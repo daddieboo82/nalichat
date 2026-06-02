@@ -1,0 +1,49 @@
+{
+  "name": "Project",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Project/song title"
+    },
+    "description": {
+      "type": "string"
+    },
+    "owner_id": {
+      "type": "string"
+    },
+    "collaborator_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "genre": {
+      "type": "string"
+    },
+    "bpm": {
+      "type": "number"
+    },
+    "key": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "in_progress",
+        "mixing",
+        "mastering",
+        "complete"
+      ],
+      "default": "draft"
+    },
+    "cover_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "owner_id"
+  ]
+}

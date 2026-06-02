@@ -1,0 +1,39 @@
+{
+  "name": "Conversation",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Group name or empty for DMs"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "dm",
+        "group"
+      ],
+      "default": "dm"
+    },
+    "participant_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "User IDs of participants"
+    },
+    "last_message_text": {
+      "type": "string"
+    },
+    "last_message_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "avatar_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "participant_ids",
+    "type"
+  ]
+}

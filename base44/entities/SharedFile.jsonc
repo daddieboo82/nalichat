@@ -1,0 +1,51 @@
+{
+  "name": "SharedFile",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "file_type": {
+      "type": "string",
+      "enum": [
+        "audio",
+        "image",
+        "video",
+        "session",
+        "document",
+        "other"
+      ],
+      "default": "other"
+    },
+    "file_size": {
+      "type": "number"
+    },
+    "uploader_id": {
+      "type": "string"
+    },
+    "uploader_name": {
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Optional project association"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "file_url",
+    "uploader_id"
+  ]
+}

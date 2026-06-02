@@ -1,0 +1,62 @@
+{
+  "name": "Track",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "vocal",
+        "instrument",
+        "beat",
+        "sample",
+        "fx",
+        "master"
+      ],
+      "default": "vocal"
+    },
+    "color": {
+      "type": "string"
+    },
+    "volume": {
+      "type": "number",
+      "default": 75
+    },
+    "pan": {
+      "type": "number",
+      "default": 0
+    },
+    "muted": {
+      "type": "boolean",
+      "default": false
+    },
+    "solo": {
+      "type": "boolean",
+      "default": false
+    },
+    "duration": {
+      "type": "number"
+    },
+    "uploaded_by": {
+      "type": "string"
+    },
+    "waveform_data": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    }
+  },
+  "required": [
+    "project_id",
+    "name"
+  ]
+}

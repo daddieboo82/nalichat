@@ -1,0 +1,47 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "artist",
+        "producer",
+        "engineer",
+        "ar",
+        "admin"
+      ],
+      "default": "artist",
+      "description": "User role in the platform"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Artist/stage name"
+    },
+    "bio": {
+      "type": "string",
+      "description": "Short bio"
+    },
+    "avatar_url": {
+      "type": "string",
+      "description": "Profile photo URL"
+    },
+    "genres": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Music genres"
+    },
+    "location": {
+      "type": "string"
+    },
+    "is_online": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "role"
+  ]
+}

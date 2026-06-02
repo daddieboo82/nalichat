@@ -142,7 +142,7 @@ export default function Record() {
               <SelectValue placeholder="Select input device" />
             </SelectTrigger>
             <SelectContent>
-              {devices.map(d => (
+              {devices.filter(d => d.deviceId).map(d => (
                 <SelectItem key={d.deviceId} value={d.deviceId}>{d.label || `Microphone ${d.deviceId.slice(0, 8)}`}</SelectItem>
               ))}
             </SelectContent>

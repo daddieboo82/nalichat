@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Upload, Music, Loader2, FolderOpen, Play, Square, Disc3, ChevronLeft } from "lucide-react";
 import MultiTrackEditor from "@/components/studio/MultiTrackEditor";
+import SessionTimer from "@/components/studio/SessionTimer";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -229,6 +230,7 @@ export default function Studio() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                <SessionTimer />
                 <Select
                   value={selectedProject.status}
                   onValueChange={(v) => updateProject.mutate({ id: selectedProject.id, data: { status: v } })}

@@ -65,6 +65,15 @@
     },
     "reactions": {
       "type": "object"
+    },
+    "thread_id": {
+      "type": "string",
+      "description": "Parent message ID \u2014 set for thread replies"
+    },
+    "thread_reply_count": {
+      "type": "number",
+      "description": "Cached count of replies in this thread",
+      "default": 0
     }
   },
   "required": [

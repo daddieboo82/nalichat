@@ -7,10 +7,12 @@ import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import GroupInfoPanel from "./GroupInfoPanel";
 import TypingIndicator from "./TypingIndicator";
+import ThreadPanel from "./ThreadPanel";
 
 export default function ChatView({ conversation, messages, currentUser, users, onSendMessage, onReact, onBack }) {
   const [replyTo, setReplyTo] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [threadMessage, setThreadMessage] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
   const scrollRef = useRef(null);
   const prevLenRef = useRef(0);
@@ -72,8 +74,11 @@ export default function ChatView({ conversation, messages, currentUser, users, o
     );
   }
 
+  // Filter out thread replies — they show in the ThreadPanel only
+  const topLevelMessages = messages.filter(m => !m.thread_id);
+
   // Group messages by sender for consecutive grouping
-  const enriched = messages.map((msg, i) => {
+  const enriched = topLevelMessages.map((msg, i) => {
     const prev = messages[i - 1];
     const showAvatar = !prev || prev.sender_id !== msg.sender_id;
     return { ...msg, showAvatar };
@@ -143,6 +148,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
               showAvatar={item.showAvatar}
               onReply={setReplyTo}
               onReact={onReact}
+              onOpenThread={setThreadMessage}
               users={users}
             />
           )
@@ -176,6 +182,13 @@ export default function ChatView({ conversation, messages, currentUser, users, o
           conversation={conversation}
           users={users}
           onClose={() => setShowGroupInfo(false)}
+        />
+      )}
+      {threadMessage && (
+        <ThreadPanel
+          parentMessage={threadMessage}
+          currentUser={currentUser}
+          onClose={() => setThreadMessage(null)}
         />
       )}
     </div>

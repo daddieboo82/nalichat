@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2 } from "lucide-react";
+import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { resumableDownload } from "@/lib/resumableUpload";
@@ -183,7 +183,7 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
   );
 }
 
-export default function MessageBubble({ message, isOwn, showAvatar, onReply, onReact, users }) {
+export default function MessageBubble({ message, isOwn, showAvatar, onReply, onReact, onOpenThread, users }) {
   const [showActions, setShowActions] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -267,6 +267,15 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
             <ReadReceipts readBy={message.read_by || []} users={users || []} />
           )}
         </div>
+        {message.thread_reply_count > 0 && (
+          <button
+            onClick={() => onOpenThread?.(message)}
+            className={cn("flex items-center gap-1 mt-1 text-[10px] text-primary hover:underline", isOwn ? "self-end mr-1" : "ml-1")}
+          >
+            <MessageSquareQuote className="w-3 h-3" />
+            {message.thread_reply_count} {message.thread_reply_count === 1 ? "reply" : "replies"}
+          </button>
+        )}
       </div>
 
       {/* Hover action buttons */}
@@ -301,6 +310,13 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
           className="w-7 h-7 rounded-full bg-secondary border border-border flex items-center justify-center hover:bg-muted transition-colors"
         >
           <Reply className="w-3.5 h-3.5 text-muted-foreground" />
+        </button>
+        <button
+          onClick={() => onOpenThread?.(message)}
+          className="w-7 h-7 rounded-full bg-secondary border border-border flex items-center justify-center hover:bg-muted transition-colors"
+          title="Open thread"
+        >
+          <MessageSquareQuote className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
       </div>
 

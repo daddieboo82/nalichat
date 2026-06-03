@@ -26,6 +26,7 @@ import Leaderboard from '@/pages/Leaderboard';
 import Profile from '@/pages/Profile';
 import Playlists from '@/pages/Playlists';
 import PlaylistDetail from '@/pages/PlaylistDetail';
+import Analytics from '@/pages/Analytics';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -71,6 +72,7 @@ const AuthenticatedApp = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/playlist/:playlistId" element={<PlaylistDetail />} />
+          <Route path="/analytics" element={<Analytics />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

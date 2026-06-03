@@ -5,6 +5,7 @@ import { Heart, Eye, Plus, Upload, X, Search, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ArtPostCard from "@/components/explore/ArtPostCard";
+import PullToRefresh from "@/components/layout/PullToRefresh";
 import UploadArtDialog from "@/components/explore/UploadArtDialog";
 import AddToPlaylistDialog from "@/components/explore/AddToPlaylistDialog";
 import TrackCommentsDialog from "@/components/explore/TrackCommentsDialog";
@@ -39,7 +40,27 @@ export default function Explore() {
         : [...(post.liked_by || []), currentUser.id];
       return base44.entities.ArtPost.update(post.id, { liked_by, likes: liked_by.length });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["artposts"] }),
+    // Optimistic update so the heart + count flip instantly
+    onMutate: async (post) => {
+      if (!currentUser) return;
+      await queryClient.cancelQueries({ queryKey: ["artposts"] });
+      const previous = queryClient.getQueryData(["artposts", filter]);
+      queryClient.setQueryData(["artposts", filter], (old = []) =>
+        old.map(p => {
+          if (p.id !== post.id) return p;
+          const liked = p.liked_by?.includes(currentUser.id);
+          const liked_by = liked
+            ? p.liked_by.filter(id => id !== currentUser.id)
+            : [...(p.liked_by || []), currentUser.id];
+          return { ...p, liked_by, likes: liked_by.length };
+        })
+      );
+      return { previous };
+    },
+    onError: (_err, _post, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(["artposts", filter], ctx.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["artposts"] }),
   });
 
   const filtered = posts.filter(p =>
@@ -52,7 +73,10 @@ export default function Explore() {
   const recent = filtered;
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
+    <PullToRefresh
+      onRefresh={() => queryClient.invalidateQueries({ queryKey: ["artposts"] })}
+      className="h-full overflow-y-auto bg-background"
+    >
       {/* Hero */}
       <div className="relative overflow-hidden bg-gradient-to-br from-primary/25 via-background to-accent/15 px-4 sm:px-8 pt-8 pb-6">
         <div className="absolute -top-24 right-10 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-float-blob pointer-events-none" />
@@ -166,6 +190,6 @@ export default function Explore() {
         open={!!commentTrack}
         onOpenChange={(open) => !open && setCommentTrack(null)}
       />
-    </div>
+    </PullToRefresh>
   );
 }

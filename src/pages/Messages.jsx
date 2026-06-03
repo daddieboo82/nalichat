@@ -77,7 +77,27 @@ export default function Messages() {
       }
       return msg;
     },
-    onSuccess: () => {
+    // Optimistically append the message so it appears instantly
+    onMutate: async (msgData) => {
+      await queryClient.cancelQueries({ queryKey: ["messages", selectedConvId] });
+      const previous = queryClient.getQueryData(["messages", selectedConvId]);
+      const tempMsg = {
+        id: `temp-${Date.now()}`,
+        ...msgData,
+        conversation_id: selectedConvId,
+        sender_id: currentUser?.id,
+        sender_name: currentUser?.display_name || currentUser?.full_name,
+        sender_avatar: currentUser?.avatar_url,
+        created_date: new Date().toISOString(),
+        _optimistic: true,
+      };
+      queryClient.setQueryData(["messages", selectedConvId], (old = []) => [...old, tempMsg]);
+      return { previous };
+    },
+    onError: (_err, _msgData, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(["messages", selectedConvId], ctx.previous);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
@@ -95,8 +115,19 @@ export default function Messages() {
     } else {
       reactions[userKey] = emoji;
     }
-    await base44.entities.Message.update(messageId, { reactions });
-    queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
+    // Optimistically flip the reaction in the cache before the request resolves
+    const previous = queryClient.getQueryData(["messages", selectedConvId]);
+    queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+      old.map(m => (m.id === messageId ? { ...m, reactions } : m))
+    );
+    try {
+      await base44.entities.Message.update(messageId, { reactions });
+    } catch (err) {
+      if (previous) queryClient.setQueryData(["messages", selectedConvId], previous);
+      throw err;
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
+    }
   };
 
   const startDM = async (otherUser) => {

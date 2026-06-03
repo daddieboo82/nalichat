@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Home, Compass, Mic, MessageSquare, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -12,10 +12,26 @@ const tabs = [
 
 export default function MobileBottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const path = location.pathname;
 
   const isActive = (tabPath) =>
     tabPath === "/" ? path === "/" : path.startsWith(tabPath);
+
+  const handleTap = (e, tabPath) => {
+    e.preventDefault();
+    const active = isActive(tabPath);
+    // Re-selecting the active tab resets it to its root path and scrolls to top.
+    if (active) {
+      if (path !== tabPath) {
+        navigate(tabPath);
+      }
+      const scroller = document.querySelector("main");
+      scroller?.scrollTo?.({ top: 0, behavior: "smooth" });
+      return;
+    }
+    navigate(tabPath);
+  };
 
   return (
     <nav
@@ -26,9 +42,10 @@ export default function MobileBottomNav() {
         {tabs.map(({ icon: Icon, label, path: tabPath }) => {
           const active = isActive(tabPath);
           return (
-            <Link
+            <a
               key={tabPath}
-              to={tabPath}
+              href={tabPath}
+              onClick={(e) => handleTap(e, tabPath)}
               className={cn(
                 "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 select-none transition-colors active:bg-primary/10",
                 active ? "text-primary" : "text-muted-foreground"
@@ -36,7 +53,7 @@ export default function MobileBottomNav() {
             >
               <Icon className={cn("w-5 h-5", active && "scale-110 transition-transform")} />
               <span className="text-[10px] font-medium">{label}</span>
-            </Link>
+            </a>
           );
         })}
       </div>

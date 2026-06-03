@@ -1,4 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+import PageTransition from "@/components/layout/PageTransition";
 import { Settings, LogOut, Compass, Trophy, User, Mic, Sparkles, Music, BarChart3, FileText, MessageSquare, Users } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useState, useEffect } from "react";
@@ -39,7 +41,11 @@ export default function AppLayout() {
 
       {/* Main Content — bottom padding on mobile clears the fixed bottom nav */}
       <main className="flex-1 overflow-hidden pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
-        <Outlet />
+        <AnimatePresence mode="wait">
+          <PageTransition key={location.pathname}>
+            <Outlet />
+          </PageTransition>
+        </AnimatePresence>
       </main>
 
       {/* Bottom Navigation (Mobile) */}

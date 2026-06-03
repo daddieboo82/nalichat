@@ -53,6 +53,14 @@
       "items": {
         "type": "number"
       }
+    },
+    "suggested_genre": {
+      "type": "string",
+      "description": "AI-suggested genre based on the uploaded track"
+    },
+    "suggested_bpm": {
+      "type": "number",
+      "description": "AI-suggested BPM based on the uploaded track"
     }
   },
   "required": [

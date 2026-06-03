@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { Play, Pause, Download, Share2, Loader2, Wand2, Music, Zap, Radio } from "lucide-react";
+import { Play, Pause, Download, Share2, Loader2, Wand2, Music, Zap, Radio, Users } from "lucide-react";
 import { motion } from "framer-motion";
+import CollaboratorPresence from "@/components/studio/CollaboratorPresence";
 
 export default function StudioEditor() {
   const [currentUser, setCurrentUser] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
+  const [collaborators, setCollaborators] = useState([]);
   const [audioUrl, setAudioUrl] = useState("");
   const [processing, setProcessing] = useState(false);
   const [masterAnalysis, setMasterAnalysis] = useState(null);
@@ -22,6 +24,19 @@ export default function StudioEditor() {
   useEffect(() => {
     base44.auth.me().then(setCurrentUser);
   }, []);
+
+  // Subscribe to collaboration updates
+  useEffect(() => {
+    if (!activeSession || !currentUser) return;
+
+    const handleCollaborationUpdate = () => {
+      // Fetch current collaborators (in production, use WebSocket/SSE)
+      setCollaborators([currentUser]);
+    };
+
+    const interval = setInterval(handleCollaborationUpdate, 1000);
+    return () => clearInterval(interval);
+  }, [activeSession, currentUser]);
 
   const handleProcessAudio = async () => {
     if (!audioUrl) return;
@@ -95,8 +110,15 @@ export default function StudioEditor() {
         <TabsContent value="editor" className="flex-1 overflow-auto p-6">
           <div className="max-w-4xl mx-auto space-y-6">
             <div className="bg-card rounded-2xl border border-border p-8">
-              <h2 className="font-heading font-bold text-2xl mb-2">Studio Session Editor</h2>
-              <p className="text-muted-foreground mb-6">Upload your bounced session or paste the audio URL</p>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="font-heading font-bold text-2xl mb-2">Studio Session Editor</h2>
+                  <p className="text-muted-foreground">Upload your bounced session or paste the audio URL</p>
+                </div>
+                {collaborators.length > 0 && (
+                  <CollaboratorPresence collaborators={collaborators} currentUserId={currentUser?.id} />
+                )}
+              </div>
 
               <div className="space-y-4">
                 <Input

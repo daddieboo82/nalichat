@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { resumableDownload } from "@/lib/resumableUpload";
 import MediaViewer from "./MediaViewer";
+import AudioWaveform from "./AudioWaveform";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -71,6 +72,51 @@ function AudioPlayer({ src, duration }) {
   );
 }
 
+function AudioPlayerWithWaveform({ src, duration }) {
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const audioRef = useRef(null);
+
+  const toggle = () => {
+    if (!audioRef.current) return;
+    if (playing) audioRef.current.pause();
+    else audioRef.current.play();
+    setPlaying(!playing);
+  };
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    const pct = (audioRef.current.currentTime / audioRef.current.duration) * 100;
+    setProgress(pct || 0);
+    setCurrentTime(audioRef.current.currentTime);
+  };
+
+  const handleWaveformClick = (e) => {
+    if (!audioRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    audioRef.current.currentTime = pct * audioRef.current.duration;
+  };
+
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <audio ref={audioRef} src={src} onEnded={() => { setPlaying(false); setProgress(0); }} onTimeUpdate={handleTimeUpdate} />
+        <button onClick={toggle} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 hover:bg-white/30 transition-colors">
+          {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+        </button>
+        <div className="flex-1 cursor-pointer" onClick={handleWaveformClick}>
+          <AudioWaveform src={src} isPlaying={playing} progress={progress} />
+        </div>
+      </div>
+      <span className="text-[10px] text-muted-foreground/70 px-1">{fmt(currentTime)} / {fmt(duration || 0)}</span>
+    </div>
+  );
+}
+
 function FileAttachment({ message, isOwn, onOpenViewer }) {
   const [dlProgress, setDlProgress] = useState(null); // null = idle, 0-100 = downloading
   const isImage = message.type === "image" || message.file_type?.startsWith("image");
@@ -100,7 +146,7 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
   if (isAudio) {
     return (
       <div className="flex flex-col gap-2">
-        <AudioPlayer src={message.file_url} duration={message.duration} />
+        <AudioPlayerWithWaveform src={message.file_url} duration={message.duration} />
         <button onClick={() => onOpenViewer(message)} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
           <Maximize2 className="w-3 h-3" /> Full player
         </button>

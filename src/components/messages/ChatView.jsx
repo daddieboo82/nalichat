@@ -6,13 +6,16 @@ import { base44 } from "@/api/base44Client";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import GroupInfoPanel from "./GroupInfoPanel";
+import TypingIndicator from "./TypingIndicator";
 
 export default function ChatView({ conversation, messages, currentUser, users, onSendMessage, onReact, onBack }) {
   const [replyTo, setReplyTo] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [typingUsers, setTypingUsers] = useState([]);
   const scrollRef = useRef(null);
   const prevLenRef = useRef(0);
   const markedRef = useRef(new Set());
+  const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -146,11 +149,26 @@ export default function ChatView({ conversation, messages, currentUser, users, o
         )}
       </div>
 
+      {/* Typing indicator */}
+      {typingUsers.length > 0 && (
+        <div className="px-5 py-2 text-xs text-muted-foreground flex items-center gap-1.5">
+          <TypingIndicator />
+          <span>{typingUsers.map(u => u.display_name || u.full_name).join(", ")} typing...</span>
+        </div>
+      )}
+
       {/* Input */}
       <ChatInput
         onSend={onSendMessage}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
+        onTyping={() => {
+          // Simulate typing broadcast (in production, send via WebSocket)
+          clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => {
+            setTypingUsers([]);
+          }, 2000);
+        }}
       />
       </div>
       {showGroupInfo && conversation?.type === "group" && (

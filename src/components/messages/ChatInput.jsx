@@ -4,7 +4,7 @@ import { Send, Paperclip, Mic, X, StopCircle, UploadCloud } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resumableUpload } from "@/lib/resumableUpload";
 
-export default function ChatInput({ onSend, replyTo, onCancelReply, disabled }) {
+export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, onTyping }) {
   const [text, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -196,7 +196,10 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled }) 
           <textarea
             ref={textareaRef}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              onTyping?.();
+            }}
             placeholder={dragOver ? "Drop files here..." : "Message..."}
             className="flex-1 bg-secondary/50 border border-border rounded-2xl px-3 sm:px-4 py-2.5 text-sm resize-none min-h-[40px] max-h-[120px] focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground"
             onKeyDown={(e) => {

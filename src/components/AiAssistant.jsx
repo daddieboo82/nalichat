@@ -40,7 +40,7 @@ export default function AiAssistant() {
       // Send greeting
       await base44.agents.addMessage(conv, {
         role: "user",
-        content: "Hi! What can you help me with on ArtVerse?"
+        content: "Hi! What can you help me with on RecordStudio?"
       });
     }
     setTimeout(() => inputRef.current?.focus(), 100);
@@ -81,7 +81,7 @@ export default function AiAssistant() {
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-heading font-bold text-sm">Aria</p>
+              <p className="font-heading font-bold text-sm">Nali</p>
               {!minimized && <p className="text-[10px] text-muted-foreground">AI Creative Assistant</p>}
             </div>
             <button onClick={() => setMinimized(v => !v)} className="text-muted-foreground hover:text-foreground p-1">
@@ -102,7 +102,7 @@ export default function AiAssistant() {
                       <Sparkles className="w-6 h-6 text-primary" />
                     </div>
                     <p className="text-sm font-semibold">Hi{user ? `, ${user.display_name || user.full_name?.split(" ")[0]}` : ""}! 👋</p>
-                    <p className="text-xs text-muted-foreground mt-1">I'm Aria, your creative AI. Ask me anything!</p>
+                    <p className="text-xs text-muted-foreground mt-1">I'm Nali, your creative AI. Ask me anything!</p>
                     <div className="flex flex-col gap-1.5 mt-4">
                       {["Help me write my bio", "How do I earn XP?", "Give me art ideas"].map(s => (
                         <button key={s} onClick={() => { setInput(s); inputRef.current?.focus(); }} className="text-xs bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground px-3 py-2 rounded-xl text-left transition-colors">
@@ -153,7 +153,7 @@ export default function AiAssistant() {
                   ref={inputRef}
                   value={input}
                   onChange={e => setInput(e.target.value)}
-                  placeholder="Ask Aria anything..."
+                  placeholder="Ask Nali anything..."
                   className="flex-1 bg-secondary/50 border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/50"
                   onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                 />

@@ -33,6 +33,32 @@
       "purpose": "maskable"
     }
   ],
+  "screenshots": [
+    {
+      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Explore Music",

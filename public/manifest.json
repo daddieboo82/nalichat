@@ -3,43 +3,74 @@
   "short_name": "NaliChat",
   "description": "Collaborate, mix & share music with artists worldwide.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0a0a14",
   "theme_color": "#7c3aed",
-  "orientation": "portrait",
-  "scope": "/",
-  "lang": "en",
-  "categories": ["music", "social", "entertainment"],
+  "prefer_related_applications": false,
   "icons": [
+    {
+      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
+    },
+    {
+      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "Explore Music",
+      "short_name": "Explore",
+      "description": "Discover trending tracks",
       "url": "/explore",
-      "description": "Discover trending tracks"
+      "icons": [
+        {
+          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Studio",
+      "short_name": "Studio",
+      "description": "Open your studio projects",
       "url": "/studio",
-      "description": "Open your studio projects"
+      "icons": [
+        {
+          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Messages",
+      "short_name": "Messages",
+      "description": "Open your messages",
       "url": "/messages",
-      "description": "Open your messages"
+      "icons": [
+        {
+          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

@@ -28,6 +28,7 @@ Each profile must have:
 Ensure variety in locations and genres. Return as pure JSON array, nothing else.`;
 
     const response = await base44.integrations.Core.InvokeLLM({
+      model: "gemini_3_1_pro",
       prompt,
       add_context_from_internet: true,
       response_json_schema: {

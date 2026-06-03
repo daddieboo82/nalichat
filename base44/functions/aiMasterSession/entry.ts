@@ -16,6 +16,7 @@ Deno.serve(async (req) => {
 
     // Call LLM to analyze and provide mix/master recommendations
     const analysis = await base44.integrations.Core.InvokeLLM({
+      model: "claude_opus_4_8",
       prompt: `Analyze this audio session for mixing and mastering. Project: "${project_title}". 
                Provide recommendations for:
                1. EQ adjustments (low/mid/high frequencies)

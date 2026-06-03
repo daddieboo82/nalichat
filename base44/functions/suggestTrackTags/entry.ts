@@ -46,6 +46,7 @@ Based on this, suggest the most likely musical genre and a typical BPM (beats pe
 Return realistic values. BPM must be a whole number between 60 and 200.`;
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      model: "claude_opus_4_8",
       prompt,
       response_json_schema: {
         type: 'object',

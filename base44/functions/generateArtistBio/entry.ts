@@ -32,6 +32,7 @@ Website: ${artist.website || 'Not specified'}
 The bio should be written in first person, highlight their expertise, and sound authentic and inspiring. Keep it concise and suitable for a professional music network profile.`;
 
         const bioResponse = await base44.asServiceRole.integrations.Core.InvokeLLM({
+          model: "claude_opus_4_8",
           prompt: prompt,
         });
 

@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Upload, Music, Loader2, FolderOpen, Play, Square, Disc3, ChevronLeft, Search } from "lucide-react";
+import { Plus, Upload, Music, Loader2, FolderOpen, Disc3, ChevronLeft, Search, Settings } from "lucide-react";
 import MultiTrackEditor from "@/components/studio/MultiTrackEditor";
 import SessionTimer from "@/components/studio/SessionTimer";
+import ProjectSettingsDialog from "@/components/studio/ProjectSettingsDialog";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ export default function Studio() {
   const [newProjectKey, setNewProjectKey] = useState("C");
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState("");
+  const [showProjectSettings, setShowProjectSettings] = useState(false);
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -46,6 +48,11 @@ export default function Studio() {
   });
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
+
+  // Role helpers
+  const isOwner = selectedProject?.owner_id === currentUser?.id;
+  const myRole = selectedProject?.collaborator_roles?.[currentUser?.id] || "viewer";
+  const canEdit = isOwner || myRole === "editor";
 
   const filteredProjects = projects.filter(p =>
     p.title?.toLowerCase().includes(search.toLowerCase())
@@ -250,6 +257,17 @@ export default function Studio() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <SessionTimer />
+                {isOwner && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="rounded-xl hover:bg-secondary"
+                    onClick={() => setShowProjectSettings(true)}
+                    title="Project settings"
+                  >
+                    <Settings className="w-4 h-4 text-muted-foreground" />
+                  </Button>
+                )}
                 <Select
                   value={selectedProject.status}
                   onValueChange={(v) => updateProject.mutate({ id: selectedProject.id, data: { status: v } })}
@@ -266,10 +284,12 @@ export default function Studio() {
                   </SelectContent>
                 </Select>
                 <input ref={fileInputRef} type="file" accept="audio/*" className="hidden" onChange={addTrack} />
-                <Button className="rounded-xl bg-primary hover:bg-primary/90" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                  {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                  Add Track
-                </Button>
+                {canEdit && (
+                  <Button className="rounded-xl bg-primary hover:bg-primary/90" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                    {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                    Add Track
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -280,7 +300,16 @@ export default function Studio() {
               projectTitle={selectedProject?.title}
               onTrackUpdate={(id, data) => updateTrack.mutate({ id, data })}
               onTrackDelete={(id) => deleteTrack.mutate(id)}
+              canEdit={canEdit}
             />
+
+            {showProjectSettings && (
+              <ProjectSettingsDialog
+                project={selectedProject}
+                open={showProjectSettings}
+                onOpenChange={setShowProjectSettings}
+              />
+            )}
           </>
         )}
       </div>

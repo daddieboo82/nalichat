@@ -18,6 +18,11 @@
         "type": "string"
       }
     },
+    "collaborator_roles": {
+      "type": "object",
+      "description": "Map of user_id -> role ('viewer' | 'editor')",
+      "default": {}
+    },
     "genre": {
       "type": "string"
     },

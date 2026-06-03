@@ -6,7 +6,7 @@ import Timeline from "./Timeline";
 import BounceDialog from "./BounceDialog";
 import StemQueue from "./StemQueue";
 
-export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete, projectTitle }) {
+export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete, projectTitle, canEdit = true }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -149,10 +149,12 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           />
         </div>
 
-        {/* Bounce Button */}
-        <div className="ml-4">
-          <BounceDialog projectTitle={projectTitle || selectedProject?.title} project={selectedProject} tracks={tracks} />
-        </div>
+        {/* Bounce Button — editors/owners only */}
+        {canEdit && (
+          <div className="ml-4">
+            <BounceDialog projectTitle={projectTitle || selectedProject?.title} project={selectedProject} tracks={tracks} />
+          </div>
+        )}
       </div>
 
       {/* Timeline & Tracks */}
@@ -182,14 +184,15 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                     track={track}
                     isPlaying={isPlaying}
                     currentTime={currentTime}
-                    onUpdate={(data) => onTrackUpdate(track.id, data)}
-                    onDelete={() => onTrackDelete(track.id)}
+                    onUpdate={(data) => canEdit && onTrackUpdate(track.id, data)}
+                    onDelete={() => canEdit && onTrackDelete(track.id)}
                     audioRef={(ref) => {
                       if (ref) audioElements.current[idx] = ref;
                     }}
                     masterVolume={masterVolume}
                     inQueue={queueIds.has(track.id)}
                     onToggleQueue={() => toggleQueue(track)}
+                    canEdit={canEdit}
                   />
                 </div>
               ))

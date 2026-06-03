@@ -1,16 +1,45 @@
 {
   "name": "NaliChat",
   "short_name": "NaliChat",
-  "description": "NaliChat - collaborate, create, and connect.",
+  "description": "Collaborate, mix & share music with artists worldwide.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0f",
+  "background_color": "#0a0a14",
   "theme_color": "#7c3aed",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["music", "social", "entertainment"],
   "icons": [
     {
-      "src": "https://base44.com/logo_v2.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Explore Music",
+      "url": "/explore",
+      "description": "Discover trending tracks"
+    },
+    {
+      "name": "Studio",
+      "url": "/studio",
+      "description": "Open your studio projects"
+    },
+    {
+      "name": "Messages",
+      "url": "/messages",
+      "description": "Open your messages"
     }
   ]
 }

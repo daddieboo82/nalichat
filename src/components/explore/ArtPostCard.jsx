@@ -1,8 +1,8 @@
-import { Heart, Eye, Music } from "lucide-react";
+import { Heart, Eye, Music, MessageCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
-export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist, large }) {
+export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist, onComment, large }) {
   const liked = post.liked_by?.includes(currentUser?.id);
 
   return (
@@ -32,6 +32,13 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
             )}
           </div>
           <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onComment?.(post)}
+              className="p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+              title="Comments"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+            </button>
             <button
               onClick={() => onAddToPlaylist?.(post.id)}
               className="p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"

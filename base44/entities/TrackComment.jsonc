@@ -1,0 +1,27 @@
+{
+  "name": "TrackComment",
+  "type": "object",
+  "properties": {
+    "track_id": {
+      "type": "string",
+      "description": "ID of the ArtPost being commented on"
+    },
+    "author_id": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "author_avatar": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "track_id",
+    "author_id",
+    "text"
+  ]
+}

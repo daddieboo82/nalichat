@@ -1,0 +1,45 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "recipient_id": {
+      "type": "string",
+      "description": "User ID who receives the notification"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "comment",
+        "file",
+        "session_invite"
+      ],
+      "description": "Type of notification"
+    },
+    "actor_id": {
+      "type": "string",
+      "description": "User ID who triggered the notification"
+    },
+    "actor_name": {
+      "type": "string"
+    },
+    "actor_avatar": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string",
+      "description": "Notification body text"
+    },
+    "link": {
+      "type": "string",
+      "description": "In-app path to navigate to"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "recipient_id",
+    "type"
+  ]
+}

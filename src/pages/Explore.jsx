@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ArtPostCard from "@/components/explore/ArtPostCard";
 import UploadArtDialog from "@/components/explore/UploadArtDialog";
 import AddToPlaylistDialog from "@/components/explore/AddToPlaylistDialog";
+import TrackCommentsDialog from "@/components/explore/TrackCommentsDialog";
 
 const MEDIUMS = ["all", "original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
 
@@ -16,6 +17,7 @@ export default function Explore() {
   const [search, setSearch] = useState("");
   const [showUpload, setShowUpload] = useState(false);
   const [selectedTrackForPlaylist, setSelectedTrackForPlaylist] = useState(null);
+  const [commentTrack, setCommentTrack] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => { base44.auth.me().then(setCurrentUser); }, []);
@@ -107,7 +109,7 @@ export default function Explore() {
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">🔥 Trending</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {featured.slice(0, 3).map(post => (
-                <ArtPostCard key={post.id} post={post} currentUser={currentUser} onLike={() => toggleLike.mutate(post)} large />
+                <ArtPostCard key={post.id} post={post} currentUser={currentUser} onLike={() => toggleLike.mutate(post)} onComment={setCommentTrack} onAddToPlaylist={setSelectedTrackForPlaylist} large />
               ))}
             </div>
           </div>
@@ -136,6 +138,7 @@ export default function Explore() {
                   currentUser={currentUser} 
                   onLike={() => toggleLike.mutate(post)}
                   onAddToPlaylist={setSelectedTrackForPlaylist}
+                  onComment={setCommentTrack}
                 />
               ))}
             </div>
@@ -152,6 +155,13 @@ export default function Explore() {
         trackId={selectedTrackForPlaylist}
         open={!!selectedTrackForPlaylist}
         onOpenChange={(open) => !open && setSelectedTrackForPlaylist(null)}
+      />
+
+      <TrackCommentsDialog
+        post={commentTrack}
+        currentUser={currentUser}
+        open={!!commentTrack}
+        onOpenChange={(open) => !open && setCommentTrack(null)}
       />
     </div>
   );

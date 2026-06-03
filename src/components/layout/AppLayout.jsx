@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import AiAssistant from "@/components/AiAssistant";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 const navItems = [
   { icon: MessageSquare, label: "Messages", path: "/messages" },
@@ -53,6 +54,7 @@ export default function AppLayout() {
 
           {/* Mobile User Actions */}
           <div className="flex items-center gap-1">
+            <NotificationBell />
             <Link to="/profile" className="p-2 rounded-lg hover:bg-primary/10 transition-all">
               <Avatar className="w-6 h-6 border border-border">
                 <AvatarImage src={user?.avatar_url} />
@@ -146,6 +148,7 @@ export default function AppLayout() {
 
           {/* User Actions */}
           <div className="flex items-center gap-1 shrink-0">
+            <NotificationBell />
             <Link
               to="/profile"
               title="Profile"

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Upload, Music, Loader2, FolderOpen, Play, Square, Disc3, ChevronLeft } from "lucide-react";
+import { Plus, Upload, Music, Loader2, FolderOpen, Play, Square, Disc3, ChevronLeft, Search } from "lucide-react";
 import MultiTrackEditor from "@/components/studio/MultiTrackEditor";
 import SessionTimer from "@/components/studio/SessionTimer";
 import { motion } from "framer-motion";
@@ -28,6 +28,7 @@ export default function Studio() {
   const [newProjectBpm, setNewProjectBpm] = useState(120);
   const [newProjectKey, setNewProjectKey] = useState("C");
   const [uploading, setUploading] = useState(false);
+  const [search, setSearch] = useState("");
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -45,6 +46,10 @@ export default function Studio() {
   });
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
+
+  const filteredProjects = projects.filter(p =>
+    p.title?.toLowerCase().includes(search.toLowerCase())
+  );
 
   const createProject = useMutation({
     mutationFn: () => base44.entities.Project.create({
@@ -157,6 +162,15 @@ export default function Studio() {
               </DialogContent>
             </Dialog>
           </div>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search projects..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="bg-secondary/50 border-0 rounded-xl pl-9 h-9 text-sm"
+            />
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -165,8 +179,13 @@ export default function Studio() {
               <FolderOpen className="w-10 h-10 opacity-30" />
               <p className="text-sm text-center">No projects yet.<br/>Create your first one!</p>
             </div>
+          ) : filteredProjects.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 p-6">
+              <Search className="w-10 h-10 opacity-30" />
+              <p className="text-sm text-center">No projects match "{search}"</p>
+            </div>
           ) : (
-            projects.map(p => (
+            filteredProjects.map(p => (
               <button
                 key={p.id}
                 onClick={() => setSelectedProjectId(p.id)}

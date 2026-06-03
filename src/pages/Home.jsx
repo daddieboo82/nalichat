@@ -118,6 +118,11 @@ export default function Home() {
             </motion.div>
           </div>
 
+          {user && (
+            <p className="text-sm font-semibold tracking-wide text-primary mb-3 uppercase">
+              Welcome back, {user.full_name?.split(" ")[0] || "Artist"} 🎧
+            </p>
+          )}
           <h1 className="font-heading font-black text-5xl md:text-7xl mb-4 text-gradient-animate">
             Welcome to NaliChat
           </h1>
@@ -188,6 +193,30 @@ export default function Home() {
               </div>
             </div>
           </Link>
+        </motion.div>
+
+        {/* Nali AI Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="mb-16"
+        >
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/15 via-card to-accent/15 border border-primary/20 p-8 md:p-10">
+            <div className="absolute -top-16 -right-16 w-56 h-56 bg-primary/20 rounded-full blur-3xl" />
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
+              <div className="w-16 h-16 shrink-0 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center glow-primary">
+                <Sparkles className="w-8 h-8 text-white" />
+              </div>
+              <div className="flex-1">
+                <h2 className="font-heading font-bold text-2xl md:text-3xl mb-1">Meet Nali, your AI partner</h2>
+                <p className="text-muted-foreground">
+                  Ask anything, get expert music advice, and let Nali <span className="text-foreground font-medium">automate tasks</span> — create projects, build playlists, write your bio, and more. Tap the ✨ button anytime.
+                </p>
+              </div>
+            </div>
+          </div>
         </motion.div>
 
         {/* Features Grid */}

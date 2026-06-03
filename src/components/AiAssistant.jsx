@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { Bot, X, Send, Minimize2, Maximize2, Sparkles } from "lucide-react";
+import { Bot, X, Send, Minimize2, Maximize2, Sparkles, Expand, Shrink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 
 export default function AiAssistant() {
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -73,7 +74,7 @@ export default function AiAssistant() {
       {open && (
         <div className={cn(
           "fixed bottom-24 right-4 z-50 bg-card border border-border rounded-2xl shadow-2xl shadow-black/40 flex flex-col transition-all duration-300",
-          minimized ? "w-64 h-14" : "w-80 sm:w-96 h-[500px]"
+          minimized ? "w-64 h-14" : expanded ? "w-[92vw] sm:w-[440px] h-[640px] max-h-[80vh]" : "w-80 sm:w-96 h-[500px]"
         )}>
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-gradient-to-r from-primary/10 to-accent/10 rounded-t-2xl shrink-0">
@@ -84,6 +85,11 @@ export default function AiAssistant() {
               <p className="font-heading font-bold text-sm">Nali</p>
               {!minimized && <p className="text-[10px] text-muted-foreground">AI Creative Assistant</p>}
             </div>
+            {!minimized && (
+              <button onClick={() => setExpanded(v => !v)} className="text-muted-foreground hover:text-foreground p-1" title={expanded ? "Shrink" : "Expand"}>
+                {expanded ? <Shrink className="w-4 h-4" /> : <Expand className="w-4 h-4" />}
+              </button>
+            )}
             <button onClick={() => setMinimized(v => !v)} className="text-muted-foreground hover:text-foreground p-1">
               {minimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
             </button>
@@ -102,9 +108,9 @@ export default function AiAssistant() {
                       <Sparkles className="w-6 h-6 text-primary" />
                     </div>
                     <p className="text-sm font-semibold">Hi{user ? `, ${user.display_name || user.full_name?.split(" ")[0]}` : ""}! 👋</p>
-                    <p className="text-xs text-muted-foreground mt-1">I'm Nali, your creative AI. Ask me anything!</p>
+                    <p className="text-xs text-muted-foreground mt-1">I'm Nali, your creative AI. I can answer anything <span className="text-primary">and</span> do tasks for you!</p>
                     <div className="flex flex-col gap-1.5 mt-4">
-                      {["Help me write my bio", "How do I earn XP?", "Give me art ideas"].map(s => (
+                      {["Create a new project for me", "Write & save my artist bio", "Make a playlist of my tracks", "Suggest tags for my latest track"].map(s => (
                         <button key={s} onClick={() => { setInput(s); inputRef.current?.focus(); }} className="text-xs bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground px-3 py-2 rounded-xl text-left transition-colors">
                           {s}
                         </button>

@@ -124,7 +124,7 @@ export default function AppLayout() {
           </Link>
 
           {/* Main Navigation */}
-          <div className="flex items-center gap-0.5 justify-center flex-1">
+          <div className="flex items-center gap-0.5 flex-wrap justify-center flex-1">
             {navItems.map(({ icon: Icon, label, path }) => {
               const isActive = location.pathname.startsWith(path);
               return (
@@ -133,14 +133,14 @@ export default function AppLayout() {
                   to={path}
                   title={label}
                   className={cn(
-                    "flex-1 min-w-0 px-2 py-1.5 rounded-lg flex items-center justify-center gap-1 transition-all whitespace-nowrap text-xs group",
+                    "px-2 py-1.5 rounded-lg flex items-center gap-1 transition-all whitespace-nowrap text-xs group",
                     isActive
                       ? "bg-gradient-to-r from-primary/25 to-pink-500/15 text-primary shadow-sm shadow-primary/20 font-semibold"
                       : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
                   )}
                 >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  <span className="hidden lg:inline truncate">{label}</span>
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{label}</span>
                 </Link>
               );
             })}

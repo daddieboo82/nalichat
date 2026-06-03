@@ -239,17 +239,25 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
           )}
         </div>
 
-        {/* Reactions display */}
-        {message.reactions && Object.keys(message.reactions).length > 0 && (
-          <div className={cn("flex gap-1 flex-wrap mt-1", isOwn && "justify-end")}>
-            {Object.entries(message.reactions).map(([emoji, count]) => (
-              <button key={emoji} onClick={() => onReact?.(message.id, emoji)}
-                className="bg-secondary border border-border rounded-full px-2 py-0.5 text-xs hover:bg-primary/10 transition-colors">
-                {emoji} {count > 1 && <span className="opacity-70">{count}</span>}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Reactions display — aggregate per-user keys (emoji__userId) into counts */}
+        {(() => {
+          const counts = {};
+          for (const emoji of Object.values(message.reactions || {})) {
+            counts[emoji] = (counts[emoji] || 0) + 1;
+          }
+          const entries = Object.entries(counts);
+          if (entries.length === 0) return null;
+          return (
+            <div className={cn("flex gap-1 flex-wrap mt-1", isOwn && "justify-end")}>
+              {entries.map(([emoji, count]) => (
+                <button key={emoji} onClick={() => onReact?.(message.id, emoji)}
+                  className="bg-secondary border border-border rounded-full px-2 py-0.5 text-xs hover:bg-primary/10 transition-colors">
+                  {emoji} {count > 1 && <span className="opacity-70">{count}</span>}
+                </button>
+              ))}
+            </div>
+          );
+        })()}
 
         <div className={cn("flex items-center gap-1 mt-0.5", isOwn ? "justify-end mr-1" : "ml-1")}>
           <p className="text-[10px] text-muted-foreground">

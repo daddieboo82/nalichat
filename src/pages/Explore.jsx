@@ -32,6 +32,7 @@ export default function Explore() {
 
   const toggleLike = useMutation({
     mutationFn: async (post) => {
+      if (!currentUser) return;
       const liked = post.liked_by?.includes(currentUser.id);
       const liked_by = liked
         ? post.liked_by.filter(id => id !== currentUser.id)

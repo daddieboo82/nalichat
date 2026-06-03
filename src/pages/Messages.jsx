@@ -85,20 +85,17 @@ export default function Messages() {
 
   const handleReact = async (messageId, emoji) => {
     const msg = messages.find(m => m.id === messageId);
-    if (!msg) return;
+    if (!msg || !currentUser) return;
+    // Store per-user keys directly so toggling survives reloads.
+    // Display counts are aggregated in the message component.
     const reactions = { ...(msg.reactions || {}) };
-    const userKey = `${emoji}_${currentUser.id}`;
+    const userKey = `${emoji}__${currentUser.id}`;
     if (reactions[userKey]) {
       delete reactions[userKey];
     } else {
       reactions[userKey] = emoji;
     }
-    // Aggregate for display
-    const aggregated = {};
-    for (const val of Object.values(reactions)) {
-      aggregated[val] = (aggregated[val] || 0) + 1;
-    }
-    await base44.entities.Message.update(messageId, { reactions: aggregated, _raw_reactions: reactions });
+    await base44.entities.Message.update(messageId, { reactions });
     queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
   };
 

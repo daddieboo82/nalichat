@@ -81,7 +81,7 @@ export default function Files() {
 
   const handleUpload = (e) => {
     const file = e.target.files?.[0];
-    if (file) uploadMutation.mutate(file);
+    if (file && currentUser) uploadMutation.mutate(file);
     e.target.value = "";
   };
 

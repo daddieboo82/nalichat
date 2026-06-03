@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,7 +35,7 @@ export default function Network() {
   });
 
   const [currentUser, setCurrentUser] = useState(null);
-  useState(() => { base44.auth.me().then(setCurrentUser); });
+  useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
 
   const filtered = users.filter(u => {
     if (u.id === currentUser?.id) return false;

@@ -6,6 +6,7 @@ import ConversationList from "@/components/messages/ConversationList";
 import ChatView from "@/components/messages/ChatView";
 import NewChatDialog from "@/components/messages/NewChatDialog";
 import GroupChatDialog from "@/components/messages/GroupChatDialog";
+import ExternalMessageDialog from "@/components/messages/ExternalMessageDialog";
 import { notify } from "@/lib/notifications";
 
 export default function Messages() {
@@ -13,6 +14,7 @@ export default function Messages() {
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [showNewDM, setShowNewDM] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
+  const [showExternal, setShowExternal] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -178,6 +180,7 @@ export default function Messages() {
           onSelect={setSelectedConvId}
           onNewDM={() => setShowNewDM(true)}
           onNewGroup={() => setShowNewGroup(true)}
+          onNewExternal={() => setShowExternal(true)}
           users={users}
           currentUserId={currentUser?.id}
         />
@@ -206,6 +209,10 @@ export default function Messages() {
         onOpenChange={setShowNewGroup}
         users={otherUsers}
         onCreate={createGroup}
+      />
+      <ExternalMessageDialog
+        open={showExternal}
+        onOpenChange={setShowExternal}
       />
     </div>
   );

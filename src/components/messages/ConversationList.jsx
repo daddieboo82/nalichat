@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, MessageSquare, Users, ChevronDown } from "lucide-react";
+import { Search, Plus, MessageSquare, Users, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export default function ConversationList({ conversations, selectedId, onSelect, onNewDM, onNewGroup, users, currentUserId }) {
+export default function ConversationList({ conversations, selectedId, onSelect, onNewDM, onNewGroup, onNewExternal, users, currentUserId }) {
   const [search, setSearch] = useState("");
 
   const getOtherUser = (conv) => {
@@ -44,6 +44,9 @@ export default function ConversationList({ conversations, selectedId, onSelect, 
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onNewGroup} className="gap-2 cursor-pointer">
                 <Users className="w-4 h-4" /> New Group
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onNewExternal} className="gap-2 cursor-pointer">
+                <Mail className="w-4 h-4" /> Email / SMS
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

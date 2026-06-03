@@ -47,7 +47,7 @@ export default function StudioEditor() {
         audio_url: audioUrl,
         project_title: uploadTitle || 'Untitled Mix'
       });
-      setMasterAnalysis(result);
+      setMasterAnalysis(result.data);
     } catch (err) {
       setError("Failed to process audio. Please try again.");
       console.error('Processing failed:', err);

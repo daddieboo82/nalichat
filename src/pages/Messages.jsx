@@ -116,8 +116,6 @@ export default function Messages() {
   const otherUsers = users.filter(u => u.id !== currentUser?.id);
 
   const selectedConv = myConversations.find(c => c.id === selectedConvId);
-  // On mobile: show list OR chat, not both
-  const showList = !selectedConvId || window.innerWidth >= 640;
 
   return (
     <div className="h-full flex overflow-hidden">

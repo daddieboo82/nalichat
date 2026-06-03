@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Upload, Music, Loader2, FolderOpen, Play, Square, Disc3 } from "lucide-react";
+import { Plus, Upload, Music, Loader2, FolderOpen, Play, Square, Disc3, ChevronLeft } from "lucide-react";
 import MultiTrackEditor from "@/components/studio/MultiTrackEditor";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -100,8 +100,11 @@ export default function Studio() {
 
   return (
     <div className="h-full flex">
-      {/* Project Sidebar */}
-      <div className="w-72 border-r border-border flex flex-col bg-card/50 shrink-0">
+      {/* Project Sidebar — hidden on mobile when a project is open */}
+      <div className={cn(
+        "w-full md:w-72 border-r border-border flex-col bg-card/50 shrink-0",
+        selectedProjectId ? "hidden md:flex" : "flex"
+      )}>
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-heading font-bold text-lg">Studio</h2>
@@ -189,7 +192,10 @@ export default function Studio() {
       </div>
 
       {/* Main Studio Area */}
-      <div className="flex-1 flex flex-col">
+      <div className={cn(
+        "flex-1 flex-col min-w-0",
+        selectedProjectId ? "flex" : "hidden md:flex"
+      )}>
         {!selectedProject ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center text-muted-foreground">
@@ -203,9 +209,16 @@ export default function Studio() {
         ) : (
           <>
             {/* Project Header */}
-            <div className="p-6 border-b border-border flex items-center justify-between bg-card/50 backdrop-blur-sm">
-              <div>
-                <h1 className="text-xl font-heading font-bold">{selectedProject.title}</h1>
+            <div className="p-4 md:p-6 border-b border-border flex items-center justify-between bg-card/50 backdrop-blur-sm gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <button
+                  onClick={() => setSelectedProjectId(null)}
+                  className="md:hidden p-2 -ml-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors shrink-0"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="min-w-0">
+                <h1 className="text-xl font-heading font-bold truncate">{selectedProject.title}</h1>
                 <div className="flex items-center gap-3 mt-1">
                   <Badge className={`text-[9px] border-0 ${statusColors[selectedProject.status]}`}>
                     {selectedProject.status?.replace("_", " ").toUpperCase()}
@@ -213,8 +226,9 @@ export default function Studio() {
                   <span className="text-xs text-muted-foreground">{selectedProject.bpm} BPM</span>
                   <span className="text-xs text-muted-foreground">Key: {selectedProject.key}</span>
                 </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <Select
                   value={selectedProject.status}
                   onValueChange={(v) => updateProject.mutate({ id: selectedProject.id, data: { status: v } })}

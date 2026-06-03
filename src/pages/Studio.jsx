@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Upload, Music, Loader2, FolderOpen, Play, Square, Disc3 } from "lucide-react";
-import TrackStrip from "@/components/studio/TrackStrip";
+import MultiTrackEditor from "@/components/studio/MultiTrackEditor";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -238,33 +238,13 @@ export default function Studio() {
               </div>
             </div>
 
-            {/* Tracks */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {tracks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                  <Upload className="w-12 h-12 opacity-30 mb-3" />
-                  <p className="font-heading font-semibold">No tracks yet</p>
-                  <p className="text-sm mt-1">Upload audio files to build your mix</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {tracks.map((track, i) => (
-                    <motion.div
-                      key={track.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                    >
-                      <TrackStrip
-                        track={track}
-                        onUpdate={(data) => updateTrack.mutate({ id: track.id, data })}
-                        onDelete={() => deleteTrack.mutate(track.id)}
-                      />
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Multi-Track Editor */}
+            <MultiTrackEditor
+              tracks={tracks}
+              selectedProject={selectedProject}
+              onTrackUpdate={(id, data) => updateTrack.mutate({ id, data })}
+              onTrackDelete={(id) => deleteTrack.mutate(id)}
+            />
           </>
         )}
       </div>

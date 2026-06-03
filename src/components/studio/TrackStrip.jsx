@@ -1,7 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Play, Pause, Volume2, VolumeX, Headphones, Trash2 } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Headphones, Trash2, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const trackTypeColors = {
@@ -13,85 +13,119 @@ const trackTypeColors = {
   master: "bg-foreground",
 };
 
-export default function TrackStrip({ track, onUpdate, onDelete }) {
+export default function TrackStrip({ track, onUpdate, onDelete, audioRef: externalRef, isPlaying, masterVolume }) {
   const [playing, setPlaying] = useState(false);
-  const audioRef = useRef(null);
+  const [showPan, setShowPan] = useState(false);
+  const localRef = useRef(null);
+  const audioRef = externalRef || localRef;
 
-  const togglePlay = () => {
-    if (!audioRef.current) return;
-    if (playing) audioRef.current.pause();
-    else audioRef.current.play();
-    setPlaying(!playing);
-  };
+  useEffect(() => {
+    if (audioRef.current && masterVolume) {
+      audioRef.current.volume = ((track.volume || 75) / 100) * (masterVolume / 100);
+    }
+  }, [masterVolume, track.volume, audioRef]);
 
   const toggleMute = () => onUpdate({ muted: !track.muted });
   const toggleSolo = () => onUpdate({ solo: !track.solo });
 
   return (
     <div className={cn(
-      "bg-card rounded-xl border border-border p-4 transition-all",
-      track.muted && "opacity-50",
-      track.solo && "border-accent"
+      "bg-secondary/30 rounded-xl border border-border p-3 transition-all",
+      track.muted && "opacity-40",
+      track.solo && "border-accent ring-1 ring-accent/20"
     )}>
-      {track.file_url && <audio ref={audioRef} src={track.file_url} onEnded={() => setPlaying(false)} />}
-      
-      <div className="flex items-center gap-3 mb-3">
-        <div className={cn("w-3 h-3 rounded-full shrink-0", trackTypeColors[track.type] || "bg-muted")} />
-        <span className="font-medium text-sm flex-1 truncate">{track.name}</span>
-        <span className="text-[10px] text-muted-foreground uppercase">{track.type}</span>
+      {track.file_url && (
+        <audio
+          ref={audioRef}
+          src={track.file_url}
+          onEnded={() => setPlaying(false)}
+          onTimeUpdate={() => {}}
+        />
+      )}
+
+      <div className="flex items-center gap-2 mb-2">
+        <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", trackTypeColors[track.type] || "bg-muted")} />
+        <span className="font-medium text-xs flex-1 truncate">{track.name}</span>
+        <span className="text-[9px] text-muted-foreground uppercase">{track.type}</span>
       </div>
 
       {/* Waveform */}
-      <div className="h-12 bg-secondary/50 rounded-lg mb-3 flex items-center gap-px px-2 overflow-hidden">
-        {Array.from({ length: 80 }, (_, i) => (
+      <div className="h-10 bg-secondary rounded-lg mb-2 flex items-center gap-px px-1.5 overflow-hidden">
+        {Array.from({ length: 60 }, (_, i) => (
           <div
             key={i}
-            className={cn("w-0.5 rounded-full", track.muted ? "bg-muted-foreground/20" : trackTypeColors[track.type] || "bg-primary")}
-            style={{ height: `${Math.random() * 32 + 8}px`, opacity: track.muted ? 0.3 : 0.6 }}
+            className={cn("flex-1 rounded-full", track.muted ? "bg-muted-foreground/20" : trackTypeColors[track.type] || "bg-primary")}
+            style={{ height: `${Math.random() * 28 + 4}px`, opacity: track.muted ? 0.3 : 0.7 }}
           />
         ))}
       </div>
 
-      <div className="flex items-center gap-2">
-        <button onClick={togglePlay} className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors" disabled={!track.file_url}>
-          {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-        </button>
-        
-        <button
-          onClick={toggleMute}
-          className={cn("w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-            track.muted ? "bg-destructive/20 text-destructive" : "bg-secondary hover:bg-secondary/80"
-          )}
-        >
-          {track.muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-        </button>
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={toggleMute}
+            className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[11px]",
+              track.muted ? "bg-destructive/20 text-destructive" : "bg-secondary hover:bg-secondary/80"
+            )}
+            title="Mute"
+          >
+            {track.muted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+          </button>
 
-        <button
-          onClick={toggleSolo}
-          className={cn("w-8 h-8 rounded-lg flex items-center justify-center transition-colors text-xs font-bold",
-            track.solo ? "bg-accent/20 text-accent" : "bg-secondary hover:bg-secondary/80"
-          )}
-        >
-          <Headphones className="w-3.5 h-3.5" />
-        </button>
+          <button
+            onClick={toggleSolo}
+            className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[11px] font-bold",
+              track.solo ? "bg-accent/20 text-accent" : "bg-secondary hover:bg-secondary/80"
+            )}
+            title="Solo"
+          >
+            S
+          </button>
 
-        <div className="flex-1 px-2">
-          <Slider
-            value={[track.volume || 75]}
-            max={100}
-            step={1}
-            onValueChange={([v]) => onUpdate({ volume: v })}
-            className="w-full"
-          />
+          <div className="flex-1">
+            <Slider
+              value={[track.volume || 75]}
+              max={100}
+              step={1}
+              onValueChange={([v]) => onUpdate({ volume: v })}
+              className="w-full"
+            />
+          </div>
+          <span className="text-[9px] text-muted-foreground w-6 text-right">{track.volume || 75}%</span>
+
+          <button
+            onClick={() => setShowPan(!showPan)}
+            className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
+              showPan ? "bg-primary/20 text-primary" : "bg-secondary hover:bg-secondary/80"
+            )}
+            title="Pan"
+          >
+            <Settings2 className="w-3 h-3" />
+          </button>
+
+          <button
+            onClick={onDelete}
+            className="w-7 h-7 rounded-lg bg-secondary hover:bg-destructive/20 hover:text-destructive flex items-center justify-center transition-colors"
+            title="Delete"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
         </div>
-        <span className="text-[10px] text-muted-foreground w-8 text-right">{track.volume || 75}%</span>
 
-        <button
-          onClick={onDelete}
-          className="w-8 h-8 rounded-lg bg-secondary hover:bg-destructive/20 hover:text-destructive flex items-center justify-center transition-colors ml-1"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        {/* Pan Control */}
+        {showPan && (
+          <div className="px-1.5 py-1.5 bg-secondary/50 rounded-lg border border-border/50">
+            <div className="text-[9px] text-muted-foreground mb-1">Pan: {track.pan || 0}</div>
+            <Slider
+              value={[track.pan || 0]}
+              min={-100}
+              max={100}
+              step={1}
+              onValueChange={([v]) => onUpdate({ pan: v })}
+              className="w-full"
+            />
+          </div>
+        )}
       </div>
     </div>
   );

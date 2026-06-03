@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { MessageSquare, Users, Settings, LogOut, Compass, Trophy, User, Mic, Sparkles } from "lucide-react";
+import { MessageSquare, Users, Settings, LogOut, Compass, Trophy, User, Mic, Sparkles, Music } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -9,6 +9,7 @@ import AiAssistant from "@/components/AiAssistant";
 const navItems = [
   { icon: MessageSquare, label: "Messages", path: "/messages" },
   { icon: Compass, label: "Explore", path: "/explore" },
+  { icon: Music, label: "Playlists", path: "/playlists" },
   { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
   { icon: Users, label: "Network", path: "/network" },
   { icon: Mic, label: "Studio", path: "/studio" },

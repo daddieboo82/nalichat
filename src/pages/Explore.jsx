@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ArtPostCard from "@/components/explore/ArtPostCard";
 import UploadArtDialog from "@/components/explore/UploadArtDialog";
+import AddToPlaylistDialog from "@/components/explore/AddToPlaylistDialog";
 
 const MEDIUMS = ["all", "original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
 
@@ -14,6 +15,7 @@ export default function Explore() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [showUpload, setShowUpload] = useState(false);
+  const [selectedTrackForPlaylist, setSelectedTrackForPlaylist] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => { base44.auth.me().then(setCurrentUser); }, []);
@@ -128,7 +130,13 @@ export default function Explore() {
           ) : (
             <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
               {recent.map(post => (
-                <ArtPostCard key={post.id} post={post} currentUser={currentUser} onLike={() => toggleLike.mutate(post)} />
+                <ArtPostCard 
+                  key={post.id} 
+                  post={post} 
+                  currentUser={currentUser} 
+                  onLike={() => toggleLike.mutate(post)}
+                  onAddToPlaylist={setSelectedTrackForPlaylist}
+                />
               ))}
             </div>
           )}
@@ -139,6 +147,12 @@ export default function Explore() {
         setShowUpload(false);
         queryClient.invalidateQueries({ queryKey: ["artposts"] });
       }} />
+
+      <AddToPlaylistDialog 
+        trackId={selectedTrackForPlaylist}
+        open={!!selectedTrackForPlaylist}
+        onOpenChange={(open) => !open && setSelectedTrackForPlaylist(null)}
+      />
     </div>
   );
 }

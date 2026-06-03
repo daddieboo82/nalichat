@@ -1,8 +1,8 @@
-import { Heart, Eye, MessageCircle } from "lucide-react";
+import { Heart, Eye, MessageCircle, Music } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
-export default function ArtPostCard({ post, currentUser, onLike, large }) {
+export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist, large }) {
   const liked = post.liked_by?.includes(currentUser?.id);
 
   return (
@@ -31,18 +31,27 @@ export default function ArtPostCard({ post, currentUser, onLike, large }) {
               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{post.description}</p>
             )}
           </div>
-          <button
-            onClick={onLike}
-            className={cn(
-              "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-all shrink-0",
-              liked
-                ? "bg-destructive/15 text-destructive"
-                : "bg-secondary text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-            )}
-          >
-            <Heart className={cn("w-3.5 h-3.5", liked && "fill-current")} />
-            <span>{post.likes || 0}</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onAddToPlaylist?.(post.id)}
+              className="p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+              title="Add to playlist"
+            >
+              <Music className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={onLike}
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-all shrink-0",
+                liked
+                  ? "bg-destructive/15 text-destructive"
+                  : "bg-secondary text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              )}
+            >
+              <Heart className={cn("w-3.5 h-3.5", liked && "fill-current")} />
+              <span>{post.likes || 0}</span>
+            </button>
+          </div>
         </div>
 
         {post.tags?.length > 0 && (

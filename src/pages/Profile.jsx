@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, Edit3, Award, Star, Grid, Heart, Users, Zap, Save, X } from "lucide-react";
+import { Camera, Edit3, Award, Star, Grid, Heart, Users, Zap, Save, X, Sparkles } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import ArtPostCard from "@/components/explore/ArtPostCard";
 import AchievementsPanel from "@/components/profile/AchievementsPanel";
 import LevelBadge from "@/components/profile/LevelBadge";
+import TopWorksGallery from "@/components/profile/TopWorksGallery";
 
 const ROLES = ["Producer", "Beatmaker", "Sound Engineer", "Mixing Engineer", "Mastering Engineer", "Vocalist", "Instrumentalist", "DJ", "Composer", "Other"];
 const GENRES = ["Hip-Hop", "Trap", "Lo-Fi", "Electronic", "House", "Techno", "Ambient", "R&B", "Indie", "Alternative"];
@@ -200,12 +201,16 @@ export default function Profile() {
 
         {/* Tabs */}
         <div className="flex gap-1 bg-secondary/50 rounded-xl p-1 mb-6">
-          {["posts", "achievements"].map(t => (
+          {["featured", "posts", "achievements"].map(t => (
             <button key={t} onClick={() => setTab(t)} className={cn("flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition-colors", tab === t ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground")}>
-              {t === "posts" ? "🎨 Posts" : "🏆 Achievements"}
+              {t === "featured" ? "⭐ Featured" : t === "posts" ? "🎨 All Tracks" : "🏆 Achievements"}
             </button>
           ))}
         </div>
+
+        {tab === "featured" && (
+          <TopWorksGallery posts={myPosts} />
+        )}
 
         {tab === "posts" && (
           myPosts.length === 0 ? (

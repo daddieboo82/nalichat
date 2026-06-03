@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Mic, Square, Play, Pause, Save, Trash2, Loader2, Radio } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";

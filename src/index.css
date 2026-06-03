@@ -85,9 +85,30 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html, body {
+    /* Prevent browser bounce / overscroll glow inside the Android WebView */
+    overscroll-behavior: none;
+  }
   body {
     @apply bg-background text-foreground font-body;
   }
+  /* Navigation and interactive controls should not be text-selectable on touch */
+  nav, header, button, [role="button"], a {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* But keep real content (inputs, text areas, editable regions) selectable */
+  input, textarea, [contenteditable="true"], p, span.selectable {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+/* Safe-area padding so content never clips under notches / system bars */
+@supports (padding: env(safe-area-inset-top)) {
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 }
 
 /* Custom scrollbar */

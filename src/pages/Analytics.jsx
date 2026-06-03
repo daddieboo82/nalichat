@@ -28,7 +28,7 @@ export default function Analytics() {
   const avgLikesPerTrack = userPosts.length > 0 ? (totalLikes / userPosts.length).toFixed(1) : 0;
 
   // Chart data - tracks by views
-  const trackData = userPosts
+  const trackData = [...userPosts]
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 10)
     .map(p => ({
@@ -38,7 +38,7 @@ export default function Analytics() {
     }));
 
   // Growth data (simulated by created_date)
-  const growthData = userPosts
+  const growthData = [...userPosts]
     .sort((a, b) => new Date(a.created_date) - new Date(b.created_date))
     .reduce((acc, post, idx) => {
       const lastEntry = acc[acc.length - 1] || { views: 0, likes: 0 };

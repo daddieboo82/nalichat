@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
+// Returns concrete, numeric mastering parameters that the client applies via WebAudio
+// to automatically produce an industry-ready master from stacked stems.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -8,51 +10,50 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { audio_url, project_title } = await req.json();
-    
-    if (!audio_url) {
-      return Response.json({ error: 'Missing audio_url' }, { status: 400 });
-    }
+    const { project_title, genre, bpm, stems } = await req.json();
 
-    // Call LLM to analyze and provide mix/master recommendations
-    const analysis = await base44.integrations.Core.InvokeLLM({
+    const stemSummary = Array.isArray(stems)
+      ? stems.map(s => `- ${s.name} (${s.type || 'unknown'})`).join('\n')
+      : 'unknown';
+
+    const result = await base44.integrations.Core.InvokeLLM({
       model: "claude_opus_4_8",
-      prompt: `Analyze this audio session for mixing and mastering. Project: "${project_title}". 
-               Provide recommendations for:
-               1. EQ adjustments (low/mid/high frequencies)
-               2. Compression settings (ratio, threshold, attack, release)
-               3. Reverb/delay (type, wet/dry mix)
-               4. Target loudness level (-14 LUFS for streaming)
-               5. Overall processing chain
-               Be specific and technical.`,
+      prompt: `You are a world-class mastering engineer. Produce concrete, numeric processing settings to turn a multi-stem mix into an industry-ready, streaming-loud master.
+
+Project: "${project_title}"
+${genre ? `Genre: ${genre}` : ''}
+${bpm ? `BPM: ${bpm}` : ''}
+Stems being mixed:
+${stemSummary}
+
+Return precise DSP parameters tailored to this genre. Target streaming loudness around -14 LUFS with a true-peak ceiling of -1 dB.
+- low_shelf: { freq_hz, gain_db } — low-end shaping
+- low_mid: { freq_hz, gain_db, q } — control mud (200-500Hz)
+- presence: { freq_hz, gain_db, q } — vocal/instrument clarity (2-5kHz)
+- high_shelf: { freq_hz, gain_db } — air/brightness
+- compressor: { threshold_db, ratio, attack_s, release_s, knee_db } — glue compression
+- makeup_gain_db — overall level boost after compression
+- limiter_ceiling_db — final brickwall ceiling (negative dB, around -1)
+gain_db values should be modest (-6 to +6). ratio 1.5-4. attack 0.003-0.05. release 0.05-0.4.`,
       response_json_schema: {
         type: "object",
         properties: {
-          eq_recommendations: { type: "string" },
-          compression: { type: "string" },
-          effects: { type: "string" },
-          target_loudness: { type: "string" },
-          mastering_chain: { type: "string" },
-          confidence: { type: "string" }
-        }
+          low_shelf: { type: "object", properties: { freq_hz: { type: "number" }, gain_db: { type: "number" } } },
+          low_mid: { type: "object", properties: { freq_hz: { type: "number" }, gain_db: { type: "number" }, q: { type: "number" } } },
+          presence: { type: "object", properties: { freq_hz: { type: "number" }, gain_db: { type: "number" }, q: { type: "number" } } },
+          high_shelf: { type: "object", properties: { freq_hz: { type: "number" }, gain_db: { type: "number" } } },
+          compressor: { type: "object", properties: { threshold_db: { type: "number" }, ratio: { type: "number" }, attack_s: { type: "number" }, release_s: { type: "number" }, knee_db: { type: "number" } } },
+          makeup_gain_db: { type: "number" },
+          limiter_ceiling_db: { type: "number" },
+          notes: { type: "string" }
+        },
+        required: ["low_shelf", "low_mid", "presence", "high_shelf", "compressor", "makeup_gain_db", "limiter_ceiling_db"]
       }
     });
 
-    // Generate mastered version metadata
-    const masteredData = {
-      title: `${project_title} - Mastered`,
-      eq_recommendations: analysis.eq_recommendations || "",
-      compression_settings: analysis.compression || "",
-      effects_chain: analysis.effects || "",
-      target_loudness: analysis.target_loudness || "-14 LUFS",
-      mastering_chain: analysis.mastering_chain || "",
-      recommendations: analysis.mastering_chain || "",
-      processed_at: new Date().toISOString(),
-      source_url: audio_url
-    };
-
-    return Response.json(masteredData);
+    return Response.json(result);
   } catch (error) {
+    console.error('aiMasterSession error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

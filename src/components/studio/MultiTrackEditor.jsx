@@ -151,7 +151,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
 
         {/* Bounce Button */}
         <div className="ml-4">
-          <BounceDialog projectTitle={projectTitle || selectedProject?.title} tracks={tracks} />
+          <BounceDialog projectTitle={projectTitle || selectedProject?.title} project={selectedProject} tracks={tracks} />
         </div>
       </div>
 

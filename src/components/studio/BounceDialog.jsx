@@ -1,201 +1,163 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { renderMasteredMix } from "@/lib/autoMaster";
 
-export default function BounceDialog({ projectTitle, tracks }) {
+const STEPS = [
+  "Analyzing your stacked stems...",
+  "AI mastering engineer setting EQ, compression & loudness...",
+  "Mixing & rendering industry-ready master...",
+  "Publishing your finished song...",
+];
+
+export default function BounceDialog({ projectTitle, project, tracks }) {
   const [open, setOpen] = useState(false);
-  const [bounceTitle, setBounceTitle] = useState(`${projectTitle} - Bounce`);
+  const [bounceTitle, setBounceTitle] = useState(`${projectTitle || "Untitled"}`);
   const [bouncing, setBouncing] = useState(false);
+  const [step, setStep] = useState(0);
   const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
 
   const handleBounce = async () => {
     if (!bounceTitle.trim() || tracks.length === 0) return;
     setBouncing(true);
     setError("");
+    setDone(false);
+    setStep(0);
 
     try {
-      // Validate tracks have audio
       const validTracks = tracks.filter(t => t.file_url && !t.muted);
       if (validTracks.length === 0) {
-        setError("No unmuted tracks with audio to bounce.");
+        setError("Stack at least one unmuted recorded sound or vocal to bounce.");
         setBouncing(false);
         return;
       }
 
-      // Create WebAudio context to mix tracks
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const offlineContext = new OfflineAudioContext(
-        2,
-        audioContext.sampleRate * 300, // 5 minute max
-        audioContext.sampleRate
-      );
-
-      let maxDuration = 0;
-
-      // Load all audio sources
-      for (const track of validTracks) {
-        try {
-          const response = await fetch(track.file_url);
-          if (!response.ok) throw new Error(`Failed to load track: ${track.name}`);
-          
-          const arrayBuffer = await response.arrayBuffer();
-          const audioBuffer = await offlineContext.decodeAudioData(arrayBuffer);
-
-          maxDuration = Math.max(maxDuration, audioBuffer.duration);
-
-          const source = offlineContext.createBufferSource();
-          source.buffer = audioBuffer;
-
-          // Apply volume and pan
-          const gainNode = offlineContext.createGain();
-          gainNode.gain.value = (track.volume || 75) / 100;
-
-          source.connect(gainNode);
-          gainNode.connect(offlineContext.destination);
-          source.start(0);
-        } catch (trackErr) {
-          console.warn(`Failed to load track ${track.name}:`, trackErr);
-        }
-      }
-
-      // Render mixed audio
-      const renderedBuffer = await offlineContext.startRendering();
-
-      // Convert to WAV blob
-      const wav = bufferToWave(renderedBuffer);
-      const blob = new Blob([wav], { type: 'audio/wav' });
-
-      // Upload bounced file as FormData
-      const formData = new FormData();
-      formData.append('file', blob, `${bounceTitle}.wav`);
-
-      const { file_url } = await base44.integrations.Core.UploadFile({
-        file: blob
+      // 1. AI mastering engineer decides the processing chain
+      setStep(1);
+      const { data: params } = await base44.functions.invoke("aiMasterSession", {
+        project_title: bounceTitle,
+        genre: project?.genre,
+        bpm: project?.bpm,
+        stems: validTracks.map(t => ({ name: t.name, type: t.type })),
       });
+      if (params?.error) throw new Error(params.error);
 
-      // Store bounce session
+      // 2. Mix + apply the AI master in one render
+      setStep(2);
+      const wav = await renderMasteredMix(validTracks, params);
+      const blob = new Blob([wav], { type: "audio/wav" });
+
+      // 3. Upload + publish the finished, industry-ready song
+      setStep(3);
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: blob });
+      const me = await base44.auth.me();
       await base44.entities.ArtPost.create({
         title: bounceTitle,
-        description: `Bounced session from ${projectTitle}`,
-        file_url: file_url,
-        medium: 'production',
-        creator_id: (await base44.auth.me()).id,
+        description: `AI-mastered, industry-ready song produced from ${validTracks.length} stacked stems.`,
+        file_url,
+        medium: "production",
+        genre: project?.genre,
+        bpm: project?.bpm,
+        creator_id: me.id,
+        creator_name: me.display_name || me.full_name,
+        creator_avatar: me.avatar_url,
         featured: false,
         likes: 0,
-        views: 0
+        views: 0,
       });
 
-      setOpen(false);
-      setBounceTitle(`${projectTitle} - Bounce`);
-      setError("");
+      setDone(true);
+      setTimeout(() => {
+        setOpen(false);
+        setDone(false);
+        setBouncing(false);
+        setError("");
+      }, 1400);
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : "Failed to bounce session";
+      const errMsg = err instanceof Error ? err.message : "Failed to produce song";
       setError(errMsg);
-      console.error('Bounce failed:', err);
-    } finally {
+      console.error("Bounce failed:", err);
       setBouncing(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { if (!bouncing) setOpen(v); }}>
       <DialogTrigger asChild>
-        <Button className="rounded-xl bg-accent hover:bg-accent/90">
-          <Download className="w-4 h-4 mr-2" />
-          Bounce Session
+        <Button className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white">
+          <Sparkles className="w-4 h-4 mr-2" />
+          Bounce
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="font-heading">Bounce & Export Session</DialogTitle>
-          <DialogDescription>Mix all unmuted tracks and export as audio</DialogDescription>
+          <DialogTitle className="font-heading flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            Auto-Produce Your Song
+          </DialogTitle>
+          <DialogDescription>
+            Just stack your recorded sounds & vocals — AI mixes, masters, and delivers an industry-ready song.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Input
-            placeholder="Bounce name"
+            placeholder="Song name"
             value={bounceTitle}
             onChange={(e) => setBounceTitle(e.target.value)}
+            disabled={bouncing}
             className="rounded-xl"
           />
+
+          {bouncing && !done && (
+            <div className="p-4 rounded-xl bg-secondary/40 border border-border space-y-2">
+              {STEPS.map((label, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  {i < step ? (
+                    <CheckCircle2 className="w-4 h-4 text-accent shrink-0" />
+                  ) : i === step ? (
+                    <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
+                  ) : (
+                    <div className="w-4 h-4 rounded-full border border-border shrink-0" />
+                  )}
+                  <span className={i <= step ? "text-foreground" : "text-muted-foreground"}>{label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {done && (
+            <div className="p-3 rounded-xl bg-accent/10 border border-accent/30 flex items-center gap-2 text-accent text-sm">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>Your industry-ready song is published! Find it in Explore.</span>
+            </div>
+          )}
+
           {error && (
             <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 flex items-start gap-2 text-destructive text-sm">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
-          <Button
-            onClick={handleBounce}
-            disabled={!bounceTitle.trim() || bouncing}
-            className="w-full rounded-xl bg-primary hover:bg-primary/90"
-          >
-            {bouncing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4 mr-2" />
-                Bounce Now
-              </>
-            )}
-          </Button>
+
+          {!done && (
+            <Button
+              onClick={handleBounce}
+              disabled={!bounceTitle.trim() || bouncing}
+              className="w-full rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white"
+            >
+              {bouncing ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Producing...</>
+              ) : (
+                <><Sparkles className="w-4 h-4 mr-2" /> Bounce — Make My Song</>
+              )}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
   );
-}
-
-function bufferToWave(audioBuffer) {
-  const numberOfChannels = audioBuffer.numberOfChannels;
-  const sampleRate = audioBuffer.sampleRate;
-  const format = 1; // PCM
-  const bitDepth = 16;
-
-  const bytesPerSample = bitDepth / 8;
-  const blockAlign = numberOfChannels * bytesPerSample;
-
-  const channelData = [];
-  for (let i = 0; i < numberOfChannels; i++) {
-    channelData.push(audioBuffer.getChannelData(i));
-  }
-
-  const dataLength = audioBuffer.length * numberOfChannels * bytesPerSample;
-  const buffer = new ArrayBuffer(44 + dataLength);
-  const view = new DataView(buffer);
-
-  const writeString = (offset, string) => {
-    for (let i = 0; i < string.length; i++) {
-      view.setUint8(offset + i, string.charCodeAt(i));
-    }
-  };
-
-  writeString(0, 'RIFF');
-  view.setUint32(4, 36 + dataLength, true);
-  writeString(8, 'WAVE');
-  writeString(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, format, true);
-  view.setUint16(22, numberOfChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * blockAlign, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bitDepth, true);
-  writeString(36, 'data');
-  view.setUint32(40, dataLength, true);
-
-  let offset = 44;
-  for (let i = 0; i < audioBuffer.length; i++) {
-    for (let channel = 0; channel < numberOfChannels; channel++) {
-      let s = Math.max(-1, Math.min(1, channelData[channel][i]));
-      s = s < 0 ? s * 0x8000 : s * 0x7FFF;
-      view.setInt16(offset, s, true);
-      offset += 2;
-    }
-  }
-
-  return buffer;
 }

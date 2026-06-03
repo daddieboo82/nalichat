@@ -63,9 +63,9 @@ export default function AiAssistant() {
       {!open && (
         <button
           onClick={openChat}
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+          className="fixed bottom-20 right-6 z-50 w-11 h-11 rounded-lg bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
         >
-          <Sparkles className="w-6 h-6 text-white" />
+          <Sparkles className="w-5 h-5 text-white" />
         </button>
       )}
 

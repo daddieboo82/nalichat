@@ -46,7 +46,7 @@ export default function AppLayout() {
           </Link>
 
           {/* Main Navigation */}
-          <div className="flex items-center gap-1 overflow-x-auto">
+          <div className="flex items-center gap-1">
             {navItems.map(({ icon: Icon, label, path }) => {
               const isActive = location.pathname.startsWith(path);
               return (

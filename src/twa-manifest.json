@@ -1,0 +1,70 @@
+{
+  "packageId": "com.nalichat.app",
+  "host": "nalichat.org",
+  "name": "NaliChat",
+  "launcherName": "NaliChat",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#1a0f2e",
+  "navigationColor": "#0f0a14",
+  "navigationColorDark": "#0f0a14",
+  "navigationDividerColor": "#0f0a14",
+  "navigationDividerColorDark": "#0f0a14",
+  "backgroundColor": "#0f0a14",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/2089b13d8_generated_image.png",
+  "maskableIconUrl": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/2089b13d8_generated_image.png",
+  "monochromeIconUrl": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/2089b13d8_generated_image.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "nalichat"
+  },
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "shortcuts": [
+    {
+      "name": "Explore Music",
+      "shortName": "Explore",
+      "url": "/explore",
+      "icons": [
+        {
+          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/2089b13d8_generated_image.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Studio",
+      "shortName": "Studio",
+      "url": "/studio",
+      "icons": [
+        {
+          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/2089b13d8_generated_image.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://nalichat.org/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": false
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://nalichat.org/",
+  "minSdkVersion": 19,
+  "targetSdkVersion": 34
+}

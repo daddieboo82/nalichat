@@ -15,6 +15,7 @@ export default function AiAssistant() {
   const [user, setUser] = useState(null);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+  const unsubRef = useRef(null);
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
@@ -22,13 +23,18 @@ export default function AiAssistant() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
+  // Clean up the conversation subscription on unmount
+  useEffect(() => () => { unsubRef.current?.(); }, []);
+
   const initConversation = async () => {
     if (conversation) return conversation;
     const conv = await base44.agents.createConversation({ agent_name: "studio_ai" });
     setConversation(conv);
-    // Subscribe
-    base44.agents.subscribeToConversation(conv.id, (data) => {
-      setMessages(data.messages || []);
+    // Subscribe — stop the typing indicator once the assistant has replied
+    unsubRef.current = base44.agents.subscribeToConversation(conv.id, (data) => {
+      const msgs = data.messages || [];
+      setMessages(msgs);
+      if (msgs.length && msgs[msgs.length - 1].role !== "user") setLoading(false);
     });
     return conv;
   };
@@ -55,7 +61,7 @@ export default function AiAssistant() {
     let conv = conversation;
     if (!conv) conv = await initConversation();
     await base44.agents.addMessage(conv, { role: "user", content: text });
-    setLoading(false);
+    // loading is cleared by the subscription when Nali's reply arrives
   };
 
   return (

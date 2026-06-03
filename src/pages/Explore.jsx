@@ -21,7 +21,7 @@ export default function Explore() {
   const [commentTrack, setCommentTrack] = useState(null);
   const queryClient = useQueryClient();
 
-  useEffect(() => { base44.auth.me().then(setCurrentUser); }, []);
+  useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
 
   const { data: posts = [] } = useQuery({
     queryKey: ["artposts", filter],

@@ -9,6 +9,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Admin only' }, { status: 403 });
     }
 
+    // Skip if seeded profiles already exist to avoid duplicates
+    const existing = await base44.asServiceRole.entities.User.filter({ artist_role: 'producer' }, '-created_date', 1);
+    if (existing.length > 0) {
+      return Response.json({ success: true, created: 0, message: 'Profiles already seeded' });
+    }
+
     const prompt = `Generate 15 realistic music industry profiles (5 artists, 4 producers, 3 engineers, 3 A&Rs). Return ONLY valid JSON array with no markdown formatting.
 
 Each profile must have:
@@ -18,7 +24,6 @@ Each profile must have:
 - bio: 1-2 sentence professional bio (max 150 chars)
 - location: real city, country
 - genres: array of 2-3 music genres
-- avatar_url: a valid unsplash profile photo URL (https://images.unsplash.com/...)
 
 Ensure variety in locations and genres. Return as pure JSON array, nothing else.`;
 
@@ -38,8 +43,7 @@ Ensure variety in locations and genres. Return as pure JSON array, nothing else.
                 role: { type: 'string' },
                 bio: { type: 'string' },
                 location: { type: 'string' },
-                genres: { type: 'array', items: { type: 'string' } },
-                avatar_url: { type: 'string' }
+                genres: { type: 'array', items: { type: 'string' } }
               }
             }
           }
@@ -51,6 +55,9 @@ Ensure variety in locations and genres. Return as pure JSON array, nothing else.
     const created = [];
 
     for (const profile of profiles) {
+      // Deterministic, always-valid avatar from the display name (no broken Unsplash links)
+      const seed = encodeURIComponent(profile.display_name || profile.full_name || 'artist');
+      const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
       const newUser = await base44.asServiceRole.entities.User.create({
         full_name: profile.full_name,
         display_name: profile.display_name,
@@ -58,9 +65,9 @@ Ensure variety in locations and genres. Return as pure JSON array, nothing else.
         bio: profile.bio,
         location: profile.location,
         genres: profile.genres,
-        avatar_url: profile.avatar_url,
+        avatar_url: avatarUrl,
         email: `${profile.display_name.replace(/\s+/g, '').toLowerCase()}@studio.local`,
-        cover_url: profile.avatar_url,
+        cover_url: avatarUrl,
         website: '',
         artist_role: profile.role,
         badge: ''

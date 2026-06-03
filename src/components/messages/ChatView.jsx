@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { base44 } from "@/api/base44Client";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 
@@ -9,6 +10,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
   const [replyTo, setReplyTo] = useState(null);
   const scrollRef = useRef(null);
   const prevLenRef = useRef(0);
+  const markedRef = useRef(new Set());
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -18,6 +20,23 @@ export default function ChatView({ conversation, messages, currentUser, users, o
     }
     prevLenRef.current = messages.length;
   }, [messages]);
+
+  // Mark incoming messages as read
+  useEffect(() => {
+    if (!currentUser || !messages.length) return;
+    const unread = messages.filter(m =>
+      m.sender_id !== currentUser.id &&
+      !m.read_by?.includes(currentUser.id) &&
+      !markedRef.current.has(m.id)
+    );
+    if (!unread.length) return;
+    unread.forEach(m => markedRef.current.add(m.id));
+    unread.forEach(m => {
+      base44.entities.Message.update(m.id, {
+        read_by: [...(m.read_by || []), currentUser.id]
+      });
+    });
+  }, [messages, currentUser]);
 
   const getOtherUser = () => {
     if (conversation?.type === "group") return null;
@@ -105,6 +124,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
               showAvatar={item.showAvatar}
               onReply={setReplyTo}
               onReact={onReact}
+              users={users}
             />
           )
         )}

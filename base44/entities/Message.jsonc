@@ -45,6 +45,26 @@
     "duration": {
       "type": "number",
       "description": "Audio duration in seconds"
+    },
+    "read_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of user IDs who have read this message",
+      "default": []
+    },
+    "reply_to_id": {
+      "type": "string"
+    },
+    "reply_to_text": {
+      "type": "string"
+    },
+    "reply_to_sender": {
+      "type": "string"
+    },
+    "reactions": {
+      "type": "object"
     }
   },
   "required": [

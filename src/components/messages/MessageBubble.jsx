@@ -6,6 +6,24 @@ import { format } from "date-fns";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
+function ReadReceipts({ readBy, users }) {
+  if (!readBy.length) return <span className="text-[10px] text-muted-foreground/50">✓</span>;
+  const readers = users.filter(u => readBy.includes(u.id)).slice(0, 3);
+  return (
+    <div className="flex items-center gap-0.5" title={readers.map(u => u.display_name || u.full_name).join(", ") + " saw this"}>
+      {readers.map(u => (
+        <Avatar key={u.id} className="w-3.5 h-3.5 border border-background">
+          <AvatarImage src={u.avatar_url} />
+          <AvatarFallback className="bg-primary/40 text-[6px] font-bold text-primary-foreground">
+            {(u.display_name || u.full_name)?.[0]?.toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+      ))}
+      {readBy.length > 3 && <span className="text-[9px] text-muted-foreground">+{readBy.length - 3}</span>}
+    </div>
+  );
+}
+
 function AudioPlayer({ src, duration }) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -86,7 +104,7 @@ function FileAttachment({ message, isOwn }) {
   );
 }
 
-export default function MessageBubble({ message, isOwn, showAvatar, onReply, onReact }) {
+export default function MessageBubble({ message, isOwn, showAvatar, onReply, onReact, users }) {
   const [showActions, setShowActions] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
 
@@ -153,10 +171,14 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
           </div>
         )}
 
-        <p className={cn("text-[10px] text-muted-foreground mt-0.5", isOwn ? "text-right mr-1" : "ml-1")}>
-          {format(new Date(message.created_date), "h:mm a")}
-          {isOwn && <span className="ml-1 opacity-60">✓</span>}
-        </p>
+        <div className={cn("flex items-center gap-1 mt-0.5", isOwn ? "justify-end mr-1" : "ml-1")}>
+          <p className="text-[10px] text-muted-foreground">
+            {format(new Date(message.created_date), "h:mm a")}
+          </p>
+          {isOwn && (
+            <ReadReceipts readBy={message.read_by || []} users={users || []} />
+          )}
+        </div>
       </div>
 
       {/* Hover action buttons */}

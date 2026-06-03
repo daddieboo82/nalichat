@@ -1,0 +1,18 @@
+{
+  "appId": "com.nalichat.aab",
+  "appName": "NaliChat",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "buildOptions": {
+      "packageType": "aab"
+    }
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}

@@ -30,6 +30,7 @@ import PlaylistDetail from '@/pages/PlaylistDetail';
 import Analytics from '@/pages/Analytics';
 import ThankYou from '@/pages/ThankYou';
 import PricingPlans from '@/components/pricing/PricingPlans';
+import Privacy from '@/pages/Privacy';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -82,6 +83,7 @@ const AuthenticatedApp = () => {
           <Route path="/pricing" element={<PricingPlans />} />
         </Route>
       </Route>
+      <Route path="/privacy" element={<Privacy />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </AnimatePresence>

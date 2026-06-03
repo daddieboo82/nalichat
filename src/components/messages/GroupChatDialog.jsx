@@ -18,7 +18,7 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
   const toggle = (id) => setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
 
   const handleCreate = () => {
-    if (!name.trim() || selected.length < 2) return;
+    if (!name.trim() || selected.length < 1) return;
     onCreate({ name: name.trim(), participant_ids: selected });
     setName(""); setSelected([]); setSearch("");
     onOpenChange(false);
@@ -49,7 +49,7 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
               </button>
             ))}
           </div>
-          <Button onClick={handleCreate} disabled={!name.trim() || selected.length < 2} className="w-full rounded-xl bg-primary hover:bg-primary/90">
+          <Button onClick={handleCreate} disabled={!name.trim() || selected.length < 1} className="w-full rounded-xl bg-primary hover:bg-primary/90">
             Create Group {selected.length > 0 && `(${selected.length} people)`}
           </Button>
         </div>

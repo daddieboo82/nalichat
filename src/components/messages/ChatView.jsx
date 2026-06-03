@@ -1,13 +1,15 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
+import GroupInfoPanel from "./GroupInfoPanel";
 
 export default function ChatView({ conversation, messages, currentUser, users, onSendMessage, onReact }) {
   const [replyTo, setReplyTo] = useState(null);
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
   const scrollRef = useRef(null);
   const prevLenRef = useRef(0);
   const markedRef = useRef(new Set());
@@ -87,7 +89,8 @@ export default function ChatView({ conversation, messages, currentUser, users, o
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="h-16 border-b border-border flex items-center px-5 gap-3 shrink-0 bg-card/70 backdrop-blur-sm">
         <Avatar className="w-9 h-9 shrink-0">
@@ -100,6 +103,15 @@ export default function ChatView({ conversation, messages, currentUser, users, o
           <p className="font-heading font-semibold text-sm truncate">{displayName}</p>
           {subtitle && <p className="text-[10px] text-muted-foreground capitalize">{subtitle}</p>}
         </div>
+        {conversation?.type === "group" && (
+          <button
+            onClick={() => setShowGroupInfo(v => !v)}
+            className={cn("w-8 h-8 rounded-xl flex items-center justify-center transition-colors", showGroupInfo ? "bg-primary/20 text-primary" : "hover:bg-secondary text-muted-foreground")}
+            title="Group info"
+          >
+            <Users className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Messages */}
@@ -136,6 +148,14 @@ export default function ChatView({ conversation, messages, currentUser, users, o
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
       />
+      </div>
+      {showGroupInfo && conversation?.type === "group" && (
+        <GroupInfoPanel
+          conversation={conversation}
+          users={users}
+          onClose={() => setShowGroupInfo(false)}
+        />
+      )}
     </div>
   );
 }

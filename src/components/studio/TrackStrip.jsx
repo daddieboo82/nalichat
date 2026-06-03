@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Play, Pause, Volume2, VolumeX, Headphones, Trash2, Settings2, Layers } from "lucide-react";
+import { Volume2, VolumeX, Trash2, Settings2, Layers, History } from "lucide-react";
 import { cn } from "@/lib/utils";
+import TrackVersionHistory from "./TrackVersionHistory";
 
 const trackTypeColors = {
   vocal: "bg-primary",
@@ -13,9 +14,10 @@ const trackTypeColors = {
   master: "bg-foreground",
 };
 
-export default function TrackStrip({ track, onUpdate, onDelete, audioRef: externalRef, isPlaying, masterVolume, inQueue, onToggleQueue, canEdit = true }) {
+export default function TrackStrip({ track, onUpdate, onDelete, audioRef: externalRef, isPlaying, masterVolume, inQueue, onToggleQueue, canEdit = true, currentUser }) {
   const [playing, setPlaying] = useState(false);
   const [showPan, setShowPan] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
   const localRef = useRef(null);
   // externalRef may be a callback ref (function) or a ref object; normalise to an object
   const audioRef = useRef(null);
@@ -122,6 +124,14 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
             </button>
           )}
 
+          <button
+            onClick={() => setShowVersionHistory(true)}
+            className="w-7 h-7 rounded-lg bg-secondary hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-colors"
+            title="Version history"
+          >
+            <History className="w-3 h-3" />
+          </button>
+
           {canEdit && (
             <button
               onClick={onDelete}
@@ -149,6 +159,15 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
           </div>
         )}
       </div>
+
+      <TrackVersionHistory
+        track={track}
+        open={showVersionHistory}
+        onOpenChange={setShowVersionHistory}
+        onRevert={(data) => onUpdate(data)}
+        canEdit={canEdit}
+        currentUser={currentUser}
+      />
     </div>
   );
 }

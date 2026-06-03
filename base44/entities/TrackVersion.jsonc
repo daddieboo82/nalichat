@@ -1,0 +1,48 @@
+{
+  "name": "TrackVersion",
+  "type": "object",
+  "properties": {
+    "track_id": {
+      "type": "string",
+      "description": "ID of the parent Track"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "version_number": {
+      "type": "number",
+      "description": "Incrementing version number"
+    },
+    "label": {
+      "type": "string",
+      "description": "Optional user-given label, e.g. 'First mix', 'After vocal tuning'"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "volume": {
+      "type": "number"
+    },
+    "pan": {
+      "type": "number"
+    },
+    "muted": {
+      "type": "boolean"
+    },
+    "solo": {
+      "type": "boolean"
+    },
+    "saved_by_id": {
+      "type": "string"
+    },
+    "saved_by_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "track_id",
+    "project_id",
+    "version_number",
+    "file_url"
+  ]
+}

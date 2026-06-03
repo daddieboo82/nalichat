@@ -301,6 +301,7 @@ export default function Studio() {
               onTrackUpdate={(id, data) => updateTrack.mutate({ id, data })}
               onTrackDelete={(id) => deleteTrack.mutate(id)}
               canEdit={canEdit}
+              currentUser={currentUser}
             />
 
             {showProjectSettings && (

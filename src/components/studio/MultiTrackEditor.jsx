@@ -9,7 +9,7 @@ import { downloadFilesAsZip } from "@/lib/downloadZip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 
-export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete, projectTitle, canEdit = true }) {
+export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete, projectTitle, canEdit = true, currentUser }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -233,6 +233,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                     inQueue={queueIds.has(track.id)}
                     onToggleQueue={() => toggleQueue(track)}
                     canEdit={canEdit}
+                    currentUser={currentUser}
                   />
                   </div>
                 </div>

@@ -1,9 +1,10 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Pause, Download, FileText, Music, Film, Reply, Smile } from "lucide-react";
+import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { resumableDownload } from "@/lib/resumableUpload";
+import MediaViewer from "./MediaViewer";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -70,7 +71,7 @@ function AudioPlayer({ src, duration }) {
   );
 }
 
-function FileAttachment({ message, isOwn }) {
+function FileAttachment({ message, isOwn, onOpenViewer }) {
   const [dlProgress, setDlProgress] = useState(null); // null = idle, 0-100 = downloading
   const isImage = message.type === "image" || message.file_type?.startsWith("image");
   const isAudio = message.type === "audio" || message.file_type?.startsWith("audio");
@@ -86,15 +87,25 @@ function FileAttachment({ message, isOwn }) {
 
   if (isImage) {
     return (
-      <a href={message.file_url} target="_blank" rel="noopener noreferrer">
-        <img src={message.file_url} alt={message.file_name} className="rounded-xl w-full max-w-[280px] sm:max-w-[300px] max-h-[220px] object-cover block" />
+      <div className="relative group">
+        <img src={message.file_url} alt={message.file_name} className="rounded-xl w-full max-w-[280px] sm:max-w-[300px] max-h-[220px] object-cover block cursor-pointer hover:brightness-90 transition-all" onClick={() => onOpenViewer(message)} />
+        <button onClick={() => onOpenViewer(message)} className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity hover:bg-black/60">
+          <Maximize2 className="w-4 h-4 text-white" />
+        </button>
         {message.text && <p className="text-sm mt-2">{message.text}</p>}
-      </a>
+      </div>
     );
   }
 
   if (isAudio) {
-    return <AudioPlayer src={message.file_url} duration={message.duration} />;
+    return (
+      <div className="flex flex-col gap-2">
+        <AudioPlayer src={message.file_url} duration={message.duration} />
+        <button onClick={() => onOpenViewer(message)} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+          <Maximize2 className="w-3 h-3" /> Full player
+        </button>
+      </div>
+    );
   }
 
   const Icon = isVideo ? Film : message.file_type?.startsWith("audio") ? Music : FileText;
@@ -129,6 +140,7 @@ function FileAttachment({ message, isOwn }) {
 export default function MessageBubble({ message, isOwn, showAvatar, onReply, onReact, users }) {
   const [showActions, setShowActions] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const hasFile = message.file_url && message.type !== "text";
 
@@ -172,7 +184,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
           hasFile && message.type !== "audio" && "p-2"
         )}>
           {hasFile ? (
-            <FileAttachment message={message} isOwn={isOwn} />
+            <FileAttachment message={message} isOwn={isOwn} onOpenViewer={() => setViewerOpen(true)} />
           ) : (
             <p className="text-sm leading-relaxed break-words">{message.text}</p>
           )}
@@ -237,6 +249,13 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
           <Reply className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
       </div>
+
+      {/* Media Viewer Modal */}
+      <MediaViewer
+        media={hasFile ? message : null}
+        isOpen={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+      />
     </div>
   );
 }

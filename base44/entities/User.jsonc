@@ -5,43 +5,71 @@
     "role": {
       "type": "string",
       "enum": [
-        "artist",
-        "producer",
-        "engineer",
-        "ar",
-        "admin"
+        "admin",
+        "user"
       ],
-      "default": "artist",
-      "description": "User role in the platform"
+      "default": "user"
     },
     "display_name": {
-      "type": "string",
-      "description": "Artist/stage name"
+      "type": "string"
     },
     "bio": {
-      "type": "string",
-      "description": "Short bio"
+      "type": "string"
     },
     "avatar_url": {
-      "type": "string",
-      "description": "Profile photo URL"
+      "type": "string"
     },
-    "genres": {
+    "cover_url": {
+      "type": "string"
+    },
+    "genre": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Music genres"
+      }
+    },
+    "artist_role": {
+      "type": "string"
     },
     "location": {
       "type": "string"
     },
-    "is_online": {
-      "type": "boolean",
-      "default": false
+    "website": {
+      "type": "string"
+    },
+    "xp": {
+      "type": "number",
+      "default": 0
+    },
+    "level": {
+      "type": "number",
+      "default": 1
+    },
+    "followers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "following": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "total_posts": {
+      "type": "number",
+      "default": 0
+    },
+    "total_likes_received": {
+      "type": "number",
+      "default": 0
+    },
+    "badge": {
+      "type": "string",
+      "description": "Special badge/title"
     }
-  },
-  "required": [
-    "role"
-  ]
+  }
 }

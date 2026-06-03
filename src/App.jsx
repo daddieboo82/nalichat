@@ -20,6 +20,9 @@ import Files from '@/pages/Files';
 import Studio from '@/pages/Studio';
 import Record from '@/pages/Record';
 import Settings from '@/pages/Settings';
+import Explore from '@/pages/Explore';
+import Leaderboard from '@/pages/Leaderboard';
+import Profile from '@/pages/Profile';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -59,6 +62,9 @@ const AuthenticatedApp = () => {
           <Route path="/studio" element={<Studio />} />
           <Route path="/record" element={<Record />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

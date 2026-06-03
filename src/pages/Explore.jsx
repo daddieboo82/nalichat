@@ -1,0 +1,144 @@
+import { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Heart, Eye, Plus, Upload, X, Search, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import ArtPostCard from "@/components/explore/ArtPostCard";
+import UploadArtDialog from "@/components/explore/UploadArtDialog";
+
+const MEDIUMS = ["all", "digital", "traditional", "photography", "3d", "music", "poetry", "video", "other"];
+
+export default function Explore() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [showUpload, setShowUpload] = useState(false);
+  const queryClient = useQueryClient();
+
+  useEffect(() => { base44.auth.me().then(setCurrentUser); }, []);
+
+  const { data: posts = [] } = useQuery({
+    queryKey: ["artposts", filter],
+    queryFn: () => filter === "all"
+      ? base44.entities.ArtPost.list("-created_date", 100)
+      : base44.entities.ArtPost.filter({ medium: filter }, "-created_date", 100),
+    refetchInterval: 30000,
+  });
+
+  const toggleLike = useMutation({
+    mutationFn: async (post) => {
+      const liked = post.liked_by?.includes(currentUser.id);
+      const liked_by = liked
+        ? post.liked_by.filter(id => id !== currentUser.id)
+        : [...(post.liked_by || []), currentUser.id];
+      return base44.entities.ArtPost.update(post.id, { liked_by, likes: liked_by.length });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["artposts"] }),
+  });
+
+  const filtered = posts.filter(p =>
+    !search || p.title?.toLowerCase().includes(search.toLowerCase()) ||
+    p.creator_name?.toLowerCase().includes(search.toLowerCase()) ||
+    p.tags?.some(t => t.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  const featured = filtered.filter(p => p.featured || p.likes > 5);
+  const recent = filtered;
+
+  return (
+    <div className="h-full overflow-y-auto bg-background">
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-primary/20 via-background to-accent/10 px-4 sm:px-8 pt-8 pb-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-5 h-5 text-primary" />
+                <span className="text-xs text-primary font-semibold uppercase tracking-wider">Gallery</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-heading font-bold">Explore & Discover</h1>
+              <p className="text-muted-foreground text-sm mt-1">Showcasing creators from around the world</p>
+            </div>
+            <button
+              onClick={() => setShowUpload(true)}
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Share Art
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by title, artist, tag..."
+              className="w-full bg-secondary/60 border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 sm:px-8 py-6">
+        {/* Medium filters */}
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none">
+          {MEDIUMS.map(m => (
+            <button
+              key={m}
+              onClick={() => setFilter(m)}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap capitalize transition-colors shrink-0",
+                filter === m ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {m === "all" ? "✨ All" : m}
+            </button>
+          ))}
+        </div>
+
+        {/* Featured row */}
+        {featured.length > 0 && search === "" && (
+          <div className="mb-8">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">🔥 Trending</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {featured.slice(0, 3).map(post => (
+                <ArtPostCard key={post.id} post={post} currentUser={currentUser} onLike={() => toggleLike.mutate(post)} large />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* All posts masonry grid */}
+        <div>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            {search ? `Results for "${search}"` : "Recent"}
+          </h2>
+          {recent.length === 0 ? (
+            <div className="text-center py-20 text-muted-foreground">
+              <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-heading font-semibold">No posts yet</p>
+              <p className="text-sm mt-1">Be the first to share your art!</p>
+              <button onClick={() => setShowUpload(true)} className="mt-4 bg-primary text-primary-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
+                Upload Now
+              </button>
+            </div>
+          ) : (
+            <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+              {recent.map(post => (
+                <ArtPostCard key={post.id} post={post} currentUser={currentUser} onLike={() => toggleLike.mutate(post)} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <UploadArtDialog open={showUpload} onClose={() => setShowUpload(false)} currentUser={currentUser} onSuccess={() => {
+        setShowUpload(false);
+        queryClient.invalidateQueries({ queryKey: ["artposts"] });
+      }} />
+    </div>
+  );
+}

@@ -1,0 +1,41 @@
+{
+  "name": "Achievement",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "key": {
+      "type": "string",
+      "description": "Unique achievement identifier"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string"
+    },
+    "xp": {
+      "type": "number",
+      "default": 0
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "social",
+        "creative",
+        "explorer",
+        "legend"
+      ],
+      "default": "social"
+    }
+  },
+  "required": [
+    "user_id",
+    "key",
+    "title"
+  ]
+}

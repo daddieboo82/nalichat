@@ -1,0 +1,70 @@
+{
+  "name": "ArtPost",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "medium": {
+      "type": "string",
+      "enum": [
+        "digital",
+        "traditional",
+        "photography",
+        "3d",
+        "music",
+        "poetry",
+        "video",
+        "other"
+      ],
+      "default": "digital"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "likes": {
+      "type": "number",
+      "default": 0
+    },
+    "liked_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "creator_id": {
+      "type": "string"
+    },
+    "creator_name": {
+      "type": "string"
+    },
+    "creator_avatar": {
+      "type": "string"
+    },
+    "views": {
+      "type": "number",
+      "default": 0
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "creator_id",
+    "title"
+  ]
+}

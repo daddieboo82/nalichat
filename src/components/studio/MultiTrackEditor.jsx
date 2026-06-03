@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, Pause, Square, Volume2, RotateCcw, Settings2 } from "lucide-react";
+import { Play, Pause, Square, Volume2, RotateCcw, FolderArchive, X, CheckSquare, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import TrackStrip from "./TrackStrip";
 import Timeline from "./Timeline";
 import BounceDialog from "./BounceDialog";
 import StemQueue from "./StemQueue";
+import { downloadFilesAsZip } from "@/lib/downloadZip";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 
 export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete, projectTitle, canEdit = true }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -14,6 +17,8 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   const [zoom, setZoom] = useState(1);
   const [queue, setQueue] = useState([]);
   const [queueOpen, setQueueOpen] = useState(false);
+  const [selectedTrackIds, setSelectedTrackIds] = useState([]);
+  const [zipping, setZipping] = useState(false);
 
   const queueIds = new Set(queue.map(t => t.id));
   const toggleQueue = (track) =>
@@ -56,6 +61,20 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
         el.currentTime = 0;
       }
     });
+  };
+
+  const toggleTrackSelect = (id) =>
+    setSelectedTrackIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const clearTrackSelection = () => setSelectedTrackIds([]);
+
+  const handleDownloadTracksZip = async () => {
+    const selected = tracks.filter(t => selectedTrackIds.includes(t.id));
+    if (!selected.length) return;
+    setZipping(true);
+    await downloadFilesAsZip(selected, "session-assets.zip");
+    setZipping(false);
+    clearTrackSelection();
   };
 
   const handleTimelineClick = (time) => {
@@ -157,6 +176,21 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
         )}
       </div>
 
+      {/* Selection toolbar */}
+      {selectedTrackIds.length > 0 && (
+        <div className="px-4 py-2 border-b border-border bg-primary/5 flex items-center gap-3">
+          <CheckSquare className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium text-primary">{selectedTrackIds.length} track{selectedTrackIds.length > 1 ? "s" : ""} selected</span>
+          <Button size="sm" className="rounded-lg bg-primary hover:bg-primary/90 h-7 text-xs ml-2" onClick={handleDownloadTracksZip} disabled={zipping}>
+            {zipping ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <FolderArchive className="w-3 h-3 mr-1" />}
+            Download ZIP
+          </Button>
+          <Button size="sm" variant="ghost" className="rounded-lg h-7 text-xs" onClick={clearTrackSelection}>
+            <X className="w-3 h-3 mr-1" /> Clear
+          </Button>
+        </div>
+      )}
+
       {/* Timeline & Tracks */}
       <div className="flex-1 overflow-hidden flex flex-col">
         <Timeline
@@ -178,8 +212,14 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
               tracks.map((track, idx) => (
                 <div
                   key={track.id}
-                  className="bg-card rounded-xl border border-border p-3 hover:border-primary/50 transition-colors"
+                  className={cn("bg-card rounded-xl border p-3 transition-colors flex items-start gap-2", selectedTrackIds.includes(track.id) ? "border-primary ring-1 ring-primary/30" : "border-border hover:border-primary/50")}
                 >
+                  <Checkbox
+                    checked={selectedTrackIds.includes(track.id)}
+                    onCheckedChange={() => toggleTrackSelect(track.id)}
+                    className="mt-3 shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
                   <TrackStrip
                     track={track}
                     isPlaying={isPlaying}
@@ -194,6 +234,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                     onToggleQueue={() => toggleQueue(track)}
                     canEdit={canEdit}
                   />
+                  </div>
                 </div>
               ))
             )}

@@ -26,81 +26,87 @@ export default function AppLayout() {
   }, []);
 
   return (
-    <div className="h-screen flex bg-background overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-[72px] bg-card border-r border-border flex flex-col items-center py-4 gap-1 shrink-0">
-        {/* Logo */}
-        <Link to="/" className="mb-4 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-            <span className="text-white font-heading font-black text-sm">NC</span>
-          </div>
-        </Link>
-
-        <nav className="flex flex-col gap-1 flex-1 overflow-y-auto overflow-x-hidden">
-          {navItems.map(({ icon: Icon, label, path }) => {
-            const isActive = location.pathname.startsWith(path);
-            return (
-              <Link
-                key={path}
-                to={path}
-                title={label}
-                className={cn(
-                  "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 group relative flex-shrink-0",
-                  isActive
-                    ? "bg-primary/20 text-primary shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                )}
-              >
-                <Icon className="w-5 h-5" />
-                {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-primary rounded-r-full -ml-[1px]" />}
-                <span className="absolute left-14 bg-card border border-border text-foreground text-xs px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 font-medium shadow-lg">
-                  {label}
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="flex flex-col gap-1 items-center flex-shrink-0">
-          <Link
-            to="/profile"
-            title="Profile"
-            className={cn(
-              "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
-              location.pathname === "/profile" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-            )}
-          >
-            <User className="w-5 h-5" />
-          </Link>
-          <Link
-            to="/settings"
-            title="Settings"
-            className="w-12 h-12 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
-          >
-            <Settings className="w-5 h-5" />
-          </Link>
-          <button
-            onClick={() => base44.auth.logout()}
-            title="Log out"
-            className="w-12 h-12 rounded-xl flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
-          <Link to="/profile" className="mt-1">
-            <Avatar className="w-9 h-9 border-2 border-border hover:border-primary transition-colors cursor-pointer">
-              <AvatarImage src={user?.avatar_url} />
-              <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
-                {user?.display_name?.[0] || user?.full_name?.[0] || "?"}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
-        </div>
-      </aside>
-
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Main Content */}
       <main className="flex-1 overflow-hidden">
         <Outlet />
       </main>
+
+      {/* Bottom Navigation */}
+      <nav className="border-t border-border bg-card/50 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          {/* Logo + Branding */}
+          <Link to="/" className="group shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+                <span className="text-white font-heading font-black text-xs">NC</span>
+              </div>
+              <span className="font-heading font-bold text-sm text-foreground hidden sm:inline">NaliChat</span>
+            </div>
+          </Link>
+
+          {/* Main Navigation */}
+          <div className="flex items-center gap-1 overflow-x-auto">
+            {navItems.map(({ icon: Icon, label, path }) => {
+              const isActive = location.pathname.startsWith(path);
+              return (
+                <Link
+                  key={path}
+                  to={path}
+                  title={label}
+                  className={cn(
+                    "px-3 py-2 rounded-lg flex items-center gap-2 transition-all whitespace-nowrap text-sm group",
+                    isActive
+                      ? "bg-primary/20 text-primary shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="hidden sm:inline">{label}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* User Actions */}
+          <div className="flex items-center gap-1 shrink-0">
+            <Link
+              to="/profile"
+              title="Profile"
+              className={cn(
+                "p-2 rounded-lg transition-all",
+                location.pathname === "/profile"
+                  ? "bg-primary/20 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
+              )}
+            >
+              <User className="w-4 h-4" />
+            </Link>
+            <Link
+              to="/settings"
+              title="Settings"
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-all"
+            >
+              <Settings className="w-4 h-4" />
+            </Link>
+            <button
+              onClick={() => base44.auth.logout()}
+              title="Log out"
+              className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+            <Link to="/profile" className="ml-2">
+              <Avatar className="w-7 h-7 border border-border hover:border-primary transition-colors cursor-pointer">
+                <AvatarImage src={user?.avatar_url} />
+                <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
+                  {user?.display_name?.[0] || user?.full_name?.[0] || "?"}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+          </div>
+        </div>
+      </nav>
 
       {/* Omnipresent AI */}
       <AiAssistant />

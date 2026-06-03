@@ -71,7 +71,7 @@ export default function ThreadPanel({ parentMessage, currentUser, onClose }) {
       });
       // Bump reply count on parent
       await base44.entities.Message.update(parentMessage.id, {
-        thread_reply_count: (parentMessage.thread_reply_count || 0) + replies.length + 1,
+        thread_reply_count: replies.length + 1,
       });
       return reply;
     },

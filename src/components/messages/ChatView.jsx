@@ -79,7 +79,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
 
   // Group messages by sender for consecutive grouping
   const enriched = topLevelMessages.map((msg, i) => {
-    const prev = messages[i - 1];
+    const prev = topLevelMessages[i - 1];
     const showAvatar = !prev || prev.sender_id !== msg.sender_id;
     return { ...msg, showAvatar };
   });

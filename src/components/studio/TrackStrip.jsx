@@ -13,11 +13,17 @@ const trackTypeColors = {
   master: "bg-foreground",
 };
 
-export default function TrackStrip({ track, onUpdate, onDelete, audioRef: externalRef, isPlaying, masterVolume, inQueue, onToggleQueue }) {
+export default function TrackStrip({ track, onUpdate, onDelete, audioRef: externalRef, isPlaying, masterVolume, inQueue, onToggleQueue, canEdit = true }) {
   const [playing, setPlaying] = useState(false);
   const [showPan, setShowPan] = useState(false);
   const localRef = useRef(null);
-  const audioRef = externalRef || localRef;
+  // externalRef may be a callback ref (function) or a ref object; normalise to an object
+  const audioRef = useRef(null);
+  const setAudioRef = (el) => {
+    audioRef.current = el;
+    if (typeof externalRef === "function") externalRef(el);
+    else if (externalRef) externalRef.current = el;
+  };
 
   useEffect(() => {
     if (audioRef.current && masterVolume) {
@@ -25,8 +31,8 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
     }
   }, [masterVolume, track.volume, audioRef]);
 
-  const toggleMute = () => onUpdate({ muted: !track.muted });
-  const toggleSolo = () => onUpdate({ solo: !track.solo });
+  const toggleMute = () => canEdit && onUpdate({ muted: !track.muted });
+  const toggleSolo = () => canEdit && onUpdate({ solo: !track.solo });
 
   return (
     <div className={cn(
@@ -36,7 +42,7 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
     )}>
       {track.file_url && (
         <audio
-          ref={audioRef}
+          ref={setAudioRef}
           src={track.file_url}
           onEnded={() => setPlaying(false)}
           onTimeUpdate={() => {}}
@@ -87,8 +93,9 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
               value={[track.volume || 75]}
               max={100}
               step={1}
-              onValueChange={([v]) => onUpdate({ volume: v })}
+              onValueChange={([v]) => canEdit && onUpdate({ volume: v })}
               className="w-full"
+              disabled={!canEdit}
             />
           </div>
           <span className="text-[9px] text-muted-foreground w-6 text-right">{track.volume || 75}%</span>
@@ -115,13 +122,15 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
             </button>
           )}
 
-          <button
-            onClick={onDelete}
-            className="w-7 h-7 rounded-lg bg-secondary hover:bg-destructive/20 hover:text-destructive flex items-center justify-center transition-colors"
-            title="Delete"
-          >
-            <Trash2 className="w-3 h-3" />
-          </button>
+          {canEdit && (
+            <button
+              onClick={onDelete}
+              className="w-7 h-7 rounded-lg bg-secondary hover:bg-destructive/20 hover:text-destructive flex items-center justify-center transition-colors"
+              title="Delete"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          )}
         </div>
 
         {/* Pan Control */}
@@ -133,8 +142,9 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
               min={-100}
               max={100}
               step={1}
-              onValueChange={([v]) => onUpdate({ pan: v })}
+              onValueChange={([v]) => canEdit && onUpdate({ pan: v })}
               className="w-full"
+              disabled={!canEdit}
             />
           </div>
         )}

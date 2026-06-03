@@ -36,7 +36,7 @@ export default function AppLayout() {
           </div>
         </Link>
 
-        <nav className="flex flex-col gap-1 flex-1">
+        <nav className="flex flex-col gap-1 flex-1 overflow-y-auto overflow-x-hidden">
           {navItems.map(({ icon: Icon, label, path }) => {
             const isActive = location.pathname.startsWith(path);
             return (
@@ -45,7 +45,7 @@ export default function AppLayout() {
                 to={path}
                 title={label}
                 className={cn(
-                  "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 group relative",
+                  "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 group relative flex-shrink-0",
                   isActive
                     ? "bg-primary/20 text-primary shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
@@ -61,7 +61,7 @@ export default function AppLayout() {
           })}
         </nav>
 
-        <div className="flex flex-col gap-1 items-center">
+        <div className="flex flex-col gap-1 items-center flex-shrink-0">
           <Link
             to="/profile"
             title="Profile"

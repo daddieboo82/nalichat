@@ -70,7 +70,7 @@ export default function Leaderboard() {
             <Trophy className="w-8 h-8 text-yellow-400" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-heading font-bold">Leaderboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">Top creators on ArtVerse</p>
+          <p className="text-muted-foreground text-sm mt-1">Top producers on RecordStudio</p>
           {myRank > 0 && (
             <div className="mt-3 inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-semibold">
               <Star className="w-4 h-4" /> You're #{myRank}

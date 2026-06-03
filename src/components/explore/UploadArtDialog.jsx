@@ -3,8 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { X, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const MEDIUMS = ["digital", "traditional", "photography", "3d", "music", "poetry", "video", "other"];
-const TAGS_SUGGESTIONS = ["abstract", "portrait", "landscape", "concept", "character", "dark", "colorful", "minimal", "surreal", "fantasy"];
+const MEDIUMS = ["original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
+const TAGS_SUGGESTIONS = ["hip-hop", "trap", "lofi", "electronic", "ambient", "house", "techno", "synthwave", "dark", "experimental"];
 
 export default function UploadArtDialog({ open, onClose, currentUser, onSuccess }) {
   const [form, setForm] = useState({ title: "", description: "", medium: "digital", tags: [] });
@@ -58,7 +58,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-card border border-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="font-heading font-bold text-lg">Share Your Art</h2>
+          <h2 className="font-heading font-bold text-lg">Release Your Track</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-5 space-y-4">
@@ -81,13 +81,13 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           <input
             value={form.title}
             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-            placeholder="Title *"
+            placeholder="Track title *"
             className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
           />
           <textarea
             value={form.description}
             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-            placeholder="Describe your work, process, inspiration..."
+            placeholder="Track description, production notes, credits..."
             rows={3}
             className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary/50"
           />
@@ -119,7 +119,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
             disabled={loading || !form.title || !imageFile}
             className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</> : <><Upload className="w-4 h-4" /> Share & Earn 50 XP</>}
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Releasing...</> : <><Upload className="w-4 h-4" /> Release & Earn 50 XP</>}
           </button>
         </div>
       </div>

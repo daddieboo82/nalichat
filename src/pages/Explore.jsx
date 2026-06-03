@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ArtPostCard from "@/components/explore/ArtPostCard";
 import UploadArtDialog from "@/components/explore/UploadArtDialog";
 
-const MEDIUMS = ["all", "digital", "traditional", "photography", "3d", "music", "poetry", "video", "other"];
+const MEDIUMS = ["all", "original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
 
 export default function Explore() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -58,14 +58,14 @@ export default function Explore() {
                 <span className="text-xs text-primary font-semibold uppercase tracking-wider">Gallery</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-heading font-bold">Explore & Discover</h1>
-              <p className="text-muted-foreground text-sm mt-1">Showcasing creators from around the world</p>
+              <p className="text-muted-foreground text-sm mt-1">Tracks from producers worldwide</p>
             </div>
             <button
               onClick={() => setShowUpload(true)}
               className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Share Art
+              Release Track
             </button>
           </div>
 
@@ -119,10 +119,10 @@ export default function Explore() {
           {recent.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
               <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-heading font-semibold">No posts yet</p>
-              <p className="text-sm mt-1">Be the first to share your art!</p>
+              <p className="font-heading font-semibold">No tracks yet</p>
+              <p className="text-sm mt-1">Be the first to release your music!</p>
               <button onClick={() => setShowUpload(true)} className="mt-4 bg-primary text-primary-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
-                Upload Now
+                Release Now
               </button>
             </div>
           ) : (

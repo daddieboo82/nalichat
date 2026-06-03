@@ -29,7 +29,7 @@ export default function AppLayout() {
         {/* Logo */}
         <Link to="/" className="mb-4 group">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-            <span className="text-white font-heading font-black text-sm">AV</span>
+            <span className="text-white font-heading font-black text-sm">RS</span>
           </div>
         </Link>
 

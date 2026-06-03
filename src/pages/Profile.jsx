@@ -8,8 +8,8 @@ import ArtPostCard from "@/components/explore/ArtPostCard";
 import AchievementsPanel from "@/components/profile/AchievementsPanel";
 import LevelBadge from "@/components/profile/LevelBadge";
 
-const ROLES = ["Painter", "Illustrator", "Photographer", "Musician", "Writer", "Poet", "3D Artist", "Filmmaker", "Graphic Designer", "Other"];
-const GENRES = ["Abstract", "Portrait", "Landscape", "Fantasy", "Sci-Fi", "Minimalism", "Surrealism", "Pop Art", "Street Art", "Classical"];
+const ROLES = ["Producer", "Beatmaker", "Sound Engineer", "Mixing Engineer", "Mastering Engineer", "Vocalist", "Instrumentalist", "DJ", "Composer", "Other"];
+const GENRES = ["Hip-Hop", "Trap", "Lo-Fi", "Electronic", "House", "Techno", "Ambient", "R&B", "Indie", "Alternative"];
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -116,7 +116,7 @@ export default function Profile() {
               <h1 className="font-heading font-bold text-xl">{user.display_name || user.full_name}</h1>
               <LevelBadge level={user.level || 1} />
             </div>
-            <p className="text-muted-foreground text-sm capitalize">{user.artist_role || "Creator"}</p>
+            <p className="text-muted-foreground text-sm capitalize">{user.artist_role || "Producer"}</p>
           </div>
           <button
             onClick={() => editing ? save() : setEditing(true)}
@@ -144,8 +144,8 @@ export default function Profile() {
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           {[
-            { label: "Posts", value: myPosts.length, icon: Grid },
-            { label: "Likes", value: totalLikes, icon: Heart },
+            { label: "Tracks", value: myPosts.length, icon: Grid },
+            { label: "Plays", value: totalLikes, icon: Heart },
             { label: "Awards", value: achievements.length, icon: Award },
           ].map(({ label, value, icon: Icon }) => (
             <div key={label} className="bg-card rounded-xl border border-border p-3 text-center">
@@ -210,8 +210,8 @@ export default function Profile() {
         {tab === "posts" && (
           myPosts.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <p className="font-heading font-semibold">No posts yet</p>
-              <p className="text-sm mt-1">Share your first piece from the Explore tab!</p>
+              <p className="font-heading font-semibold">No tracks yet</p>
+              <p className="text-sm mt-1">Release your first track from the Explore tab!</p>
             </div>
           ) : (
             <div className="columns-1 sm:columns-2 gap-4 mb-8">

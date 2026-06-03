@@ -3,30 +3,33 @@
   "type": "object",
   "properties": {
     "title": {
-      "type": "string"
+      "type": "string",
+      "description": "Song/Track title"
     },
     "description": {
       "type": "string"
     },
     "image_url": {
-      "type": "string"
+      "type": "string",
+      "description": "Album art or cover"
     },
     "file_url": {
-      "type": "string"
+      "type": "string",
+      "description": "Audio file URL"
     },
     "medium": {
       "type": "string",
       "enum": [
-        "digital",
-        "traditional",
-        "photography",
-        "3d",
-        "music",
-        "poetry",
-        "video",
-        "other"
+        "original",
+        "remix",
+        "cover",
+        "beat",
+        "production",
+        "mixing",
+        "mastering",
+        "collab"
       ],
-      "default": "digital"
+      "default": "original"
     },
     "tags": {
       "type": "array",
@@ -57,6 +60,16 @@
     "views": {
       "type": "number",
       "default": 0
+    },
+    "duration": {
+      "type": "number",
+      "description": "Track duration in seconds"
+    },
+    "genre": {
+      "type": "string"
+    },
+    "bpm": {
+      "type": "number"
     },
     "featured": {
       "type": "boolean",

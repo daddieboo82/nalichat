@@ -114,3 +114,54 @@
 .waveform-bar {
   animation: waveform 0.8s ease-in-out infinite;
 }
+
+/* ---- Vibrant UI utilities ---- */
+
+/* Animated gradient text */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.text-gradient-animate {
+  background: linear-gradient(90deg, hsl(265 80% 65%), hsl(175 70% 50%), hsl(330 80% 60%), hsl(265 80% 65%));
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 6s ease infinite;
+}
+
+/* Glow shadow helpers */
+.glow-primary { box-shadow: 0 0 0 1px hsl(265 80% 60% / 0.3), 0 8px 30px -6px hsl(265 80% 60% / 0.45); }
+.glow-accent { box-shadow: 0 0 0 1px hsl(175 70% 45% / 0.3), 0 8px 30px -6px hsl(175 70% 45% / 0.45); }
+
+/* Soft glass surface */
+.glass {
+  background: hsl(240 8% 8% / 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Slow floating blobs */
+@keyframes float-blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(20px, -30px) scale(1.1); }
+  66% { transform: translate(-15px, 20px) scale(0.95); }
+}
+.animate-float-blob { animation: float-blob 14s ease-in-out infinite; }
+
+/* Shimmer sweep on hover */
+@keyframes shimmer {
+  100% { transform: translateX(200%); }
+}
+.shimmer-hover { position: relative; overflow: hidden; }
+.shimmer-hover::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; height: 100%; width: 50%;
+  background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.12), transparent);
+  transform: translateX(-150%);
+  transition: opacity 0.3s;
+  opacity: 0;
+}
+.shimmer-hover:hover::after { opacity: 1; animation: shimmer 1s ease; }

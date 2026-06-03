@@ -53,20 +53,22 @@ export default function Explore() {
   return (
     <div className="h-full overflow-y-auto bg-background">
       {/* Hero */}
-      <div className="bg-gradient-to-br from-primary/20 via-background to-accent/10 px-4 sm:px-8 pt-8 pb-6">
-        <div className="max-w-5xl mx-auto">
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary/25 via-background to-accent/15 px-4 sm:px-8 pt-8 pb-6">
+        <div className="absolute -top-24 right-10 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-float-blob pointer-events-none" />
+        <div className="absolute -bottom-24 left-10 w-72 h-72 bg-accent/20 rounded-full blur-3xl animate-float-blob pointer-events-none" style={{ animationDelay: "-7s" }} />
+        <div className="relative max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles className="w-5 h-5 text-primary" />
                 <span className="text-xs text-primary font-semibold uppercase tracking-wider">Gallery</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-heading font-bold">Explore & Discover</h1>
+              <h1 className="text-2xl sm:text-3xl font-heading font-black text-gradient-animate inline-block">Explore & Discover</h1>
               <p className="text-muted-foreground text-sm mt-1">Tracks from producers worldwide</p>
             </div>
             <button
               onClick={() => setShowUpload(true)}
-              className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors"
+              className="flex items-center gap-2 bg-gradient-to-r from-primary to-pink-500 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:opacity-90 transition-all glow-primary shimmer-hover"
             >
               <Plus className="w-4 h-4" />
               Release Track
@@ -95,7 +97,7 @@ export default function Explore() {
               onClick={() => setFilter(m)}
               className={cn(
                 "px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap capitalize transition-colors shrink-0",
-                filter === m ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+                filter === m ? "bg-gradient-to-r from-primary to-pink-500 text-white shadow-md shadow-primary/30" : "bg-secondary text-muted-foreground hover:text-foreground"
               )}
             >
               {m === "all" ? "✨ All" : m}

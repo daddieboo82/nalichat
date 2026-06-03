@@ -223,9 +223,9 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
 
         {/* Bubble */}
         <div className={cn(
-          "relative rounded-2xl px-4 py-2.5 min-w-[60px]",
+          "relative rounded-2xl px-4 py-2.5 min-w-[60px] transition-shadow",
           isOwn
-            ? "bg-primary text-primary-foreground rounded-br-md"
+            ? "bg-gradient-to-br from-primary to-pink-500 text-primary-foreground rounded-br-md shadow-lg shadow-primary/25"
             : "bg-card border border-border rounded-bl-md",
           hasFile && message.type !== "audio" && "p-2"
         )}>

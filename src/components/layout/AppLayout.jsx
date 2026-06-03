@@ -78,7 +78,7 @@ export default function AppLayout() {
                   className={cn(
                     "w-full px-3 py-2 rounded-lg flex items-center gap-2 transition-all text-sm",
                     isActive
-                      ? "bg-primary/20 text-primary"
+                      ? "bg-gradient-to-r from-primary/25 to-pink-500/15 text-primary font-semibold"
                       : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
                   )}
                 >
@@ -116,10 +116,10 @@ export default function AppLayout() {
           {/* Logo + Branding */}
           <Link to="/" className="group shrink-0">
             <div className="flex items-center gap-1.5">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary via-pink-500 to-accent flex items-center justify-center shadow-lg shadow-primary/30">
                 <span className="text-white font-heading font-black text-[10px]">NC</span>
               </div>
-              <span className="font-heading font-bold text-xs text-foreground hidden sm:inline">NaliChat</span>
+              <span className="font-heading font-bold text-xs text-gradient-animate hidden sm:inline">NaliChat</span>
             </div>
           </Link>
 
@@ -135,7 +135,7 @@ export default function AppLayout() {
                   className={cn(
                     "px-2 py-1.5 rounded-lg flex items-center gap-1 transition-all whitespace-nowrap text-xs group",
                     isActive
-                      ? "bg-primary/20 text-primary shadow-sm"
+                      ? "bg-gradient-to-r from-primary/25 to-pink-500/15 text-primary shadow-sm shadow-primary/20 font-semibold"
                       : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
                   )}
                 >

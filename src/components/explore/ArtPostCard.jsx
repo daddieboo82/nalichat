@@ -6,7 +6,7 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
   const liked = post.liked_by?.includes(currentUser?.id);
 
   return (
-    <div className={cn("break-inside-avoid mb-4 bg-card rounded-2xl overflow-hidden border border-border group hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5", large && "")}>
+    <div className={cn("break-inside-avoid mb-4 bg-card rounded-2xl overflow-hidden border border-border group hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1", large && "")}>
       {post.image_url && (
         <div className="relative overflow-hidden">
           <img
@@ -15,7 +15,7 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
             className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
             style={{ maxHeight: large ? 280 : 220 }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-t from-primary/40 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="absolute bottom-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <span className="flex items-center gap-1 bg-black/60 text-white text-[10px] px-2 py-1 rounded-full">
               <Eye className="w-3 h-3" /> {post.views || 0}
@@ -82,7 +82,7 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
               </span>
             )}
             {post.price > 0 && (
-              <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-semibold">
+              <span className="text-[10px] bg-gradient-to-r from-primary to-pink-500 text-white px-2 py-0.5 rounded-full font-bold shadow-sm shadow-primary/30">
                 ${post.price.toFixed(2)}
               </span>
             )}

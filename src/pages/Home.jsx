@@ -97,8 +97,9 @@ export default function Home() {
       <section className="relative min-h-[400px] flex items-center justify-center overflow-hidden px-6 py-12">
         {/* Animated Background */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/30 rounded-full blur-3xl animate-float-blob" />
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent/30 rounded-full blur-3xl animate-float-blob" style={{ animationDelay: "-5s" }} />
+          <div className="absolute top-1/3 left-1/2 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-float-blob" style={{ animationDelay: "-9s" }} />
         </div>
 
         <motion.div
@@ -111,13 +112,13 @@ export default function Home() {
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/30"
+              className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary via-pink-500 to-accent flex items-center justify-center glow-primary"
             >
               <Music className="w-8 h-8 text-white" />
             </motion.div>
           </div>
 
-          <h1 className="font-heading font-black text-5xl md:text-7xl mb-4 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+          <h1 className="font-heading font-black text-5xl md:text-7xl mb-4 text-gradient-animate">
             Welcome to NaliChat
           </h1>
           <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
@@ -126,7 +127,7 @@ export default function Home() {
 
           <div className="flex gap-4 justify-center flex-wrap">
             <Link to="/messages">
-              <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90 text-base">
+              <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover">
                 <MessageSquare className="w-5 h-5 mr-2" />
                 Start Messaging
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -191,7 +192,7 @@ export default function Home() {
 
         {/* Features Grid */}
         <div className="mb-8">
-          <h2 className="font-heading font-bold text-3xl mb-2">Explore All Features</h2>
+          <h2 className="font-heading font-bold text-3xl mb-2 text-gradient-animate inline-block">Explore All Features</h2>
           <p className="text-muted-foreground mb-8">Everything you need to create, produce, and share your music</p>
 
           <motion.div
@@ -206,12 +207,12 @@ export default function Home() {
               return (
                 <motion.div key={feature.path} variants={itemVariants}>
                   <Link to={feature.path}>
-                    <div className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${feature.gradient} p-0.5 h-full`}>
-                      <div className="relative h-full bg-card rounded-2xl p-6 hover:bg-card/50 transition-all duration-300">
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${feature.gradient} p-0.5 h-full transition-transform duration-300 hover:-translate-y-1`}>
+                      <div className="relative h-full bg-card rounded-2xl p-6 transition-all duration-300 shimmer-hover">
+                        <div className={`absolute -inset-8 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-20 blur-2xl transition-opacity duration-300`} />
                         
                         <div className="relative z-10">
-                          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 shadow-lg`}>
+                          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 shadow-lg transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}>
                             <Icon className="w-6 h-6 text-white" />
                           </div>
                           <h3 className="font-heading font-bold text-lg mb-1">{feature.label}</h3>
@@ -234,16 +235,16 @@ export default function Home() {
           viewport={{ once: true }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16"
         >
-          <div className="bg-card border border-border rounded-2xl p-8 text-center hover:border-primary/40 transition-colors">
-            <p className="text-4xl font-bold text-primary mb-2">10K+</p>
+          <div className="bg-card border border-border rounded-2xl p-8 text-center transition-all duration-300 hover:border-primary/50 hover:-translate-y-1 hover:glow-primary">
+            <p className="text-5xl font-black mb-2 bg-gradient-to-br from-primary to-pink-500 bg-clip-text text-transparent">10K+</p>
             <p className="text-muted-foreground">Tracks Uploaded</p>
           </div>
-          <div className="bg-card border border-border rounded-2xl p-8 text-center hover:border-accent/40 transition-colors">
-            <p className="text-4xl font-bold text-accent mb-2">50K+</p>
+          <div className="bg-card border border-border rounded-2xl p-8 text-center transition-all duration-300 hover:border-accent/50 hover:-translate-y-1 hover:glow-accent">
+            <p className="text-5xl font-black mb-2 bg-gradient-to-br from-accent to-cyan-400 bg-clip-text text-transparent">50K+</p>
             <p className="text-muted-foreground">Community Members</p>
           </div>
-          <div className="bg-card border border-border rounded-2xl p-8 text-center hover:border-purple-500/40 transition-colors">
-            <p className="text-4xl font-bold text-purple-500 mb-2">1M+</p>
+          <div className="bg-card border border-border rounded-2xl p-8 text-center transition-all duration-300 hover:border-pink-500/50 hover:-translate-y-1">
+            <p className="text-5xl font-black mb-2 bg-gradient-to-br from-pink-500 to-purple-500 bg-clip-text text-transparent">1M+</p>
             <p className="text-muted-foreground">Messages Sent</p>
           </div>
         </motion.div>

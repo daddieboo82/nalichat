@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { registerServiceWorker, requestPushPermission, showPushNotification, getPermissionStatus } from "@/lib/pushNotifications";
 
 const typeIcon = {
   comment: MessageCircle,
@@ -23,6 +24,13 @@ export default function NotificationBell() {
 
   useEffect(() => {
     base44.auth.me().then((u) => { setUser(u); userRef.current = u; }).catch(() => {});
+    // Register service worker and request push permission on first load
+    registerServiceWorker().then(() => {
+      if (getPermissionStatus() === 'default') {
+        // Ask after a short delay so it doesn't immediately pop on page load
+        setTimeout(() => requestPushPermission(), 3000);
+      }
+    });
   }, []);
 
   const load = async (uid) => {
@@ -39,6 +47,11 @@ export default function NotificationBell() {
       if (event.data?.recipient_id !== me.id) return;
       if (event.type === "create") {
         toast({ title: event.data.actor_name || "New activity", description: event.data.message });
+        showPushNotification({
+          title: event.data.actor_name || "NaliChat",
+          body: event.data.message || "You have a new notification",
+          url: event.data.link || "/",
+        });
       }
       load(me.id);
     });

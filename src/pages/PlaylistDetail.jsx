@@ -26,10 +26,14 @@ export default function PlaylistDetail() {
     queryKey: ["playlistTracks", playlist?.track_ids],
     queryFn: async () => {
       if (!playlist?.track_ids?.length) return [];
-      const trackPromises = playlist.track_ids.map((id) =>
-        base44.entities.ArtPost.get(id)
+      // Tolerate tracks that were deleted from ArtPost — skip the missing ones
+      // instead of failing the whole list.
+      const results = await Promise.all(
+        playlist.track_ids.map((id) =>
+          base44.entities.ArtPost.get(id).catch(() => null)
+        )
       );
-      return Promise.all(trackPromises);
+      return results.filter(Boolean);
     },
     enabled: !!playlist?.track_ids?.length,
   });

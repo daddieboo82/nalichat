@@ -18,6 +18,7 @@ import Messages from '@/pages/Messages';
 import Network from '@/pages/Network';
 import Files from '@/pages/Files';
 import Studio from '@/pages/Studio';
+import StudioEditor from '@/pages/StudioEditor';
 import Record from '@/pages/Record';
 import Settings from '@/pages/Settings';
 import Explore from '@/pages/Explore';
@@ -60,6 +61,7 @@ const AuthenticatedApp = () => {
           <Route path="/network" element={<Network />} />
           <Route path="/files" element={<Files />} />
           <Route path="/studio" element={<Studio />} />
+          <Route path="/studio-editor" element={<StudioEditor />} />
           <Route path="/record" element={<Record />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/explore" element={<Explore />} />

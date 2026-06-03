@@ -242,6 +242,7 @@ export default function Studio() {
             <MultiTrackEditor
               tracks={tracks}
               selectedProject={selectedProject}
+              projectTitle={selectedProject?.title}
               onTrackUpdate={(id, data) => updateTrack.mutate({ id, data })}
               onTrackDelete={(id) => deleteTrack.mutate(id)}
             />

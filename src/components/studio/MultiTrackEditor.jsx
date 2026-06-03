@@ -3,8 +3,9 @@ import { Play, Pause, Square, Volume2, RotateCcw, Settings2 } from "lucide-react
 import { cn } from "@/lib/utils";
 import TrackStrip from "./TrackStrip";
 import Timeline from "./Timeline";
+import BounceDialog from "./BounceDialog";
 
-export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete }) {
+export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete, projectTitle }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -125,6 +126,11 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
             }}
           />
           <span className="text-xs text-muted-foreground w-8 text-right">{masterVolume}%</span>
+        </div>
+
+        {/* Bounce Button */}
+        <div className="ml-4">
+          <BounceDialog projectTitle={projectTitle || selectedProject?.title} tracks={tracks} />
         </div>
       </div>
 

@@ -1,0 +1,260 @@
+import { useState, useRef, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Play, Pause, Download, Share2, Loader2, Wand2, Music, Zap, Radio } from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function StudioEditor() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [activeSession, setActiveSession] = useState(null);
+  const [audioUrl, setAudioUrl] = useState("");
+  const [processing, setProcessing] = useState(false);
+  const [masterAnalysis, setMasterAnalysis] = useState(null);
+  const [playing, setPlaying] = useState(false);
+  const [shareDialog, setShareDialog] = useState(false);
+  const [uploadTitle, setUploadTitle] = useState("");
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser);
+  }, []);
+
+  const handleProcessAudio = async () => {
+    if (!audioUrl) return;
+    setProcessing(true);
+    try {
+      const result = await base44.functions.invoke('aiMasterSession', {
+        audio_url: audioUrl,
+        project_title: uploadTitle || 'Untitled Mix'
+      });
+      setMasterAnalysis(result);
+    } catch (err) {
+      console.error('Processing failed:', err);
+    }
+    setProcessing(false);
+  };
+
+  const handleUploadToLeaderboard = async () => {
+    if (!audioUrl || !uploadTitle) return;
+    
+    try {
+      await base44.entities.ArtPost.create({
+        title: uploadTitle,
+        description: masterAnalysis?.recommendations || 'AI-mastered session',
+        file_url: audioUrl,
+        medium: 'production',
+        creator_id: currentUser.id,
+        creator_name: currentUser.full_name,
+        creator_avatar: currentUser.avatar_url,
+        featured: false,
+        likes: 0,
+        views: 0,
+        genre: 'Electronic'
+      });
+      setShareDialog(false);
+      setAudioUrl("");
+      setUploadTitle("");
+    } catch (err) {
+      console.error('Upload failed:', err);
+    }
+  };
+
+  const handleShare = async (platform) => {
+    if (!currentUser) return;
+    
+    // Create share message
+    const shareText = `Check out my latest mix: ${uploadTitle} - mastered with AI!`;
+    
+    if (platform === 'messages') {
+      // Store in local state for later sharing via messages
+      console.log('Share via messages:', shareText);
+    }
+    
+    setShareDialog(false);
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-background">
+      <Tabs defaultValue="editor" className="h-full flex flex-col">
+        <TabsList className="w-full justify-start rounded-none border-b border-border px-6 py-3 h-auto bg-card/50">
+          <TabsTrigger value="editor" className="rounded-lg">Studio Editor</TabsTrigger>
+          <TabsTrigger value="mastering" className="rounded-lg">AI Mastering</TabsTrigger>
+          <TabsTrigger value="library" className="rounded-lg">Processed Sessions</TabsTrigger>
+        </TabsList>
+
+        {/* Editor Tab */}
+        <TabsContent value="editor" className="flex-1 overflow-auto p-6">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="bg-card rounded-2xl border border-border p-8">
+              <h2 className="font-heading font-bold text-2xl mb-2">Studio Session Editor</h2>
+              <p className="text-muted-foreground mb-6">Upload your bounced session or paste the audio URL</p>
+
+              <div className="space-y-4">
+                <Input
+                  placeholder="Session title (e.g., 'Summer Vibes - v2')"
+                  value={uploadTitle}
+                  onChange={(e) => setUploadTitle(e.target.value)}
+                  className="rounded-xl"
+                />
+                
+                <Input
+                  placeholder="Audio URL from bounced session"
+                  value={audioUrl}
+                  onChange={(e) => setAudioUrl(e.target.value)}
+                  className="rounded-xl"
+                />
+
+                {audioUrl && (
+                  <div className="flex items-center gap-2 p-4 bg-secondary/50 rounded-xl">
+                    <div className="flex-1 flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (audioRef.current) {
+                            playing ? audioRef.current.pause() : audioRef.current.play();
+                            setPlaying(!playing);
+                          }
+                        }}
+                        className="w-10 h-10 rounded-lg bg-primary/20 text-primary flex items-center justify-center hover:bg-primary/30 transition-colors"
+                      >
+                        {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                      </button>
+                      <span className="text-sm text-muted-foreground">Preview audio</span>
+                    </div>
+                    <audio ref={audioRef} src={audioUrl} onEnded={() => setPlaying(false)} />
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleProcessAudio}
+                  disabled={!audioUrl || processing}
+                  className="w-full rounded-xl bg-primary hover:bg-primary/90"
+                >
+                  {processing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      AI is processing...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Analyze & Master with AI
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {masterAnalysis && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-card rounded-2xl border border-accent/30 p-8 space-y-4"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Zap className="w-5 h-5 text-accent" />
+                  <h3 className="font-heading font-bold text-lg">AI Mastering Analysis</h3>
+                </div>
+
+                <div className="grid gap-4">
+                  <div className="bg-secondary/30 rounded-lg p-4">
+                    <p className="text-xs text-muted-foreground mb-1">EQ & Tone</p>
+                    <p className="text-sm">{masterAnalysis.eq_recommendations}</p>
+                  </div>
+                  
+                  <div className="bg-secondary/30 rounded-lg p-4">
+                    <p className="text-xs text-muted-foreground mb-1">Compression</p>
+                    <p className="text-sm">{masterAnalysis.compression_settings}</p>
+                  </div>
+                  
+                  <div className="bg-secondary/30 rounded-lg p-4">
+                    <p className="text-xs text-muted-foreground mb-1">Effects & Reverb</p>
+                    <p className="text-sm">{masterAnalysis.effects_chain}</p>
+                  </div>
+                  
+                  <div className="bg-secondary/30 rounded-lg p-4">
+                    <p className="text-xs text-muted-foreground mb-1">Target Loudness</p>
+                    <p className="text-sm">{masterAnalysis.target_loudness}</p>
+                  </div>
+                  
+                  <div className="bg-secondary/30 rounded-lg p-4">
+                    <p className="text-xs text-muted-foreground mb-1">Mastering Chain</p>
+                    <p className="text-sm">{masterAnalysis.mastering_chain}</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Dialog open={shareDialog} onOpenChange={setShareDialog}>
+                    <DialogTrigger asChild>
+                      <Button className="flex-1 rounded-xl bg-accent hover:bg-accent/90">
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Share & Publish
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-card border-border">
+                      <DialogHeader>
+                        <DialogTitle className="font-heading">Publish Your Mix</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-3">
+                        <Button
+                          onClick={() => handleUploadToLeaderboard()}
+                          className="w-full rounded-xl bg-primary hover:bg-primary/90"
+                        >
+                          <Radio className="w-4 h-4 mr-2" />
+                          Upload to Leaderboard
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleShare('messages')}
+                          className="w-full rounded-xl"
+                        >
+                          <Music className="w-4 h-4 mr-2" />
+                          Share in Messages
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Button
+                    variant="outline"
+                    className="flex-1 rounded-xl"
+                    onClick={() => {
+                      const a = document.createElement('a');
+                      a.href = audioUrl;
+                      a.download = `${uploadTitle}.mp3`;
+                      a.click();
+                    }}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Mastering Tab */}
+        <TabsContent value="mastering" className="flex-1 overflow-auto p-6">
+          <div className="max-w-4xl mx-auto text-center text-muted-foreground py-20">
+            <Zap className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p className="font-heading font-semibold mb-2">AI Mastering Engine</p>
+            <p className="text-sm">Upload a session in the Editor tab to apply professional mastering</p>
+          </div>
+        </TabsContent>
+
+        {/* Library Tab */}
+        <TabsContent value="library" className="flex-1 overflow-auto p-6">
+          <div className="max-w-4xl mx-auto text-center text-muted-foreground py-20">
+            <Music className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p className="font-heading font-semibold mb-2">Your Processed Sessions</p>
+            <p className="text-sm">Sessions you've processed will appear here</p>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

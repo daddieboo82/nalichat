@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen } from "lucide-react";
+import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen, FolderArchive, X, CheckSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
+import { Checkbox } from "@/components/ui/checkbox";
+import { downloadFilesAsZip } from "@/lib/downloadZip";
+import { useToast } from "@/components/ui/use-toast";
 
 const typeIcons = {
   audio: Music,
@@ -41,10 +44,31 @@ export default function Files() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [uploading, setUploading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [zipping, setZipping] = useState(false);
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   useEffect(() => { base44.auth.me().then(setCurrentUser); }, []);
+
+  const toggleSelect = (id) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const clearSelection = () => setSelectedIds([]);
+
+  const handleDownloadZip = async () => {
+    const selectedFiles = files.filter((f) => selectedIds.includes(f.id));
+    if (selectedFiles.length === 0) return;
+    setZipping(true);
+    try {
+      await downloadFilesAsZip(selectedFiles, "selected-files.zip");
+      clearSelection();
+    } catch {
+      toast({ title: "Download failed", description: "Could not bundle the selected files.", variant: "destructive" });
+    }
+    setZipping(false);
+  };
 
   const { data: files = [], isLoading } = useQuery({
     queryKey: ["shared-files"],
@@ -117,6 +141,24 @@ export default function Files() {
             </TabsList>
           </Tabs>
         </div>
+
+        {selectedIds.length > 0 && (
+          <div className="flex items-center justify-between gap-3 mb-4 p-3 rounded-xl bg-primary/10 border border-primary/20">
+            <div className="flex items-center gap-2 text-sm font-medium text-primary">
+              <CheckSquare className="w-4 h-4" />
+              {selectedIds.length} selected
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" className="rounded-lg bg-primary hover:bg-primary/90" onClick={handleDownloadZip} disabled={zipping}>
+                {zipping ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FolderArchive className="w-4 h-4 mr-2" />}
+                Download ZIP
+              </Button>
+              <Button size="sm" variant="ghost" className="rounded-lg" onClick={clearSelection}>
+                <X className="w-4 h-4 mr-1" /> Clear
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pb-6">
@@ -134,15 +176,21 @@ export default function Files() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {filtered.map((file, i) => {
               const Icon = typeIcons[file.file_type] || File;
+              const isSelected = selectedIds.includes(file.id);
               return (
                 <motion.div
                   key={file.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className="bg-card rounded-xl border border-border p-4 hover:border-primary/30 transition-all group"
+                  className={`bg-card rounded-xl border p-4 transition-all group ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-border hover:border-primary/30"}`}
                 >
                   <div className="flex items-start gap-3">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleSelect(file.id)}
+                      className="mt-1 shrink-0"
+                    />
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${typeColors[file.file_type] || typeColors.other}`}>
                       <Icon className="w-5 h-5" />
                     </div>

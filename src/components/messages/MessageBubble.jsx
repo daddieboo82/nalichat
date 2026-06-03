@@ -1,8 +1,9 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Pause, Download, FileText, Image as ImageIcon, Music, Film, Reply, Smile } from "lucide-react";
+import { Play, Pause, Download, FileText, Music, Film, Reply, Smile } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { resumableDownload } from "@/lib/resumableUpload";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -70,14 +71,23 @@ function AudioPlayer({ src, duration }) {
 }
 
 function FileAttachment({ message, isOwn }) {
+  const [dlProgress, setDlProgress] = useState(null); // null = idle, 0-100 = downloading
   const isImage = message.type === "image" || message.file_type?.startsWith("image");
   const isAudio = message.type === "audio" || message.file_type?.startsWith("audio");
   const isVideo = message.file_type?.startsWith("video");
 
+  const handleDownload = async (e) => {
+    e.preventDefault();
+    if (dlProgress !== null) return;
+    setDlProgress(0);
+    await resumableDownload(message.file_url, message.file_name || "file", (pct) => setDlProgress(pct));
+    setDlProgress(null);
+  };
+
   if (isImage) {
     return (
       <a href={message.file_url} target="_blank" rel="noopener noreferrer">
-        <img src={message.file_url} alt={message.file_name} className="rounded-xl max-w-[300px] max-h-[220px] object-cover block" />
+        <img src={message.file_url} alt={message.file_name} className="rounded-xl w-full max-w-[280px] sm:max-w-[300px] max-h-[220px] object-cover block" />
         {message.text && <p className="text-sm mt-2">{message.text}</p>}
       </a>
     );
@@ -91,16 +101,28 @@ function FileAttachment({ message, isOwn }) {
   const size = message.file_size ? `${(message.file_size / 1024 / 1024).toFixed(1)} MB` : "";
 
   return (
-    <a href={message.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:opacity-80 transition-opacity group">
-      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", isOwn ? "bg-white/20" : "bg-primary/20")}>
-        <Icon className={cn("w-5 h-5", isOwn ? "text-white" : "text-primary")} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate max-w-[180px]">{message.file_name || "File"}</p>
-        <p className="text-[10px] opacity-60">{size}</p>
-      </div>
-      <Download className="w-4 h-4 opacity-40 group-hover:opacity-80 transition-opacity shrink-0" />
-    </a>
+    <div className="min-w-[180px] sm:min-w-[220px]">
+      <button onClick={handleDownload} className="w-full flex items-center gap-3 hover:opacity-80 transition-opacity group text-left">
+        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", isOwn ? "bg-white/20" : "bg-primary/20")}>
+          <Icon className={cn("w-5 h-5", isOwn ? "text-white" : "text-primary")} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate max-w-[140px] sm:max-w-[180px]">{message.file_name || "File"}</p>
+          <p className="text-[10px] opacity-60">
+            {dlProgress !== null ? `${dlProgress}%` : size}
+          </p>
+        </div>
+        <Download className={cn("w-4 h-4 shrink-0 transition-opacity", dlProgress !== null ? "opacity-100 text-primary animate-bounce" : "opacity-40 group-hover:opacity-80")} />
+      </button>
+      {dlProgress !== null && (
+        <div className="mt-2 h-1 bg-white/20 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-white/80 rounded-full transition-all duration-200"
+            style={{ width: `${dlProgress}%` }}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 

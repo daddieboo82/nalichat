@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, Users } from "lucide-react";
+import { MessageSquare, Users, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import GroupInfoPanel from "./GroupInfoPanel";
 
-export default function ChatView({ conversation, messages, currentUser, users, onSendMessage, onReact }) {
+export default function ChatView({ conversation, messages, currentUser, users, onSendMessage, onReact, onBack }) {
   const [replyTo, setReplyTo] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const scrollRef = useRef(null);
@@ -92,7 +92,11 @@ export default function ChatView({ conversation, messages, currentUser, users, o
     <div className="flex-1 flex overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="h-16 border-b border-border flex items-center px-5 gap-3 shrink-0 bg-card/70 backdrop-blur-sm">
+      <div className="h-16 border-b border-border flex items-center px-3 sm:px-5 gap-2 sm:gap-3 shrink-0 bg-card/70 backdrop-blur-sm">
+        {/* Back button — mobile only */}
+        <button onClick={onBack} className="sm:hidden w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors shrink-0 touch-manipulation">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
         <Avatar className="w-9 h-9 shrink-0">
           <AvatarImage src={avatarSrc} />
           <AvatarFallback className="bg-primary/20 text-primary font-bold text-sm">

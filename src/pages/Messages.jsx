@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ConversationList from "@/components/messages/ConversationList";
@@ -114,25 +115,40 @@ export default function Messages() {
 
   const otherUsers = users.filter(u => u.id !== currentUser?.id);
 
+  const selectedConv = myConversations.find(c => c.id === selectedConvId);
+  // On mobile: show list OR chat, not both
+  const showList = !selectedConvId || window.innerWidth >= 640;
+
   return (
-    <div className="h-full flex">
-      <ConversationList
-        conversations={myConversations}
-        selectedId={selectedConvId}
-        onSelect={setSelectedConvId}
-        onNewDM={() => setShowNewDM(true)}
-        onNewGroup={() => setShowNewGroup(true)}
-        users={users}
-        currentUserId={currentUser?.id}
-      />
-      <ChatView
-        conversation={myConversations.find(c => c.id === selectedConvId)}
-        messages={messages}
-        currentUser={currentUser}
-        users={users}
-        onSendMessage={(data) => sendMessage.mutate(data)}
-        onReact={handleReact}
-      />
+    <div className="h-full flex overflow-hidden">
+      {/* Conversation list — hidden on mobile when a chat is open */}
+      <div className={cn(
+        "shrink-0 transition-all",
+        selectedConvId ? "hidden sm:flex" : "flex w-full sm:w-auto"
+      )}>
+        <ConversationList
+          conversations={myConversations}
+          selectedId={selectedConvId}
+          onSelect={setSelectedConvId}
+          onNewDM={() => setShowNewDM(true)}
+          onNewGroup={() => setShowNewGroup(true)}
+          users={users}
+          currentUserId={currentUser?.id}
+        />
+      </div>
+
+      {/* Chat view — full width on mobile */}
+      <div className={cn("flex-1 overflow-hidden", !selectedConvId && "hidden sm:flex")}>
+        <ChatView
+          conversation={selectedConv}
+          messages={messages}
+          currentUser={currentUser}
+          users={users}
+          onSendMessage={(data) => sendMessage.mutate(data)}
+          onReact={handleReact}
+          onBack={() => setSelectedConvId(null)}
+        />
+      </div>
       <NewChatDialog
         open={showNewDM}
         onOpenChange={setShowNewDM}

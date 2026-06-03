@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Button } from "@/components/ui/button";
-import { Send, Paperclip, Mic, X, Image as ImageIcon, Film, FileText, StopCircle } from "lucide-react";
+import { Send, Paperclip, Mic, X, StopCircle, UploadCloud } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resumableUpload } from "@/lib/resumableUpload";
 
 export default function ChatInput({ onSend, replyTo, onCancelReply, disabled }) {
   const [text, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [uploading, setUploading] = useState(false);
+  const [uploads, setUploads] = useState([]); // [{name, progress, done}]
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -37,26 +37,35 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled }) 
   };
 
   const uploadFile = async (file) => {
-    setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const id = `${file.name}-${Date.now()}`;
+    setUploads(u => [...u, { id, name: file.name, progress: 0, done: false, error: false }]);
+
+    const updateProgress = (pct) => {
+      setUploads(u => u.map(x => x.id === id ? { ...x, progress: pct } : x));
+    };
+
+    let file_url;
+    try {
+      file_url = await resumableUpload(file, updateProgress);
+    } catch (err) {
+      setUploads(u => u.map(x => x.id === id ? { ...x, error: true } : x));
+      setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 3000);
+      return;
+    }
+
+    setUploads(u => u.map(x => x.id === id ? { ...x, progress: 100, done: true } : x));
+    setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 1200);
+
     const isImage = file.type.startsWith("image");
     const isAudio = file.type.startsWith("audio");
     const isVideo = file.type.startsWith("video");
     const type = isImage ? "image" : isAudio ? "audio" : isVideo ? "video" : "file";
-    onSend({
-      text: "",
-      type,
-      file_url,
-      file_name: file.name,
-      file_size: file.size,
-      file_type: file.type,
-    });
-    setUploading(false);
+    onSend({ text: "", type, file_url, file_name: file.name, file_size: file.size, file_type: file.type });
   };
 
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files || []);
-    for (const file of files) await uploadFile(file);
+    for (const file of files) uploadFile(file); // parallel
     e.target.value = "";
   };
 
@@ -64,7 +73,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled }) 
     e.preventDefault();
     setDragOver(false);
     const files = Array.from(e.dataTransfer.files);
-    for (const file of files) await uploadFile(file);
+    for (const file of files) uploadFile(file);
   };
 
   const startRecording = async () => {
@@ -76,10 +85,17 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled }) 
       stream.getTracks().forEach(t => t.stop());
       const blob = new Blob(chunksRef.current, { type: "audio/webm" });
       const file = new File([blob], `voice-${Date.now()}.webm`, { type: "audio/webm" });
-      setUploading(true);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      onSend({ text: "", type: "audio", file_url, file_name: "Voice Message", file_type: "audio/webm", duration: recordingTime });
-      setUploading(false);
+      const id = `voice-${Date.now()}`;
+      setUploads(u => [...u, { id, name: "Voice Message", progress: 0, done: false, error: false }]);
+      try {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        setUploads(u => u.map(x => x.id === id ? { ...x, progress: 100, done: true } : x));
+        setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 1200);
+        onSend({ text: "", type: "audio", file_url, file_name: "Voice Message", file_type: "audio/webm", duration: recordingTime });
+      } catch {
+        setUploads(u => u.map(x => x.id === id ? { ...x, error: true } : x));
+        setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 3000);
+      }
       setRecordingTime(0);
     };
     mediaRecorderRef.current = recorder;
@@ -107,46 +123,72 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled }) 
   };
 
   const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const anyUploading = uploads.some(u => !u.done && !u.error);
 
   return (
     <div
-      className={cn("border-t border-border bg-card/60 backdrop-blur-sm transition-colors", dragOver && "bg-primary/5")}
+      className={cn("border-t border-border bg-card/60 backdrop-blur-sm transition-colors shrink-0", dragOver && "bg-primary/5")}
       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
     >
       {/* Reply preview */}
       {replyTo && (
-        <div className="px-4 pt-3 flex items-center gap-2">
+        <div className="px-3 sm:px-4 pt-3 flex items-center gap-2">
           <div className="flex-1 border-l-2 border-primary pl-2 py-0.5">
             <p className="text-[10px] text-primary font-semibold">{replyTo.sender_name}</p>
             <p className="text-xs text-muted-foreground truncate">{replyTo.text || `[${replyTo.type}]`}</p>
           </div>
-          <button onClick={onCancelReply} className="text-muted-foreground hover:text-foreground">
+          <button onClick={onCancelReply} className="text-muted-foreground hover:text-foreground p-1">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      <div className="p-3 flex items-end gap-2">
+      {/* Upload progress bars */}
+      {uploads.length > 0 && (
+        <div className="px-3 sm:px-4 pt-2 space-y-1.5">
+          {uploads.map(u => (
+            <div key={u.id} className="flex items-center gap-2">
+              <UploadCloud className={cn("w-3.5 h-3.5 shrink-0", u.error ? "text-destructive" : "text-primary")} />
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center mb-0.5">
+                  <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{u.name}</p>
+                  <p className="text-[10px] text-muted-foreground shrink-0 ml-1">
+                    {u.error ? "Failed" : u.done ? "Done" : `${u.progress}%`}
+                  </p>
+                </div>
+                <div className="h-1 bg-secondary rounded-full overflow-hidden">
+                  <div
+                    className={cn("h-full rounded-full transition-all duration-300", u.error ? "bg-destructive" : u.done ? "bg-accent" : "bg-primary")}
+                    style={{ width: `${u.progress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="p-2 sm:p-3 flex items-end gap-1.5 sm:gap-2">
         <input ref={fileInputRef} type="file" className="hidden" multiple onChange={handleFileChange} accept="*/*" />
 
         {/* Attach */}
         <button
           onClick={() => fileInputRef.current?.click()}
-          disabled={uploading || isRecording}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0 mb-0.5"
+          disabled={anyUploading || isRecording}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0 mb-0.5 touch-manipulation"
         >
           <Paperclip className="w-5 h-5" />
         </button>
 
-        {/* Recording state */}
+        {/* Recording or textarea */}
         {isRecording ? (
-          <div className="flex-1 flex items-center gap-3 bg-destructive/10 border border-destructive/20 rounded-2xl px-4 py-2.5 h-10">
+          <div className="flex-1 flex items-center gap-2 sm:gap-3 bg-destructive/10 border border-destructive/20 rounded-2xl px-3 sm:px-4 py-2.5 h-10">
             <div className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse shrink-0" />
             <span className="text-sm text-destructive font-mono font-semibold">{fmt(recordingTime)}</span>
-            <span className="text-xs text-muted-foreground">Recording voice...</span>
-            <button onClick={cancelRecording} className="ml-auto text-muted-foreground hover:text-foreground">
+            <span className="text-xs text-muted-foreground hidden sm:block">Recording...</span>
+            <button onClick={cancelRecording} className="ml-auto text-muted-foreground hover:text-foreground p-1 touch-manipulation">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -156,14 +198,14 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled }) 
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={dragOver ? "Drop files here..." : "Message..."}
-            className="flex-1 bg-secondary/50 border border-border rounded-2xl px-4 py-2.5 text-sm resize-none min-h-[40px] max-h-[120px] focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground"
+            className="flex-1 bg-secondary/50 border border-border rounded-2xl px-3 sm:px-4 py-2.5 text-sm resize-none min-h-[40px] max-h-[120px] focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 handleSend();
               }
             }}
-            disabled={uploading}
+            disabled={anyUploading}
             rows={1}
           />
         )}
@@ -173,34 +215,27 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled }) 
           <button
             onClick={handleSend}
             disabled={disabled}
-            className="w-9 h-9 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors shrink-0 mb-0.5"
+            className="w-9 h-9 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors shrink-0 mb-0.5 touch-manipulation"
           >
             <Send className="w-4 h-4 text-primary-foreground" />
           </button>
         ) : isRecording ? (
           <button
             onClick={stopRecording}
-            className="w-9 h-9 rounded-full bg-destructive flex items-center justify-center hover:bg-destructive/90 transition-colors shrink-0 mb-0.5"
+            className="w-9 h-9 rounded-full bg-destructive flex items-center justify-center hover:bg-destructive/90 transition-colors shrink-0 mb-0.5 touch-manipulation"
           >
             <StopCircle className="w-5 h-5 text-white" />
           </button>
         ) : (
           <button
             onClick={startRecording}
-            disabled={uploading || disabled}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0 mb-0.5"
+            disabled={anyUploading || disabled}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0 mb-0.5 touch-manipulation"
           >
             <Mic className="w-5 h-5" />
           </button>
         )}
       </div>
-
-      {uploading && (
-        <div className="px-4 pb-2 flex items-center gap-2 text-xs text-muted-foreground">
-          <div className="w-3 h-3 border-2 border-primary/40 border-t-primary rounded-full animate-spin" />
-          Uploading...
-        </div>
-      )}
     </div>
   );
 }

@@ -27,7 +27,7 @@ export default function ConversationList({ conversations, selectedId, onSelect, 
   });
 
   return (
-    <div className="w-[300px] border-r border-border flex flex-col bg-card/40 backdrop-blur-sm shrink-0">
+    <div className="w-full sm:w-[300px] border-r border-border flex flex-col bg-card/40 backdrop-blur-sm shrink-0">
       {/* Header */}
       <div className="px-4 pt-5 pb-3 border-b border-border/50">
         <div className="flex items-center justify-between mb-4">

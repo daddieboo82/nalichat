@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import TrackStrip from "./TrackStrip";
 import Timeline from "./Timeline";
 import BounceDialog from "./BounceDialog";
+import StemQueue from "./StemQueue";
 
 export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete, projectTitle }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -11,6 +12,15 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   const [duration, setDuration] = useState(0);
   const [masterVolume, setMasterVolume] = useState(100);
   const [zoom, setZoom] = useState(1);
+  const [queue, setQueue] = useState([]);
+  const [queueOpen, setQueueOpen] = useState(false);
+
+  const queueIds = new Set(queue.map(t => t.id));
+  const toggleQueue = (track) =>
+    setQueue(prev => prev.some(t => t.id === track.id)
+      ? prev.filter(t => t.id !== track.id)
+      : [...prev, track]);
+  const removeFromQueue = (id) => setQueue(prev => prev.filter(t => t.id !== id));
   const audioContextRef = useRef(null);
   const playbackRef = useRef(null);
 
@@ -56,7 +66,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   };
 
   return (
-    <div className="h-full flex flex-col bg-background overflow-hidden">
+    <div className="h-full flex flex-col bg-background overflow-hidden relative">
       {/* Transport Controls */}
       <div className="px-6 py-3 border-b border-border bg-card/50 flex items-center gap-4">
         <div className="flex items-center gap-2">
@@ -128,6 +138,17 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           <span className="text-xs text-muted-foreground w-8 text-right">{masterVolume}%</span>
         </div>
 
+        {/* Stem Queue */}
+        <div className="ml-4">
+          <StemQueue
+            queue={queue}
+            open={queueOpen}
+            onToggle={() => setQueueOpen(v => !v)}
+            onRemove={removeFromQueue}
+            onClear={() => setQueue([])}
+          />
+        </div>
+
         {/* Bounce Button */}
         <div className="ml-4">
           <BounceDialog projectTitle={projectTitle || selectedProject?.title} tracks={tracks} />
@@ -167,6 +188,8 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                       if (ref) audioElements.current[idx] = ref;
                     }}
                     masterVolume={masterVolume}
+                    inQueue={queueIds.has(track.id)}
+                    onToggleQueue={() => toggleQueue(track)}
                   />
                 </div>
               ))

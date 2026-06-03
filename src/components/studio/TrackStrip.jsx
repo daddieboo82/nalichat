@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Play, Pause, Volume2, VolumeX, Headphones, Trash2, Settings2 } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Headphones, Trash2, Settings2, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const trackTypeColors = {
@@ -13,7 +13,7 @@ const trackTypeColors = {
   master: "bg-foreground",
 };
 
-export default function TrackStrip({ track, onUpdate, onDelete, audioRef: externalRef, isPlaying, masterVolume }) {
+export default function TrackStrip({ track, onUpdate, onDelete, audioRef: externalRef, isPlaying, masterVolume, inQueue, onToggleQueue }) {
   const [playing, setPlaying] = useState(false);
   const [showPan, setShowPan] = useState(false);
   const localRef = useRef(null);
@@ -102,6 +102,18 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
           >
             <Settings2 className="w-3 h-3" />
           </button>
+
+          {onToggleQueue && (
+            <button
+              onClick={onToggleQueue}
+              className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
+                inQueue ? "bg-primary/20 text-primary" : "bg-secondary hover:bg-secondary/80"
+              )}
+              title={inQueue ? "Remove from queue" : "Add to queue"}
+            >
+              <Layers className="w-3 h-3" />
+            </button>
+          )}
 
           <button
             onClick={onDelete}

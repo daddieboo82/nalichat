@@ -27,6 +27,8 @@ import Profile from '@/pages/Profile';
 import Playlists from '@/pages/Playlists';
 import PlaylistDetail from '@/pages/PlaylistDetail';
 import Analytics from '@/pages/Analytics';
+import ThankYou from '@/pages/ThankYou';
+import PricingPlans from '@/components/pricing/PricingPlans';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -73,6 +75,8 @@ const AuthenticatedApp = () => {
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/playlist/:playlistId" element={<PlaylistDetail />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/thank-you" element={<ThankYou />} />
+          <Route path="/pricing" element={<PricingPlans />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

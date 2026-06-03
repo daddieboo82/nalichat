@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Play, Pause, Download, Share2, Loader2, Wand2, Music, Zap, Radio } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -17,6 +16,7 @@ export default function StudioEditor() {
   const [playing, setPlaying] = useState(false);
   const [shareDialog, setShareDialog] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
+  const [error, setError] = useState("");
   const audioRef = useRef(null);
 
   useEffect(() => {
@@ -26,6 +26,7 @@ export default function StudioEditor() {
   const handleProcessAudio = async () => {
     if (!audioUrl) return;
     setProcessing(true);
+    setError("");
     try {
       const result = await base44.functions.invoke('aiMasterSession', {
         audio_url: audioUrl,
@@ -33,13 +34,14 @@ export default function StudioEditor() {
       });
       setMasterAnalysis(result);
     } catch (err) {
+      setError("Failed to process audio. Please try again.");
       console.error('Processing failed:', err);
     }
     setProcessing(false);
   };
 
   const handleUploadToLeaderboard = async () => {
-    if (!audioUrl || !uploadTitle) return;
+    if (!audioUrl || !uploadTitle || !currentUser) return;
     
     try {
       await base44.entities.ArtPost.create({
@@ -58,7 +60,10 @@ export default function StudioEditor() {
       setShareDialog(false);
       setAudioUrl("");
       setUploadTitle("");
+      setMasterAnalysis(null);
+      setError("");
     } catch (err) {
+      setError("Failed to upload. Please try again.");
       console.error('Upload failed:', err);
     }
   };
@@ -129,24 +134,30 @@ export default function StudioEditor() {
                 )}
 
                 <Button
-                  onClick={handleProcessAudio}
-                  disabled={!audioUrl || processing}
-                  className="w-full rounded-xl bg-primary hover:bg-primary/90"
-                >
-                  {processing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      AI is processing...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="w-4 h-4 mr-2" />
-                      Analyze & Master with AI
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
+                   onClick={handleProcessAudio}
+                   disabled={!audioUrl || processing}
+                   className="w-full rounded-xl bg-primary hover:bg-primary/90"
+                 >
+                   {processing ? (
+                     <>
+                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                       AI is processing...
+                     </>
+                   ) : (
+                     <>
+                       <Wand2 className="w-4 h-4 mr-2" />
+                       Analyze & Master with AI
+                     </>
+                   )}
+                 </Button>
+
+                {error && (
+                  <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+                    {error}
+                  </div>
+                )}
+                </div>
+                </div>
 
             {masterAnalysis && (
               <motion.div
@@ -197,6 +208,7 @@ export default function StudioEditor() {
                     <DialogContent className="bg-card border-border">
                       <DialogHeader>
                         <DialogTitle className="font-heading">Publish Your Mix</DialogTitle>
+                        <DialogDescription>Choose where to share your AI-mastered session</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-3">
                         <Button

@@ -40,11 +40,12 @@ Deno.serve(async (req) => {
     // Generate mastered version metadata
     const masteredData = {
       title: `${project_title} - Mastered`,
-      mix_profile: analysis.eq_recommendations,
-      compression_settings: analysis.compression,
-      effects_chain: analysis.effects,
-      target_loudness: analysis.target_loudness,
-      recommendations: analysis.mastering_chain,
+      eq_recommendations: analysis.eq_recommendations || "",
+      compression_settings: analysis.compression || "",
+      effects_chain: analysis.effects || "",
+      target_loudness: analysis.target_loudness || "-14 LUFS",
+      mastering_chain: analysis.mastering_chain || "",
+      recommendations: analysis.mastering_chain || "",
       processed_at: new Date().toISOString(),
       source_url: audio_url
     };

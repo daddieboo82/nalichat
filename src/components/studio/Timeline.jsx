@@ -74,7 +74,8 @@ export default function Timeline({ currentTime, duration, zoom, onClick }) {
         width={1200}
         height={50}
         onClick={handleClick}
-        className="w-full display-block"
+        className="w-full block"
+        style={{ display: 'block' }}
       />
     </div>
   );

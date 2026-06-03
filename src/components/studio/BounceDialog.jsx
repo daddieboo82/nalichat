@@ -1,53 +1,64 @@
 import { useState, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, AlertCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 export default function BounceDialog({ projectTitle, tracks }) {
   const [open, setOpen] = useState(false);
   const [bounceTitle, setBounceTitle] = useState(`${projectTitle} - Bounce`);
   const [bouncing, setBouncing] = useState(false);
+  const [error, setError] = useState("");
 
   const handleBounce = async () => {
     if (!bounceTitle.trim() || tracks.length === 0) return;
     setBouncing(true);
+    setError("");
 
     try {
+      // Validate tracks have audio
+      const validTracks = tracks.filter(t => t.file_url && !t.muted);
+      if (validTracks.length === 0) {
+        setError("No unmuted tracks with audio to bounce.");
+        setBouncing(false);
+        return;
+      }
+
       // Create WebAudio context to mix tracks
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const offlineContext = new OfflineAudioContext(
         2,
-        audioContext.sampleRate * 60, // 60 seconds max
+        audioContext.sampleRate * 300, // 5 minute max
         audioContext.sampleRate
       );
 
-      const audioElements = [];
       let maxDuration = 0;
 
       // Load all audio sources
-      for (const track of tracks) {
-        if (!track.file_url || track.muted) continue;
+      for (const track of validTracks) {
+        try {
+          const response = await fetch(track.file_url);
+          if (!response.ok) throw new Error(`Failed to load track: ${track.name}`);
+          
+          const arrayBuffer = await response.arrayBuffer();
+          const audioBuffer = await offlineContext.decodeAudioData(arrayBuffer);
 
-        const response = await fetch(track.file_url);
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await offlineContext.decodeAudioData(arrayBuffer);
+          maxDuration = Math.max(maxDuration, audioBuffer.duration);
 
-        maxDuration = Math.max(maxDuration, audioBuffer.duration);
+          const source = offlineContext.createBufferSource();
+          source.buffer = audioBuffer;
 
-        const source = offlineContext.createBufferSource();
-        source.buffer = audioBuffer;
+          // Apply volume and pan
+          const gainNode = offlineContext.createGain();
+          gainNode.gain.value = (track.volume || 75) / 100;
 
-        // Apply volume
-        const gainNode = offlineContext.createGain();
-        gainNode.gain.value = (track.volume || 75) / 100;
-
-        source.connect(gainNode);
-        gainNode.connect(offlineContext.destination);
-        source.start(0);
-
-        audioElements.push(source);
+          source.connect(gainNode);
+          gainNode.connect(offlineContext.destination);
+          source.start(0);
+        } catch (trackErr) {
+          console.warn(`Failed to load track ${track.name}:`, trackErr);
+        }
       }
 
       // Render mixed audio
@@ -57,7 +68,10 @@ export default function BounceDialog({ projectTitle, tracks }) {
       const wav = bufferToWave(renderedBuffer);
       const blob = new Blob([wav], { type: 'audio/wav' });
 
-      // Upload bounced file
+      // Upload bounced file as FormData
+      const formData = new FormData();
+      formData.append('file', blob, `${bounceTitle}.wav`);
+
       const { file_url } = await base44.integrations.Core.UploadFile({
         file: blob
       });
@@ -69,12 +83,17 @@ export default function BounceDialog({ projectTitle, tracks }) {
         file_url: file_url,
         medium: 'production',
         creator_id: (await base44.auth.me()).id,
-        featured: false
+        featured: false,
+        likes: 0,
+        views: 0
       });
 
       setOpen(false);
       setBounceTitle(`${projectTitle} - Bounce`);
+      setError("");
     } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Failed to bounce session";
+      setError(errMsg);
       console.error('Bounce failed:', err);
     } finally {
       setBouncing(false);
@@ -92,6 +111,7 @@ export default function BounceDialog({ projectTitle, tracks }) {
       <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle className="font-heading">Bounce & Export Session</DialogTitle>
+          <DialogDescription>Mix all unmuted tracks and export as audio</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Input
@@ -100,6 +120,12 @@ export default function BounceDialog({ projectTitle, tracks }) {
             onChange={(e) => setBounceTitle(e.target.value)}
             className="rounded-xl"
           />
+          {error && (
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 flex items-start gap-2 text-destructive text-sm">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
           <Button
             onClick={handleBounce}
             disabled={!bounceTitle.trim() || bouncing}

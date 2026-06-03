@@ -7,7 +7,7 @@ const MEDIUMS = ["original", "remix", "cover", "beat", "production", "mixing", "
 const TAGS_SUGGESTIONS = ["hip-hop", "trap", "lofi", "electronic", "ambient", "house", "techno", "synthwave", "dark", "experimental"];
 
 export default function UploadArtDialog({ open, onClose, currentUser, onSuccess }) {
-  const [form, setForm] = useState({ title: "", description: "", medium: "digital", tags: [] });
+  const [form, setForm] = useState({ title: "", description: "", medium: "digital", tags: [], price: 0 });
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
     await base44.auth.updateMe({ xp, level, total_posts: (currentUser.total_posts || 0) + 1 });
     setLoading(false);
     onSuccess();
-    setForm({ title: "", description: "", medium: "digital", tags: [] });
+    setForm({ title: "", description: "", medium: "digital", tags: [], price: 0 });
     setPreview(null);
     setImageFile(null);
   };
@@ -112,6 +112,23 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-muted-foreground mb-2 block">Price (USD)</label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">$</span>
+              <input
+                type="number"
+                min="0"
+                step="0.99"
+                value={form.price}
+                onChange={e => setForm(f => ({ ...f, price: Math.max(0, parseFloat(e.target.value) || 0) }))}
+                placeholder="0 for free"
+                className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">Leave at 0 for free downloads</p>
           </div>
 
           <button

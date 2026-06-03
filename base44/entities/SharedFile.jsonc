@@ -23,6 +23,12 @@
     "file_size": {
       "type": "number"
     },
+    "price": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Price in USD (0 for free)",
+      "default": 0
+    },
     "uploader_id": {
       "type": "string"
     },

@@ -1,4 +1,4 @@
-import { Heart, Eye, MessageCircle, Music } from "lucide-react";
+import { Heart, Eye, Music } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -68,11 +68,18 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
             <AvatarFallback className="bg-primary/20 text-primary text-[10px]">{post.creator_name?.[0]}</AvatarFallback>
           </Avatar>
           <span className="text-[11px] text-muted-foreground truncate">{post.creator_name || "Anonymous"}</span>
-          {post.medium && (
-            <span className="ml-auto text-[10px] capitalize bg-secondary text-muted-foreground px-2 py-0.5 rounded-full">
-              {post.medium}
-            </span>
-          )}
+          <div className="ml-auto flex items-center gap-1.5">
+            {post.medium && (
+              <span className="text-[10px] capitalize bg-secondary text-muted-foreground px-2 py-0.5 rounded-full">
+                {post.medium}
+              </span>
+            )}
+            {post.price > 0 && (
+              <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-semibold">
+                ${post.price.toFixed(2)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>

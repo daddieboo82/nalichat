@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { MessageSquare, Users, FolderOpen, Music, Mic, Settings, LogOut, Disc3 } from "lucide-react";
+import { MessageSquare, Users, Settings, LogOut, MessageCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,10 +7,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: MessageSquare, label: "Messages", path: "/messages" },
-  { icon: Users, label: "Network", path: "/network" },
-  { icon: FolderOpen, label: "Files", path: "/files" },
-  { icon: Music, label: "Studio", path: "/studio" },
-  { icon: Mic, label: "Record", path: "/record" },
+  { icon: Users, label: "Contacts", path: "/network" },
 ];
 
 export default function AppLayout() {
@@ -27,7 +24,7 @@ export default function AppLayout() {
       <aside className="w-[72px] bg-card border-r border-border flex flex-col items-center py-6 gap-2 shrink-0">
         <Link to="/" className="mb-6 group">
           <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
-            <Disc3 className="w-5 h-5 text-primary" />
+            <MessageCircle className="w-5 h-5 text-primary" />
           </div>
         </Link>
 

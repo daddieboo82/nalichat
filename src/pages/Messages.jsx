@@ -4,11 +4,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ConversationList from "@/components/messages/ConversationList";
 import ChatView from "@/components/messages/ChatView";
 import NewChatDialog from "@/components/messages/NewChatDialog";
+import GroupChatDialog from "@/components/messages/GroupChatDialog";
 
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedConvId, setSelectedConvId] = useState(null);
-  const [showNewChat, setShowNewChat] = useState(false);
+  const [showNewDM, setShowNewDM] = useState(false);
+  const [showNewGroup, setShowNewGroup] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -31,11 +33,12 @@ export default function Messages() {
 
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", selectedConvId],
-    queryFn: () => base44.entities.Message.filter({ conversation_id: selectedConvId }, "created_date", 200),
+    queryFn: () => base44.entities.Message.filter({ conversation_id: selectedConvId }, "created_date", 300),
     enabled: !!selectedConvId,
+    refetchInterval: 5000,
   });
 
-  // Subscribe to real-time messages
+  // Real-time subscription
   useEffect(() => {
     const unsub = base44.entities.Message.subscribe((event) => {
       if (event.data?.conversation_id === selectedConvId) {
@@ -67,18 +70,43 @@ export default function Messages() {
     },
   });
 
-  const startConversation = async (otherUser) => {
-    // Check if conversation already exists
-    const existing = myConversations.find(c =>
-      c.type === "dm" && c.participant_ids?.includes(otherUser.id)
-    );
-    if (existing) {
-      setSelectedConvId(existing.id);
-      return;
+  const handleReact = async (messageId, emoji) => {
+    const msg = messages.find(m => m.id === messageId);
+    if (!msg) return;
+    const reactions = { ...(msg.reactions || {}) };
+    const userKey = `${emoji}_${currentUser.id}`;
+    if (reactions[userKey]) {
+      delete reactions[userKey];
+    } else {
+      reactions[userKey] = emoji;
     }
+    // Aggregate for display
+    const aggregated = {};
+    for (const val of Object.values(reactions)) {
+      aggregated[val] = (aggregated[val] || 0) + 1;
+    }
+    await base44.entities.Message.update(messageId, { reactions: aggregated, _raw_reactions: reactions });
+    queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
+  };
+
+  const startDM = async (otherUser) => {
+    const existing = myConversations.find(c =>
+      c.type === "dm" && c.participant_ids?.includes(otherUser.id) && c.participant_ids?.length === 2
+    );
+    if (existing) { setSelectedConvId(existing.id); return; }
     const conv = await base44.entities.Conversation.create({
       type: "dm",
       participant_ids: [currentUser.id, otherUser.id],
+    });
+    queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    setSelectedConvId(conv.id);
+  };
+
+  const createGroup = async ({ name, participant_ids }) => {
+    const conv = await base44.entities.Conversation.create({
+      type: "group",
+      name,
+      participant_ids: [currentUser.id, ...participant_ids],
     });
     queryClient.invalidateQueries({ queryKey: ["conversations"] });
     setSelectedConvId(conv.id);
@@ -92,7 +120,8 @@ export default function Messages() {
         conversations={myConversations}
         selectedId={selectedConvId}
         onSelect={setSelectedConvId}
-        onNewChat={() => setShowNewChat(true)}
+        onNewDM={() => setShowNewDM(true)}
+        onNewGroup={() => setShowNewGroup(true)}
         users={users}
         currentUserId={currentUser?.id}
       />
@@ -102,12 +131,19 @@ export default function Messages() {
         currentUser={currentUser}
         users={users}
         onSendMessage={(data) => sendMessage.mutate(data)}
+        onReact={handleReact}
       />
       <NewChatDialog
-        open={showNewChat}
-        onOpenChange={setShowNewChat}
+        open={showNewDM}
+        onOpenChange={setShowNewDM}
         users={otherUsers}
-        onSelectUser={startConversation}
+        onSelectUser={(u) => { startDM(u); setShowNewDM(false); }}
+      />
+      <GroupChatDialog
+        open={showNewGroup}
+        onOpenChange={setShowNewGroup}
+        users={otherUsers}
+        onCreate={createGroup}
       />
     </div>
   );

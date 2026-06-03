@@ -1,0 +1,198 @@
+import { useState, useRef } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Play, Pause, Download, FileText, Image as ImageIcon, Music, Film, Reply, Smile } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+
+const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
+
+function AudioPlayer({ src, duration }) {
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const audioRef = useRef(null);
+
+  const toggle = () => {
+    if (!audioRef.current) return;
+    if (playing) audioRef.current.pause();
+    else audioRef.current.play();
+    setPlaying(!playing);
+  };
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    const pct = (audioRef.current.currentTime / audioRef.current.duration) * 100;
+    setProgress(pct || 0);
+    setCurrentTime(audioRef.current.currentTime);
+  };
+
+  const handleSeek = (e) => {
+    if (!audioRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    audioRef.current.currentTime = pct * audioRef.current.duration;
+  };
+
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+  return (
+    <div className="flex items-center gap-3 min-w-[200px]">
+      <audio ref={audioRef} src={src} onEnded={() => { setPlaying(false); setProgress(0); }} onTimeUpdate={handleTimeUpdate} />
+      <button onClick={toggle} className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 hover:bg-white/30 transition-colors">
+        {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+      </button>
+      <div className="flex-1 flex flex-col gap-1">
+        <div className="h-1.5 bg-white/20 rounded-full cursor-pointer" onClick={handleSeek}>
+          <div className="h-full bg-white/80 rounded-full transition-all" style={{ width: `${progress}%` }} />
+        </div>
+        <span className="text-[10px] opacity-70">{fmt(currentTime)} / {fmt(duration || 0)}</span>
+      </div>
+    </div>
+  );
+}
+
+function FileAttachment({ message, isOwn }) {
+  const isImage = message.type === "image" || message.file_type?.startsWith("image");
+  const isAudio = message.type === "audio" || message.file_type?.startsWith("audio");
+  const isVideo = message.file_type?.startsWith("video");
+
+  if (isImage) {
+    return (
+      <a href={message.file_url} target="_blank" rel="noopener noreferrer">
+        <img src={message.file_url} alt={message.file_name} className="rounded-xl max-w-[300px] max-h-[220px] object-cover block" />
+        {message.text && <p className="text-sm mt-2">{message.text}</p>}
+      </a>
+    );
+  }
+
+  if (isAudio) {
+    return <AudioPlayer src={message.file_url} duration={message.duration} />;
+  }
+
+  const Icon = isVideo ? Film : message.file_type?.startsWith("audio") ? Music : FileText;
+  const size = message.file_size ? `${(message.file_size / 1024 / 1024).toFixed(1)} MB` : "";
+
+  return (
+    <a href={message.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:opacity-80 transition-opacity group">
+      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", isOwn ? "bg-white/20" : "bg-primary/20")}>
+        <Icon className={cn("w-5 h-5", isOwn ? "text-white" : "text-primary")} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate max-w-[180px]">{message.file_name || "File"}</p>
+        <p className="text-[10px] opacity-60">{size}</p>
+      </div>
+      <Download className="w-4 h-4 opacity-40 group-hover:opacity-80 transition-opacity shrink-0" />
+    </a>
+  );
+}
+
+export default function MessageBubble({ message, isOwn, showAvatar, onReply, onReact }) {
+  const [showActions, setShowActions] = useState(false);
+  const [showReactions, setShowReactions] = useState(false);
+
+  const hasFile = message.file_url && message.type !== "text";
+
+  return (
+    <div
+      className={cn("flex gap-2 group mb-1", isOwn ? "flex-row-reverse" : "flex-row")}
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => { setShowActions(false); setShowReactions(false); }}
+    >
+      {/* Avatar */}
+      <div className="w-7 shrink-0 mt-auto">
+        {showAvatar && !isOwn && (
+          <Avatar className="w-7 h-7">
+            <AvatarImage src={message.sender_avatar} />
+            <AvatarFallback className="bg-primary/20 text-primary text-[10px] font-bold">
+              {message.sender_name?.[0]?.toUpperCase() || "?"}
+            </AvatarFallback>
+          </Avatar>
+        )}
+      </div>
+
+      <div className={cn("max-w-[70%] flex flex-col", isOwn && "items-end")}>
+        {showAvatar && !isOwn && (
+          <p className="text-[10px] text-muted-foreground mb-1 ml-1 font-medium">{message.sender_name}</p>
+        )}
+
+        {/* Reply-to preview */}
+        {message.reply_to_text && (
+          <div className={cn("px-3 py-1.5 rounded-xl mb-1 border-l-2 text-xs opacity-70 max-w-full", isOwn ? "bg-primary/30 border-white/40 text-right" : "bg-secondary border-primary")}>
+            <p className="font-medium text-[10px] mb-0.5">{message.reply_to_sender}</p>
+            <p className="truncate">{message.reply_to_text}</p>
+          </div>
+        )}
+
+        {/* Bubble */}
+        <div className={cn(
+          "relative rounded-2xl px-4 py-2.5 min-w-[60px]",
+          isOwn
+            ? "bg-primary text-primary-foreground rounded-br-md"
+            : "bg-card border border-border rounded-bl-md",
+          hasFile && message.type !== "audio" && "p-2"
+        )}>
+          {hasFile ? (
+            <FileAttachment message={message} isOwn={isOwn} />
+          ) : (
+            <p className="text-sm leading-relaxed break-words">{message.text}</p>
+          )}
+          {hasFile && message.text && message.type !== "audio" && (
+            <p className="text-sm mt-2 px-2 pb-1">{message.text}</p>
+          )}
+        </div>
+
+        {/* Reactions display */}
+        {message.reactions && Object.keys(message.reactions).length > 0 && (
+          <div className={cn("flex gap-1 flex-wrap mt-1", isOwn && "justify-end")}>
+            {Object.entries(message.reactions).map(([emoji, count]) => (
+              <button key={emoji} onClick={() => onReact?.(message.id, emoji)}
+                className="bg-secondary border border-border rounded-full px-2 py-0.5 text-xs hover:bg-primary/10 transition-colors">
+                {emoji} {count > 1 && <span className="opacity-70">{count}</span>}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <p className={cn("text-[10px] text-muted-foreground mt-0.5", isOwn ? "text-right mr-1" : "ml-1")}>
+          {format(new Date(message.created_date), "h:mm a")}
+          {isOwn && <span className="ml-1 opacity-60">✓</span>}
+        </p>
+      </div>
+
+      {/* Hover action buttons */}
+      <div className={cn(
+        "flex items-center gap-1 opacity-0 transition-opacity self-center shrink-0",
+        showActions && "opacity-100",
+        isOwn ? "flex-row order-first mr-1" : "flex-row ml-1"
+      )}>
+        <div className="relative">
+          <button
+            onClick={() => setShowReactions(!showReactions)}
+            className="w-7 h-7 rounded-full bg-secondary border border-border flex items-center justify-center hover:bg-muted transition-colors"
+          >
+            <Smile className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+          {showReactions && (
+            <div className={cn(
+              "absolute bottom-full mb-1 flex gap-1 bg-card border border-border rounded-2xl p-1.5 shadow-xl z-50",
+              isOwn ? "right-0" : "left-0"
+            )}>
+              {QUICK_REACTIONS.map(emoji => (
+                <button key={emoji} onClick={() => { onReact?.(message.id, emoji); setShowReactions(false); }}
+                  className="text-lg hover:scale-125 transition-transform leading-none p-0.5">
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => onReply?.(message)}
+          className="w-7 h-7 rounded-full bg-secondary border border-border flex items-center justify-center hover:bg-muted transition-colors"
+        >
+          <Reply className="w-3.5 h-3.5 text-muted-foreground" />
+        </button>
+      </div>
+    </div>
+  );
+}

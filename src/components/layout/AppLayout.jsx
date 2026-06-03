@@ -111,7 +111,7 @@ export default function AppLayout() {
       </main>
 
       {/* Bottom Navigation (Desktop) */}
-      <nav className="hidden md:block border-t border-border bg-card/50 backdrop-blur-md">
+      <nav className="hidden md:block relative z-50 border-t border-border bg-card/50 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-2 py-2 flex items-center justify-between gap-2">
           {/* Logo + Branding */}
           <Link to="/" className="group shrink-0">

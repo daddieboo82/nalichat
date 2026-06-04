@@ -187,7 +187,7 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
 const gradients = ["from-primary to-pink-500","from-accent to-cyan-400","from-yellow-500 to-orange-500","from-green-400 to-emerald-600","from-purple-500 to-indigo-500"];
 const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.length];
 
-export default function MessageBubble({ message, isOwn, showAvatar, onReply, onReact, onOpenThread, users, onCopy, onDelete }) {
+export default function MessageBubble({ message, isOwn, showAvatar, onReply, onReact, onOpenThread, users, onCopy, onDelete, currentUser }) {
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -247,6 +247,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
         {/* Reactions display */}
         {(() => {
           const counts = {};
+          const userReaction = currentUser ? (message.reactions || {})[currentUser.id] : null;
           for (const emoji of Object.values(message.reactions || {})) {
             counts[emoji] = (counts[emoji] || 0) + 1;
           }
@@ -254,12 +255,18 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
           if (entries.length === 0) return null;
           return (
             <div className={cn("flex gap-1 flex-wrap mt-1.5", isOwn && "justify-end")}>
-              {entries.map(([emoji, count]) => (
-                <button key={emoji} onClick={() => onReact?.(message.id, emoji)}
-                  className="bg-secondary/80 border border-border/60 rounded-full px-2 py-0.5 text-xs hover:bg-primary/15 hover:border-primary/30 transition-all hover:scale-105 active:scale-95 shadow-sm">
-                  {emoji} {count > 1 && <span className="opacity-60 font-medium ml-0.5">{count}</span>}
-                </button>
-              ))}
+              {entries.map(([emoji, count]) => {
+                const hasReacted = userReaction === emoji;
+                return (
+                  <button key={emoji} onClick={() => onReact?.(message.id, emoji)}
+                    className={cn(
+                      "border rounded-full px-2.5 py-0.5 text-xs transition-all hover:scale-105 active:scale-95 shadow-sm",
+                      hasReacted ? "bg-primary/20 border-primary/50 text-primary" : "bg-secondary/80 border-border/60 hover:bg-primary/15 hover:border-primary/30"
+                    )}>
+                    {emoji} {count > 1 && <span className="opacity-60 font-medium ml-1">{count}</span>}
+                  </button>
+                );
+              })}
             </div>
           );
         })()}
@@ -285,14 +292,27 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
 
       {/* Hover action buttons */}
       <div className={cn(
-        "flex items-center gap-0.5 opacity-0 transition-all self-center shrink-0 relative",
+        "flex items-center gap-1 opacity-0 transition-all self-center shrink-0 relative",
         showActions && "opacity-100",
-        isOwn ? "flex-row order-first mr-1" : "flex-row ml-1"
+        isOwn ? "flex-row order-first mr-2" : "flex-row ml-2"
       )}>
+        <div className="hidden md:flex items-center gap-1 mr-1">
+          {QUICK_REACTIONS.map(emoji => (
+            <button
+              key={emoji}
+              onClick={() => { onReact?.(message.id, emoji); setShowActions(false); }}
+              className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:scale-125 hover:border-primary/40 transition-all shadow-sm text-sm"
+              title={`React with ${emoji}`}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+
         <button
           onClick={() => setShowEmojiPicker(!showEmojiPicker)}
           className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
-          title="Add reaction"
+          title="More reactions"
         >
           <Smile className="w-3.5 h-3.5 text-muted-foreground" />
         </button>

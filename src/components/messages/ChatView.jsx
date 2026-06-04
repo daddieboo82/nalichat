@@ -198,6 +198,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
               onDelete={async (id) => {
                 await base44.entities.Message.delete(id);
               }}
+              currentUser={currentUser}
             />
           )
         )}

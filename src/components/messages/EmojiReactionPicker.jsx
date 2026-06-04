@@ -26,8 +26,8 @@ export default function EmojiReactionPicker({ onSelect, onClose, position = "top
 
   return (
     <div className={cn(
-      "absolute z-[60] bg-card border border-border/60 rounded-2xl shadow-2xl p-3 w-96 backdrop-blur-xl",
-      position === "bottom" ? "bottom-full mb-2" : "top-full mt-2"
+      "absolute z-[60] bg-card border border-border/60 rounded-2xl shadow-2xl p-3 w-[280px] sm:w-80 backdrop-blur-xl",
+      position === "bottom" ? "bottom-full mb-2 -left-2 sm:left-0" : "top-full mt-2 -left-32 sm:left-0"
     )}>
       <div className="mb-3 flex items-center gap-2">
         <Search className="w-4 h-4 text-muted-foreground absolute left-5" />

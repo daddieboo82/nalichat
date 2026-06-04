@@ -5,9 +5,7 @@ import { cn } from "@/lib/utils";
 import { resumableUpload } from "@/lib/resumableUpload";
 import { sounds } from "@/hooks/use-sound";
 import { motion, AnimatePresence } from "framer-motion";
-
-const EMOJI_LIST = ["😀","😂","🥰","😎","🤩","😮","😢","😡","👍","👎","❤️","🔥","🎵","🎤","🎸","🥁","💯","🙏","✨","🎉","💪","🤝","🎶","🎧"];
-
+import EmojiReactionPicker from "./EmojiReactionPicker";
 
 export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, onTyping }) {
   const [text, setText] = useState("");
@@ -161,20 +159,6 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
         </div>
       )}
 
-      {/* Emoji picker */}
-      {showEmoji && (
-        <div className="px-4 pt-2 animate-in slide-in-from-bottom-2 duration-150">
-          <div className="flex flex-wrap gap-1 p-2 bg-secondary/30 rounded-xl border border-border/40 max-h-24 overflow-y-auto">
-            {EMOJI_LIST.map(e => (
-              <button key={e} onClick={() => { setText(t => t + e); setShowEmoji(false); textareaRef.current?.focus(); }}
-                className="text-xl p-1 rounded-lg hover:bg-secondary/80 transition-all hover:scale-110 active:scale-95">
-                {e}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Upload progress bars */}
       {uploads.length > 0 && (
         <div className="px-4 pt-2 space-y-1.5">
@@ -204,14 +188,27 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
         <input ref={fileInputRef} type="file" className="hidden" multiple onChange={handleFileChange} accept="*/*" />
 
         {/* Emoji */}
-        <button
-          onClick={() => setShowEmoji(v => !v)}
-          disabled={isRecording}
-          className={cn("w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5 touch-manipulation",
-            showEmoji ? "text-primary bg-primary/15" : "text-muted-foreground hover:text-primary hover:bg-primary/10")}
-        >
-          <Smile className="w-5 h-5" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowEmoji(v => !v)}
+            disabled={isRecording}
+            className={cn("w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5 touch-manipulation",
+              showEmoji ? "text-primary bg-primary/15" : "text-muted-foreground hover:text-primary hover:bg-primary/10")}
+          >
+            <Smile className="w-5 h-5" />
+          </button>
+          {showEmoji && (
+            <EmojiReactionPicker 
+              position="bottom" 
+              onSelect={(emoji) => { 
+                setText(t => t + emoji); 
+                setShowEmoji(false);
+                textareaRef.current?.focus(); 
+              }} 
+              onClose={() => setShowEmoji(false)} 
+            />
+          )}
+        </div>
 
         {/* Attach */}
         <button

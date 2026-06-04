@@ -89,6 +89,8 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
             placeholder="Search by name, genre, or location..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            title="Search contacts"
+            aria-label="Search contacts"
             className="pl-9 bg-secondary/50 border-0 rounded-xl text-sm"
           />
         </div>

@@ -63,6 +63,8 @@ export default function ConversationList({ conversations, myConversations, selec
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search messages or find people..."
+            title="Search conversations"
+            aria-label="Search conversations"
             className="pl-10 pr-4 py-6 bg-secondary/40 border-transparent rounded-2xl shadow-inner focus:bg-background/80 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all text-sm"
           />
         </div>

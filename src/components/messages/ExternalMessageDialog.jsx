@@ -99,6 +99,8 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
                 placeholder={placeholder}
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}
+                title={label}
+                aria-label={label}
                 className="bg-secondary/50 border-0 rounded-xl"
                 type={tab === "email" ? "email" : "tel"}
               />
@@ -110,6 +112,8 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
                 placeholder="Type your message..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                title="Message content"
+                aria-label="Message content"
                 className="bg-secondary/50 border-0 rounded-xl resize-none h-28"
                 maxLength={1000}
               />

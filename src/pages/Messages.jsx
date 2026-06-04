@@ -8,8 +8,10 @@ import ChatView from "@/components/messages/ChatView";
 import NewChatDialog from "@/components/messages/NewChatDialog";
 import GroupChatDialog from "@/components/messages/GroupChatDialog";
 import ExternalMessageDialog from "@/components/messages/ExternalMessageDialog";
+import InviteTab from "@/components/messages/InviteTab";
 import { notify } from "@/lib/notifications";
-import { MessageSquare, Users, Mail, Plus, Zap } from "lucide-react";
+import { MessageSquare, Users, Mail, Plus, Zap, UserPlus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
 export default function Messages() {
@@ -18,6 +20,7 @@ export default function Messages() {
   const [showNewDM, setShowNewDM] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [showExternal, setShowExternal] = useState(false);
+  const [activeTab, setActiveTab] = useState("chats");
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -216,48 +219,69 @@ export default function Messages() {
         "shrink-0 transition-all flex flex-col",
         selectedConvId ? "hidden sm:flex" : "flex w-full sm:w-[320px]"
       )}>
-        {/* Quick Actions Header */}
+        {/* Tabs for Chats and Invite */}
         {!selectedConvId && (
-          <div className="px-4 pt-5 pb-4 border-b border-border/40" style={{ background: "hsl(240 10% 5%)" }}>
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4"
-            >
-              <h3 className="text-xs font-bold text-muted-foreground/60 uppercase tracking-wider mb-3">Start Chatting</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {quickActions.map((action) => {
-                  const Icon = action.icon;
-                  return (
-                    <button
-                      key={action.label}
-                      onClick={action.action}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all hover:scale-105 active:scale-95 ${action.bg}`}
-                      title={action.label}
-                    >
-                      <Icon className={`w-5 h-5 ${action.text}`} />
-                      <span className="text-xs font-medium text-center text-foreground/80">{action.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
+          <div className="px-4 pt-5 pb-3 border-b border-border/40">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="chats">Chats</TabsTrigger>
+                <TabsTrigger value="invite">Invite</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         )}
         
-        {/* Conversation List */}
-        <div className="flex-1 overflow-hidden">
-          <ConversationList
-            conversations={myConversations}
-            selectedId={selectedConvId}
-            onSelect={setSelectedConvId}
-            onNewDM={() => setShowNewDM(true)}
-            onNewGroup={() => setShowNewGroup(true)}
-            onNewExternal={() => setShowExternal(true)}
-            users={users}
-            currentUserId={currentUser?.id}
-          />
-        </div>
+        {/* Quick Actions Header and Conversation List (Chats Tab) */}
+        {activeTab === "chats" && !selectedConvId && (
+          <>
+            <div className="px-4 pt-5 pb-4 border-b border-border/40" style={{ background: "hsl(240 10% 5%)" }}>
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4"
+              >
+                <h3 className="text-xs font-bold text-muted-foreground/60 uppercase tracking-wider mb-3">Start Chatting</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {quickActions.map((action) => {
+                    const Icon = action.icon;
+                    return (
+                      <button
+                        key={action.label}
+                        onClick={action.action}
+                        className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all hover:scale-105 active:scale-95 ${action.bg}`}
+                        title={action.label}
+                      >
+                        <Icon className={`w-5 h-5 ${action.text}`} />
+                        <span className="text-xs font-medium text-center text-foreground/80">{action.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            </div>
+            
+            {/* Conversation List */}
+            <div className="flex-1 overflow-hidden">
+              <ConversationList
+                conversations={myConversations}
+                selectedId={selectedConvId}
+                onSelect={setSelectedConvId}
+                onNewDM={() => setShowNewDM(true)}
+                onNewGroup={() => setShowNewGroup(true)}
+                onNewExternal={() => setShowExternal(true)}
+                users={users}
+                currentUserId={currentUser?.id}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Invite Tab */}
+        {activeTab === "invite" && !selectedConvId && (
+          <div className="flex-1 overflow-hidden">
+            <InviteTab />
+          </div>
+        )}
       </div>
 
       {/* Chat view — full width on mobile */}

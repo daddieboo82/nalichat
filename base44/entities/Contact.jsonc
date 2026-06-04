@@ -1,0 +1,24 @@
+{
+  "name": "Contact",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the user who has the contact"
+    },
+    "contact_user_id": {
+      "type": "string",
+      "description": "ID of the user who is in the contact list"
+    },
+    "contact_name": {
+      "type": "string"
+    },
+    "contact_avatar": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "contact_user_id"
+  ]
+}

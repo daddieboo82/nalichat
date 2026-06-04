@@ -412,7 +412,9 @@ export default function Studio() {
         <div className="flex items-center gap-4">
           <div className="font-heading font-black text-xl text-gradient-animate tracking-tight flex items-center gap-2">
             <Mic className="w-6 h-6 text-primary" />
-            NaliStudio <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest ml-2">Pro</span>
+            NaliStudio 
+            <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest ml-2">Pro</span>
+            <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-yellow-500/30">Beta</span>
           </div>
         </div>
 

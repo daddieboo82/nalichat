@@ -37,7 +37,7 @@ import Privacy from '@/pages/Privacy';
 import Studio from '@/pages/Studio';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -46,9 +46,11 @@ const AuthenticatedApp = () => {
       const lastPath = localStorage.getItem('last_visited_path');
       if (lastPath && lastPath !== '/') {
         navigate(lastPath, { replace: true });
+      } else if (isAuthenticated) {
+        navigate('/messages', { replace: true });
       }
     }
-  }, []);
+  }, [location.pathname, isAuthenticated, navigate]);
 
   useEffect(() => {
     const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];

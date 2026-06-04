@@ -140,6 +140,13 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
           <button
+            onClick={() => window.location.href = '/record'}
+            className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary/50 text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-all hover:scale-105 active:scale-95"
+            title="Record"
+          >
+            <Mic className="w-4 h-4" />
+          </button>
+          <button
             onClick={handlePlay}
             className={cn(
               "w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg relative group",
@@ -159,13 +166,6 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           >
             <Square className="w-4 h-4" />
             <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-2 py-1 bg-secondary rounded text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none">Ctrl+⌫</div>
-          </button>
-          <button
-            onClick={() => window.location.href = '/record'}
-            className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all hover:scale-105 active:scale-95"
-            title="Record"
-          >
-            <Mic className="w-4 h-4" />
           </button>
           </div>
 

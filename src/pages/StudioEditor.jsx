@@ -269,22 +269,22 @@ export default function StudioEditor() {
         </TabsContent>
 
         {/* Mastering Tab */}
-        <TabsContent value="mastering" className="flex-1 overflow-auto p-6">
-          <div className="max-w-4xl mx-auto text-center text-muted-foreground py-20">
-            <Zap className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p className="font-heading font-semibold mb-2">AI Mastering Engine</p>
-            <p className="text-sm">Upload a session in the Editor tab to apply professional mastering</p>
-          </div>
-        </TabsContent>
+         <TabsContent value="mastering" className="flex-1 overflow-auto p-6">
+           <div className="max-w-4xl mx-auto text-center text-muted-foreground py-20">
+             <Zap className="w-12 h-12 mx-auto mb-4 opacity-30" />
+             <p className="font-heading font-semibold mb-2 text-foreground">AI Mastering Engine</p>
+             <p className="text-sm opacity-70">Upload an audio session in the Editor tab to analyze and apply professional mastering</p>
+           </div>
+         </TabsContent>
 
         {/* Library Tab */}
-        <TabsContent value="library" className="flex-1 overflow-auto p-6">
-          <div className="max-w-4xl mx-auto text-center text-muted-foreground py-20">
-            <Music className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p className="font-heading font-semibold mb-2">Your Processed Sessions</p>
-            <p className="text-sm">Sessions you've processed will appear here</p>
-          </div>
-        </TabsContent>
+         <TabsContent value="library" className="flex-1 overflow-auto p-6">
+           <div className="max-w-4xl mx-auto text-center text-muted-foreground py-20">
+             <Music className="w-12 h-12 mx-auto mb-4 opacity-30" />
+             <p className="font-heading font-semibold mb-2 text-foreground">Your Processed Sessions</p>
+             <p className="text-sm opacity-70">Sessions you process and publish will be saved here for easy access</p>
+           </div>
+         </TabsContent>
       </Tabs>
     </div>
   );

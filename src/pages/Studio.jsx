@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import WaveEditor from '@/components/studio/WaveEditor';
+import { sounds } from '@/hooks/use-sound';
 
 // Fake waveform generator
 const generateWaveform = (length = 100) => {
@@ -55,8 +56,21 @@ export default function Studio() {
   useEffect(() => {
     let interval;
     if (isPlaying || isRecording) {
+      let lastBeat = -1;
       interval = setInterval(() => {
-        setCurrentTime((prev) => (prev + 0.1 > 100 ? 0 : prev + 0.1));
+        setCurrentTime((prev) => {
+          const next = prev + 0.05 > 100 ? 0 : prev + 0.05;
+          const currentBeat = Math.floor(next * 2); // 120 BPM = 2 beats/sec
+          if (currentBeat !== lastBeat) {
+            if (currentBeat % 8 === 0) {
+              sounds.success(); // Bar start
+            } else if (currentBeat % 2 === 0) {
+              sounds.click(); // Beat
+            }
+            lastBeat = currentBeat;
+          }
+          return next;
+        });
       }, 50);
     }
     return () => clearInterval(interval);
@@ -65,6 +79,8 @@ export default function Studio() {
   const togglePlay = () => {
     if (isRecording) setIsRecording(false);
     setIsPlaying(!isPlaying);
+    if (!isPlaying) sounds.nav();
+    else sounds.click();
   };
 
   const toggleRecord = () => {
@@ -72,6 +88,9 @@ export default function Studio() {
     setIsRecording(!isRecording);
     if (!isRecording) {
       toast.success("Recording started");
+      sounds.recStart();
+    } else {
+      sounds.recStop();
     }
   };
 
@@ -79,6 +98,7 @@ export default function Studio() {
     setIsPlaying(false);
     setIsRecording(false);
     setCurrentTime(0);
+    sounds.recStop();
   };
 
   // Keyboard shortcuts for Power Users

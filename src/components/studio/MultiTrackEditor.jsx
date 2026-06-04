@@ -141,7 +141,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           </button>
           <button
             onClick={() => window.location.href = '/record'}
-            className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary/50 text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-all hover:scale-105 active:scale-95"
+            className="w-8 h-8 rounded-lg flex items-center justify-center bg-destructive/20 text-destructive hover:bg-destructive/30 transition-all hover:scale-105 active:scale-95"
             title="Record"
           >
             <Mic className="w-4 h-4" />
@@ -151,8 +151,8 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
             className={cn(
               "w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg relative group",
               isPlaying
-                ? "bg-destructive/20 text-destructive border border-destructive/30 shadow-destructive/20"
-                : "bg-gradient-to-br from-primary to-pink-500 text-white shadow-primary/30 hover:opacity-90"
+                ? "bg-green-500/20 text-green-500 border border-green-500/30 shadow-green-500/20"
+                : "bg-green-500/20 text-green-500 shadow-green-500/30 hover:bg-green-500/30"
             )}
             title="Play / Pause (Space)"
           >
@@ -161,7 +161,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           </button>
           <button
             onClick={handleStop}
-            className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all hover:scale-105 active:scale-95 relative group"
+            className="w-8 h-8 rounded-lg flex items-center justify-center border-2 border-destructive text-destructive hover:bg-destructive/10 transition-all hover:scale-105 active:scale-95 relative group"
             title="Stop (Ctrl+Delete)"
           >
             <Square className="w-4 h-4" />

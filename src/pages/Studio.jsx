@@ -6,7 +6,7 @@ import {
   Play, Square, Circle, Mic, Plus, Settings2, Volume2, 
   Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical,
   Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
-  Cpu, Activity
+  Cpu, Activity, Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
@@ -31,7 +31,7 @@ export default function Studio() {
   const audioChunksRef = useRef([]);
   const audioElementsRef = useRef({});
   const [editingTrack, setEditingTrack] = useState(null);
-  const [selectedTrackId, setSelectedTrackId] = useState(1);
+  const [selectedTrackIds, setSelectedTrackIds] = useState([1]);
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
   
   const [hardware, setHardware] = useState({
@@ -324,6 +324,31 @@ export default function Studio() {
     setTracks(tracks.map(t => t.id === trackId ? { ...t, volume: val[0] } : t));
   };
 
+  const handleTrackClick = (e, trackId) => {
+    if (e.ctrlKey || e.metaKey) {
+      if (selectedTrackIds.includes(trackId)) {
+        setSelectedTrackIds(selectedTrackIds.filter(id => id !== trackId));
+      } else {
+        setSelectedTrackIds([...selectedTrackIds, trackId]);
+      }
+    } else {
+      setSelectedTrackIds([trackId]);
+    }
+  };
+
+  const deleteSelectedTracks = () => {
+    if (selectedTrackIds.length === 0) return;
+    selectedTrackIds.forEach(id => {
+      if (audioElementsRef.current[id]) {
+        audioElementsRef.current[id].pause();
+        delete audioElementsRef.current[id];
+      }
+    });
+    setTracks(tracks.filter(t => !selectedTrackIds.includes(t.id)));
+    setSelectedTrackIds([]);
+    toast.success("Selected tracks deleted");
+  };
+
   const addTrack = () => {
     if (tracks.length >= maxTracks) {
       toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
@@ -440,6 +465,7 @@ export default function Studio() {
         <div className="flex items-center gap-1 shrink-0">
           <Button variant="ghost" size="icon" className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground"><Scissors className="w-4 h-4" /></Button>
           <Button variant="ghost" size="icon" className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground"><Copy className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-red-400 disabled:opacity-50"><Trash2 className="w-4 h-4" /></Button>
         </div>
         <div className="h-5 w-px bg-border/50 mx-2 shrink-0" />
         <div className="flex items-center gap-2 shrink-0 text-sm text-muted-foreground bg-secondary/30 px-3 py-1 rounded-lg">
@@ -470,11 +496,11 @@ export default function Studio() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, height: 0 }}
-                onClick={() => setSelectedTrackId(track.id)}
+                onClick={(e) => handleTrackClick(e, track.id)}
                 className={cn(
                   "h-28 border-b border-border/40 p-3 flex flex-col justify-between transition-all cursor-pointer border-l-4",
                   track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40",
-                  selectedTrackId === track.id ? "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]" : "border-l-transparent"
+                  selectedTrackIds.includes(track.id) ? "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]" : "border-l-transparent"
                 )}
               >
                 <div className="flex items-center justify-between">
@@ -553,11 +579,11 @@ export default function Studio() {
               {tracks.map((track) => (
                 <div 
                   key={track.id} 
-                  onClick={() => setSelectedTrackId(track.id)}
+                  onClick={(e) => handleTrackClick(e, track.id)}
                   className={cn(
                     "h-28 border-b border-border/20 relative group transition-all", 
                     track.muted ? "opacity-30" : "",
-                    selectedTrackId === track.id ? "bg-primary/15 shadow-[inset_0_0_30px_hsl(var(--primary)/0.1)]" : ""
+                    selectedTrackIds.includes(track.id) ? "bg-primary/15 shadow-[inset_0_0_30px_hsl(var(--primary)/0.1)]" : ""
                   )}
                 >
                   {/* Grid lines */}

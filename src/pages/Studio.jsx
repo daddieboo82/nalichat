@@ -27,6 +27,9 @@ export default function Studio() {
   const playheadRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const audioContextRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const audioElementsRef = useRef({});
   const [editingTrack, setEditingTrack] = useState(null);
   const [selectedTrackId, setSelectedTrackId] = useState(1);
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
@@ -69,10 +72,33 @@ export default function Studio() {
   }, [isPlaying, isRecording]);
 
   const togglePlay = () => {
-    if (isRecording) setIsRecording(false);
+    if (isRecording) {
+      setIsRecording(false);
+      stopRecordingProcess();
+    }
+    
+    if (!isPlaying) {
+      sounds.nav();
+      tracks.forEach(track => {
+        if (track.audioUrl && (!track.muted || track.solo)) {
+          let audio = audioElementsRef.current[track.id];
+          if (!audio || audio.src !== track.audioUrl) {
+            audio = new Audio(track.audioUrl);
+            audioElementsRef.current[track.id] = audio;
+          }
+          audio.currentTime = currentTime;
+          audio.volume = track.muted ? 0 : (track.volume / 100);
+          audio.play().catch(e => console.error("Audio playback error:", e));
+        }
+      });
+    } else {
+      sounds.click();
+      Object.values(audioElementsRef.current).forEach(audio => {
+        audio.pause();
+      });
+    }
+    
     setIsPlaying(!isPlaying);
-    if (!isPlaying) sounds.nav();
-    else sounds.click();
   };
 
   useEffect(() => {
@@ -83,10 +109,46 @@ export default function Studio() {
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close();
       }
+      Object.values(audioElementsRef.current).forEach(audio => {
+        audio.pause();
+      });
     };
   }, []);
 
+  // Sync audio volumes
+  useEffect(() => {
+    tracks.forEach(track => {
+      const audio = audioElementsRef.current[track.id];
+      if (audio) {
+        audio.volume = track.muted ? 0 : (track.volume / 100);
+      }
+    });
+  }, [tracks]);
+
   const stopRecordingProcess = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioUrl = URL.createObjectURL(blob);
+        
+        setTracks(prev => prev.map(t => {
+          if (t.armed) {
+            return { ...t, waveform: generateWaveform(120), armed: false, audioUrl };
+          }
+          return t;
+        }));
+        toast.success("Recording saved!");
+      };
+      mediaRecorderRef.current.stop();
+    } else {
+      setTracks(prev => prev.map(t => {
+        if (t.armed) {
+          return { ...t, waveform: generateWaveform(120), armed: false };
+        }
+        return t;
+      }));
+    }
+
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(t => t.stop());
       mediaStreamRef.current = null;
@@ -96,14 +158,6 @@ export default function Studio() {
       audioContextRef.current = null;
     }
     sounds.recStop();
-    
-    setTracks(prev => prev.map(t => {
-      if (t.armed) {
-        return { ...t, waveform: generateWaveform(120), armed: false };
-      }
-      return t;
-    }));
-    toast.success("Recording saved!");
   };
 
   const toggleRecord = async () => {
@@ -135,6 +189,15 @@ export default function Studio() {
         source.connect(gainNode);
         gainNode.connect(audioCtx.destination);
         
+        // Start actual recording
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
+        mediaRecorder.start();
+        
         setIsRecording(true);
         toast.success("Recording started (Mic active)");
         sounds.recStart();
@@ -157,6 +220,10 @@ export default function Studio() {
       sounds.recStop();
     }
     setCurrentTime(0);
+    Object.values(audioElementsRef.current).forEach(audio => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
   };
 
   // Keyboard shortcuts for Power Users

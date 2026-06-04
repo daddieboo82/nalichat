@@ -143,7 +143,8 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    {post.price > 0 && (
                      <Button 
                        size="lg"
-                       onClick={() => addToCart(post)}
+                       type="button"
+                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(post); }}
                        disabled={inCart}
                        className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 gap-2 h-14 px-6 sm:px-8 text-base rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
                      >
@@ -173,15 +174,18 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    {post.file_url && (
                      <Button
                        size="lg"
-                       onClick={() => {
-                         const a = document.createElement('a');
-                         a.href = post.file_url;
-                         a.download = post.title || 'download';
-                         a.target = '_blank';
-                         document.body.appendChild(a);
-                         a.click();
-                         document.body.removeChild(a);
-                         toast.success("Download started");
+                       type="button"
+                       onClick={async (e) => {
+                         e.preventDefault();
+                         e.stopPropagation();
+                         toast.success("Download started...");
+                         try {
+                           const { resumableDownload } = await import('@/lib/resumableUpload');
+                           await resumableDownload(post.file_url, post.title || 'download', () => {});
+                           toast.success("Download complete");
+                         } catch (err) {
+                           toast.error("Download failed");
+                         }
                        }}
                        className="bg-white/10 text-white hover:bg-white/20 border border-white/10 shadow-lg gap-2 h-14 px-6 text-base rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
                      >

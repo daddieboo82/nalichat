@@ -468,11 +468,7 @@ export default function Files() {
                       )}
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <a href={file.file_url} target="_blank" rel="noopener noreferrer">
-                        <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg">
-                          <Download className="w-3.5 h-3.5" />
-                        </Button>
-                      </a>
+                      <FileDownloadButton file={file} />
                       {file.uploader_id === currentUser?.id && (
                         <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg text-destructive" onClick={() => deleteMutation.mutate(file.id)}>
                           <Trash2 className="w-3.5 h-3.5" />

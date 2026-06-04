@@ -476,7 +476,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   </DropdownMenuItem>
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => setActiveEnvelope(activeEnvelope === 'pan' ? null : 'pan')}>
                     {activeEnvelope === 'pan' ? "✓ " : ""}Pan Envelope
-                  </DropdownMenuItem
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 

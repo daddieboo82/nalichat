@@ -22,9 +22,23 @@ import { toast } from 'sonner';
 import WaveEditor from '@/components/studio/WaveEditor';
 import { sounds } from '@/hooks/use-sound';
 
-// Fake waveform generator
-const generateWaveform = (length = 100) => {
-  return Array.from({ length }, () => Math.random() * 0.8 + 0.1);
+// Fake waveform generator - High-resolution for precision editing
+const generateWaveform = (length = 2000) => {
+  return Array.from({ length }, (_, i) => {
+    const envelope = Math.sin(i * Math.PI / length) * 0.8 + 0.2;
+    const noise = Math.random() * 0.8 + 0.1;
+    const bursts = Math.sin(i * 0.1) * Math.cos(i * 0.05);
+    return Math.min(1, Math.max(0.02, Math.abs(bursts * noise * envelope) * 2));
+  });
+};
+
+const waveformFills = {
+  "bg-primary": "fill-primary",
+  "bg-pink-500": "fill-pink-500",
+  "bg-accent": "fill-accent",
+  "bg-yellow-500": "fill-yellow-500",
+  "bg-purple-500": "fill-purple-500",
+  "bg-green-500": "fill-green-500"
 };
 
 export default function Studio() {
@@ -65,8 +79,8 @@ export default function Studio() {
   });
   
   const [tracks, setTracks] = useState([
-    { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
-    { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+    { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+    { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
   ]);
 
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -303,13 +317,13 @@ export default function Studio() {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const audioUrl = URL.createObjectURL(blob);
         
-        let realWaveform = generateWaveform(120);
+        let realWaveform = generateWaveform(2000);
         try {
           const arrayBuffer = await blob.arrayBuffer();
           const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
           const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
           const channelData = audioBuffer.getChannelData(0);
-          const numPoints = 120;
+          const numPoints = 2000;
           const blockSize = Math.floor(channelData.length / numPoints);
           const waveform = [];
           for (let i = 0; i < numPoints; i++) {
@@ -657,7 +671,7 @@ export default function Studio() {
         muted: false,
         solo: false,
         armed: false,
-        waveform: generateWaveform(120),
+        waveform: generateWaveform(2000),
         startTime: 0,
         duration: 40,
         audioUrl: fileUrl,
@@ -844,7 +858,7 @@ export default function Studio() {
           <Slider 
             value={[zoom]} 
             min={0.5} 
-            max={3} 
+            max={10} 
             step={0.1}
             onValueChange={(v) => setZoom(v[0])}
             className="w-24"
@@ -967,7 +981,7 @@ export default function Studio() {
                 window.addEventListener('pointerup', handleUp);
               }}
             >
-              {Array.from({ length: 100 }).map((_, i) => {
+              {Array.from({ length: 200 }).map((_, i) => {
                 const seconds = i * 5; // Every 5 seconds
                 const position = seconds * 20 * zoom;
                 return (
@@ -1316,14 +1330,19 @@ export default function Studio() {
                         </div>
                       )}
 
-                      <div className={cn("absolute inset-x-0 flex items-center justify-between gap-0 overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-1 top-5")}>
-                        {track.waveform.map((val, i) => (
-                          <div 
-                            key={i} 
-                            className={cn("flex-1 opacity-90 transition-all duration-300", track.color)}
-                            style={{ height: `${Math.max(2, val * 100)}%`, margin: '0 0.5px', borderRadius: '1px' }}
+                      <div className={cn("absolute inset-x-0 overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-1 top-5")}>
+                        <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                          <path 
+                            d={(() => {
+                              const wLen = track.waveform.length - 1 || 1;
+                              let d = `M 0,50 `;
+                              for(let i=0; i<=wLen; i++) d += `L ${(i/wLen)*1000},${50 - Math.max(0.02, track.waveform[i])*50} `;
+                              for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, track.waveform[i])*50} `;
+                              return d + 'Z';
+                            })()}
+                            className={cn("opacity-90 drop-shadow-md", waveformFills[track.color] || "fill-primary")}
                           />
-                        ))}
+                        </svg>
                       </div>
                     </div>
                   )}

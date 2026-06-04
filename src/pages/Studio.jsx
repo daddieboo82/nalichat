@@ -643,14 +643,29 @@ export default function Studio() {
       toast.error("No tracks to export");
       return;
     }
+    
+    const fileName = prompt("Enter a name for your exported file:", "NaliStudio_Mixdown");
+    if (!fileName) return;
+
+    const formats = ["wav", "mp3", "flac", "ogg", "aac", "midi"];
+    const format = prompt(`Choose export format (${formats.join(", ")}):`, "wav");
+    
+    if (!format || !formats.includes(format.toLowerCase().trim())) {
+        toast.error("Invalid format selected or cancelled.");
+        return;
+    }
+
+    const cleanFormat = format.toLowerCase().trim();
+    const fullFileName = `${fileName}.${cleanFormat}`;
     const element = document.createElement("a");
-    const file = new Blob(["Simulated exported audio data from NaliStudio"], {type: 'audio/wav'});
+    const mimeType = cleanFormat === 'midi' ? 'audio/midi' : `audio/${cleanFormat}`;
+    const file = new Blob(["Simulated exported audio data from NaliStudio"], {type: mimeType});
     element.href = URL.createObjectURL(file);
-    element.download = "NaliStudio_Mixdown.wav";
+    element.download = fullFileName;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-    toast.success("Exported Mixdown.wav");
+    toast.success(`Exported ${fullFileName}`);
   };
 
   return (
@@ -716,7 +731,7 @@ export default function Studio() {
           </div>
           
           <div className="hidden md:flex items-center gap-2">
-            <input type="file" ref={fileInputRef} className="hidden" accept="audio/*" onChange={handleFileChange} />
+            <input type="file" ref={fileInputRef} className="hidden" accept="audio/*,.mid,.midi,.flac,.ogg,.m4a,.wma,.aiff" onChange={handleFileChange} />
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleImportClick}>
               <Upload className="w-4 h-4" /> Import
             </Button>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -24,8 +24,6 @@ export default function WaveEditor({ track, onClose, onSave }) {
   const [selectedEffect, setSelectedEffect] = useState(null);
   const [zoom, setZoom] = useState(1);
 
-  if (!track) return null;
-
   const toggleEffect = (effect) => {
     if (activeEffects.some(e => e.id === effect.id)) {
       setActiveEffects(activeEffects.filter(e => e.id !== effect.id));
@@ -37,10 +35,34 @@ export default function WaveEditor({ track, onClose, onSave }) {
   };
 
   const handleSave = () => {
+    if (!track) return;
     toast.success('Track saved with applied effects!');
     onSave(track.id, { ...track, effects: activeEffects });
     onClose();
   };
+
+  // Power user keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsPlaying(p => !p);
+      } else if (e.code === 'Escape') {
+        e.preventDefault();
+        onClose();
+      } else if (e.code === 'Enter') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeEffects, track, onClose, onSave]);
+
+  if (!track) return null;
 
   return (
     <AnimatePresence>

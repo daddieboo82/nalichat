@@ -127,18 +127,20 @@ export default function Files() {
   });
 
   const uploadMutation = useMutation({
-    mutationFn: async (file) => {
+    mutationFn: async (filesArray) => {
       setUploading(true);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.entities.SharedFile.create({
-        name: file.name,
-        file_url,
-        file_type: detectFileType(file),
-        file_size: file.size,
-        uploader_id: currentUser.id,
-        uploader_name: currentUser.display_name || currentUser.full_name,
-        folder_id: currentFolderId,
-      });
+      for (const file of filesArray) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        await base44.entities.SharedFile.create({
+          name: file.name,
+          file_url,
+          file_type: detectFileType(file),
+          file_size: file.size,
+          uploader_id: currentUser.id,
+          uploader_name: currentUser.display_name || currentUser.full_name,
+          folder_id: currentFolderId,
+        });
+      }
       setUploading(false);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["shared-files"] }),
@@ -190,8 +192,8 @@ export default function Files() {
   });
 
   const handleUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (file && currentUser) uploadMutation.mutate(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0 && currentUser) uploadMutation.mutate(files);
     e.target.value = "";
   };
 
@@ -204,7 +206,7 @@ export default function Files() {
             <p className="text-sm text-muted-foreground">Share music, sessions, art & more</p>
           </div>
           <div>
-            <input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} />
+            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleUpload} />
             <Button className="rounded-xl bg-primary hover:bg-primary/90" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
               {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
               Upload File
@@ -212,8 +214,23 @@ export default function Files() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mb-6">
-          <div className="relative flex-1 max-w-md">
+        <div className="flex flex-wrap items-center gap-4 mb-6">
+          <Button 
+            variant={selectedIds.length > 0 && selectedIds.length === filtered.length ? "default" : "outline"} 
+            size="icon" 
+            className="rounded-xl shrink-0" 
+            onClick={() => {
+              if (selectedIds.length === filtered.length && filtered.length > 0) {
+                setSelectedIds([]);
+              } else {
+                setSelectedIds(filtered.map(f => f.id));
+              }
+            }}
+            title={selectedIds.length === filtered.length ? "Deselect All" : "Select All"}
+          >
+            <CheckSquare className="w-4 h-4" />
+          </Button>
+          <div className="relative flex-1 max-w-md min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Search files..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-secondary/50 border-0 rounded-xl" />
           </div>

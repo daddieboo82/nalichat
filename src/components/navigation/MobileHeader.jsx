@@ -21,6 +21,8 @@ const TITLES = {
   "/settings": "Settings",
   "/analytics": "Analytics",
   "/record": "Record",
+  "/studio": "Studio",
+  "/cover-art": "AI Cover Art",
 };
 
 export default function MobileHeader() {

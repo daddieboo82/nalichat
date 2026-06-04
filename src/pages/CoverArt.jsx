@@ -8,6 +8,7 @@ import { useRef } from "react";
 
 export default function CoverArt() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [selectedPost, setSelectedPost] = useState(null);
   const [generatedImage, setGeneratedImage] = useState(null);
   const [generatingStatus, setGeneratingStatus] = useState("");
@@ -16,7 +17,10 @@ export default function CoverArt() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
+    base44.auth.me()
+      .then(setCurrentUser)
+      .catch(() => {})
+      .finally(() => setIsLoadingUser(false));
   }, []);
 
   const { data: posts = [], isLoading } = useQuery({
@@ -108,6 +112,7 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
     }
   };
 
+  if (isLoadingUser) return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   if (!currentUser) return <div className="p-8 text-center">Please log in to use the Cover Art Creator.</div>;
 
   return (

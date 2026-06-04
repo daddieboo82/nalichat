@@ -12,6 +12,7 @@ export default function MediaViewer({ media, isOpen, onClose }) {
 
   const isImage = media.type === "image" || media.file_type?.startsWith("image");
   const isAudio = media.type === "audio" || media.file_type?.startsWith("audio");
+  const isVideo = media.type === "video" || media.file_type?.startsWith("video");
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -73,6 +74,15 @@ export default function MediaViewer({ media, isOpen, onClose }) {
           ) : isAudio ? (
             <div className="w-full max-w-md px-6 py-8">
               <AudioPlayerFull src={media.file_url} duration={media.duration} />
+            </div>
+          ) : isVideo ? (
+            <div className="flex flex-col items-center justify-center gap-4 p-4 w-full h-full">
+              <video
+                src={media.file_url}
+                controls
+                autoPlay
+                className="rounded-xl max-h-[70vh] max-w-full object-contain"
+              />
             </div>
           ) : null}
         </div>

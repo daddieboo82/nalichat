@@ -30,9 +30,18 @@ const generateWaveform = (length = 100) => {
 export default function Studio() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
+  const currentTimeRef = useRef(0);
+  const timeDisplayRef = useRef(null);
+  const recordingIndicatorRefs = useRef({});
   const [zoom, setZoom] = useState(1);
   const playheadRef = useRef(null);
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    const ms = Math.floor((seconds % 1) * 100);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+  };
   const mediaStreamRef = useRef(null);
   const audioContextRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -135,7 +144,7 @@ export default function Studio() {
     fetchSub();
   }, []);
 
-  // Smooth playback via RAF
+  // Smooth playback via RAF - Optimized to bypass React render cycle for award-winning performance
   useEffect(() => {
     let animationFrameId;
     let lastTime = performance.now();
@@ -143,10 +152,27 @@ export default function Studio() {
     const updateTime = (time) => {
       const delta = (time - lastTime) / 1000;
       lastTime = time;
-      setCurrentTime((prev) => {
-        const newTime = prev + delta;
-        return newTime > 100 ? 0 : newTime; // Loop at 100s
-      });
+      
+      let newTime = currentTimeRef.current + delta;
+      if (newTime > 100) newTime = 0; // Loop at 100s
+      
+      currentTimeRef.current = newTime;
+      
+      // Update DOM directly for maximum 60fps performance without React reconciliation
+      if (timeDisplayRef.current) {
+        timeDisplayRef.current.textContent = formatTime(newTime);
+      }
+      
+      if (playheadRef.current) {
+        playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
+      }
+      
+      if (isRecording && recordingStartTime !== null) {
+        Object.values(recordingIndicatorRefs.current).forEach(el => {
+          if (el) el.style.width = `${Math.max(0, newTime - recordingStartTime) * 20 * zoom}px`;
+        });
+      }
+
       animationFrameId = requestAnimationFrame(updateTime);
     };
 
@@ -155,7 +181,13 @@ export default function Studio() {
       animationFrameId = requestAnimationFrame(updateTime);
     }
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isPlaying, isRecording]);
+  }, [isPlaying, isRecording, zoom, recordingStartTime]);
+
+  const updateCurrentTime = (newTime) => {
+    currentTimeRef.current = newTime;
+    if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
+    if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
+  };
 
   const togglePlay = () => {
     if (isRecording) {
@@ -172,7 +204,7 @@ export default function Studio() {
             audio = new Audio(track.audioUrl);
             audioElementsRef.current[track.id] = audio;
           }
-          audio.currentTime = currentTime;
+          audio.currentTime = currentTimeRef.current;
           audio.volume = track.muted ? 0 : (track.volume / 100);
           audio.play().catch(e => console.error("Audio playback error:", e));
         }
@@ -301,8 +333,8 @@ export default function Studio() {
               waveform: realWaveform, 
               armed: false, 
               audioUrl, 
-              startTime: recordingStartTime !== null ? recordingStartTime : currentTime,
-              duration: recordingStartTime !== null ? Math.max(1, currentTime - recordingStartTime) : 10
+              startTime: recordingStartTime !== null ? recordingStartTime : currentTimeRef.current,
+              duration: recordingStartTime !== null ? Math.max(1, currentTimeRef.current - recordingStartTime) : 10
             };
           }
           return t;
@@ -371,7 +403,7 @@ export default function Studio() {
         mediaRecorder.start();
         
         setIsRecording(true);
-        setRecordingStartTime(currentTime);
+        setRecordingStartTime(currentTimeRef.current);
         toast.success("Recording started (Mic active)");
         sounds.recStart();
       } catch (err) {
@@ -392,7 +424,7 @@ export default function Studio() {
     } else {
       sounds.recStop();
     }
-    setCurrentTime(0);
+    updateCurrentTime(0);
     Object.values(audioElementsRef.current).forEach(audio => {
       audio.pause();
       audio.currentTime = 0;
@@ -532,9 +564,10 @@ export default function Studio() {
         const clipStart = t.startTime !== undefined ? t.startTime : 0;
         const clipDuration = t.duration !== undefined ? t.duration : 40;
         const clipEnd = clipStart + clipDuration;
+        const curr = currentTimeRef.current;
         
-        if (currentTime > clipStart && currentTime < clipEnd) {
-          const splitRatio = (currentTime - clipStart) / clipDuration;
+        if (curr > clipStart && curr < clipEnd) {
+          const splitRatio = (curr - clipStart) / clipDuration;
           const splitIndex = Math.floor(t.waveform.length * splitRatio);
           
           const waveformPart1 = t.waveform.slice(0, splitIndex);
@@ -547,14 +580,14 @@ export default function Studio() {
             id: nextId++,
             name: `${t.name} (Cut)`,
             waveform: waveformPart2,
-            startTime: currentTime,
-            duration: clipEnd - currentTime
+            startTime: curr,
+            duration: clipEnd - curr
           });
           
           return {
             ...t,
             waveform: waveformPart1,
-            duration: currentTime - clipStart
+            duration: curr - clipStart
           };
         }
       }
@@ -591,13 +624,6 @@ export default function Studio() {
       duration: 0
     }]);
     toast.success("Track added");
-  };
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    const ms = Math.floor((seconds % 1) * 100);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
   };
 
   const saveTrackEffects = (trackId, updatedTrack) => {
@@ -750,7 +776,7 @@ export default function Studio() {
           </div>
 
           <div className="font-mono text-xl text-primary font-bold bg-[#0a0a0c] px-4 py-1.5 rounded-lg border border-border w-36 text-center shadow-inner tracking-widest relative group">
-            {formatTime(currentTime)}
+            <span ref={timeDisplayRef}>{formatTime(currentTimeRef.current)}</span>
             {isRecording && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
           </div>
           
@@ -928,7 +954,7 @@ export default function Studio() {
                 const updatePosition = (clientX) => {
                   const rect = target.getBoundingClientRect();
                   const x = clientX - rect.left;
-                  setCurrentTime(Math.max(0, x / (20 * zoom)));
+                  updateCurrentTime(Math.max(0, x / (20 * zoom)));
                 };
                 updatePosition(e.clientX);
                 
@@ -963,7 +989,7 @@ export default function Studio() {
               const updatePosition = (clientX) => {
                 const rect = target.getBoundingClientRect();
                 const x = clientX - rect.left;
-                setCurrentTime(Math.max(0, x / (20 * zoom)));
+                updateCurrentTime(Math.max(0, x / (20 * zoom)));
               };
               updatePosition(e.clientX);
               
@@ -980,7 +1006,7 @@ export default function Studio() {
             <div 
               ref={playheadRef}
               className="absolute top-0 bottom-0 w-[2px] bg-primary z-30 pointer-events-none group shadow-[0_0_10px_rgba(var(--primary),0.8)]"
-              style={{ left: `${currentTime * 20 * zoom}px` }}
+              style={{ left: `${currentTimeRef.current * 20 * zoom}px` }}
             >
               <div className="absolute top-0 -translate-x-1/2 w-4 h-4 bg-primary rounded-b flex items-center justify-center cursor-ew-resize pointer-events-auto hover:bg-primary/90 shadow-md">
                 <div className="w-0.5 h-2 bg-background/80 rounded-full" />
@@ -1017,13 +1043,14 @@ export default function Studio() {
                   {/* Armed / Recording Indicator */}
                   {track.armed && (
                     <div 
+                      ref={el => { recordingIndicatorRefs.current[track.id] = el; }}
                       className={cn(
                         "absolute top-0 bottom-0 z-20 pointer-events-none transition-all",
                         isRecording ? "border-l-2 border-red-500 bg-red-500/10" : "w-[2px] bg-red-500/50"
                       )}
                       style={{ 
-                        left: `${(isRecording && recordingStartTime !== null ? recordingStartTime : currentTime) * 20 * zoom}px`,
-                        width: isRecording && recordingStartTime !== null ? `${Math.max(0, currentTime - recordingStartTime) * 20 * zoom}px` : '2px'
+                        left: `${(isRecording && recordingStartTime !== null ? recordingStartTime : currentTimeRef.current) * 20 * zoom}px`,
+                        width: isRecording && recordingStartTime !== null ? `${Math.max(0, currentTimeRef.current - recordingStartTime) * 20 * zoom}px` : '2px'
                       }}
                     >
                       <div className={cn(

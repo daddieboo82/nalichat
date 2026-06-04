@@ -63,52 +63,52 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Communication */}
           <button
             onClick={onMessageClick}
             title="Send Message"
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+            className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-4.5 h-4.5" />
           </button>
           <button
             onClick={onInviteClick}
             title="Invite Collaborators"
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+            className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus className="w-4.5 h-4.5" />
           </button>
 
           {/* System */}
-          <div className="border-l border-border/30 pl-1 flex items-center gap-1">
+          <div className="border-l border-border/30 pl-2 flex items-center gap-2">
             <SoundToggle />
             <NotificationBell />
             <button
               onClick={onHelpClick}
               title="Help & Tutorial"
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
             >
-              <HelpCircle className="w-4 h-4" />
+              <HelpCircle className="w-4.5 h-4.5" />
             </button>
             <Link
               to="/settings"
               title="Settings"
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-4.5 h-4.5" />
             </Link>
             <button
               onClick={() => base44.auth.logout()}
               title="Log out"
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4.5 h-4.5" />
             </button>
 
             {/* Profile Avatar */}
-            <Link to="/profile" className="ml-0.5">
-              <Avatar className="w-8 h-8 border-2 border-border/50 hover:border-primary/50 transition-all cursor-pointer shadow-md">
+            <Link to="/profile" className="ml-1">
+              <Avatar className="w-9 h-9 border-2 border-border/50 hover:border-primary/50 transition-all cursor-pointer shadow-md">
                 <AvatarImage src={user?.avatar_url} />
                 <AvatarFallback className="bg-gradient-to-br from-primary to-pink-500 text-white text-xs font-bold">
                   {user?.display_name?.[0] || user?.full_name?.[0] || "?"}

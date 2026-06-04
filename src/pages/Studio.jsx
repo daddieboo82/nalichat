@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import WaveEditor from '@/components/studio/WaveEditor';
+import BounceDialog from '@/components/studio/BounceDialog';
 import { sounds } from '@/hooks/use-sound';
 
 // Fake waveform generator - High-resolution for precision editing
@@ -868,9 +869,16 @@ export default function Studio() {
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleSave}>
               <Save className="w-4 h-4" /> Save
             </Button>
-            <Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary" onClick={handleExport}>
-              <Download className="w-4 h-4" /> Export
-            </Button>
+            <BounceDialog
+              projectTitle="Untitled Studio Project"
+              project={{ genre: "Electronic", bpm: 120 }}
+              tracks={tracks}
+              trigger={
+                <Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary">
+                  <Download className="w-4 h-4" /> Export
+                </Button>
+              }
+            />
           </div>
         </div>
       </div>

@@ -26,7 +26,7 @@ const STEPS = [
   "Publishing your finished song...",
 ];
 
-export default function BounceDialog({ projectTitle, project, tracks }) {
+export default function BounceDialog({ projectTitle, project, tracks, trigger }) {
   const [open, setOpen] = useState(false);
   const [bounceTitle, setBounceTitle] = useState(`${projectTitle || "Untitled"}`);
   const [bouncing, setBouncing] = useState(false);
@@ -116,10 +116,12 @@ export default function BounceDialog({ projectTitle, project, tracks }) {
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!bouncing) setOpen(v); }}>
       <DialogTrigger asChild>
-        <Button className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white">
-          <Sparkles className="w-4 h-4 mr-2" />
-          Bounce
-        </Button>
+        {trigger ? trigger : (
+          <Button className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white">
+            <Sparkles className="w-4 h-4 mr-2" />
+            Bounce
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="bg-card border-border">
         <DialogHeader>

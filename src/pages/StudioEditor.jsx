@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Play, Pause, Download, Share2, Loader2, Wand2, Music, Zap, Radio, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import CollaboratorPresence from "@/components/studio/CollaboratorPresence";
+import ExportBounce from "@/components/studio/ExportBounce";
 
 export default function StudioEditor() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -220,52 +221,44 @@ export default function StudioEditor() {
                 </div>
 
                 <div className="flex gap-3 pt-4">
-                  <Dialog open={shareDialog} onOpenChange={setShareDialog}>
-                    <DialogTrigger asChild>
-                      <Button className="flex-1 rounded-xl bg-accent hover:bg-accent/90">
-                        <Share2 className="w-4 h-4 mr-2" />
-                        Share & Publish
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="bg-card border-border">
-                      <DialogHeader>
-                        <DialogTitle className="font-heading">Publish Your Mix</DialogTitle>
-                        <DialogDescription>Choose where to share your AI-mastered session</DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-3">
-                        <Button
-                          onClick={() => handleUploadToLeaderboard()}
-                          className="w-full rounded-xl bg-primary hover:bg-primary/90"
-                        >
-                          <Radio className="w-4 h-4 mr-2" />
-                          Upload to Leaderboard
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleShare('messages')}
-                          className="w-full rounded-xl"
-                        >
-                          <Music className="w-4 h-4 mr-2" />
-                          Share in Messages
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                   <Dialog open={shareDialog} onOpenChange={setShareDialog}>
+                     <DialogTrigger asChild>
+                       <Button className="flex-1 rounded-xl bg-accent hover:bg-accent/90">
+                         <Share2 className="w-4 h-4 mr-2" />
+                         Share & Publish
+                       </Button>
+                     </DialogTrigger>
+                     <DialogContent className="bg-card border-border">
+                       <DialogHeader>
+                         <DialogTitle className="font-heading">Publish Your Mix</DialogTitle>
+                         <DialogDescription>Choose where to share your AI-mastered session</DialogDescription>
+                       </DialogHeader>
+                       <div className="space-y-3">
+                         <Button
+                           onClick={() => handleUploadToLeaderboard()}
+                           className="w-full rounded-xl bg-primary hover:bg-primary/90"
+                         >
+                           <Radio className="w-4 h-4 mr-2" />
+                           Upload to Leaderboard
+                         </Button>
+                         <Button
+                           variant="outline"
+                           onClick={() => handleShare('messages')}
+                           className="w-full rounded-xl"
+                         >
+                           <Music className="w-4 h-4 mr-2" />
+                           Share in Messages
+                         </Button>
+                       </div>
+                     </DialogContent>
+                   </Dialog>
 
-                  <Button
-                    variant="outline"
-                    className="flex-1 rounded-xl"
-                    onClick={() => {
-                      const a = document.createElement('a');
-                      a.href = audioUrl;
-                      a.download = `${uploadTitle}.mp3`;
-                      a.click();
-                    }}
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
-                  </Button>
-                </div>
+                   <ExportBounce
+                     audioUrl={audioUrl}
+                     title={uploadTitle}
+                     disabled={!audioUrl}
+                   />
+                 </div>
               </motion.div>
             )}
           </div>

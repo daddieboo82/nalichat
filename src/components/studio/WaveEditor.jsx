@@ -43,8 +43,14 @@ export default function WaveEditor({ track, onClose, onSave }) {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [selectionRange, setSelectionRange] = useState(null);
   const [isDraggingRange, setIsDraggingRange] = useState(false);
+  const [activeEnvelope, setActiveEnvelope] = useState(null);
 
   const containerRef = useRef(null);
+
+  const getEnv = (seg, type) => {
+    if (seg[type]) return seg[type];
+    return type === 'panEnv' ? [{t:0, v:0.5}, {t:1, v:0.5}] : [{t:0, v:1}, {t:1, v:1}];
+  };
 
   const getSnappedTime = (time) => {
     if (!snapToGrid) return time;
@@ -426,6 +432,13 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 Snap
             </Button>
             
+            <div className="w-px h-6 bg-[#1a1a1c] mx-1 border-r border-[#444]" />
+
+            <div className="flex gap-0.5 bg-[#2b2b2b] p-0.5 rounded border border-[#1a1a1c] shadow-inner">
+              <Button variant="ghost" size="sm" onClick={() => setActiveEnvelope(activeEnvelope === 'volume' ? null : 'volume')} className={cn("h-7 px-2 text-xs", activeEnvelope === 'volume' ? "bg-[#555] shadow-inner text-white" : "text-white/80 hover:bg-[#444]")}>Vol Env</Button>
+              <Button variant="ghost" size="sm" onClick={() => setActiveEnvelope(activeEnvelope === 'pan' ? null : 'pan')} className={cn("h-7 px-2 text-xs", activeEnvelope === 'pan' ? "bg-[#555] shadow-inner text-white" : "text-white/80 hover:bg-[#444]")}>Pan Env</Button>
+            </div>
+
             <div className="flex-1" />
 
             <div className="flex flex-col bg-[#e5e5e5] px-2 py-0.5 rounded shadow-inner border border-[#888] border-t-[#aaa] border-l-[#aaa]">
@@ -694,34 +707,135 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       <div className="w-[2px] h-4 bg-white/50 rounded-full group-hover/trimr:bg-white" />
                     </div>
 
-                    {/* Gain Line */}
-                    <div 
-                        className="absolute left-0 right-0 h-2 -mt-1 cursor-ns-resize hover:bg-white/30 z-20 group/gain flex items-center justify-center transition-colors"
-                        style={{ top: `${Math.max(5, Math.min(95, (1 - (seg.gain ?? 1)) * 50 + 50))}%` }}
-                        onPointerDown={(e) => {
-                            if (activeTool !== 'select') return;
-                            e.stopPropagation();
-                            const startY = e.clientY;
-                            const startGain = seg.gain ?? 1;
-                            const handleMove = (moveEv) => {
-                                const deltaY = moveEv.clientY - startY;
-                                const newGain = Math.max(0, Math.min(2, startGain - deltaY / 50));
-                                handleGainChange(seg.id, newGain);
-                            };
-                            const handleUp = () => {
-                                window.removeEventListener('pointermove', handleMove);
-                                window.removeEventListener('pointerup', handleUp);
-                                commitSegmentChange();
-                            };
-                            window.addEventListener('pointermove', handleMove);
-                            window.addEventListener('pointerup', handleUp);
-                        }}
-                    >
-                        <div className="w-full h-px bg-white/40 group-hover/gain:bg-white" />
-                        <div className="hidden group-hover/gain:block absolute -top-6 bg-black text-white text-[10px] px-1.5 py-0.5 rounded shadow">
-                           {((seg.gain ?? 1) * 100).toFixed(0)}%
+                    {/* Gain Line (hidden when envelope is active) */}
+                    {!activeEnvelope && (
+                        <div 
+                            className="absolute left-0 right-0 h-2 -mt-1 cursor-ns-resize hover:bg-white/30 z-20 group/gain flex items-center justify-center transition-colors"
+                            style={{ top: `${Math.max(5, Math.min(95, (1 - (seg.gain ?? 1)) * 50 + 50))}%` }}
+                            onPointerDown={(e) => {
+                                if (activeTool !== 'select') return;
+                                e.stopPropagation();
+                                const startY = e.clientY;
+                                const startGain = seg.gain ?? 1;
+                                const handleMove = (moveEv) => {
+                                    const deltaY = moveEv.clientY - startY;
+                                    const newGain = Math.max(0, Math.min(2, startGain - deltaY / 50));
+                                    handleGainChange(seg.id, newGain);
+                                };
+                                const handleUp = () => {
+                                    window.removeEventListener('pointermove', handleMove);
+                                    window.removeEventListener('pointerup', handleUp);
+                                    commitSegmentChange();
+                                };
+                                window.addEventListener('pointermove', handleMove);
+                                window.addEventListener('pointerup', handleUp);
+                            }}
+                        >
+                            <div className="w-full h-px bg-white/40 group-hover/gain:bg-white" />
+                            <div className="hidden group-hover/gain:block absolute -top-6 bg-black text-white text-[10px] px-1.5 py-0.5 rounded shadow">
+                               {((seg.gain ?? 1) * 100).toFixed(0)}%
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {/* Automation Envelopes */}
+                    {activeEnvelope && (
+                        <div 
+                            className="absolute inset-0 z-40"
+                            onPointerDown={(e) => {
+                                if (e.target !== e.currentTarget) return;
+                                if (activeTool !== 'select') return;
+                                e.stopPropagation();
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const t = (e.clientX - rect.left) / rect.width;
+                                const v = 1 - ((e.clientY - rect.top) / rect.height);
+                                const envKey = activeEnvelope === 'volume' ? 'volEnv' : 'panEnv';
+                                const env = getEnv(seg, envKey);
+                                const newEnv = [...env, {t, v}].sort((a,b) => a.t - b.t);
+                                
+                                setSegments(prev => prev.map(s => s.id === seg.id ? { ...s, [envKey]: newEnv } : s));
+                                setTimeout(commitSegmentChange, 0);
+                            }}
+                        >
+                            <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                                <polyline 
+                                    points={getEnv(seg, activeEnvelope === 'volume' ? 'volEnv' : 'panEnv').map(p => `${p.t * 1000},${(1 - p.v) * 100}`).join(' ')}
+                                    className={activeEnvelope === 'volume' ? "stroke-blue-400" : "stroke-red-400"}
+                                    fill="none"
+                                    strokeWidth="2"
+                                    vectorEffect="non-scaling-stroke"
+                                />
+                            </svg>
+                            {getEnv(seg, activeEnvelope === 'volume' ? 'volEnv' : 'panEnv').map((p, i, arr) => (
+                                <div 
+                                    key={i}
+                                    className={cn(
+                                        "absolute w-3 h-3 -ml-1.5 -mt-1.5 rounded-full border-2 border-white cursor-pointer pointer-events-auto shadow-sm",
+                                        activeEnvelope === 'volume' ? "bg-blue-500" : "bg-red-500"
+                                    )}
+                                    style={{ left: `${p.t * 100}%`, top: `${(1 - p.v) * 100}%` }}
+                                    title={activeEnvelope === 'volume' ? `Vol: ${Math.round(p.v * 100)}%` : `Pan: ${Math.round((p.v - 0.5) * 200)}%`}
+                                    onPointerDown={(e) => {
+                                        e.stopPropagation();
+                                        if (activeTool !== 'select') return;
+                                        const envKey = activeEnvelope === 'volume' ? 'volEnv' : 'panEnv';
+                                        
+                                        const startY = e.clientY;
+                                        const startX = e.clientX;
+                                        const startT = p.t;
+                                        const startV = p.v;
+                                        const rect = e.target.parentElement.getBoundingClientRect();
+                   
+                                        const handleMove = (moveEv) => {
+                                            const deltaX = moveEv.clientX - startX;
+                                            const deltaY = moveEv.clientY - startY;
+                                            let newT = startT + deltaX / rect.width;
+                                            let newV = startV - deltaY / rect.height;
+                   
+                                            newV = Math.max(0, Math.min(1, newV));
+                                            
+                                            if (i === 0) newT = 0;
+                                            else if (i === arr.length - 1) newT = 1;
+                                            else {
+                                                const minT = arr[i-1].t + 0.001;
+                                                const maxT = arr[i+1].t - 0.001;
+                                                newT = Math.max(minT, Math.min(maxT, newT));
+                                            }
+                   
+                                            setSegments(prev => prev.map(s => {
+                                                if (s.id === seg.id) {
+                                                    const updatedEnv = [...getEnv(s, envKey)];
+                                                    updatedEnv[i] = { t: newT, v: newV };
+                                                    return { ...s, [envKey]: updatedEnv };
+                                                }
+                                                return s;
+                                            }));
+                                        };
+                                        const handleUp = () => {
+                                            window.removeEventListener('pointermove', handleMove);
+                                            window.removeEventListener('pointerup', handleUp);
+                                            commitSegmentChange();
+                                        };
+                                        window.addEventListener('pointermove', handleMove);
+                                        window.addEventListener('pointerup', handleUp);
+                                    }}
+                                    onDoubleClick={(e) => {
+                                        e.stopPropagation();
+                                        if (i === 0 || i === arr.length - 1) return;
+                                        const envKey = activeEnvelope === 'volume' ? 'volEnv' : 'panEnv';
+                                        setSegments(prev => prev.map(s => {
+                                            if (s.id === seg.id) {
+                                                const updatedEnv = getEnv(s, envKey).filter((_, idx) => idx !== i);
+                                                return { ...s, [envKey]: updatedEnv };
+                                            }
+                                            return s;
+                                        }));
+                                        commitSegmentChange();
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    )}
 
                     {/* Fades */}
                     <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" preserveAspectRatio="none">

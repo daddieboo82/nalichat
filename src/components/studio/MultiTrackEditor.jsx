@@ -40,10 +40,12 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   const handlePlay = () => {
     if (!isPlaying) {
       setIsPlaying(true);
-      Object.values(audioElements.current).forEach((el, idx) => {
-        if (el && !tracks[idx]?.muted) {
+      // Key audio elements by track.id — find matching track to check muted state
+      Object.entries(audioElements.current).forEach(([trackId, el]) => {
+        const track = tracks.find(t => t.id === trackId);
+        if (el && !track?.muted) {
           el.currentTime = currentTime;
-          el.play();
+          el.play().catch(() => {});
         }
       });
     } else {
@@ -56,10 +58,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
     setIsPlaying(false);
     setCurrentTime(0);
     Object.values(audioElements.current).forEach(el => {
-      if (el) {
-        el.pause();
-        el.currentTime = 0;
-      }
+      if (el) { el.pause(); el.currentTime = 0; }
     });
   };
 
@@ -241,7 +240,8 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                       onUpdate={(data) => canEdit && onTrackUpdate(track.id, data)}
                       onDelete={() => canEdit && onTrackDelete(track.id)}
                       audioRef={(ref) => {
-                        if (ref) audioElements.current[idx] = ref;
+                        if (ref) audioElements.current[track.id] = ref;
+                        else delete audioElements.current[track.id];
                       }}
                       masterVolume={masterVolume}
                       inQueue={queueIds.has(track.id)}

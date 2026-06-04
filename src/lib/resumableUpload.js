@@ -81,14 +81,11 @@ export async function resumableUpload(file, onProgress) {
     onProgress?.(Math.round(((i + 1) / totalChunks) * 90));
   }
 
-  // All chunks done — use the first chunk URL as the canonical file URL
-  // (In production you'd call a merge API; here we use the full-file URL from a final upload)
-  onProgress?.(95);
-  const { base44 } = await import("@/api/base44Client");
-  const { file_url } = await base44.integrations.Core.UploadFile({ file });
+  // All chunks done — return the last chunk URL as the canonical URL
+  // (avoids re-uploading the entire file again)
   clearUploadState(fileId);
   onProgress?.(100);
-  return file_url;
+  return uploadedUrls[uploadedUrls.length - 1];
 }
 
 /**

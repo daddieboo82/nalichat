@@ -43,22 +43,21 @@ export default function Explore() {
     // Optimistic update so the heart + count flip instantly
     onMutate: async (post) => {
       if (!currentUser) return;
-      await queryClient.cancelQueries({ queryKey: ["artposts"] });
+      await queryClient.cancelQueries({ queryKey: ["artposts", filter] });
       const previous = queryClient.getQueryData(["artposts", filter]);
-      queryClient.setQueryData(["artposts", filter], (old = []) =>
-        old.map(p => {
-          if (p.id !== post.id) return p;
-          const liked = p.liked_by?.includes(currentUser.id);
-          const liked_by = liked
-            ? p.liked_by.filter(id => id !== currentUser.id)
-            : [...(p.liked_by || []), currentUser.id];
-          return { ...p, liked_by, likes: liked_by.length };
-        })
-      );
-      return { previous };
+      const update = (old = []) => old.map(p => {
+        if (p.id !== post.id) return p;
+        const liked = p.liked_by?.includes(currentUser.id);
+        const liked_by = liked
+          ? p.liked_by.filter(id => id !== currentUser.id)
+          : [...(p.liked_by || []), currentUser.id];
+        return { ...p, liked_by, likes: liked_by.length };
+      });
+      queryClient.setQueryData(["artposts", filter], update);
+      return { previous, filter };
     },
     onError: (_err, _post, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData(["artposts", filter], ctx.previous);
+      if (ctx?.previous) queryClient.setQueryData(["artposts", ctx.filter], ctx.previous);
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["artposts"] }),
   });

@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import {
   MessageSquare, Music, Users, BarChart3, Sparkles,
   Trophy, Compass, Play, ArrowRight, Zap, Shield, Star,
-  Headphones, Radio, Wand2, FileAudio, ChevronRight
+  Headphones, Radio, Wand2, FileAudio, ChevronRight,
+  Image, Cloud, UserCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
 import DailyRecommendation from "@/components/home/DailyRecommendation";
@@ -37,6 +38,21 @@ const features = [
     gradient: "from-indigo-500 to-purple-500",
   },
   {
+    icon: Wand2,
+    label: "AI Cover Art",
+    path: "/cover-art",
+    description: "Generate stunning album covers for your tracks using AI.",
+    gradient: "from-yellow-400 to-orange-500",
+    badge: "New",
+  },
+  {
+    icon: Cloud,
+    label: "Cloud Storage",
+    path: "/files",
+    description: "Securely store, organize, and share your audio files and stems.",
+    gradient: "from-blue-500 to-indigo-500",
+  },
+  {
     icon: Music,
     label: "Playlists",
     path: "/playlists",
@@ -49,6 +65,13 @@ const features = [
     path: "/leaderboard",
     description: "Climb rankings & showcase your talent to the world",
     gradient: "from-pink-500 to-rose-500",
+  },
+  {
+    icon: UserCircle,
+    label: "Creator Profile",
+    path: "/profile",
+    description: "Showcase your portfolio, track achievements, and level up.",
+    gradient: "from-violet-500 to-fuchsia-500",
   },
   {
     icon: BarChart3,
@@ -287,7 +310,7 @@ export default function Home() {
             <h2 className="font-heading font-bold text-4xl mb-3">What You Can Actually Do</h2>
             <p className="text-muted-foreground text-lg mb-10 max-w-2xl">Everything you need to discover music, collaborate with artists, produce your sound, and grow your audience:</p>
             
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[
                 {
                   title: "🎧 Produce in the Studio",
@@ -298,8 +321,16 @@ export default function Home() {
                   items: ["Unlimited messaging", "Voice notes & files", "Find collaborators", "Network with peers"]
                 },
                 {
+                  title: "🎨 Create & Manage",
+                  items: ["AI Cover Art Generation", "Cloud File Storage", "Custom Playlists", "Stem Organization"]
+                },
+                {
                   title: "📈 Build Your Presence",
                   items: ["Release your tracks", "Climb the leaderboard", "Track your stats", "Grow your following"]
+                },
+                {
+                  title: "👤 Showcase Talent",
+                  items: ["Creator Profiles", "Earn Achievements", "Display Portfolio", "Level Up Status"]
                 }
               ].map((block) => (
                 <div key={block.title} className="border border-border/50 rounded-2xl p-6 bg-card/50 hover:border-primary/30 transition-colors">

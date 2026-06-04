@@ -37,6 +37,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
   const [history, setHistory] = useState([]);
   const [historyIdx, setHistoryIdx] = useState(-1);
   const [playhead, setPlayhead] = useState(0);
+  const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false);
   const [selectedSegmentId, setSelectedSegmentId] = useState(null);
   const [snapToGrid, setSnapToGrid] = useState(true);
 
@@ -409,11 +410,42 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
               {/* Playhead */}
               <div 
-                className="absolute top-0 bottom-0 w-[2px] bg-primary z-30 shadow-[0_0_12px_rgba(var(--primary),1)] pointer-events-none"
+                className={cn(
+                  "absolute top-0 bottom-0 z-30 cursor-ew-resize transition-colors",
+                  isDraggingPlayhead ? "w-[3px] bg-white shadow-[0_0_15px_rgba(255,255,255,1)]" : "w-[2px] bg-primary shadow-[0_0_12px_rgba(var(--primary),1)]"
+                )}
                 style={{ left: `${(playhead / (track?.duration || 40)) * 100 * zoom}%` }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  setIsDraggingPlayhead(true);
+                  const handleMove = (moveEvent) => {
+                     const rect = containerRef.current.getBoundingClientRect();
+                     const clickX = moveEvent.clientX - rect.left + containerRef.current.scrollLeft;
+                     const totalWidth = rect.width * zoom;
+                     let newTime = (clickX / totalWidth) * (track?.duration || 40);
+                     newTime = getSnappedTime(Math.max(0, Math.min(newTime, track?.duration || 40)));
+                     setPlayhead(newTime);
+                  };
+                  const handleUp = () => {
+                     setIsDraggingPlayhead(false);
+                     window.removeEventListener('pointermove', handleMove);
+                     window.removeEventListener('pointerup', handleUp);
+                  };
+                  window.addEventListener('pointermove', handleMove);
+                  window.addEventListener('pointerup', handleUp);
+                }}
               >
-                <div className="absolute top-0 -translate-x-1/2 w-4 h-4 bg-primary flex items-center justify-center">
+                <div className={cn(
+                  "absolute top-0 -translate-x-1/2 w-4 h-4 flex items-center justify-center transition-colors",
+                  isDraggingPlayhead ? "bg-white" : "bg-primary"
+                )}>
                    <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[6px] border-l-transparent border-r-transparent border-t-black mt-1" />
+                </div>
+                <div className={cn(
+                  "absolute top-5 -translate-x-1/2 text-black text-[10px] font-mono px-1.5 py-0.5 rounded font-bold shadow-lg transition-all",
+                  isDraggingPlayhead ? "bg-white scale-110" : "bg-primary scale-100"
+                )}>
+                  {playhead.toFixed(3)}s
                 </div>
               </div>
             </div>

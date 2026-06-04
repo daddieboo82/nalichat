@@ -98,10 +98,8 @@ export default function AppLayout() {
             })}
           </div>
 
-          {/* User Actions */}
+          {/* Communication Actions */}
           <div className="flex items-center gap-1 shrink-0">
-            <SoundToggle />
-            <NotificationBell />
             <button
               onClick={() => setShowMessage(true)}
               title="Send Message"
@@ -116,6 +114,12 @@ export default function AppLayout() {
             >
               <UserPlus className="w-4 h-4" />
             </button>
+          </div>
+
+          {/* System & Account Actions */}
+          <div className="flex items-center gap-1 shrink-0 border-l border-border/30 pl-1">
+            <SoundToggle />
+            <NotificationBell />
             <button
               onClick={() => setShowHelp(true)}
               title="Help & Tutorial"
@@ -123,18 +127,6 @@ export default function AppLayout() {
             >
               <HelpCircle className="w-4 h-4" />
             </button>
-            <Link
-              to="/profile"
-              title="Profile"
-              className={cn(
-                "w-9 h-9 rounded-lg flex items-center justify-center transition-all",
-                location.pathname === "/profile"
-                  ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-              )}
-            >
-              <User className="w-4 h-4" />
-            </Link>
             <Link
               to="/settings"
               title="Settings"

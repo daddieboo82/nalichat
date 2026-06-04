@@ -644,6 +644,15 @@ export default function Studio() {
       return;
     }
     
+    const destination = prompt("Save to 'device' (download) or 'app' (cloud files)?", "device");
+    if (!destination) return;
+    
+    const destClean = destination.toLowerCase().trim();
+    if (destClean !== 'device' && destClean !== 'app') {
+      toast.error("Invalid destination. Choose 'device' or 'app'.");
+      return;
+    }
+
     const fileName = prompt("Enter a name for your exported file:", "NaliStudio_Mixdown");
     if (!fileName) return;
 
@@ -657,15 +666,20 @@ export default function Studio() {
 
     const cleanFormat = format.toLowerCase().trim();
     const fullFileName = `${fileName}.${cleanFormat}`;
-    const element = document.createElement("a");
-    const mimeType = cleanFormat === 'midi' ? 'audio/midi' : `audio/${cleanFormat}`;
-    const file = new Blob(["Simulated exported audio data from NaliStudio"], {type: mimeType});
-    element.href = URL.createObjectURL(file);
-    element.download = fullFileName;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-    toast.success(`Exported ${fullFileName}`);
+    
+    if (destClean === 'device') {
+      const element = document.createElement("a");
+      const mimeType = cleanFormat === 'midi' ? 'audio/midi' : `audio/${cleanFormat}`;
+      const file = new Blob(["Simulated exported audio data from NaliStudio"], {type: mimeType});
+      element.href = URL.createObjectURL(file);
+      element.download = fullFileName;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      toast.success(`Downloaded ${fullFileName} to device`);
+    } else {
+      toast.success(`Saved ${fullFileName} to your NaliStudio App Files`);
+    }
   };
 
   return (

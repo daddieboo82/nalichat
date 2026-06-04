@@ -1,9 +1,9 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -39,6 +39,23 @@ import Studio from '@/pages/Studio';
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (location.pathname === '/') {
+      const lastPath = localStorage.getItem('last_visited_path');
+      if (lastPath && lastPath !== '/') {
+        navigate(lastPath, { replace: true });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+    if (!authRoutes.includes(location.pathname) && location.pathname !== '/') {
+      localStorage.setItem('last_visited_path', location.pathname + location.search);
+    }
+  }, [location]);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (

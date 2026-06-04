@@ -62,8 +62,8 @@ export default function AppLayout() {
       <MobileBottomNav />
 
       {/* Bottom Navigation (Desktop) */}
-      <nav className="hidden md:block relative z-50 border-t border-border/50 backdrop-blur-xl" style={{ background: "hsl(240 8% 6% / 0.95)" }}>
-        <div className="max-w-7xl mx-auto px-3 py-1.5 flex items-center justify-between gap-2">
+      <nav className="hidden md:block relative z-50 border-t border-border/50 backdrop-blur-2xl shadow-2xl shadow-primary/5" style={{ background: "hsl(240 8% 6% / 0.98)" }}>
+        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
           {/* Logo + Branding */}
           <Link to="/" className="group shrink-0">
             <div className="flex items-center gap-2">
@@ -85,7 +85,7 @@ export default function AppLayout() {
                   title={label}
                   onClick={() => sounds.nav()}
                   className={cn(
-                    "px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap text-xs font-medium group",
+                    "px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap text-xs font-medium group relative",
                     isActive
                       ? "bg-primary/15 text-primary shadow-sm"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"

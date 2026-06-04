@@ -77,25 +77,25 @@ export default function Explore() {
       className="h-full overflow-y-auto bg-background"
     >
       {/* Hero */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/25 via-background to-accent/15 px-4 sm:px-8 pt-8 pb-6">
-        <div className="absolute -top-24 right-10 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-float-blob pointer-events-none" />
-        <div className="absolute -bottom-24 left-10 w-72 h-72 bg-accent/20 rounded-full blur-3xl animate-float-blob pointer-events-none" style={{ animationDelay: "-7s" }} />
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary/30 via-background to-accent/20 px-4 sm:px-8 pt-8 pb-8">
+        <div className="absolute -top-24 right-10 w-72 h-72 bg-pink-500/25 rounded-full blur-3xl animate-float-blob pointer-events-none" />
+        <div className="absolute -bottom-24 left-10 w-72 h-72 bg-accent/25 rounded-full blur-3xl animate-float-blob pointer-events-none" style={{ animationDelay: "-7s" }} />
         <div className="relative max-w-5xl mx-auto">
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <span className="text-xs text-primary font-semibold uppercase tracking-wider">Gallery</span>
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+                <span className="text-xs text-primary font-bold uppercase tracking-wider">🎵 Discovery Hub</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-heading font-black text-gradient-animate inline-block">Explore & Discover</h1>
-              <p className="text-muted-foreground text-sm mt-1">Tracks from producers worldwide</p>
+              <h1 className="text-3xl sm:text-4xl font-heading font-black text-gradient-animate inline-block">Discover & Collaborate</h1>
+              <p className="text-muted-foreground text-base mt-2">Find inspiring tracks, connect with producers, or release your own work</p>
             </div>
             <button
               onClick={() => setShowUpload(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-primary to-pink-500 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:opacity-90 transition-all glow-primary shimmer-hover"
+              className="flex items-center gap-2 bg-gradient-to-r from-primary to-pink-500 text-white px-5 py-3 rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-primary/40 transition-all glow-primary shimmer-hover hover:-translate-y-0.5"
             >
               <Plus className="w-4 h-4" />
-              Release Track
+              Release Your Track
             </button>
           </div>
 
@@ -131,8 +131,12 @@ export default function Explore() {
 
         {/* Featured row */}
         {featured.length > 0 && search === "" && (
-          <div className="mb-8">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">🔥 Trending</h2>
+          <div className="mb-10">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="text-2xl">🔥</div>
+              <h2 className="text-lg font-bold tracking-tight">Trending Now</h2>
+              <div className="flex-1 h-0.5 bg-gradient-to-r from-primary/40 to-transparent rounded-full" />
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {featured.slice(0, 3).map(post => (
                 <ArtPostCard key={post.id} post={post} currentUser={currentUser} onLike={() => toggleLike.mutate(post)} onComment={setCommentTrack} onAddToPlaylist={setSelectedTrackForPlaylist} large />
@@ -143,16 +147,22 @@ export default function Explore() {
 
         {/* All posts masonry grid */}
         <div>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            {search ? `Results for "${search}"` : "Recent"}
-          </h2>
+          <div className="flex items-center gap-2 mb-4">
+            {search && <span className="text-base">🔍</span>}
+            <h2 className="text-lg font-bold tracking-tight">
+              {search ? `Results for "${search}"` : "Latest Releases"}
+            </h2>
+          </div>
           {recent.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground">
-              <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-heading font-semibold">No tracks yet</p>
-              <p className="text-sm mt-1">Be the first to release your music!</p>
-              <button onClick={() => setShowUpload(true)} className="mt-4 bg-primary text-primary-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
-                Release Now
+            <div className="text-center py-24 text-muted-foreground">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                <Sparkles className="w-8 h-8 text-primary" />
+              </div>
+              <p className="font-heading font-bold text-lg text-foreground">No tracks yet</p>
+              <p className="text-sm mt-2 mb-6">Be the first to release your music and inspire the community!</p>
+              <button onClick={() => setShowUpload(true)} className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-pink-500 text-white px-6 py-3 rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-primary/40 transition-all glow-primary hover:-translate-y-0.5">
+                <Plus className="w-4 h-4" />
+                Release Your First Track
               </button>
             </div>
           ) : (

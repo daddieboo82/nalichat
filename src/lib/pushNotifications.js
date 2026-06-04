@@ -17,6 +17,17 @@ export async function requestPushPermission() {
 
 export async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return null;
+
+  // In dev mode, unregister any stale service workers and skip registration
+  // to prevent the SW from cache-serving stale Vite/React chunks.
+  if (import.meta.env.DEV) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const reg of registrations) {
+      await reg.unregister();
+    }
+    return null;
+  }
+
   try {
     const reg = await navigator.serviceWorker.register('/sw.js');
     return reg;

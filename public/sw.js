@@ -1,85 +1,88 @@
-const CACHE_NAME = 'nalichat-v1';
-const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+const CACHE_NAME = 'nalichat-v2';
+
+// Never cache these — Vite dev chunks, JS modules, CSS, or API calls
+const BYPASS_PATTERNS = [
+  '/src/',
+  '/node_modules/.vite',
+  '/@vite',
+  '/@react-refresh',
+  '/api/',
+  '.js',
+  '.jsx',
+  '.ts',
+  '.tsx',
+  '.css',
+  '.mjs',
 ];
 
-// Install event - cache essential assets
+function shouldBypass(url) {
+  return BYPASS_PATTERNS.some(p => url.includes(p));
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).catch(err => console.log('Cache install failed:', err))
-  );
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys().then(keys =>
+      Promise.all(keys.map(key => caches.delete(key)))
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch event - network first, fallback to cache
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
+  const url = event.request.url;
 
-  // Skip non-GET requests and external URLs
-  if (request.method !== 'GET') {
-    return;
+  // Bypass: non-GET, cross-origin, or any JS/CSS/Vite/API resource
+  if (
+    event.request.method !== 'GET' ||
+    !url.startsWith(self.location.origin) ||
+    shouldBypass(url)
+  ) {
+    return; // Let the browser handle it normally
   }
 
-  // For API calls and external resources, use network-first strategy
-  if (url.pathname.startsWith('/api/') || !url.origin.includes(self.location.origin)) {
+  // For navigation requests (HTML), serve network-first
+  if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then(response => response)
-        .catch(() => caches.match(request))
+      fetch(event.request).catch(() => caches.match('/index.html'))
     );
     return;
   }
 
-  // For app assets, use cache-first strategy
+  // For static assets (icons, manifest, images), cache-first
   event.respondWith(
-    caches.match(request).then((response) => {
-      if (response) {
-        return response;
-      }
-
-      return fetch(request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+      return fetch(event.request).then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
-
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(request, responseToCache);
-        });
-
         return response;
-      });
-    })
-    .catch(() => {
-      // Return a fallback response if offline
-      return new Response('Offline - Unable to load resource', {
-        status: 503,
-        statusText: 'Service Unavailable',
-        headers: new Headers({
-          'Content-Type': 'text/plain'
-        })
       });
     })
   );
+});
+
+// Show push notifications from server-sent push events
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  const data = event.data.json();
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'NaliChat', {
+      body: data.body || '',
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      tag: 'nali-notification',
+      data: { url: data.url || '/' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/';
+  event.waitUntil(clients.openWindow(url));
 });

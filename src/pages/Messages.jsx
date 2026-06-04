@@ -11,7 +11,7 @@ import ExternalMessageDialog from "@/components/messages/ExternalMessageDialog";
 import InviteTab from "@/components/messages/InviteTab";
 import ContactsTab from "@/components/messages/ContactsTab";
 import { notify } from "@/lib/notifications";
-import { MessageSquare, Users, Mail, Plus, Zap, UserPlus } from "lucide-react";
+import { MessageSquare, Users, Mail, Plus, Zap, UserPlus, Hash } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
@@ -180,6 +180,32 @@ export default function Messages() {
     }
   };
 
+  const joinMainRoom = async () => {
+    if (!currentUser?.id) return;
+    try {
+      const existing = conversations.find(c => c.name === "Main Chat Room" && c.type === "group");
+      if (existing) {
+        if (!existing.participant_ids?.includes(currentUser.id)) {
+          await base44.entities.Conversation.update(existing.id, {
+            participant_ids: [...new Set([...(existing.participant_ids || []), currentUser.id])]
+          });
+          await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        }
+        setSelectedConvId(existing.id);
+      } else {
+        const conv = await base44.entities.Conversation.create({
+          type: "group",
+          name: "Main Chat Room",
+          participant_ids: [currentUser.id]
+        });
+        await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        setSelectedConvId(conv.id);
+      }
+    } catch (err) {
+      console.error("Failed to join main room:", err);
+    }
+  };
+
   const createGroup = async ({ name, participant_ids }) => {
     if (!currentUser?.id || !participant_ids?.length) return;
     try {
@@ -208,6 +234,7 @@ export default function Messages() {
   const otherUsers = users.filter(u => u.id !== currentUser?.id);
 
   const quickActions = [
+    { icon: Hash, label: "Main Room", action: joinMainRoom, color: "from-purple-500 to-indigo-500", bg: "bg-purple-500/10", text: "text-purple-500" },
     { icon: MessageSquare, label: "Direct Message", action: () => setShowNewDM(true), color: "from-primary to-pink-500", bg: "bg-primary/10", text: "text-primary" },
     { icon: Users, label: "New Group", action: () => setShowNewGroup(true), color: "from-accent to-cyan-400", bg: "bg-accent/10", text: "text-accent" },
     { icon: Zap, label: "Email / SMS", action: () => setShowExternal(true), color: "from-yellow-500 to-orange-500", bg: "bg-yellow-500/10", text: "text-yellow-500" },
@@ -243,7 +270,7 @@ export default function Messages() {
                 className="mb-4"
               >
                 <h3 className="text-xs font-bold text-muted-foreground/60 uppercase tracking-wider mb-3">Start Chatting</h3>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {quickActions.map((action) => {
                     const Icon = action.icon;
                     return (

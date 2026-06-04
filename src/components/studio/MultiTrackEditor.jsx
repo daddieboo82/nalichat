@@ -14,11 +14,13 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [masterVolume, setMasterVolume] = useState(100);
+  const [masterPeak, setMasterPeak] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [queue, setQueue] = useState([]);
   const [queueOpen, setQueueOpen] = useState(false);
   const [selectedTrackIds, setSelectedTrackIds] = useState([]);
   const [zipping, setZipping] = useState(false);
+  const peakRef = useRef(null);
 
   const queueIds = new Set(queue.map(t => t.id));
   const toggleQueue = (track) =>
@@ -36,6 +38,37 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
       Object.values(audioElements.current).forEach(el => el?.pause());
     };
   }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.code === "Space" && (e.target === document.body || e.target.tagName === "BODY")) {
+        e.preventDefault();
+        handlePlay();
+      } else if (e.code === "Backspace" && canEdit && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        handleStop();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isPlaying, canEdit]);
+
+  // Update master peak meter
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const peaks = Object.values(audioElements.current)
+        .map(el => {
+          if (!el || el.paused) return 0;
+          const track = tracks.find(t => t.id === Object.entries(audioElements.current).find(([_, r]) => r === el)?.[0]);
+          if (track?.muted) return 0;
+          return (track?.volume || 75) / 100;
+        });
+      const maxPeak = Math.max(...peaks, 0);
+      setMasterPeak(prev => prev * 0.9 + maxPeak * 0.1);
+    }, 50);
+    return () => clearInterval(interval);
+  }, [tracks]);
 
   const handlePlay = () => {
     if (!isPlaying) {
@@ -109,20 +142,23 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           <button
             onClick={handlePlay}
             className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg",
+              "w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg relative group",
               isPlaying
                 ? "bg-destructive/20 text-destructive border border-destructive/30 shadow-destructive/20"
                 : "bg-gradient-to-br from-primary to-pink-500 text-white shadow-primary/30 hover:opacity-90"
             )}
+            title="Play / Pause (Space)"
           >
             {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-2 py-1 bg-secondary rounded text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none">Space</div>
           </button>
           <button
             onClick={handleStop}
-            className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all hover:scale-105 active:scale-95"
-            title="Stop"
+            className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all hover:scale-105 active:scale-95 relative group"
+            title="Stop (Ctrl+Delete)"
           >
             <Square className="w-4 h-4" />
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-2 py-1 bg-secondary rounded text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none">Ctrl+⌫</div>
           </button>
           <button
             onClick={() => window.location.href = '/record'}
@@ -138,26 +174,34 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           {Math.floor(currentTime / 60)}:{String(Math.floor(currentTime % 60)).padStart(2, "0")}
         </div>
 
-        {/* Master volume */}
+        {/* Master volume with peak meter */}
         <div className="flex items-center gap-2">
           <Headphones className="w-4 h-4 text-muted-foreground shrink-0" />
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={masterVolume}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              setMasterVolume(v);
-              Object.values(audioElements.current).forEach(el => {
-                if (el) el.volume = (v / 100) * 0.75;
-              });
-            }}
-            className="w-20 h-1 rounded-full appearance-none cursor-pointer"
-            style={{
-              background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${masterVolume}%, hsl(var(--secondary)) ${masterVolume}%, hsl(var(--secondary)) 100%)`
-            }}
-          />
+          <div className="flex flex-col gap-1">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={masterVolume}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                setMasterVolume(v);
+                Object.values(audioElements.current).forEach(el => {
+                  if (el) el.volume = (v / 100) * 0.75;
+                });
+              }}
+              className="w-20 h-1 rounded-full appearance-none cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${masterVolume}%, hsl(var(--secondary)) ${masterVolume}%, hsl(var(--secondary)) 100%)`
+              }}
+            />
+            <div className="w-20 h-1 bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-accent to-primary transition-all duration-100"
+                style={{ width: `${Math.min(masterPeak * 100, 100)}%` }}
+              />
+            </div>
+          </div>
           <span className="text-[11px] text-muted-foreground/70 tabular-nums w-8">{masterVolume}%</span>
         </div>
 

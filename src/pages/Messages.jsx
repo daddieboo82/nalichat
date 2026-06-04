@@ -79,6 +79,16 @@ export default function Messages() {
     return unsub;
   }, [selectedConvId, queryClient]);
 
+  const editMessage = useMutation({
+    mutationFn: async ({ id, text }) => {
+      return await base44.entities.Message.update(id, { text, is_edited: true });
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
+      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+
   const sendMessage = useMutation({
     mutationFn: async (msgData) => {
       const msg = await base44.entities.Message.create({
@@ -254,18 +264,32 @@ export default function Messages() {
               currentUser={currentUser}
               users={users}
               onSendMessage={(data) => sendMessage.mutate(data)}
+              onEditMessage={(id, text) => editMessage.mutate({ id, text })}
               onReact={handleReact}
               onBack={() => setSelectedConvId(null)}
             />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-              <div className="w-24 h-24 rounded-full bg-secondary/50 flex items-center justify-center mb-6 shadow-inner">
-                <MessageSquare className="w-10 h-10 text-muted-foreground/50" />
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+              <div className="relative z-10 flex flex-col items-center">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-8 shadow-[0_0_60px_-15px_rgba(var(--primary),0.3)] border border-white/5 backdrop-blur-xl">
+                  <div className="w-24 h-24 rounded-full bg-card flex items-center justify-center shadow-inner">
+                    <MessageSquare className="w-10 h-10 text-primary/60" />
+                  </div>
+                </div>
+                <h2 className="text-2xl font-heading font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">Your Messages</h2>
+                <p className="text-base text-muted-foreground max-w-[300px] leading-relaxed">
+                  Select a conversation from the sidebar or start a new one to connect with your network.
+                </p>
+                <div className="mt-8 flex gap-3">
+                  <Button onClick={() => setShowNewDM(true)} className="rounded-xl shadow-lg shadow-primary/20">
+                    <MessageSquare className="w-4 h-4 mr-2" /> New Chat
+                  </Button>
+                  <Button onClick={() => setShowNewGroup(true)} variant="secondary" className="rounded-xl border border-border/50">
+                    <Users className="w-4 h-4 mr-2" /> New Group
+                  </Button>
+                </div>
               </div>
-              <h2 className="text-xl font-heading font-bold mb-2">No Chat Selected</h2>
-              <p className="text-sm text-muted-foreground max-w-[260px]">
-                Choose a conversation from the sidebar or start a new one to begin messaging.
-              </p>
             </div>
           )}
         </div>

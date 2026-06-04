@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, Copy, Trash2, Forward } from "lucide-react";
+import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, Copy, Trash2, Forward, Pencil } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { resumableDownload } from "@/lib/resumableUpload";
@@ -187,7 +189,7 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
 const gradients = ["from-primary to-pink-500","from-accent to-cyan-400","from-yellow-500 to-orange-500","from-green-400 to-emerald-600","from-purple-500 to-indigo-500"];
 const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.length];
 
-export default function MessageBubble({ message, isOwn, showAvatar, onReply, onReact, onOpenThread, users, onCopy, onDelete, currentUser }) {
+export default function MessageBubble({ message, isOwn, showAvatar, onReply, onEdit, onReact, onOpenThread, users, onCopy, onDelete, currentUser }) {
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -196,8 +198,11 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
   const avatarGradient = getGradient(message.sender_name);
 
   return (
-    <div
-      className={cn("flex gap-2 group mb-0.5 py-0.5", isOwn ? "flex-row-reverse" : "flex-row")}
+    <motion.div
+      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className={cn("flex gap-2 group mb-0.5 py-0.5", isOwn ? "flex-row-reverse" : "flex-row", showAvatar ? "mt-4" : "mt-0.5")}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => { setShowActions(false); setShowEmojiPicker(false); }}
     >
@@ -237,7 +242,17 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
           {hasFile ? (
             <FileAttachment message={message} isOwn={isOwn} onOpenViewer={() => setViewerOpen(true)} />
           ) : (
-            <p className={cn("text-sm leading-relaxed break-words", isOwn ? "text-white" : "text-foreground")}>{message.text}</p>
+            <div className={cn("text-[15px] leading-relaxed break-words whitespace-pre-wrap", isOwn ? "text-white" : "text-foreground")}>
+              <ReactMarkdown
+                components={{
+                  a: ({node, ...props}) => <a {...props} target="_blank" rel="noreferrer" className="underline font-semibold hover:opacity-80 break-all" />,
+                  p: ({node, ...props}) => <span {...props} />,
+                  code: ({node, inline, ...props}) => <code {...props} className={cn("px-1.5 py-0.5 rounded-md text-xs font-mono bg-black/10 dark:bg-white/10")} />
+                }}
+              >
+                {message.text}
+              </ReactMarkdown>
+            </div>
           )}
           {hasFile && message.text && message.type !== "audio" && (
             <p className="text-sm mt-2 px-2 pb-1">{message.text}</p>
@@ -272,8 +287,9 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
         })()}
 
         <div className={cn("flex items-center gap-1.5 mt-1", isOwn ? "justify-end mr-1" : "ml-1")}>
-          <p className="text-[10px] text-muted-foreground/50">
+          <p className="text-[10px] text-muted-foreground/50 font-medium">
             {message.created_date ? format(new Date(message.created_date), "h:mm a") : "..."}
+            {message.is_edited && " • Edited"}
           </p>
           {isOwn && (
             <ReadReceipts readBy={message.read_by || []} users={users || []} />
@@ -341,6 +357,16 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
           <MessageSquareQuote className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
 
+        {isOwn && message.type === "text" && (
+          <button
+            onClick={() => onEdit?.(message)}
+            className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 hover:text-primary transition-all shadow-sm"
+            title="Edit message"
+          >
+            <Pencil className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
+          </button>
+        )}
+
         {isOwn && (
           <button
             onClick={() => onDelete?.(message.id)}
@@ -358,6 +384,6 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
       />
-    </div>
+    </motion.div>
   );
 }

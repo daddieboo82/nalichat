@@ -12,8 +12,9 @@ import ThreadPanel from "./ThreadPanel";
 import MessageSearch from "./MessageSearch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-export default function ChatView({ conversation, messages, currentUser, users, onSendMessage, onReact, onBack }) {
+export default function ChatView({ conversation, messages, currentUser, users, onSendMessage, onEditMessage, onReact, onBack }) {
   const [replyTo, setReplyTo] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [threadMessage, setThreadMessage] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
@@ -140,6 +141,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
               isOwn={item.sender_id === currentUser?.id}
               showAvatar={item.showAvatar}
               onReply={setReplyTo}
+              onEdit={setEditingMessage}
               onReact={onReact}
               onOpenThread={setThreadMessage}
               users={users}
@@ -163,9 +165,18 @@ export default function ChatView({ conversation, messages, currentUser, users, o
       <div className="absolute bottom-0 left-0 right-0 z-20 p-2 sm:p-4 pointer-events-none">
         <div className="pointer-events-auto w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-hidden bg-background/90 backdrop-blur-2xl border border-border/50">
           <ChatInput
-            onSend={onSendMessage}
+            onSend={(payload) => {
+              if (editingMessage && payload.type === 'text') {
+                onEditMessage(editingMessage.id, payload.text);
+                setEditingMessage(null);
+              } else {
+                onSendMessage(payload);
+              }
+            }}
             replyTo={replyTo}
             onCancelReply={() => setReplyTo(null)}
+            editingMessage={editingMessage}
+            onCancelEdit={() => setEditingMessage(null)}
             onTyping={() => {
               clearTimeout(typingTimeoutRef.current);
               typingTimeoutRef.current = setTimeout(() => setTypingUsers([]), 2000);

@@ -7,8 +7,15 @@ import { sounds } from "@/hooks/use-sound";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiReactionPicker from "./EmojiReactionPicker";
 
-export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, onTyping }) {
+export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessage, onCancelEdit, disabled, onTyping }) {
   const [text, setText] = useState("");
+
+  useEffect(() => {
+    if (editingMessage) {
+      setText(editingMessage.text || "");
+      textareaRef.current?.focus();
+    }
+  }, [editingMessage]);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [uploads, setUploads] = useState([]); // [{name, progress, done}]
@@ -39,6 +46,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
     onSend(payload);
     setText("");
     onCancelReply?.();
+    onCancelEdit?.();
   };
 
   const uploadFile = async (file) => {
@@ -145,8 +153,21 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
     >
+      {/* Edit preview */}
+      {editingMessage && (
+        <div className="px-4 pt-3 flex items-center gap-2 animate-in slide-in-from-bottom-1 duration-200">
+          <div className="flex-1 border-l-2 border-accent/70 pl-3 py-1.5 bg-accent/5 rounded-r-lg">
+            <p className="text-[10px] text-accent font-semibold mb-0.5">Editing Message</p>
+            <p className="text-xs text-muted-foreground/80 truncate">{editingMessage.text}</p>
+          </div>
+          <button onClick={() => { onCancelEdit?.(); setText(""); }} className="text-muted-foreground hover:text-foreground p-1.5 rounded-full hover:bg-secondary/60 transition-all">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Reply preview */}
-      {replyTo && (
+      {replyTo && !editingMessage && (
         <div className="px-4 pt-3 flex items-center gap-2 animate-in slide-in-from-bottom-1 duration-200">
           <div className="flex-1 border-l-2 border-primary/70 pl-3 py-1 bg-primary/5 rounded-r-lg">
             <p className="text-[10px] text-primary font-semibold">{replyTo.sender_name}</p>

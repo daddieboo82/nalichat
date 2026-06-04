@@ -208,7 +208,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       )}
 
       <div className="p-2.5 sm:p-3 flex items-end gap-1.5 sm:gap-2">
-        <input ref={fileInputRef} type="file" className="hidden" multiple onChange={handleFileChange} accept="*/*" />
+        <input ref={fileInputRef} type="file" className="hidden" multiple onChange={handleFileChange} accept="*/*" title="File Upload" aria-label="File Upload" />
 
         {/* Start Session / Additional Features */}
         <Popover open={showFeatures} onOpenChange={setShowFeatures}>
@@ -246,6 +246,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
                         onChange={e => setSessionName(e.target.value)}
                         className="flex-1 bg-secondary/50 border border-border/50 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary/50 text-foreground"
                         placeholder="Session name"
+                        title="Session Name Input"
+                        aria-label="Session Name Input"
                         onKeyDown={e => {
                           if (e.key === 'Enter' && sessionName.trim()) {
                             onSend({ text: sessionName.trim(), type: "session" });
@@ -367,6 +369,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
               onTyping?.();
             }}
             placeholder={dragOver ? "📎 Drop files here..." : "Message..."}
+            title="Message Input"
+            aria-label="Message Input"
             className="flex-1 bg-secondary/30 border border-border/50 rounded-2xl px-4 py-2.5 text-sm resize-none min-h-[40px] max-h-[120px] focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 placeholder:text-muted-foreground/50 transition-all"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {

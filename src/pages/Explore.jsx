@@ -103,6 +103,8 @@ export default function Explore() {
             </div>
             <button
               onClick={() => setShowUpload(true)}
+              title="Release Track"
+              aria-label="Release Track"
               className="flex items-center gap-2 bg-gradient-to-r from-primary to-pink-500 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:opacity-90 transition-all glow-primary shimmer-hover"
             >
               <Plus className="w-4 h-4" />
@@ -117,6 +119,8 @@ export default function Explore() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search by title, artist, tag..."
+              title="Search Tracks"
+              aria-label="Search Tracks"
               className="w-full bg-secondary/60 border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground"
             />
           </div>
@@ -130,6 +134,8 @@ export default function Explore() {
             <button
               key={m}
               onClick={() => setFilter(m)}
+              title={`Filter by ${m}`}
+              aria-label={`Filter by ${m}`}
               className={cn(
                 "px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap capitalize transition-colors shrink-0",
                 filter === m ? "bg-gradient-to-r from-primary to-pink-500 text-white shadow-md shadow-primary/30" : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -162,7 +168,7 @@ export default function Explore() {
               <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="font-heading font-semibold">No tracks yet</p>
               <p className="text-sm mt-1">Be the first to release your music!</p>
-              <button onClick={() => setShowUpload(true)} className="mt-4 bg-primary text-primary-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
+              <button onClick={() => setShowUpload(true)} title="Release Now" aria-label="Release Now" className="mt-4 bg-primary text-primary-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
                 Release Now
               </button>
             </div>

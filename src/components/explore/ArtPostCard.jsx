@@ -13,9 +13,22 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
 
   return (
     <>
-      <div className={cn("break-inside-avoid mb-4 bg-card rounded-2xl overflow-hidden border border-border group hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 cursor-pointer", large && "")} onClick={() => {
-        setShowMedia(true);
-      }}>
+      <div 
+        role="button"
+        tabIndex={0}
+        title={`View ${post.title || 'media'}`}
+        aria-label={`View ${post.title || 'media'}`}
+        className={cn("break-inside-avoid mb-4 bg-card rounded-2xl overflow-hidden border border-border group hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 cursor-pointer", large && "")} 
+        onClick={() => {
+          setShowMedia(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setShowMedia(true);
+          }
+        }}
+      >
         {post.image_url && (
           <div className="relative overflow-hidden">
             <img
@@ -68,6 +81,8 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onLike?.(e); }}
+              title="Like"
+              aria-label="Like"
               className={cn(
                 "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-all shrink-0",
                 liked

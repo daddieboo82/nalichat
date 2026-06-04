@@ -274,6 +274,8 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                          max={duration || 0}
                          value={currentTime}
                          onChange={handleTimeChange}
+                         title="Seek audio"
+                         aria-label="Seek audio"
                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                        />
                        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -357,6 +359,8 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
           {/* Close Button */}
           <button
             onClick={() => onOpenChange(false)}
+            title="Close"
+            aria-label="Close"
             className="absolute top-4 right-4 p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md transition-all z-20 border border-white/10"
           >
             <X className="w-5 h-5" />

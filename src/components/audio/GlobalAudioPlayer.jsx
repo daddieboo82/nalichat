@@ -62,6 +62,8 @@ export default function GlobalAudioPlayer() {
               <Button
                 variant="ghost"
                 size="icon"
+                title={isPlaying ? "Pause" : "Play"}
+                aria-label={isPlaying ? "Pause" : "Play"}
                 className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white text-black hover:bg-white/90 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                 onClick={togglePlay}
               >
@@ -84,7 +86,7 @@ export default function GlobalAudioPlayer() {
           {/* Right Controls */}
           <div className="flex items-center justify-end gap-2 w-1/3 min-w-0">
              <div className="hidden lg:flex items-center gap-2 w-32 mr-4">
-                <Button variant="ghost" size="icon" className="w-8 h-8 text-white/60 hover:bg-white/10 hover:text-white" onClick={() => setVolume(volume === 0 ? 1 : 0)}>
+                <Button variant="ghost" size="icon" title={volume === 0 ? "Unmute" : "Mute"} aria-label={volume === 0 ? "Unmute" : "Mute"} className="w-8 h-8 text-white/60 hover:bg-white/10 hover:text-white" onClick={() => setVolume(volume === 0 ? 1 : 0)}>
                   {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                 </Button>
                 <Slider 
@@ -95,10 +97,10 @@ export default function GlobalAudioPlayer() {
                   className="w-20 [&_[role=slider]]:w-3 [&_[role=slider]]:h-3 [&_[role=slider]]:bg-white [&_[role=slider]]:border-white/50" 
                 />
              </div>
-             <Button variant="ghost" size="icon" className="w-8 h-8 text-white/60 hover:bg-white/10 hover:text-white md:hidden" onClick={togglePlay}>
+             <Button variant="ghost" size="icon" title={isPlaying ? "Pause" : "Play"} aria-label={isPlaying ? "Pause" : "Play"} className="w-8 h-8 text-white/60 hover:bg-white/10 hover:text-white md:hidden" onClick={togglePlay}>
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
              </Button>
-             <Button variant="ghost" size="icon" className="w-8 h-8 text-white/60 hover:bg-white/10 hover:text-white transition-colors rounded-full" onClick={closePlayer}>
+             <Button variant="ghost" size="icon" title="Close Player" aria-label="Close Player" className="w-8 h-8 text-white/60 hover:bg-white/10 hover:text-white transition-colors rounded-full" onClick={closePlayer}>
                <X className="w-4 h-4" />
              </Button>
           </div>

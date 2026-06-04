@@ -154,7 +154,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   return (
     <div className="h-full flex flex-col overflow-hidden relative bg-background">
       {/* Transport Controls */}
-      <div className="px-4 py-3 border-b border-border flex items-center gap-3 flex-wrap bg-secondary/30">
+      <div className="px-8 py-3 border-b border-border flex items-center gap-4 flex-wrap bg-secondary/30">
         {/* Play/Stop/Rewind */}
         <div className="flex items-center gap-1.5">
           <button
@@ -288,7 +288,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
 
       {/* Selection toolbar */}
       {selectedTrackIds.length > 0 && (
-        <div className="px-4 py-2 border-b border-border bg-primary/10 flex items-center gap-3">
+        <div className="px-8 py-2 border-b border-border bg-primary/10 flex items-center gap-4">
           <CheckSquare className="w-4 h-4 text-primary" />
           <span className="text-xs font-bold font-mono text-primary uppercase">{selectedTrackIds.length} Track{selectedTrackIds.length > 1 ? "s" : ""} Selected</span>
           <Button size="sm" className="rounded-sm bg-primary hover:bg-primary/90 h-7 text-xs font-bold ml-auto" onClick={handleDownloadTracksZip} disabled={zipping}>
@@ -333,7 +333,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                 </div>
               </div>
             ) : (
-              <div className="space-y-1.5 p-3">
+              <div className="space-y-2 p-6">
                 {tracks.map((track, idx) => (
                   <div
                     key={track.id}

@@ -5,7 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { 
   X, Play, Pause, Scissors, Copy, Trash2, 
   Activity, Radio, Waves, Settings2, SlidersHorizontal,
-  VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair, Loader2, Undo2, Redo2, Maximize2, SplitSquareHorizontal, Magnet
+  VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair, Loader2, Undo2, Redo2, Maximize2, SplitSquareHorizontal, Magnet, SquareDashedBottom
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -40,6 +40,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
   const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false);
   const [selectedSegmentId, setSelectedSegmentId] = useState(null);
   const [snapToGrid, setSnapToGrid] = useState(true);
+  const [selectionRange, setSelectionRange] = useState(null);
+  const [isDraggingRange, setIsDraggingRange] = useState(false);
 
   const containerRef = useRef(null);
 
@@ -89,7 +91,17 @@ export default function WaveEditor({ track, onClose, onSave }) {
     }
   };
 
-  const handleContainerClick = (e) => {
+  const handleGainChange = (id, newGain) => {
+    setSegments(prev => prev.map(s => s.id === id ? { ...s, gain: newGain } : s));
+  };
+
+  const commitGainChange = () => {
+    setSegments(prev => { saveHistory(prev); return prev; });
+  };
+
+  const handlePointerDown = (e) => {
+    const segmentEl = e.target.closest('.audio-segment');
+    
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const clickX = e.clientX - rect.left + containerRef.current.scrollLeft;
@@ -97,7 +109,14 @@ export default function WaveEditor({ track, onClose, onSave }) {
       let clickTime = (clickX / totalWidth) * (track?.duration || 40);
       clickTime = getSnappedTime(clickTime);
 
-      const segmentEl = e.target.closest('.audio-segment');
+      if (activeTool === 'range') {
+        setIsDraggingRange(true);
+        setSelectionRange({ start: clickTime, end: clickTime });
+        return;
+      }
+
+      if (segmentEl && activeTool === 'move') return;
+
       const clickedSegId = segmentEl ? segmentEl.dataset.segmentId : null;
 
       if (activeTool === 'split') {
@@ -117,12 +136,31 @@ export default function WaveEditor({ track, onClose, onSave }) {
         }
       } else {
         setPlayhead(clickTime);
-        if (clickedSegId) {
-          setSelectedSegmentId(clickedSegId);
-        } else {
-          setSelectedSegmentId(null);
-        }
+        if (clickedSegId) setSelectedSegmentId(clickedSegId);
+        else setSelectedSegmentId(null);
+        setSelectionRange(null);
       }
+    }
+  };
+
+  const handlePointerMove = (e) => {
+    if (isDraggingRange && activeTool === 'range' && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const clickX = e.clientX - rect.left + containerRef.current.scrollLeft;
+      const totalWidth = rect.width * zoom;
+      let currentTime = (clickX / totalWidth) * (track?.duration || 40);
+      currentTime = getSnappedTime(currentTime);
+      setSelectionRange(prev => prev ? { ...prev, end: currentTime } : null);
+    }
+  };
+
+  const handlePointerUp = () => {
+    if (isDraggingRange) {
+      setIsDraggingRange(false);
+      setSelectionRange(prev => {
+        if (!prev || prev.start === prev.end) return null;
+        return { start: Math.min(prev.start, prev.end), end: Math.max(prev.start, prev.end) };
+      });
     }
   };
 
@@ -193,19 +231,52 @@ export default function WaveEditor({ track, onClose, onSave }) {
         if (e.shiftKey) handleRedo();
         else handleUndo();
       } else if (e.code === 'Backspace' || e.code === 'Delete') {
-        setSegments(prev => {
-          if (!selectedSegmentId) return prev;
-          const newSegs = prev.filter(s => s.id !== selectedSegmentId);
-          saveHistory(newSegs);
-          setSelectedSegmentId(null);
-          return newSegs;
-        });
+        if (selectionRange) {
+           const { start, end } = selectionRange;
+           setSegments(prev => {
+              let newSegs = [];
+              prev.forEach(seg => {
+                  const segEnd = seg.startOffset + seg.duration;
+                  if (segEnd <= start || seg.startOffset >= end) {
+                      newSegs.push(seg);
+                  } else if (seg.startOffset < start && segEnd > end) {
+                      const ratio1 = (start - seg.startOffset) / seg.duration;
+                      const ratio2 = (end - seg.startOffset) / seg.duration;
+                      const sEnd1 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio1;
+                      const sStart2 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio2;
+                      newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd1, duration: start - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio1)) });
+                      newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart2, duration: segEnd - end, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio2)) });
+                  } else if (seg.startOffset < start && segEnd <= end) {
+                      const ratio = (start - seg.startOffset) / seg.duration;
+                      const sEnd = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
+                      newSegs.push({ ...seg, sourceEnd: sEnd, duration: start - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio)) });
+                  } else if (seg.startOffset >= start && segEnd > end) {
+                      const ratio = (end - seg.startOffset) / seg.duration;
+                      const sStart = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
+                      newSegs.push({ ...seg, startOffset: end, sourceStart: sStart, duration: segEnd - end, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio)) });
+                  }
+              });
+              saveHistory(newSegs);
+              setSelectionRange(null);
+              return newSegs;
+           });
+        } else {
+            setSegments(prev => {
+              if (!selectedSegmentId) return prev;
+              const newSegs = prev.filter(s => s.id !== selectedSegmentId);
+              saveHistory(newSegs);
+              setSelectedSegmentId(null);
+              return newSegs;
+            });
+        }
       } else if (e.code === 'Digit1') {
         setActiveTool('select');
       } else if (e.code === 'Digit2') {
         setActiveTool('move');
       } else if (e.code === 'Digit3') {
         setActiveTool('split');
+      } else if (e.code === 'Digit4') {
+        setActiveTool('range');
       } else if (e.code === 'KeyS') {
         setSegments(prev => {
           const segIndex = prev.findIndex(s => playhead > s.startOffset && playhead < (s.startOffset + s.duration));
@@ -287,6 +358,9 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <Button variant="ghost" size="icon" onClick={() => setActiveTool('split')} className={cn("h-6 w-6 rounded", activeTool === 'split' && "bg-primary/20 text-primary")} title="Split Segment (Shortcut: 3)">
                   <Scissors className="w-3.5 h-3.5" />
                 </Button>
+                <Button variant="ghost" size="icon" onClick={() => setActiveTool('range')} className={cn("h-6 w-6 rounded", activeTool === 'range' && "bg-primary/20 text-primary")} title="Time Range Selection (Shortcut: 4)">
+                  <SquareDashedBottom className="w-3.5 h-3.5" />
+                </Button>
               </div>
 
               <div className="w-px h-4 bg-white/10" />
@@ -321,9 +395,12 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
             {/* Arrangement View */}
             <div 
-              className="flex-1 relative bg-[#151516] overflow-x-auto overflow-y-hidden custom-scrollbar focus:outline-none" 
+              className="flex-1 relative bg-[#151516] overflow-x-auto overflow-y-hidden custom-scrollbar focus:outline-none touch-none" 
               ref={containerRef} 
-              onClick={handleContainerClick}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerLeave={handlePointerUp}
               tabIndex={0}
               onWheel={(e) => {
                 if (e.ctrlKey || e.metaKey) {
@@ -359,6 +436,21 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 ))}
               </div>
 
+              {/* Range Selection Overlay */}
+              {selectionRange && (
+                <div 
+                  className="absolute top-8 bottom-4 bg-blue-500/20 border-l border-r border-blue-500 pointer-events-none z-20"
+                  style={{
+                    left: `${(Math.min(selectionRange.start, selectionRange.end) / (track?.duration || 40)) * 100 * zoom}%`,
+                    width: `${(Math.abs(selectionRange.end - selectionRange.start) / (track?.duration || 40)) * 100 * zoom}%`
+                  }}
+                >
+                  <div className="absolute top-1 left-1 bg-blue-500 text-white text-[9px] px-1 rounded shadow">
+                    {(Math.abs(selectionRange.end - selectionRange.start)).toFixed(2)}s
+                  </div>
+                </div>
+              )}
+
               {/* Segments Container */}
               <div className="absolute top-8 bottom-4 left-0" style={{ width: `${100 * zoom}%`, minWidth: '100%' }}>
                 {segments.map((seg, idx) => (
@@ -386,19 +478,102 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     }}
                   >
                     {/* Header bar of segment */}
-                    <div className="absolute top-0 left-0 right-0 h-5 bg-black/40 flex items-center px-2 group-hover:bg-primary/20 transition-colors">
+                    <div className="absolute top-0 left-0 right-0 h-5 bg-black/40 flex items-center px-2 group-hover:bg-primary/20 transition-colors z-20 pointer-events-none">
                       <span className="text-[10px] text-white/80 font-mono truncate">{track.name} [{idx+1}]</span>
                     </div>
 
+                    {/* Gain Line */}
+                    <div 
+                        className="absolute left-0 right-0 h-2 -mt-1 cursor-ns-resize hover:bg-white/30 z-20 group/gain flex items-center justify-center transition-colors"
+                        style={{ top: `${Math.max(5, Math.min(95, (1 - (seg.gain ?? 1)) * 50 + 50))}%` }}
+                        onPointerDown={(e) => {
+                            if (activeTool !== 'select') return;
+                            e.stopPropagation();
+                            const startY = e.clientY;
+                            const startGain = seg.gain ?? 1;
+                            const handleMove = (moveEv) => {
+                                const deltaY = moveEv.clientY - startY;
+                                const newGain = Math.max(0, Math.min(2, startGain - deltaY / 50));
+                                handleGainChange(seg.id, newGain);
+                            };
+                            const handleUp = () => {
+                                window.removeEventListener('pointermove', handleMove);
+                                window.removeEventListener('pointerup', handleUp);
+                                commitGainChange();
+                            };
+                            window.addEventListener('pointermove', handleMove);
+                            window.addEventListener('pointerup', handleUp);
+                        }}
+                    >
+                        <div className="w-full h-px bg-white/40 group-hover/gain:bg-white" />
+                        <div className="hidden group-hover/gain:block absolute -top-6 bg-black text-white text-[10px] px-1.5 py-0.5 rounded shadow">
+                           {((seg.gain ?? 1) * 100).toFixed(0)}%
+                        </div>
+                    </div>
+
+                    {/* Fades */}
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" preserveAspectRatio="none">
+                      {seg.fadeIn && (
+                        <polygon points={`0,0 ${((seg.fadeIn)/(seg.duration))*100}%,0 0,100%`} className="fill-[#1c1c1e]/90" />
+                      )}
+                      {seg.fadeOut && (
+                        <polygon points={`100%,0 ${100 - ((seg.fadeOut)/(seg.duration))*100}%,0 100%,100%`} className="fill-[#1c1c1e]/90" />
+                      )}
+                    </svg>
+
+                    {/* Fade Handles */}
+                    <div 
+                        className="absolute top-0 w-2.5 h-2.5 bg-white/50 hover:bg-white cursor-ew-resize z-30 rounded-br-sm"
+                        style={{ left: `${((seg.fadeIn || 0) / seg.duration) * 100}%` }}
+                        onPointerDown={(e) => {
+                            if (activeTool !== 'select') return;
+                            e.stopPropagation();
+                            const rect = e.target.parentElement.getBoundingClientRect();
+                            const handleMove = (moveEv) => {
+                                const clickX = Math.max(0, moveEv.clientX - rect.left);
+                                const newFadeIn = (clickX / rect.width) * seg.duration;
+                                setSegments(prev => prev.map(s => s.id === seg.id ? { ...s, fadeIn: Math.min(newFadeIn, seg.duration - (seg.fadeOut || 0)) } : s));
+                            };
+                            const handleUp = () => {
+                                window.removeEventListener('pointermove', handleMove);
+                                window.removeEventListener('pointerup', handleUp);
+                                commitGainChange();
+                            };
+                            window.addEventListener('pointermove', handleMove);
+                            window.addEventListener('pointerup', handleUp);
+                        }}
+                    />
+                    <div 
+                        className="absolute top-0 w-2.5 h-2.5 bg-white/50 hover:bg-white cursor-ew-resize z-30 rounded-bl-sm -translate-x-full"
+                        style={{ left: `${100 - ((seg.fadeOut || 0) / seg.duration) * 100}%` }}
+                        onPointerDown={(e) => {
+                            if (activeTool !== 'select') return;
+                            e.stopPropagation();
+                            const rect = e.target.parentElement.getBoundingClientRect();
+                            const handleMove = (moveEv) => {
+                                const clickX = Math.max(0, rect.right - moveEv.clientX);
+                                const newFadeOut = (clickX / rect.width) * seg.duration;
+                                setSegments(prev => prev.map(s => s.id === seg.id ? { ...s, fadeOut: Math.min(newFadeOut, seg.duration - (seg.fadeIn || 0)) } : s));
+                            };
+                            const handleUp = () => {
+                                window.removeEventListener('pointermove', handleMove);
+                                window.removeEventListener('pointerup', handleUp);
+                                commitGainChange();
+                            };
+                            window.addEventListener('pointermove', handleMove);
+                            window.addEventListener('pointerup', handleUp);
+                        }}
+                    />
+
                     {/* Waveform */}
-                    <svg className="w-full h-full pt-5 pb-1" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                    <svg className="w-full h-full pt-5 pb-1 pointer-events-none" preserveAspectRatio="none" viewBox="0 0 1000 100">
                       <path 
                         d={(() => {
                           const wf = seg.waveform || [];
                           const wLen = wf.length - 1 || 1;
                           let d = `M 0,50 `;
-                          for(let i=0; i<=wLen; i++) d += `L ${(i/wLen)*1000},${50 - Math.max(0.02, wf[i])*45} `;
-                          for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*45} `;
+                          for(let i=0; i<=wLen; i++) d += `L ${(i/wLen)*1000},${50 - Math.max(0.02, wf[i])*45*(seg.gain ?? 1)} `;
+                          for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*45*(seg.gain ?? 1)} `;
                           return d + 'Z';
                         })()}
                         className={cn("opacity-90", waveformFills[track.color] || "fill-primary")}

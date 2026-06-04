@@ -122,6 +122,14 @@ export default function Studio() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projects"] }),
   });
 
+  const deleteProject = useMutation({
+    mutationFn: (id) => base44.entities.Project.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      setSelectedProjectId(null);
+    },
+  });
+
   return (
     <div className="h-full flex" style={{ background: "hsl(240 10% 3%)" }}>
       {/* Project Sidebar — hidden on mobile when a project is open */}
@@ -374,6 +382,7 @@ export default function Studio() {
                 project={selectedProject}
                 open={showProjectSettings}
                 onOpenChange={setShowProjectSettings}
+                onDelete={(id) => deleteProject.mutate(id)}
               />
             )}
           </>

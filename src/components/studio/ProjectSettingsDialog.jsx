@@ -8,14 +8,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Button } from "@/components/ui/button";
-import { UserX, Settings, Crown } from "lucide-react";
+import { UserX, Settings, Crown, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const ROLE_COLORS = {
   editor: "bg-primary/20 text-primary",
   viewer: "bg-secondary text-muted-foreground",
 };
 
-export default function ProjectSettingsDialog({ project, open, onOpenChange }) {
+export default function ProjectSettingsDialog({ project, open, onOpenChange, onDelete }) {
+  const [showDelete, setShowDelete] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: allUsers = [] } = useQuery({
@@ -127,8 +129,44 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange }) {
               })}
             </div>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
+
+          {/* Delete Project */}
+          <div className="pt-4 border-t border-border/50">
+            <Button
+              variant="ghost"
+              className="w-full text-destructive hover:bg-destructive/10 rounded-xl justify-start"
+              onClick={() => setShowDelete(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Project
+            </Button>
+          </div>
+          </div>
+
+          <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
+          <AlertDialogContent className="bg-card border-border">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete "{project.title}"?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the project and all its tracks. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex gap-3">
+              <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+                onClick={() => {
+                  onDelete?.(project.id);
+                  setShowDelete(false);
+                  onOpenChange(false);
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+          </AlertDialog>
+          </DialogContent>
+          </Dialog>
+          );
+          }

@@ -6,7 +6,7 @@ import {
   Play, Square, Circle, Mic, Plus, Settings2, Volume2, 
   Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical,
   Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
-  Cpu
+  Cpu, Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
@@ -27,6 +27,7 @@ export default function Studio() {
   const playheadRef = useRef(null);
   const [editingTrack, setEditingTrack] = useState(null);
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
+  const [isMetronomeOn, setIsMetronomeOn] = useState(true);
   
   const [tracks, setTracks] = useState([
     { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, waveform: generateWaveform(120) },
@@ -62,10 +63,12 @@ export default function Studio() {
           const next = prev + 0.05 > 100 ? 0 : prev + 0.05;
           const currentBeat = Math.floor(next * 2); // 120 BPM = 2 beats/sec
           if (currentBeat !== lastBeat) {
-            if (currentBeat % 8 === 0) {
-              sounds.success(); // Bar start
-            } else if (currentBeat % 2 === 0) {
-              sounds.click(); // Beat
+            if (isMetronomeOn) {
+              if (currentBeat % 8 === 0) {
+                sounds.success(); // Bar start
+              } else if (currentBeat % 2 === 0) {
+                sounds.click(); // Beat
+              }
             }
             lastBeat = currentBeat;
           }
@@ -74,7 +77,7 @@ export default function Studio() {
       }, 50);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, isRecording]);
+  }, [isPlaying, isRecording, isMetronomeOn]);
 
   const togglePlay = () => {
     if (isRecording) setIsRecording(false);
@@ -179,6 +182,15 @@ export default function Studio() {
 
         {/* Transport Controls */}
         <div className="flex items-center gap-2 bg-background/50 p-1.5 rounded-xl border border-border/50 shadow-inner">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setIsMetronomeOn(!isMetronomeOn)}
+            className={cn("w-10 h-10 rounded-lg transition-colors", isMetronomeOn ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground")}
+            title="Toggle Metronome"
+          >
+            <Activity className="w-5 h-5" />
+          </Button>
           <Button variant="ghost" size="icon" className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground">
             <Rewind className="w-5 h-5" />
           </Button>

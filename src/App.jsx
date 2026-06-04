@@ -26,7 +26,7 @@ import Home from '@/pages/Home';
 import Messages from '@/pages/Messages';
 import Network from '@/pages/Network';
 import Files from '@/pages/Files';
-import Studio from '@/pages/Studio';
+import StudioNew from '@/pages/StudioNew';
 import StudioEditor from '@/pages/StudioEditor';
 import Settings from '@/pages/Settings';
 import Explore from '@/pages/Explore';
@@ -91,7 +91,7 @@ const AuthenticatedApp = () => {
           <Route path="/messages" element={<Messages />} />
           <Route path="/network" element={<Network />} />
           <Route path="/files" element={<Files />} />
-          <Route path="/studio" element={<Studio />} />
+          <Route path="/studio" element={<StudioNew />} />
           <Route path="/studio-editor" element={<StudioEditor />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/leaderboard" element={<Leaderboard />} />

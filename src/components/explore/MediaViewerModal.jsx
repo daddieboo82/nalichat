@@ -50,21 +50,22 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-2xl p-0 overflow-hidden">
-        <div className="relative">
+      <DialogContent className="bg-card border-border max-w-2xl p-0 overflow-hidden min-h-[300px] flex flex-col justify-center">
+        <div className="relative w-full h-full flex flex-col">
           {/* Image Viewer */}
-          {post.image_url && (
-            <div className="relative w-full bg-black/20 aspect-square overflow-hidden">
+          {post.image_url && !post.image_url.includes(".mp3") && !post.image_url.includes(".wav") && !post.image_url.includes(".ogg") && (
+            <div className="relative w-full bg-black/20 aspect-square overflow-hidden flex-shrink-0">
               <img
                 src={post.image_url}
                 alt={post.title}
                 className="w-full h-full object-cover"
+                onError={(e) => e.currentTarget.style.display = 'none'}
               />
             </div>
           )}
 
           {/* Audio Player */}
-          {post.file_url && (
+          {(post.file_url || post.image_url?.includes(".mp3") || post.image_url?.includes(".wav") || post.image_url?.includes(".ogg")) && (
             <div className="bg-gradient-to-b from-primary/10 to-background p-6 space-y-6">
               {/* Now Playing Info */}
               <div>
@@ -90,7 +91,7 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
               <div className="space-y-3">
                 <audio
                   ref={audioRef}
-                  src={post.file_url}
+                  src={post.file_url || post.image_url}
                   onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
                   onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
                   onEnded={() => setIsPlaying(false)}

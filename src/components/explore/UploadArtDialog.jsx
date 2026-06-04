@@ -6,12 +6,16 @@ import { cn } from "@/lib/utils";
 const MEDIUMS = ["original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
 const TAGS_SUGGESTIONS = ["hip-hop", "trap", "lofi", "electronic", "ambient", "house", "techno", "synthwave", "dark", "experimental"];
 
+import { Music } from "lucide-react";
+
 export default function UploadArtDialog({ open, onClose, currentUser, onSuccess }) {
-  const [form, setForm] = useState({ title: "", description: "", medium: "digital", tags: [], price: 0 });
+  const [form, setForm] = useState({ title: "", description: "", medium: "original", tags: [], price: 0 });
   const [imageFile, setImageFile] = useState(null);
+  const [audioFile, setAudioFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
-  const fileRef = useRef();
+  const imageRef = useRef();
+  const audioRef = useRef();
 
   if (!open) return null;
 
@@ -22,6 +26,12 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
     setPreview(URL.createObjectURL(f));
   };
 
+  const handleAudio = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    setAudioFile(f);
+  };
+
   const toggleTag = (tag) => {
     setForm(f => ({
       ...f,
@@ -30,28 +40,44 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
   };
 
   const submit = async () => {
-    if (!form.title || !imageFile) return;
+    if (!form.title || !audioFile) return;
     setLoading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file: imageFile });
-    await base44.entities.ArtPost.create({
-      ...form,
-      image_url: file_url,
-      creator_id: currentUser.id,
-      creator_name: currentUser.display_name || currentUser.full_name,
-      creator_avatar: currentUser.avatar_url,
-      likes: 0,
-      liked_by: [],
-      views: 0,
-    });
+    let image_url = null;
+    let file_url = null;
+
+    try {
+      if (imageFile) {
+        const res = await base44.integrations.Core.UploadFile({ file: imageFile });
+        image_url = res.file_url;
+      }
+      
+      const audioRes = await base44.integrations.Core.UploadFile({ file: audioFile });
+      file_url = audioRes.file_url;
+
+      await base44.entities.ArtPost.create({
+        ...form,
+        image_url,
+        file_url,
+        creator_id: currentUser.id,
+        creator_name: currentUser.display_name || currentUser.full_name,
+        creator_avatar: currentUser.avatar_url,
+        likes: 0,
+        liked_by: [],
+        views: 0,
+      });
+    } catch (err) {
+      console.error(err);
+    }
     // Award XP
     const xp = (currentUser.xp || 0) + 50;
     const level = Math.floor(xp / 200) + 1;
     await base44.auth.updateMe({ xp, level, total_posts: (currentUser.total_posts || 0) + 1 });
     setLoading(false);
     onSuccess();
-    setForm({ title: "", description: "", medium: "digital", tags: [], price: 0 });
+    setForm({ title: "", description: "", medium: "original", tags: [], price: 0 });
     setPreview(null);
     setImageFile(null);
+    setAudioFile(null);
   };
 
   return (
@@ -62,21 +88,49 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-5 space-y-4">
-          {/* Image upload */}
-          <div
-            onClick={() => fileRef.current?.click()}
-            className={cn("border-2 border-dashed border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-center", preview ? "h-48" : "h-32")}
-          >
-            {preview ? (
-              <img src={preview} className="w-full h-full object-cover" alt="preview" />
-            ) : (
+          
+          {/* Audio Upload (Required) */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-2 block">Audio File *</label>
+            <div
+              onClick={() => audioRef.current?.click()}
+              className={cn("border-2 border-dashed rounded-xl overflow-hidden cursor-pointer transition-colors flex items-center justify-center h-20", audioFile ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/50")}
+            >
               <div className="text-center text-muted-foreground">
-                <ImageIcon className="w-8 h-8 mx-auto mb-1 opacity-40" />
-                <p className="text-sm">Click to upload image</p>
+                {audioFile ? (
+                  <>
+                    <Music className="w-6 h-6 mx-auto mb-1 text-primary" />
+                    <p className="text-xs font-medium text-foreground px-4 truncate max-w-[300px]">{audioFile.name}</p>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-6 h-6 mx-auto mb-1 opacity-40" />
+                    <p className="text-sm">Click to select audio file</p>
+                  </>
+                )}
               </div>
-            )}
+            </div>
+            <input ref={audioRef} type="file" accept="audio/*" className="hidden" onChange={handleAudio} />
           </div>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
+
+          {/* Cover Art upload */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-2 block">Cover Art</label>
+            <div
+              onClick={() => imageRef.current?.click()}
+              className={cn("border-2 border-dashed border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-center", preview ? "h-48" : "h-24")}
+            >
+              {preview ? (
+                <img src={preview} className="w-full h-full object-cover" alt="preview" />
+              ) : (
+                <div className="text-center text-muted-foreground">
+                  <ImageIcon className="w-6 h-6 mx-auto mb-1 opacity-40" />
+                  <p className="text-sm">Click to upload cover art</p>
+                </div>
+              )}
+            </div>
+            <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
+          </div>
 
           <input
             value={form.title}
@@ -133,7 +187,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
 
           <button
             onClick={submit}
-            disabled={loading || !form.title || !imageFile}
+            disabled={loading || !form.title || !audioFile}
             className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Releasing...</> : <><Upload className="w-4 h-4" /> Release & Earn 50 XP</>}

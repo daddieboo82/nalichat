@@ -265,7 +265,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
 
         <div className={cn("flex items-center gap-1.5 mt-1", isOwn ? "justify-end mr-1" : "ml-1")}>
           <p className="text-[10px] text-muted-foreground/50">
-            {format(new Date(message.created_date), "h:mm a")}
+            {message.created_date ? format(new Date(message.created_date), "h:mm a") : "..."}
           </p>
           {isOwn && (
             <ReadReceipts readBy={message.read_by || []} users={users || []} />

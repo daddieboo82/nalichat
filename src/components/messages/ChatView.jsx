@@ -91,9 +91,10 @@ export default function ChatView({ conversation, messages, currentUser, users, o
   const groups = [];
   let lastDate = null;
   for (const msg of enriched) {
-    const dateStr = new Date(msg.created_date).toDateString();
+    const d = msg.created_date ? new Date(msg.created_date) : new Date();
+    const dateStr = d.toDateString();
     if (dateStr !== lastDate) {
-      groups.push({ type: "date", label: formatDateLabel(new Date(msg.created_date)), key: dateStr });
+      groups.push({ type: "date", label: formatDateLabel(d), key: dateStr });
       lastDate = dateStr;
     }
     groups.push({ type: "msg", ...msg });

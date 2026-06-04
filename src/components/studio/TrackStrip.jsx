@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Volume2, VolumeX, Trash2, Settings2, Layers, History } from "lucide-react";
@@ -18,6 +18,8 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
   const [playing, setPlaying] = useState(false);
   const [showPan, setShowPan] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  // Stable waveform bar heights — regenerated only when track id changes
+  const waveformBars = useMemo(() => Array.from({ length: 60 }, () => Math.random() * 28 + 4), [track.id]);
   const localRef = useRef(null);
   // externalRef may be a callback ref (function) or a ref object; normalise to an object
   const audioRef = useRef(null);
@@ -59,11 +61,11 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
 
       {/* Waveform */}
       <div className="h-10 bg-secondary rounded-lg mb-2 flex items-center gap-px px-1.5 overflow-hidden">
-        {Array.from({ length: 60 }, (_, i) => (
+        {waveformBars.map((h, i) => (
           <div
             key={i}
             className={cn("flex-1 rounded-full", track.muted ? "bg-muted-foreground/20" : trackTypeColors[track.type] || "bg-primary")}
-            style={{ height: `${Math.random() * 28 + 4}px`, opacity: track.muted ? 0.3 : 0.7 }}
+            style={{ height: `${h}px`, opacity: track.muted ? 0.3 : 0.7 }}
           />
         ))}
       </div>

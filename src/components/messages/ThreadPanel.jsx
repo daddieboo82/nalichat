@@ -69,9 +69,10 @@ export default function ThreadPanel({ parentMessage, currentUser, onClose }) {
         type: "text",
         thread_id: parentMessage.id,
       });
-      // Bump reply count on parent
+      // Bump reply count on parent — fetch fresh count to avoid stale closure
+      const fresh = await base44.entities.Message.filter({ thread_id: parentMessage.id }, "created_date");
       await base44.entities.Message.update(parentMessage.id, {
-        thread_reply_count: replies.length + 1,
+        thread_reply_count: fresh.length,
       });
       return reply;
     },

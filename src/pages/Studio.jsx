@@ -81,21 +81,24 @@ export default function Studio() {
     const file = e.target.files?.[0];
     if (!file || !selectedProjectId) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.Track.create({
-      project_id: selectedProjectId,
-      name: file.name.replace(/\.[^/.]+$/, ""),
-      file_url,
-      type: "vocal",
-      volume: 75,
-      pan: 0,
-      muted: false,
-      solo: false,
-      uploaded_by: currentUser.id,
-    });
-    queryClient.invalidateQueries({ queryKey: ["tracks", selectedProjectId] });
-    setUploading(false);
-    e.target.value = "";
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.entities.Track.create({
+        project_id: selectedProjectId,
+        name: file.name.replace(/\.[^/.]+$/, ""),
+        file_url,
+        type: "vocal",
+        volume: 75,
+        pan: 0,
+        muted: false,
+        solo: false,
+        uploaded_by: currentUser.id,
+      });
+      queryClient.invalidateQueries({ queryKey: ["tracks", selectedProjectId] });
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   };
 
   const updateTrack = useMutation({

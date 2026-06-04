@@ -67,8 +67,9 @@ export default function Messages() {
         last_message_at: new Date().toISOString(),
       });
       // Notify recipients when a file/audio/session is sent
-      if (["file", "audio", "session", "image"].includes(msgData.type) && selectedConv) {
-        const recipients = (selectedConv.participant_ids || []).filter(id => id !== currentUser.id);
+      const conv = queryClient.getQueryData(["conversations"])?.find(c => c.id === selectedConvId);
+      if (["file", "audio", "session", "image"].includes(msgData.type) && conv) {
+        const recipients = (conv.participant_ids || []).filter(id => id !== currentUser.id);
         await Promise.all(recipients.map(rid => notify({
           recipientId: rid,
           actor: currentUser,

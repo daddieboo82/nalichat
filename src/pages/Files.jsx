@@ -236,6 +236,8 @@ export default function Files() {
     return (f.name || "").toLowerCase().includes(search.toLowerCase());
   });
 
+  const filteredFolders = folders.filter(f => (f.name || "").toLowerCase().includes(search.toLowerCase()));
+
   const handleUpload = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0 && currentUser) uploadMutation.mutate(files);
@@ -372,33 +374,51 @@ export default function Files() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
-        ) : !currentFolderId && folders.length > 0 ? (
+        ) : (!currentFolderId && filteredFolders.length === 0 && filtered.length === 0) || (currentFolderId && filtered.length === 0) ? (
+          <div className="text-center text-muted-foreground py-20">
+            {search ? (
+              <>
+                <Search className="w-12 h-12 opacity-30 mx-auto mb-3" />
+                <p className="font-heading text-lg">No results found</p>
+                <p className="text-sm mt-1">We couldn't find anything matching "{search}"</p>
+              </>
+            ) : (
+              <>
+                <FolderOpen className="w-12 h-12 opacity-30 mx-auto mb-3" />
+                <p className="font-heading text-lg">No files yet</p>
+                <p className="text-sm mt-1">{currentFolder ? `Upload files to ${currentFolder.name}` : "Upload your first file to get started"}</p>
+              </>
+            )}
+          </div>
+        ) : !currentFolderId && (filteredFolders.length > 0 || folders.length > 0) ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-              {folders.map((folder, i) => (
-                <motion.div
-                  key={folder.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
-                  className="bg-card rounded-xl border border-border hover:border-primary/30 p-4 cursor-pointer transition-all group"
-                  onClick={() => setCurrentFolderId(folder.id)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-accent/20">
-                      <FolderOpen className="w-5 h-5 text-accent" />
+            {filteredFolders.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {filteredFolders.map((folder, i) => (
+                  <motion.div
+                    key={folder.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="bg-card rounded-xl border border-border hover:border-primary/30 p-4 cursor-pointer transition-all group"
+                    onClick={() => setCurrentFolderId(folder.id)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-accent/20">
+                        <FolderOpen className="w-5 h-5 text-accent" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{folder.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {files.filter(f => f.folder_id === folder.id).length} files
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm">{folder.name}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {files.filter(f => f.folder_id === folder.id).length} files
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            {filtered.length > 0 && <p className="text-xs font-semibold text-muted-foreground uppercase mt-6 mb-3">Ungrouped Files</p>}
+                  </motion.div>
+                ))}
+              </div>
+            )}
+            {filtered.length > 0 && filteredFolders.length > 0 && <p className="text-xs font-semibold text-muted-foreground uppercase mt-6 mb-3">Ungrouped Files</p>}
             {filtered.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {filtered.map((file, i) => {
@@ -469,12 +489,6 @@ export default function Files() {
                 })}
               </div>
             )}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center text-muted-foreground py-20">
-            <FolderOpen className="w-12 h-12 opacity-30 mx-auto mb-3" />
-            <p className="font-heading text-lg">No files yet</p>
-            <p className="text-sm mt-1">{currentFolder ? `Upload files to ${currentFolder.name}` : "Upload your first file to get started"}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">

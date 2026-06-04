@@ -39,7 +39,10 @@ export default function LargeFileTransfer({ currentUser }) {
   };
 
   const handleTransfer = async () => {
-    if (!file) return;
+    if (!file) {
+      toast.error("Please select a file to transfer.");
+      return;
+    }
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -173,7 +176,6 @@ export default function LargeFileTransfer({ currentUser }) {
               <Button 
                 className="w-full h-12 text-lg font-medium bg-primary hover:bg-primary/90 text-white rounded-xl"
                 onClick={handleTransfer}
-                disabled={!file}
               >
                 Transfer
               </Button>

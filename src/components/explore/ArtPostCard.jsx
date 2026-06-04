@@ -14,11 +14,7 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
   return (
     <>
       <div className={cn("break-inside-avoid mb-4 bg-card rounded-2xl overflow-hidden border border-border group hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 cursor-pointer", large && "")} onClick={() => {
-        if (post.file_url) {
-          playTrack(post);
-        } else {
-          setShowMedia(true);
-        }
+        setShowMedia(true);
       }}>
         {post.image_url && (
           <div className="relative overflow-hidden">

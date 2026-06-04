@@ -11,6 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
+import WaveEditor from '@/components/studio/WaveEditor';
 
 // Fake waveform generator
 const generateWaveform = (length = 100) => {
@@ -23,6 +24,7 @@ export default function Studio() {
   const [currentTime, setCurrentTime] = useState(0);
   const [zoom, setZoom] = useState(1);
   const playheadRef = useRef(null);
+  const [editingTrack, setEditingTrack] = useState(null);
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
   
   const [tracks, setTracks] = useState([
@@ -92,6 +94,11 @@ export default function Studio() {
   };
 
   const addTrack = () => {
+    if (tracks.length >= maxTracks) {
+      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      return;
+    }
+
     const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
     const colors = ["bg-primary", "bg-pink-500", "bg-accent", "bg-yellow-500", "bg-purple-500", "bg-green-500"];
     setTracks([...tracks, {
@@ -112,6 +119,10 @@ export default function Studio() {
     const secs = Math.floor(seconds % 60);
     const ms = Math.floor((seconds % 1) * 100);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+  };
+
+  const saveTrackEffects = (trackId, updatedTrack) => {
+    setTracks(tracks.map(t => t.id === trackId ? updatedTrack : t));
   };
 
   return (
@@ -191,7 +202,7 @@ export default function Studio() {
           <Plus className="w-4 h-4" /> Add Track
         </Button>
         <span className="text-xs font-medium text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md shrink-0">
-          Tracks: {tracks.length}
+          Tracks: {tracks.length} / {maxTracks > 100 ? "Unlimited" : maxTracks}
         </span>
         <div className="h-5 w-px bg-border/50 mx-2 shrink-0" />
         <div className="flex items-center gap-1 shrink-0">
@@ -308,7 +319,10 @@ export default function Studio() {
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px)] bg-[size:100px_100%]" />
                   
                   {/* Audio Region (Clip) */}
-                  <div className="absolute top-2 bottom-2 left-10 w-[800px] rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-pointer">
+                  <div 
+                    onDoubleClick={() => setEditingTrack(track)}
+                    className="absolute top-2 bottom-2 left-10 w-[800px] rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-pointer"
+                  >
                     <div className="absolute top-1 left-2 text-[10px] font-medium text-white/50">{track.name} - Take 1</div>
                     <div className="absolute inset-x-0 bottom-2 top-6 flex items-center justify-center gap-px px-2">
                       {track.waveform.map((val, i) => (
@@ -338,6 +352,12 @@ export default function Studio() {
           <span>RAM: <span className="text-green-400">28%</span></span>
         </div>
       </div>
+
+      <WaveEditor 
+        track={editingTrack} 
+        onClose={() => setEditingTrack(null)} 
+        onSave={saveTrackEffects}
+      />
     </div>
   );
 }

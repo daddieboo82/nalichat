@@ -132,21 +132,21 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <AudioPlayerProvider>
-          <CartProvider>
-            <QueryClientProvider client={queryClientInstance}>
-            {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
-            <NavRipple />
-            <Router>
-              <AuthenticatedApp />
-            </Router>
-            <Toaster />
-            <SonnerToaster />
-            </QueryClientProvider>
-          </CartProvider>
-        </AudioPlayerProvider>
-      </AuthProvider>
+      <QueryClientProvider client={queryClientInstance}>
+        <AuthProvider>
+          <AudioPlayerProvider>
+            <CartProvider>
+              {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
+              <NavRipple />
+              <Router>
+                <AuthenticatedApp />
+              </Router>
+              <Toaster />
+              <SonnerToaster />
+            </CartProvider>
+          </AudioPlayerProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   )
 }

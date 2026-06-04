@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
       
       try {
         const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
-        setAppPublicSettings(publicSettings);
+        if (publicSettings) setAppPublicSettings(publicSettings);
         
         // If we got the app public settings successfully, check if user is authenticated
         if (appParams.token) {
@@ -46,12 +46,11 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(false);
           setAuthChecked(true);
         }
-        setIsLoadingPublicSettings(false);
       } catch (appError) {
         console.error('App state check failed:', appError);
         
         // Handle app-level errors
-        if (appError.status === 403 && appError.data?.extra_data?.reason) {
+        if (appError?.status === 403 && appError?.data?.extra_data?.reason) {
           const reason = appError.data.extra_data.reason;
           if (reason === 'auth_required') {
             setAuthError({
@@ -66,15 +65,16 @@ export const AuthProvider = ({ children }) => {
           } else {
             setAuthError({
               type: reason,
-              message: appError.message
+              message: appError.message || 'Access Denied'
             });
           }
         } else {
           setAuthError({
             type: 'unknown',
-            message: appError.message || 'Failed to load app'
+            message: appError?.message || 'Failed to load app'
           });
         }
+      } finally {
         setIsLoadingPublicSettings(false);
         setIsLoadingAuth(false);
       }

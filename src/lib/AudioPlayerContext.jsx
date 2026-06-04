@@ -42,32 +42,50 @@ export function AudioPlayerProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
     if (currentTrack?.file_url) {
-      audioRef.current.src = currentTrack.file_url;
-      audioRef.current.play().then(() => {
-        setIsPlaying(true);
-      }).catch(e => {
-        console.warn("Autoplay blocked:", e.message);
-        setIsPlaying(false);
-      });
+      try {
+        audioRef.current.src = currentTrack.file_url;
+        audioRef.current.play().then(() => {
+          if (isMounted) setIsPlaying(true);
+        }).catch(e => {
+          console.warn("Autoplay blocked:", e.message);
+          if (isMounted) setIsPlaying(false);
+        });
+      } catch (e) {
+        console.error("Audio src error:", e);
+      }
     }
+    return () => {
+      isMounted = false;
+    };
   }, [currentTrack]);
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
+    if (audioRef.current && !isNaN(volume)) {
+      try {
+        audioRef.current.volume = Math.max(0, Math.min(1, volume));
+      } catch (e) {
+        console.error("Error setting volume:", e);
+      }
     }
   }, [volume]);
 
   const togglePlay = () => {
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current.play().then(() => setIsPlaying(true)).catch(e => {
-        console.error("Playback failed:", e);
+    if (!audioRef.current) return;
+    try {
+      if (isPlaying) {
+        audioRef.current.pause();
         setIsPlaying(false);
-      });
+      } else {
+        audioRef.current.play().then(() => setIsPlaying(true)).catch(e => {
+          console.error("Playback failed:", e);
+          setIsPlaying(false);
+        });
+      }
+    } catch (e) {
+      console.error("Toggle play error:", e);
+      setIsPlaying(false);
     }
   };
 
@@ -98,8 +116,14 @@ export function AudioPlayerProvider({ children }) {
       seek,
       playTrack,
       closePlayer: () => {
-        if (audioRef.current) {
-          audioRef.current.pause();
+        try {
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.removeAttribute('src'); // Clean up the source
+            audioRef.current.load();
+          }
+        } catch (e) {
+          console.error("Error closing player:", e);
         }
         setCurrentTrack(null);
         setIsPlaying(false);

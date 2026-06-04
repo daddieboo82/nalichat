@@ -771,7 +771,7 @@ export default function Studio() {
             <Mic className="w-6 h-6 text-primary" />
             NaliStudio 
             <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest ml-2">Pro</span>
-            <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-yellow-500/30">Beta</span>
+            <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-green-500/30">Engine v2</span>
           </div>
         </div>
 
@@ -1428,9 +1428,12 @@ export default function Studio() {
       <div className="h-10 border-t border-border/50 bg-card/80 flex items-center justify-between px-4 text-xs text-muted-foreground shrink-0">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
-          <span className="text-primary font-medium">44.1 kHz / 24-bit</span>
+          <span className="text-primary font-medium">44.1 kHz / 24-bit • Opus Codec Active</span>
         </div>
         <div className="flex items-center gap-4">
+          <span className="hidden sm:flex items-center gap-1 text-green-500/80 mr-2" title="Optimized Strided Buffer Rendering Active">
+            <Activity className="w-3.5 h-3.5" /> Strided Rendering
+          </span>
           <span>CPU: <span className="text-green-400">12%</span></span>
           <span>RAM: <span className="text-green-400">28%</span></span>
         </div>

@@ -6,7 +6,8 @@ import {
   Play, Square, Circle, Mic, Plus, Settings2, Volume2, 
   Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical,
   Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
-  Cpu, Activity, Trash2
+  Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle,
+  Crosshair, PenTool, Link2, Unlock, TrendingUp, Option
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
@@ -35,6 +36,10 @@ export default function Studio() {
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
   const [recordingStartTime, setRecordingStartTime] = useState(null);
   
+  const [editMode, setEditMode] = useState('slip'); // slip, grid, shuffle
+  const [activeTool, setActiveTool] = useState('smart'); // smart, trim, grab, fade
+  const [gridSize, setGridSize] = useState(1);
+  
   const [hardware, setHardware] = useState({
     mic: false,
     interface: false,
@@ -43,9 +48,13 @@ export default function Studio() {
   });
   
   const [tracks, setTracks] = useState([
-    { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120), startTime: 0, duration: 40 },
-    { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120), startTime: 0, duration: 40 },
+    { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+    { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
   ]);
+
+  const toggleTrackProperty = (id, prop) => {
+    setTracks(prev => prev.map(t => t.id === id ? { ...t, [prop]: !t[prop] } : t));
+  };
 
   useEffect(() => {
     const fetchSub = async () => {
@@ -577,20 +586,41 @@ export default function Studio() {
         <Button onClick={addTrack} variant="secondary" size="sm" className="gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
           <Plus className="w-4 h-4" /> Add Track
         </Button>
-        <span className="text-xs font-medium text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md shrink-0">
-          Tracks: {tracks.length} / {maxTracks > 100 ? "Unlimited" : maxTracks}
-        </span>
-        <div className="h-5 w-px bg-border/50 mx-2 shrink-0" />
+
+        <div className="h-5 w-px bg-border/50 mx-1 shrink-0" />
+        
+        {/* Edit Modes */}
+        <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
+          <Button variant="ghost" size="sm" onClick={() => setEditMode('shuffle')} className={cn("px-2 py-1 h-7 text-xs rounded-md", editMode === 'shuffle' && "bg-primary/20 text-primary")}>Shuffle</Button>
+          <Button variant="ghost" size="sm" onClick={() => setEditMode('slip')} className={cn("px-2 py-1 h-7 text-xs rounded-md", editMode === 'slip' && "bg-primary/20 text-primary")}>Slip</Button>
+          <Button variant="ghost" size="sm" onClick={() => setEditMode('grid')} className={cn("px-2 py-1 h-7 text-xs rounded-md", editMode === 'grid' && "bg-primary/20 text-primary")}>Grid</Button>
+        </div>
+
+        {/* Tools */}
+        <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
+          <Button variant="ghost" size="icon" onClick={() => setActiveTool('trim')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'trim' && "bg-primary/20 text-primary")} title="Trim Tool"><MoveHorizontal className="w-3.5 h-3.5" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => setActiveTool('grab')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'grab' && "bg-primary/20 text-primary")} title="Grabber Tool"><MousePointer2 className="w-3.5 h-3.5" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => setActiveTool('fade')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'fade' && "bg-primary/20 text-primary")} title="Fade Tool"><Crosshair className="w-3.5 h-3.5" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => setActiveTool('smart')} className={cn("w-7 h-7 rounded text-muted-foreground border border-transparent hover:text-foreground", activeTool === 'smart' && "border-primary text-primary bg-primary/10")} title="Smart Tool">
+             <div className="flex flex-col gap-0.5 items-center">
+               <div className="flex gap-[1px]"><MoveHorizontal className="w-2.5 h-2.5"/><MousePointer2 className="w-2.5 h-2.5"/></div>
+             </div>
+          </Button>
+        </div>
+
+        <div className="h-5 w-px bg-border/50 mx-1 shrink-0" />
+
         <div className="flex items-center gap-1 shrink-0">
-          <Button variant="ghost" size="icon" onClick={splitSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50"><Scissors className="w-4 h-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={duplicateSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50"><Copy className="w-4 h-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-red-400 disabled:opacity-50"><Trash2 className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => {
+            const allLocked = selectedTrackIds.every(id => tracks.find(t => t.id === id)?.locked);
+            selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked'));
+          }} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50" title="Lock/Unlock Clip">{tracks.find(t => t.id === selectedTrackIds[0])?.locked ? <Unlock className="w-4 h-4"/> : <Link2 className="w-4 h-4"/>}</Button>
+          <Button variant="ghost" size="icon" onClick={splitSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50" title="Separate Clip"><Scissors className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={duplicateSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50" title="Duplicate Clip"><Copy className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-red-400 disabled:opacity-50" title="Delete"><Trash2 className="w-4 h-4" /></Button>
         </div>
-        <div className="h-5 w-px bg-border/50 mx-2 shrink-0" />
-        <div className="flex items-center gap-2 shrink-0 text-sm text-muted-foreground bg-secondary/30 px-3 py-1 rounded-lg">
-          <span className="font-medium text-foreground">Formats:</span> 
-          <span>WAV</span> • <span>MP3</span> • <span>FLAC</span> • <span>OGG</span> • <span>MIDI</span>
-        </div>
+        
+        <div className="flex-1" />
         <div className="flex items-center gap-3 ml-auto text-sm text-muted-foreground shrink-0 pl-4">
           <Maximize2 className="w-4 h-4" /> Zoom
           <Slider 
@@ -617,7 +647,8 @@ export default function Studio() {
                 exit={{ opacity: 0, height: 0 }}
                 onClick={(e) => handleTrackClick(e, track.id)}
                 className={cn(
-                  "h-28 border-b border-border/40 p-3 flex flex-col justify-between transition-all cursor-pointer border-l-4",
+                  "border-b border-border/40 p-3 flex flex-col justify-between transition-all cursor-pointer border-l-4",
+                  track.showAutomation ? "h-44" : "h-28",
                   track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40",
                   selectedTrackIds.includes(track.id) ? "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]" : "border-l-transparent"
                 )}
@@ -627,7 +658,11 @@ export default function Studio() {
                     <div className={cn("w-2 h-2 rounded-full", track.color)} />
                     <span className="truncate">{track.name}</span>
                   </div>
-                  <Button variant="ghost" size="icon" className="w-6 h-6 text-muted-foreground hover:text-foreground"><Settings2 className="w-3.5 h-3.5" /></Button>
+                  <div className="flex items-center gap-0.5">
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")} title="Elastic Audio"><Activity className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")} title="Show Automation"><TrendingUp className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="w-6 h-6 text-muted-foreground hover:text-foreground" title="Track Options"><Settings2 className="w-3.5 h-3.5" /></Button>
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-2 mt-2">
@@ -743,7 +778,8 @@ export default function Studio() {
                   key={track.id} 
                   onClick={(e) => handleTrackClick(e, track.id)}
                   className={cn(
-                    "h-28 border-b border-border/20 relative group transition-all", 
+                    "border-b border-border/20 relative group transition-all", 
+                    track.showAutomation ? "h-44" : "h-28",
                     track.muted ? "opacity-30" : "",
                     selectedTrackIds.includes(track.id) ? "bg-primary/15 shadow-[inset_0_0_30px_hsl(var(--primary)/0.1)]" : ""
                   )}
@@ -751,6 +787,17 @@ export default function Studio() {
                   {/* Grid lines */}
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px)] bg-[size:100px_100%]" />
                   
+                  {/* Automation Lane Background */}
+                  {track.showAutomation && (
+                    <div className="absolute bottom-0 left-0 right-0 h-16 border-t border-white/5 bg-black/40">
+                       {/* Mock Automation Line */}
+                       <div className="absolute top-1/2 left-0 right-0 h-px bg-primary/30" />
+                       <div className="absolute top-1/2 left-1/4 w-2 h-2 -mt-1 -ml-1 rounded-full bg-primary hover:scale-150 cursor-pointer transition-transform" />
+                       <div className="absolute top-1/3 left-1/2 w-2 h-2 -mt-1 -ml-1 rounded-full bg-primary hover:scale-150 cursor-pointer transition-transform" />
+                       <div className="absolute top-2/3 left-3/4 w-2 h-2 -mt-1 -ml-1 rounded-full bg-primary hover:scale-150 cursor-pointer transition-transform" />
+                    </div>
+                  )}
+
                   {/* Armed / Recording Indicator */}
                   {track.armed && (
                     <div 
@@ -782,6 +829,7 @@ export default function Studio() {
                       onDoubleClick={() => setEditingTrack(track)}
                       onPointerDown={(e) => {
                         e.stopPropagation();
+                        if (track.locked || activeTool === 'fade') return;
                         const target = e.currentTarget;
                         const startX = e.clientX;
                         const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
@@ -791,7 +839,10 @@ export default function Studio() {
                         const handleMove = (moveEvent) => {
                           const deltaX = moveEvent.clientX - startX;
                           const deltaTime = deltaX / (20 * zoom);
-                          const newStartTime = Math.max(0, initialStartTime + deltaTime);
+                          let newStartTime = Math.max(0, initialStartTime + deltaTime);
+                          if (editMode === 'grid') {
+                             newStartTime = Math.round(newStartTime);
+                          }
                           
                           setTracks(prev => prev.map(t => 
                             t.id === track.id ? { ...t, startTime: newStartTime } : t
@@ -903,8 +954,25 @@ export default function Studio() {
                         <div className="w-[2px] h-4 bg-white/50 group-hover/handle:bg-white rounded-full" />
                       </div>
 
-                      <div className="absolute top-1 left-4 text-[10px] font-medium text-white/50 pointer-events-none">{track.name} - Take 1</div>
-                      <div className="absolute inset-x-3 bottom-2 top-6 flex items-center justify-start gap-px overflow-hidden pointer-events-none">
+                      <div className="absolute top-1 left-4 text-[10px] font-medium text-white/50 pointer-events-none flex items-center gap-1">
+                        {track.name} - Take 1
+                        {track.locked && <Link2 className="w-3 h-3 text-red-400" />}
+                        {track.elasticAudio && <Activity className="w-3 h-3 text-blue-400" />}
+                      </div>
+                      
+                      {/* Fake Fade In/Out Overlays */}
+                      {activeTool === 'fade' && (
+                        <>
+                          <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-background to-transparent z-10 cursor-ew-resize group-hover/fade:opacity-100 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
+                             <div className="w-[2px] h-4 bg-white/50 rounded-full" />
+                          </div>
+                          <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-background to-transparent z-10 cursor-ew-resize group-hover/fade:opacity-100 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
+                             <div className="w-[2px] h-4 bg-white/50 rounded-full" />
+                          </div>
+                        </>
+                      )}
+
+                      <div className={cn("absolute inset-x-3 flex items-center justify-start gap-px overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-2 top-6")}>
                         {track.waveform.map((val, i) => (
                           <div 
                             key={i} 

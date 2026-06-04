@@ -26,8 +26,12 @@ const STEPS = [
   "Publishing your finished song...",
 ];
 
-export default function BounceDialog({ projectTitle, project, tracks, trigger }) {
-  const [open, setOpen] = useState(false);
+export default function BounceDialog({ projectTitle, project, tracks, trigger, open: controlledOpen, onOpenChange }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? onOpenChange : setInternalOpen;
+
   const [bounceTitle, setBounceTitle] = useState(`${projectTitle || "Untitled"}`);
   const [bouncing, setBouncing] = useState(false);
   const [step, setStep] = useState(0);
@@ -115,22 +119,24 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger })
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!bouncing) setOpen(v); }}>
-      <DialogTrigger asChild>
-        {trigger ? trigger : (
-          <Button className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white">
-            <Sparkles className="w-4 h-4 mr-2" />
-            Bounce
-          </Button>
-        )}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {trigger ? trigger : (
+            <Button className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Bounce
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle className="font-heading flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            Auto-Produce Your Song
+            Export Studio Track
           </DialogTitle>
           <DialogDescription>
-            Just stack your recorded sounds & vocals — AI mixes, masters, and delivers an industry-ready song.
+            Just stack your recorded sounds & vocals — AI mixes, masters, and publishes your industry-ready song.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -264,9 +270,9 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger })
               className="w-full rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white"
             >
               {bouncing ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Producing...</>
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Exporting & Publishing...</>
               ) : (
-                <><Sparkles className="w-4 h-4 mr-2" /> Bounce — Make My Song</>
+                <><Sparkles className="w-4 h-4 mr-2" /> Export & Publish Track</>
               )}
             </Button>
           )}

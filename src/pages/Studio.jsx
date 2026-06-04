@@ -69,6 +69,7 @@ export default function Studio() {
   const [renamingTrack, setRenamingTrack] = useState(null);
   const [newTrackName, setNewTrackName] = useState("");
   const [selectedTrackIds, setSelectedTrackIds] = useState([1]);
+  const [showExport, setShowExport] = useState(false);
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
   const [recordingStartTime, setRecordingStartTime] = useState(null);
   
@@ -754,49 +755,7 @@ export default function Studio() {
     }
   };
 
-  const handleExport = () => {
-    if (tracks.length === 0) {
-      toast.error("No tracks to export");
-      return;
-    }
-    
-    const destination = prompt("Save to 'device' (download) or 'app' (cloud files)?", "device");
-    if (!destination) return;
-    
-    const destClean = destination.toLowerCase().trim();
-    if (destClean !== 'device' && destClean !== 'app') {
-      toast.error("Invalid destination. Choose 'device' or 'app'.");
-      return;
-    }
-
-    const fileName = prompt("Enter a name for your exported file:", "NaliStudio_Mixdown");
-    if (!fileName) return;
-
-    const formats = ["wav", "mp3", "flac", "ogg", "aac", "midi"];
-    const format = prompt(`Choose export format (${formats.join(", ")}):`, "wav");
-    
-    if (!format || !formats.includes(format.toLowerCase().trim())) {
-        toast.error("Invalid format selected or cancelled.");
-        return;
-    }
-
-    const cleanFormat = format.toLowerCase().trim();
-    const fullFileName = `${fileName}.${cleanFormat}`;
-    
-    if (destClean === 'device') {
-      const element = document.createElement("a");
-      const mimeType = cleanFormat === 'midi' ? 'audio/midi' : `audio/${cleanFormat}`;
-      const file = new Blob(["Simulated exported audio data from NaliStudio"], {type: mimeType});
-      element.href = URL.createObjectURL(file);
-      element.download = fullFileName;
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-      toast.success(`Downloaded ${fullFileName} to device`);
-    } else {
-      toast.success(`Saved ${fullFileName} to your NaliStudio App Files`);
-    }
-  };
+  // handleExport removed in favor of BounceDialog
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-background text-foreground overflow-hidden">
@@ -869,15 +828,18 @@ export default function Studio() {
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleSave}>
               <Save className="w-4 h-4" /> Save
             </Button>
+            <Button 
+              className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary" 
+              onClick={() => setShowExport(true)}
+            >
+              <Download className="w-4 h-4" /> Export
+            </Button>
             <BounceDialog
+              open={showExport}
+              onOpenChange={setShowExport}
               projectTitle="Untitled Studio Project"
               project={{ genre: "Electronic", bpm: 120 }}
               tracks={tracks}
-              trigger={
-                <Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary">
-                  <Download className="w-4 h-4" /> Export
-                </Button>
-              }
             />
           </div>
         </div>

@@ -19,6 +19,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 const waveformFills = {
   "bg-primary": "fill-primary",
@@ -52,6 +59,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
   const [selectionRange, setSelectionRange] = useState(null);
   const [isDraggingRange, setIsDraggingRange] = useState(false);
   const [activeEnvelope, setActiveEnvelope] = useState(null);
+  const [showHelpDialog, setShowHelpDialog] = useState(false);
 
   const containerRef = useRef(null);
 
@@ -486,9 +494,9 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Help</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans">
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('Help not implemented yet')}>Contents and Index</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => setShowHelpDialog(true)}>Help & Support</DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('About Wave Editor')}>About Wave Editor</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('Wave Editor v2.0 - Studio Engine')}>About Wave Editor</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -1144,6 +1152,52 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
           </div>
         </motion.div>
+
+        {/* Help Dialog */}
+        <Dialog open={showHelpDialog} onOpenChange={setShowHelpDialog}>
+          <DialogContent className="max-w-md bg-card border-border text-foreground z-[200]">
+            <DialogHeader>
+              <DialogTitle>Wave Editor Help & Support</DialogTitle>
+              <DialogDescription>
+                Quick guide on how to use the advanced wave editor tools.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Keyboard Shortcuts</h4>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex justify-between bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Play / Pause</span><span className="font-mono bg-background px-1 rounded border border-border">Space</span></div>
+                  <div className="flex justify-between bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Undo</span><span className="font-mono bg-background px-1 rounded border border-border">Ctrl+Z</span></div>
+                  <div className="flex justify-between bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Redo</span><span className="font-mono bg-background px-1 rounded border border-border">Ctrl+Y</span></div>
+                  <div className="flex justify-between bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Split</span><span className="font-mono bg-background px-1 rounded border border-border">S</span></div>
+                  <div className="flex justify-between bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Delete</span><span className="font-mono bg-background px-1 rounded border border-border">Del</span></div>
+                  <div className="flex justify-between bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Save & Close</span><span className="font-mono bg-background px-1 rounded border border-border">Ctrl+S</span></div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Tools Guide</h4>
+                <ul className="text-xs space-y-2 text-muted-foreground">
+                  <li><strong className="text-foreground">Edit Tool (1):</strong> Drag edges to trim clips. Adjust the gain line to change clip volume.</li>
+                  <li><strong className="text-foreground">Range Tool (4):</strong> Click and drag to select a specific time range to delete or split.</li>
+                  <li><strong className="text-foreground">Event Tool (2):</strong> Drag entire clips left and right to move them in time.</li>
+                  <li><strong className="text-foreground">Snap (Magnet):</strong> Toggles snapping to grid. Helpful for precise micro-edits.</li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Automation</h4>
+                <p className="text-xs text-muted-foreground">
+                  Click on "Vol Env" or "Pan Env" in the toolbar to show automation curves. Click on the line to add points, and drag them to automate volume and panning over time. Double click a point to remove it.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end pt-4 border-t border-border">
+              <Button onClick={() => setShowHelpDialog(false)}>Got it</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
       </motion.div>
     </AnimatePresence>
   );

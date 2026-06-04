@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
+import { useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import ConversationList from "@/components/messages/ConversationList";
@@ -17,7 +18,15 @@ import { Button } from "@/components/ui/button";
 
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
+  const location = useLocation();
   const [selectedConvId, setSelectedConvId] = useState(null);
+
+  // Clear selected conversation when navigating to /messages
+  useEffect(() => {
+    if (location.pathname === "/messages" && !location.search) {
+      setSelectedConvId(null);
+    }
+  }, [location.pathname, location.search]);
   const [showNewDM, setShowNewDM] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [showExternal, setShowExternal] = useState(false);

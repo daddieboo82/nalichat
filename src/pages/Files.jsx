@@ -205,13 +205,18 @@ export default function Files() {
             <h1 className="text-2xl font-heading font-bold">Files</h1>
             <p className="text-sm text-muted-foreground">Share music, sessions, art & more</p>
           </div>
-          <div>
-            <Button className="rounded-xl bg-primary hover:bg-primary/90 cursor-pointer" disabled={uploading} asChild>
-              <label>
-                <input type="file" multiple className="hidden" onChange={handleUpload} disabled={uploading} />
-                {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                Upload File
-              </label>
+          <div className="relative inline-block">
+            <input 
+              type="file" 
+              multiple 
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+              onChange={handleUpload} 
+              disabled={uploading} 
+              title="Upload File"
+            />
+            <Button className="rounded-xl bg-primary hover:bg-primary/90 pointer-events-none" disabled={uploading} tabIndex={-1}>
+              {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+              Upload File
             </Button>
           </div>
         </div>

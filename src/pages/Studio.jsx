@@ -7,7 +7,8 @@ import {
   Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical,
   Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
   Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle,
-  Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2
+  Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2,
+  Image as ImageIcon
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -76,6 +77,9 @@ export default function Studio() {
   const [editMode, setEditMode] = useState('slip'); // slip, grid, shuffle
   const [activeTool, setActiveTool] = useState('smart'); // smart, trim, grab, fade
   const [gridSize, setGridSize] = useState(1);
+  
+  const [bounceOpen, setBounceOpen] = useState(false);
+  const [bounceRedirect, setBounceRedirect] = useState(null);
   
   const [hardware, setHardware] = useState({
     mic: false,
@@ -828,15 +832,29 @@ export default function Studio() {
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleSave}>
               <Save className="w-4 h-4" /> Save
             </Button>
-            <BounceDialog
-              trigger={
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary">
                   <Download className="w-4 h-4" /> Export
                 </Button>
-              }
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => { setBounceRedirect('explore'); setBounceOpen(true); }} className="cursor-pointer py-2">
+                  <Download className="w-4 h-4 mr-2" /> Export & Publish
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setBounceRedirect('cover-art'); setBounceOpen(true); }} className="cursor-pointer py-2">
+                  <ImageIcon className="w-4 h-4 mr-2" /> Export to Cover Creator
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <BounceDialog
+              open={bounceOpen}
+              onOpenChange={setBounceOpen}
               projectTitle="Untitled Studio Project"
               project={{ genre: "Electronic", bpm: 120 }}
               tracks={tracks}
+              redirectAfter={bounceRedirect}
             />
           </div>
         </div>

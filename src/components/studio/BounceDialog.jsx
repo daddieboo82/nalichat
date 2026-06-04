@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sparkles, Loader2, AlertCircle, CheckCircle2, Wand2, ChevronDown, RotateCcw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { useNavigate } from "react-router-dom";
 import { Slider } from "@/components/ui/slider";
 import { base44 } from "@/api/base44Client";
 import { renderMasteredMix } from "@/lib/autoMaster";
@@ -26,7 +27,8 @@ const STEPS = [
   "Publishing your finished song...",
 ];
 
-export default function BounceDialog({ projectTitle, project, tracks, trigger, open: controlledOpen, onOpenChange }) {
+export default function BounceDialog({ projectTitle, project, tracks, trigger, open: controlledOpen, onOpenChange, redirectAfter }) {
+  const navigate = useNavigate();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -108,6 +110,11 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
         setBouncing(false);
         setError("");
         setShowManualParams(false);
+        if (redirectAfter === 'cover-art') {
+          navigate('/cover-art');
+        } else if (redirectAfter === 'explore') {
+          navigate('/explore');
+        }
       }, 1400);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "Failed to produce song";
@@ -136,7 +143,9 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
             Export Studio Track
           </DialogTitle>
           <DialogDescription>
-            Just stack your recorded sounds & vocals — AI mixes, masters, and publishes your industry-ready song.
+            {redirectAfter === 'cover-art' 
+              ? "Bounce your track and head straight to the Cover Creator."
+              : "Just stack your recorded sounds & vocals — AI mixes, masters, and publishes your industry-ready song."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -252,7 +261,11 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
           {done && (
             <div className="p-3 rounded-xl bg-accent/10 border border-accent/30 flex items-center gap-2 text-accent text-sm">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>Your industry-ready song is published! Find it in Explore.</span>
+              <span>
+                {redirectAfter === 'cover-art' 
+                  ? "Track bounced! Redirecting to Cover Creator..." 
+                  : "Your industry-ready song is published! Find it in Explore."}
+              </span>
             </div>
           )}
 
@@ -270,9 +283,9 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
               className="w-full rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white"
             >
               {bouncing ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Exporting & Publishing...</>
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {redirectAfter === 'cover-art' ? "Exporting..." : "Exporting & Publishing..."}</>
               ) : (
-                <><Sparkles className="w-4 h-4 mr-2" /> Export & Publish Track</>
+                <><Sparkles className="w-4 h-4 mr-2" /> {redirectAfter === 'cover-art' ? "Export to Cover Creator" : "Export & Publish Track"}</>
               )}
             </Button>
           )}

@@ -201,8 +201,11 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    )}
                    
                    <Button
+                     type="button"
                      size="lg"
-                     onClick={() => {
+                     onClick={(e) => {
+                       e.preventDefault();
+                       e.stopPropagation();
                        const textToShare = `Check out this track: ${post.title} on NaliChat!`;
                        if (navigator.share) {
                          navigator.share({
@@ -296,28 +299,31 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    {/* Controls */}
                    <div className="flex items-center justify-center gap-4 sm:gap-6">
                      <Button
+                       type="button"
                        variant="ghost"
                        size="icon"
                        className="rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors h-10 w-10 sm:h-12 sm:w-12"
-                       onClick={stopPlayback}
+                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); stopPlayback(); }}
                        title="Stop"
                      >
                        <Square className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
                      </Button>
 
                      <Button
+                       type="button"
                        variant="ghost"
                        size="icon"
                        className="rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors h-10 w-10 sm:h-12 sm:w-12"
-                       onClick={skipBackward}
+                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); skipBackward(); }}
                        title="Rewind 10s"
                      >
                        <Rewind className="w-5 h-5 sm:w-6 sm:h-6" />
                      </Button>
                      
                      <Button
+                       type="button"
                        className="rounded-full w-14 h-14 sm:w-16 sm:h-16 bg-white hover:bg-white/90 text-black shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition-all shrink-0"
-                       onClick={togglePlay}
+                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePlay(); }}
                        title={isPlaying ? "Pause" : "Play"}
                      >
                        {isPlaying ? (
@@ -328,20 +334,24 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                      </Button>
 
                      <Button
+                       type="button"
                        variant="ghost"
                        size="icon"
                        className="rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors h-10 w-10 sm:h-12 sm:w-12"
-                       onClick={skipForward}
+                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); skipForward(); }}
                        title="Fast Forward 10s"
                      >
                        <FastForward className="w-5 h-5 sm:w-6 sm:h-6" />
                      </Button>
 
                      <Button
+                       type="button"
                        variant="ghost"
                        size="icon"
                        className="rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors h-10 w-10 sm:h-12 sm:w-12"
-                       onClick={() => {
+                       onClick={(e) => {
+                         e.preventDefault();
+                         e.stopPropagation();
                          stopPlayback();
                          onOpenChange(false);
                          playTrack(post);

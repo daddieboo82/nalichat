@@ -10,6 +10,15 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
+const waveformFills = {
+  "bg-primary": "fill-primary",
+  "bg-pink-500": "fill-pink-500",
+  "bg-accent": "fill-accent",
+  "bg-yellow-500": "fill-yellow-500",
+  "bg-purple-500": "fill-purple-500",
+  "bg-green-500": "fill-green-500"
+};
+
 const EFFECTS = [
   { id: 'eq', name: 'Parametric EQ', icon: SlidersHorizontal },
   { id: 'reverb', name: 'Studio Reverb', icon: Waves },

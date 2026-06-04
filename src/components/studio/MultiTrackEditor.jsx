@@ -5,9 +5,11 @@ import TrackStrip from "./TrackStrip";
 import Timeline from "./Timeline";
 import BounceDialog from "./BounceDialog";
 import StemQueue from "./StemQueue";
+import RecordingDialog from "./RecordingDialog";
 import { downloadFilesAsZip } from "@/lib/downloadZip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { base44 } from "@/api/base44Client";
 
 export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete, projectTitle, canEdit = true, currentUser }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -20,6 +22,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   const [queueOpen, setQueueOpen] = useState(false);
   const [selectedTrackIds, setSelectedTrackIds] = useState([]);
   const [zipping, setZipping] = useState(false);
+  const [recordingDialogOpen, setRecordingDialogOpen] = useState(false);
   const peakRef = useRef(null);
 
   const queueIds = new Set(queue.map(t => t.id));
@@ -140,12 +143,12 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => window.location.href = '/record'}
-            className="w-8 h-8 rounded-lg flex items-center justify-center bg-destructive/20 text-destructive hover:bg-destructive/30 transition-all hover:scale-105 active:scale-95"
-            title="Record"
-          >
-            <Mic className="w-4 h-4" />
-          </button>
+             onClick={() => setRecordingDialogOpen(true)}
+             className="w-8 h-8 rounded-lg flex items-center justify-center bg-destructive/20 text-destructive hover:bg-destructive/30 transition-all hover:scale-105 active:scale-95"
+             title="Record"
+           >
+             <Mic className="w-4 h-4" />
+           </button>
           <button
             onClick={handlePlay}
             className={cn(
@@ -238,6 +241,29 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           <BounceDialog projectTitle={projectTitle || selectedProject?.title} project={selectedProject} tracks={tracks} />
         )}
       </div>
+
+      {/* Recording Dialog */}
+      <RecordingDialog
+        open={recordingDialogOpen}
+        onOpenChange={setRecordingDialogOpen}
+        projectId={selectedProject?.id}
+        currentUser={currentUser}
+        onSave={async (file, name) => {
+          const { file_url } = await base44.integrations.Core.UploadFile({ file });
+          await base44.entities.Track.create({
+            project_id: selectedProject.id,
+            name,
+            file_url,
+            type: "vocal",
+            volume: 75,
+            pan: 0,
+            muted: false,
+            solo: false,
+            uploaded_by: currentUser.id,
+          });
+          onTrackUpdate(null, null);
+        }}
+      />
 
       {/* Selection toolbar */}
       {selectedTrackIds.length > 0 && (

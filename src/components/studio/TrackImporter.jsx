@@ -1,8 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Music, AlertCircle, CheckCircle2, Loader2, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Upload, Music, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -17,13 +16,11 @@ const SUPPORTED_FORMATS = {
   "audio/webm": ".webm",
 };
 
-const TRACK_TYPES = ["vocal", "instrument", "beat", "sample", "fx"];
-
-export default function TrackImporter({ projectId, currentUser, onSuccess, onRefreshTracks }) {
+export default function TrackImporter({ projectId, currentUser, onSuccess }) {
   const [open, setOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [uploads, setUploads] = useState([]);
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [queue, setQueue] = useState([]);
   const fileInputRef = useRef(null);
 
   const isSupportedFormat = (file) => {
@@ -41,45 +38,39 @@ export default function TrackImporter({ projectId, currentUser, onSuccess, onRef
     const audioFiles = Array.from(files).filter(isSupportedFormat);
     if (audioFiles.length === 0) return;
 
-    const newUploads = audioFiles.map(file => ({
-      id: `${file.name}-${Date.now()}-${Math.random()}`,
+    const newItems = audioFiles.map(file => ({
+      id: `${file.name}-${Date.now()}`,
       file,
       name: file.name.replace(/\.[^/.]+$/, ""),
-      type: "vocal",
       status: "pending",
       error: null,
     }));
 
-    setUploads(prev => [...prev, ...newUploads]);
+    setQueue(prev => [...prev, ...newItems]);
+    if (!open) setOpen(true);
   };
 
-  const updateUpload = (id, updates) => {
-    setUploads(prev =>
-      prev.map(u => u.id === id ? { ...u, ...updates } : u)
-    );
-  };
+  const uploadTracks = async () => {
+    setUploading(true);
+    const pendingItems = queue.filter(item => item.status === "pending");
 
-  const removeUpload = (id) => {
-    setUploads(prev => prev.filter(u => u.id !== id));
-  };
-
-  const handleUpload = async () => {
-    setIsUploading(true);
-    const pending = uploads.filter(u => u.status === "pending");
-
-    for (const upload of pending) {
+    for (const item of pendingItems) {
       try {
-        updateUpload(upload.id, { status: "uploading" });
+        setQueue(prev =>
+          prev.map(i =>
+            i.id === item.id ? { ...i, status: "uploading" } : i
+          )
+        );
 
         const { file_url } = await base44.integrations.Core.UploadFile({
-          file: upload.file,
+          file: item.file,
         });
 
         await base44.entities.Track.create({
           project_id: projectId,
-          name: upload.name,
+          name: item.name,
           file_url,
-          type: upload.type,
+          type: "vocal",
           volume: 75,
           pan: 0,
           muted: false,
@@ -87,36 +78,36 @@ export default function TrackImporter({ projectId, currentUser, onSuccess, onRef
           uploaded_by: currentUser.id,
         });
 
-        updateUpload(upload.id, { status: "success" });
+        setQueue(prev =>
+          prev.map(i =>
+            i.id === item.id ? { ...i, status: "success" } : i
+          )
+        );
       } catch (error) {
-        console.error(`Upload failed for ${upload.name}:`, error);
-        updateUpload(upload.id, { 
-          status: "error", 
-          error: error.message || "Upload failed" 
-        });
+        setQueue(prev =>
+          prev.map(i =>
+            i.id === item.id
+              ? { ...i, status: "error", error: error.message }
+              : i
+          )
+        );
       }
     }
 
-    setIsUploading(false);
+    setUploading(false);
     onSuccess?.();
-    onRefreshTracks?.();
+  };
 
-    // Auto-close after success
-    const allSuccess = uploads.every(u => u.status === "success" || u.status === "error");
-    if (allSuccess && pending.length > 0) {
-      setTimeout(() => {
-        setUploads([]);
-        setOpen(false);
-      }, 1500);
+  const clearQueue = () => {
+    setQueue(queue.filter(item => item.status !== "success"));
+    if (queue.every(item => item.status === "success")) {
+      setQueue([]);
+      setOpen(false);
     }
   };
 
-  const clearCompleted = () => {
-    setUploads(prev => prev.filter(u => u.status === "pending"));
-  };
-
-  const pendingCount = uploads.filter(u => u.status === "pending").length;
-  const completedCount = uploads.filter(u => u.status === "success").length;
+  const pendingCount = queue.filter(item => item.status === "pending" || item.status === "uploading").length;
+  const successCount = queue.filter(item => item.status === "success").length;
 
   return (
     <>
@@ -126,10 +117,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess, onRef
         accept={Object.keys(SUPPORTED_FORMATS).join(",")}
         multiple
         className="hidden"
-        onChange={(e) => {
-          handleFiles(e.currentTarget.files);
-          setOpen(true);
-        }}
+        onChange={(e) => handleFiles(e.currentTarget.files)}
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -140,25 +128,31 @@ export default function TrackImporter({ projectId, currentUser, onSuccess, onRef
           onDrop={(e) => {
             handleDrag(e);
             handleFiles(e.dataTransfer.files);
-            setOpen(true);
           }}
+          className="relative"
         >
           <Button
             size="sm"
-            className="rounded-lg bg-gradient-to-r from-primary to-accent hover:opacity-90 font-semibold shadow-sm shadow-primary/20 transition-all text-xs h-8"
-            onClick={() => fileInputRef.current?.click()}
+            className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 font-semibold shadow-md shadow-primary/20 transition-all hover:scale-105"
+            onClick={() => {
+              if (queue.length === 0) {
+                fileInputRef.current?.click();
+              } else {
+                setOpen(true);
+              }
+            }}
           >
-            <Upload className="w-3 h-3 mr-1" />
-            Import
+            <Upload className="w-3.5 h-3.5 mr-1.5" />
+            Import Tracks
           </Button>
         </div>
 
-        <DialogContent className="bg-card border-border shadow-2xl max-w-sm">
+        <DialogContent className="bg-card border-border shadow-2xl max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-heading text-base">Import Audio Tracks</DialogTitle>
+            <DialogTitle className="font-heading text-lg">Import Audio Tracks</DialogTitle>
           </DialogHeader>
 
-          {uploads.length === 0 ? (
+          {queue.length === 0 ? (
             <div
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -167,117 +161,107 @@ export default function TrackImporter({ projectId, currentUser, onSuccess, onRef
                 handleDrag(e);
                 handleFiles(e.dataTransfer.files);
               }}
-              className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${
+              className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
                 dragActive
                   ? "border-primary/60 bg-primary/10"
                   : "border-border/50 hover:border-primary/40 bg-secondary/20"
               }`}
               onClick={() => fileInputRef.current?.click()}
             >
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-2">
-                <Music className="w-5 h-5 text-primary/70" />
+              <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
+                <Music className="w-7 h-7 text-primary/70" />
               </div>
-              <p className="font-medium text-sm mb-1">Drag tracks here or click</p>
-              <p className="text-[11px] text-muted-foreground">
-                MP3, WAV, FLAC, OGG, AAC, M4A, WebM
+              <p className="font-medium mb-1">Drag tracks here or click to browse</p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Supports: MP3, WAV, FLAC, OGG, AAC, M4A, WebM
               </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+              >
+                Select Files
+              </Button>
             </div>
           ) : (
-            <div className="space-y-2 max-h-80 overflow-y-auto">
+            <div className="space-y-3 max-h-96 overflow-y-auto">
               <AnimatePresence>
-                {uploads.map((upload) => (
+                {queue.map((item) => (
                   <motion.div
-                    key={upload.id}
+                    key={item.id}
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="flex items-start gap-2 p-2 rounded-lg bg-secondary/40 border border-border/50"
+                    className="flex items-start gap-3 p-3 rounded-xl bg-secondary/40 border border-border/50"
                   >
                     <div className="mt-0.5 flex-shrink-0">
-                      {upload.status === "pending" && (
-                        <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30" />
+                      {item.status === "pending" && (
+                        <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30" />
                       )}
-                      {upload.status === "uploading" && (
-                        <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                      {item.status === "uploading" && (
+                        <Loader2 className="w-5 h-5 text-primary animate-spin" />
                       )}
-                      {upload.status === "success" && (
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      {item.status === "success" && (
+                        <CheckCircle2 className="w-5 h-5 text-green-500" />
                       )}
-                      {upload.status === "error" && (
-                        <AlertCircle className="w-4 h-4 text-destructive" />
+                      {item.status === "error" && (
+                        <AlertCircle className="w-5 h-5 text-destructive" />
                       )}
                     </div>
-
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{upload.name}</p>
-                      
-                      {upload.status === "pending" && (
-                        <Select value={upload.type} onValueChange={(type) => updateUpload(upload.id, { type })}>
-                          <SelectTrigger className="h-6 text-[10px] mt-0.5 bg-secondary/40 border-border/50 rounded-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {TRACK_TYPES.map(type => (
-                              <SelectItem key={type} value={type} className="text-[10px] capitalize">
-                                {type}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <p className="text-sm font-medium truncate">{item.name}</p>
+                      {item.error && (
+                        <p className="text-xs text-destructive mt-1">{item.error}</p>
                       )}
-
-                      {upload.status === "uploading" && (
-                        <div className="w-full h-0.5 bg-secondary rounded-full mt-1.5 overflow-hidden">
+                      {item.status === "uploading" && (
+                        <div className="w-full h-1 bg-secondary rounded-full mt-2 overflow-hidden">
                           <div className="h-full bg-primary/50 animate-pulse w-1/3" />
                         </div>
                       )}
-
-                      {upload.error && (
-                        <p className="text-[10px] text-destructive mt-0.5">{upload.error}</p>
-                      )}
                     </div>
-
-                    {upload.status === "pending" && (
-                      <button
-                        onClick={() => removeUpload(upload.id)}
-                        className="p-0.5 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
                   </motion.div>
                 ))}
               </AnimatePresence>
             </div>
           )}
 
-          {uploads.length > 0 && (
-            <div className="flex gap-2 pt-3 border-t border-border/50">
-              <Button
-                variant="outline"
-                className="flex-1 h-8 text-xs rounded-lg"
-                onClick={clearCompleted}
-                disabled={isUploading}
-              >
-                Clear
-              </Button>
-              <Button
-                className="flex-1 bg-primary hover:bg-primary/90 h-8 text-xs rounded-lg"
-                onClick={handleUpload}
-                disabled={isUploading || pendingCount === 0}
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-3 h-3 mr-1" />
-                    Upload {pendingCount}
-                  </>
-                )}
-              </Button>
+          {queue.length > 0 && (
+            <div className="flex gap-2 pt-4 border-t border-border/50">
+              {uploading || pendingCount === 0 ? (
+                <>
+                  {successCount > 0 && (
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={clearQueue}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                  {pendingCount > 0 && (
+                    <Button
+                      className="flex-1 bg-primary hover:bg-primary/90"
+                      onClick={uploadTracks}
+                      disabled={uploading || pendingCount === 0}
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-1.5" />
+                          Upload {pendingCount}
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </>
+              ) : null}
             </div>
           )}
         </DialogContent>

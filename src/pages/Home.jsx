@@ -10,8 +10,6 @@ import {
 import { motion } from "framer-motion";
 import DailyRecommendation from "@/components/home/DailyRecommendation";
 import QuickStartGuide from "@/components/home/QuickStartGuide";
-import QuickWinsCarousel from "@/components/home/QuickWinsCarousel";
-import FirstTimeChecklist from "@/components/home/FirstTimeChecklist";
 import { sounds } from "@/hooks/use-sound";
 
 const features = [
@@ -177,13 +175,6 @@ export default function Home() {
       {/* ── Daily Recommendation ── */}
       <DailyRecommendation />
 
-      {/* ── First Time Checklist ── */}
-      {user && (
-        <div className="max-w-7xl mx-auto px-6 pt-6">
-          <FirstTimeChecklist user={user} />
-        </div>
-      )}
-
       {/* ── Hero ── */}
       <section className="relative min-h-[520px] flex items-center justify-center overflow-hidden px-6 py-16">
         {/* Animated blobs */}
@@ -236,11 +227,8 @@ export default function Home() {
           <h1 className="font-heading font-black text-5xl md:text-7xl mb-5 text-gradient-animate leading-tight">
             Make Music.<br className="hidden md:block" /> Together.
           </h1>
-          <p className="text-lg md:text-xl text-foreground mb-3 leading-relaxed max-w-2xl mx-auto font-medium">
-            Create, collaborate, and ship music in hours—not months.
-          </p>
-          <p className="text-base text-muted-foreground mb-10 leading-relaxed max-w-2xl mx-auto">
-            Real-time collaboration, multi-track studio, AI mastering, and built-in community. Everything you need to go from idea to release.
+          <p className="text-xl text-muted-foreground mb-10 leading-relaxed max-w-2xl mx-auto">
+            The artist collaboration platform. Real-time messaging, voice calls, multi-track studio, AI mastering—everything you need to create with your team and reach listeners.
           </p>
 
           {/* CTAs */}
@@ -310,18 +298,6 @@ export default function Home() {
       </section>
 
       <section className="relative z-10 max-w-7xl mx-auto px-6 py-20 space-y-24">
-
-        {/* ── Quick Wins Carousel ── */}
-        {user && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-          >
-            <QuickWinsCarousel user={user} />
-          </motion.div>
-        )}
 
         {/* ── What You Can Do ── */}
         <motion.div

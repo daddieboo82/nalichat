@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 export default function MediaViewerModal({ post, open, onOpenChange }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -52,10 +51,6 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card border-border max-w-2xl p-0 overflow-hidden">
-        <VisuallyHidden>
-          <DialogTitle>{post.title}</DialogTitle>
-          <DialogDescription>{post.description}</DialogDescription>
-        </VisuallyHidden>
         <div className="relative">
           {/* Image Viewer */}
           {post.image_url && (

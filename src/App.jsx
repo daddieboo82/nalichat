@@ -13,8 +13,6 @@ import NavRipple from '@/components/layout/NavRipple';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { OnboardingProvider, useOnboarding } from '@/lib/OnboardingContext';
 import OnboardingOverlay from '@/components/onboarding/OnboardingOverlay';
-import { MediaPlayerProvider } from '@/lib/MediaPlayerContext.jsx';
-import GlobalMediaPlayer from '@/components/media/GlobalMediaPlayer';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -26,8 +24,9 @@ import Home from '@/pages/Home';
 import Messages from '@/pages/Messages';
 import Network from '@/pages/Network';
 import Files from '@/pages/Files';
-import StudioNew from '@/pages/StudioNew';
+import Studio from '@/pages/Studio';
 import StudioEditor from '@/pages/StudioEditor';
+import Record from '@/pages/Record';
 import Settings from '@/pages/Settings';
 import Explore from '@/pages/Explore';
 import Leaderboard from '@/pages/Leaderboard';
@@ -75,7 +74,6 @@ const AuthenticatedApp = () => {
         }}
         completedSteps={new Set()}
       />
-      <GlobalMediaPlayer />
       <AnimatePresence mode="wait">
       <Routes location={location}>
       <Route path="/login" element={<Login />} />
@@ -91,8 +89,9 @@ const AuthenticatedApp = () => {
           <Route path="/messages" element={<Messages />} />
           <Route path="/network" element={<Network />} />
           <Route path="/files" element={<Files />} />
-          <Route path="/studio" element={<StudioNew />} />
+          <Route path="/studio" element={<Studio />} />
           <Route path="/studio-editor" element={<StudioEditor />} />
+          <Route path="/record" element={<Record />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
@@ -118,20 +117,18 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <OnboardingProvider>
-          <MediaPlayerProvider>
-            <QueryClientProvider client={queryClientInstance}>
+          <QueryClientProvider client={queryClientInstance}>
             {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
             <NavRipple />
             <Router>
               <AuthenticatedApp />
             </Router>
             <Toaster />
-            </QueryClientProvider>
-            </MediaPlayerProvider>
-            </OnboardingProvider>
-            </AuthProvider>
-            </ErrorBoundary>
-            )
+          </QueryClientProvider>
+        </OnboardingProvider>
+      </AuthProvider>
+    </ErrorBoundary>
+  )
 }
 
 export default App

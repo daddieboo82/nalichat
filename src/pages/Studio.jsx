@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Upload, Music, Loader2, FolderOpen, Disc3, ChevronLeft, Search, Settings, Flag, Trash2, Mic } from "lucide-react";
+import { Plus, Upload, Music, Loader2, FolderOpen, Disc3, ChevronLeft, Search, Settings, Flag, Trash2 } from "lucide-react";
 import MultiTrackEditor from "@/components/studio/MultiTrackEditor";
 import SessionTimer from "@/components/studio/SessionTimer";
 import ProjectSettingsDialog from "@/components/studio/ProjectSettingsDialog";
@@ -16,7 +16,7 @@ import UpgradeModal from "@/components/billing/UpgradeModal";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useOnboarding } from "@/lib/OnboardingContext";
-
+import TutorialTooltip from "@/components/onboarding/TutorialTooltip";
 
 const statusColors = {
   draft: "bg-muted text-muted-foreground",
@@ -235,6 +235,14 @@ export default function Studio() {
             }}>
               <DialogTrigger asChild>
                 <div className="relative">
+                  {showStudioTip && (
+                    <TutorialTooltip
+                      title="Create a Project"
+                      description="Start by making a new project to organize your tracks"
+                      position="bottom"
+                      onDismiss={() => setShowStudioTip(false)}
+                    />
+                  )}
                   <Button size="icon" variant="ghost" className="rounded-xl w-8 h-8 hover:bg-primary/20 hover:text-primary transition-all hover:scale-105">
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -279,27 +287,14 @@ export default function Studio() {
                       </Select>
                     </div>
                   </div>
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setNewProjectBpm(120);
-                        setNewProjectKey("C");
-                      }}
-                      className="flex-1"
-                    >
-                      Reset to Default
-                    </Button>
-                    <Button
-                      className="flex-1 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/20 font-semibold"
-                      onClick={() => createProject.mutate()}
-                      disabled={!newProjectTitle.trim() || createProject.isPending}
-                    >
-                      {createProject.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-                      Create
-                    </Button>
-                  </div>
+                  <Button
+                    className="w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/20 font-semibold"
+                    onClick={() => createProject.mutate()}
+                    disabled={!newProjectTitle.trim() || createProject.isPending}
+                  >
+                    {createProject.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+                    Create Project
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -317,14 +312,11 @@ export default function Studio() {
 
         <div className="flex-1 overflow-y-auto py-1.5">
           {projects.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4 p-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-pink-500/20 flex items-center justify-center border border-primary/20">
-                <FolderOpen className="w-8 h-8 text-primary/40" />
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 p-6">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <FolderOpen className="w-7 h-7 opacity-30" />
               </div>
-              <div className="text-center">
-                <p className="text-sm font-semibold text-foreground mb-1">No Projects Yet</p>
-                <p className="text-xs text-muted-foreground/70 leading-relaxed">Click the + button above<br/>to create your first beat</p>
-              </div>
+              <p className="text-sm text-center leading-relaxed opacity-70">No projects yet.<br/>Tap + to create your first!</p>
             </div>
           ) : filteredProjects.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 p-6">
@@ -390,21 +382,18 @@ export default function Studio() {
         )}
 
         {!selectedProject ? (
-           <div className="flex-1 flex items-center justify-center px-6">
-             <div className="text-center max-w-md">
-               <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-primary/25 to-pink-500/25 border border-primary/30 flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-primary/15">
-                 <Music className="w-14 h-14 text-primary/60" />
-               </div>
-               <h2 className="font-heading font-bold text-2xl mb-2 text-foreground">Ready to Create?</h2>
-               <p className="text-base text-muted-foreground/80 mb-6">Select a project from the left or create a new one to dive into multi-track production</p>
-               <div className="w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent my-6" />
-               <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">💡 Pro Tip</p>
-               <p className="text-sm text-muted-foreground mt-2">Upload stems from any DAW and collaborate in real-time with your team</p>
-             </div>
-           </div>
-         ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center text-muted-foreground">
+              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-pink-500/20 border border-primary/20 flex items-center justify-center mx-auto mb-5 shadow-2xl shadow-primary/10">
+                <Music className="w-11 h-11 text-primary/50" />
+              </div>
+              <p className="font-heading font-semibold text-xl mb-2">Select a Project</p>
+              <p className="text-sm text-muted-foreground/70">or create a new one to start mixing</p>
+            </div>
+          </div>
+        ) : (
           <>
-            {/* Project Header with live indicator */}
+            {/* Project Header */}
             <div className="px-4 md:px-5 py-3 border-b border-border/50 flex items-center justify-between backdrop-blur-xl gap-2" style={{ background: "hsl(240 8% 7% / 0.95)" }}>
               <div className="flex items-center gap-2 min-w-0">
                 <button
@@ -414,8 +403,7 @@ export default function Studio() {
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+                  <div className="flex items-center gap-2 min-w-0">
                     <h1 className="text-lg font-heading font-bold truncate">{selectedProject.title}</h1>
                     <span className="text-[10px] px-2 py-1 rounded-full bg-primary/20 text-primary font-semibold whitespace-nowrap">Professional Studio</span>
                   </div>
@@ -481,22 +469,11 @@ export default function Studio() {
                   </SelectContent>
                 </Select>
                 {canEdit && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="rounded-xl w-8 h-8 hover:bg-secondary/60 text-muted-foreground"
-                      onClick={() => window.location.href = '/record'}
-                      title="Record audio"
-                    >
-                      <Mic className="w-4 h-4" />
-                    </Button>
-                    <TrackImporter
-                      projectId={selectedProjectId}
-                      currentUser={currentUser}
-                      onSuccess={() => queryClient.invalidateQueries({ queryKey: ["tracks", selectedProjectId] })}
-                    />
-                  </>
+                  <TrackImporter
+                    projectId={selectedProjectId}
+                    currentUser={currentUser}
+                    onSuccess={() => queryClient.invalidateQueries({ queryKey: ["tracks", selectedProjectId] })}
+                  />
                 )}
               </div>
             </div>

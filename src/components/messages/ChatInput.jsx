@@ -163,7 +163,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             <p className="text-[10px] text-accent font-semibold mb-0.5">Editing Message</p>
             <p className="text-xs text-muted-foreground/80 truncate">{editingMessage.text}</p>
           </div>
-          <button onClick={() => { onCancelEdit?.(); setText(""); }} className="text-muted-foreground hover:text-foreground p-1.5 rounded-full hover:bg-secondary/60 transition-all">
+          <button onClick={() => { onCancelEdit?.(); setText(""); }} className="text-muted-foreground hover:text-foreground p-1.5 rounded-full hover:bg-secondary/60 transition-all" title="Cancel Edit" aria-label="Cancel Edit">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -176,7 +176,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             <p className="text-[10px] text-primary font-semibold">{replyTo.sender_name}</p>
             <p className="text-xs text-muted-foreground/80 truncate">{replyTo.text || `[${replyTo.type}]`}</p>
           </div>
-          <button onClick={onCancelReply} className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-secondary/60 transition-all">
+          <button onClick={onCancelReply} className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-secondary/60 transition-all" title="Cancel Reply" aria-label="Cancel Reply">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -299,6 +299,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             disabled={isRecording}
             className={cn("w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5 touch-manipulation",
               showEmoji ? "text-primary bg-primary/15" : "text-muted-foreground hover:text-primary hover:bg-primary/10")}
+            title="Add Emoji"
+            aria-label="Add Emoji"
           >
             <Smile className="w-5 h-5" />
           </button>
@@ -321,6 +323,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
           onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
           disabled={anyUploading || isRecording}
           className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shrink-0 mb-0.5 touch-manipulation"
+          title="Attach File"
+          aria-label="Attach File"
         >
           <Paperclip className="w-5 h-5" />
         </button>
@@ -379,6 +383,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             whileTap={{ scale: 0.88 }}
             whileHover={{ scale: 1.08 }}
             className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-primary/40"
+            title="Send Message"
+            aria-label="Send Message"
           >
             <Send className="w-4 h-4 text-white" />
           </motion.button>
@@ -390,6 +396,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             className="w-10 h-10 rounded-full bg-destructive flex items-center justify-center shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-destructive/40"
             animate={{ boxShadow: ["0 0 8px hsl(0 72% 51% / 0.4)", "0 0 20px hsl(0 72% 51% / 0.7)", "0 0 8px hsl(0 72% 51% / 0.4)"] }}
             transition={{ repeat: Infinity, duration: 1 }}
+            title="Stop Recording"
+            aria-label="Stop Recording"
           >
             <StopCircle className="w-5 h-5 text-white" />
           </motion.button>
@@ -401,6 +409,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             whileTap={{ scale: 0.88 }}
             whileHover={{ scale: 1.1 }}
             className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0 mb-0.5 touch-manipulation"
+            title="Record Audio"
+            aria-label="Record Audio"
           >
             <Mic className="w-5 h-5" />
           </motion.button>

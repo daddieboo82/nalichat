@@ -113,6 +113,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
 
   return (
     <motion.div
+      id={`message-${message.id}`}
       initial={{ opacity: 0, y: 8, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.2, ease: "easeOut" }}

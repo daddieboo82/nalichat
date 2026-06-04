@@ -208,7 +208,14 @@ export default function ChatView({ conversation, messages, currentUser, users, o
         <MessageSearch
           messages={messages}
           onClose={() => setShowSearch(false)}
-          onSelectMessage={(msg) => scrollRef.current?.scrollIntoView({ behavior: "smooth" })}
+          onSelectMessage={(msg) => {
+            const el = document.getElementById(`message-${msg.id}`);
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "center" });
+              el.classList.add("bg-primary/20", "rounded-xl", "transition-colors");
+              setTimeout(() => el.classList.remove("bg-primary/20", "rounded-xl"), 2000);
+            }
+          }}
           users={users}
         />
       )}

@@ -1,23 +1,69 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, Loader2, MessageCircle } from "lucide-react";
+import { Send, Loader2, MessageCircle, Clock, Play, Pause } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { notify } from "@/lib/notifications";
+import { cn } from "@/lib/utils";
+
+function formatTime(seconds) {
+  if (seconds == null) return null;
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 export default function TrackCommentsDialog({ post, currentUser, open, onOpenChange }) {
   const [text, setText] = useState("");
+  const [currentTime, setCurrentTime] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef(null);
   const queryClient = useQueryClient();
 
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ["track-comments", post?.id],
-    queryFn: () => base44.entities.TrackComment.filter({ track_id: post.id }, "-created_date", 100),
+    queryFn: () => base44.entities.TrackComment.filter({ track_id: post.id }, "timestamp", 100),
     enabled: !!post?.id && open,
   });
+
+  // Stop audio when dialog closes
+  useEffect(() => {
+    if (!open && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+      setCurrentTime(null);
+    }
+  }, [open]);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const seekTo = (seconds) => {
+    if (!audioRef.current) return;
+    audioRef.current.currentTime = seconds;
+    audioRef.current.play();
+    setIsPlaying(true);
+  };
+
+  const captureTimestamp = () => {
+    if (audioRef.current && duration > 0) {
+      setCurrentTime(Math.floor(audioRef.current.currentTime));
+    }
+  };
+
+  const clearTimestamp = () => setCurrentTime(null);
 
   const addComment = useMutation({
     mutationFn: async () => {
@@ -27,26 +73,32 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
         author_name: currentUser.display_name || currentUser.full_name,
         author_avatar: currentUser.avatar_url,
         text: text.trim(),
+        timestamp: currentTime,
       });
       await notify({
         recipientId: post.creator_id,
         actor: currentUser,
         type: "comment",
-        message: `commented on your track "${post.title}"`,
+        message: `commented on your track "${post.title}"${currentTime != null ? ` at ${formatTime(currentTime)}` : ""}`,
         link: "/explore",
       });
     },
     onSuccess: () => {
       setText("");
+      setCurrentTime(null);
       queryClient.invalidateQueries({ queryKey: ["track-comments", post.id] });
     },
   });
 
   if (!post) return null;
 
+  const timestampedComments = comments.filter(c => c.timestamp != null).sort((a, b) => a.timestamp - b.timestamp);
+  const generalComments = comments.filter(c => c.timestamp == null);
+  const sortedComments = [...timestampedComments, ...generalComments];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-md">
+      <DialogContent className="bg-card border-border max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-heading flex items-center gap-2">
             <MessageCircle className="w-4 h-4 text-primary" />
@@ -54,22 +106,75 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
           </DialogTitle>
         </DialogHeader>
 
-        <div className="max-h-72 overflow-y-auto space-y-3 -mx-1 px-1">
+        {/* Audio Player */}
+        {post.file_url && (
+          <div className="bg-secondary/50 rounded-xl p-3 space-y-2">
+            <audio
+              ref={audioRef}
+              src={post.file_url}
+              onTimeUpdate={() => {}}
+              onLoadedMetadata={(e) => setDuration(e.target.duration)}
+              onEnded={() => setIsPlaying(false)}
+            />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={togglePlay}
+                className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 hover:bg-primary/90 transition-colors"
+              >
+                {isPlaying ? <Pause className="w-3.5 h-3.5 text-white" /> : <Play className="w-3.5 h-3.5 text-white ml-0.5" />}
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={duration || 100}
+                step={1}
+                defaultValue={0}
+                className="flex-1 h-1.5 accent-primary cursor-pointer"
+                onChange={(e) => seekTo(Number(e.target.value))}
+                onMouseMove={(e) => {
+                  if (audioRef.current) audioRef.current.currentTime = Number(e.target.value);
+                }}
+              />
+              <span className="text-xs text-muted-foreground shrink-0">{formatTime(duration)}</span>
+            </div>
+            <button
+              onClick={captureTimestamp}
+              className="text-xs flex items-center gap-1.5 text-primary hover:text-primary/80 transition-colors"
+              title="Pin comment to current playhead position"
+            >
+              <Clock className="w-3 h-3" />
+              Pin comment to current time
+            </button>
+          </div>
+        )}
+
+        {/* Comments List */}
+        <div className="max-h-64 overflow-y-auto space-y-3 -mx-1 px-1">
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
-          ) : comments.length === 0 ? (
+          ) : sortedComments.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">No comments yet. Be the first!</p>
           ) : (
-            comments.map((c) => (
+            sortedComments.map((c) => (
               <div key={c.id} className="flex items-start gap-2">
                 <Avatar className="w-7 h-7 shrink-0">
                   <AvatarImage src={c.author_avatar} />
                   <AvatarFallback className="bg-primary/20 text-primary text-[10px]">{c.author_name?.[0] || "?"}</AvatarFallback>
                 </Avatar>
                 <div className="bg-secondary/50 rounded-xl px-3 py-2 flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-semibold truncate">{c.author_name}</span>
-                    <span className="text-[10px] text-muted-foreground shrink-0">
+                    {c.timestamp != null && (
+                      <button
+                        onClick={() => seekTo(c.timestamp)}
+                        className="flex items-center gap-1 text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full hover:bg-primary/25 transition-colors font-mono"
+                        title="Jump to this timestamp"
+                      >
+                        <Clock className="w-2.5 h-2.5" />
+                        {formatTime(c.timestamp)}
+                      </button>
+                    )}
+                    <span className="text-[10px] text-muted-foreground shrink-0 ml-auto">
                       {formatDistanceToNow(new Date(c.created_date), { addSuffix: true })}
                     </span>
                   </div>
@@ -80,22 +185,32 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
           )}
         </div>
 
-        <div className="flex gap-2 pt-2">
-          <Input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Add a comment..."
-            className="bg-secondary/50 border-0 rounded-xl"
-            onKeyDown={(e) => { if (e.key === "Enter" && text.trim()) addComment.mutate(); }}
-          />
-          <Button
-            size="icon"
-            className="rounded-xl bg-primary hover:bg-primary/90 shrink-0"
-            disabled={!text.trim() || addComment.isPending}
-            onClick={() => addComment.mutate()}
-          >
-            {addComment.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </Button>
+        {/* Input */}
+        <div className="space-y-2 pt-2">
+          {currentTime != null && (
+            <div className="flex items-center gap-2 text-xs text-primary bg-primary/10 rounded-lg px-3 py-1.5">
+              <Clock className="w-3 h-3" />
+              <span>Pinned at <span className="font-mono font-bold">{formatTime(currentTime)}</span></span>
+              <button onClick={clearTimestamp} className="ml-auto text-muted-foreground hover:text-foreground">✕</button>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={currentTime != null ? `Comment at ${formatTime(currentTime)}...` : "Add a comment..."}
+              className="bg-secondary/50 border-0 rounded-xl"
+              onKeyDown={(e) => { if (e.key === "Enter" && text.trim()) addComment.mutate(); }}
+            />
+            <Button
+              size="icon"
+              className="rounded-xl bg-primary hover:bg-primary/90 shrink-0"
+              disabled={!text.trim() || addComment.isPending}
+              onClick={() => addComment.mutate()}
+            >
+              {addComment.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

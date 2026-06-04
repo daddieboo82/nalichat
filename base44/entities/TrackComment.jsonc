@@ -17,6 +17,10 @@
     },
     "text": {
       "type": "string"
+    },
+    "timestamp": {
+      "type": "number",
+      "description": "Timestamp in seconds within the audio track (null = general comment)"
     }
   },
   "required": [

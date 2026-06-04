@@ -129,11 +129,11 @@ export default function StudioRecorder({
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-12 overflow-y-auto bg-gradient-to-b from-secondary/10 to-background">
+    <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto bg-gradient-to-b from-secondary/10 to-background">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-2xl space-y-8"
+        className="w-full max-w-2xl space-y-6"
       >
         {/* Recording Status */}
         <div className="text-center">
@@ -165,7 +165,7 @@ export default function StudioRecorder({
 
         {/* Waveform Visualizer */}
         {isRecording && (
-          <div className="bg-secondary/30 rounded-xl p-8 border border-border/30">
+          <div className="bg-secondary/30 rounded-lg p-6 border border-border/30">
             <RecordingVisualizerWave audioLevel={audioLevel} />
           </div>
         )}
@@ -206,13 +206,13 @@ export default function StudioRecorder({
         )}
 
         {/* Control Buttons */}
-        <div className="flex gap-3 justify-center">
+        <div className="flex gap-3 justify-center flex-wrap">
           {!isRecording ? (
             <Button
               size="lg"
               onClick={startRecording}
               disabled={saving}
-              className="bg-destructive/90 hover:bg-destructive text-white font-semibold rounded-xl px-8 shadow-lg shadow-destructive/30"
+              className="bg-destructive hover:bg-destructive/90 text-white font-bold rounded-lg px-8 h-12 shadow-lg shadow-destructive/40"
             >
               <Mic className="w-5 h-5 mr-2" />
               Start Recording
@@ -223,7 +223,7 @@ export default function StudioRecorder({
                 size="lg"
                 onClick={stopRecording}
                 disabled={saving}
-                className="bg-primary/90 hover:bg-primary text-primary-foreground font-semibold rounded-xl px-8 shadow-lg shadow-primary/30"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg px-8 h-12 shadow-lg shadow-primary/40"
               >
                 {saving ? (
                   <>
@@ -248,7 +248,7 @@ export default function StudioRecorder({
                   setRecordingTime(0);
                   chunksRef.current = [];
                 }}
-                className="border-border/50 rounded-xl"
+                className="border-border rounded-lg h-12 font-bold hover:bg-secondary/60"
               >
                 <RotateCcw className="w-5 h-5 mr-2" />
                 Discard
@@ -258,14 +258,16 @@ export default function StudioRecorder({
         </div>
 
         {/* Tips */}
-        <div className="mt-12 bg-secondary/20 border border-border/30 rounded-xl p-6 text-center">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold mb-2">Pro Tips</p>
-          <ul className="text-sm text-muted-foreground/80 space-y-1">
-            <li>• Keep your microphone at a consistent distance</li>
-            <li>• Minimize background noise for clean recordings</li>
-            <li>• Layer multiple takes to build depth</li>
-          </ul>
-        </div>
+        {!isRecording && (
+          <div className="bg-secondary/20 border border-border/30 rounded-lg p-5 text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold mb-2">Pro Tips</p>
+            <ul className="text-xs text-muted-foreground/80 space-y-1">
+              <li>• Keep your microphone at a consistent distance</li>
+              <li>• Minimize background noise for clean recordings</li>
+              <li>• Layer multiple takes to build depth</li>
+            </ul>
+          </div>
+        )}
       </motion.div>
     </div>
   );

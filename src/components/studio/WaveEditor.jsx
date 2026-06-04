@@ -5,7 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { 
   X, Play, Pause, Scissors, Copy, Trash2, 
   Activity, Radio, Waves, Settings2, SlidersHorizontal,
-  VolumeX, Volume2, Save, Wand2, Plus
+  VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -23,6 +23,9 @@ export default function WaveEditor({ track, onClose, onSave }) {
   const [activeEffects, setActiveEffects] = useState([]);
   const [selectedEffect, setSelectedEffect] = useState(null);
   const [zoom, setZoom] = useState(1);
+  const [activeTool, setActiveTool] = useState('smart'); // smart, select, trim, fade
+  const [selection, setSelection] = useState({ start: 0.25, end: 0.75 });
+  const [fade, setFade] = useState({ in: 0.1, out: 0.1 });
 
   const toggleEffect = (effect) => {
     if (activeEffects.some(e => e.id === effect.id)) {
@@ -144,6 +147,19 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                 </Button>
                 <div className="w-px h-4 bg-border/50 mx-2" />
+                
+                <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-lg">
+                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('trim')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'trim' && "bg-primary/20 text-primary")} title="Trim"><MoveHorizontal className="w-3.5 h-3.5" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('select')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'select' && "bg-primary/20 text-primary")} title="Select"><MousePointer2 className="w-3.5 h-3.5" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('fade')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'fade' && "bg-primary/20 text-primary")} title="Fade"><Crosshair className="w-3.5 h-3.5" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('smart')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'smart' && "border-primary text-primary bg-primary/10")} title="Smart Tool">
+                     <div className="flex flex-col gap-0.5 items-center">
+                       <div className="flex gap-[1px]"><MoveHorizontal className="w-2.5 h-2.5"/><MousePointer2 className="w-2.5 h-2.5"/></div>
+                     </div>
+                  </Button>
+                </div>
+
+                <div className="w-px h-4 bg-border/50 mx-2" />
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground"><Scissors className="w-4 h-4" /></Button>
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground"><Copy className="w-4 h-4" /></Button>
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-400"><Trash2 className="w-4 h-4" /></Button>
@@ -156,21 +172,126 @@ export default function WaveEditor({ track, onClose, onSave }) {
               {/* Huge Waveform View */}
               <div className="flex-1 relative overflow-auto custom-scrollbar p-8 flex items-center justify-center">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:40px_40px]" />
-                <div className="relative w-full max-w-[2000px] h-64 bg-card/20 rounded-xl border border-white/5 flex items-center justify-center gap-[2px] px-4" style={{ transform: `scaleX(${zoom})` }}>
+                <div 
+                  className={cn("relative w-full max-w-[2000px] h-64 bg-card/20 rounded-xl border border-white/5 flex items-center justify-between gap-px overflow-hidden", 
+                    activeTool === 'select' ? "cursor-text" : 
+                    activeTool === 'trim' ? "cursor-ew-resize" : 
+                    activeTool === 'fade' ? "cursor-crosshair" : "cursor-default"
+                  )} 
+                  style={{ transform: `scaleX(${zoom})` }}
+                  onPointerDown={(e) => {
+                    if (activeTool !== 'select' && activeTool !== 'smart') return;
+                    const target = e.currentTarget;
+                    const rect = target.getBoundingClientRect();
+                    const startX = (e.clientX - rect.left) / rect.width;
+                    setSelection({ start: startX, end: startX });
+                    
+                    target.setPointerCapture(e.pointerId);
+                    
+                    const handleMove = (moveEvent) => {
+                      const currentX = Math.max(0, Math.min(1, (moveEvent.clientX - rect.left) / rect.width));
+                      setSelection({ start: Math.min(startX, currentX), end: Math.max(startX, currentX) });
+                    };
+                    
+                    const handleUp = (upEvent) => {
+                      target.releasePointerCapture(upEvent.pointerId);
+                      target.removeEventListener('pointermove', handleMove);
+                      target.removeEventListener('pointerup', handleUp);
+                    };
+                    
+                    target.addEventListener('pointermove', handleMove);
+                    target.addEventListener('pointerup', handleUp);
+                  }}
+                >
+                  {/* Selection Overlay */}
+                  {selection.start !== selection.end && (
+                    <div 
+                      className="absolute top-0 bottom-0 bg-white/10 border-x border-white/30 z-10 pointer-events-none"
+                      style={{ left: `${selection.start * 100}%`, right: `${(1 - selection.end) * 100}%` }}
+                    />
+                  )}
+
+                  {/* Fade In Overlay */}
+                  <div 
+                    className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-background to-transparent z-10"
+                    style={{ width: `${fade.in * 100}%` }}
+                  >
+                    {(activeTool === 'fade' || activeTool === 'smart') && (
+                      <div className="absolute top-0 right-0 w-4 h-full cursor-ew-resize hover:bg-white/20 flex items-center justify-center group"
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          const target = e.currentTarget.parentElement.parentElement;
+                          const rect = target.getBoundingClientRect();
+                          target.setPointerCapture(e.pointerId);
+                          
+                          const handleMove = (moveEvent) => {
+                            const currentX = Math.max(0, Math.min(1 - fade.out, (moveEvent.clientX - rect.left) / rect.width));
+                            setFade(prev => ({ ...prev, in: currentX }));
+                          };
+                          
+                          const handleUp = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleMove);
+                            target.removeEventListener('pointerup', handleUp);
+                          };
+                          
+                          target.addEventListener('pointermove', handleMove);
+                          target.addEventListener('pointerup', handleUp);
+                        }}
+                      >
+                        <div className="w-[2px] h-6 bg-white/50 group-hover:bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Fade Out Overlay */}
+                  <div 
+                    className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-background to-transparent z-10"
+                    style={{ width: `${fade.out * 100}%` }}
+                  >
+                    {(activeTool === 'fade' || activeTool === 'smart') && (
+                      <div className="absolute top-0 left-0 w-4 h-full cursor-ew-resize hover:bg-white/20 flex items-center justify-center group"
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          const target = e.currentTarget.parentElement.parentElement;
+                          const rect = target.getBoundingClientRect();
+                          target.setPointerCapture(e.pointerId);
+                          
+                          const handleMove = (moveEvent) => {
+                            const currentX = Math.max(0, Math.min(1 - fade.in, 1 - ((moveEvent.clientX - rect.left) / rect.width)));
+                            setFade(prev => ({ ...prev, out: currentX }));
+                          };
+                          
+                          const handleUp = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleMove);
+                            target.removeEventListener('pointerup', handleUp);
+                          };
+                          
+                          target.addEventListener('pointermove', handleMove);
+                          target.addEventListener('pointerup', handleUp);
+                        }}
+                      >
+                        <div className="w-[2px] h-6 bg-white/50 group-hover:bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    )}
+                  </div>
+
                   {/* Playhead */}
                   {isPlaying && (
                     <motion.div 
                       initial={{ left: 0 }}
                       animate={{ left: "100%" }}
                       transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                      className="absolute top-0 bottom-0 w-px bg-primary z-10 shadow-[0_0_10px_rgba(var(--primary),0.8)]"
+                      className="absolute top-0 bottom-0 w-px bg-primary z-20 shadow-[0_0_10px_rgba(var(--primary),0.8)]"
                     />
                   )}
+                  
                   {track.waveform && track.waveform.map((val, i) => (
                     <div 
                       key={i} 
-                      className={cn("w-2 rounded-full opacity-90 transition-all", track.color)}
-                      style={{ height: `${val * 100}%` }}
+                      className={cn("flex-1 rounded-full opacity-90 transition-all", track.color)}
+                      style={{ height: `${Math.max(2, val * 100)}%` }}
                     />
                   ))}
                 </div>

@@ -780,7 +780,34 @@ export default function Studio() {
                   {track.waveform && track.waveform.length > 0 && (
                     <div 
                       onDoubleClick={() => setEditingTrack(track)}
-                      className="audio-clip absolute top-2 bottom-2 rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-pointer"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        const target = e.currentTarget;
+                        const startX = e.clientX;
+                        const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
+                        
+                        target.setPointerCapture(e.pointerId);
+                        
+                        const handleMove = (moveEvent) => {
+                          const deltaX = moveEvent.clientX - startX;
+                          const deltaTime = deltaX / (20 * zoom);
+                          const newStartTime = Math.max(0, initialStartTime + deltaTime);
+                          
+                          setTracks(prev => prev.map(t => 
+                            t.id === track.id ? { ...t, startTime: newStartTime } : t
+                          ));
+                        };
+                        
+                        const handleUp = (upEvent) => {
+                          target.releasePointerCapture(upEvent.pointerId);
+                          target.removeEventListener('pointermove', handleMove);
+                          target.removeEventListener('pointerup', handleUp);
+                        };
+                        
+                        target.addEventListener('pointermove', handleMove);
+                        target.addEventListener('pointerup', handleUp);
+                      }}
+                      className="audio-clip absolute top-2 bottom-2 rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-grab active:cursor-grabbing"
                       style={{ 
                         left: `${(track.startTime !== undefined ? track.startTime : 0) * 20}px`,
                         width: `${(track.duration !== undefined ? track.duration : 40) * 20}px`

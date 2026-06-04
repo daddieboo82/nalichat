@@ -125,6 +125,7 @@ const AuthenticatedApp = () => {
 
 function App() {
   const [loaded, setLoaded] = useState(false);
+  // App refreshed
 
   return (
     <ErrorBoundary>

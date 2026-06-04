@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/layout/PageTransition";
-import { Settings, LogOut, Compass, Trophy, User, Mic, Sparkles, Music, BarChart3, FileText, MessageSquare, Users, HelpCircle } from "lucide-react";
+import { Settings, LogOut, Compass, Trophy, User, Mic, Sparkles, Music, BarChart3, FileText, MessageSquare, Users, HelpCircle, UserPlus } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,6 +15,7 @@ import SoundToggle from "@/components/layout/SoundToggle";
 import { sounds } from "@/hooks/use-sound";
 import { useOnboarding } from "@/lib/OnboardingContext";
 import OnboardingOverlay from "@/components/onboarding/OnboardingOverlay";
+import GlobalInviteDialog from "@/components/GlobalInviteDialog";
 
 const navItems = [
   { icon: MessageSquare, label: "Messages", path: "/messages" },
@@ -33,6 +34,7 @@ export default function AppLayout() {
   const [user, setUser] = useState(null);
   const { isFirstTime, skipOnboarding } = useOnboarding();
   const [showHelp, setShowHelp] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
 
   useSystemTheme();
 
@@ -99,6 +101,13 @@ export default function AppLayout() {
             <SoundToggle />
             <NotificationBell />
             <button
+              onClick={() => setShowInvite(true)}
+              title="Invite Collaborators"
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+            >
+              <UserPlus className="w-4 h-4" />
+            </button>
+            <button
               onClick={() => setShowHelp(true)}
               title="Help & Tutorial"
               className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
@@ -152,6 +161,9 @@ export default function AppLayout() {
         onComplete={() => setShowHelp(false)}
         completedSteps={new Set()}
       />
-    </div>
-  );
-}
+
+      {/* Global Invite Dialog */}
+      <GlobalInviteDialog open={showInvite} onOpenChange={setShowInvite} />
+      </div>
+      );
+      }

@@ -1088,7 +1088,6 @@ export default function Studio() {
                   )}
                 >
                   {/* Grid lines */}
-                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px)]" style={{ backgroundSize: `${100 * zoom}px 100%` }} />
                   
                   {/* Automation Lane Background */}
                   {track.showAutomation && (
@@ -1317,7 +1316,7 @@ export default function Studio() {
                       
                       {/* Fade In/Out Overlays & Handles */}
                       <div 
-                        className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none"
+                        className="absolute top-0 bottom-0 left-0 bg-white/5 z-10 pointer-events-none"
                         style={{ width: `${(track.fadeIn || 0) * 100}%` }}
                       />
                       {(activeTool === 'fade' || activeTool === 'smart') && (
@@ -1359,7 +1358,7 @@ export default function Studio() {
                       )}
 
                       <div 
-                        className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none"
+                        className="absolute top-0 bottom-0 right-0 bg-white/5 z-10 pointer-events-none"
                         style={{ width: `${(track.fadeOut || 0) * 100}%` }}
                       />
                       {(activeTool === 'fade' || activeTool === 'smart') && (

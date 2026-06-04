@@ -103,9 +103,9 @@ export default function Messages() {
     onError: (_err, _msgData, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(["messages", selectedConvId], ctx.previous);
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
+      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
 

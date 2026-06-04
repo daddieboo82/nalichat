@@ -113,8 +113,11 @@ export default function StudioEditor() {
             <div className="bg-card rounded-2xl border border-border p-8">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="font-heading font-bold text-2xl mb-2">Studio Session Editor</h2>
-                  <p className="text-muted-foreground">Upload your bounced session or paste the audio URL</p>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h2 className="font-heading font-bold text-2xl">Award-Winning Studio Editor</h2>
+                    <span className="text-xs px-3 py-1 rounded-full bg-accent/20 text-accent font-semibold">Professional Grade</span>
+                  </div>
+                  <p className="text-muted-foreground">Professional mastering-grade tools with streaming platform optimization</p>
                 </div>
                 {collaborators.length > 0 && (
                   <CollaboratorPresence collaborators={collaborators} currentUserId={currentUser?.id} />
@@ -189,9 +192,10 @@ export default function StudioEditor() {
                 className="bg-card rounded-2xl border border-accent/30 p-8 space-y-4"
               >
                 <div className="flex items-center gap-2 mb-4">
-                  <Zap className="w-5 h-5 text-accent" />
-                  <h3 className="font-heading font-bold text-lg">AI Mastering Analysis</h3>
-                </div>
+                   <Zap className="w-5 h-5 text-accent" />
+                   <h3 className="font-heading font-bold text-lg">AI Mastering Analysis</h3>
+                   <span className="text-xs px-2 py-1 rounded-full bg-accent/20 text-accent font-semibold">Industry Standard</span>
+                 </div>
 
                 <div className="grid gap-4">
                   <div className="bg-secondary/30 rounded-lg p-4">

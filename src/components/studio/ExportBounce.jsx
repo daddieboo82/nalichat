@@ -2,20 +2,31 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
-import { Download, Loader2, Music } from "lucide-react";
+import { Download, Loader2, Music, Award } from "lucide-react";
 
 const EXPORT_FORMATS = {
   mp3: { label: "MP3", bitrate: "320kbps", size: "small", quality: "High Quality" },
-  wav: { label: "WAV", bitrate: "Lossless", size: "large", quality: "Studio Quality" },
-  flac: { label: "FLAC", bitrate: "Lossless", size: "medium", quality: "Lossless" },
-  aac: { label: "AAC", bitrate: "256kbps", size: "small", quality: "High Quality" },
-  ogg: { label: "OGG", bitrate: "320kbps", size: "small", quality: "High Quality" },
-  m4a: { label: "M4A", bitrate: "256kbps", size: "small", quality: "iTunes Compatible" },
+  wav: { label: "WAV", bitrate: "Lossless", size: "large", quality: "Studio Reference" },
+  flac: { label: "FLAC", bitrate: "Lossless", size: "medium", quality: "Archival Quality" },
+  aac: { label: "AAC", bitrate: "256kbps", size: "small", quality: "Professional Distribution" },
+  ogg: { label: "OGG", bitrate: "320kbps", size: "small", quality: "Professional Quality" },
+  m4a: { label: "M4A", bitrate: "256kbps", size: "small", quality: "Professional Mastered" },
+};
+
+const LOUDNESS_STANDARDS = {
+  spotify: { platform: "Spotify", lufs: "-14 LUFS", tp: "-1.0 dBFS" },
+  apple: { platform: "Apple Music", lufs: "-16 LUFS", tp: "-1.0 dBFS" },
+  youtube: { platform: "YouTube", lufs: "-13 LUFS", tp: "-1.0 dBFS" },
+  tidal: { platform: "Tidal", lufs: "-14 LUFS", tp: "-1.0 dBFS" },
+  streaming: { platform: "Universal Streaming", lufs: "-14 LUFS", tp: "-1.0 dBFS" },
 };
 
 export default function ExportBounce({ audioUrl, title, disabled }) {
   const [open, setOpen] = useState(false);
   const [format, setFormat] = useState("mp3");
+  const [loudnessStandard, setLoudnessStandard] = useState("streaming");
+  const [bitDepth, setBitDepth] = useState("24bit");
+  const [sampleRate, setSampleRate] = useState("44.1khz");
   const [exporting, setExporting] = useState(false);
 
   const handleExport = async () => {
@@ -61,7 +72,7 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Format Selection */}
           <div className="space-y-3">
             <label className="text-sm font-semibold text-foreground block">
@@ -90,34 +101,67 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
             </div>
           </div>
 
-          {/* Format Details */}
-          {selectedFormat && (
-            <div className="p-4 rounded-xl bg-secondary/30 border border-border/50 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Quality:</span>
-                <span className="font-medium">{selectedFormat.quality}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Bitrate:</span>
-                <span className="font-medium">{selectedFormat.bitrate}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">File Size:</span>
-                <span className="font-medium capitalize">{selectedFormat.size}</span>
-              </div>
-            </div>
-          )}
+          {/* Quality Standards */}
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-foreground block flex items-center gap-2">
+              <Award className="w-4 h-4 text-accent" />
+              Loudness Standard
+            </label>
+            <select
+              value={loudnessStandard}
+              onChange={(e) => setLoudnessStandard(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border/50 text-sm focus:border-primary/50 outline-none cursor-pointer"
+            >
+              {Object.entries(LOUDNESS_STANDARDS).map(([key, std]) => (
+                <option key={key} value={key}>
+                  {std.platform} ({std.lufs})
+                </option>
+              ))}
+            </select>
+          </div>
 
-          {/* Export Presets Info */}
-          <div className="bg-accent/10 border border-accent/30 rounded-lg p-3">
+          {/* Technical Specs */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground block">
+                Bit Depth
+              </label>
+              <select
+                value={bitDepth}
+                onChange={(e) => setBitDepth(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border/50 text-xs focus:border-primary/50 outline-none cursor-pointer"
+              >
+                <option value="16bit">16-bit (CD)</option>
+                <option value="24bit">24-bit (Studio)</option>
+                <option value="32bit">32-bit (Pro)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground block">
+                Sample Rate
+              </label>
+              <select
+                value={sampleRate}
+                onChange={(e) => setSampleRate(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border/50 text-xs focus:border-primary/50 outline-none cursor-pointer"
+              >
+                <option value="44.1khz">44.1 kHz (CD)</option>
+                <option value="48khz">48 kHz (Video)</option>
+                <option value="96khz">96 kHz (Mastering)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Professional Info */}
+          <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
             <div className="flex gap-2">
-              <Music className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-accent/80">
-                <p className="font-semibold mb-1">Bounce Settings</p>
-                <ul className="space-y-1 text-accent/70">
-                  <li>• Full mix with all tracks</li>
-                  <li>• Preserves all effects & mixing</li>
-                  <li>• 44.1kHz sample rate</li>
+              <Award className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-primary/80">
+                <p className="font-semibold mb-1">Professional Mastering Standards</p>
+                <ul className="space-y-1 text-primary/70">
+                  <li>• {LOUDNESS_STANDARDS[loudnessStandard].platform} optimized ({LOUDNESS_STANDARDS[loudnessStandard].lufs})</li>
+                  <li>• {bitDepth} resolution for pristine quality</li>
+                  <li>• {sampleRate} sample rate for optimal playback</li>
                 </ul>
               </div>
             </div>

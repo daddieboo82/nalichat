@@ -392,7 +392,10 @@ export default function Studio() {
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <div className="min-w-0">
-                  <h1 className="text-lg font-heading font-bold truncate">{selectedProject.title}</h1>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h1 className="text-lg font-heading font-bold truncate">{selectedProject.title}</h1>
+                    <span className="text-[10px] px-2 py-1 rounded-full bg-primary/20 text-primary font-semibold whitespace-nowrap">Professional Studio</span>
+                  </div>
                   <div className="flex items-center gap-2.5 mt-0.5">
                     <Badge className={`text-[9px] border-0 ${statusColors[selectedProject.status]}`}>
                       {selectedProject.status?.replace("_", " ").toUpperCase()}

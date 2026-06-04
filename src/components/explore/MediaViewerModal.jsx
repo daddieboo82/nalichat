@@ -66,141 +66,173 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-2xl p-0 overflow-hidden min-h-[300px] flex flex-col justify-center">
+      <DialogContent className="bg-[#0a0a0c] border-white/10 max-w-5xl p-0 overflow-hidden shadow-2xl sm:rounded-3xl">
         <DialogTitle className="sr-only">{post.title || "Media viewer"}</DialogTitle>
         <DialogDescription className="sr-only">{post.description || "View media details and playback."}</DialogDescription>
-        <div className="relative w-full h-full flex flex-col">
-          {/* Image Viewer */}
-          {post.image_url && !post.image_url.includes(".mp3") && !post.image_url.includes(".wav") && !post.image_url.includes(".ogg") ? (
-            <div className="relative w-full bg-black/20 aspect-video sm:aspect-[21/9] overflow-hidden flex-shrink-0">
+        
+        <div className="flex flex-col md:flex-row h-full md:h-[600px] relative w-full">
+          {/* Ambient Background */}
+          {post.image_url && (
+            <div 
+              className="absolute inset-0 opacity-20 blur-3xl scale-150 pointer-events-none transition-all duration-1000"
+              style={{ backgroundImage: `url(${post.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+            />
+          )}
+
+          {/* Media Side */}
+          <div className="w-full md:w-1/2 h-[350px] md:h-full relative flex-shrink-0 group bg-black/50">
+            {post.image_url && !post.image_url.includes(".mp3") && !post.image_url.includes(".wav") && !post.image_url.includes(".ogg") ? (
               <img
                 src={post.image_url}
                 alt={post.title}
                 className="w-full h-full object-cover"
                 onError={(e) => e.currentTarget.style.display = 'none'}
               />
-            </div>
-          ) : (
-            <div className="relative w-full bg-secondary/20 aspect-video sm:aspect-[21/9] flex flex-col items-center justify-center flex-shrink-0">
-              <Music className="w-16 h-16 text-muted-foreground/30 mb-2" />
-              <p className="text-xs text-muted-foreground/50 uppercase tracking-widest font-semibold">No Media Preview</p>
-            </div>
-          )}
-
-          <div className="bg-gradient-to-b from-primary/10 to-background p-6 space-y-6 flex-1 overflow-y-auto">
-            {/* Post Metadata (Always Show) */}
-            <div>
-              <h2 className="font-heading font-semibold text-lg mb-2">{post.title}</h2>
-              {post.description && (
-                <p className="text-sm text-muted-foreground mb-3">{post.description}</p>
-              )}
-              <div className="flex items-center gap-2">
-                <Avatar className="w-8 h-8">
-                  <AvatarImage src={post.creator_avatar} />
-                  <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
-                    {post.creator_name?.[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-xs font-semibold">{post.creator_name || "Anonymous"}</p>
-                  {post.genre && <p className="text-xs text-muted-foreground">{post.genre}</p>}
-                </div>
-              </div>
-            </div>
-
-            {/* Audio Player (Only if audio exists) */}
-            {(post.file_url || post.image_url?.includes(".mp3") || post.image_url?.includes(".wav") || post.image_url?.includes(".ogg")) && (
-              <div className="space-y-3">
-                <audio
-                  ref={audioRef}
-                  src={post.file_url || post.image_url}
-                  onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-                  onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-                  onEnded={() => setIsPlaying(false)}
-                />
-
-                {/* Play Controls */}
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors shrink-0"
-                    onClick={skipBackward}
-                  >
-                    <Rewind className="w-5 h-5" />
-                  </Button>
-                  <Button
-                    size="lg"
-                    className="rounded-full w-14 h-14 bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/20 shrink-0"
-                    onClick={togglePlay}
-                  >
-                    {isPlaying ? (
-                      <Pause className="w-6 h-6 fill-current" />
-                    ) : (
-                      <Play className="w-6 h-6 fill-current ml-1" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors shrink-0"
-                    onClick={skipForward}
-                  >
-                    <FastForward className="w-5 h-5" />
-                  </Button>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs text-muted-foreground">{formatTime(currentTime)}</span>
-                      <input
-                        type="range"
-                        min="0"
-                        max={duration || 0}
-                        value={currentTime}
-                        onChange={handleTimeChange}
-                        className="flex-1 h-1.5 bg-secondary rounded-full appearance-none cursor-pointer accent-primary"
-                      />
-                      <span className="text-xs text-muted-foreground">{formatTime(duration)}</span>
-                    </div>
-                  </div>
-                </div>
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-secondary/20">
+                <Music className="w-24 h-24 text-white/10 mb-4" />
               </div>
             )}
+            
+            {/* Gradient Fades for blending */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] to-transparent md:hidden" />
+            <div className="absolute inset-0 bg-gradient-to-l from-[#0a0a0c] to-transparent hidden md:block" />
+          </div>
 
-            {/* Extra Metadata (BPM, Duration, Tags) */}
-            <div className="space-y-3 mt-4">
-              {(post.bpm || post.duration) && (
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  {post.bpm && (
-                    <div className="bg-secondary/50 rounded-lg p-2 border border-border/50">
-                      <p className="text-muted-foreground">BPM</p>
-                      <p className="font-semibold">{post.bpm}</p>
-                    </div>
-                  )}
-                  {post.duration && (
-                    <div className="bg-secondary/50 rounded-lg p-2 border border-border/50">
-                      <p className="text-muted-foreground">Duration</p>
-                      <p className="font-semibold">{formatTime(post.duration)}</p>
-                    </div>
-                  )}
-                </div>
-              )}
+          {/* Content Side */}
+          <div className="flex-1 flex flex-col p-6 md:p-10 relative z-10 justify-end h-full">
+             <div className="flex-1 flex flex-col justify-center">
+                 <div className="flex flex-wrap gap-2 mb-4">
+                   {post.genre && <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-1 rounded-full">{post.genre}</span>}
+                   {post.medium && <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 bg-white/5 px-2.5 py-1 rounded-full">{post.medium}</span>}
+                 </div>
+                 
+                 <h2 className="text-3xl md:text-5xl font-heading font-black text-white mb-2 leading-tight drop-shadow-lg line-clamp-2">{post.title}</h2>
+                 
+                 <div className="flex items-center gap-3 mt-4 mb-6">
+                   <Avatar className="w-10 h-10 ring-2 ring-white/10">
+                     <AvatarImage src={post.creator_avatar} />
+                     <AvatarFallback className="bg-primary/20 text-primary">{post.creator_name?.[0]?.toUpperCase()}</AvatarFallback>
+                   </Avatar>
+                   <div>
+                     <p className="text-sm font-semibold text-white/90">{post.creator_name || "Anonymous"}</p>
+                     <p className="text-xs text-white/50">Creator</p>
+                   </div>
+                 </div>
 
-              {post.tags?.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {post.tags.map(tag => (
-                    <span key={tag} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full border border-primary/20">
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+                 {post.description && (
+                   <p className="text-sm text-white/70 line-clamp-3 mb-6 leading-relaxed">{post.description}</p>
+                 )}
+
+                 <div className="grid grid-cols-2 gap-4 mb-8">
+                    {(post.bpm || post.duration) && (
+                       <>
+                         {post.bpm && (
+                           <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-md">
+                             <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Tempo</p>
+                             <p className="font-mono text-lg text-white/90">{post.bpm} <span className="text-xs text-white/40">BPM</span></p>
+                           </div>
+                         )}
+                         {post.duration && (
+                           <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-md">
+                             <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Length</p>
+                             <p className="font-mono text-lg text-white/90">{formatTime(post.duration)}</p>
+                           </div>
+                         )}
+                       </>
+                    )}
+                 </div>
+                 
+                 {post.tags?.length > 0 && (
+                   <div className="flex flex-wrap gap-2 mb-8">
+                     {post.tags.map(tag => (
+                       <span key={tag} className="text-xs text-white/50 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">
+                         #{tag}
+                       </span>
+                     ))}
+                   </div>
+                 )}
+             </div>
+
+             {/* Audio Player */}
+             {(post.file_url || post.image_url?.includes(".mp3") || post.image_url?.includes(".wav") || post.image_url?.includes(".ogg")) && (
+               <div className="mt-auto pt-6 border-t border-white/10">
+                 <audio
+                   ref={audioRef}
+                   src={post.file_url || post.image_url}
+                   onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+                   onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                   onEnded={() => setIsPlaying(false)}
+                 />
+
+                 <div className="flex flex-col gap-4">
+                   {/* Progress Bar */}
+                   <div className="flex items-center gap-3">
+                     <span className="text-xs font-mono text-white/50 w-10 text-right">{formatTime(currentTime)}</span>
+                     <div className="flex-1 relative group cursor-pointer h-4 flex items-center">
+                       <input
+                         type="range"
+                         min="0"
+                         max={duration || 0}
+                         value={currentTime}
+                         onChange={handleTimeChange}
+                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                       />
+                       <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                         <div 
+                           className="h-full bg-gradient-to-r from-primary to-pink-500 rounded-full"
+                           style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                         />
+                       </div>
+                       {/* Thumb */}
+                       <div 
+                         className="absolute h-3 w-3 bg-white rounded-full shadow-lg shadow-black/50 scale-0 group-hover:scale-100 transition-transform pointer-events-none"
+                         style={{ left: `calc(${(currentTime / (duration || 1)) * 100}% - 6px)` }}
+                       />
+                     </div>
+                     <span className="text-xs font-mono text-white/50 w-10">{formatTime(duration)}</span>
+                   </div>
+
+                   {/* Controls */}
+                   <div className="flex items-center justify-center gap-6">
+                     <Button
+                       variant="ghost"
+                       size="icon"
+                       className="rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors h-12 w-12"
+                       onClick={skipBackward}
+                     >
+                       <Rewind className="w-6 h-6" />
+                     </Button>
+                     
+                     <Button
+                       className="rounded-full w-16 h-16 bg-white hover:bg-white/90 text-black shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition-all"
+                       onClick={togglePlay}
+                     >
+                       {isPlaying ? (
+                         <Pause className="w-7 h-7 fill-current" />
+                       ) : (
+                         <Play className="w-7 h-7 fill-current ml-1" />
+                       )}
+                     </Button>
+
+                     <Button
+                       variant="ghost"
+                       size="icon"
+                       className="rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors h-12 w-12"
+                       onClick={skipForward}
+                     >
+                       <FastForward className="w-6 h-6" />
+                     </Button>
+                   </div>
+                 </div>
+               </div>
+             )}
           </div>
 
           {/* Close Button */}
           <button
             onClick={() => onOpenChange(false)}
-            className="absolute top-3 right-3 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors z-10"
+            className="absolute top-4 right-4 p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md transition-all z-20 border border-white/10"
           >
             <X className="w-5 h-5" />
           </button>

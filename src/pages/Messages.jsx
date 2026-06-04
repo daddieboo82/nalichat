@@ -24,6 +24,22 @@ export default function Messages() {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
+  // Update online status when page becomes visible/hidden
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      const isOnline = document.visibilityState === "visible";
+      if (currentUser) {
+        await base44.functions.invoke("updateUserPresence", { isOnline });
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    // Mark as online when component mounts
+    if (currentUser) {
+      base44.functions.invoke("updateUserPresence", { isOnline: true });
+    }
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [currentUser]);
+
   const { data: users = [] } = useQuery({
     queryKey: ["users"],
     queryFn: () => base44.entities.User.list(),

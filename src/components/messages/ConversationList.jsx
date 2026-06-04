@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, MessageSquare, Users, Mail, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { base44 } from "@/api/base44Client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +14,22 @@ import {
 
 export default function ConversationList({ conversations, selectedId, onSelect, onNewDM, onNewGroup, onNewExternal, users, currentUserId }) {
   const [search, setSearch] = useState("");
+  const [unreadCounts, setUnreadCounts] = useState({});
+
+  // Calculate unread counts for each conversation
+  useEffect(() => {
+    const calculateUnread = async () => {
+      const counts = {};
+      for (const conv of conversations) {
+        const msgs = await base44.entities.Message.filter({ conversation_id: conv.id });
+        counts[conv.id] = msgs.filter(m => 
+          m.sender_id !== currentUserId && !m.read_by?.includes(currentUserId)
+        ).length;
+      }
+      setUnreadCounts(counts);
+    };
+    if (conversations.length > 0) calculateUnread();
+  }, [conversations, currentUserId]);
 
   const getOtherUser = (conv) => {
     if (conv.type === "group") return null;
@@ -128,19 +145,26 @@ export default function ConversationList({ conversations, selectedId, onSelect, 
                         <Users className="w-2 h-2 text-white" />
                       </div>
                     )}
-                    {/* Online dot placeholder */}
-                    {conv.type !== "group" && (
-                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-background opacity-0 group-hover:opacity-0" />
+                    {/* Online status dot */}
+                    {conv.type !== "group" && other && (
+                      <div className={cn("absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background transition-opacity", other.is_online ? "bg-green-500 opacity-100" : "bg-muted-foreground/40 opacity-60")} title={other.is_online ? "Online" : "Offline"} />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline gap-1">
                       <p className={cn("text-sm font-semibold truncate", isSelected ? "text-primary" : "text-foreground")}>{displayName}</p>
-                      {conv.last_message_at && (
-                        <span className="text-[10px] text-muted-foreground/60 shrink-0">
-                          {formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: false })}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {unreadCounts[conv.id] > 0 && (
+                          <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground">
+                            {unreadCounts[conv.id] > 99 ? "99+" : unreadCounts[conv.id]}
+                          </div>
+                        )}
+                        {conv.last_message_at && (
+                          <span className="text-[10px] text-muted-foreground/60">
+                            {formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: false })}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground/70 truncate mt-0.5 leading-snug">
                       {conv.last_message_text || <span className="italic opacity-60">Start the conversation</span>}

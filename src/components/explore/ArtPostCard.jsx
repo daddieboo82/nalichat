@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import MediaViewerModal from "./MediaViewerModal";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
+import CustomMediaPlayer from "@/components/audio/CustomMediaPlayer";
 
 export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist, onComment, large }) {
   const [showMedia, setShowMedia] = useState(false);
@@ -89,7 +90,7 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
           </div>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-3">
           <Avatar className="w-5 h-5">
             <AvatarImage src={post.creator_avatar} />
             <AvatarFallback className="bg-primary/20 text-primary text-[10px]">{post.creator_name?.[0]}</AvatarFallback>
@@ -108,6 +109,10 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
             )}
           </div>
         </div>
+
+        {post.file_url && (
+          <CustomMediaPlayer src={post.file_url} className="mt-2" />
+        )}
       </div>
       </div>
 

@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Play, Pause, X, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import CustomMediaPlayer from "@/components/audio/CustomMediaPlayer";
 import { Slider } from "@/components/ui/slider";
 
 export default function PlaylistDetail() {
@@ -285,9 +286,12 @@ export default function PlaylistDetail() {
                       >
                         {track.title}
                       </p>
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="text-xs text-muted-foreground truncate mb-2">
                         {track.creator_name}
                       </p>
+                      {track.file_url && (
+                        <CustomMediaPlayer src={track.file_url} className="mt-2" />
+                      )}
                     </div>
                     <button
                       onClick={(e) => {

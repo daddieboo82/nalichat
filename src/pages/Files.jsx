@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { downloadFilesAsZip } from "@/lib/downloadZip";
 import { useToast } from "@/components/ui/use-toast";
+import CustomMediaPlayer from "@/components/audio/CustomMediaPlayer";
 
 const typeIcons = {
   audio: Music,
@@ -303,7 +304,7 @@ export default function Files() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{file.name}</p>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-2 mt-1 mb-2">
                             <span className="text-[10px] text-muted-foreground">
                               {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "—"}
                             </span>
@@ -314,6 +315,9 @@ export default function Files() {
                               {formatDistanceToNow(new Date(file.created_date), { addSuffix: true })}
                             </span>
                           </div>
+                          {file.file_type === "audio" && (
+                            <CustomMediaPlayer src={file.file_url} className="mt-2" />
+                          )}
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <a href={file.file_url} target="_blank" rel="noopener noreferrer">
@@ -364,7 +368,7 @@ export default function Files() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{file.name}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-1 mb-2">
                         <span className="text-[10px] text-muted-foreground">
                           {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "—"}
                         </span>
@@ -375,6 +379,9 @@ export default function Files() {
                           {formatDistanceToNow(new Date(file.created_date), { addSuffix: true })}
                         </span>
                       </div>
+                      {file.file_type === "audio" && (
+                        <CustomMediaPlayer src={file.file_url} className="mt-2" />
+                      )}
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <a href={file.file_url} target="_blank" rel="noopener noreferrer">

@@ -33,6 +33,7 @@ export default function Studio() {
   const [editingTrack, setEditingTrack] = useState(null);
   const [selectedTrackIds, setSelectedTrackIds] = useState([1]);
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
+  const [recordingStartTime, setRecordingStartTime] = useState(null);
   
   const [hardware, setHardware] = useState({
     mic: false,
@@ -217,10 +218,11 @@ export default function Studio() {
         
         setTracks(prev => prev.map(t => {
           if (t.armed) {
-            return { ...t, waveform: realWaveform, armed: false, audioUrl };
+            return { ...t, waveform: realWaveform, armed: false, audioUrl, startTime: recordingStartTime !== null ? recordingStartTime : currentTime };
           }
           return t;
         }));
+        setRecordingStartTime(null);
         toast.success("Recording saved!");
       };
       mediaRecorderRef.current.stop();
@@ -231,6 +233,7 @@ export default function Studio() {
         }
         return t;
       }));
+      setRecordingStartTime(null);
     }
 
     if (mediaStreamRef.current) {
@@ -283,6 +286,7 @@ export default function Studio() {
         mediaRecorder.start();
         
         setIsRecording(true);
+        setRecordingStartTime(currentTime);
         toast.success("Recording started (Mic active)");
         sounds.recStart();
       } catch (err) {
@@ -614,11 +618,37 @@ export default function Studio() {
                   {/* Grid lines */}
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px)] bg-[size:100px_100%]" />
                   
+                  {/* Armed / Recording Indicator */}
+                  {track.armed && (
+                    <div 
+                      className={cn(
+                        "absolute top-0 bottom-0 z-20 pointer-events-none transition-all",
+                        isRecording ? "border-l-2 border-red-500 bg-red-500/10" : "w-[2px] bg-red-500/50"
+                      )}
+                      style={{ 
+                        left: `${(isRecording && recordingStartTime !== null ? recordingStartTime : currentTime) * 20}px`,
+                        width: isRecording && recordingStartTime !== null ? `${Math.max(0, currentTime - recordingStartTime) * 20}px` : '2px'
+                      }}
+                    >
+                      <div className={cn(
+                        "absolute top-2 left-2 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg whitespace-nowrap flex items-center gap-1",
+                        isRecording ? "bg-red-500 animate-pulse" : "bg-red-500/80"
+                      )}>
+                        <Circle className={cn("w-2 h-2", isRecording ? "fill-current" : "")} />
+                        {isRecording ? "RECORDING" : "REC START"}
+                      </div>
+                      {!isRecording && (
+                        <div className="absolute top-0 bottom-0 left-0 w-32 bg-gradient-to-r from-red-500/20 to-transparent border-y border-l border-red-500/30 rounded-l-md" />
+                      )}
+                    </div>
+                  )}
+                  
                   {/* Audio Region (Clip) */}
                   {track.waveform && track.waveform.length > 0 && (
                     <div 
                       onDoubleClick={() => setEditingTrack(track)}
-                      className="absolute top-2 bottom-2 left-10 w-[800px] rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-pointer"
+                      className="absolute top-2 bottom-2 w-[800px] rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-pointer"
+                      style={{ left: `${(track.startTime !== undefined ? track.startTime : 2) * 20}px` }}
                     >
                       <div className="absolute top-1 left-2 text-[10px] font-medium text-white/50">{track.name} - Take 1</div>
                       <div className="absolute inset-x-0 bottom-2 top-6 flex items-center justify-center gap-px px-2">

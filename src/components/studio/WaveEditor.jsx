@@ -247,6 +247,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   }
                 }}
               >
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
                 <div 
                   className={cn("relative h-64 bg-card/20 rounded-xl border border-white/5 flex items-center justify-between gap-px overflow-hidden", 
                     activeTool === 'select' ? "cursor-text" : 
@@ -383,7 +384,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
                   {/* Fade In/Out Overlays & Handles */}
                   <div 
-                    className="absolute top-0 bottom-0 left-0 bg-white/5 z-10 pointer-events-none"
+                    className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none"
                     style={{ width: `${fade.in * 100}%` }}
                   />
                   {(activeTool === 'fade' || activeTool === 'smart') && (
@@ -425,7 +426,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   )}
 
                   <div 
-                    className="absolute top-0 bottom-0 right-0 bg-white/5 z-10 pointer-events-none"
+                    className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none"
                     style={{ width: `${fade.out * 100}%` }}
                   />
                   {(activeTool === 'fade' || activeTool === 'smart') && (

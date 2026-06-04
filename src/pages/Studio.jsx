@@ -79,9 +79,8 @@ export default function Studio() {
   });
   
   const [tracks, setTracks] = useState([
-    { id: 1, type: 'audio', name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0, input: 'Mic 1', output: 'Master', takes: [{id: 't1', name: 'Vocals Lead.01', waveform: generateWaveform(2000)}, {id: 't2', name: 'Vocals Lead.02', waveform: generateWaveform(2000)}], activeTake: 't1', showTakes: false, sends: [{bus: 'Bus 1', level: 0}] },
-    { id: 2, type: 'midi', name: "Synth Bass", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, midiNotes: [{pitch: 48, start: 2, duration: 4}, {pitch: 55, start: 6, duration: 2}], startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0, input: 'All MIDI', output: 'Massive', takes: [], activeTake: null, showTakes: false, sends: [] },
-    { id: 3, type: 'bus', name: "Reverb Bus", color: "bg-purple-500", volume: 100, pan: 50, muted: false, solo: false, armed: false, input: 'Bus 1', output: 'Master', takes: [], activeTake: null, showTakes: false, sends: [] },
+    { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+    { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
   ]);
 
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -648,7 +647,7 @@ export default function Studio() {
     }
   };
 
-  const addTrack = (type = 'audio') => {
+  const addTrack = () => {
     if (tracks.length >= maxTracks) {
       toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
       return;
@@ -656,30 +655,20 @@ export default function Studio() {
 
     const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
     const colors = ["bg-primary", "bg-pink-500", "bg-accent", "bg-yellow-500", "bg-purple-500", "bg-green-500"];
-    const isMidi = type === 'midi';
-    const isBus = type === 'bus';
-    
     setTracksWithHistory([...tracks, {
       id: newId,
-      type: type,
-      name: `New ${type.charAt(0).toUpperCase() + type.slice(1)} ${newId}`,
+      name: `New Track ${newId}`,
       color: colors[newId % colors.length],
       volume: 75,
       pan: 50,
       muted: false,
       solo: false,
       armed: false,
-      waveform: isMidi || isBus ? [] : generateWaveform(2000),
-      midiNotes: isMidi ? [] : undefined,
+      waveform: [],
       startTime: 0,
-      duration: 40,
-      input: isMidi ? 'All MIDI' : isBus ? `Bus ${newId}` : 'Mic 1',
-      output: isBus ? 'Master' : 'Master',
-      takes: [],
-      showTakes: false,
-      sends: []
+      duration: 0
     }]);
-    toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} Track added`);
+    toast.success("Track added");
   };
 
   const saveTrackEffects = (trackId, updatedTrack) => {
@@ -850,18 +839,9 @@ export default function Studio() {
 
       {/* Toolbar 2 (Tools) */}
       <div className="h-12 border-b border-border/40 bg-card/40 flex items-center px-4 gap-4 shrink-0 overflow-x-auto custom-scrollbar">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="secondary" size="sm" className="gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
-              <Plus className="w-4 h-4" /> Add Track
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => addTrack('audio')}>Audio Track</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addTrack('midi')}>MIDI Track</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addTrack('bus')}>Bus / Aux Track</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button onClick={addTrack} variant="secondary" size="sm" className="gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
+          <Plus className="w-4 h-4" /> Add Track
+        </Button>
         <Button 
           onClick={() => {
             if (selectedTrackIds.length === 1) {
@@ -945,11 +925,11 @@ export default function Studio() {
                 exit={{ opacity: 0, height: 0 }}
                 onClick={(e) => handleTrackClick(e, track.id)}
                 className={cn(
-                  "border-b border-border/40 p-3 flex flex-col justify-between transition-all cursor-pointer border-l-4 relative",
+                  "border-b border-border/40 p-3 flex flex-col justify-between transition-all cursor-pointer border-l-4",
+                  track.showAutomation ? "h-44" : "h-28",
                   track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40",
                   selectedTrackIds.includes(track.id) ? "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]" : "border-l-transparent"
                 )}
-                style={{ height: track.showTakes ? `${(track.takes?.length || 0) * 64 + 144}px` : track.showAutomation ? '176px' : '144px' }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 font-medium text-sm truncate">
@@ -957,10 +937,8 @@ export default function Studio() {
                     <span className="truncate">{track.name}</span>
                   </div>
                   <div className="flex items-center gap-0.5">
-                    {track.type === 'midi' && <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toast.info("Opening Piano Roll editor"); }} className="w-6 h-6 text-muted-foreground hover:text-accent" title="Piano Roll"><Grid className="w-3.5 h-3.5" /></Button>}
-                    {track.type === 'audio' && <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showTakes') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.showTakes && "text-blue-400")} title="Show Playlists / Takes"><Layers className="w-3.5 h-3.5" /></Button>}
-                    {track.type !== 'bus' && <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setEditingTrack(track); }} className="w-6 h-6 text-muted-foreground hover:text-accent" title="Add Plugins"><SlidersHorizontal className="w-3.5 h-3.5" /></Button>}
-                    {track.type === 'audio' && <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")} title="Elastic Audio"><Activity className="w-3.5 h-3.5" /></Button>}
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setEditingTrack(track); }} className="w-6 h-6 text-muted-foreground hover:text-accent" title="Add Plugins"><SlidersHorizontal className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")} title="Elastic Audio"><Activity className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")} title="Show Automation"><TrendingUp className="w-3.5 h-3.5" /></Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -987,39 +965,28 @@ export default function Studio() {
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between mt-1 gap-2">
-                  <div className="flex flex-col gap-1 w-full">
-                    <div className="bg-background/50 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground border border-border/50 truncate cursor-pointer hover:bg-secondary flex justify-between" title="Input Routing" onClick={(e) => { e.stopPropagation(); const val = prompt("Set Input Routing:", track.input); if (val) setTracks(prev => prev.map(t => t.id === track.id ? { ...t, input: val } : t)); }}>
-                      <span className="truncate">IN: {track.input || 'None'}</span>
-                    </div>
-                    <div className="bg-background/50 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground border border-border/50 truncate cursor-pointer hover:bg-secondary flex justify-between" title="Output Routing" onClick={(e) => { e.stopPropagation(); const val = prompt("Set Output Routing:", track.output); if (val) setTracks(prev => prev.map(t => t.id === track.id ? { ...t, output: val } : t)); }}>
-                      <span className="truncate">OUT: {track.output || 'Master'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-2">
                   <button 
-                    onClick={(e) => { e.stopPropagation(); toggleMute(track.id); }}
+                    onClick={() => toggleMute(track.id)}
                     className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all", track.muted ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-secondary/80")}
                   >
                     M
                   </button>
                   <button 
-                    onClick={(e) => { e.stopPropagation(); toggleSolo(track.id); }}
+                    onClick={() => toggleSolo(track.id)}
                     className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all", track.solo ? "bg-yellow-500 text-white" : "bg-secondary text-muted-foreground hover:bg-secondary/80")}
                   >
                     S
                   </button>
                   <button 
-                    onClick={(e) => { e.stopPropagation(); toggleArm(track.id); }}
+                    onClick={() => toggleArm(track.id)}
                     className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center", track.armed ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-red-500/20 hover:text-red-400")}
                   >
                     <Circle className="w-3 h-3 fill-current" />
                   </button>
                 </div>
 
-                <div className="flex items-center gap-3 mt-1" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-3 mt-3">
                   <Volume2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                   <Slider 
                     value={[track.volume]} 
@@ -1115,12 +1082,13 @@ export default function Studio() {
                   onClick={(e) => handleTrackClick(e, track.id)}
                   className={cn(
                     "border-b border-border/20 relative group transition-all", 
+                    track.showAutomation ? "h-44" : "h-28",
                     track.muted ? "opacity-30" : "",
                     selectedTrackIds.includes(track.id) ? "bg-primary/15 shadow-[inset_0_0_30px_hsl(var(--primary)/0.1)]" : ""
                   )}
-                  style={{ height: track.showTakes ? `${(track.takes?.length || 0) * 64 + 144}px` : track.showAutomation ? '176px' : '144px' }}
                 >
                   {/* Grid lines */}
+                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px)]" style={{ backgroundSize: `${100 * zoom}px 100%` }} />
                   
                   {/* Automation Lane Background */}
                   {track.showAutomation && (
@@ -1159,8 +1127,8 @@ export default function Studio() {
                     </div>
                   )}
                   
-                  {/* Audio/MIDI Region (Clip) */}
-                  {(track.type === 'midi' || (track.waveform && track.waveform.length > 0)) && track.type !== 'bus' && (
+                  {/* Audio Region (Clip) */}
+                  {track.waveform && track.waveform.length > 0 && (
                     <div 
                       onDoubleClick={() => setEditingTrack(track)}
                       onPointerDown={(e) => {
@@ -1349,7 +1317,7 @@ export default function Studio() {
                       
                       {/* Fade In/Out Overlays & Handles */}
                       <div 
-                        className="absolute top-0 bottom-0 left-0 bg-white/5 z-10 pointer-events-none"
+                        className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none"
                         style={{ width: `${(track.fadeIn || 0) * 100}%` }}
                       />
                       {(activeTool === 'fade' || activeTool === 'smart') && (
@@ -1391,7 +1359,7 @@ export default function Studio() {
                       )}
 
                       <div 
-                        className="absolute top-0 bottom-0 right-0 bg-white/5 z-10 pointer-events-none"
+                        className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none"
                         style={{ width: `${(track.fadeOut || 0) * 100}%` }}
                       />
                       {(activeTool === 'fade' || activeTool === 'smart') && (
@@ -1433,53 +1401,19 @@ export default function Studio() {
                       )}
 
                       <div className={cn("absolute inset-x-0 overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-1 top-5")}>
-                        {track.type === 'audio' ? (
-                          <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">
-                            <path 
-                              d={(() => {
-                                const wLen = track.waveform?.length - 1 || 1;
-                                let d = `M 0,50 `;
-                                for(let i=0; i<=wLen; i++) d += `L ${(i/wLen)*1000},${50 - Math.max(0.02, track.waveform[i])*50} `;
-                                for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, track.waveform[i])*50} `;
-                                return d + 'Z';
-                              })()}
-                              className={cn("opacity-90 drop-shadow-md", waveformFills[track.color] || "fill-primary")}
-                            />
-                          </svg>
-                        ) : track.type === 'midi' ? (
-                          <div className="absolute inset-0 bg-black/40 rounded border border-white/10">
-                            {/* Fake piano roll blocks */}
-                            {track.midiNotes && track.midiNotes.map((note, i) => (
-                              <div key={i} className={cn("absolute h-1.5 rounded-[1px] shadow-sm", track.color)} style={{ left: `${(note.start / track.duration) * 100}%`, width: `${(note.duration / track.duration) * 100}%`, top: `${(note.pitch % 12) * 8}%` }} />
-                            ))}
-                          </div>
-                        ) : null}
+                        <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                          <path 
+                            d={(() => {
+                              const wLen = track.waveform.length - 1 || 1;
+                              let d = `M 0,50 `;
+                              for(let i=0; i<=wLen; i++) d += `L ${(i/wLen)*1000},${50 - Math.max(0.02, track.waveform[i])*50} `;
+                              for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, track.waveform[i])*50} `;
+                              return d + 'Z';
+                            })()}
+                            className={cn("opacity-90 drop-shadow-md", waveformFills[track.color] || "fill-primary")}
+                          />
+                        </svg>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Track Takes (Comping) */}
-                  {track.showTakes && track.takes && track.takes.length > 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 border-t border-white/5 bg-black/40 flex flex-col justify-end" style={{ height: `${track.takes.length * 64}px` }}>
-                      {track.takes.map((take, idx) => (
-                        <div key={take.id} className="relative h-16 border-b border-white/5">
-                           <div className="absolute left-2 top-1 text-[10px] text-muted-foreground flex items-center gap-2 z-30">
-                              <button onClick={(e) => { e.stopPropagation(); setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, activeTake: take.id, waveform: take.waveform } : t)) }} className="bg-primary/20 text-primary px-1.5 py-0.5 rounded hover:bg-primary/40">Promote to Main</button>
-                              {take.name}
-                           </div>
-                           <div className="absolute inset-x-0 bottom-1 top-5 pointer-events-none">
-                              <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">
-                                <path d={(() => {
-                                  const wLen = take.waveform.length - 1 || 1;
-                                  let d = `M 0,50 `;
-                                  for(let i=0; i<=wLen; i++) d += `L ${(i/wLen)*1000},${50 - Math.max(0.02, take.waveform[i])*50} `;
-                                  for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, take.waveform[i])*50} `;
-                                  return d + 'Z';
-                                })()} className={cn("opacity-50", track.activeTake === take.id ? "fill-primary" : "fill-muted-foreground")} />
-                              </svg>
-                           </div>
-                        </div>
-                      ))}
                     </div>
                   )}
                 </div>

@@ -17,6 +17,26 @@ export default function CoverArt() {
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
 
+  const createDemoTrackMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentUser) return;
+      return await base44.entities.ArtPost.create({
+        title: "My First Hit (Demo)",
+        description: "A generated demo track for testing.",
+        medium: "original",
+        creator_id: currentUser.id,
+        creator_name: currentUser.display_name || currentUser.full_name || "Unknown Artist",
+        file_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        genre: "Pop",
+        tags: ["demo", "pop", "upbeat"]
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["myArtPosts"] });
+      toast.success("Demo track created! You can now generate cover art.");
+    }
+  });
+
   useEffect(() => {
     base44.auth.me()
       .then(setCurrentUser)
@@ -158,9 +178,20 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
             <div className="text-center p-8 flex flex-col items-center justify-center text-muted-foreground text-sm">
               <Music className="w-8 h-8 mx-auto mb-3 opacity-50" />
               <p className="mb-4">No tracks found. You need a track to generate cover art.</p>
-              <Button asChild variant="outline" size="sm">
-                <Link to="/studio">Go to Studio</Link>
-              </Button>
+              <div className="flex gap-2">
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/studio">Go to Studio</Link>
+                </Button>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={() => createDemoTrackMutation.mutate()}
+                  disabled={createDemoTrackMutation.isPending}
+                >
+                  {createDemoTrackMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Music className="w-4 h-4 mr-2" />}
+                  Create Demo Track
+                </Button>
+              </div>
             </div>
           ) : (
             posts.map(post => (

@@ -251,8 +251,9 @@ export default function Messages() {
         {!selectedConvId && (
           <div className="px-4 pt-5 pb-3 border-b border-border/40">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="chats">Chats</TabsTrigger>
+                <TabsTrigger value="discover">Discover</TabsTrigger>
                 <TabsTrigger value="contacts">Contacts</TabsTrigger>
                 <TabsTrigger value="invite">Invite</TabsTrigger>
               </TabsList>
@@ -320,6 +321,39 @@ export default function Messages() {
          {activeTab === "invite" && !selectedConvId && (
            <div className="flex-1 overflow-hidden">
              <InviteTab />
+           </div>
+         )}
+
+         {/* Discover Tab */}
+         {activeTab === "discover" && !selectedConvId && (
+           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 custom-scrollbar">
+             <h3 className="text-xs font-bold text-muted-foreground/60 uppercase tracking-wider mb-3">Public Rooms</h3>
+             {conversations.filter(c => c.type === "group" && !c.participant_ids?.includes(currentUser?.id)).length === 0 && (
+               <div className="text-center py-8 text-muted-foreground text-sm">
+                 No new public rooms to discover.
+               </div>
+             )}
+             {conversations.filter(c => c.type === "group" && !c.participant_ids?.includes(currentUser?.id)).map(room => (
+               <div key={room.id} className="flex items-center justify-between p-3 bg-secondary/20 rounded-xl hover:bg-secondary/40 transition-colors">
+                 <div className="flex items-center gap-3 min-w-0">
+                   <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                     <Hash className="w-5 h-5 text-primary" />
+                   </div>
+                   <div className="min-w-0">
+                     <p className="font-semibold text-sm truncate">{room.name}</p>
+                     <p className="text-xs text-muted-foreground">{room.participant_ids?.length || 0} members</p>
+                   </div>
+                 </div>
+                 <Button size="sm" variant="outline" className="ml-2 shrink-0" onClick={async () => {
+                   if (!currentUser) return;
+                   await base44.entities.Conversation.update(room.id, {
+                     participant_ids: [...new Set([...(room.participant_ids || []), currentUser.id])]
+                   });
+                   queryClient.invalidateQueries({ queryKey: ["conversations"] });
+                   setSelectedConvId(room.id);
+                 }}>Join</Button>
+               </div>
+             ))}
            </div>
          )}
         </div>

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward, Square } from "lucide-react";
+import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward, Square, ShoppingCart } from "lucide-react";
+import { useCart } from "@/lib/CartContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +11,8 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef(null);
+  const { addToCart, items } = useCart();
+  const inCart = items.some(item => item.id === post?.id);
 
   useEffect(() => {
     if (!open) {
@@ -132,6 +135,28 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
                  {post.description && (
                    <p className="text-sm text-white/70 line-clamp-3 mb-6 leading-relaxed">{post.description}</p>
                  )}
+
+                 <div className="flex items-center gap-4 mb-8">
+                   {post.price > 0 && (
+                     <Button 
+                       size="lg"
+                       onClick={() => addToCart(post)}
+                       disabled={inCart}
+                       className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 gap-2 h-14 px-8 text-base rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
+                     >
+                       <ShoppingCart className="w-5 h-5" />
+                       {inCart ? "In Cart" : `Buy for $${post.price.toFixed(2)}`}
+                     </Button>
+                   )}
+                   {post.price === 0 && (
+                     <Button 
+                       size="lg"
+                       className="bg-white/10 text-white border border-white/10 shadow-lg gap-2 h-14 px-8 text-base rounded-full flex-shrink-0 cursor-default"
+                     >
+                       Free
+                     </Button>
+                   )}
+                 </div>
 
                  <div className="grid grid-cols-2 gap-4 mb-8">
                     {(post.bpm || post.duration) && (

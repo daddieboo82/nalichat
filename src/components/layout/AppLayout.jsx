@@ -11,6 +11,7 @@ import GlobalInviteDialog from "@/components/GlobalInviteDialog";
 import GlobalMessageDialog from "@/components/GlobalMessageDialog";
 import GlobalHelpDialog from "@/components/GlobalHelpDialog";
 import GlobalAudioPlayer from "@/components/audio/GlobalAudioPlayer";
+import CartDrawer from "@/components/shop/CartDrawer";
 
 export default function AppLayout() {
   const location = useLocation();
@@ -50,6 +51,7 @@ export default function AppLayout() {
       <GlobalMessageDialog open={showMessage} onOpenChange={setShowMessage} />
       <GlobalHelpDialog open={showHelp} onOpenChange={setShowHelp} />
       <GlobalAudioPlayer />
+      <CartDrawer />
     </div>
   );
 }

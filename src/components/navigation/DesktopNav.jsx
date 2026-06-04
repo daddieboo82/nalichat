@@ -5,7 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import SoundToggle from "@/components/layout/SoundToggle";
-import { MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, HelpCircle, UserPlus, Send, Mic } from "lucide-react";
+import { MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, HelpCircle, UserPlus, Send, Mic, ShoppingCart } from "lucide-react";
+import { useCart } from "@/lib/CartContext";
 import { sounds } from "@/hooks/use-sound";
 
 const NAV_ITEMS = [
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
 export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick }) {
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const { items, setIsOpen } = useCart();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -79,6 +81,19 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
             className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
           >
             <UserPlus className="w-4.5 h-4.5" />
+          </button>
+
+          <button
+            onClick={() => setIsOpen(true)}
+            title="Shopping Cart"
+            className="relative w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
+          >
+            <ShoppingCart className="w-4.5 h-4.5" />
+            {items.length > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary text-[9px] font-bold text-white flex items-center justify-center border-2 border-background">
+                {items.length}
+              </span>
+            )}
           </button>
 
           {/* System */}

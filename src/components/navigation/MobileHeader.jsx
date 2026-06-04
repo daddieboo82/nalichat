@@ -1,10 +1,11 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, Music } from "lucide-react";
+import { ChevronLeft, Music, ShoppingCart } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import { useCart } from "@/lib/CartContext";
 
 const SUBPAGE_PREFIXES = ["/playlist/", "/record", "/settings", "/analytics"];
 
@@ -26,6 +27,7 @@ export default function MobileHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const { items, setIsOpen } = useCart();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -63,6 +65,17 @@ export default function MobileHeader() {
 
         {/* Right Section */}
         <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => setIsOpen(true)}
+            className="relative p-1.5 rounded-lg hover:bg-primary/10 transition-all text-muted-foreground hover:text-foreground"
+          >
+            <ShoppingCart className="w-5 h-5" />
+            {items.length > 0 && (
+              <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-[8px] font-bold text-white flex items-center justify-center border border-background">
+                {items.length}
+              </span>
+            )}
+          </button>
           <NotificationBell />
           <Link to="/profile" className="p-1 rounded-lg hover:bg-primary/10 transition-all select-none">
             <Avatar className="w-7 h-7 border border-border">

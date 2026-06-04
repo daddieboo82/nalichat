@@ -2,12 +2,15 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import ConversationList from "@/components/messages/ConversationList";
 import ChatView from "@/components/messages/ChatView";
 import NewChatDialog from "@/components/messages/NewChatDialog";
 import GroupChatDialog from "@/components/messages/GroupChatDialog";
 import ExternalMessageDialog from "@/components/messages/ExternalMessageDialog";
 import { notify } from "@/lib/notifications";
+import { MessageSquare, Users, Mail, Plus, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -168,36 +171,86 @@ export default function Messages() {
 
   const otherUsers = users.filter(u => u.id !== currentUser?.id);
 
+  const quickActions = [
+    { icon: MessageSquare, label: "Direct Message", action: () => setShowNewDM(true), color: "from-primary to-pink-500", bg: "bg-primary/10", text: "text-primary" },
+    { icon: Users, label: "New Group", action: () => setShowNewGroup(true), color: "from-accent to-cyan-400", bg: "bg-accent/10", text: "text-accent" },
+    { icon: Zap, label: "Email / SMS", action: () => setShowExternal(true), color: "from-yellow-500 to-orange-500", bg: "bg-yellow-500/10", text: "text-yellow-500" },
+  ];
+
   return (
-    <div className="h-full flex overflow-hidden">
-      {/* Conversation list — hidden on mobile when a chat is open */}
+    <div className="h-full flex overflow-hidden flex-col sm:flex-row">
+      {/* Sidebar with conversation list — hidden on mobile when a chat is open */}
       <div className={cn(
-        "shrink-0 transition-all",
-        selectedConvId ? "hidden sm:flex" : "flex w-full sm:w-auto"
+        "shrink-0 transition-all flex flex-col",
+        selectedConvId ? "hidden sm:flex" : "flex w-full sm:w-[320px]"
       )}>
-        <ConversationList
-          conversations={myConversations}
-          selectedId={selectedConvId}
-          onSelect={setSelectedConvId}
-          onNewDM={() => setShowNewDM(true)}
-          onNewGroup={() => setShowNewGroup(true)}
-          onNewExternal={() => setShowExternal(true)}
-          users={users}
-          currentUserId={currentUser?.id}
-        />
+        {/* Quick Actions Header */}
+        {!selectedConvId && (
+          <div className="px-4 pt-5 pb-4 border-b border-border/40" style={{ background: "hsl(240 10% 5%)" }}>
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4"
+            >
+              <h3 className="text-xs font-bold text-muted-foreground/60 uppercase tracking-wider mb-3">Start Chatting</h3>
+              <div className="grid grid-cols-3 gap-2">
+                {quickActions.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <button
+                      key={action.label}
+                      onClick={action.action}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all hover:scale-105 active:scale-95 ${action.bg}`}
+                      title={action.label}
+                    >
+                      <Icon className={`w-5 h-5 ${action.text}`} />
+                      <span className="text-xs font-medium text-center text-foreground/80">{action.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+        )}
+        
+        {/* Conversation List */}
+        <div className="flex-1 overflow-hidden">
+          <ConversationList
+            conversations={myConversations}
+            selectedId={selectedConvId}
+            onSelect={setSelectedConvId}
+            onNewDM={() => setShowNewDM(true)}
+            onNewGroup={() => setShowNewGroup(true)}
+            onNewExternal={() => setShowExternal(true)}
+            users={users}
+            currentUserId={currentUser?.id}
+          />
+        </div>
       </div>
 
       {/* Chat view — full width on mobile */}
-      <div className={cn("flex-1 overflow-hidden", !selectedConvId && "hidden sm:flex")}>
-        <ChatView
-          conversation={selectedConv}
-          messages={messages}
-          currentUser={currentUser}
-          users={users}
-          onSendMessage={(data) => sendMessage.mutate(data)}
-          onReact={handleReact}
-          onBack={() => setSelectedConvId(null)}
-        />
+      <div className={cn("flex-1 overflow-hidden flex flex-col", !selectedConvId && "hidden sm:flex")}>
+        {selectedConv ? (
+          <ChatView
+            conversation={selectedConv}
+            messages={messages}
+            currentUser={currentUser}
+            users={users}
+            onSendMessage={(data) => sendMessage.mutate(data)}
+            onReact={handleReact}
+            onBack={() => setSelectedConvId(null)}
+          />
+        ) : (
+          <div className="flex-1 flex items-center justify-center flex-col text-center text-muted-foreground gap-4 px-6">
+            <div className="w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center">
+              <MessageSquare className="w-12 h-12 text-primary/30" />
+            </div>
+            <div>
+              <p className="text-lg font-heading font-semibold mb-2">Select a conversation</p>
+              <p className="text-sm text-muted-foreground/70">Choose a chat from the left or create a new one to get started</p>
+            </div>
+          </div>
+        )}
       </div>
       <NewChatDialog
         open={showNewDM}

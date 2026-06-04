@@ -5,7 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { 
   X, Play, Pause, Scissors, Copy, Trash2, 
   Activity, Radio, Waves, Settings2, SlidersHorizontal,
-  VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair, Loader2, Undo2, Redo2, Maximize2, SplitSquareHorizontal
+  VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair, Loader2, Undo2, Redo2, Maximize2, SplitSquareHorizontal, Magnet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -37,8 +37,16 @@ export default function WaveEditor({ track, onClose, onSave }) {
   const [history, setHistory] = useState([]);
   const [historyIdx, setHistoryIdx] = useState(-1);
   const [playhead, setPlayhead] = useState(0);
+  const [selectedSegmentId, setSelectedSegmentId] = useState(null);
+  const [snapToGrid, setSnapToGrid] = useState(true);
 
   const containerRef = useRef(null);
+
+  const getSnappedTime = (time) => {
+    if (!snapToGrid) return time;
+    const snapInterval = zoom > 5 ? 0.1 : zoom > 2 ? 0.5 : 1;
+    return Math.round(time / snapInterval) * snapInterval;
+  };
 
   // Initialize segments
   useEffect(() => {
@@ -81,53 +89,40 @@ export default function WaveEditor({ track, onClose, onSave }) {
   };
 
   const handleContainerClick = (e) => {
-    if (activeTool === 'split' && containerRef.current) {
+    if (e.target.closest('.audio-segment')) return;
+
+    if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const clickX = e.clientX - rect.left + containerRef.current.scrollLeft;
       const totalWidth = rect.width * zoom;
-      const clickTime = (clickX / totalWidth) * (track?.duration || 40);
+      let clickTime = (clickX / totalWidth) * (track?.duration || 40);
+      clickTime = getSnappedTime(clickTime);
 
-      // Find segment at clickTime
-      const segIndex = segments.findIndex(s => clickTime >= s.startOffset && clickTime <= (s.startOffset + s.duration));
-      if (segIndex !== -1) {
-        const seg = segments[segIndex];
-        const splitRatio = (clickTime - seg.startOffset) / seg.duration;
-        
-        const splitSourceTime = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * splitRatio;
-        
-        const newSeg1 = {
-          ...seg,
-          id: `seg_${Date.now()}_1`,
-          sourceEnd: splitSourceTime,
-          duration: seg.duration * splitRatio,
-          waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * splitRatio))
-        };
+      if (activeTool === 'split') {
+        const segIndex = segments.findIndex(s => clickTime > s.startOffset && clickTime < (s.startOffset + s.duration));
+        if (segIndex !== -1) {
+          const seg = segments[segIndex];
+          const splitRatio = (clickTime - seg.startOffset) / seg.duration;
+          const splitSourceTime = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * splitRatio;
+          
+          const newSeg1 = { ...seg, id: `seg_${Date.now()}_1`, sourceEnd: splitSourceTime, duration: seg.duration * splitRatio, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * splitRatio)) };
+          const newSeg2 = { ...seg, id: `seg_${Date.now()}_2`, startOffset: clickTime, sourceStart: splitSourceTime, duration: seg.duration * (1 - splitRatio), waveform: seg.waveform.slice(Math.floor(seg.waveform.length * splitRatio)) };
 
-        const newSeg2 = {
-          ...seg,
-          id: `seg_${Date.now()}_2`,
-          startOffset: clickTime,
-          sourceStart: splitSourceTime,
-          duration: seg.duration * (1 - splitRatio),
-          waveform: seg.waveform.slice(Math.floor(seg.waveform.length * splitRatio))
-        };
-
-        const newSegs = [...segments];
-        newSegs.splice(segIndex, 1, newSeg1, newSeg2);
-        saveHistory(newSegs);
-        toast.success("Segment split");
-      }
-    } else if (activeTool === 'select' && containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const clickX = e.clientX - rect.left + containerRef.current.scrollLeft;
-        const totalWidth = rect.width * zoom;
-        const clickTime = (clickX / totalWidth) * (track?.duration || 40);
+          const newSegs = [...segments];
+          newSegs.splice(segIndex, 1, newSeg1, newSeg2);
+          saveHistory(newSegs);
+          toast.success("Segment split");
+        }
+      } else {
         setPlayhead(clickTime);
+        setSelectedSegmentId(null);
+      }
     }
   };
 
   const handleSegmentDragEnd = (id, newOffset) => {
-    const newSegs = segments.map(s => s.id === id ? { ...s, startOffset: newOffset } : s);
+    const snappedOffset = getSnappedTime(newOffset);
+    const newSegs = segments.map(s => s.id === id ? { ...s, startOffset: snappedOffset } : s);
     saveHistory(newSegs);
   };
 
@@ -191,11 +186,44 @@ export default function WaveEditor({ track, onClose, onSave }) {
       } else if ((e.metaKey || e.ctrlKey) && e.code === 'KeyZ') {
         if (e.shiftKey) handleRedo();
         else handleUndo();
+      } else if (e.code === 'Backspace' || e.code === 'Delete') {
+        setSegments(prev => {
+          if (!selectedSegmentId) return prev;
+          const newSegs = prev.filter(s => s.id !== selectedSegmentId);
+          saveHistory(newSegs);
+          setSelectedSegmentId(null);
+          return newSegs;
+        });
+      } else if (e.code === 'Digit1') {
+        setActiveTool('select');
+      } else if (e.code === 'Digit2') {
+        setActiveTool('move');
+      } else if (e.code === 'Digit3') {
+        setActiveTool('split');
+      } else if (e.code === 'KeyS') {
+        setSegments(prev => {
+          const segIndex = prev.findIndex(s => playhead > s.startOffset && playhead < (s.startOffset + s.duration));
+          if (segIndex !== -1) {
+            const seg = prev[segIndex];
+            const splitRatio = (playhead - seg.startOffset) / seg.duration;
+            const splitSourceTime = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * splitRatio;
+            
+            const newSeg1 = { ...seg, id: `seg_${Date.now()}_1`, sourceEnd: splitSourceTime, duration: seg.duration * splitRatio, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * splitRatio)) };
+            const newSeg2 = { ...seg, id: `seg_${Date.now()}_2`, startOffset: playhead, sourceStart: splitSourceTime, duration: seg.duration * (1 - splitRatio), waveform: seg.waveform.slice(Math.floor(seg.waveform.length * splitRatio)) };
+            
+            const newSegs = [...prev];
+            newSegs.splice(segIndex, 1, newSeg1, newSeg2);
+            saveHistory(newSegs);
+            toast.success("Split at playhead");
+            return newSegs;
+          }
+          return prev;
+        });
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [historyIdx, history]);
+  }, [historyIdx, history, selectedSegmentId, playhead]);
 
   if (!track) return null;
 
@@ -244,13 +272,13 @@ export default function WaveEditor({ track, onClose, onSave }) {
             {/* Toolbar */}
             <div className="h-10 bg-[#2d2d30] border-b border-white/5 flex items-center px-4 gap-4 text-sm shrink-0">
               <div className="flex items-center gap-1 bg-[#1a1a1c] p-1 rounded-md border border-white/5">
-                <Button variant="ghost" size="icon" onClick={() => setActiveTool('select')} className={cn("h-6 w-6 rounded", activeTool === 'select' && "bg-primary/20 text-primary")} title="Select / Move Playhead">
+                <Button variant="ghost" size="icon" onClick={() => setActiveTool('select')} className={cn("h-6 w-6 rounded", activeTool === 'select' && "bg-primary/20 text-primary")} title="Select / Move Playhead (Shortcut: 1)">
                   <MousePointer2 className="w-3.5 h-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => setActiveTool('move')} className={cn("h-6 w-6 rounded", activeTool === 'move' && "bg-primary/20 text-primary")} title="Move Segments">
+                <Button variant="ghost" size="icon" onClick={() => setActiveTool('move')} className={cn("h-6 w-6 rounded", activeTool === 'move' && "bg-primary/20 text-primary")} title="Move Segments (Shortcut: 2)">
                   <MoveHorizontal className="w-3.5 h-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => setActiveTool('split')} className={cn("h-6 w-6 rounded", activeTool === 'split' && "bg-primary/20 text-primary")} title="Split Segment">
+                <Button variant="ghost" size="icon" onClick={() => setActiveTool('split')} className={cn("h-6 w-6 rounded", activeTool === 'split' && "bg-primary/20 text-primary")} title="Split Segment (Shortcut: 3)">
                   <Scissors className="w-3.5 h-3.5" />
                 </Button>
               </div>
@@ -258,22 +286,47 @@ export default function WaveEditor({ track, onClose, onSave }) {
               <div className="w-px h-4 bg-white/10" />
 
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIdx <= 0} className="h-6 w-6 text-white/70 disabled:opacity-30">
+                <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIdx <= 0} className="h-6 w-6 text-white/70 disabled:opacity-30" title="Undo (Cmd+Z)">
                   <Undo2 className="w-3.5 h-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIdx >= history.length - 1} className="h-6 w-6 text-white/70 disabled:opacity-30">
+                <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIdx >= history.length - 1} className="h-6 w-6 text-white/70 disabled:opacity-30" title="Redo (Cmd+Shift+Z)">
                   <Redo2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
 
+              <div className="w-px h-4 bg-white/10" />
+
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setSnapToGrid(!snapToGrid)} 
+                className={cn("h-6 px-2 text-[10px] uppercase font-bold tracking-wider", snapToGrid ? "bg-primary/20 text-primary border border-primary/30" : "text-white/50 border border-transparent")}
+                title="Snap to Grid"
+              >
+                <Magnet className="w-3 h-3 mr-1" />
+                Snap
+              </Button>
+
               <div className="ml-auto flex items-center gap-3">
-                <span className="text-white/50 text-xs">Zoom</span>
-                <Slider value={[zoom]} min={0.5} max={5} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-32 [&_[role=slider]]:bg-white [&_[role=slider]]:border-none" />
+                <span className="text-white/50 text-[10px] uppercase tracking-wider font-bold">Zoom</span>
+                <Slider value={[zoom]} min={0.5} max={15} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-32 [&_[role=slider]]:bg-white [&_[role=slider]]:border-none" />
               </div>
             </div>
 
             {/* Arrangement View */}
-            <div className="flex-1 relative bg-[#151516] overflow-x-auto overflow-y-hidden custom-scrollbar" ref={containerRef} onClick={handleContainerClick}>
+            <div 
+              className="flex-1 relative bg-[#151516] overflow-x-auto overflow-y-hidden custom-scrollbar focus:outline-none" 
+              ref={containerRef} 
+              onClick={handleContainerClick}
+              tabIndex={0}
+              onWheel={(e) => {
+                if (e.ctrlKey || e.metaKey) {
+                  e.preventDefault();
+                  const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+                  setZoom(z => Math.max(0.5, Math.min(15, z * zoomFactor)));
+                }
+              }}
+            >
               {/* Spectral Background Simulation */}
               <div className="absolute inset-0 opacity-30 pointer-events-none mix-blend-screen" style={{
                 background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #2563eb 2px, #8b5cf6 4px), repeating-linear-gradient(90deg, #151516, #151516 4px, transparent 4px, transparent 8px)',
@@ -315,17 +368,20 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       handleSegmentDragEnd(seg.id, Math.max(0, seg.startOffset + timeShift));
                     }}
                     className={cn(
-                      "absolute top-0 bottom-0 rounded-md border border-white/20 bg-[#1c1c1e]/80 backdrop-blur-sm overflow-hidden flex items-center shadow-lg transition-colors group",
+                      "audio-segment absolute top-0 bottom-0 rounded-md border bg-[#1c1c1e]/80 backdrop-blur-sm overflow-hidden flex items-center shadow-lg transition-all group",
                       activeTool === 'move' ? "cursor-grab active:cursor-grabbing hover:border-primary/50" : "",
-                      activeTool === 'split' ? "hover:border-red-500/50 cursor-crosshair" : ""
+                      activeTool === 'split' ? "hover:border-red-500/50 cursor-crosshair" : "",
+                      selectedSegmentId === seg.id ? "border-primary shadow-[0_0_15px_rgba(var(--primary),0.5)] z-10" : "border-white/20 z-0"
                     )}
                     style={{
                       left: `${(seg.startOffset / (track?.duration || 40)) * 100}%`,
                       width: `${(seg.duration / (track?.duration || 40)) * 100}%`
                     }}
                     onClick={(e) => {
-                        // Prevent container click when moving or doing other things
-                        if (activeTool === 'move') e.stopPropagation();
+                        if (activeTool === 'select' || activeTool === 'move') {
+                          e.stopPropagation();
+                          setSelectedSegmentId(seg.id);
+                        }
                     }}
                   >
                     {/* Header bar of segment */}

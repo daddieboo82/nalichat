@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, Users, ArrowLeft, Search as SearchIcon, Phone, Video, Info } from "lucide-react";
+import { MessageSquare, ArrowLeft, Search as SearchIcon, Phone, Video, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
 import MessageBubble from "./MessageBubble";
+import MessageInput from "./MessageInput";
+import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import GroupInfoPanel from "./GroupInfoPanel";
 import TypingIndicator from "./TypingIndicator";
 import ThreadPanel from "./ThreadPanel";
 import MessageSearch from "./MessageSearch";
-import { Button } from "@/components/ui/button";
 
 export default function ChatView({ conversation, messages, currentUser, users, onSendMessage, onReact, onBack }) {
   const [replyTo, setReplyTo] = useState(null);

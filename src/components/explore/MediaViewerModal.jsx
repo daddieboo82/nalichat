@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward } from "lucide-react";
+import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward, Square } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +59,15 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
       const newTime = Math.min(duration || 0, audioRef.current.currentTime + 10);
       audioRef.current.currentTime = newTime;
       setCurrentTime(newTime);
+    }
+  };
+
+  const stopPlayback = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
+      setCurrentTime(0);
     }
   };
 
@@ -194,35 +203,50 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
                    </div>
 
                    {/* Controls */}
-                   <div className="flex items-center justify-center gap-6">
+                   <div className="flex items-center justify-center gap-4 sm:gap-6">
                      <Button
                        variant="ghost"
                        size="icon"
-                       className="rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors h-12 w-12"
-                       onClick={skipBackward}
+                       className="rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors h-10 w-10 sm:h-12 sm:w-12"
+                       onClick={stopPlayback}
+                       title="Stop"
                      >
-                       <Rewind className="w-6 h-6" />
+                       <Square className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
+                     </Button>
+
+                     <Button
+                       variant="ghost"
+                       size="icon"
+                       className="rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors h-10 w-10 sm:h-12 sm:w-12"
+                       onClick={skipBackward}
+                       title="Rewind 10s"
+                     >
+                       <Rewind className="w-5 h-5 sm:w-6 sm:h-6" />
                      </Button>
                      
                      <Button
-                       className="rounded-full w-16 h-16 bg-white hover:bg-white/90 text-black shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition-all"
+                       className="rounded-full w-14 h-14 sm:w-16 sm:h-16 bg-white hover:bg-white/90 text-black shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition-all shrink-0"
                        onClick={togglePlay}
+                       title={isPlaying ? "Pause" : "Play"}
                      >
                        {isPlaying ? (
-                         <Pause className="w-7 h-7 fill-current" />
+                         <Pause className="w-6 h-6 sm:w-7 sm:h-7 fill-current" />
                        ) : (
-                         <Play className="w-7 h-7 fill-current ml-1" />
+                         <Play className="w-6 h-6 sm:w-7 sm:h-7 fill-current ml-1" />
                        )}
                      </Button>
 
                      <Button
                        variant="ghost"
                        size="icon"
-                       className="rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors h-12 w-12"
+                       className="rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors h-10 w-10 sm:h-12 sm:w-12"
                        onClick={skipForward}
+                       title="Fast Forward 10s"
                      >
-                       <FastForward className="w-6 h-6" />
+                       <FastForward className="w-5 h-5 sm:w-6 sm:h-6" />
                      </Button>
+
+                     <div className="w-10 sm:w-12" /> {/* Placeholder to balance the stop button */}
                    </div>
                  </div>
                </div>

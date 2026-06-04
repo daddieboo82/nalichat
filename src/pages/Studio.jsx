@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Upload, Music, Loader2, FolderOpen, Disc3, ChevronLeft, Search, Settings, Flag, Trash2 } from "lucide-react";
+import { Plus, Upload, Music, Loader2, FolderOpen, Disc3, ChevronLeft, Search, Settings, Flag, Trash2, Mic } from "lucide-react";
 import MultiTrackEditor from "@/components/studio/MultiTrackEditor";
 import SessionTimer from "@/components/studio/SessionTimer";
 import ProjectSettingsDialog from "@/components/studio/ProjectSettingsDialog";
@@ -279,14 +279,27 @@ export default function Studio() {
                       </Select>
                     </div>
                   </div>
-                  <Button
-                    className="w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/20 font-semibold"
-                    onClick={() => createProject.mutate()}
-                    disabled={!newProjectTitle.trim() || createProject.isPending}
-                  >
-                    {createProject.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-                    Create Project
-                  </Button>
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setNewProjectBpm(120);
+                        setNewProjectKey("C");
+                      }}
+                      className="flex-1"
+                    >
+                      Reset to Default
+                    </Button>
+                    <Button
+                      className="flex-1 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/20 font-semibold"
+                      onClick={() => createProject.mutate()}
+                      disabled={!newProjectTitle.trim() || createProject.isPending}
+                    >
+                      {createProject.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+                      Create
+                    </Button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
@@ -467,11 +480,22 @@ export default function Studio() {
                   </SelectContent>
                 </Select>
                 {canEdit && (
-                  <TrackImporter
-                    projectId={selectedProjectId}
-                    currentUser={currentUser}
-                    onSuccess={() => queryClient.invalidateQueries({ queryKey: ["tracks", selectedProjectId] })}
-                  />
+                  <>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="rounded-xl w-8 h-8 hover:bg-secondary/60 text-muted-foreground"
+                      onClick={() => window.location.href = '/record'}
+                      title="Record audio"
+                    >
+                      <Mic className="w-4 h-4" />
+                    </Button>
+                    <TrackImporter
+                      projectId={selectedProjectId}
+                      currentUser={currentUser}
+                      onSuccess={() => queryClient.invalidateQueries({ queryKey: ["tracks", selectedProjectId] })}
+                    />
+                  </>
                 )}
               </div>
             </div>

@@ -230,38 +230,31 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
 
           {queue.length > 0 && (
             <div className="flex gap-2 pt-4 border-t border-border/50">
-              {uploading || pendingCount === 0 ? (
-                <>
-                  {successCount > 0 && (
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={clearQueue}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                  {pendingCount > 0 && (
-                    <Button
-                      className="flex-1 bg-primary hover:bg-primary/90"
-                      onClick={uploadTracks}
-                      disabled={uploading || pendingCount === 0}
-                    >
-                      {uploading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-4 h-4 mr-1.5" />
-                          Upload {pendingCount}
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </>
-              ) : null}
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={clearQueue}
+                disabled={uploading}
+              >
+                Clear
+              </Button>
+              <Button
+                className="flex-1 bg-primary hover:bg-primary/90"
+                onClick={uploadTracks}
+                disabled={uploading || pendingCount === 0}
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-1.5" />
+                    Upload {pendingCount}
+                  </>
+                )}
+              </Button>
             </div>
           )}
         </DialogContent>

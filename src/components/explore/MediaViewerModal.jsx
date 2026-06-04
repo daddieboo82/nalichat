@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music } from "lucide-react";
+import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -46,11 +46,29 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const skipBackward = () => {
+    if (audioRef.current) {
+      const newTime = Math.max(0, audioRef.current.currentTime - 10);
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
+
+  const skipForward = () => {
+    if (audioRef.current) {
+      const newTime = Math.min(duration || 0, audioRef.current.currentTime + 10);
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
+
   if (!post) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card border-border max-w-2xl p-0 overflow-hidden min-h-[300px] flex flex-col justify-center">
+        <DialogTitle className="sr-only">{post.title || "Media viewer"}</DialogTitle>
+        <DialogDescription className="sr-only">{post.description || "View media details and playback."}</DialogDescription>
         <div className="relative w-full h-full flex flex-col">
           {/* Image Viewer */}
           {post.image_url && !post.image_url.includes(".mp3") && !post.image_url.includes(".wav") && !post.image_url.includes(".ogg") ? (
@@ -104,6 +122,14 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
                 {/* Play Controls */}
                 <div className="flex items-center gap-3">
                   <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors shrink-0"
+                    onClick={skipBackward}
+                  >
+                    <Rewind className="w-5 h-5" />
+                  </Button>
+                  <Button
                     size="lg"
                     className="rounded-full w-14 h-14 bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/20 shrink-0"
                     onClick={togglePlay}
@@ -113,6 +139,14 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
                     ) : (
                       <Play className="w-6 h-6 fill-current ml-1" />
                     )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors shrink-0"
+                    onClick={skipForward}
+                  >
+                    <FastForward className="w-5 h-5" />
                   </Button>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">

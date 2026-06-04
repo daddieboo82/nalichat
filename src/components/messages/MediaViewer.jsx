@@ -145,21 +145,39 @@ function AudioPlayerFull({ src, duration }) {
         onEnded={() => { setPlaying(false); setProgress(0); }}
         onTimeUpdate={handleTimeUpdate}
       />
-      <button
-        onClick={toggle}
-        className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center hover:shadow-lg transition-all active:scale-95"
-      >
-        {playing ? (
-          <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-            <rect x="6" y="4" width="4" height="16" />
-            <rect x="14" y="4" width="4" height="16" />
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => { if (audioRef.current) audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 10); }}
+          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all active:scale-95"
+        >
+          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" />
           </svg>
-        ) : (
-          <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-            <polygon points="5 3 19 12 5 21" />
+        </button>
+        <button
+          onClick={toggle}
+          className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center hover:shadow-lg transition-all active:scale-95"
+        >
+          {playing ? (
+            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <rect x="6" y="4" width="4" height="16" />
+              <rect x="14" y="4" width="4" height="16" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+              <polygon points="5 3 19 12 5 21" />
+            </svg>
+          )}
+        </button>
+        <button
+          onClick={() => { if (audioRef.current) audioRef.current.currentTime = Math.min(audioRef.current.duration, audioRef.current.currentTime + 10); }}
+          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all active:scale-95"
+        >
+          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.334-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.334-4z" />
           </svg>
-        )}
-      </button>
+        </button>
+      </div>
       <div className="w-full space-y-3">
         <div
           className="h-2 bg-white/20 rounded-full cursor-pointer hover:h-3 transition-all"

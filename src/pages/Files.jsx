@@ -14,6 +14,7 @@ import { downloadFilesAsZip } from "@/lib/downloadZip";
 import { useToast } from "@/components/ui/use-toast";
 import { resumableDownload } from "@/lib/resumableUpload";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
+import LargeFileTransfer from "@/components/files/LargeFileTransfer";
 
 const typeIcons = {
   audio: Music,
@@ -95,7 +96,27 @@ export default function Files() {
   const { toast } = useToast();
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
 
-  useEffect(() => { base44.auth.me().then(setCurrentUser); }, []);
+  useEffect(() => { 
+    base44.auth.me().then(setCurrentUser); 
+    
+    // Check for download query param
+    const urlParams = new URLSearchParams(window.location.search);
+    const downloadId = urlParams.get('download');
+    if (downloadId) {
+      base44.entities.SharedFile.get(downloadId).then(async (file) => {
+        if (file) {
+          toast({ title: "Starting download...", description: `Downloading ${file.name}` });
+          try {
+            await resumableDownload(file.file_url, file.name || "file");
+            toast({ title: "Download complete", description: `${file.name} downloaded successfully.` });
+          } catch (e) {
+            console.error(e);
+            toast({ title: "Download failed", description: "There was an error downloading the file.", variant: "destructive" });
+          }
+        }
+      }).catch(e => console.error("Could not fetch file to download", e));
+    }
+  }, []);
 
   const toggleSelect = (id) =>
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -205,49 +226,56 @@ export default function Files() {
             <h1 className="text-2xl font-heading font-bold">Files</h1>
             <p className="text-sm text-muted-foreground">Share music, sessions, art & more</p>
           </div>
-          <div className="relative inline-block">
-            <input 
-              type="file" 
-              multiple 
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-              onChange={handleUpload} 
-              disabled={uploading} 
-              title="Upload File"
-            />
-            <Button className="rounded-xl bg-primary hover:bg-primary/90 pointer-events-none" disabled={uploading} tabIndex={-1}>
-              {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-              Upload File
-            </Button>
-          </div>
+          {typeFilter !== "transfer" && (
+            <div className="relative inline-block">
+              <input 
+                type="file" 
+                multiple 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                onChange={handleUpload} 
+                disabled={uploading} 
+                title="Upload File"
+              />
+              <Button className="rounded-xl bg-primary hover:bg-primary/90 pointer-events-none" disabled={uploading} tabIndex={-1}>
+                {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                Upload File
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-4 mb-6">
-          <Button 
-            variant={selectedIds.length > 0 && selectedIds.length === filtered.length ? "default" : "outline"} 
-            size="icon" 
-            className="rounded-xl shrink-0" 
-            onClick={() => {
-              if (selectedIds.length === filtered.length && filtered.length > 0) {
-                setSelectedIds([]);
-              } else {
-                setSelectedIds(filtered.map(f => f.id));
-              }
-            }}
-            title={selectedIds.length === filtered.length ? "Deselect All" : "Select All"}
-          >
-            <CheckSquare className="w-4 h-4" />
-          </Button>
-          <div className="relative flex-1 max-w-md min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search files..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-secondary/50 border-0 rounded-xl" />
-          </div>
-          <Tabs value={typeFilter} onValueChange={setTypeFilter}>
+          {typeFilter !== "transfer" && (
+            <>
+              <Button 
+                variant={selectedIds.length > 0 && selectedIds.length === filtered.length ? "default" : "outline"} 
+                size="icon" 
+                className="rounded-xl shrink-0" 
+                onClick={() => {
+                  if (selectedIds.length === filtered.length && filtered.length > 0) {
+                    setSelectedIds([]);
+                  } else {
+                    setSelectedIds(filtered.map(f => f.id));
+                  }
+                }}
+                title={selectedIds.length === filtered.length ? "Deselect All" : "Select All"}
+              >
+                <CheckSquare className="w-4 h-4" />
+              </Button>
+              <div className="relative flex-1 max-w-md min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input placeholder="Search files..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-secondary/50 border-0 rounded-xl" />
+              </div>
+            </>
+          )}
+          <Tabs value={typeFilter} onValueChange={setTypeFilter} className={typeFilter === "transfer" ? "ml-auto" : ""}>
             <TabsList className="bg-secondary/50">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="audio">Audio</TabsTrigger>
               <TabsTrigger value="image">Images</TabsTrigger>
               <TabsTrigger value="session">Sessions</TabsTrigger>
               <TabsTrigger value="video">Video</TabsTrigger>
+              <TabsTrigger value="transfer" className="text-primary font-bold">Transfer</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -281,7 +309,7 @@ export default function Files() {
           </div>
         )}
 
-        {currentFolder && (
+        {typeFilter !== "transfer" && currentFolder && (
           <div className="flex items-center gap-2 mb-4 p-3 rounded-xl bg-secondary/50 border border-border">
             <Button size="sm" variant="ghost" className="rounded-lg" onClick={() => setCurrentFolderId(null)}>
               <ChevronRight className="w-4 h-4 rotate-180 mr-1" /> Back
@@ -299,20 +327,24 @@ export default function Files() {
           </div>
         )}
 
-        <div className="flex items-center gap-2 mb-4">
-          <Button 
-            size="sm"
-            variant="outline"
-            className="rounded-lg"
-            onClick={() => setShowNewFolder(true)}
-          >
-            <Plus className="w-4 h-4 mr-1" /> New Folder
-          </Button>
-        </div>
+        {typeFilter !== "transfer" && (
+          <div className="flex items-center gap-2 mb-4">
+            <Button 
+              size="sm"
+              variant="outline"
+              className="rounded-lg"
+              onClick={() => setShowNewFolder(true)}
+            >
+              <Plus className="w-4 h-4 mr-1" /> New Folder
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pb-6">
-        {isLoading ? (
+        {typeFilter === "transfer" ? (
+          <LargeFileTransfer currentUser={currentUser} />
+        ) : isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>

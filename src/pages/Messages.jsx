@@ -5,6 +5,7 @@ import { useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import ConversationList from "@/components/messages/ConversationList";
+import ContactsTab from "@/components/messages/ContactsTab";
 import ChatView from "@/components/messages/ChatView";
 import NewChatDialog from "@/components/messages/NewChatDialog";
 import GroupChatDialog from "@/components/messages/GroupChatDialog";
@@ -18,6 +19,7 @@ export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
   const location = useLocation();
   const [selectedConvId, setSelectedConvId] = useState(null);
+  const [sidebarTab, setSidebarTab] = useState("chats");
 
   useEffect(() => {
     if (location.pathname === "/messages" && !location.search) {
@@ -195,46 +197,81 @@ export default function Messages() {
           selectedConvId ? "hidden sm:flex" : "flex"
         )}>
           {/* Header */}
-          <div className="px-6 pt-8 pb-4 flex items-center justify-between shrink-0">
-            <h1 className="text-2xl font-heading font-bold tracking-tight">Messages</h1>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20">
-                  <Plus className="w-5 h-5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-xl border-border/50 shadow-2xl rounded-2xl p-2">
-                <DropdownMenuItem onClick={() => setShowNewDM(true)} className="gap-3 cursor-pointer py-3 px-3 rounded-xl focus:bg-primary/10 focus:text-primary">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                    <MessageSquare className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-sm">New Message</span>
-                    <span className="text-[10px] text-muted-foreground">Start a direct chat</span>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowNewGroup(true)} className="gap-3 cursor-pointer py-3 px-3 rounded-xl focus:bg-accent/10 focus:text-accent">
-                  <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
-                    <Users className="w-4 h-4 text-accent" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-sm">New Group</span>
-                    <span className="text-[10px] text-muted-foreground">Create a room</span>
-                  </div>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="px-6 pt-8 pb-2 flex flex-col shrink-0">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-2xl font-heading font-bold tracking-tight">Messages</h1>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20">
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-xl border-border/50 shadow-2xl rounded-2xl p-2">
+                  <DropdownMenuItem onClick={() => setShowNewDM(true)} className="gap-3 cursor-pointer py-3 px-3 rounded-xl focus:bg-primary/10 focus:text-primary">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                      <MessageSquare className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-sm">New Message</span>
+                      <span className="text-[10px] text-muted-foreground">Start a direct chat</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowNewGroup(true)} className="gap-3 cursor-pointer py-3 px-3 rounded-xl focus:bg-accent/10 focus:text-accent">
+                    <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
+                      <Users className="w-4 h-4 text-accent" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-sm">New Group</span>
+                      <span className="text-[10px] text-muted-foreground">Create a room</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
+            {/* Tabs */}
+            <div className="flex gap-6 border-b border-border/40 pb-0">
+              <button 
+                onClick={() => setSidebarTab("chats")}
+                className={cn("pb-3 text-sm font-semibold transition-colors relative", sidebarTab === "chats" ? "text-foreground" : "text-muted-foreground hover:text-foreground")}
+              >
+                Chats
+                {sidebarTab === "chats" && <motion.div layoutId="activeTabMsg" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+              </button>
+              <button 
+                onClick={() => setSidebarTab("contacts")}
+                className={cn("pb-3 text-sm font-semibold transition-colors relative", sidebarTab === "contacts" ? "text-foreground" : "text-muted-foreground hover:text-foreground")}
+              >
+                Network
+                {sidebarTab === "contacts" && <motion.div layoutId="activeTabMsg" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+              </button>
+            </div>
           </div>
 
-          <ConversationList
-            conversations={conversations}
-            myConversations={myConversations}
-            selectedId={selectedConvId}
-            onSelect={setSelectedConvId}
-            users={users}
-            currentUserId={currentUser?.id}
-            onStartDM={startDM}
-          />
+          <div className="flex-1 overflow-hidden relative">
+            <AnimatePresence mode="wait">
+              {sidebarTab === "chats" ? (
+                <motion.div key="chats" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="absolute inset-0 flex flex-col">
+                  <ConversationList
+                    conversations={conversations}
+                    myConversations={myConversations}
+                    selectedId={selectedConvId}
+                    onSelect={setSelectedConvId}
+                    users={users}
+                    currentUserId={currentUser?.id}
+                    onStartDM={startDM}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div key="contacts" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="absolute inset-0 flex flex-col pt-2">
+                  <ContactsTab 
+                    currentUserId={currentUser?.id} 
+                    onMessageContact={(u) => { startDM(u); setSidebarTab("chats"); }} 
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Chat View */}

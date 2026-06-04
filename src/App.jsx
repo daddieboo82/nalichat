@@ -22,7 +22,6 @@ import ResetPassword from '@/pages/ResetPassword';
 import AppLayout from '@/components/layout/AppLayout';
 import Home from '@/pages/Home';
 import Messages from '@/pages/Messages';
-import Network from '@/pages/Network';
 import Files from '@/pages/Files';
 
 import Settings from '@/pages/Settings';
@@ -103,7 +102,6 @@ const AuthenticatedApp = () => {
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route element={<AppLayout />}>
           <Route path="/messages" element={<Messages />} />
-          <Route path="/network" element={<Network />} />
           <Route path="/files" element={<Files />} />
 
           <Route path="/settings" element={<Settings />} />

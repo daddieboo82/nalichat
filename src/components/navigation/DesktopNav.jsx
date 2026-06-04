@@ -18,7 +18,6 @@ const NAV_ITEMS = [
   { icon: FileText, label: "Files", path: "/files" },
   { icon: BarChart3, label: "Analytics", path: "/analytics" },
   { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
-  { icon: Users, label: "Network", path: "/network" },
 ];
 
 export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick }) {

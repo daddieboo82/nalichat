@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Upload, Music, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,7 +22,16 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [queue, setQueue] = useState([]);
+  const [trackTypes, setTrackTypes] = useState({});
   const fileInputRef = useRef(null);
+
+  const trackTypeOptions = ["vocal", "instrument", "beat", "sample", "fx", "master"];
+  
+  const setTrackType = (itemId, type) => {
+    setTrackTypes(prev => ({ ...prev, [itemId]: type }));
+  };
+
+  const getTrackType = (itemId) => trackTypes[itemId] || "vocal";
 
   const isSupportedFormat = (file) => {
     return file.type.startsWith("audio/") || 
@@ -70,7 +80,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
           project_id: projectId,
           name: item.name,
           file_url,
-          type: "vocal",
+          type: getTrackType(item.id),
           volume: 75,
           pan: 0,
           muted: false,
@@ -212,16 +222,28 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.name}</p>
-                      {item.error && (
-                        <p className="text-xs text-destructive mt-1">{item.error}</p>
-                      )}
-                      {item.status === "uploading" && (
-                        <div className="w-full h-1 bg-secondary rounded-full mt-2 overflow-hidden">
-                          <div className="h-full bg-primary/50 animate-pulse w-1/3" />
-                        </div>
-                      )}
-                    </div>
+                       <p className="text-sm font-medium truncate">{item.name}</p>
+                       {item.status === "pending" && (
+                         <Select value={getTrackType(item.id)} onValueChange={(type) => setTrackType(item.id, type)}>
+                           <SelectTrigger className="h-7 text-xs mt-1 bg-secondary/40 border-border/50">
+                             <SelectValue />
+                           </SelectTrigger>
+                           <SelectContent>
+                             {trackTypeOptions.map(type => (
+                               <SelectItem key={type} value={type} className="text-xs capitalize">{type}</SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
+                       )}
+                       {item.error && (
+                         <p className="text-xs text-destructive mt-1">{item.error}</p>
+                       )}
+                       {item.status === "uploading" && (
+                         <div className="w-full h-1 bg-secondary rounded-full mt-2 overflow-hidden">
+                           <div className="h-full bg-primary/50 animate-pulse w-1/3" />
+                         </div>
+                       )}
+                     </div>
                   </motion.div>
                 ))}
               </AnimatePresence>

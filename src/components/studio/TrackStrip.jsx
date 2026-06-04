@@ -33,6 +33,13 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
     }
   }, [masterVolume, track.volume]);
 
+  const formatTime = (seconds) => {
+    if (!seconds || isNaN(seconds)) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${String(secs).padStart(2, "0")}`;
+  };
+
   const toggleMute = () => canEdit && onUpdate({ muted: !track.muted });
   const toggleSolo = () => canEdit && onUpdate({ solo: !track.solo });
 
@@ -51,10 +58,13 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
       )}
 
       <div className="flex items-center gap-2 mb-2">
-        <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", trackTypeColors[track.type] || "bg-muted")} />
-        <span className="font-medium text-xs flex-1 truncate">{track.name}</span>
-        <span className="text-[9px] text-muted-foreground uppercase">{track.type}</span>
-      </div>
+         <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", trackTypeColors[track.type] || "bg-muted")} />
+         <span className="font-medium text-xs flex-1 truncate">{track.name}</span>
+         <span className="text-[9px] text-muted-foreground uppercase">{track.type}</span>
+         {audioRef.current?.duration && (
+           <span className="text-[9px] text-muted-foreground/70 font-mono">{formatTime(audioRef.current.duration)}</span>
+         )}
+       </div>
 
       {/* Waveform */}
       <div className="h-10 bg-secondary rounded-lg mb-2 flex items-center gap-px px-1.5 overflow-hidden">

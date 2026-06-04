@@ -404,7 +404,7 @@ export default function Studio() {
            </div>
          ) : (
           <>
-            {/* Project Header */}
+            {/* Project Header with live indicator */}
             <div className="px-4 md:px-5 py-3 border-b border-border/50 flex items-center justify-between backdrop-blur-xl gap-2" style={{ background: "hsl(240 8% 7% / 0.95)" }}>
               <div className="flex items-center gap-2 min-w-0">
                 <button
@@ -414,7 +414,8 @@ export default function Studio() {
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
                     <h1 className="text-lg font-heading font-bold truncate">{selectedProject.title}</h1>
                     <span className="text-[10px] px-2 py-1 rounded-full bg-primary/20 text-primary font-semibold whitespace-nowrap">Professional Studio</span>
                   </div>

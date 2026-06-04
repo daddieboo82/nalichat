@@ -83,6 +83,16 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
     });
   };
 
+  useEffect(() => {
+    const maxDuration = Math.max(
+      ...Object.values(audioElements.current).map(el => el?.duration || 0),
+      duration
+    );
+    if (maxDuration > duration && maxDuration !== Infinity) {
+      setDuration(maxDuration);
+    }
+  }, [tracks.length]);
+
   return (
     <div className="h-full flex flex-col overflow-hidden relative" style={{ background: "hsl(240 10% 3%)" }}>
       {/* Transport Controls */}
@@ -241,21 +251,25 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                   />
                   <div className="flex-1 min-w-0">
                     <TrackStrip
-                      track={track}
-                      isPlaying={isPlaying}
-                      currentTime={currentTime}
-                      onUpdate={(data) => canEdit && onTrackUpdate(track.id, data)}
-                      onDelete={() => canEdit && onTrackDelete(track.id)}
-                      audioRef={(ref) => {
-                        if (ref) audioElements.current[track.id] = ref;
-                        else delete audioElements.current[track.id];
-                      }}
-                      masterVolume={masterVolume}
-                      inQueue={queueIds.has(track.id)}
-                      onToggleQueue={() => toggleQueue(track)}
-                      canEdit={canEdit}
-                      currentUser={currentUser}
-                    />
+                        track={track}
+                        isPlaying={isPlaying}
+                        currentTime={currentTime}
+                        onUpdate={(data) => canEdit && onTrackUpdate(track.id, data)}
+                        onDelete={() => canEdit && onTrackDelete(track.id)}
+                        audioRef={(ref) => {
+                          if (ref) {
+                            audioElements.current[track.id] = ref;
+                            if (ref.duration > 0) setDuration(prev => Math.max(prev, ref.duration));
+                          } else {
+                            delete audioElements.current[track.id];
+                          }
+                        }}
+                        masterVolume={masterVolume}
+                        inQueue={queueIds.has(track.id)}
+                        onToggleQueue={() => toggleQueue(track)}
+                        canEdit={canEdit}
+                        currentUser={currentUser}
+                      />
                   </div>
                 </div>
               ))}

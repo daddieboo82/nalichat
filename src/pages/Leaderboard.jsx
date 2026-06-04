@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Trophy, Star, Flame, Heart, Award, Crown, Medal, Music, Image as ImageIcon, Video, FileText } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import MediaViewerModal from "@/components/explore/MediaViewerModal";
 import { cn } from "@/lib/utils";
 
 const USER_TABS = ["xp", "likes", "posts"];
@@ -13,6 +14,8 @@ export default function Leaderboard() {
   const [mode, setMode] = useState("users");
   const [userTab, setUserTab] = useState("xp");
   const [contentTab, setContentTab] = useState("songs");
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   useEffect(() => { base44.auth.me().then(setCurrentUser); }, []);
 
@@ -73,6 +76,18 @@ export default function Leaderboard() {
   };
 
   const currentContent = getCurrentContentList();
+
+  const handleItemClick = (item) => {
+    setSelectedItem({
+      ...item,
+      title: item.title || item.name || "Untitled",
+      creator_name: item.creator_name || item.uploader_name || "Unknown",
+      creator_avatar: item.creator_avatar || null,
+      image_url: item.image_url || (item.file_type === 'image' ? item.file_url : null),
+      file_url: item.file_url,
+    });
+    setIsViewerOpen(true);
+  };
 
   const myRank = sorted.findIndex(u => u.id === currentUser?.id) + 1;
 
@@ -229,7 +244,11 @@ export default function Leaderboard() {
                 </div>
               ) : (
                 currentContent.map((item, i) => (
-                  <div key={item.id} className="flex items-center gap-4 p-3 rounded-xl border border-border bg-card/60 hover:bg-card transition-colors">
+                  <div 
+                    key={item.id} 
+                    onClick={() => handleItemClick(item)}
+                    className="flex items-center gap-4 p-3 rounded-xl border border-border bg-card/60 hover:bg-card transition-colors cursor-pointer"
+                  >
                     <div className="w-8 text-center shrink-0 flex flex-col items-center">
                       {i < 3 ? RANK_ICONS[i] : <span className="text-sm text-muted-foreground font-bold">#{i + 1}</span>}
                     </div>
@@ -281,6 +300,12 @@ export default function Leaderboard() {
           </>
         )}
       </div>
+      
+      <MediaViewerModal
+        post={selectedItem}
+        open={isViewerOpen}
+        onOpenChange={setIsViewerOpen}
+      />
     </div>
   );
 }

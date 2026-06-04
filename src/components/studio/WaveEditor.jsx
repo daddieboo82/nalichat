@@ -389,7 +389,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">File</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
+                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('New File not implemented yet')}>New <DropdownMenuShortcut className="text-current opacity-70">Ctrl+N</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Open File not implemented yet')}>Open... <DropdownMenuShortcut className="text-current opacity-70">Ctrl+O</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
@@ -404,7 +404,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Edit</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
+                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={handleUndo} disabled={historyIdx <= 0}>Undo <DropdownMenuShortcut className="text-current opacity-70">Ctrl+Z</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={handleRedo} disabled={historyIdx >= history.length - 1}>Redo <DropdownMenuShortcut className="text-current opacity-70">Ctrl+Y</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
@@ -421,7 +421,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">View</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
+                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setZoom(z => Math.min(1000, z * 1.5))}>Zoom In</DropdownMenuItem>
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setZoom(z => Math.max(0.5, z / 1.5))}>Zoom Out</DropdownMenuItem>
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setZoom(1)}>Zoom Normal</DropdownMenuItem>
@@ -436,7 +436,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Process</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
+                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Process Mute not implemented yet')}>Mute</DropdownMenuItem>
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Process Reverse not implemented yet')}>Reverse</DropdownMenuItem>
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Process Normalize not implemented yet')}>Normalize</DropdownMenuItem>
@@ -449,7 +449,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Effects</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
+                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
                   {EFFECTS.map(eff => (
                     <DropdownMenuItem key={eff.id} className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => addEffect(eff)}>
                       {eff.name}...
@@ -462,7 +462,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Tools</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
+                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setActiveEnvelope(activeEnvelope === 'volume' ? null : 'volume')}>
                     {activeEnvelope === 'volume' ? "✓ " : ""}Volume Envelope
                   </DropdownMenuItem>
@@ -476,7 +476,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Options</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
+                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Preferences modal not implemented yet')}>Preferences...</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -485,7 +485,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Help</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
+                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Help not implemented yet')}>Contents and Index</DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('About Wave Editor')}>About Wave Editor</DropdownMenuItem>

@@ -210,7 +210,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                 const v = Number(e.target.value);
                 setMasterVolume(v);
                 Object.values(audioElements.current).forEach(el => {
-                  if (el) el.volume = (v / 100) * 0.75;
+                  if (el) el.volume = (v / 100);
                 });
               }}
               className="w-full h-1 bg-border rounded appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-sm [&::-moz-range-thumb]:w-2 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0"

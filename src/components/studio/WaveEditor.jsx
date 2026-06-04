@@ -257,22 +257,47 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   style={{ width: `${100 * zoom}%`, minWidth: '100%' }}
                   onPointerDown={(e) => {
                     if (activeTool !== 'select' && activeTool !== 'smart') return;
+                    if (e.target.closest('.selection-handle')) return; // Ignore if clicking on handles
+                    
                     const target = e.currentTarget;
                     const rect = target.getBoundingClientRect();
                     const startX = (e.clientX - rect.left) / rect.width;
-                    setSelection({ start: startX, end: startX });
+                    
+                    const overlay = target.querySelector('.selection-overlay');
+                    if (overlay) {
+                      overlay.style.display = 'block';
+                      overlay.style.left = `${startX * 100}%`;
+                      overlay.style.right = `${(1 - startX) * 100}%`;
+                    }
                     
                     target.setPointerCapture(e.pointerId);
                     
                     const handleMove = (moveEvent) => {
                       const currentX = Math.max(0, Math.min(1, (moveEvent.clientX - rect.left) / rect.width));
-                      setSelection({ start: Math.min(startX, currentX), end: Math.max(startX, currentX) });
+                      const minX = Math.min(startX, currentX);
+                      const maxX = Math.max(startX, currentX);
+                      if (overlay) {
+                        overlay.style.left = `${minX * 100}%`;
+                        overlay.style.right = `${(1 - maxX) * 100}%`;
+                      }
+                      target.dataset.newStart = minX;
+                      target.dataset.newEnd = maxX;
                     };
                     
                     const handleUp = (upEvent) => {
                       target.releasePointerCapture(upEvent.pointerId);
                       target.removeEventListener('pointermove', handleMove);
                       target.removeEventListener('pointerup', handleUp);
+                      
+                      const newStartStr = target.dataset.newStart;
+                      const newEndStr = target.dataset.newEnd;
+                      if (newStartStr !== undefined && newEndStr !== undefined) {
+                        setSelection({ start: parseFloat(newStartStr), end: parseFloat(newEndStr) });
+                        delete target.dataset.newStart;
+                        delete target.dataset.newEnd;
+                      } else {
+                        setSelection({ start: startX, end: startX });
+                      }
                     };
                     
                     target.addEventListener('pointermove', handleMove);
@@ -280,14 +305,13 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   }}
                 >
                   {/* Selection Overlay */}
-                  {selection.start !== selection.end && (
-                    <div 
-                      className="absolute top-0 bottom-0 bg-primary/20 border-x-2 border-primary z-10 pointer-events-none"
-                      style={{ left: `${selection.start * 100}%`, right: `${(1 - selection.end) * 100}%` }}
-                    >
+                  <div 
+                    className={cn("selection-overlay absolute top-0 bottom-0 bg-primary/20 border-x-2 border-primary z-10 pointer-events-none", selection.start === selection.end ? "hidden" : "block")}
+                    style={{ left: `${selection.start * 100}%`, right: `${(1 - selection.end) * 100}%` }}
+                  >
                       {/* Left Figure */}
                       <div 
-                        className="absolute top-0 bottom-0 -left-3 w-6 cursor-ew-resize flex items-center justify-center hover:bg-white/10 pointer-events-auto"
+                        className="selection-handle absolute top-0 bottom-0 -left-3 w-6 cursor-ew-resize flex items-center justify-center hover:bg-white/10 pointer-events-auto"
                         onPointerDown={(e) => {
                           e.stopPropagation();
                           const target = e.currentTarget;
@@ -323,7 +347,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       
                       {/* Right Figure */}
                       <div 
-                        className="absolute top-0 bottom-0 -right-3 w-6 cursor-ew-resize flex items-center justify-center hover:bg-white/10 pointer-events-auto"
+                        className="selection-handle absolute top-0 bottom-0 -right-3 w-6 cursor-ew-resize flex items-center justify-center hover:bg-white/10 pointer-events-auto"
                         onPointerDown={(e) => {
                           e.stopPropagation();
                           const target = e.currentTarget;
@@ -357,7 +381,6 @@ export default function WaveEditor({ track, onClose, onSave }) {
                         <div className="w-1.5 h-8 bg-primary rounded-full shadow-sm" />
                       </div>
                     </div>
-                  )}
 
                   {/* Fade In/Out Overlays & Handles */}
                   <div 

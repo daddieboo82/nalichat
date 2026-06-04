@@ -25,6 +25,8 @@ export default function Studio() {
   const [currentTime, setCurrentTime] = useState(0);
   const [zoom, setZoom] = useState(1);
   const playheadRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const audioContextRef = useRef(null);
   const [editingTrack, setEditingTrack] = useState(null);
   const [selectedTrackId, setSelectedTrackId] = useState(1);
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
@@ -87,26 +89,83 @@ export default function Studio() {
     else sounds.click();
   };
 
-  const toggleRecord = () => {
+  useEffect(() => {
+    return () => {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
+  const stopRecordingProcess = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      mediaStreamRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    sounds.recStop();
+    
+    setTracks(prev => prev.map(t => {
+      if (t.armed) {
+        return { ...t, waveform: generateWaveform(120), armed: false };
+      }
+      return t;
+    }));
+    toast.success("Recording saved!");
+  };
+
+  const toggleRecord = async () => {
     if (!isRecording && !tracks.some(t => t.armed)) {
       toast.error("Please arm at least one track to record (click the circle icon on a track)");
       return;
     }
     if (isPlaying) setIsPlaying(false);
-    setIsRecording(!isRecording);
+
     if (!isRecording) {
-      toast.success("Recording started");
-      sounds.recStart();
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: { echoCancellation: true, noiseSuppression: true } 
+        });
+        mediaStreamRef.current = stream;
+        
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioContextRef.current = audioCtx;
+        const source = audioCtx.createMediaStreamSource(stream);
+        
+        // Monitor audio with reduced volume to prevent loud feedback
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.value = 0.6; 
+        source.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        setIsRecording(true);
+        toast.success("Recording started (Mic active)");
+        sounds.recStart();
+      } catch (err) {
+        toast.error("Microphone access denied. Please allow mic permissions in your browser.");
+        console.error(err);
+      }
     } else {
-      sounds.recStop();
+      setIsRecording(false);
+      stopRecordingProcess();
     }
   };
 
   const stop = () => {
     setIsPlaying(false);
-    setIsRecording(false);
+    if (isRecording) {
+      setIsRecording(false);
+      stopRecordingProcess();
+    } else {
+      sounds.recStop();
+    }
     setCurrentTime(0);
-    sounds.recStop();
   };
 
   // Keyboard shortcuts for Power Users

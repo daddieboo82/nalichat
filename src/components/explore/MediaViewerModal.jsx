@@ -15,7 +15,8 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
   const audioRef = useRef(null);
   const { addToCart, items } = useCart();
   const inCart = items.some(item => item.id === post?.id);
-  const { playTrack } = useAudioPlayer();
+  const audioPlayer = useAudioPlayer();
+  const playTrack = audioPlayer?.playTrack;
 
   useEffect(() => {
     if (!open) {

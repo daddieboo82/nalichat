@@ -44,8 +44,12 @@ export function AudioPlayerProvider({ children }) {
   useEffect(() => {
     if (currentTrack?.file_url) {
       audioRef.current.src = currentTrack.file_url;
-      audioRef.current.play().catch(console.error);
-      setIsPlaying(true);
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(e => {
+        console.warn("Autoplay blocked:", e.message);
+        setIsPlaying(false);
+      });
     }
   }, [currentTrack]);
 

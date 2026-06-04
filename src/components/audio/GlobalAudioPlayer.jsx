@@ -7,9 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function GlobalAudioPlayer() {
-  const { currentTrack, isPlaying, currentTime, duration, volume, setVolume, togglePlay, seek, closePlayer } = useAudioPlayer();
-
-  if (!currentTrack) return null;
+  const player = useAudioPlayer();
+  if (!player || !player.currentTrack) return null;
+  const { currentTrack, isPlaying, currentTime, duration, volume, setVolume, togglePlay, seek, closePlayer } = player;
 
   const formatTime = (seconds) => {
     if (!seconds || isNaN(seconds)) return "0:00";

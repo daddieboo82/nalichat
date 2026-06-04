@@ -8,7 +8,10 @@ import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist, onComment, large }) {
   const [showMedia, setShowMedia] = useState(false);
   const liked = post.liked_by?.includes(currentUser?.id);
-  const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
+  const audioPlayer = useAudioPlayer();
+  const playTrack = audioPlayer?.playTrack;
+  const currentTrack = audioPlayer?.currentTrack;
+  const isPlaying = audioPlayer?.isPlaying;
   const isActive = currentTrack?.id === post.id;
 
   return (

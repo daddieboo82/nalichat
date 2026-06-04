@@ -219,6 +219,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
               className={cn("w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5 touch-manipulation",
                 showFeatures ? "text-primary bg-primary/15" : "text-muted-foreground hover:text-primary hover:bg-primary/10")}
               title="Additional Features"
+              aria-label="Additional Features"
             >
               <Layers className="w-5 h-5 text-indigo-400" />
             </button>
@@ -263,6 +264,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
                           }
                         }}
                         className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-md hover:bg-primary/90"
+                        title="Start Live Session"
+                        aria-label="Start Live Session"
                       >
                         Start
                       </button>
@@ -277,6 +280,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
                     fileInputRef.current?.click();
                     setShowFeatures(false);
                   }}
+                  title="Share Music"
+                  aria-label="Share Music"
                 >
                   <div className="w-8 h-8 rounded-full bg-pink-500/10 flex items-center justify-center text-pink-500 shrink-0">
                     <Music className="w-4 h-4" />
@@ -349,7 +354,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             </div>
             <span className="text-sm text-destructive font-mono font-bold">{fmt(recordingTime)}</span>
             <span className="text-xs text-muted-foreground hidden sm:block">Recording…</span>
-            <button onClick={cancelRecording} className="ml-auto text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-secondary/60 transition-all touch-manipulation">
+            <button onClick={cancelRecording} className="ml-auto text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-secondary/60 transition-all touch-manipulation" title="Cancel Recording" aria-label="Cancel Recording">
               <X className="w-4 h-4" />
             </button>
           </motion.div>

@@ -96,7 +96,7 @@ export default function ThreadPanel({ parentMessage, currentUser, onClose }) {
           <MessageSquareQuote className="w-4 h-4 text-primary" />
           <span className="font-heading font-semibold text-sm">Thread</span>
         </div>
-        <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors">
+        <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors" title="Close Thread" aria-label="Close Thread">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -155,6 +155,8 @@ export default function ThreadPanel({ parentMessage, currentUser, onClose }) {
             onClick={handleSend}
             disabled={!text.trim() || sendMutation.isPending}
             className="w-8 h-8 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0"
+            title="Send Reply"
+            aria-label="Send Reply"
           >
             <Send className="w-3.5 h-3.5 text-primary-foreground" />
           </button>

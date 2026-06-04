@@ -84,7 +84,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
       {/* Floating Header */}
       <div className="absolute top-0 left-0 right-0 z-20 p-2 sm:p-4 pointer-events-none">
         <div className="h-16 bg-background/80 backdrop-blur-2xl border border-border/50 rounded-3xl flex items-center px-4 gap-3 shadow-xl pointer-events-auto transition-all">
-          <button onClick={onBack} className="sm:hidden w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground bg-secondary/80 hover:bg-secondary transition-colors shrink-0">
+          <button onClick={onBack} className="sm:hidden w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground bg-secondary/80 hover:bg-secondary transition-colors shrink-0" title="Go Back" aria-label="Go Back">
             <ArrowLeft className="w-4 h-4" />
           </button>
           
@@ -101,12 +101,12 @@ export default function ChatView({ conversation, messages, currentUser, users, o
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full text-muted-foreground hover:bg-secondary/80" onClick={() => setShowSearch(true)}>
+            <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full text-muted-foreground hover:bg-secondary/80" onClick={() => setShowSearch(true)} title="Search Messages" aria-label="Search Messages">
               <SearchIcon className="w-4 h-4" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full text-muted-foreground hover:bg-secondary/80">
+                <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full text-muted-foreground hover:bg-secondary/80" title="More Options" aria-label="More Options">
                   <MoreHorizontal className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -246,7 +246,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
           
           <div className="flex items-center gap-6">
             {callState.type === 'video' && (
-              <Button size="icon" variant="outline" className="w-14 h-14 rounded-full bg-secondary/50 border-white/10 hover:bg-secondary">
+              <Button size="icon" variant="outline" className="w-14 h-14 rounded-full bg-secondary/50 border-white/10 hover:bg-secondary" title="Enable/Disable Video" aria-label="Enable/Disable Video">
                 <Video className="w-6 h-6" />
               </Button>
             )}
@@ -255,6 +255,8 @@ export default function ChatView({ conversation, messages, currentUser, users, o
               variant="destructive" 
               className="w-16 h-16 rounded-full shadow-lg shadow-destructive/20 hover:scale-105 transition-transform"
               onClick={() => setCallState(null)}
+              title="End Call"
+              aria-label="End Call"
             >
               <Phone className="w-7 h-7 rotate-[135deg]" />
             </Button>

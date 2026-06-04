@@ -33,6 +33,8 @@ export default function MessageSearch({ messages, onClose, onSelectMessage, user
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground"
+            title="Close Search"
+            aria-label="Close Search"
           >
             <X className="w-4 h-4" />
           </button>
@@ -56,6 +58,8 @@ export default function MessageSearch({ messages, onClose, onSelectMessage, user
                   key={msg.id}
                   onClick={() => { onSelectMessage(msg); onClose(); }}
                   className="w-full text-left px-3 py-2 rounded-xl hover:bg-secondary/60 transition-colors group"
+                  title="Jump to message"
+                  aria-label="Jump to message"
                 >
                   <div className="flex items-start gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0 mt-0.5">

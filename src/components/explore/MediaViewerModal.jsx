@@ -7,7 +7,7 @@ import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
-export default function MediaViewerModal({ post, open, onOpenChange }) {
+export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlaylist }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -156,6 +156,16 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
                        className="bg-white/10 text-white border border-white/10 shadow-lg gap-2 h-14 px-8 text-base rounded-full flex-shrink-0 cursor-default"
                      >
                        Free
+                     </Button>
+                   )}
+                   {onAddToPlaylist && (
+                     <Button 
+                       size="lg"
+                       onClick={() => onAddToPlaylist(post.id)}
+                       className="bg-white/10 text-white hover:bg-white/20 border border-white/10 shadow-lg gap-2 h-14 px-6 text-base rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
+                     >
+                       <Music className="w-5 h-5" />
+                       Add to Playlist
                      </Button>
                    )}
                  </div>

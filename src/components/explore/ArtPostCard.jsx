@@ -53,21 +53,21 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
           </div>
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => onComment?.(post)}
+              onClick={(e) => { e.stopPropagation(); onComment?.(post); }}
               className="p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
               title="Comments"
             >
               <MessageCircle className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => onAddToPlaylist?.(post.id)}
+              onClick={(e) => { e.stopPropagation(); onAddToPlaylist?.(post.id); }}
               className="p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
               title="Add to playlist"
             >
               <Music className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={onLike}
+              onClick={(e) => { e.stopPropagation(); onLike?.(e); }}
               className={cn(
                 "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-all shrink-0",
                 liked
@@ -112,7 +112,7 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
       </div>
       </div>
 
-      <MediaViewerModal post={post} open={showMedia} onOpenChange={setShowMedia} />
+      <MediaViewerModal post={post} open={showMedia} onOpenChange={setShowMedia} onAddToPlaylist={onAddToPlaylist} />
     </>
   );
 }

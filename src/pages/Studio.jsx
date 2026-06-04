@@ -919,33 +919,35 @@ export default function Studio() {
                            return;
                         }
 
-                        const target = e.currentTarget;
-                        const startX = e.clientX;
-                        const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
-                        
-                        target.setPointerCapture(e.pointerId);
-                        
-                        const handleMove = (moveEvent) => {
-                          const deltaX = moveEvent.clientX - startX;
-                          const deltaTime = deltaX / (20 * zoom);
-                          let newStartTime = Math.max(0, initialStartTime + deltaTime);
-                          if (editMode === 'grid') {
-                             newStartTime = Math.round(newStartTime);
-                          }
+                        if (activeTool === 'grab' || activeTool === 'smart') {
+                          const target = e.currentTarget;
+                          const startX = e.clientX;
+                          const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
                           
-                          setTracks(prev => prev.map(t => 
-                            t.id === track.id ? { ...t, startTime: newStartTime } : t
-                          ));
-                        };
-                        
-                        const handleUp = (upEvent) => {
-                          target.releasePointerCapture(upEvent.pointerId);
-                          target.removeEventListener('pointermove', handleMove);
-                          target.removeEventListener('pointerup', handleUp);
-                        };
-                        
-                        target.addEventListener('pointermove', handleMove);
-                        target.addEventListener('pointerup', handleUp);
+                          target.setPointerCapture(e.pointerId);
+                          
+                          const handleMove = (moveEvent) => {
+                            const deltaX = moveEvent.clientX - startX;
+                            const deltaTime = deltaX / (20 * zoom);
+                            let newStartTime = Math.max(0, initialStartTime + deltaTime);
+                            if (editMode === 'grid') {
+                               newStartTime = Math.round(newStartTime);
+                            }
+                            
+                            setTracks(prev => prev.map(t => 
+                              t.id === track.id ? { ...t, startTime: newStartTime } : t
+                            ));
+                          };
+                          
+                          const handleUp = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleMove);
+                            target.removeEventListener('pointerup', handleUp);
+                          };
+                          
+                          target.addEventListener('pointermove', handleMove);
+                          target.addEventListener('pointerup', handleUp);
+                        }
                       }}
                       className="audio-clip absolute top-2 bottom-2 rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-grab active:cursor-grabbing"
                       style={{ 
@@ -955,8 +957,9 @@ export default function Studio() {
                     >
                       {/* Left Trim Handle */}
                       <div 
-                        className="absolute top-0 bottom-0 left-0 w-3 cursor-col-resize hover:bg-white/40 z-20 group/handle flex justify-center items-center bg-black/20"
+                        className={cn("absolute top-0 bottom-0 left-0 w-3 z-20 group/handle flex justify-center items-center bg-black/20", (activeTool === 'trim' || activeTool === 'smart') ? "cursor-col-resize hover:bg-white/40" : "")}
                         onPointerDown={(e) => {
+                          if (activeTool !== 'trim' && activeTool !== 'smart') return;
                           e.stopPropagation();
                           const target = e.currentTarget;
                           const startX = e.clientX;
@@ -1001,8 +1004,9 @@ export default function Studio() {
 
                       {/* Right Trim Handle */}
                       <div 
-                        className="absolute top-0 bottom-0 right-0 w-3 cursor-col-resize hover:bg-white/40 z-20 group/handle flex justify-center items-center bg-black/20"
+                        className={cn("absolute top-0 bottom-0 right-0 w-3 z-20 group/handle flex justify-center items-center bg-black/20", (activeTool === 'trim' || activeTool === 'smart') ? "cursor-col-resize hover:bg-white/40" : "")}
                         onPointerDown={(e) => {
+                          if (activeTool !== 'trim' && activeTool !== 'smart') return;
                           e.stopPropagation();
                           const target = e.currentTarget;
                           const startX = e.clientX;
@@ -1049,16 +1053,71 @@ export default function Studio() {
                         {track.elasticAudio && <Activity className="w-3 h-3 text-blue-400" />}
                       </div>
                       
-                      {/* Fake Fade In/Out Overlays */}
-                      {activeTool === 'fade' && (
-                        <>
-                          <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-background to-transparent z-10 cursor-ew-resize group-hover/fade:opacity-100 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
-                             <div className="w-[2px] h-4 bg-white/50 rounded-full" />
-                          </div>
-                          <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-background to-transparent z-10 cursor-ew-resize group-hover/fade:opacity-100 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
-                             <div className="w-[2px] h-4 bg-white/50 rounded-full" />
-                          </div>
-                        </>
+                      {/* Fade In/Out Overlays & Handles */}
+                      <div 
+                        className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none"
+                        style={{ width: `${(track.fadeIn || 0) * 100}%` }}
+                      />
+                      {(activeTool === 'fade' || activeTool === 'smart') && (
+                        <div className="absolute top-0 bottom-0 w-6 cursor-ew-resize hover:bg-white/10 flex items-center justify-center group z-20 pointer-events-auto"
+                          style={{ left: `calc(${(track.fadeIn || 0) * 100}% - 12px)` }}
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                            const target = e.currentTarget;
+                            const container = target.parentElement;
+                            const rect = container.getBoundingClientRect();
+                            target.setPointerCapture(e.pointerId);
+                            
+                            const handleMove = (moveEvent) => {
+                              const currentX = Math.max(0, Math.min(1 - (track.fadeOut || 0), (moveEvent.clientX - rect.left) / rect.width));
+                              setTracks(prev => prev.map(t => t.id === track.id ? { ...t, fadeIn: currentX } : t));
+                            };
+                            
+                            const handleUp = (upEvent) => {
+                              target.releasePointerCapture(upEvent.pointerId);
+                              target.removeEventListener('pointermove', handleMove);
+                              target.removeEventListener('pointerup', handleUp);
+                            };
+                            
+                            target.addEventListener('pointermove', handleMove);
+                            target.addEventListener('pointerup', handleUp);
+                          }}
+                        >
+                          <div className="w-1 h-6 bg-white/50 group-hover:bg-white rounded-full transition-colors shadow-sm" />
+                        </div>
+                      )}
+
+                      <div 
+                        className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none"
+                        style={{ width: `${(track.fadeOut || 0) * 100}%` }}
+                      />
+                      {(activeTool === 'fade' || activeTool === 'smart') && (
+                        <div className="absolute top-0 bottom-0 w-6 cursor-ew-resize hover:bg-white/10 flex items-center justify-center group z-20 pointer-events-auto"
+                          style={{ right: `calc(${(track.fadeOut || 0) * 100}% - 12px)` }}
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                            const target = e.currentTarget;
+                            const container = target.parentElement;
+                            const rect = container.getBoundingClientRect();
+                            target.setPointerCapture(e.pointerId);
+                            
+                            const handleMove = (moveEvent) => {
+                              const currentX = Math.max(0, Math.min(1 - (track.fadeIn || 0), 1 - ((moveEvent.clientX - rect.left) / rect.width)));
+                              setTracks(prev => prev.map(t => t.id === track.id ? { ...t, fadeOut: currentX } : t));
+                            };
+                            
+                            const handleUp = (upEvent) => {
+                              target.releasePointerCapture(upEvent.pointerId);
+                              target.removeEventListener('pointermove', handleMove);
+                              target.removeEventListener('pointerup', handleUp);
+                            };
+                            
+                            target.addEventListener('pointermove', handleMove);
+                            target.addEventListener('pointerup', handleUp);
+                          }}
+                        >
+                          <div className="w-1 h-6 bg-white/50 group-hover:bg-white rounded-full transition-colors shadow-sm" />
+                        </div>
                       )}
 
                       <div className={cn("absolute inset-x-0 flex items-center justify-between gap-[1px] overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-2 top-6")}>

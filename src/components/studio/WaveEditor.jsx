@@ -179,8 +179,33 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     toast.error("Use the Select tool to highlight a region first to trim");
                   }
                 }} className="text-muted-foreground hover:text-foreground" title="Trim to Selection"><Scissors className="w-4 h-4" /></Button>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground"><Copy className="w-4 h-4" /></Button>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-400"><Trash2 className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={() => {
+                  if (selection.start !== selection.end) {
+                    toast.success("Selection copied to clipboard");
+                  } else {
+                    toast.error("Make a selection first to copy");
+                  }
+                }} className="text-muted-foreground hover:text-foreground"><Copy className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={() => {
+                  if (selection.start !== selection.end) {
+                    const minStart = Math.min(selection.start, selection.end);
+                    const maxEnd = Math.max(selection.start, selection.end);
+                    const newWaveform = [
+                      ...track.waveform.slice(0, Math.floor(minStart * track.waveform.length)),
+                      ...track.waveform.slice(Math.floor(maxEnd * track.waveform.length))
+                    ];
+                    const newTrack = {
+                      ...track,
+                      waveform: newWaveform,
+                      duration: (track.duration || 40) * (1 - (maxEnd - minStart))
+                    };
+                    setSelection({ start: 0, end: 0 });
+                    onSave(track.id, newTrack);
+                    toast.success("Selection deleted");
+                  } else {
+                    toast.error("Make a selection first to delete");
+                  }
+                }} className="text-muted-foreground hover:text-red-400"><Trash2 className="w-4 h-4" /></Button>
                 <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
                   <Settings2 className="w-4 h-4" /> Zoom
                   <Slider value={[zoom]} min={0.5} max={3} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-24" />
@@ -292,71 +317,72 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     </div>
                   )}
 
-                  {/* Fade In Overlay */}
+                  {/* Fade In/Out Overlays & Handles */}
                   <div 
-                    className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-background to-transparent z-10"
+                    className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none"
                     style={{ width: `${fade.in * 100}%` }}
-                  >
-                    {(activeTool === 'fade' || activeTool === 'smart') && (
-                      <div className="absolute top-0 right-0 w-4 h-full cursor-ew-resize hover:bg-white/20 flex items-center justify-center group"
-                        onPointerDown={(e) => {
-                          e.stopPropagation();
-                          const target = e.currentTarget.parentElement.parentElement;
-                          const rect = target.getBoundingClientRect();
-                          target.setPointerCapture(e.pointerId);
-                          
-                          const handleMove = (moveEvent) => {
-                            const currentX = Math.max(0, Math.min(1 - fade.out, (moveEvent.clientX - rect.left) / rect.width));
-                            setFade(prev => ({ ...prev, in: currentX }));
-                          };
-                          
-                          const handleUp = (upEvent) => {
-                            target.releasePointerCapture(upEvent.pointerId);
-                            target.removeEventListener('pointermove', handleMove);
-                            target.removeEventListener('pointerup', handleUp);
-                          };
-                          
-                          target.addEventListener('pointermove', handleMove);
-                          target.addEventListener('pointerup', handleUp);
-                        }}
-                      >
-                        <div className="w-[2px] h-6 bg-white/50 group-hover:bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    )}
-                  </div>
+                  />
+                  {(activeTool === 'fade' || activeTool === 'smart') && (
+                    <div className="absolute top-0 bottom-0 w-6 cursor-ew-resize hover:bg-white/10 flex items-center justify-center group z-20 pointer-events-auto"
+                      style={{ left: `calc(${fade.in * 100}% - 12px)` }}
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        const target = e.currentTarget;
+                        const container = target.parentElement;
+                        const rect = container.getBoundingClientRect();
+                        target.setPointerCapture(e.pointerId);
+                        
+                        const handleMove = (moveEvent) => {
+                          const currentX = Math.max(0, Math.min(1 - fade.out, (moveEvent.clientX - rect.left) / rect.width));
+                          setFade(prev => ({ ...prev, in: currentX }));
+                        };
+                        
+                        const handleUp = (upEvent) => {
+                          target.releasePointerCapture(upEvent.pointerId);
+                          target.removeEventListener('pointermove', handleMove);
+                          target.removeEventListener('pointerup', handleUp);
+                        };
+                        
+                        target.addEventListener('pointermove', handleMove);
+                        target.addEventListener('pointerup', handleUp);
+                      }}
+                    >
+                      <div className="w-1 h-6 bg-white/50 group-hover:bg-white rounded-full transition-colors shadow-sm" />
+                    </div>
+                  )}
 
-                  {/* Fade Out Overlay */}
                   <div 
-                    className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-background to-transparent z-10"
+                    className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none"
                     style={{ width: `${fade.out * 100}%` }}
-                  >
-                    {(activeTool === 'fade' || activeTool === 'smart') && (
-                      <div className="absolute top-0 left-0 w-4 h-full cursor-ew-resize hover:bg-white/20 flex items-center justify-center group"
-                        onPointerDown={(e) => {
-                          e.stopPropagation();
-                          const target = e.currentTarget.parentElement.parentElement;
-                          const rect = target.getBoundingClientRect();
-                          target.setPointerCapture(e.pointerId);
-                          
-                          const handleMove = (moveEvent) => {
-                            const currentX = Math.max(0, Math.min(1 - fade.in, 1 - ((moveEvent.clientX - rect.left) / rect.width)));
-                            setFade(prev => ({ ...prev, out: currentX }));
-                          };
-                          
-                          const handleUp = (upEvent) => {
-                            target.releasePointerCapture(upEvent.pointerId);
-                            target.removeEventListener('pointermove', handleMove);
-                            target.removeEventListener('pointerup', handleUp);
-                          };
-                          
-                          target.addEventListener('pointermove', handleMove);
-                          target.addEventListener('pointerup', handleUp);
-                        }}
-                      >
-                        <div className="w-[2px] h-6 bg-white/50 group-hover:bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    )}
-                  </div>
+                  />
+                  {(activeTool === 'fade' || activeTool === 'smart') && (
+                    <div className="absolute top-0 bottom-0 w-6 cursor-ew-resize hover:bg-white/10 flex items-center justify-center group z-20 pointer-events-auto"
+                      style={{ right: `calc(${fade.out * 100}% - 12px)` }}
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        const target = e.currentTarget;
+                        const container = target.parentElement;
+                        const rect = container.getBoundingClientRect();
+                        target.setPointerCapture(e.pointerId);
+                        
+                        const handleMove = (moveEvent) => {
+                          const currentX = Math.max(0, Math.min(1 - fade.in, 1 - ((moveEvent.clientX - rect.left) / rect.width)));
+                          setFade(prev => ({ ...prev, out: currentX }));
+                        };
+                        
+                        const handleUp = (upEvent) => {
+                          target.releasePointerCapture(upEvent.pointerId);
+                          target.removeEventListener('pointermove', handleMove);
+                          target.removeEventListener('pointerup', handleUp);
+                        };
+                        
+                        target.addEventListener('pointermove', handleMove);
+                        target.addEventListener('pointerup', handleUp);
+                      }}
+                    >
+                      <div className="w-1 h-6 bg-white/50 group-hover:bg-white rounded-full transition-colors shadow-sm" />
+                    </div>
+                  )}
 
                   {/* Playhead */}
                   {isPlaying && (

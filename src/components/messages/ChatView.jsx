@@ -111,10 +111,10 @@ export default function ChatView({ conversation, messages, currentUser, users, o
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl border-border/50 bg-background/95 backdrop-blur-xl">
-                <DropdownMenuItem onClick={() => setCallState({ type: 'audio' })} className="py-2.5 rounded-lg cursor-pointer">
+                <DropdownMenuItem onClick={() => setCallState({ type: 'audio' })} className="py-2.5 rounded-lg cursor-pointer" aria-label="Audio Call" title="Audio Call">
                   <Phone className="w-4 h-4 mr-2 text-muted-foreground" /> Audio Call
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setCallState({ type: 'video' })} className="py-2.5 rounded-lg cursor-pointer">
+                <DropdownMenuItem onClick={() => setCallState({ type: 'video' })} className="py-2.5 rounded-lg cursor-pointer" aria-label="Video Call" title="Video Call">
                   <Video className="w-4 h-4 mr-2 text-muted-foreground" /> Video Call
                 </DropdownMenuItem>
                 {conversation?.type === "group" && (

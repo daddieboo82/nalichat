@@ -53,7 +53,7 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
               </button>
             ))}
           </div>
-          <Button onClick={handleCreate} disabled={!name.trim() || selected.length < 1} className="w-full rounded-xl bg-primary hover:bg-primary/90">
+          <Button onClick={handleCreate} disabled={!name.trim() || selected.length < 1} className="w-full rounded-xl bg-primary hover:bg-primary/90" aria-label="Create Group Submit" title="Create Group Submit">
             Create Group {selected.length > 0 && `(${selected.length} people)`}
           </Button>
         </div>

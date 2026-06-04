@@ -16,6 +16,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -63,6 +65,8 @@ export default function Studio() {
   const audioElementsRef = useRef({});
   const fileInputRef = useRef(null);
   const [editingTrack, setEditingTrack] = useState(null);
+  const [renamingTrack, setRenamingTrack] = useState(null);
+  const [newTrackName, setNewTrackName] = useState("");
   const [selectedTrackIds, setSelectedTrackIds] = useState([1]);
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
   const [recordingStartTime, setRecordingStartTime] = useState(null);
@@ -982,12 +986,8 @@ export default function Studio() {
                       <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenuItem onSelect={(e) => {
                           e.preventDefault();
-                          setTimeout(() => {
-                            const newName = window.prompt("Enter new track name:", track.name);
-                            if (newName && newName.trim()) {
-                              setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, name: newName.trim() } : t));
-                            }
-                          }, 50);
+                          setRenamingTrack(track);
+                          setNewTrackName(track.name);
                         }}>
                           <PenTool className="w-4 h-4 mr-2" /> Rename
                         </DropdownMenuItem>
@@ -1521,6 +1521,36 @@ export default function Studio() {
         onClose={() => setEditingTrack(null)} 
         onSave={saveTrackEffects}
       />
+
+      <Dialog open={!!renamingTrack} onOpenChange={(open) => !open && setRenamingTrack(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Track</DialogTitle>
+          </DialogHeader>
+          <Input 
+            value={newTrackName} 
+            onChange={(e) => setNewTrackName(e.target.value)} 
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                if (newTrackName.trim()) {
+                  setTracksWithHistory(prev => prev.map(t => t.id === renamingTrack.id ? { ...t, name: newTrackName.trim() } : t));
+                }
+                setRenamingTrack(null);
+              }
+            }}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenamingTrack(null)}>Cancel</Button>
+            <Button onClick={() => {
+              if (newTrackName.trim()) {
+                setTracksWithHistory(prev => prev.map(t => t.id === renamingTrack.id ? { ...t, name: newTrackName.trim() } : t));
+              }
+              setRenamingTrack(null);
+            }}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

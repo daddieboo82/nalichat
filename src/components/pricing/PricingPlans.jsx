@@ -8,30 +8,31 @@ const plans = [
   {
     name: "Free",
     price: "0",
-    description: "Connect with other artists",
+    description: "Discover & collaborate with artists",
     features: [
-      "Unlimited Messaging",
-      "Voice & Video Calls",
-      "1 Studio Project",
-      "File Sharing (2GB)",
+      "Unlimited Messaging & Voice Notes",
+      "Browse & Listen to Tracks",
+      "Create & Share Playlists",
+      "Access Explore & Network",
+      "Basic File Sharing (2GB)",
       "Community Access",
     ],
     cta: "Start Free",
     popular: false,
   },
   {
-    name: "Artist Pro",
-    price: "9.99",
+    name: "Creator",
+    price: "7.99",
     period: "/month",
-    description: "Collaborate & produce",
+    description: "Upload & share your music",
     features: [
-      "Unlimited Messaging",
-      "Priority Notifications",
-      "Unlimited Studio Projects",
-      "Advanced Studio Tools",
-      "File Sharing (100GB)",
-      "AI Mastering (5/month)",
-      "Priority Support",
+      "Everything in Free",
+      "Upload Unlimited Tracks",
+      "Analytics Dashboard",
+      "File Sharing (50GB)",
+      "Custom Artist Profile",
+      "Playlist Management Tools",
+      "Weekly Creator Support",
     ],
     cta: "Subscribe Now",
     popular: true,
@@ -39,24 +40,24 @@ const plans = [
       subscriptionSettings: {
         frequency: "MONTH",
       },
-      title: "Artist Pro - Monthly",
-      description: "Unlimited messaging and collaboration with full studio access",
+      title: "Creator - Monthly",
+      description: "Upload and share your music with full creator tools",
     },
   },
   {
-    name: "Studio Elite",
-    price: "24.99",
+    name: "Pro Studio",
+    price: "19.99",
     period: "/month",
-    description: "Team collaboration & mastery",
+    description: "Advanced production tools",
     features: [
-      "Everything in Pro",
-      "Team Messaging (up to 5)",
-      "Team Collaborators (5)",
-      "Unlimited AI Mastering",
-      "Unlimited File Sharing",
-      "Custom Branding",
-      "Advanced Analytics",
-      "Dedicated Support",
+      "Everything in Creator",
+      "Multi-Track Studio Projects",
+      "AI-Powered Mastering (10/month)",
+      "File Sharing (500GB)",
+      "Collaboration Tools (up to 3 people)",
+      "Advanced Analytics & Insights",
+      "Priority Support",
+      "Export Stems & Masters",
     ],
     cta: "Subscribe Now",
     popular: false,
@@ -64,8 +65,8 @@ const plans = [
       subscriptionSettings: {
         frequency: "MONTH",
       },
-      title: "Studio Elite - Monthly",
-      description: "Unlimited messaging and full production suite for teams",
+      title: "Pro Studio - Monthly",
+      description: "Full production suite with AI mastering and collaboration",
     },
   },
 ];
@@ -112,7 +113,7 @@ export default function PricingPlans() {
           Simple, Transparent Pricing
         </h2>
         <p className="text-lg text-muted-foreground">
-          Unlimited messaging on all plans. Upgrade for studio & production tools.
+          Messaging is always free. Upgrade to share music and access studio tools.
         </p>
       </div>
 

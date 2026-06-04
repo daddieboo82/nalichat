@@ -651,7 +651,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-lg", isPlaying ? "text-primary bg-primary/20 shadow-inner" : "text-muted-foreground hover:text-foreground hover:bg-secondary")} onClick={() => setIsPlaying(!isPlaying)}>
                   <Play className="w-4 h-4 fill-current" />
                 </Button>
-                <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-lg", !isPlaying ? "text-muted-foreground bg-secondary shadow-inner" : "text-muted-foreground hover:text-foreground hover:bg-secondary")} onClick={() => setIsPlaying(false)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setIsPlaying(false)}>
                   <Square className="w-4 h-4 fill-current" />
                 </Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(Math.min(track?.duration || 40, playhead + 5))}>

@@ -962,7 +962,8 @@ export default function Studio() {
                   "border-b border-border/40 p-3 flex flex-col justify-between transition-all cursor-pointer border-l-4",
                   track.showAutomation ? "h-44" : "h-28",
                   track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40",
-                  selectedTrackIds.includes(track.id) ? "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]" : "border-l-transparent"
+                  selectedTrackIds.includes(track.id) ? "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]" : "border-l-transparent",
+                  tracks.some(t => t.solo) && !track.solo && "opacity-40 grayscale"
                 )}
               >
                 <div className="flex items-center justify-between">
@@ -979,11 +980,14 @@ export default function Studio() {
                         <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="w-6 h-6 text-muted-foreground hover:text-foreground" title="Track Options"><Settings2 className="w-3.5 h-3.5" /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenuItem onClick={() => {
-                          const newName = prompt("Enter new track name:", track.name);
-                          if (newName) {
-                            setTracksWithHistory(tracks.map(t => t.id === track.id ? { ...t, name: newName } : t));
-                          }
+                        <DropdownMenuItem onSelect={(e) => {
+                          e.preventDefault();
+                          setTimeout(() => {
+                            const newName = window.prompt("Enter new track name:", track.name);
+                            if (newName && newName.trim()) {
+                              setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, name: newName.trim() } : t));
+                            }
+                          }, 50);
                         }}>
                           <PenTool className="w-4 h-4 mr-2" /> Rename
                         </DropdownMenuItem>
@@ -1118,7 +1122,8 @@ export default function Studio() {
                     "border-b border-border/20 relative group transition-all", 
                     track.showAutomation ? "h-44" : "h-28",
                     track.muted ? "opacity-30" : "",
-                    selectedTrackIds.includes(track.id) ? "bg-primary/15 shadow-[inset_0_0_30px_hsl(var(--primary)/0.1)]" : ""
+                    selectedTrackIds.includes(track.id) ? "bg-primary/15 shadow-[inset_0_0_30px_hsl(var(--primary)/0.1)]" : "",
+                    tracks.some(t => t.solo) && !track.solo && "opacity-40 grayscale"
                   )}
                 >
                   {/* Grid lines */}

@@ -241,7 +241,8 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                     "rounded-xl border transition-all flex items-start gap-2",
                     selectedTrackIds.includes(track.id)
                       ? "border-primary/60 ring-1 ring-primary/20 bg-primary/5"
-                      : "border-border/50 bg-card/50 hover:border-primary/30 hover:bg-card/70"
+                      : "border-border/50 bg-card/50 hover:border-primary/30 hover:bg-card/70",
+                    tracks.some(t => t.solo) && !track.solo && "opacity-40 grayscale"
                   )}
                   style={{ padding: "10px 12px" }}
                 >

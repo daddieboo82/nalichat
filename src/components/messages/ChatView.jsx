@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, ArrowLeft, Search as SearchIcon, Phone, Video, Info } from "lucide-react";
+import { MessageSquare, ArrowLeft, Search as SearchIcon, Phone, Video, Info, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import GroupInfoPanel from "./GroupInfoPanel";
 import TypingIndicator from "./TypingIndicator";
 import ThreadPanel from "./ThreadPanel";
 import MessageSearch from "./MessageSearch";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function ChatView({ conversation, messages, currentUser, users, onSendMessage, onReact, onBack }) {
   const [replyTo, setReplyTo] = useState(null);
@@ -17,7 +18,6 @@ export default function ChatView({ conversation, messages, currentUser, users, o
   const [threadMessage, setThreadMessage] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
-  const [searchScrollTarget, setSearchScrollTarget] = useState(null);
   const scrollRef = useRef(null);
   const prevLenRef = useRef(0);
   const markedRef = useRef(new Set());
@@ -32,21 +32,12 @@ export default function ChatView({ conversation, messages, currentUser, users, o
     prevLenRef.current = messages.length;
   }, [messages]);
 
-  // Mark incoming messages as read
   useEffect(() => {
     if (!currentUser || !messages.length) return;
-    const unread = messages.filter(m =>
-      m.sender_id !== currentUser.id &&
-      !m.read_by?.includes(currentUser.id) &&
-      !markedRef.current.has(m.id)
-    );
+    const unread = messages.filter(m => m.sender_id !== currentUser.id && !m.read_by?.includes(currentUser.id) && !markedRef.current.has(m.id));
     if (!unread.length) return;
     unread.forEach(m => markedRef.current.add(m.id));
-    unread.forEach(m => {
-      base44.entities.Message.update(m.id, {
-        read_by: [...(m.read_by || []), currentUser.id]
-      });
-    });
+    unread.forEach(m => base44.entities.Message.update(m.id, { read_by: [...(m.read_by || []), currentUser.id] }));
   }, [messages, currentUser]);
 
   const getOtherUser = () => {
@@ -56,42 +47,19 @@ export default function ChatView({ conversation, messages, currentUser, users, o
   };
 
   const other = getOtherUser();
-  const displayName = conversation?.type === "group"
-    ? conversation.name
-    : (other?.display_name || other?.full_name || "Unknown");
+  const displayName = conversation?.type === "group" ? conversation.name : (other?.display_name || other?.full_name || "Unknown");
   const avatarSrc = conversation?.type === "group" ? conversation?.avatar_url : other?.avatar_url;
-  const subtitle = conversation?.type === "group"
-    ? `${conversation.participant_ids?.length || 0} members`
-    : (other?.role ? other.role.charAt(0).toUpperCase() + other.role.slice(1) : "");
+  const subtitle = conversation?.type === "group" 
+    ? `${conversation.participant_ids?.length || 0} members` 
+    : (other?.is_online ? "Active now" : (other?.role ? other.role.charAt(0).toUpperCase() + other.role.slice(1) : "Offline"));
 
-  if (!conversation) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground relative overflow-hidden" style={{ background: "hsl(240 10% 3.5%)" }}>
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        </div>
-        <div className="text-center relative z-10">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-pink-500/20 border border-primary/20 flex items-center justify-center mx-auto mb-5 shadow-2xl shadow-primary/10">
-            <MessageSquare className="w-11 h-11 text-primary/60" />
-          </div>
-          <p className="font-heading font-bold text-2xl mb-2">Your Messages</p>
-          <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">Select a conversation from the left, or start a new one to connect with artists</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Filter out thread replies — they show in the ThreadPanel only
   const topLevelMessages = messages.filter(m => !m.thread_id);
-
-  // Group messages by sender for consecutive grouping
   const enriched = topLevelMessages.map((msg, i) => {
     const prev = topLevelMessages[i - 1];
     const showAvatar = !prev || prev.sender_id !== msg.sender_id;
     return { ...msg, showAvatar };
   });
 
-  // Group by date
   const groups = [];
   let lastDate = null;
   for (const msg of enriched) {
@@ -108,81 +76,62 @@ export default function ChatView({ conversation, messages, currentUser, users, o
   const avatarGradient = gradients[(displayName?.charCodeAt(0) || 0) % gradients.length];
 
   return (
-    <div className="flex-1 flex overflow-hidden">
-      <div className="flex-1 flex flex-col overflow-hidden" style={{ background: "hsl(240 10% 3.5%)" }}>
-      {/* Header */}
-      <div className="h-16 border-b border-border/50 flex items-center px-3 sm:px-5 gap-2 sm:gap-3 shrink-0 backdrop-blur-xl" style={{ background: "hsl(240 10% 5% / 0.9)" }}>
-        {/* Back button — mobile only */}
-        <button onClick={onBack} className="sm:hidden w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors shrink-0 touch-manipulation">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <Avatar className="w-10 h-10 shrink-0 shadow-lg">
-          <AvatarImage src={avatarSrc} />
-          <AvatarFallback className={cn("font-bold text-sm bg-gradient-to-br text-white", avatarGradient)}>
-            {displayName?.[0]?.toUpperCase() || "?"}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <p className="font-heading font-semibold text-sm truncate">{displayName}</p>
-          {subtitle && <p className="text-[10px] text-muted-foreground/70 capitalize">{subtitle}</p>}
-        </div>
+    <div className="flex-1 flex flex-col overflow-hidden relative">
+      {/* Floating Header */}
+      <div className="absolute top-0 left-0 right-0 z-20 p-2 sm:p-4 pointer-events-none">
+        <div className="h-16 bg-background/80 backdrop-blur-2xl border border-border/50 rounded-3xl flex items-center px-4 gap-3 shadow-xl pointer-events-auto transition-all">
+          <button onClick={onBack} className="sm:hidden w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground bg-secondary/80 hover:bg-secondary transition-colors shrink-0">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          
+          <Avatar className="w-10 h-10 shadow-md">
+            <AvatarImage src={avatarSrc} />
+            <AvatarFallback className={cn("font-bold text-sm text-white bg-gradient-to-br", avatarGradient)}>
+              {displayName?.[0]?.toUpperCase() || "?"}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => conversation?.type === "group" && setShowGroupInfo(true)}>
+            <p className="font-heading font-semibold text-[15px] leading-tight truncate">{displayName}</p>
+            <p className={cn("text-[11px] font-medium leading-tight truncate", other?.is_online ? "text-green-500" : "text-muted-foreground")}>{subtitle}</p>
+          </div>
 
-        {/* Quick actions */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-8 h-8 text-muted-foreground hover:bg-secondary/60"
-            onClick={() => setShowSearch(true)}
-            title="Search"
-          >
-            <SearchIcon className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-8 h-8 text-muted-foreground hover:bg-secondary/60 hidden sm:flex"
-            title="Voice call"
-          >
-            <Phone className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-8 h-8 text-muted-foreground hover:bg-secondary/60 hidden sm:flex"
-            title="Video call"
-          >
-            <Video className="w-4 h-4" />
-          </Button>
-          {conversation?.type === "group" && (
-            <button
-              onClick={() => setShowGroupInfo(v => !v)}
-              className={cn("w-8 h-8 rounded-xl flex items-center justify-center transition-all", showGroupInfo ? "bg-primary/20 text-primary shadow-sm" : "hover:bg-secondary/60 text-muted-foreground")}
-              title="Group info"
-            >
-              <Info className="w-4 h-4" />
-            </button>
-          )}
+          <div className="flex items-center gap-1.5">
+            <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full text-muted-foreground hover:bg-secondary/80" onClick={() => setShowSearch(true)}>
+              <SearchIcon className="w-4 h-4" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full text-muted-foreground hover:bg-secondary/80">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl border-border/50 bg-background/95 backdrop-blur-xl">
+                <DropdownMenuItem className="py-2.5 rounded-lg cursor-pointer">
+                  <Phone className="w-4 h-4 mr-2 text-muted-foreground" /> Audio Call
+                </DropdownMenuItem>
+                <DropdownMenuItem className="py-2.5 rounded-lg cursor-pointer">
+                  <Video className="w-4 h-4 mr-2 text-muted-foreground" /> Video Call
+                </DropdownMenuItem>
+                {conversation?.type === "group" && (
+                  <DropdownMenuItem onClick={() => setShowGroupInfo(true)} className="py-2.5 rounded-lg cursor-pointer text-primary focus:text-primary">
+                    <Info className="w-4 h-4 mr-2" /> Group Info
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
-      {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-0.5">
-        {groups.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <MessageSquare className="w-8 h-8 opacity-30" />
-            </div>
-            <p className="text-sm font-medium">No messages yet</p>
-            <p className="text-xs text-muted-foreground/60">Be the first to say hello! 👋</p>
-          </div>
-        )}
+      {/* Messages Area */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 pt-24 pb-32 space-y-0.5 custom-scrollbar">
         {groups.map((item, i) =>
           item.type === "date" ? (
-            <div key={item.key} className="flex items-center gap-3 my-5">
-              <div className="flex-1 h-px bg-border/50" />
-              <span className="text-[10px] text-muted-foreground/50 font-medium px-3 py-1 rounded-full bg-secondary/30 border border-border/30">{item.label}</span>
-              <div className="flex-1 h-px bg-border/50" />
+            <div key={item.key} className="flex justify-center my-6 sticky top-24 z-10 pointer-events-none">
+              <span className="text-[10px] text-muted-foreground font-semibold px-3 py-1 rounded-full bg-background/60 backdrop-blur-md border border-border/30 shadow-sm uppercase tracking-wider">
+                {item.label}
+              </span>
             </div>
           ) : (
             <MessageBubble
@@ -195,9 +144,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
               onOpenThread={setThreadMessage}
               users={users}
               onCopy={() => navigator.clipboard.writeText(item.text || "")}
-              onDelete={async (id) => {
-                await base44.entities.Message.delete(id);
-              }}
+              onDelete={async (id) => await base44.entities.Message.delete(id)}
               currentUser={currentUser}
             />
           )
@@ -206,49 +153,39 @@ export default function ChatView({ conversation, messages, currentUser, users, o
 
       {/* Typing indicator */}
       {typingUsers.length > 0 && (
-        <div className="px-5 py-2 text-xs text-muted-foreground flex items-center gap-1.5">
+        <div className="absolute bottom-24 left-6 z-10 px-4 py-2 text-[11px] font-medium text-muted-foreground bg-background/80 backdrop-blur-md rounded-full border border-border/50 shadow-sm flex items-center gap-2">
           <TypingIndicator />
-          <span>{typingUsers.map(u => u.display_name || u.full_name).join(", ")} typing...</span>
+          <span>{typingUsers.map(u => u.display_name || u.full_name).join(", ")} typing</span>
         </div>
       )}
 
-      {/* Input */}
-      <ChatInput
-        onSend={onSendMessage}
-        replyTo={replyTo}
-        onCancelReply={() => setReplyTo(null)}
-        onTyping={() => {
-          // Simulate typing broadcast (in production, send via WebSocket)
-          clearTimeout(typingTimeoutRef.current);
-          typingTimeoutRef.current = setTimeout(() => {
-            setTypingUsers([]);
-          }, 2000);
-        }}
-      />
+      {/* Floating Input Area */}
+      <div className="absolute bottom-0 left-0 right-0 z-20 p-2 sm:p-4 pointer-events-none">
+        <div className="pointer-events-auto w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-hidden bg-background/90 backdrop-blur-2xl border border-border/50">
+          <ChatInput
+            onSend={onSendMessage}
+            replyTo={replyTo}
+            onCancelReply={() => setReplyTo(null)}
+            onTyping={() => {
+              clearTimeout(typingTimeoutRef.current);
+              typingTimeoutRef.current = setTimeout(() => setTypingUsers([]), 2000);
+            }}
+          />
+        </div>
       </div>
+
+      {/* Panels */}
       {showGroupInfo && conversation?.type === "group" && (
-        <GroupInfoPanel
-          conversation={conversation}
-          users={users}
-          currentUser={currentUser}
-          onClose={() => setShowGroupInfo(false)}
-        />
+        <GroupInfoPanel conversation={conversation} users={users} currentUser={currentUser} onClose={() => setShowGroupInfo(false)} />
       )}
       {threadMessage && (
-        <ThreadPanel
-          parentMessage={threadMessage}
-          currentUser={currentUser}
-          onClose={() => setThreadMessage(null)}
-        />
+        <ThreadPanel parentMessage={threadMessage} currentUser={currentUser} onClose={() => setThreadMessage(null)} />
       )}
       {showSearch && (
         <MessageSearch
           messages={messages}
           onClose={() => setShowSearch(false)}
-          onSelectMessage={(msg) => {
-            setSearchScrollTarget(msg.id);
-            scrollRef.current?.scrollIntoView?.({ behavior: "smooth" });
-          }}
+          onSelectMessage={(msg) => scrollRef.current?.scrollIntoView({ behavior: "smooth" })}
           users={users}
         />
       )}
@@ -261,5 +198,5 @@ function formatDateLabel(date) {
   const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
   if (date.toDateString() === today.toDateString()) return "Today";
   if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
-  return date.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }

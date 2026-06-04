@@ -1,35 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, MessageSquare, Users, Mail, Zap } from "lucide-react";
+import { Search, Users, Hash, UserPlus, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
-export default function ConversationList({ conversations, selectedId, onSelect, onNewDM, onNewGroup, onNewExternal, users, currentUserId }) {
+export default function ConversationList({ conversations, myConversations, selectedId, onSelect, users, currentUserId, onStartDM }) {
   const [search, setSearch] = useState("");
-  const [unreadCounts, setUnreadCounts] = useState({});
-
-  // Calculate unread counts for each conversation
-  useEffect(() => {
-    const calculateUnread = async () => {
-      const counts = {};
-      for (const conv of conversations) {
-        const msgs = await base44.entities.Message.filter({ conversation_id: conv.id });
-        counts[conv.id] = msgs.filter(m => 
-          m.sender_id !== currentUserId && !m.read_by?.includes(currentUserId)
-        ).length;
-      }
-      setUnreadCounts(counts);
-    };
-    if (conversations.length > 0) calculateUnread();
-  }, [conversations, currentUserId]);
+  const [filter, setFilter] = useState("all"); // all, unread, groups
 
   const getOtherUser = (conv) => {
     if (conv.type === "group") return null;
@@ -37,145 +17,189 @@ export default function ConversationList({ conversations, selectedId, onSelect, 
     return users?.find(u => u.id === otherId);
   };
 
-  const filtered = conversations.filter(conv => {
-    const other = getOtherUser(conv);
-    const name = conv.type === "group" ? conv.name : (other?.display_name || other?.full_name || "");
-    return name.toLowerCase().includes(search.toLowerCase());
-  });
+  // Searching applies globally to find NEW people to message too
+  const searchResults = useMemo(() => {
+    const term = search.toLowerCase();
+    
+    // Filter existing chats
+    let filteredChats = myConversations.filter(conv => {
+      const other = getOtherUser(conv);
+      const name = conv.type === "group" ? conv.name : (other?.display_name || other?.full_name || "");
+      if (!name.toLowerCase().includes(term)) return false;
+      if (filter === "groups" && conv.type !== "group") return false;
+      return true;
+    });
 
-  // Gradient avatars for users without photos
+    // Discover public groups
+    const discoverGroups = term ? conversations.filter(c => 
+      c.type === "group" && 
+      !c.participant_ids?.includes(currentUserId) &&
+      c.name?.toLowerCase().includes(term)
+    ) : [];
+
+    // Find new users to DM
+    const discoverUsers = term ? users.filter(u => 
+      u.id !== currentUserId &&
+      (u.display_name?.toLowerCase().includes(term) || u.full_name?.toLowerCase().includes(term)) &&
+      !myConversations.some(c => c.type === "dm" && c.participant_ids?.includes(u.id))
+    ) : [];
+
+    return { filteredChats, discoverGroups, discoverUsers };
+  }, [search, filter, myConversations, conversations, users, currentUserId]);
+
   const gradients = [
-    "from-primary to-pink-500",
-    "from-accent to-cyan-400",
-    "from-yellow-500 to-orange-500",
-    "from-green-400 to-emerald-600",
-    "from-purple-500 to-indigo-500",
-    "from-rose-500 to-pink-500",
+    "from-primary to-pink-500", "from-accent to-cyan-400", "from-yellow-500 to-orange-500",
+    "from-green-400 to-emerald-600", "from-purple-500 to-indigo-500", "from-rose-500 to-pink-500",
   ];
   const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.length];
 
   return (
-    <div className="w-full sm:w-[300px] border-r border-border flex flex-col shrink-0" style={{ background: "hsl(240 10% 5%)" }}>
-      {/* Header */}
-      <div className="px-4 pt-5 pb-3 border-b border-border/40">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center">
-              <MessageSquare className="w-3.5 h-3.5 text-white" />
-            </div>
-            <h2 className="text-base font-heading font-bold tracking-tight">Messages</h2>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="w-8 h-8 rounded-xl bg-primary/15 text-primary flex items-center justify-center hover:bg-primary/25 transition-all hover:scale-105 active:scale-95">
-                <Plus className="w-4 h-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-card border-border shadow-2xl">
-              <DropdownMenuItem onClick={onNewDM} className="gap-2.5 cursor-pointer py-2.5">
-                <div className="w-6 h-6 rounded-md bg-primary/15 flex items-center justify-center">
-                  <MessageSquare className="w-3.5 h-3.5 text-primary" />
-                </div>
-                New Message
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onNewGroup} className="gap-2.5 cursor-pointer py-2.5">
-                <div className="w-6 h-6 rounded-md bg-accent/15 flex items-center justify-center">
-                  <Users className="w-3.5 h-3.5 text-accent" />
-                </div>
-                New Group
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onNewExternal} className="gap-2.5 cursor-pointer py-2.5">
-                <div className="w-6 h-6 rounded-md bg-yellow-500/15 flex items-center justify-center">
-                  <Zap className="w-3.5 h-3.5 text-yellow-500" />
-                </div>
-                Email / SMS
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Search Bar */}
+      <div className="px-6 mb-4 shrink-0">
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search conversations..."
-            className="pl-9 bg-secondary/30 border-border/40 rounded-xl h-9 text-sm focus:border-primary/50 transition-colors"
+            placeholder="Search messages or find people..."
+            className="pl-10 pr-4 py-6 bg-secondary/40 border-transparent rounded-2xl shadow-inner focus:bg-background/80 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all text-sm"
           />
         </div>
       </div>
 
-      {/* List */}
-      <div className="flex-1 overflow-y-auto py-1.5">
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 p-6">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <MessageSquare className="w-7 h-7 opacity-30" />
-            </div>
-            <p className="text-xs text-center leading-relaxed">{search ? `No results for "${search}"` : "No conversations yet.\nTap + to start one!"}</p>
-          </div>
-        ) : (
-          <div className="px-2 space-y-0.5">
-            {filtered.map(conv => {
-              const other = getOtherUser(conv);
-              const displayName = conv.type === "group" ? conv.name : (other?.display_name || other?.full_name || "Unknown");
-              const avatar = conv.type === "group" ? conv.avatar_url : other?.avatar_url;
-              const isSelected = selectedId === conv.id;
-              const gradient = getGradient(displayName);
+      {/* Filters */}
+      {!search && (
+        <div className="px-6 mb-4 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
+          {["all", "groups"].map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={cn(
+                "px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-all whitespace-nowrap",
+                filter === f 
+                  ? "bg-primary text-primary-foreground shadow-md" 
+                  : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              )}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      )}
 
-              return (
-                <button
-                  key={conv.id}
-                  onClick={() => onSelect(conv.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left group",
-                    isSelected
-                      ? "bg-primary/15 shadow-sm"
-                      : "hover:bg-secondary/40"
-                  )}
-                >
-                  <div className="relative shrink-0">
-                    <Avatar className="w-11 h-11 shadow-md">
-                      <AvatarImage src={avatar} />
-                      <AvatarFallback className={cn("font-bold text-sm bg-gradient-to-br text-white", gradient)}>
-                        {displayName?.[0]?.toUpperCase() || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    {conv.type === "group" && (
-                      <div className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 bg-accent rounded-full flex items-center justify-center border-2 border-background">
-                        <Users className="w-2 h-2 text-white" />
-                      </div>
-                    )}
-                    {/* Online status dot */}
-                    {conv.type !== "group" && other && (
-                      <div className={cn("absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background transition-opacity", other.is_online ? "bg-green-500 opacity-100" : "bg-muted-foreground/40 opacity-60")} title={other.is_online ? "Online" : "Offline"} />
-                    )}
+      {/* List */}
+      <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-1 custom-scrollbar">
+        {searchResults.filteredChats.length === 0 && !search && (
+          <div className="text-center py-10 px-4 text-muted-foreground">
+            <p className="text-sm">No conversations yet.</p>
+            <p className="text-xs mt-1 opacity-70">Start one by tapping the + button above.</p>
+          </div>
+        )}
+
+        {/* Existing Chats */}
+        {searchResults.filteredChats.map(conv => {
+          const other = getOtherUser(conv);
+          const displayName = conv.type === "group" ? conv.name : (other?.display_name || other?.full_name || "Unknown");
+          const avatar = conv.type === "group" ? conv.avatar_url : other?.avatar_url;
+          const isSelected = selectedId === conv.id;
+          const gradient = getGradient(displayName);
+
+          return (
+            <button
+              key={conv.id}
+              onClick={() => onSelect(conv.id)}
+              className={cn(
+                "w-full flex items-center gap-4 p-3 rounded-2xl transition-all text-left group relative",
+                isSelected
+                  ? "bg-background/80 shadow-md border border-border/50 z-10"
+                  : "hover:bg-secondary/40 border border-transparent"
+              )}
+            >
+              <div className="relative shrink-0">
+                <Avatar className="w-12 h-12 shadow-sm">
+                  <AvatarImage src={avatar} />
+                  <AvatarFallback className={cn("font-bold text-sm bg-gradient-to-br text-white", gradient)}>
+                    {displayName?.[0]?.toUpperCase() || "?"}
+                  </AvatarFallback>
+                </Avatar>
+                {conv.type === "group" && (
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-background rounded-full flex items-center justify-center shadow-sm">
+                    <Users className="w-3 h-3 text-accent" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline gap-1">
-                      <p className={cn("text-sm font-semibold truncate", isSelected ? "text-primary" : "text-foreground")}>{displayName}</p>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {unreadCounts[conv.id] > 0 && (
-                          <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground">
-                            {unreadCounts[conv.id] > 99 ? "99+" : unreadCounts[conv.id]}
-                          </div>
-                        )}
-                        {conv.last_message_at && (
-                          <span className="text-[10px] text-muted-foreground/60">
-                            {formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: false })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground/70 truncate mt-0.5 leading-snug">
-                      {conv.last_message_text || <span className="italic opacity-60">Start the conversation</span>}
-                    </p>
-                  </div>
-                  {isSelected && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                )}
+                {conv.type !== "group" && other?.is_online && (
+                  <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-[2.5px] border-background" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-baseline mb-0.5">
+                  <p className={cn("font-semibold truncate pr-2 text-[15px]", isSelected ? "text-primary" : "text-foreground")}>
+                    {displayName}
+                  </p>
+                  {conv.last_message_at && (
+                    <span className={cn("text-[10px] shrink-0 font-medium", isSelected ? "text-primary/70" : "text-muted-foreground/60")}>
+                      {formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: false }).replace('about ','').replace('less than a minute','now')}
+                    </span>
                   )}
-                </button>
-              );
-            })}
+                </div>
+                <p className={cn("text-xs truncate leading-snug", isSelected ? "text-foreground/80" : "text-muted-foreground/80")}>
+                  {conv.last_message_text || <span className="italic opacity-60">Start chatting...</span>}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+
+        {/* Global Search Results (People / Public Groups) */}
+        {search && (searchResults.discoverUsers.length > 0 || searchResults.discoverGroups.length > 0) && (
+          <div className="pt-4 mt-4 border-t border-border/50">
+            <h3 className="text-xs font-bold text-muted-foreground/60 uppercase tracking-wider mb-2 px-3">Discover</h3>
+            
+            {searchResults.discoverUsers.map(user => (
+              <button
+                key={user.id}
+                onClick={() => { onStartDM(user); setSearch(""); }}
+                className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-secondary/40 transition-all text-left group"
+              >
+                <Avatar className="w-12 h-12 shadow-sm opacity-80 group-hover:opacity-100 transition-opacity">
+                  <AvatarImage src={user.avatar_url} />
+                  <AvatarFallback className={cn("bg-gradient-to-br text-white", getGradient(user.display_name || user.full_name))}>
+                    {(user.display_name || user.full_name)?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{user.display_name || user.full_name}</p>
+                  <p className="text-xs text-primary font-medium mt-0.5 flex items-center gap-1">
+                    <UserPlus className="w-3 h-3" /> Start conversation
+                  </p>
+                </div>
+              </button>
+            ))}
+
+            {searchResults.discoverGroups.map(room => (
+              <button
+                key={room.id}
+                onClick={async () => {
+                  await base44.entities.Conversation.update(room.id, {
+                    participant_ids: [...new Set([...(room.participant_ids || []), currentUserId])]
+                  });
+                  onSelect(room.id);
+                  setSearch("");
+                }}
+                className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-secondary/40 transition-all text-left group"
+              >
+                <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
+                  <Hash className="w-5 h-5 text-accent" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{room.name}</p>
+                  <p className="text-xs text-accent font-medium mt-0.5 flex items-center gap-1">
+                    Join public room
+                  </p>
+                </div>
+              </button>
+            ))}
           </div>
         )}
       </div>

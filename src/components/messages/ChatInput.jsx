@@ -140,8 +140,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
 
   return (
     <div
-      className={cn("border-t border-border/40 backdrop-blur-xl shrink-0 transition-all duration-300", dragOver && "bg-primary/5 border-primary/40")}
-      style={{ background: "hsl(240 10% 5% / 0.95)" }}
+      className={cn("w-full transition-all duration-300", dragOver && "bg-primary/5")}
       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}

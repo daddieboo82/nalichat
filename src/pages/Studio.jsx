@@ -16,7 +16,7 @@ import UpgradeModal from "@/components/billing/UpgradeModal";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useOnboarding } from "@/lib/OnboardingContext";
-import TutorialTooltip from "@/components/onboarding/TutorialTooltip";
+
 
 const statusColors = {
   draft: "bg-muted text-muted-foreground",
@@ -235,14 +235,6 @@ export default function Studio() {
             }}>
               <DialogTrigger asChild>
                 <div className="relative">
-                  {showStudioTip && (
-                    <TutorialTooltip
-                      title="Create a Project"
-                      description="Start by making a new project to organize your tracks"
-                      position="bottom"
-                      onDismiss={() => setShowStudioTip(false)}
-                    />
-                  )}
                   <Button size="icon" variant="ghost" className="rounded-xl w-8 h-8 hover:bg-primary/20 hover:text-primary transition-all hover:scale-105">
                     <Plus className="w-4 h-4" />
                   </Button>

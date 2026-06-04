@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Image as ImageIcon, Music, Loader2, Save, Wand2, Upload } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Music, Loader2, Save, Wand2, Upload, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
@@ -85,6 +85,26 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
       setSelectedPost(null);
     }
   });
+
+  const handleDownload = async () => {
+    const imageUrl = generatedImage || selectedPost?.image_url;
+    if (!imageUrl) return;
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedPost?.title || 'cover'}-art.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to download image");
+    }
+  };
 
   const handleFileUpload = async (event) => {
     const file = event.target.files?.[0];
@@ -188,10 +208,10 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
             />
             
             {!generatedImage ? (
-              <div className="flex gap-4 w-full">
+              <div className="flex flex-wrap gap-3 w-full">
                 <Button 
                   size="lg" 
-                  className="flex-[2] h-14 text-lg gap-2 bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/25 text-white"
+                  className="flex-[2] min-w-[140px] h-14 text-lg gap-2 bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/25 text-white"
                   onClick={() => selectedPost && generateArtMutation.mutate(selectedPost)}
                   disabled={!selectedPost || generateArtMutation.isPending || isUploading}
                 >
@@ -202,20 +222,33 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                 <Button 
                   variant="outline"
                   size="lg" 
-                  className="flex-1 h-14 gap-2 border-primary/50 text-primary hover:bg-primary/10 bg-transparent"
+                  className="flex-1 min-w-[100px] h-14 gap-2 border-primary/50 text-primary hover:bg-primary/10 bg-transparent"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={!selectedPost || generateArtMutation.isPending || isUploading}
                 >
                   {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                   Upload
                 </Button>
+
+                {selectedPost?.image_url && (
+                  <Button 
+                    variant="outline"
+                    size="lg" 
+                    className="flex-1 min-w-[100px] h-14 gap-2 bg-transparent"
+                    onClick={handleDownload}
+                    disabled={generateArtMutation.isPending || isUploading}
+                  >
+                    <Download className="w-5 h-5" />
+                    Export
+                  </Button>
+                )}
               </div>
             ) : (
-              <div className="flex gap-4 w-full">
+              <div className="flex flex-wrap gap-3 w-full">
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="flex-[1.5] h-12 gap-2 bg-transparent"
+                  className="flex-1 min-w-[100px] h-12 gap-2 bg-transparent"
                   onClick={() => generateArtMutation.mutate(selectedPost)}
                   disabled={generateArtMutation.isPending || saveArtMutation.isPending || isUploading}
                 >
@@ -225,7 +258,7 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                 <Button 
                   variant="outline"
                   size="lg" 
-                  className="flex-[1.5] h-12 gap-2 bg-transparent"
+                  className="flex-1 min-w-[100px] h-12 gap-2 bg-transparent"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={generateArtMutation.isPending || saveArtMutation.isPending || isUploading}
                 >
@@ -233,13 +266,23 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                   Upload
                 </Button>
                 <Button 
+                  variant="outline"
                   size="lg" 
-                  className="flex-[2] h-12 gap-2 bg-primary hover:bg-primary/90 text-white"
+                  className="flex-1 min-w-[100px] h-12 gap-2 bg-transparent"
+                  onClick={handleDownload}
+                  disabled={generateArtMutation.isPending || saveArtMutation.isPending || isUploading}
+                >
+                  <Download className="w-4 h-4" />
+                  Export
+                </Button>
+                <Button 
+                  size="lg" 
+                  className="flex-[2] min-w-[140px] h-12 gap-2 bg-primary hover:bg-primary/90 text-white"
                   onClick={() => saveArtMutation.mutate()}
                   disabled={saveArtMutation.isPending || isUploading}
                 >
                   {saveArtMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  Save
+                  Save to Track
                 </Button>
               </div>
             )}

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen, FolderArchive, X, CheckSquare, Plus, ChevronRight, Play, Pause } from "lucide-react";
+import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen, FolderArchive, X, CheckSquare, Plus, ChevronRight, Play, Pause, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -76,6 +76,30 @@ function FileDownloadButton({ file }) {
       title="Download file"
     >
       <Download className="w-4 h-4" />
+    </Button>
+  );
+}
+
+function FileShareButton({ file }) {
+  const { toast } = useToast();
+  
+  const handleShare = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/files?download=${file.id}`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "Link copied", description: "Share link copied to clipboard" });
+  };
+
+  return (
+    <Button 
+      size="icon" 
+      variant="ghost" 
+      className="w-8 h-8 rounded-lg hover:bg-primary/20 hover:text-primary transition-colors" 
+      onClick={handleShare}
+      title="Copy share link"
+    >
+      <Share2 className="w-4 h-4" />
     </Button>
   );
 }
@@ -431,6 +455,7 @@ export default function Files() {
                           )}
                         </div>
                         <div className="flex gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                          <FileShareButton file={file} />
                           <FileDownloadButton file={file} />
                           {file.uploader_id === currentUser?.id && (
                             <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg text-destructive" onClick={() => deleteMutation.mutate(file.id)}>
@@ -507,6 +532,7 @@ export default function Files() {
                       )}
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <FileShareButton file={file} />
                       <FileDownloadButton file={file} />
                       {file.uploader_id === currentUser?.id && (
                         <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg text-destructive" onClick={() => deleteMutation.mutate(file.id)}>

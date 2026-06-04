@@ -43,8 +43,8 @@ export default function Studio() {
   });
   
   const [tracks, setTracks] = useState([
-    { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120) },
-    { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120) },
+    { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120), startTime: 0, duration: 40 },
+    { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120), startTime: 0, duration: 40 },
   ]);
 
   useEffect(() => {
@@ -218,7 +218,14 @@ export default function Studio() {
         
         setTracks(prev => prev.map(t => {
           if (t.armed) {
-            return { ...t, waveform: realWaveform, armed: false, audioUrl, startTime: recordingStartTime !== null ? recordingStartTime : currentTime };
+            return { 
+              ...t, 
+              waveform: realWaveform, 
+              armed: false, 
+              audioUrl, 
+              startTime: recordingStartTime !== null ? recordingStartTime : currentTime,
+              duration: recordingStartTime !== null ? Math.max(1, currentTime - recordingStartTime) : 10
+            };
           }
           return t;
         }));
@@ -393,7 +400,9 @@ export default function Studio() {
       muted: false,
       solo: false,
       armed: false,
-      waveform: []
+      waveform: [],
+      startTime: 0,
+      duration: 0
     }]);
     toast.success("Track added");
   };
@@ -583,7 +592,15 @@ export default function Studio() {
           {/* Timeline Header */}
           <div className="h-8 border-b border-border/30 bg-card/40 sticky top-0 z-20 flex items-end px-4 overflow-hidden">
             {/* Timeline markers */}
-            <div className="w-[2000px] h-full relative" style={{ transform: `scaleX(${zoom})`, transformOrigin: 'left' }}>
+            <div 
+              className="w-[2000px] h-full relative cursor-pointer" 
+              style={{ transform: `scaleX(${zoom})`, transformOrigin: 'left' }}
+              onPointerDown={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / zoom;
+                setCurrentTime(Math.max(0, x / 20));
+              }}
+            >
               {Array.from({ length: 50 }).map((_, i) => (
                 <div key={i} className="absolute bottom-0 text-[10px] text-muted-foreground/50 border-l border-border/40 pl-1 h-3" style={{ left: `${i * 100}px` }}>
                   0:{i.toString().padStart(2, '0')}
@@ -593,7 +610,16 @@ export default function Studio() {
           </div>
 
           {/* Tracks Area */}
-          <div className="relative w-[2000px] min-h-full" style={{ transform: `scaleX(${zoom})`, transformOrigin: 'top left' }}>
+          <div 
+            className="relative w-[2000px] min-h-full cursor-text" 
+            style={{ transform: `scaleX(${zoom})`, transformOrigin: 'top left' }}
+            onPointerDown={(e) => {
+              if (e.target.closest('.audio-clip')) return;
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = (e.clientX - rect.left) / zoom;
+              setCurrentTime(Math.max(0, x / 20));
+            }}
+          >
             {/* Playhead */}
             <div 
               ref={playheadRef}
@@ -647,8 +673,11 @@ export default function Studio() {
                   {track.waveform && track.waveform.length > 0 && (
                     <div 
                       onDoubleClick={() => setEditingTrack(track)}
-                      className="absolute top-2 bottom-2 w-[800px] rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-pointer"
-                      style={{ left: `${(track.startTime !== undefined ? track.startTime : 2) * 20}px` }}
+                      className="audio-clip absolute top-2 bottom-2 rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-pointer"
+                      style={{ 
+                        left: `${(track.startTime !== undefined ? track.startTime : 0) * 20}px`,
+                        width: `${(track.duration !== undefined ? track.duration : 40) * 20}px`
+                      }}
                     >
                       <div className="absolute top-1 left-2 text-[10px] font-medium text-white/50">{track.name} - Take 1</div>
                       <div className="absolute inset-x-0 bottom-2 top-6 flex items-center justify-center gap-px px-2">

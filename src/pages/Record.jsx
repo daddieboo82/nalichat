@@ -7,6 +7,7 @@ import { Mic, Square, Play, Pause, Save, Trash2, Loader2, Radio } from "lucide-r
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { sounds } from "@/hooks/use-sound";
+import DeviceSelector from "@/components/audio/DeviceSelector";
 
 export default function Record() {
   const [isRecording, setIsRecording] = useState(false);
@@ -138,18 +139,9 @@ export default function Record() {
           <p className="text-sm text-muted-foreground">Capture your ideas with professional-quality recording</p>
         </div>
 
-        {/* Input Device Selector */}
+        {/* Device Selector */}
         <div className="flex justify-center mb-8">
-          <Select value={inputDevice} onValueChange={setInputDevice}>
-            <SelectTrigger className="w-64 bg-secondary/50 border-0 rounded-xl">
-              <SelectValue placeholder="Select input device" />
-            </SelectTrigger>
-            <SelectContent>
-              {devices.filter(d => d.deviceId).map(d => (
-                <SelectItem key={d.deviceId} value={d.deviceId}>{d.label || `Microphone ${d.deviceId.slice(0, 8)}`}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <DeviceSelector compact={true} />
         </div>
 
         {/* Immersive Visualizer */}

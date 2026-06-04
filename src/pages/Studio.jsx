@@ -34,6 +34,13 @@ export default function Studio() {
   const [selectedTrackId, setSelectedTrackId] = useState(1);
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
   
+  const [hardware, setHardware] = useState({
+    mic: false,
+    interface: false,
+    output: false,
+    midi: false
+  });
+  
   const [tracks, setTracks] = useState([
     { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120) },
     { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120) },
@@ -124,6 +131,60 @@ export default function Studio() {
       }
     });
   }, [tracks]);
+
+  // Hardware Detection
+  useEffect(() => {
+    const updateDevices = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        
+        let hasMic = false;
+        let hasInterface = false;
+        let hasOutput = false;
+
+        devices.forEach(device => {
+          if (device.kind === 'audioinput') {
+            hasMic = true;
+            if (/usb|interface|focusrite|steinberg|behringer|audio|universal/i.test(device.label)) {
+              hasInterface = true;
+            }
+          }
+          if (device.kind === 'audiooutput') {
+            hasOutput = true;
+          }
+        });
+
+        let hasMidi = false;
+        if (navigator.requestMIDIAccess) {
+          try {
+            const midiAccess = await navigator.requestMIDIAccess();
+            hasMidi = midiAccess.inputs.size > 0;
+            
+            midiAccess.onstatechange = () => {
+              setHardware(prev => ({ ...prev, midi: midiAccess.inputs.size > 0 }));
+            };
+          } catch (e) {
+            console.log("MIDI not supported or denied");
+          }
+        }
+
+        setHardware({
+          mic: hasMic,
+          interface: hasInterface,
+          output: hasOutput,
+          midi: hasMidi
+        });
+      } catch (err) {
+        console.error("Error enumerating devices:", err);
+      }
+    };
+
+    updateDevices();
+    navigator.mediaDevices.addEventListener('devicechange', updateDevices);
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', updateDevices);
+    };
+  }, []);
 
   const stopRecordingProcess = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -346,10 +407,10 @@ export default function Studio() {
         <div className="flex items-center gap-2">
           {/* Hardware Config */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
-            <Button variant="ghost" size="icon" title="Audio Interface" className="w-8 h-8 rounded-lg text-green-400 hover:bg-secondary"><Cpu className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="icon" title="Microphone Input" className="w-8 h-8 rounded-lg text-green-400 hover:bg-secondary"><Mic className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="icon" title="Headphones Output" className="w-8 h-8 rounded-lg text-green-400 hover:bg-secondary"><Headphones className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="icon" title="MIDI Controller" className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Keyboard className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon" title="Audio Interface" className={cn("w-8 h-8 rounded-lg hover:bg-secondary transition-colors", hardware.interface ? "text-green-400" : "text-muted-foreground/50")}><Cpu className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon" title="Microphone Input" className={cn("w-8 h-8 rounded-lg hover:bg-secondary transition-colors", hardware.mic ? "text-green-400" : "text-muted-foreground/50")}><Mic className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon" title="Headphones Output" className={cn("w-8 h-8 rounded-lg hover:bg-secondary transition-colors", hardware.output ? "text-green-400" : "text-muted-foreground/50")}><Headphones className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon" title="MIDI Controller" className={cn("w-8 h-8 rounded-lg hover:bg-secondary transition-colors", hardware.midi ? "text-green-400" : "text-muted-foreground/50")}><Keyboard className="w-4 h-4" /></Button>
           </div>
 
           <div className="font-mono text-xl text-primary font-bold bg-primary/10 px-4 py-1.5 rounded-lg border border-primary/20 w-32 text-center">

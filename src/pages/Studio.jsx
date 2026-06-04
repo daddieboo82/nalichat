@@ -314,7 +314,7 @@ export default function Studio() {
   const stopRecordingProcess = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.onstop = async () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
         const audioUrl = URL.createObjectURL(blob);
         
         let realWaveform = generateWaveform(2000);
@@ -323,19 +323,29 @@ export default function Studio() {
           const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
           const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
           const channelData = audioBuffer.getChannelData(0);
+          
+          // Max efficiency waveform generation using Float32Array and striding
           const numPoints = 2000;
           const blockSize = Math.floor(channelData.length / numPoints);
-          const waveform = [];
+          const stride = Math.max(1, Math.floor(blockSize / 64)); // Sample max 64 points per block to prevent blocking main thread
+          
+          const waveform = new Float32Array(numPoints);
+          let maxVal = 0;
+          
           for (let i = 0; i < numPoints; i++) {
             let start = i * blockSize;
             let sum = 0;
-            for (let j = 0; j < blockSize; j++) {
+            let samples = 0;
+            for (let j = 0; j < blockSize; j += stride) {
               sum += Math.abs(channelData[start + j]);
+              samples++;
             }
-            waveform.push(sum / blockSize);
+            const val = sum / samples;
+            waveform[i] = val;
+            if (val > maxVal) maxVal = val;
           }
-          const max = Math.max(...waveform);
-          realWaveform = max > 0 ? waveform.map(val => val / max) : waveform.map(() => 0.05);
+          
+          realWaveform = maxVal > 0 ? Array.from(waveform).map(v => v / maxVal) : Array.from(waveform).map(() => 0.05);
         } catch (e) {
           console.error("Failed to parse waveform", e);
         }
@@ -403,18 +413,19 @@ export default function Studio() {
         
         // Monitor audio with reduced volume to prevent loud feedback
         const gainNode = audioCtx.createGain();
-        gainNode.gain.value = 0.6; 
+        gainNode.gain.value = 0.0; // Disabled by default to prevent nasty feedback loops
         source.connect(gainNode);
         gainNode.connect(audioCtx.destination);
         
-        // Start actual recording
-        const mediaRecorder = new MediaRecorder(stream);
+        // Start actual recording with frequent chunks for memory efficiency
+        const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? { mimeType: 'audio/webm;codecs=opus' } : {};
+        const mediaRecorder = new MediaRecorder(stream, options);
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
         mediaRecorder.ondataavailable = (e) => {
           if (e.data.size > 0) audioChunksRef.current.push(e.data);
         };
-        mediaRecorder.start();
+        mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
         
         setIsRecording(true);
         setRecordingStartTime(currentTimeRef.current);

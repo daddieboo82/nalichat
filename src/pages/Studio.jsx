@@ -81,6 +81,27 @@ export default function Studio() {
     setCurrentTime(0);
   };
 
+  // Keyboard shortcuts for Power Users
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        toggleRecord();
+      } else if (e.code === 'Enter') {
+        e.preventDefault();
+        stop();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying, isRecording, togglePlay, toggleRecord]);
+
   const toggleMute = (trackId) => {
     setTracks(tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t));
   };

@@ -47,21 +47,32 @@ export default function StudioArrange({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto flex flex-col">
+    <div className="flex-1 overflow-y-auto flex flex-col relative">
       {/* Track Headers with Time Ruler */}
-      <div className="sticky top-0 bg-secondary/40 border-b border-border/40 px-6 py-3 flex gap-4 items-start z-10">
-        <div className="w-48 shrink-0">
-          <p className="text-xs text-muted-foreground uppercase font-semibold">Tracks</p>
-        </div>
-        <div className="flex-1 overflow-x-auto">
-          <div className="flex gap-1 min-w-min">
-            {Array.from({ length: Math.ceil((duration || 120) / 10) }).map((_, i) => (
-              <div key={i} className="w-20 text-right pr-1 text-[10px] text-muted-foreground/50">
-                {i * 10}s
-              </div>
-            ))}
+      <div className="sticky top-0 bg-secondary/40 border-b border-border/40 px-6 py-3 flex gap-4 items-center justify-between z-10">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <div className="w-40 shrink-0">
+            <p className="text-xs text-muted-foreground uppercase font-semibold">Tracks</p>
+          </div>
+          <div className="flex-1 overflow-x-auto">
+            <div className="flex gap-1 min-w-min">
+              {Array.from({ length: Math.ceil((duration || 120) / 10) }).map((_, i) => (
+                <div key={i} className="w-20 text-right pr-1 text-[10px] text-muted-foreground/50">
+                  {i * 10}s
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+        {canEdit && (
+          <div className="shrink-0">
+            <TrackImporter
+              projectId={project.id}
+              currentUser={currentUser}
+              onSuccess={() => {}}
+            />
+          </div>
+        )}
       </div>
 
       {/* Tracks List */}

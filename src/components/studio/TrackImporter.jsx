@@ -154,7 +154,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
         >
           <Button
             size="sm"
-            className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 font-semibold shadow-md shadow-primary/20 transition-all hover:scale-105"
+            className="rounded-lg bg-gradient-to-r from-primary to-accent hover:opacity-90 font-semibold shadow-sm shadow-primary/20 transition-all text-xs h-8"
             onClick={() => {
               if (queue.length === 0) {
                 fileInputRef.current?.click();
@@ -163,14 +163,14 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
               }
             }}
           >
-            <Upload className="w-3.5 h-3.5 mr-1.5" />
-            Import Tracks
+            <Upload className="w-3 h-3 mr-1" />
+            Import
           </Button>
         </div>
 
-        <DialogContent className="bg-card border-border shadow-2xl max-w-md">
+        <DialogContent className="bg-card border-border shadow-2xl max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-heading text-lg">Import Audio Tracks</DialogTitle>
+            <DialogTitle className="font-heading text-base">Import Audio Tracks</DialogTitle>
           </DialogHeader>
 
           {queue.length === 0 ? (
@@ -182,19 +182,19 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
                 handleDrag(e);
                 handleFiles(e.dataTransfer.files);
               }}
-              className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
+              className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${
                 dragActive
                   ? "border-primary/60 bg-primary/10"
                   : "border-border/50 hover:border-primary/40 bg-secondary/20"
               }`}
               onClick={() => fileInputRef.current?.click()}
             >
-              <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
-                <Music className="w-7 h-7 text-primary/70" />
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-2">
+                <Music className="w-5 h-5 text-primary/70" />
               </div>
-              <p className="font-medium mb-1">Drag tracks here or click to browse</p>
-              <p className="text-xs text-muted-foreground mb-3">
-                Supports: MP3, WAV, FLAC, OGG, AAC, M4A, WebM
+              <p className="font-medium text-sm mb-1">Drag tracks here or click</p>
+              <p className="text-[11px] text-muted-foreground mb-2">
+                MP3, WAV, FLAC, OGG, AAC, M4A, WebM
               </p>
               <Button
                 variant="outline"
@@ -208,7 +208,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
               </Button>
             </div>
           ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
+            <div className="space-y-2 max-h-80 overflow-y-auto">
               <AnimatePresence>
                 {queue.map((item) => (
                   <motion.div
@@ -216,79 +216,79 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="flex items-start gap-3 p-3 rounded-xl bg-secondary/40 border border-border/50"
+                    className="flex items-start gap-2 p-2 rounded-lg bg-secondary/40 border border-border/50"
                   >
                     <div className="mt-0.5 flex-shrink-0">
                       {item.status === "pending" && (
-                        <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30" />
+                        <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30" />
                       )}
                       {item.status === "uploading" && (
-                        <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                        <Loader2 className="w-4 h-4 text-primary animate-spin" />
                       )}
                       {item.status === "success" && (
-                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
                       )}
                       {item.status === "error" && (
-                        <AlertCircle className="w-5 h-5 text-destructive" />
+                        <AlertCircle className="w-4 h-4 text-destructive" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                       <p className="text-sm font-medium truncate">{item.name}</p>
+                       <p className="text-xs font-medium truncate">{item.name}</p>
                        {item.status === "pending" && (
-                         <Select value={getTrackType(item.id)} onValueChange={(type) => setTrackType(item.id, type)}>
-                           <SelectTrigger className="h-7 text-xs mt-1 bg-secondary/40 border-border/50">
-                             <SelectValue />
-                           </SelectTrigger>
-                           <SelectContent>
-                             {trackTypeOptions.map(type => (
-                               <SelectItem key={type} value={type} className="text-xs capitalize">{type}</SelectItem>
-                             ))}
-                           </SelectContent>
-                         </Select>
-                       )}
-                       {item.error && (
-                         <p className="text-xs text-destructive mt-1">{item.error}</p>
-                       )}
-                       {item.status === "uploading" && (
-                         <div className="w-full h-1 bg-secondary rounded-full mt-2 overflow-hidden">
-                           <div className="h-full bg-primary/50 animate-pulse w-1/3" />
-                         </div>
-                       )}
-                     </div>
-                  </motion.div>
+                          <Select value={getTrackType(item.id)} onValueChange={(type) => setTrackType(item.id, type)}>
+                            <SelectTrigger className="h-6 text-[10px] mt-0.5 bg-secondary/40 border-border/50 rounded-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {trackTypeOptions.map(type => (
+                                <SelectItem key={type} value={type} className="text-[10px] capitalize">{type}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {item.error && (
+                          <p className="text-[10px] text-destructive mt-0.5">{item.error}</p>
+                        )}
+                        {item.status === "uploading" && (
+                          <div className="w-full h-0.5 bg-secondary rounded-full mt-1.5 overflow-hidden">
+                            <div className="h-full bg-primary/50 animate-pulse w-1/3" />
+                          </div>
+                        )}
+                      </div>
+                   </motion.div>
                 ))}
               </AnimatePresence>
             </div>
           )}
 
           {queue.length > 0 && (
-            <div className="flex gap-2 pt-4 border-t border-border/50">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={clearQueue}
-                disabled={uploading}
-              >
-                Clear
-              </Button>
-              <Button
-                className="flex-1 bg-primary hover:bg-primary/90"
-                onClick={uploadTracks}
-                disabled={uploading || pendingCount === 0}
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-1.5" />
-                    Upload {pendingCount}
-                  </>
-                )}
-              </Button>
-            </div>
+           <div className="flex gap-2 pt-3 border-t border-border/50">
+             <Button
+               variant="outline"
+               className="flex-1 h-8 text-xs rounded-lg"
+               onClick={clearQueue}
+               disabled={uploading}
+             >
+               Clear
+             </Button>
+             <Button
+               className="flex-1 bg-primary hover:bg-primary/90 h-8 text-xs rounded-lg"
+               onClick={uploadTracks}
+               disabled={uploading || pendingCount === 0}
+             >
+               {uploading ? (
+                 <>
+                   <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                   Uploading...
+                 </>
+               ) : (
+                 <>
+                   <Upload className="w-3 h-3 mr-1" />
+                   Upload {pendingCount}
+                 </>
+               )}
+             </Button>
+           </div>
           )}
         </DialogContent>
       </Dialog>

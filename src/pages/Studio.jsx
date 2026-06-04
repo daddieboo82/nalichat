@@ -37,6 +37,7 @@ export default function Studio() {
   const [showProjectSettings, setShowProjectSettings] = useState(false);
   const [showMilestones, setShowMilestones] = useState(false);
   const [showStudioTip, setShowStudioTip] = useState(isFirstTime);
+  const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -129,6 +130,48 @@ export default function Studio() {
       setSelectedProjectId(null);
     },
   });
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (!selectedProjectId || !currentUser) return;
+
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("audio/"));
+    if (files.length === 0) return;
+
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        await base44.entities.Track.create({
+          project_id: selectedProjectId,
+          name: file.name.replace(/\.[^/.]+$/, ""),
+          file_url,
+          type: "vocal",
+          volume: 75,
+          pan: 0,
+          muted: false,
+          solo: false,
+          uploaded_by: currentUser.id,
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["tracks", selectedProjectId] });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="h-full flex" style={{ background: "hsl(240 10% 3%)" }}>
@@ -270,10 +313,27 @@ export default function Studio() {
       </div>
 
       {/* Main Studio Area */}
-      <div className={cn(
-        "flex-1 flex-col min-w-0",
-        selectedProjectId ? "flex" : "hidden md:flex"
-      )}>
+      <div
+        className={cn(
+          "flex-1 flex-col min-w-0",
+          selectedProjectId ? "flex" : "hidden md:flex"
+        )}
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+      >
+        {dragActive && (
+          <div className="absolute inset-0 bg-primary/20 border-2 border-dashed border-primary rounded-lg pointer-events-none flex items-center justify-center z-40">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/30 flex items-center justify-center mx-auto mb-2">
+                <Upload className="w-8 h-8 text-primary" />
+              </div>
+              <p className="text-primary font-semibold">Drop audio files here</p>
+            </div>
+          </div>
+        )}
+
         {!selectedProject ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center text-muted-foreground">

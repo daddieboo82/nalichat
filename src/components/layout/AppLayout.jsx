@@ -88,13 +88,13 @@ export default function AppLayout() {
           </div>
 
           {/* User Actions */}
-          <div className="flex items-center gap-0.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <NotificationBell />
             <Link
               to="/profile"
               title="Profile"
               className={cn(
-                "p-2 rounded-lg transition-all",
+                "w-9 h-9 rounded-lg flex items-center justify-center transition-all",
                 location.pathname === "/profile"
                   ? "bg-primary/15 text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
@@ -105,18 +105,18 @@ export default function AppLayout() {
             <Link
               to="/settings"
               title="Settings"
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
             >
               <Settings className="w-4 h-4" />
             </Link>
             <button
               onClick={() => base44.auth.logout()}
               title="Log out"
-              className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
             >
               <LogOut className="w-4 h-4" />
             </button>
-            <Link to="/profile" className="ml-1">
+            <Link to="/profile" className="ml-0.5">
               <Avatar className="w-8 h-8 border-2 border-border/50 hover:border-primary/50 transition-all cursor-pointer shadow-md">
                 <AvatarImage src={user?.avatar_url} />
                 <AvatarFallback className="bg-gradient-to-br from-primary to-pink-500 text-white text-xs font-bold">

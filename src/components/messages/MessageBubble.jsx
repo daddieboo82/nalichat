@@ -1,11 +1,12 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote } from "lucide-react";
+import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, Copy, Trash2, Forward } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { resumableDownload } from "@/lib/resumableUpload";
 import MediaViewer from "./MediaViewer";
 import AudioWaveform from "./AudioWaveform";
+import EmojiReactionPicker from "./EmojiReactionPicker";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -186,9 +187,9 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
 const gradients = ["from-primary to-pink-500","from-accent to-cyan-400","from-yellow-500 to-orange-500","from-green-400 to-emerald-600","from-purple-500 to-indigo-500"];
 const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.length];
 
-export default function MessageBubble({ message, isOwn, showAvatar, onReply, onReact, onOpenThread, users }) {
+export default function MessageBubble({ message, isOwn, showAvatar, onReply, onReact, onOpenThread, users, onCopy, onDelete }) {
   const [showActions, setShowActions] = useState(false);
-  const [showReactions, setShowReactions] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
 
   const hasFile = message.file_url && message.type !== "text";
@@ -198,7 +199,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
     <div
       className={cn("flex gap-2 group mb-0.5 py-0.5", isOwn ? "flex-row-reverse" : "flex-row")}
       onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => { setShowActions(false); setShowReactions(false); }}
+      onMouseLeave={() => { setShowActions(false); setShowEmojiPicker(false); }}
     >
       {/* Avatar */}
       <div className="w-8 shrink-0 mt-auto">
@@ -284,37 +285,34 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
 
       {/* Hover action buttons */}
       <div className={cn(
-        "flex items-center gap-0.5 opacity-0 transition-all self-center shrink-0",
+        "flex items-center gap-0.5 opacity-0 transition-all self-center shrink-0 relative",
         showActions && "opacity-100",
         isOwn ? "flex-row order-first mr-1" : "flex-row ml-1"
       )}>
-        <div className="relative">
-          <button
-            onClick={() => setShowReactions(!showReactions)}
-            className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
-          >
-            <Smile className="w-3.5 h-3.5 text-muted-foreground" />
-          </button>
-          {showReactions && (
-            <div className={cn(
-              "absolute bottom-full mb-2 flex gap-0.5 bg-card/95 border border-border/60 rounded-2xl p-2 shadow-2xl z-50 backdrop-blur-xl",
-              isOwn ? "right-0" : "left-0"
-            )}>
-              {QUICK_REACTIONS.map(emoji => (
-                <button key={emoji} onClick={() => { onReact?.(message.id, emoji); setShowReactions(false); }}
-                  className="text-xl hover:scale-130 transition-transform leading-none p-1 rounded-lg hover:bg-secondary/60">
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <button
+          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+          className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
+          title="Add reaction"
+        >
+          <Smile className="w-3.5 h-3.5 text-muted-foreground" />
+        </button>
+        
+        {showEmojiPicker && (
+          <EmojiReactionPicker
+            position={isOwn ? "bottom" : "bottom"}
+            onSelect={(emoji) => { onReact?.(message.id, emoji); }}
+            onClose={() => setShowEmojiPicker(false)}
+          />
+        )}
+
         <button
           onClick={() => onReply?.(message)}
           className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
+          title="Reply"
         >
           <Reply className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
+
         <button
           onClick={() => onOpenThread?.(message)}
           className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
@@ -322,6 +320,16 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
         >
           <MessageSquareQuote className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
+
+        {isOwn && (
+          <button
+            onClick={() => onDelete?.(message.id)}
+            className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-destructive/20 hover:border-destructive/30 hover:text-destructive transition-all shadow-sm"
+            title="Delete message"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {/* Media Viewer Modal */}

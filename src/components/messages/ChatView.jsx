@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, Users, ArrowLeft } from "lucide-react";
+import { MessageSquare, Users, ArrowLeft, Search as SearchIcon, Phone, Video, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import MessageBubble from "./MessageBubble";
@@ -8,12 +8,16 @@ import ChatInput from "./ChatInput";
 import GroupInfoPanel from "./GroupInfoPanel";
 import TypingIndicator from "./TypingIndicator";
 import ThreadPanel from "./ThreadPanel";
+import MessageSearch from "./MessageSearch";
+import { Button } from "@/components/ui/button";
 
 export default function ChatView({ conversation, messages, currentUser, users, onSendMessage, onReact, onBack }) {
   const [replyTo, setReplyTo] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [threadMessage, setThreadMessage] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchScrollTarget, setSearchScrollTarget] = useState(null);
   const scrollRef = useRef(null);
   const prevLenRef = useRef(0);
   const markedRef = useRef(new Set());
@@ -122,15 +126,44 @@ export default function ChatView({ conversation, messages, currentUser, users, o
           <p className="font-heading font-semibold text-sm truncate">{displayName}</p>
           {subtitle && <p className="text-[10px] text-muted-foreground/70 capitalize">{subtitle}</p>}
         </div>
-        {conversation?.type === "group" && (
-          <button
-            onClick={() => setShowGroupInfo(v => !v)}
-            className={cn("w-8 h-8 rounded-xl flex items-center justify-center transition-all", showGroupInfo ? "bg-primary/20 text-primary shadow-sm" : "hover:bg-secondary/60 text-muted-foreground")}
-            title="Group info"
+
+        {/* Quick actions */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-8 h-8 text-muted-foreground hover:bg-secondary/60"
+            onClick={() => setShowSearch(true)}
+            title="Search"
           >
-            <Users className="w-4 h-4" />
-          </button>
-        )}
+            <SearchIcon className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-8 h-8 text-muted-foreground hover:bg-secondary/60 hidden sm:flex"
+            title="Voice call"
+          >
+            <Phone className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-8 h-8 text-muted-foreground hover:bg-secondary/60 hidden sm:flex"
+            title="Video call"
+          >
+            <Video className="w-4 h-4" />
+          </Button>
+          {conversation?.type === "group" && (
+            <button
+              onClick={() => setShowGroupInfo(v => !v)}
+              className={cn("w-8 h-8 rounded-xl flex items-center justify-center transition-all", showGroupInfo ? "bg-primary/20 text-primary shadow-sm" : "hover:bg-secondary/60 text-muted-foreground")}
+              title="Group info"
+            >
+              <Info className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
@@ -161,6 +194,10 @@ export default function ChatView({ conversation, messages, currentUser, users, o
               onReact={onReact}
               onOpenThread={setThreadMessage}
               users={users}
+              onCopy={() => navigator.clipboard.writeText(item.text || "")}
+              onDelete={async (id) => {
+                await base44.entities.Message.delete(id);
+              }}
             />
           )
         )}
@@ -200,6 +237,17 @@ export default function ChatView({ conversation, messages, currentUser, users, o
           parentMessage={threadMessage}
           currentUser={currentUser}
           onClose={() => setThreadMessage(null)}
+        />
+      )}
+      {showSearch && (
+        <MessageSearch
+          messages={messages}
+          onClose={() => setShowSearch(false)}
+          onSelectMessage={(msg) => {
+            setSearchScrollTarget(msg.id);
+            scrollRef.current?.scrollIntoView?.({ behavior: "smooth" });
+          }}
+          users={users}
         />
       )}
     </div>

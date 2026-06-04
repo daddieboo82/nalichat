@@ -6,14 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen, FolderArchive, X, CheckSquare, Plus, ChevronRight } from "lucide-react";
+import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen, FolderArchive, X, CheckSquare, Plus, ChevronRight, Play, Pause } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { downloadFilesAsZip } from "@/lib/downloadZip";
 import { useToast } from "@/components/ui/use-toast";
-import CustomMediaPlayer from "@/components/audio/CustomMediaPlayer";
 import { resumableDownload } from "@/lib/resumableUpload";
+import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 
 const typeIcons = {
   audio: Music,
@@ -93,6 +93,7 @@ export default function Files() {
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
 
   useEffect(() => { base44.auth.me().then(setCurrentUser); }, []);
 
@@ -354,7 +355,23 @@ export default function Files() {
                             </span>
                           </div>
                           {file.file_type === "audio" && (
-                            <CustomMediaPlayer src={file.file_url} className="mt-2" />
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="mt-3 gap-2 w-fit rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                playTrack({
+                                  id: file.id,
+                                  title: file.name,
+                                  creator_name: file.uploader_name || "Unknown",
+                                  file_url: file.file_url,
+                                });
+                              }}
+                            >
+                              {currentTrack?.id === file.id && isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                              {currentTrack?.id === file.id && isPlaying ? "Pause Audio" : "Play Audio"}
+                            </Button>
                           )}
                         </div>
                         <div className="flex gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
@@ -414,7 +431,23 @@ export default function Files() {
                         </span>
                       </div>
                       {file.file_type === "audio" && (
-                        <CustomMediaPlayer src={file.file_url} className="mt-2" />
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="mt-3 gap-2 w-fit rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playTrack({
+                              id: file.id,
+                              title: file.name,
+                              creator_name: file.uploader_name || "Unknown",
+                              file_url: file.file_url,
+                            });
+                          }}
+                        >
+                          {currentTrack?.id === file.id && isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                          {currentTrack?.id === file.id && isPlaying ? "Pause Audio" : "Play Audio"}
+                        </Button>
                       )}
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

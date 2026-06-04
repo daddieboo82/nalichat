@@ -4,7 +4,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import MediaViewerModal from "./MediaViewerModal";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
-import CustomMediaPlayer from "@/components/audio/CustomMediaPlayer";
 
 export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist, onComment, large }) {
   const [showMedia, setShowMedia] = useState(false);
@@ -110,9 +109,6 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
           </div>
         </div>
 
-        {post.file_url && (
-          <CustomMediaPlayer src={post.file_url} title={post.title} className="mt-2" />
-        )}
       </div>
       </div>
 

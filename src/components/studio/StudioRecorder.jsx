@@ -94,11 +94,12 @@ export default function StudioRecorder({
     return new Promise((resolve) => {
       mediaRecorderRef.current.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const file = new File([blob], `${recordingName || "recording"}.webm`, { type: "audio/webm" });
         
         try {
           setSaving(true);
           const { file_url } = await base44.integrations.Core.UploadFile({
-            file: blob,
+            file,
           });
 
           await base44.entities.Track.create({

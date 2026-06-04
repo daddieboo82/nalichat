@@ -27,6 +27,8 @@ export default function MessageSearch({ messages, onClose, onSelectMessage, user
             placeholder="Search messages..."
             value={query}
             onChange={e => setQuery(e.target.value)}
+            title="Search messages"
+            aria-label="Search messages"
             className="flex-1 bg-transparent text-sm focus:outline-none"
             autoFocus
           />

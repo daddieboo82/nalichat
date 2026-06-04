@@ -32,8 +32,8 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
            <DialogDescription>Create a group chat and add members</DialogDescription>
          </DialogHeader>
         <div className="space-y-4">
-          <Input value={name} onChange={e => setName(e.target.value)} placeholder="Group name..." className="bg-secondary/50 border-0 rounded-xl" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search people..." className="bg-secondary/50 border-0 rounded-xl" />
+          <Input value={name} onChange={e => setName(e.target.value)} placeholder="Group name..." className="bg-secondary/50 border-0 rounded-xl" title="Group name" aria-label="Group name" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search people..." className="bg-secondary/50 border-0 rounded-xl" title="Search people" aria-label="Search people" />
           <div className="max-h-64 overflow-y-auto space-y-1">
             {filtered.map(u => (
               <button key={u.id} onClick={() => toggle(u.id)}

@@ -53,6 +53,8 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
             placeholder="Search by name, email, or phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            title="Search by name, email, or phone"
+            aria-label="Search by name, email, or phone"
             className="pl-9 bg-secondary/50 border-0 rounded-xl"
             autoFocus
           />

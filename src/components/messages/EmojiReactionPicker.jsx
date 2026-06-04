@@ -36,12 +36,16 @@ export default function EmojiReactionPicker({ onSelect, onClose, position = "top
           placeholder="Search emoji..."
           value={search}
           onChange={e => setSearch(e.target.value)}
+          title="Search emoji"
+          aria-label="Search emoji"
           className="w-full pl-8 pr-3 py-2 bg-secondary/40 border border-border/40 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors"
           autoFocus
         />
         <button
           type="button"
           onClick={onClose}
+          title="Close emoji picker"
+          aria-label="Close emoji picker"
           className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground shrink-0"
         >
           <X className="w-4 h-4" />
@@ -55,6 +59,8 @@ export default function EmojiReactionPicker({ onSelect, onClose, position = "top
               type="button"
               key={key}
               onClick={() => setActiveTab(key)}
+              title={label}
+              aria-label={label}
               className={cn(
                 "text-xs p-0 h-full rounded-md flex items-center justify-center transition-all",
                 activeTab === key ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
@@ -72,6 +78,8 @@ export default function EmojiReactionPicker({ onSelect, onClose, position = "top
             type="button"
             key={i}
             onClick={() => { onSelect(emoji); onClose(); }}
+            title={`Select emoji ${emoji}`}
+            aria-label={`Select emoji ${emoji}`}
             className="w-8 h-8 flex items-center justify-center text-lg hover:bg-primary/20 rounded-lg transition-all hover:scale-110 active:scale-95"
           >
             {emoji}

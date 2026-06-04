@@ -234,7 +234,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
 
       {/* Hover action buttons */}
       <div className={cn(
-        "flex items-center gap-1 opacity-0 transition-all self-center shrink-0 relative",
+        "flex items-center gap-1 opacity-0 focus-within:opacity-100 transition-all self-center shrink-0 relative",
         (showActions || showEmojiPicker) && "opacity-100",
         isOwn ? "flex-row order-first mr-2" : "flex-row ml-2"
       )}>
@@ -245,6 +245,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
               onClick={() => { onReact?.(message.id, emoji); setShowActions(false); }}
               className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:scale-125 hover:border-primary/40 transition-all shadow-sm text-sm"
               title={`React with ${emoji}`}
+              aria-label={`React with ${emoji}`}
             >
               {emoji}
             </button>
@@ -256,6 +257,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
           onClick={(e) => { e.preventDefault(); setShowEmojiPicker(!showEmojiPicker); }}
           className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
           title="More reactions"
+          aria-label="More reactions"
         >
           <Smile className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
@@ -272,6 +274,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
           onClick={() => onReply?.(message)}
           className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
           title="Reply"
+          aria-label="Reply"
         >
           <Reply className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
@@ -280,6 +283,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
           onClick={() => onOpenThread?.(message)}
           className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
           title="Open thread"
+          aria-label="Open thread"
         >
           <MessageSquareQuote className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
@@ -289,6 +293,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
             onClick={() => onEdit?.(message)}
             className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 hover:text-primary transition-all shadow-sm"
             title="Edit message"
+            aria-label="Edit message"
           >
             <Pencil className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
           </button>
@@ -299,6 +304,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
             onClick={() => onDelete?.(message.id)}
             className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-destructive/20 hover:border-destructive/30 hover:text-destructive transition-all shadow-sm"
             title="Delete message"
+            aria-label="Delete message"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

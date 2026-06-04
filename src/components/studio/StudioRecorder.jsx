@@ -129,14 +129,14 @@ export default function StudioRecorder({
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto bg-gradient-to-b from-secondary/10 to-background">
+    <div className="flex-1 flex flex-col items-center justify-center p-12 overflow-y-auto bg-gradient-to-b from-secondary/10 to-background">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-2xl"
+        className="w-full max-w-2xl space-y-8"
       >
         {/* Recording Status */}
-        <div className="mb-8 text-center">
+        <div className="text-center">
           {isRecording ? (
             <motion.div
               animate={{ scale: [1, 1.1, 1] }}
@@ -155,25 +155,25 @@ export default function StudioRecorder({
             </div>
           )}
           
-          <h2 className="text-2xl font-heading font-bold text-foreground mt-2">
+          <h2 className="text-2xl font-heading font-bold text-foreground mt-3">
             {isRecording ? "Recording..." : "Ready to Record"}
           </h2>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-2">
             {isRecording ? "Keep those vocals clean!" : "Arm the microphone and hit record"}
           </p>
         </div>
 
         {/* Waveform Visualizer */}
         {isRecording && (
-          <div className="mb-8 bg-secondary/30 rounded-xl p-6 border border-border/30">
+          <div className="bg-secondary/30 rounded-xl p-8 border border-border/30">
             <RecordingVisualizerWave audioLevel={audioLevel} />
           </div>
         )}
 
         {/* Recording Time */}
         {recordingTime > 0 && (
-          <div className="text-center mb-8">
-            <div className="font-mono text-4xl font-bold text-primary mb-2">
+          <div className="text-center">
+            <div className="font-mono text-4xl font-bold text-primary mb-3">
               {formatTime(recordingTime)}
             </div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest">Recording time</p>
@@ -181,7 +181,7 @@ export default function StudioRecorder({
         )}
 
         {/* Track Name Input */}
-        <div className="mb-8">
+        <div>
           <label className="text-xs text-muted-foreground uppercase tracking-widest font-semibold block mb-2">
             Track Name
           </label>
@@ -196,7 +196,7 @@ export default function StudioRecorder({
 
         {/* Error Display */}
         {error && (
-          <div className="mb-6 bg-destructive/20 border border-destructive/50 rounded-lg p-4 flex items-start gap-3">
+          <div className="bg-destructive/20 border border-destructive/50 rounded-lg p-4 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-destructive">Recording Error</p>

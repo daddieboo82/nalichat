@@ -17,7 +17,7 @@ export default function StudioTransport({
   };
 
   return (
-    <div className="h-16 border-t border-primary/10 bg-gradient-to-r from-secondary/40 via-secondary/20 to-background backdrop-blur-xl shadow-lg shadow-primary/5 px-4 py-3 flex items-center gap-4">
+    <div className="h-16 border-t border-primary/10 bg-gradient-to-r from-secondary/40 via-secondary/20 to-background backdrop-blur-xl shadow-lg shadow-primary/5 px-8 py-3 flex items-center gap-6">
       {/* Transport Controls */}
       <div className="flex items-center gap-2">
         <button

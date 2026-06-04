@@ -31,14 +31,14 @@ export default function StudioMixerPanel({
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
       {/* Mixer Header */}
-      <div className="bg-secondary/40 border-b border-border/40 px-4 py-3 flex items-center justify-between">
+      <div className="bg-secondary/40 border-b border-border/40 px-6 py-4 flex items-center justify-between">
         <h3 className="font-heading font-bold text-foreground">Mixer</h3>
         <p className="text-xs text-muted-foreground">{tracks.length} Track{tracks.length !== 1 ? "s" : ""}</p>
       </div>
 
       {/* Mixer Strips */}
       <div className="flex-1 overflow-x-auto">
-        <div className="flex gap-2 p-4 pb-6 min-w-min">
+        <div className="flex gap-3 p-6 pb-8 min-w-min">
           {tracks.map((track, idx) => (
             <motion.div
               key={track.id}

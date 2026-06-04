@@ -49,7 +49,7 @@ export default function StudioArrange({
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
       {/* Track Headers with Time Ruler */}
-      <div className="bg-secondary/40 border-b border-border/40 px-4 py-2 flex gap-3 items-start">
+      <div className="bg-secondary/40 border-b border-border/40 px-6 py-3 flex gap-4 items-start">
         <div className="w-48 shrink-0">
           <p className="text-xs text-muted-foreground uppercase font-semibold">Tracks</p>
         </div>
@@ -66,7 +66,7 @@ export default function StudioArrange({
 
       {/* Tracks List */}
       <div className="flex-1 overflow-y-auto">
-        <div className="p-3 space-y-2">
+        <div className="p-6 space-y-3">
           {tracks.map(track => (
             <motion.div
               key={track.id}

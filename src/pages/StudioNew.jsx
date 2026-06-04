@@ -76,7 +76,7 @@ export default function StudioNew() {
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-secondary/5 to-background" style={{ background: "hsl(240 10% 3%)" }}>
       {/* Top Bar - Enhanced */}
-      <div className="h-16 border-b border-primary/10 flex items-center px-6 gap-4 bg-gradient-to-r from-secondary/40 via-secondary/20 to-background backdrop-blur-xl shadow-lg shadow-primary/5">
+      <div className="h-16 border-b border-primary/10 flex items-center px-8 gap-6 bg-gradient-to-r from-secondary/40 via-secondary/20 to-background backdrop-blur-xl shadow-lg shadow-primary/5">
         <button
           onClick={() => setSelectedProjectId(null)}
           className="p-2 -ml-2 rounded-xl hover:bg-secondary/60 transition-all text-muted-foreground hover:text-primary active:scale-95"

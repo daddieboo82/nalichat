@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Save, Loader2, X, Plus } from "lucide-react";
+import { Camera, Save, Loader2, X, Plus, CreditCard } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import DeleteAccountDialog from "@/components/settings/DeleteAccountDialog";
 import DeviceSelector from "@/components/audio/DeviceSelector";
@@ -152,6 +153,22 @@ export default function Settings() {
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Save Profile
           </Button>
+        </div>
+
+        <div className="mt-12 pt-8 border-t border-border">
+          <h2 className="text-xl font-heading font-bold mb-6">Subscription & Billing</h2>
+          <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
+            <div>
+              <h3 className="font-heading font-semibold text-lg text-foreground">Pro Plan</h3>
+              <p className="text-sm text-muted-foreground mt-1">Unlock all studio features, unlimited tracks, and advanced collaboration tools.</p>
+            </div>
+            <Link to="/pricing">
+              <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white border-0 gap-2 font-semibold">
+                <CreditCard className="w-4 h-4" />
+                View Plans
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">

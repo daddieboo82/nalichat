@@ -65,6 +65,12 @@ export default function MobileHeader() {
 
         {/* Right Section */}
         <div className="flex items-center gap-1 shrink-0">
+          <Link
+            to="/pricing"
+            className="h-6 px-3 rounded-full bg-gradient-to-r from-primary to-accent text-white font-semibold text-[10px] items-center justify-center flex mr-0.5 shadow-sm"
+          >
+            PRO
+          </Link>
           <button
             onClick={() => setIsOpen(true)}
             className="relative p-1.5 rounded-lg hover:bg-primary/10 transition-all text-muted-foreground hover:text-foreground"

@@ -159,7 +159,14 @@ export default function Home() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    base44.auth.me()
+      .then(setUser)
+      .catch(err => {
+        // Expected when not logged in
+        if (err.status !== 401 && err.status !== 403) {
+          console.warn("Auth check error:", err.message);
+        }
+      });
   }, []);
 
   return (

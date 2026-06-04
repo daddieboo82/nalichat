@@ -29,13 +29,19 @@ export default function Messages() {
     const handleVisibilityChange = async () => {
       const isOnline = document.visibilityState === "visible";
       if (currentUser) {
-        await base44.functions.invoke("updateUserPresence", { isOnline });
+        try {
+          await base44.functions.invoke("updateUserPresence", { isOnline });
+        } catch (err) {
+          console.warn("Failed to update presence:", err.message);
+        }
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
     // Mark as online when component mounts
     if (currentUser) {
-      base44.functions.invoke("updateUserPresence", { isOnline: true });
+      base44.functions.invoke("updateUserPresence", { isOnline: true }).catch(err => 
+        console.warn("Failed to mark as online:", err.message)
+      );
     }
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [currentUser]);
@@ -153,34 +159,44 @@ export default function Messages() {
   };
 
   const startDM = async (otherUser) => {
-    const existing = myConversations.find(c =>
-      c.type === "dm" && c.participant_ids?.includes(otherUser.id) && c.participant_ids?.length === 2
-    );
-    if (existing) { setSelectedConvId(existing.id); return; }
-    const conv = await base44.entities.Conversation.create({
-      type: "dm",
-      participant_ids: [currentUser.id, otherUser.id],
-    });
-    queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    setSelectedConvId(conv.id);
+    if (!otherUser?.id || !currentUser?.id) return;
+    try {
+      const existing = myConversations.find(c =>
+        c.type === "dm" && c.participant_ids?.includes(otherUser.id) && c.participant_ids?.length === 2
+      );
+      if (existing) { setSelectedConvId(existing.id); return; }
+      const conv = await base44.entities.Conversation.create({
+        type: "dm",
+        participant_ids: [currentUser.id, otherUser.id],
+      });
+      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      setSelectedConvId(conv.id);
+    } catch (err) {
+      console.error("Failed to start DM:", err);
+    }
   };
 
   const createGroup = async ({ name, participant_ids }) => {
-    const conv = await base44.entities.Conversation.create({
-      type: "group",
-      name,
-      participant_ids: [currentUser.id, ...participant_ids],
-    });
-    // Notify invited members about the new session/group
-    await Promise.all(participant_ids.map(rid => notify({
-      recipientId: rid,
-      actor: currentUser,
-      type: "session_invite",
-      message: `invited you to the session "${name || "Untitled"}"`,
-      link: "/messages",
-    })));
-    queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    setSelectedConvId(conv.id);
+    if (!currentUser?.id || !participant_ids?.length) return;
+    try {
+      const conv = await base44.entities.Conversation.create({
+        type: "group",
+        name,
+        participant_ids: [currentUser.id, ...participant_ids],
+      });
+      // Notify invited members about the new session/group
+      await Promise.all(participant_ids.map(rid => notify({
+        recipientId: rid,
+        actor: currentUser,
+        type: "session_invite",
+        message: `invited you to the session "${name || "Untitled"}"`,
+        link: "/messages",
+      }).catch(err => console.warn("Notification failed:", err))));
+      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      setSelectedConvId(conv.id);
+    } catch (err) {
+      console.error("Failed to create group:", err);
+    }
   };
 
   const selectedConv = myConversations.find(c => c.id === selectedConvId);

@@ -10,6 +10,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLoader from '@/components/layout/AppLoader';
 import NavRipple from '@/components/layout/NavRipple';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { OnboardingProvider, useOnboarding } from '@/lib/OnboardingContext';
 import OnboardingOverlay from '@/components/onboarding/OnboardingOverlay';
 
@@ -113,18 +114,20 @@ function App() {
   const [loaded, setLoaded] = useState(false);
 
   return (
-    <AuthProvider>
-      <OnboardingProvider>
-        <QueryClientProvider client={queryClientInstance}>
-          {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
-          <NavRipple />
-          <Router>
-            <AuthenticatedApp />
-          </Router>
-          <Toaster />
-        </QueryClientProvider>
-      </OnboardingProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <OnboardingProvider>
+          <QueryClientProvider client={queryClientInstance}>
+            {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
+            <NavRipple />
+            <Router>
+              <AuthenticatedApp />
+            </Router>
+            <Toaster />
+          </QueryClientProvider>
+        </OnboardingProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 

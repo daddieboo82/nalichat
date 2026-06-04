@@ -79,26 +79,42 @@ export async function resumableDownload(url, fileName, onProgress) {
   const headers = {};
   if (savedBytes > 0) headers["Range"] = `bytes=${savedBytes}-`;
 
+  const triggerFallback = () => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName || "download";
+    a.target = "_blank";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    onProgress?.(100);
+  };
+
   let response;
   try {
     response = await fetch(url, { headers });
   } catch {
-    // Network error — trigger simple fallback download
-    window.open(url, "_blank");
-    return;
+    // Network error (likely CORS preflight failed for Range header) — try simple fetch
+    try {
+      response = await fetch(url);
+    } catch {
+      triggerFallback();
+      return;
+    }
   }
 
   // If server doesn't support range or content-length, fall back
   if (!response.ok && response.status !== 206) {
-    window.open(url, "_blank");
+    triggerFallback();
     return;
   }
 
   const contentLength = response.headers.get("content-length");
+  const contentType = response.headers.get("content-type") || "";
   const total = contentLength ? parseInt(contentLength) + savedBytes : 0;
 
   const reader = response.body?.getReader();
-  if (!reader) { window.open(url, "_blank"); return; }
+  if (!reader) { triggerFallback(); return; }
 
   const chunks = [];
   let received = savedBytes;
@@ -113,12 +129,15 @@ export async function resumableDownload(url, fileName, onProgress) {
   }
 
   // Merge and trigger download
-  const blob = new Blob(chunks);
+  const blob = new Blob(chunks, { type: contentType });
   const dlUrl = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = dlUrl;
-  a.download = fileName;
+  a.download = fileName || "download";
+  a.target = "_blank"; // Ensure fallback behavior
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(dlUrl);
   localStorage.removeItem(STORAGE_KEY_DL);
   onProgress?.(100);

@@ -181,7 +181,13 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                          toast.success("Download started...");
                          try {
                            const { resumableDownload } = await import('@/lib/resumableUpload');
-                           await resumableDownload(post.file_url, post.title || 'download', () => {});
+                           let fileName = post.title || 'download';
+                           // Append extension from URL if not already present
+                           if (post.file_url && !fileName.match(/\.[a-zA-Z0-9]+$/)) {
+                             const match = post.file_url.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+                             if (match) fileName += '.' + match[1];
+                           }
+                           await resumableDownload(post.file_url, fileName, () => {});
                            toast.success("Download complete");
                          } catch (err) {
                            toast.error("Download failed");

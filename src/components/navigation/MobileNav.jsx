@@ -1,30 +1,28 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Compass, MessageSquare, User } from "lucide-react";
+import { Home, Compass, MessageSquare, User, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
 
-const tabs = [
+const TABS = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Compass, label: "Explore", path: "/explore" },
   { icon: MessageSquare, label: "Messages", path: "/messages" },
   { icon: User, label: "Profile", path: "/profile" },
+  { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
-export default function MobileBottomNav() {
+export default function MobileNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
 
-  const isActive = (tabPath) =>
-    tabPath === "/" ? path === "/" : path.startsWith(tabPath);
+  const isActive = (tabPath) => tabPath === "/" ? path === "/" : path.startsWith(tabPath);
 
-  const handleTap = (e, tabPath) => {
-    e.preventDefault();
+  const handleTap = (tabPath) => {
     const active = isActive(tabPath);
     sounds.click();
     if (active) {
-      if (path !== tabPath) navigate(tabPath);
       const scroller = document.querySelector("main");
       scroller?.scrollTo?.({ top: 0, behavior: "smooth" });
       return;
@@ -38,13 +36,12 @@ export default function MobileBottomNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="flex items-stretch justify-around">
-        {tabs.map(({ icon: Icon, label, path: tabPath }) => {
+        {TABS.map(({ icon: Icon, label, path: tabPath }) => {
           const active = isActive(tabPath);
           return (
-            <a
+            <button
               key={tabPath}
-              href={tabPath}
-              onClick={(e) => handleTap(e, tabPath)}
+              onClick={() => handleTap(tabPath)}
               className={cn(
                 "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 select-none transition-colors active:bg-primary/10",
                 active ? "text-primary" : "text-muted-foreground"
@@ -65,7 +62,7 @@ export default function MobileBottomNav() {
                 <Icon className="w-5 h-5" />
               </motion.div>
               <span className="text-[10px] font-medium">{label}</span>
-            </a>
+            </button>
           );
         })}
       </div>

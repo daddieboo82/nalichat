@@ -1,19 +1,16 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Music } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import NotificationBell from "@/components/notifications/NotificationBell";
 
-// Sub-pages that should show a Back button instead of the title row.
-const SUBPAGE_PREFIXES = ["/playlist/", "/studio-editor", "/record", "/settings", "/analytics"];
+const SUBPAGE_PREFIXES = ["/playlist/", "/record", "/settings", "/analytics"];
 
-// Map root paths to a friendly title.
 const TITLES = {
   "/": "Home",
   "/explore": "Explore",
-  "/studio": "Studio",
   "/messages": "Messages",
   "/profile": "Profile",
   "/playlists": "Playlists",
@@ -23,7 +20,6 @@ const TITLES = {
   "/settings": "Settings",
   "/analytics": "Analytics",
   "/record": "Record",
-  "/studio-editor": "AI Editor",
 };
 
 export default function MobileHeader() {
@@ -45,6 +41,7 @@ export default function MobileHeader() {
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div className="px-2 h-12 flex items-center justify-between gap-2">
+        {/* Left Section */}
         <div className="flex items-center gap-1 min-w-0">
           {isSubPage ? (
             <button
@@ -57,13 +54,14 @@ export default function MobileHeader() {
           ) : (
             <Link to="/" className="ml-1">
               <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-                <span className="text-white font-heading font-black text-[10px]">NC</span>
+                <Music className="w-4 h-4 text-white" />
               </div>
             </Link>
           )}
           <h1 className="font-heading font-bold text-base truncate">{title}</h1>
         </div>
 
+        {/* Right Section */}
         <div className="flex items-center gap-1 shrink-0">
           <NotificationBell />
           <Link to="/profile" className="p-1 rounded-lg hover:bg-primary/10 transition-all select-none">

@@ -25,7 +25,6 @@ import Messages from '@/pages/Messages';
 import Network from '@/pages/Network';
 import Files from '@/pages/Files';
 
-import Record from '@/pages/Record';
 import Settings from '@/pages/Settings';
 import Explore from '@/pages/Explore';
 import Leaderboard from '@/pages/Leaderboard';
@@ -48,7 +47,7 @@ const AuthenticatedApp = () => {
       <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-          <p className="text-sm text-muted-foreground font-heading">Loading studio...</p>
+          <p className="text-sm text-muted-foreground font-heading">Loading app...</p>
         </div>
       </div>
     );
@@ -89,7 +88,6 @@ const AuthenticatedApp = () => {
           <Route path="/network" element={<Network />} />
           <Route path="/files" element={<Files />} />
 
-          <Route path="/record" element={<Record />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />

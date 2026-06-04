@@ -58,22 +58,30 @@ export default function Profile() {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.auth.updateMe({ avatar_url: file_url });
-    const updated = await base44.auth.me();
-    setUser(updated);
-    setUploading(false);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.auth.updateMe({ avatar_url: file_url });
+      const updated = await base44.auth.me();
+      setUser(updated);
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   };
 
   const uploadCover = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.auth.updateMe({ cover_url: file_url });
-    const updated = await base44.auth.me();
-    setUser(updated);
-    setUploading(false);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.auth.updateMe({ cover_url: file_url });
+      const updated = await base44.auth.me();
+      setUser(updated);
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   };
 
   const toggleGenre = (g) => {

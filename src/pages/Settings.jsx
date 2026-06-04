@@ -38,9 +38,13 @@ export default function Settings() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setForm(f => ({ ...f, avatar_url: file_url }));
-    setUploading(false);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setForm(f => ({ ...f, avatar_url: file_url }));
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   };
 
   const addGenre = (genre) => {
@@ -56,9 +60,12 @@ export default function Settings() {
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.auth.updateMe(form);
-    toast.success("Profile updated!");
-    setSaving(false);
+    try {
+      await base44.auth.updateMe(form);
+      toast.success("Profile updated!");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!user) return <div className="flex items-center justify-center h-full"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;

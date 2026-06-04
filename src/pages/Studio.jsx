@@ -79,7 +79,7 @@ export default function Studio() {
 
   const addTrack = async (e) => {
     const file = e.target.files?.[0];
-    if (!file || !selectedProjectId) return;
+    if (!file || !selectedProjectId || !currentUser) return;
     setUploading(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });

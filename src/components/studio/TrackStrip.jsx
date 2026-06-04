@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useRef, useEffect, useMemo, useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Volume2, VolumeX, Trash2, Settings2, Layers, History } from "lucide-react";
@@ -15,25 +15,23 @@ const trackTypeColors = {
 };
 
 export default function TrackStrip({ track, onUpdate, onDelete, audioRef: externalRef, isPlaying, masterVolume, inQueue, onToggleQueue, canEdit = true, currentUser }) {
-  const [playing, setPlaying] = useState(false);
   const [showPan, setShowPan] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   // Stable waveform bar heights — regenerated only when track id changes
   const waveformBars = useMemo(() => Array.from({ length: 60 }, () => Math.random() * 28 + 4), [track.id]);
-  const localRef = useRef(null);
   // externalRef may be a callback ref (function) or a ref object; normalise to an object
   const audioRef = useRef(null);
-  const setAudioRef = (el) => {
+  const setAudioRef = useCallback((el) => {
     audioRef.current = el;
     if (typeof externalRef === "function") externalRef(el);
     else if (externalRef) externalRef.current = el;
-  };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (audioRef.current && masterVolume) {
-      audioRef.current.volume = ((track.volume || 75) / 100) * (masterVolume / 100);
+    if (audioRef.current) {
+      audioRef.current.volume = ((track.volume || 75) / 100) * ((masterVolume ?? 100) / 100);
     }
-  }, [masterVolume, track.volume, audioRef]);
+  }, [masterVolume, track.volume]);
 
   const toggleMute = () => canEdit && onUpdate({ muted: !track.muted });
   const toggleSolo = () => canEdit && onUpdate({ solo: !track.solo });
@@ -48,7 +46,6 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
         <audio
           ref={setAudioRef}
           src={track.file_url}
-          onEnded={() => setPlaying(false)}
           onTimeUpdate={() => {}}
         />
       )}

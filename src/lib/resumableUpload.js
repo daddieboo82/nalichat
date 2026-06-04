@@ -56,36 +56,13 @@ export async function resumableUpload(file, onProgress) {
     return file_url;
   }
 
-  // Chunked upload for large files
-  for (let i = 0; i < totalChunks; i++) {
-    if (uploadedChunks.includes(i)) {
-      onProgress?.(Math.round(((i + 1) / totalChunks) * 90));
-      continue;
-    }
-
-    const start = i * CHUNK_SIZE;
-    const end = Math.min(start + CHUNK_SIZE, file.size);
-    const chunk = file.slice(start, end);
-    const chunkFile = new File([chunk], `${file.name}.part${i}`, { type: file.type });
-
-    const { base44 } = await import("@/api/base44Client");
-    const { file_url: chunkUrl } = await base44.integrations.Core.UploadFile({ file: chunkFile });
-
-    uploadedChunks.push(i);
-    uploadedUrls.push(chunkUrl);
-
-    // Save progress
-    state[fileId] = { uploadedChunks: [...uploadedChunks], uploadedUrls: [...uploadedUrls], totalChunks, fileName: file.name };
-    saveUploadState(state);
-
-    onProgress?.(Math.round(((i + 1) / totalChunks) * 90));
-  }
-
-  // All chunks done — return the last chunk URL as the canonical URL
-  // (avoids re-uploading the entire file again)
+  // Large files: upload the full file directly (chunking is not supported server-side for merging)
+  onProgress?.(10);
+  const { base44 } = await import("@/api/base44Client");
+  const { file_url } = await base44.integrations.Core.UploadFile({ file });
   clearUploadState(fileId);
   onProgress?.(100);
-  return uploadedUrls[uploadedUrls.length - 1];
+  return file_url;
 }
 
 /**

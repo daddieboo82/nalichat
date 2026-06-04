@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/layout/PageTransition";
-import { Settings, LogOut, Compass, Trophy, User, Mic, Sparkles, Music, BarChart3, FileText, MessageSquare, Users, HelpCircle, UserPlus } from "lucide-react";
+import { Settings, LogOut, Compass, Trophy, User, Mic, Sparkles, Music, BarChart3, FileText, MessageSquare, Users, HelpCircle, UserPlus, Send } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,6 +16,7 @@ import { sounds } from "@/hooks/use-sound";
 import { useOnboarding } from "@/lib/OnboardingContext";
 import OnboardingOverlay from "@/components/onboarding/OnboardingOverlay";
 import GlobalInviteDialog from "@/components/GlobalInviteDialog";
+import GlobalMessageDialog from "@/components/GlobalMessageDialog";
 
 const navItems = [
   { icon: MessageSquare, label: "Messages", path: "/messages" },
@@ -35,6 +36,7 @@ export default function AppLayout() {
   const { isFirstTime, skipOnboarding } = useOnboarding();
   const [showHelp, setShowHelp] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [showMessage, setShowMessage] = useState(false);
 
   useSystemTheme();
 
@@ -101,6 +103,13 @@ export default function AppLayout() {
             <SoundToggle />
             <NotificationBell />
             <button
+              onClick={() => setShowMessage(true)}
+              title="Send Message"
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+            <button
               onClick={() => setShowInvite(true)}
               title="Invite Collaborators"
               className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
@@ -164,6 +173,9 @@ export default function AppLayout() {
 
       {/* Global Invite Dialog */}
       <GlobalInviteDialog open={showInvite} onOpenChange={setShowInvite} />
+
+      {/* Global Message Dialog */}
+      <GlobalMessageDialog open={showMessage} onOpenChange={setShowMessage} />
       </div>
       );
       }

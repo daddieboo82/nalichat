@@ -1,7 +1,12 @@
 import { useRef, useEffect, useMemo, useCallback, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Volume2, VolumeX, Trash2, Settings2, Layers, History } from "lucide-react";
+import { Volume2, VolumeX, Trash2, Settings2, Layers, History, MessageSquare, Send } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import TrackVersionHistory from "./TrackVersionHistory";
 
@@ -14,8 +19,34 @@ const trackTypeColors = {
   master: "bg-foreground",
 };
 
-export default function TrackStrip({ track, onUpdate, onDelete, audioRef: externalRef, isPlaying, masterVolume, inQueue, onToggleQueue, canEdit = true, currentUser }) {
+export default function TrackStrip({ track, onUpdate, onDelete, audioRef: externalRef, isPlaying, duration, masterVolume, inQueue, onToggleQueue, canEdit = true, currentUser }) {
   const [showPan, setShowPan] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [activeCommentTime, setActiveCommentTime] = useState(null);
+  const queryClient = useQueryClient();
+
+  const { data: comments = [] } = useQuery({
+    queryKey: ["trackComments", track.id],
+    queryFn: () => base44.entities.TrackComment.filter({ track_id: track.id })
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: async ({ text, timestamp }) => {
+      await base44.entities.TrackComment.create({
+        track_id: track.id,
+        author_id: currentUser?.id,
+        author_name: currentUser?.full_name,
+        author_avatar: currentUser?.avatar_url,
+        text,
+        timestamp
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["trackComments", track.id] });
+      setCommentText("");
+      setActiveCommentTime(null);
+    }
+  });
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   // Stable waveform bar heights — regenerated only when track id changes
   const waveformBars = useMemo(() => Array.from({ length: 60 }, () => Math.random() * 28 + 4), [track.id]);
@@ -57,7 +88,16 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
       </div>
 
       {/* Waveform */}
-      <div className="h-10 bg-secondary rounded-lg mb-2 flex items-center gap-px px-1.5 overflow-hidden">
+      <div 
+        className="h-10 bg-secondary rounded-lg mb-2 flex items-center gap-px px-1.5 overflow-hidden relative group cursor-crosshair"
+        onClick={(e) => {
+          if (!duration) return;
+          const rect = e.currentTarget.getBoundingClientRect();
+          const clickX = e.clientX - rect.left;
+          const percentage = clickX / rect.width;
+          setActiveCommentTime(percentage * duration);
+        }}
+      >
         {waveformBars.map((h, i) => (
           <div
             key={i}
@@ -65,6 +105,82 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
             style={{ height: `${h}px`, opacity: track.muted ? 0.3 : 0.7 }}
           />
         ))}
+
+        {/* Existing Comments Markers */}
+        {comments.map(comment => (
+          <Popover key={comment.id}>
+            <PopoverTrigger asChild>
+              <button 
+                className="absolute w-5 h-5 -ml-2.5 rounded-full bg-white border-2 border-primary shadow flex items-center justify-center hover:scale-125 transition-transform z-10"
+                style={{ left: `${(comment.timestamp / duration) * 100}%` }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Avatar className="w-full h-full">
+                  <AvatarImage src={comment.author_avatar} />
+                  <AvatarFallback className="text-[8px] bg-primary/20 text-primary font-bold">{comment.author_name?.[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3" onClick={e => e.stopPropagation()}>
+              <div className="flex items-start gap-3">
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src={comment.author_avatar} />
+                  <AvatarFallback className="bg-primary/20 text-primary font-bold">{comment.author_name?.[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold truncate pr-2">{comment.author_name || "Unknown"}</p>
+                    <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                      {Math.floor(comment.timestamp / 60)}:{String(Math.floor(comment.timestamp % 60)).padStart(2, "0")}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 break-words leading-relaxed">{comment.text}</p>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        ))}
+
+        {/* New Comment Popover */}
+        {activeCommentTime !== null && (
+          <Popover open={true} onOpenChange={(open) => !open && setActiveCommentTime(null)}>
+            <PopoverTrigger asChild>
+              <div 
+                className="absolute top-0 bottom-0 w-0.5 bg-primary z-20 pointer-events-none"
+                style={{ left: `${(activeCommentTime / duration) * 100}%` }}
+              >
+                <div className="absolute -top-1 -ml-1.5 w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center">
+                  <MessageSquare className="w-2 h-2 text-white" />
+                </div>
+              </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-2" onClick={e => e.stopPropagation()} onPointerDownOutside={() => setActiveCommentTime(null)}>
+              <div className="flex gap-2">
+                <Input 
+                  size="sm" 
+                  autoFocus
+                  placeholder="Add comment at this time..." 
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && commentText.trim()) {
+                      addCommentMutation.mutate({ text: commentText.trim(), timestamp: activeCommentTime });
+                    }
+                  }}
+                  className="h-8 text-xs"
+                />
+                <Button 
+                  size="icon" 
+                  className="h-8 w-8 shrink-0"
+                  disabled={!commentText.trim() || addCommentMutation.isPending}
+                  onClick={() => addCommentMutation.mutate({ text: commentText.trim(), timestamp: activeCommentTime })}
+                >
+                  <Send className="w-3 h-3" />
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
 
       <div className="space-y-2">

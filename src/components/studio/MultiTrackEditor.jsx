@@ -252,20 +252,27 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                   />
                   <div className="flex-1 min-w-0">
                     <TrackStrip
-                      track={track}
-                      isPlaying={isPlaying}
-                      currentTime={currentTime}
-                      onUpdate={(data) => canEdit && onTrackUpdate(track.id, data)}
-                      onDelete={() => canEdit && onTrackDelete(track.id)}
-                      audioRef={(ref) => {
-                        if (ref) audioElements.current[track.id] = ref;
-                        else delete audioElements.current[track.id];
-                      }}
-                      masterVolume={masterVolume}
-                      inQueue={queueIds.has(track.id)}
-                      onToggleQueue={() => toggleQueue(track)}
-                      canEdit={canEdit}
-                      currentUser={currentUser}
+                    track={track}
+                    isPlaying={isPlaying}
+                    currentTime={currentTime}
+                    duration={duration}
+                    onUpdate={(data) => canEdit && onTrackUpdate(track.id, data)}
+                    onDelete={() => canEdit && onTrackDelete(track.id)}
+                    audioRef={(ref) => {
+                      if (ref) {
+                        audioElements.current[track.id] = ref;
+                        if (!duration && ref.duration && !isNaN(ref.duration)) {
+                          setDuration(Math.max(duration, ref.duration));
+                        }
+                        ref.onloadedmetadata = () => setDuration(d => Math.max(d, ref.duration));
+                      }
+                      else delete audioElements.current[track.id];
+                    }}
+                    masterVolume={masterVolume}
+                    inQueue={queueIds.has(track.id)}
+                    onToggleQueue={() => toggleQueue(track)}
+                    canEdit={canEdit}
+                    currentUser={currentUser}
                     />
                   </div>
                 </div>

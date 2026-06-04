@@ -17,45 +17,44 @@ const features = [
     icon: MessageSquare,
     label: "Messages",
     path: "/messages",
-    description: "Real-time collaboration with voice, video & file sharing",
+    description: "Real-time messaging, voice notes & file sharing with artists",
     gradient: "from-primary to-primary/50",
     badge: "Core",
-  },
-  {
-    icon: Music,
-    label: "Playlists",
-    path: "/playlists",
-    description: "Curate & share your sound",
-    gradient: "from-accent to-accent/50",
-  },
-
-  {
-    icon: BarChart3,
-    label: "Analytics",
-    path: "/analytics",
-    description: "Track engagement & growth",
-    gradient: "from-cyan-500 to-blue-500",
-  },
-  {
-    icon: Trophy,
-    label: "Leaderboard",
-    path: "/leaderboard",
-    description: "Compete & showcase your talent",
-    gradient: "from-pink-500 to-rose-500",
-  },
-  {
-    icon: Users,
-    label: "Network",
-    path: "/network",
-    description: "Find your next collaborator",
-    gradient: "from-lime-500 to-green-500",
   },
   {
     icon: Compass,
     label: "Explore",
     path: "/explore",
-    description: "Browse trending tracks",
+    description: "Discover trending tracks & connect with creators",
     gradient: "from-indigo-500 to-purple-500",
+  },
+  {
+    icon: Music,
+    label: "Playlists",
+    path: "/playlists",
+    description: "Curate & share your favorite collections",
+    gradient: "from-accent to-accent/50",
+  },
+  {
+    icon: Users,
+    label: "Network",
+    path: "/network",
+    description: "Find your next collaborator or fan",
+    gradient: "from-lime-500 to-green-500",
+  },
+  {
+    icon: Trophy,
+    label: "Leaderboard",
+    path: "/leaderboard",
+    description: "Climb rankings & showcase your talent",
+    gradient: "from-pink-500 to-rose-500",
+  },
+  {
+    icon: BarChart3,
+    label: "Analytics",
+    path: "/analytics",
+    description: "Track plays, reach & audience growth",
+    gradient: "from-cyan-500 to-blue-500",
   },
 ];
 
@@ -63,18 +62,26 @@ const steps = [
   {
     number: "01",
     icon: Users,
-    title: "Create Your Profile",
-    description: "Set up your artist profile, add your genre, skills, and let the community discover you.",
+    title: "Connect with Creators",
+    description: "Find collaborators via Network, start conversations in Messages, and build your creative circle.",
     color: "text-primary",
     bg: "bg-primary/10",
   },
   {
     number: "02",
-    icon: Radio,
-    title: "Share & Grow",
-    description: "Post to Explore, climb the leaderboard, build playlists, and watch your audience expand.",
+    icon: Music,
+    title: "Share & Discover",
+    description: "Upload your tracks to Explore, listen to trending music, save to Playlists, and engage with the community.",
     color: "text-pink-400",
     bg: "bg-pink-400/10",
+  },
+  {
+    number: "03",
+    icon: Trophy,
+    title: "Grow Your Audience",
+    description: "Climb the Leaderboard, track Analytics, and watch your reach expand as listeners discover your work.",
+    color: "text-accent",
+    bg: "bg-accent/10",
   },
 ];
 
@@ -188,7 +195,7 @@ export default function Home() {
             Make Music.<br className="hidden md:block" /> Together.
           </h1>
           <p className="text-xl text-muted-foreground mb-10 leading-relaxed max-w-2xl mx-auto">
-            The artist collaboration platform. Real-time messaging, voice calls, multi-track studio, AI mastering—everything you need to create with your team and reach listeners.
+            Connect with artists. Share your sound. Build your fanbase. All in one place.
           </p>
 
           {/* CTAs */}
@@ -270,21 +277,21 @@ export default function Home() {
           <div className="absolute -inset-px bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-3xl pointer-events-none" />
           <div className="relative z-10">
             <h2 className="font-heading font-bold text-4xl mb-3">What You Can Actually Do</h2>
-            <p className="text-muted-foreground text-lg mb-10 max-w-2xl">Stop piecing together 5 different apps. Here's what's possible in NaliChat:</p>
+            <p className="text-muted-foreground text-lg mb-10 max-w-2xl">Everything you need to discover music, collaborate with artists, and grow your audience:</p>
             
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid md:grid-cols-3 gap-8">
               {[
                 {
-                  title: "🎵 Discover & Enjoy",
-                  items: ["Browse trending tracks", "Discover new artists", "Save to playlists", "Listen to previews"]
+                  title: "🎧 Discover Music",
+                  items: ["Browse trending tracks", "Find new artists", "Save to playlists", "Follow creators"]
                 },
                 {
-                  title: "💬 Collaborate in Real-Time",
-                  items: ["Live group sessions", "Voice & video calls", "Instant file sharing", "Thread-based feedback"]
+                  title: "💬 Connect & Collaborate",
+                  items: ["Real-time messaging", "Share files instantly", "Find collaborators", "Network with peers"]
                 },
                 {
-                  title: "🌍 Release & Grow",
-                  items: ["Share on Explore feed", "Climb the leaderboard", "Build your fan base", "Track analytics & plays"]
+                  title: "📈 Build Your Presence",
+                  items: ["Share your tracks", "Climb the leaderboard", "Track your stats", "Grow your following"]
                 }
               ].map((block) => (
                 <div key={block.title} className="border border-border/50 rounded-2xl p-6 bg-card/50 hover:border-primary/30 transition-colors">
@@ -324,11 +331,11 @@ export default function Home() {
                     <span className="text-xs font-bold tracking-widest text-primary uppercase bg-primary/10 px-3 py-1 rounded-full">Live Collaboration</span>
                   </div>
                   <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3 flex items-center gap-3">
-                    <MessageSquare className="w-8 h-8 text-primary shrink-0" />
-                    Connect & Create Together
+                   <MessageSquare className="w-8 h-8 text-primary shrink-0" />
+                   Real-Time Messaging
                   </h2>
                   <p className="text-lg text-muted-foreground mb-6 max-w-xl">
-                    Real-time messaging, voice notes, file sharing, and session coordination — all in one place. Build your creative circle and move fast.
+                   Connect instantly with other artists. Share files, exchange ideas, and collaborate without friction. All conversations in one organized inbox.
                   </p>
                   <div className="flex items-center gap-2 text-primary font-semibold group-hover:gap-3 transition-all">
                     Start connecting <ChevronRight className="w-4 h-4" />
@@ -373,11 +380,9 @@ export default function Home() {
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-bold tracking-widest text-yellow-400 uppercase bg-yellow-400/10 px-3 py-1 rounded-full">Powered by AI</span>
                 </div>
-                <h2 className="font-heading font-bold text-2xl md:text-3xl mb-2">Meet Nali, your AI music partner</h2>
+                <h2 className="font-heading font-bold text-2xl md:text-3xl mb-2">Your Music, Your Community</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  Ask anything, get expert music advice, and let Nali{" "}
-                  <span className="text-foreground font-semibold">automate the boring stuff</span> — create projects, master tracks, write your bio, build playlists, and more.
-                  Just tap the <span className="text-primary font-bold">✨</span> button anywhere in the app.
+                 Upload your tracks to Explore and let the community discover your sound. Get real-time feedback, build a fanbase, and watch your reach grow. All tracks are public by default, giving every artist equal exposure.
                 </p>
               </div>
             </div>
@@ -396,7 +401,7 @@ export default function Home() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
           >
             {features.map((feature) => {
               const Icon = feature.icon;
@@ -441,7 +446,7 @@ export default function Home() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {steps.map((step) => {
               const Icon = step.icon;
@@ -516,9 +521,9 @@ export default function Home() {
           className="grid grid-cols-1 md:grid-cols-3 gap-6"
         >
           {[
-            { value: "10K+", label: "Tracks Uploaded", from: "from-primary", to: "to-pink-500", hover: "hover:border-primary/50 hover:glow-primary" },
-            { value: "50K+", label: "Community Members", from: "from-accent", to: "to-cyan-400", hover: "hover:border-accent/50 hover:glow-accent" },
-            { value: "1M+", label: "Messages Sent", from: "from-pink-500", to: "to-purple-500", hover: "hover:border-pink-500/50" },
+           { value: "10K+", label: "Tracks Shared", from: "from-primary", to: "to-pink-500", hover: "hover:border-primary/50 hover:glow-primary" },
+           { value: "50K+", label: "Active Creators", from: "from-accent", to: "to-cyan-400", hover: "hover:border-accent/50 hover:glow-accent" },
+           { value: "100K+", label: "Conversations", from: "from-pink-500", to: "to-purple-500", hover: "hover:border-pink-500/50" },
           ].map((stat) => (
             <div
               key={stat.label}

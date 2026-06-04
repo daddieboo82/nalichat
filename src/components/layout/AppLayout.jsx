@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/layout/PageTransition";
-import { Settings, LogOut, Compass, Trophy, User, Mic, Sparkles, Music, BarChart3, FileText, MessageSquare, Users } from "lucide-react";
+import { Settings, LogOut, Compass, Trophy, User, Mic, Sparkles, Music, BarChart3, FileText, MessageSquare, Users, HelpCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,6 +13,8 @@ import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import { useSystemTheme } from "@/hooks/use-system-theme";
 import SoundToggle from "@/components/layout/SoundToggle";
 import { sounds } from "@/hooks/use-sound";
+import { useOnboarding } from "@/lib/OnboardingContext";
+import OnboardingOverlay from "@/components/onboarding/OnboardingOverlay";
 
 const navItems = [
   { icon: MessageSquare, label: "Messages", path: "/messages" },
@@ -29,6 +31,8 @@ const navItems = [
 export default function AppLayout() {
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const { isFirstTime, skipOnboarding } = useOnboarding();
+  const [showHelp, setShowHelp] = useState(false);
 
   useSystemTheme();
 
@@ -94,6 +98,13 @@ export default function AppLayout() {
           <div className="flex items-center gap-1 shrink-0">
             <SoundToggle />
             <NotificationBell />
+            <button
+              onClick={() => setShowHelp(true)}
+              title="Help & Tutorial"
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
             <Link
               to="/profile"
               title="Profile"
@@ -134,6 +145,13 @@ export default function AppLayout() {
 
       {/* Omnipresent AI */}
       <AiAssistant />
+
+      {/* Help Modal */}
+      <OnboardingOverlay
+        isOpen={showHelp}
+        onComplete={() => setShowHelp(false)}
+        completedSteps={new Set()}
+      />
     </div>
   );
 }

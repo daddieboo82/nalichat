@@ -13,6 +13,8 @@ import ProjectSettingsDialog from "@/components/studio/ProjectSettingsDialog";
 import MilestonesPanel from "@/components/studio/MilestonesPanel";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useOnboarding } from "@/lib/OnboardingContext";
+import TutorialTooltip from "@/components/onboarding/TutorialTooltip";
 
 const statusColors = {
   draft: "bg-muted text-muted-foreground",
@@ -23,6 +25,7 @@ const statusColors = {
 };
 
 export default function Studio() {
+  const { isFirstTime, markStepComplete } = useOnboarding();
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [showNewProject, setShowNewProject] = useState(false);
@@ -33,6 +36,7 @@ export default function Studio() {
   const [search, setSearch] = useState("");
   const [showProjectSettings, setShowProjectSettings] = useState(false);
   const [showMilestones, setShowMilestones] = useState(false);
+  const [showStudioTip, setShowStudioTip] = useState(isFirstTime);
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -74,6 +78,8 @@ export default function Studio() {
       setSelectedProjectId(data.id);
       setShowNewProject(false);
       setNewProjectTitle("");
+      setShowStudioTip(false);
+      markStepComplete("studio");
     },
   });
 
@@ -133,9 +139,19 @@ export default function Studio() {
             </div>
             <Dialog open={showNewProject} onOpenChange={setShowNewProject}>
               <DialogTrigger asChild>
-                <Button size="icon" variant="ghost" className="rounded-xl w-8 h-8 hover:bg-primary/20 hover:text-primary transition-all hover:scale-105">
-                  <Plus className="w-4 h-4" />
-                </Button>
+                <div className="relative">
+                  {showStudioTip && (
+                    <TutorialTooltip
+                      title="Create a Project"
+                      description="Start by making a new project to organize your tracks"
+                      position="bottom"
+                      onDismiss={() => setShowStudioTip(false)}
+                    />
+                  )}
+                  <Button size="icon" variant="ghost" className="rounded-xl w-8 h-8 hover:bg-primary/20 hover:text-primary transition-all hover:scale-105">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
               </DialogTrigger>
               <DialogContent className="bg-card border-border shadow-2xl">
                 <DialogHeader>

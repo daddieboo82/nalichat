@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import DailyRecommendation from "@/components/home/DailyRecommendation";
+import QuickStartGuide from "@/components/home/QuickStartGuide";
 import { sounds } from "@/hooks/use-sound";
 
 const features = [
@@ -287,6 +288,9 @@ export default function Home() {
       </section>
 
       <section className="relative z-10 max-w-7xl mx-auto px-6 py-20 space-y-24">
+
+        {/* ── Quick Start Guide ── */}
+        <QuickStartGuide />
 
         {/* ── Messaging Hero Card ── */}
         <motion.div

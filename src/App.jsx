@@ -10,6 +10,8 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLoader from '@/components/layout/AppLoader';
 import NavRipple from '@/components/layout/NavRipple';
+import { OnboardingProvider, useOnboarding } from '@/lib/OnboardingContext';
+import OnboardingOverlay from '@/components/onboarding/OnboardingOverlay';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -37,7 +39,9 @@ import Privacy from '@/pages/Privacy';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isFirstTime, skipOnboarding } = useOnboarding();
   const location = useLocation();
+  const [showOnboarding, setShowOnboarding] = useState(isFirstTime);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -60,8 +64,17 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <AnimatePresence mode="wait">
-    <Routes location={location}>
+    <>
+      <OnboardingOverlay 
+        isOpen={showOnboarding && !location.pathname.includes('/login') && !location.pathname.includes('/register')}
+        onComplete={() => {
+          setShowOnboarding(false);
+          skipOnboarding();
+        }}
+        completedSteps={new Set()}
+      />
+      <AnimatePresence mode="wait">
+      <Routes location={location}>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -90,8 +103,9 @@ const AuthenticatedApp = () => {
       </Route>
       <Route path="/privacy" element={<Privacy />} />
       <Route path="*" element={<PageNotFound />} />
-    </Routes>
-    </AnimatePresence>
+      </Routes>
+      </AnimatePresence>
+    </>
   );
 };
 
@@ -100,14 +114,16 @@ function App() {
 
   return (
     <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
-        <NavRipple />
-        <Router>
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
+      <OnboardingProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
+          <NavRipple />
+          <Router>
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+      </OnboardingProvider>
     </AuthProvider>
   )
 }

@@ -18,12 +18,20 @@ export async function requestPushPermission() {
 export async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return null;
 
-  // In dev mode, unregister any stale service workers and skip registration
-  // to prevent the SW from cache-serving stale Vite/React chunks.
-  if (import.meta.env.DEV) {
+  // Unregister stale SWs in dev mode OR in preview/sandbox environments
+  // to prevent cache-serving stale Vite/React chunks (causes null React hook errors).
+  const isPreview = window.location.hostname.includes('preview') ||
+    window.location.hostname.includes('sandbox') ||
+    window.location.hostname.includes('localhost');
+
+  if (import.meta.env.DEV || isPreview) {
     const registrations = await navigator.serviceWorker.getRegistrations();
     for (const reg of registrations) {
       await reg.unregister();
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
     }
     return null;
   }

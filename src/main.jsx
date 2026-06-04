@@ -3,14 +3,18 @@ import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
 
-// Always unregister any active service workers in dev mode to prevent
-// stale Vite/React chunks from being served from cache (causes null React hooks error).
+// Unregister stale service workers in dev/preview/sandbox to prevent
+// cached stale Vite/React chunks causing "Cannot read properties of null (reading 'useState')" errors.
 if ('serviceWorker' in navigator) {
-  if (import.meta.env.DEV) {
+  const isUnsafeEnv = import.meta.env.DEV ||
+    window.location.hostname.includes('preview') ||
+    window.location.hostname.includes('sandbox') ||
+    window.location.hostname.includes('localhost');
+
+  if (isUnsafeEnv) {
     navigator.serviceWorker.getRegistrations().then((regs) => {
       regs.forEach((reg) => reg.unregister());
     });
-    // Also clear all caches in dev
     if ('caches' in window) {
       caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
     }

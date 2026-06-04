@@ -206,10 +206,12 @@ export default function Files() {
             <p className="text-sm text-muted-foreground">Share music, sessions, art & more</p>
           </div>
           <div>
-            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleUpload} />
-            <Button className="rounded-xl bg-primary hover:bg-primary/90" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-              {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-              Upload File
+            <Button className="rounded-xl bg-primary hover:bg-primary/90 cursor-pointer" disabled={uploading} asChild>
+              <label>
+                <input type="file" multiple className="hidden" onChange={handleUpload} disabled={uploading} />
+                {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                Upload File
+              </label>
             </Button>
           </div>
         </div>

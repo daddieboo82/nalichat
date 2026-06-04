@@ -5,7 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { 
   X, Play, Pause, Scissors, Copy, Trash2, 
   Activity, Radio, Waves, Settings2, SlidersHorizontal,
-  VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair
+  VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -26,6 +26,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
   const [activeTool, setActiveTool] = useState('smart'); // smart, select, trim, fade
   const [selection, setSelection] = useState({ start: 0.25, end: 0.75 });
   const [fade, setFade] = useState({ in: 0.1, out: 0.1 });
+  const [isScanning, setIsScanning] = useState(false);
 
   const toggleEffect = (effect) => {
     if (activeEffects.some(e => e.id === effect.id)) {
@@ -42,6 +43,14 @@ export default function WaveEditor({ track, onClose, onSave }) {
     toast.success('Track saved with applied effects!');
     onSave(track.id, { ...track, effects: activeEffects });
     onClose();
+  };
+
+  const handleScanPlugins = () => {
+    setIsScanning(true);
+    setTimeout(() => {
+      setIsScanning(false);
+      toast.error("VST3/AU plugin scanning requires the NaliStudio Desktop Client.");
+    }, 2000);
   };
 
   // Power user keyboard shortcuts
@@ -104,7 +113,9 @@ export default function WaveEditor({ track, onClose, onSave }) {
             <div className="w-64 border-r border-border/50 bg-card/30 flex flex-col">
               <div className="p-3 text-sm font-semibold border-b border-border/50 text-muted-foreground flex items-center justify-between">
                 <span>Effects Chain</span>
-                <Button variant="ghost" size="icon" className="w-6 h-6"><Plus className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" className="w-6 h-6" onClick={() => toast.info("Toggle effects from the list below to build your chain.")}>
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
               <div className="flex-1 overflow-y-auto p-2 space-y-1">
                 {EFFECTS.map(effect => {
@@ -132,8 +143,14 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
                 <div className="mt-6 pt-4 border-t border-border/50 px-2">
                   <p className="text-xs text-muted-foreground font-medium mb-2">VST Plugins</p>
-                  <Button variant="outline" className="w-full text-xs h-8 border-dashed border-border/50 bg-transparent hover:bg-secondary/30">
-                    <Plus className="w-3 h-3 mr-2" /> Scan Plugins...
+                  <Button 
+                    variant="outline" 
+                    onClick={handleScanPlugins}
+                    disabled={isScanning}
+                    className="w-full text-xs h-8 border-dashed border-border/50 bg-transparent hover:bg-secondary/30"
+                  >
+                    {isScanning ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Plus className="w-3 h-3 mr-2" />}
+                    {isScanning ? "Scanning..." : "Scan Plugins..."}
                   </Button>
                 </div>
               </div>

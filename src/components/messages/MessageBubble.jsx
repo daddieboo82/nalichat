@@ -169,7 +169,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
               <ReactMarkdown
                 components={{
                   a: ({node, ...props}) => <a {...props} target="_blank" rel="noreferrer" className="underline font-semibold hover:opacity-80 break-all" />,
-                  p: ({node, ...props}) => <span {...props} />,
+                  p: ({node, ...props}) => <p className="mb-1.5 last:mb-0" {...props} />,
                   code: ({node, inline, ...props}) => <code {...props} className={cn("px-1.5 py-0.5 rounded-md text-xs font-mono bg-black/10 dark:bg-white/10")} />
                 }}
               >

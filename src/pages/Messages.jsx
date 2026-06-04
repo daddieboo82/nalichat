@@ -75,16 +75,44 @@ export default function Messages() {
   });
 
   useEffect(() => {
-    const unsub = base44.entities.Message.subscribe((event) => {
-      if (event.type === "create" && currentUser?.id && event.data?.sender_id !== currentUser?.id) {
-        sounds.notification();
+    if (!currentUser?.id) return;
+
+    const unsubMsg = base44.entities.Message.subscribe(async (event) => {
+      if (!event.data?.conversation_id) return;
+      
+      let convs = queryClient.getQueryData(["conversations"]) || [];
+      let isMyConv = convs.some(c => c.id === event.data.conversation_id && c.participant_ids?.includes(currentUser.id));
+
+      if (!isMyConv) {
+         try {
+           const conv = await base44.entities.Conversation.get(event.data.conversation_id);
+           if (conv && conv.participant_ids?.includes(currentUser.id)) {
+             isMyConv = true;
+           }
+         } catch(e) {}
       }
-      if (event.data?.conversation_id === selectedConvId) {
-        queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
+
+      if (isMyConv) {
+        if (event.type === "create" && event.data?.sender_id !== currentUser.id) {
+          sounds.notification();
+        }
+        if (event.data?.conversation_id === selectedConvId) {
+          queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
+        }
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
       }
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
     });
-    return unsub;
+
+    const unsubConv = base44.entities.Conversation.subscribe((event) => {
+      if (event.data?.participant_ids?.includes(currentUser.id)) {
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      }
+    });
+
+    return () => {
+      unsubMsg();
+      unsubConv();
+    };
   }, [selectedConvId, queryClient, currentUser]);
 
   const editMessage = useMutation({

@@ -95,7 +95,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
     setSegments(prev => prev.map(s => s.id === id ? { ...s, gain: newGain } : s));
   };
 
-  const commitGainChange = () => {
+  const commitSegmentChange = () => {
     setSegments(prev => { saveHistory(prev); return prev; });
   };
 
@@ -547,6 +547,95 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       <span className="text-[10px] text-white/80 font-mono truncate">{track.name} [{idx+1}]</span>
                     </div>
 
+                    {/* Left Trim Handle */}
+                    <div 
+                      className="absolute left-0 top-0 bottom-0 w-2 hover:w-3 cursor-col-resize hover:bg-white/30 z-30 transition-all flex items-center justify-center group/triml"
+                      title="Trim Start"
+                      onPointerDown={(e) => {
+                          if (activeTool !== 'select') return;
+                          e.stopPropagation();
+                          const rect = containerRef.current.getBoundingClientRect();
+                          const totalWidth = rect.width * zoom;
+                          const initialSeg = { ...seg };
+                          const handleMove = (moveEv) => {
+                              const clickX = moveEv.clientX - rect.left + containerRef.current.scrollLeft;
+                              let newStart = (clickX / totalWidth) * (track?.duration || 40);
+                              newStart = getSnappedTime(Math.max(0, Math.min(newStart, initialSeg.startOffset + initialSeg.duration - 0.1)));
+                              
+                              const timeDiff = newStart - initialSeg.startOffset;
+                              const ratio = timeDiff / initialSeg.duration;
+                              const newSourceStart = initialSeg.sourceStart + (initialSeg.sourceEnd - initialSeg.sourceStart) * ratio;
+                              
+                              setSegments(prev => prev.map(s => {
+                                  if (s.id === initialSeg.id) {
+                                      return {
+                                          ...s,
+                                          startOffset: newStart,
+                                          sourceStart: newSourceStart,
+                                          duration: initialSeg.duration - timeDiff,
+                                          waveform: initialSeg.waveform.slice(Math.max(0, Math.floor(initialSeg.waveform.length * ratio))),
+                                          fadeIn: s.fadeIn ? Math.max(0, s.fadeIn - timeDiff) : 0
+                                      };
+                                  }
+                                  return s;
+                              }));
+                          };
+                          const handleUp = () => {
+                              window.removeEventListener('pointermove', handleMove);
+                              window.removeEventListener('pointerup', handleUp);
+                              commitSegmentChange();
+                          };
+                          window.addEventListener('pointermove', handleMove);
+                          window.addEventListener('pointerup', handleUp);
+                      }}
+                    >
+                      <div className="w-[2px] h-4 bg-white/50 rounded-full group-hover/triml:bg-white" />
+                    </div>
+
+                    {/* Right Trim Handle */}
+                    <div 
+                      className="absolute right-0 top-0 bottom-0 w-2 hover:w-3 cursor-col-resize hover:bg-white/30 z-30 transition-all flex items-center justify-center group/trimr"
+                      title="Trim End"
+                      onPointerDown={(e) => {
+                          if (activeTool !== 'select') return;
+                          e.stopPropagation();
+                          const rect = containerRef.current.getBoundingClientRect();
+                          const totalWidth = rect.width * zoom;
+                          const initialSeg = { ...seg };
+                          const handleMove = (moveEv) => {
+                              const clickX = moveEv.clientX - rect.left + containerRef.current.scrollLeft;
+                              let newEnd = (clickX / totalWidth) * (track?.duration || 40);
+                              newEnd = getSnappedTime(Math.max(initialSeg.startOffset + 0.1, Math.min(newEnd, track?.duration || 40)));
+                              
+                              const newDuration = newEnd - initialSeg.startOffset;
+                              const ratio = newDuration / initialSeg.duration;
+                              const newSourceEnd = initialSeg.sourceStart + (initialSeg.sourceEnd - initialSeg.sourceStart) * ratio;
+                              
+                              setSegments(prev => prev.map(s => {
+                                  if (s.id === initialSeg.id) {
+                                      return {
+                                          ...s,
+                                          sourceEnd: newSourceEnd,
+                                          duration: newDuration,
+                                          waveform: initialSeg.waveform.slice(0, Math.max(1, Math.floor(initialSeg.waveform.length * ratio))),
+                                          fadeOut: s.fadeOut ? Math.max(0, s.fadeOut - (initialSeg.duration - newDuration)) : 0
+                                      };
+                                  }
+                                  return s;
+                              }));
+                          };
+                          const handleUp = () => {
+                              window.removeEventListener('pointermove', handleMove);
+                              window.removeEventListener('pointerup', handleUp);
+                              commitSegmentChange();
+                          };
+                          window.addEventListener('pointermove', handleMove);
+                          window.addEventListener('pointerup', handleUp);
+                      }}
+                    >
+                      <div className="w-[2px] h-4 bg-white/50 rounded-full group-hover/trimr:bg-white" />
+                    </div>
+
                     {/* Gain Line */}
                     <div 
                         className="absolute left-0 right-0 h-2 -mt-1 cursor-ns-resize hover:bg-white/30 z-20 group/gain flex items-center justify-center transition-colors"
@@ -564,7 +653,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                             const handleUp = () => {
                                 window.removeEventListener('pointermove', handleMove);
                                 window.removeEventListener('pointerup', handleUp);
-                                commitGainChange();
+                                commitSegmentChange();
                             };
                             window.addEventListener('pointermove', handleMove);
                             window.addEventListener('pointerup', handleUp);
@@ -588,8 +677,9 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
                     {/* Fade Handles */}
                     <div 
-                        className="absolute top-0 w-2.5 h-2.5 bg-white/50 hover:bg-white cursor-ew-resize z-30 rounded-br-sm"
+                        className="absolute top-0 w-4 h-4 bg-white/80 hover:bg-white hover:scale-110 cursor-ew-resize z-40 rounded-br-lg shadow-sm transition-transform flex items-center justify-center group/fadein"
                         style={{ left: `${((seg.fadeIn || 0) / seg.duration) * 100}%` }}
+                        title="Fade In"
                         onPointerDown={(e) => {
                             if (activeTool !== 'select') return;
                             e.stopPropagation();
@@ -602,15 +692,18 @@ export default function WaveEditor({ track, onClose, onSave }) {
                             const handleUp = () => {
                                 window.removeEventListener('pointermove', handleMove);
                                 window.removeEventListener('pointerup', handleUp);
-                                commitGainChange();
+                                commitSegmentChange();
                             };
                             window.addEventListener('pointermove', handleMove);
                             window.addEventListener('pointerup', handleUp);
                         }}
-                    />
+                    >
+                      <div className="w-[6px] h-[6px] bg-black/30 rounded-full group-hover/fadein:bg-black/50" />
+                    </div>
                     <div 
-                        className="absolute top-0 w-2.5 h-2.5 bg-white/50 hover:bg-white cursor-ew-resize z-30 rounded-bl-sm -translate-x-full"
+                        className="absolute top-0 w-4 h-4 bg-white/80 hover:bg-white hover:scale-110 cursor-ew-resize z-40 rounded-bl-lg shadow-sm transition-transform -translate-x-full flex items-center justify-center group/fadeout"
                         style={{ left: `${100 - ((seg.fadeOut || 0) / seg.duration) * 100}%` }}
+                        title="Fade Out"
                         onPointerDown={(e) => {
                             if (activeTool !== 'select') return;
                             e.stopPropagation();
@@ -623,12 +716,14 @@ export default function WaveEditor({ track, onClose, onSave }) {
                             const handleUp = () => {
                                 window.removeEventListener('pointermove', handleMove);
                                 window.removeEventListener('pointerup', handleUp);
-                                commitGainChange();
+                                commitSegmentChange();
                             };
                             window.addEventListener('pointermove', handleMove);
                             window.addEventListener('pointerup', handleUp);
                         }}
-                    />
+                    >
+                      <div className="w-[6px] h-[6px] bg-black/30 rounded-full group-hover/fadeout:bg-black/50" />
+                    </div>
 
                     {/* Waveform */}
                     <svg className="w-full h-full pt-5 pb-1 pointer-events-none" preserveAspectRatio="none" viewBox="0 0 1000 100">

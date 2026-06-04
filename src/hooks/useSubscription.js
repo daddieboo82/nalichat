@@ -18,7 +18,7 @@ export function useSubscription() {
 
   const isPro = subscription?.plan === 'pro' && subscription?.status === 'active';
   const isTrialActive = subscription?.trialActive;
-  const hasAccess = isPro || isTrialActive;
+  const hasAccess = subscription?.hasAccess;
 
   return {
     subscription,

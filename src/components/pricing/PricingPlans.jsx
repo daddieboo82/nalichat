@@ -3,95 +3,51 @@ import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
+import { useAuth } from "@/lib/AuthContext";
 
 const plans = [
   {
-    name: "Free",
-    price: "0",
-    description: "Discover & collaborate with artists",
+    id: "trial",
+    name: "24-Hour Trial",
+    price: "0.99",
+    period: "/24h",
+    description: "Full access for 24 hours",
     features: [
-      "Unlimited Studio Tracks",
-      "Unlimited Messaging & Voice Notes",
-      "Browse & Listen to Tracks",
-      "Create & Share Playlists",
-      "Access Explore & Network",
-      "Basic File Sharing (2GB)",
-      "Community Access",
+      "24 Hours Full Studio Access",
+      "Unlimited Tracks",
+      "All Pro Features",
     ],
-    cta: "Start Free",
+    cta: "Start Trial",
     popular: false,
   },
   {
-    name: "Creator",
-    price: "9.99",
+    id: "pro",
+    name: "Pro",
+    price: "24.95",
     period: "/month",
-    description: "Upload & share your music",
+    description: "Full access to all app features",
     features: [
-      "Everything in Free",
-      "Upload Unlimited Tracks",
-      "Analytics Dashboard",
-      "File Sharing (50GB)",
-      "Custom Artist Profile",
-      "Playlist Management Tools",
-    ],
-    cta: "Subscribe Now",
-    popular: true,
-    subscriptionInfo: {
-      subscriptionSettings: {
-        frequency: "MONTH",
-      },
-      title: "Creator - Monthly",
-      description: "Upload and share your music with full creator tools",
-    },
-  },
-  {
-    name: "Artist Pro",
-    price: "19.99",
-    period: "/month",
-    description: "Advanced collaboration & growth",
-    features: [
-      "Everything in Creator",
       "Unlimited Studio Tracks",
-      "File Sharing (250GB)",
-      "Collaboration Tools (up to 5 people)",
+      "Unlimited File Sharing",
       "Advanced Analytics & Insights",
       "Audience Management Tools",
       "Priority Support",
+      "Collaboration Tools",
     ],
     cta: "Subscribe Now",
-    popular: false,
-    subscriptionInfo: {
-      subscriptionSettings: {
-        frequency: "MONTH",
-      },
-      title: "Artist Pro - Monthly",
-      description: "Advanced tools for collaboration and audience growth",
-    },
+    popular: true,
   },
 ];
 
 export default function PricingPlans() {
   const [loading, setLoading] = useState(false);
-
+  const { user } = useAuth();
+  
   const handleSubscribe = async (plan) => {
     setLoading(true);
     try {
-      const origin = window.location.origin;
-      const items = [
-        {
-          name: plan.name,
-          quantity: 1,
-          price: plan.price,
-          subscriptionInfo: plan.subscriptionInfo,
-        },
-      ];
-
-      const response = await base44.functions.invoke("createCheckout", {
-        items,
-        callbackUrls: {
-          thankYouPageUrl: `${origin}/thank-you`,
-          postFlowUrl: `${origin}/`,
-        },
+      const response = await base44.functions.invoke("createSubscriptionCheckout", {
+        plan: plan.id,
       });
 
       if (response.data.checkoutUrl) {
@@ -109,14 +65,15 @@ export default function PricingPlans() {
     <section className="py-16 px-6 max-w-7xl mx-auto">
       <div className="text-center mb-12">
         <h2 className="font-heading font-black text-4xl mb-4">
-          Simple, Transparent Pricing
+          Unlock Full Access
         </h2>
         <p className="text-lg text-muted-foreground">
-          Messaging is always free. Upgrade to share music and access studio tools.
+          Your free hour has expired or you don't have an active subscription.
+          Upgrade now to continue creating!
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-8">
         {plans.map((plan, idx) => (
           <motion.div
             key={plan.name}
@@ -157,7 +114,7 @@ export default function PricingPlans() {
 
               <Button
                 onClick={() => handleSubscribe(plan)}
-                disabled={loading || plan.name === "Free"}
+                disabled={loading}
                 className={`w-full rounded-xl mb-8 ${
                   plan.popular
                     ? "bg-primary hover:bg-primary/90"

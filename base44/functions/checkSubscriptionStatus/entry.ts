@@ -14,19 +14,32 @@ Deno.serve(async (req) => {
       user_id: user.id,
     });
 
-    if (subs.length === 0) {
-      // User has no subscription - return free plan
+    const now = new Date();
+    const createdDate = new Date(user.created_date);
+    const diffHours = (now - createdDate) / (1000 * 60 * 60);
+    const hasOneHourFree = diffHours < 1;
+
+    const activeSubs = subs.filter(s => s.status === 'active' || s.status === 'trial');
+
+    if (activeSubs.length === 0) {
+      // User has no active subscription - check 1 hour free
       return Response.json({
         plan: 'free',
         status: 'active',
         trialActive: false,
+        hasAccess: hasOneHourFree,
       });
     }
 
-    const sub = subs[0];
-    const now = new Date();
+    const sub = activeSubs[0];
     const trialEndDate = sub.trial_end_date ? new Date(sub.trial_end_date) : null;
     const trialActive = trialEndDate && now < trialEndDate;
+
+    // For 24-hour trial, if trialEndDate has passed, we don't have access unless status is active and plan is pro
+    let hasAccess = false;
+    if (sub.plan === 'pro') hasAccess = true;
+    if (sub.plan === 'trial') hasAccess = trialActive;
+    if (hasOneHourFree) hasAccess = true;
 
     return Response.json({
       id: sub.id,
@@ -34,6 +47,7 @@ Deno.serve(async (req) => {
       status: sub.status,
       trialActive: !!trialActive,
       trialEndsAt: trialEndDate?.toISOString(),
+      hasAccess,
     });
   } catch (error) {
     console.error('Check subscription error:', error);

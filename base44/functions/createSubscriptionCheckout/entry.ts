@@ -28,30 +28,42 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Payment setup incomplete' }, { status: 500 });
     }
 
-    // Create checkout session with subscription
+    const bodyParams = await req.json().catch(() => ({}));
+    const planType = bodyParams.plan || 'pro';
+
+    let item;
+    if (planType === 'trial') {
+      item = {
+        name: 'NaliChat 24-Hour Trial',
+        description: 'Full access for 24 hours',
+        quantity: 1,
+        price: '0.99',
+      };
+    } else {
+      item = {
+        name: 'NaliChat Pro',
+        description: 'Full access to all app features',
+        quantity: 1,
+        price: '24.95',
+        lineItemType: 'SUBSCRIPTION',
+        subscriptionInfo: {
+          name: 'NaliChat Pro',
+          billingCycle: {
+            interval: 'MONTH',
+            count: 1,
+          },
+          paymentPlan: {
+            name: '$24.95/month',
+            price: '24.95',
+          },
+        },
+      };
+    }
+
+    // Create checkout session
     const checkoutPayload = {
       cart: {
-        items: [
-          {
-            name: 'NaliChat Pro — 7 Day Free Trial',
-            description: 'Unlimited projects, AI mastering, collaboration, and more',
-            quantity: 1,
-            price: '0.00',
-            lineItemType: 'SUBSCRIPTION',
-            subscriptionInfo: {
-              name: 'NaliChat Pro',
-              billingCycle: {
-                interval: 'MONTH',
-                count: 1,
-                trialDays: 7,
-              },
-              paymentPlan: {
-                name: '$9.99/month',
-                price: '9.99',
-              },
-            },
-          },
-        ],
+        items: [item],
         customerInfo: {
           email: user.email,
         },
@@ -101,13 +113,19 @@ Deno.serve(async (req) => {
 
     // Create pending subscription record
     const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + 7);
+    if (planType === 'trial') {
+      trialEndDate.setHours(trialEndDate.getHours() + 24);
+    } else {
+      // For Pro, we just set a far future date if it's not a free trial,
+      // but if we don't have free trial for Pro, we just don't need trial_end_date.
+      trialEndDate.setDate(trialEndDate.getDate() + 30);
+    }
 
     try {
       await base44.asServiceRole.entities.Subscription.create({
         user_id: user.id,
-        plan: 'pro',
-        status: 'trial',
+        plan: planType,
+        status: 'pending',
         checkout_id: checkoutId,
         trial_end_date: trialEndDate.toISOString(),
       });

@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const DefaultFallback = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -11,6 +12,8 @@ const DefaultFallback = () => (
 
 export default function ProtectedRoute({ fallback = <DefaultFallback />, unauthenticatedElement }) {
   const { isAuthenticated, isLoadingAuth, authChecked, authError, checkUserAuth } = useAuth();
+  const { hasAccess, isLoading: isSubLoading } = useSubscription();
+  const location = useLocation();
 
   useEffect(() => {
     if (!authChecked && !isLoadingAuth) {
@@ -18,7 +21,7 @@ export default function ProtectedRoute({ fallback = <DefaultFallback />, unauthe
     }
   }, [authChecked, isLoadingAuth, checkUserAuth]);
 
-  if (isLoadingAuth || !authChecked) {
+  if (isLoadingAuth || !authChecked || (isAuthenticated && isSubLoading)) {
     return fallback;
   }
 
@@ -31,6 +34,12 @@ export default function ProtectedRoute({ fallback = <DefaultFallback />, unauthe
 
   if (!isAuthenticated) {
     return unauthenticatedElement;
+  }
+
+  // Paywall enforcement
+  const allowedPaths = ['/pricing', '/thank-you', '/profile'];
+  if (!hasAccess && !allowedPaths.includes(location.pathname)) {
+    return <Navigate to="/pricing" replace />;
   }
 
   return <Outlet />;

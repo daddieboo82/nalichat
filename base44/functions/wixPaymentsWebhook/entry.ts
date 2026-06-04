@@ -54,7 +54,9 @@ Deno.serve(async (req) => {
         const sub = subs[0];
         const subscriptionId = event.data?.order?.lineItems?.[0]?.subscriptionInfo?.id;
 
-        if (!subscriptionId) {
+        // For recurring subscriptions, we expect an ID. 
+        // For one-time trials, we don't.
+        if (sub.plan !== 'trial' && !subscriptionId) {
           console.warn('No subscriptionInfo.id in order');
           return Response.json({ success: true });
         }
@@ -66,11 +68,10 @@ Deno.serve(async (req) => {
           return Response.json({ success: true });
         }
 
-        // Update subscription to active with Wix ID
+        // Update subscription to active
         await base44.asServiceRole.entities.Subscription.update(sub.id, {
           status: 'active',
-          subscription_id: subscriptionId,
-          plan: 'pro',
+          subscription_id: subscriptionId || null,
         });
 
         console.log('Subscription activated for user:', sub.user_id);

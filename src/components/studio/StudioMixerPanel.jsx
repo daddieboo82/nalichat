@@ -55,10 +55,10 @@ export default function StudioMixerPanel({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: tracks.length * 0.05 }}
-            className="w-24 bg-secondary/50 border border-border/40 rounded-lg p-3 flex flex-col items-center justify-between min-h-96"
+            className="w-24 bg-gradient-to-b from-green-500/20 to-green-500/5 border border-green-500/40 rounded-xl p-3 flex flex-col items-center justify-between min-h-96 shadow-lg shadow-green-500/20"
           >
             <div>
-              <p className="text-xs font-bold text-foreground text-center mb-3">MASTER</p>
+              <p className="text-xs font-bold text-green-400 text-center mb-3 uppercase tracking-widest">Master</p>
             </div>
 
             <div className="flex-1 flex flex-col items-center justify-center">

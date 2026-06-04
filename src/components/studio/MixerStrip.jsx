@@ -21,13 +21,14 @@ export default function MixerStrip({ track }) {
   return (
     <div
       className={cn(
-        "w-24 bg-secondary/50 border border-border/40 rounded-lg p-3 flex flex-col items-center justify-between min-h-96 transition-all hover:border-primary/50",
-        isMuted && "opacity-50"
+        "w-24 bg-gradient-to-b from-secondary/60 to-secondary/20 border border-border/40 rounded-xl p-3 flex flex-col items-center justify-between min-h-96 transition-all hover:border-primary/60 hover:shadow-lg",
+        isMuted && "opacity-40"
       )}
+      style={!isMuted ? { boxShadow: `0 8px 24px ${gradient.includes("primary") ? "rgb(200, 100, 255, 0.15)" : "rgb(100, 200, 255, 0.15)"}` } : {}}
     >
       {/* Track Name & Icon */}
       <div className="text-center w-full">
-        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradient} mx-auto mb-2 flex items-center justify-center shadow-lg`}>
+        <div className={`w-11 h-11 rounded-lg bg-gradient-to-br ${gradient} mx-auto mb-2 flex items-center justify-center shadow-xl border border-white/20`}>
           <Volume2 className="w-5 h-5 text-white" />
         </div>
         <p className="text-xs font-bold text-foreground truncate">{track.name}</p>
@@ -69,12 +70,12 @@ export default function MixerStrip({ track }) {
         <button
           onClick={() => setIsMuted(!isMuted)}
           className={cn(
-            "w-full py-1.5 rounded-md transition-all flex items-center justify-center text-[10px] font-semibold",
+            "w-full py-1.5 rounded-lg transition-all flex items-center justify-center text-[10px] font-bold uppercase tracking-widest",
             isMuted
-              ? "bg-destructive/30 text-destructive hover:bg-destructive/40"
-              : "bg-secondary/50 text-muted-foreground hover:bg-secondary/70"
+              ? "bg-destructive/40 text-destructive border border-destructive/50 shadow-lg shadow-destructive/20"
+              : "bg-accent/30 text-accent border border-accent/40 hover:bg-accent/40 shadow-lg shadow-accent/20"
           )}
-          title="Toggle mute"
+          title={isMuted ? "Unmute" : "Mute"}
         >
           {isMuted ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
         </button>

@@ -2,8 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { ChevronLeft, Loader2, RotateCcw, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useUndoRedo } from "@/lib/useUndoRedo";
 
 import StudioTransport from "@/components/studio/StudioTransport";
 import StudioArrange from "@/components/studio/StudioArrange";
@@ -72,28 +74,54 @@ export default function StudioNew() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-black" style={{ background: "hsl(240 10% 3%)" }}>
-      {/* Top Bar */}
-      <div className="h-14 border-b border-border/40 flex items-center px-4 gap-3 bg-secondary/20 backdrop-blur-md">
+    <div className="h-full flex flex-col bg-gradient-to-b from-secondary/5 to-background" style={{ background: "hsl(240 10% 3%)" }}>
+      {/* Top Bar - Enhanced */}
+      <div className="h-16 border-b border-primary/10 flex items-center px-6 gap-4 bg-gradient-to-r from-secondary/40 via-secondary/20 to-background backdrop-blur-xl shadow-lg shadow-primary/5">
         <button
           onClick={() => setSelectedProjectId(null)}
-          className="p-2 -ml-2 rounded-lg hover:bg-secondary/50 transition-colors text-muted-foreground hover:text-foreground"
+          className="p-2 -ml-2 rounded-xl hover:bg-secondary/60 transition-all text-muted-foreground hover:text-primary active:scale-95"
           title="Back to projects"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         
         <div className="flex-1 min-w-0">
-          <h1 className="text-lg font-heading font-bold text-foreground truncate">
+          <h1 className="text-xl font-heading font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent truncate">
             {selectedProject?.title}
           </h1>
-          <p className="text-xs text-muted-foreground">
-            {selectedProject?.bpm} BPM • {selectedProject?.key} • {tracks.length} tracks
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <span className="text-xs text-muted-foreground/70 font-mono">{selectedProject?.bpm} BPM</span>
+            <span className="text-xs text-muted-foreground/70">•</span>
+            <span className="text-xs text-muted-foreground/70 font-mono">{selectedProject?.key}</span>
+            <span className="text-xs text-muted-foreground/70">•</span>
+            <span className="text-xs text-accent font-semibold">{tracks.length} Track{tracks.length !== 1 ? "s" : ""}</span>
+          </div>
         </div>
 
-        {/* Mode Selector */}
-        <div className="flex gap-1 bg-secondary/30 rounded-lg p-1">
+        {/* Undo/Redo Buttons */}
+        <div className="flex gap-2">
+          <Button
+            size="icon"
+            variant="ghost"
+            disabled
+            className="rounded-lg w-9 h-9 hover:bg-secondary/60 hover:text-primary transition-all text-muted-foreground"
+            title="Undo"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            disabled
+            className="rounded-lg w-9 h-9 hover:bg-secondary/60 hover:text-primary transition-all text-muted-foreground"
+            title="Redo"
+          >
+            <RotateCw className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Mode Selector - Enhanced */}
+        <div className="flex gap-2 bg-secondary/30 rounded-xl p-1.5 border border-border/30 shadow-lg shadow-primary/5">
           {[
             { id: "record", label: "Record" },
             { id: "arrange", label: "Arrange" },
@@ -103,10 +131,10 @@ export default function StudioNew() {
               key={m.id}
               onClick={() => setMode(m.id)}
               className={cn(
-                "px-3 py-1.5 text-xs font-semibold rounded transition-all",
+                "px-4 py-1.5 text-xs font-bold rounded-lg transition-all",
                 mode === m.id
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg shadow-primary/40"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
               )}
             >
               {m.label}

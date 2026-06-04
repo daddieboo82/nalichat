@@ -18,14 +18,14 @@ export default function StudioArrange({
 
   if (tracks.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-secondary/10 to-background">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center max-w-md"
         >
-          <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/20">
-            <Volume2 className="w-10 h-10 text-primary/60" />
+          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/40 to-accent/20 flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-primary/30 border border-primary/30">
+            <Volume2 className="w-12 h-12 text-primary/70" />
           </div>
           <h3 className="text-xl font-heading font-bold text-foreground mb-2">No Tracks Yet</h3>
           <p className="text-muted-foreground text-sm mb-6">

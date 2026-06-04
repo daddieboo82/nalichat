@@ -129,7 +129,7 @@ export default function StudioRecorder({
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto">
+    <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto bg-gradient-to-b from-secondary/10 to-background">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -143,15 +143,15 @@ export default function StudioRecorder({
               transition={{ duration: 0.5, repeat: Infinity }}
               className="inline-block"
             >
-              <div className="w-20 h-20 mx-auto rounded-full bg-destructive/20 flex items-center justify-center mb-4 shadow-2xl shadow-destructive/30">
-                <div className="w-16 h-16 rounded-full bg-destructive/30 flex items-center justify-center">
-                  <Mic className="w-8 h-8 text-destructive" />
+              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-destructive/40 to-destructive/20 flex items-center justify-center mb-4 shadow-2xl shadow-destructive/40 border border-destructive/30">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-destructive/50 to-destructive/30 flex items-center justify-center border border-destructive/40">
+                  <Mic className="w-10 h-10 text-destructive" />
                 </div>
               </div>
             </motion.div>
           ) : (
-            <div className="w-20 h-20 mx-auto rounded-full bg-primary/20 flex items-center justify-center mb-4 shadow-2xl shadow-primary/30">
-              <Mic className="w-8 h-8 text-primary" />
+            <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary/40 to-accent/20 flex items-center justify-center mb-4 shadow-2xl shadow-primary/40 border border-primary/30">
+              <Mic className="w-10 h-10 text-primary" />
             </div>
           )}
           

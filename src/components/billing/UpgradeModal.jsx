@@ -14,12 +14,20 @@ export default function UpgradeModal({ open, onOpenChange, triggerReason = "proj
     try {
       const response = await base44.functions.invoke("createSubscriptionCheckout", {});
       if (response.data?.checkoutUrl) {
-        window.location.href = response.data.checkoutUrl;
+        // Use window.open to maintain session, fallback to direct nav
+        const popup = window.open(response.data.checkoutUrl, '_blank');
+        if (!popup) {
+          // Popup blocked, do direct navigation
+          window.location.href = response.data.checkoutUrl;
+        }
       } else {
-        setError("Failed to start checkout");
+        const errorMsg = response.data?.error || response.data?.details || "Failed to start checkout";
+        setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+        setLoading(false);
       }
     } catch (err) {
-      setError(err.message || "Checkout failed");
+      console.error('Checkout error:', err);
+      setError(err.response?.data?.error || err.message || "Checkout failed. Please try again.");
       setLoading(false);
     }
   };

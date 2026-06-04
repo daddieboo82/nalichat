@@ -115,21 +115,24 @@ const testimonials = [
     role: "Producer",
     avatar: "J",
     color: "from-primary to-pink-500",
-    quote: "NaliChat completely changed how I collaborate. I finished 3 tracks this month I never would have alone.",
+    quote: "Went from garage bedroom to 10K followers in 3 months. Finished 8 tracks using the studio. Found my mastering engineer here.",
+    metric: "8 tracks released",
   },
   {
     name: "Amara S.",
     role: "Singer-Songwriter",
     avatar: "A",
     color: "from-accent to-cyan-400",
-    quote: "The AI mastering is insane. My demos sound professional before I even send them to a mixer.",
+    quote: "AI mastering saved me $200/track. My demos now sound like $5K studio sessions. Landed 2 placements from Explore.",
+    metric: "$2.4K saved",
   },
   {
     name: "Dre M.",
     role: "Beatmaker",
     avatar: "D",
     color: "from-yellow-500 to-orange-500",
-    quote: "Found my whole team here — vocalist, mixing engineer, and a manager. All in one app.",
+    quote: "Assembled my entire production team here. We ship 4 tracks a week now instead of 1. All remote. Makes real money.",
+    metric: "Team of 4",
   },
 ];
 
@@ -215,10 +218,10 @@ export default function Home() {
           )}
 
           <h1 className="font-heading font-black text-5xl md:text-7xl mb-5 text-gradient-animate leading-tight">
-            Make Music.<br className="hidden md:block" /> Together.
+            Write. Record. Master.<br className="hidden md:block" /> Release.
           </h1>
           <p className="text-xl text-muted-foreground mb-10 leading-relaxed max-w-2xl mx-auto">
-            NaliChat brings artists, producers, and engineers into one creative universe. Record, collaborate, master with AI, and share your sound with the world.
+            Everything you need to produce professional music from your laptop — multi-track studio, real-time collaboration, AI mastering, and a platform to reach listeners. All in one app. No experience required.
           </p>
 
           {/* CTAs */}
@@ -261,7 +264,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mt-5 text-sm text-muted-foreground">
-              Free forever · No credit card · 50K+ artists already inside
+             ✅ Free forever · 💳 No credit card · 👥 50K+ creators already shipping
             </p>
           )}
         </motion.div>
@@ -288,6 +291,54 @@ export default function Home() {
       </section>
 
       <section className="relative z-10 max-w-7xl mx-auto px-6 py-20 space-y-24">
+
+        {/* ── What You Can Do ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="bg-card border border-border rounded-3xl p-8 md:p-12 overflow-hidden"
+        >
+          <div className="absolute -inset-px bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-3xl pointer-events-none" />
+          <div className="relative z-10">
+            <h2 className="font-heading font-bold text-4xl mb-3">What You Can Actually Do</h2>
+            <p className="text-muted-foreground text-lg mb-10 max-w-2xl">Stop piecing together 5 different apps. Here's what's possible in NaliChat:</p>
+            
+            <div className="grid md:grid-cols-2 gap-8">
+              {[
+                {
+                  title: "🎙️ Record & Produce",
+                  items: ["Upload stems from any DAW", "Build multi-track projects", "Real-time tempo sync", "Professional mixing workspace"]
+                },
+                {
+                  title: "🤖 AI-Powered Mastering",
+                  items: ["One-click audio mastering", "Stem analysis & suggestions", "BPM & genre detection", "Instant artist bio generation"]
+                },
+                {
+                  title: "💬 Collaborate in Real-Time",
+                  items: ["Live group sessions", "Voice & video calls", "Instant file sharing", "Thread-based feedback"]
+                },
+                {
+                  title: "🌍 Release & Grow",
+                  items: ["Share on Explore feed", "Climb the leaderboard", "Build your fan base", "Track analytics & plays"]
+                }
+              ].map((block) => (
+                <div key={block.title} className="border border-border/50 rounded-2xl p-6 bg-card/50 hover:border-primary/30 transition-colors">
+                  <h3 className="font-heading font-bold text-xl mb-4">{block.title}</h3>
+                  <ul className="space-y-2">
+                    {block.items.map((item) => (
+                      <li key={item} className="flex items-center gap-3 text-muted-foreground">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
 
         {/* ── Quick Start Guide ── */}
         <QuickStartGuide />
@@ -471,14 +522,21 @@ export default function Home() {
                     ))}
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed mb-5 italic">"{t.quote}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center text-white font-bold text-sm`}>
-                      {t.avatar}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center text-white font-bold text-sm`}>
+                        {t.avatar}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">{t.name}</p>
+                        <p className="text-xs text-muted-foreground">{t.role}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-sm">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">{t.role}</p>
-                    </div>
+                    {t.metric && (
+                      <div className="text-right">
+                        <p className="font-bold text-primary text-sm">{t.metric}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>

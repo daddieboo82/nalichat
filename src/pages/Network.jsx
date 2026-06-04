@@ -5,7 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, MessageSquare, Music, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -52,20 +51,22 @@ export default function Network() {
         <h1 className="text-2xl font-heading font-bold mb-1">Network</h1>
         <p className="text-sm text-muted-foreground mb-6">Connect with artists, producers, engineers & A&Rs</p>
         
-        <div className="flex items-center gap-4 mb-6">
-          <div className="relative flex-1 max-w-md">
+        <div className="flex flex-col gap-3 mb-6">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Search by name, genre, or location..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-secondary/50 border-0 rounded-xl" />
           </div>
-          <Tabs value={roleFilter} onValueChange={setRoleFilter}>
-            <TabsList className="bg-secondary/50">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="artist">Artists</TabsTrigger>
-              <TabsTrigger value="producer">Producers</TabsTrigger>
-              <TabsTrigger value="engineer">Engineers</TabsTrigger>
-              <TabsTrigger value="ar">A&R</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {["all", "artist", "producer", "engineer", "ar"].map(r => (
+              <button
+                key={r}
+                onClick={() => setRoleFilter(r)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap capitalize shrink-0 transition-colors ${roleFilter === r ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
+              >
+                {r === "all" ? "All" : r === "ar" ? "A&R" : r.charAt(0).toUpperCase() + r.slice(1) + "s"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

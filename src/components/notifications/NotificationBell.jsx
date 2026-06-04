@@ -39,7 +39,7 @@ export default function NotificationBell() {
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
     load(user.id);
     const unsub = base44.entities.Notification.subscribe((event) => {
       const me = userRef.current;
@@ -77,7 +77,7 @@ export default function NotificationBell() {
   const toggle = () => {
     const next = !open;
     setOpen(next);
-    if (next && unread > 0) markAllRead();
+    if (next && unread > 0 && user) markAllRead();
   };
 
   return (

@@ -39,7 +39,7 @@ export default function Profile() {
 
   const save = async () => {
     setSaving(true);
-    await base44.auth.updateMe({
+    try { await base44.auth.updateMe({
       display_name: form.display_name,
       bio: form.bio,
       artist_role: form.artist_role,
@@ -50,8 +50,8 @@ export default function Profile() {
     const updated = await base44.auth.me();
     setUser(updated);
     setForm(updated);
-    setSaving(false);
     setEditing(false);
+    } finally { setSaving(false); }
   };
 
   const uploadAvatar = async (e) => {

@@ -63,8 +63,9 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/" element={<AppLayout />}>
-        <Route index element={<Home />} />
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/explore" element={<Explore />} />
       </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route element={<AppLayout />}>
@@ -75,7 +76,6 @@ const AuthenticatedApp = () => {
           <Route path="/studio-editor" element={<StudioEditor />} />
           <Route path="/record" element={<Record />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/explore" element={<Explore />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/playlists" element={<Playlists />} />

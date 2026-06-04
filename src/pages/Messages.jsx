@@ -18,7 +18,7 @@ export default function Messages() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser);
+    base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
   const { data: users = [] } = useQuery({
@@ -163,9 +163,9 @@ export default function Messages() {
     setSelectedConvId(conv.id);
   };
 
-  const otherUsers = users.filter(u => u.id !== currentUser?.id);
-
   const selectedConv = myConversations.find(c => c.id === selectedConvId);
+
+  const otherUsers = users.filter(u => u.id !== currentUser?.id);
 
   return (
     <div className="h-full flex overflow-hidden">

@@ -131,19 +131,38 @@ export default function Home() {
           </p>
 
           <div className="flex gap-4 justify-center flex-wrap">
-            <Link to="/messages">
-              <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover">
-                <MessageSquare className="w-5 h-5 mr-2" />
-                Start Messaging
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
-            <Link to="/studio">
-              <Button size="lg" variant="outline" className="rounded-xl text-base">
-                <Mic className="w-5 h-5 mr-2" />
-                Open Studio
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <Link to="/messages">
+                  <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover">
+                    <MessageSquare className="w-5 h-5 mr-2" />
+                    Start Messaging
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+                <Link to="/studio">
+                  <Button size="lg" variant="outline" className="rounded-xl text-base">
+                    <Mic className="w-5 h-5 mr-2" />
+                    Open Studio
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/register">
+                  <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover">
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Join Free
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+                <Link to="/login">
+                  <Button size="lg" variant="outline" className="rounded-xl text-base">
+                    Sign In
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </motion.div>
       </section>
@@ -292,18 +311,37 @@ export default function Home() {
               {user ? `Welcome back, ${user.full_name}! Start your creative journey.` : "Join thousands of artists creating together."}
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
-              <Link to="/studio">
-                <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90">
-                  <Mic className="w-5 h-5 mr-2" />
-                  Create Project
-                </Button>
-              </Link>
-              <Link to="/explore">
-                <Button size="lg" variant="outline" className="rounded-xl">
-                  <Compass className="w-5 h-5 mr-2" />
-                  Explore Tracks
-                </Button>
-              </Link>
+              {user ? (
+                <>
+                  <Link to="/studio">
+                    <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90">
+                      <Mic className="w-5 h-5 mr-2" />
+                      Create Project
+                    </Button>
+                  </Link>
+                  <Link to="/explore">
+                    <Button size="lg" variant="outline" className="rounded-xl">
+                      <Compass className="w-5 h-5 mr-2" />
+                      Explore Tracks
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/register">
+                    <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90">
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      Get Started Free
+                    </Button>
+                  </Link>
+                  <Link to="/explore">
+                    <Button size="lg" variant="outline" className="rounded-xl">
+                      <Compass className="w-5 h-5 mr-2" />
+                      Explore Tracks
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </motion.div>

@@ -131,9 +131,6 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
                 defaultValue={0}
                 className="flex-1 h-1.5 accent-primary cursor-pointer"
                 onChange={(e) => seekTo(Number(e.target.value))}
-                onMouseMove={(e) => {
-                  if (audioRef.current) audioRef.current.currentTime = Number(e.target.value);
-                }}
               />
               <span className="text-xs text-muted-foreground shrink-0">{formatTime(duration)}</span>
             </div>

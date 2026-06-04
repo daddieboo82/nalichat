@@ -10,7 +10,7 @@ export default function Analytics() {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser);
+    base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
   const { data: userPosts = [] } = useQuery({

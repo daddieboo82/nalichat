@@ -209,7 +209,9 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
 
         {/* Start Session */}
         <button
-          onClick={() => {
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
             const name = prompt("Session name:", "New Recording Session");
             if (name) {
               onSend({ text: name, type: "session" });
@@ -225,7 +227,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
         {/* Emoji */}
         <div className="relative">
           <button
-            onClick={() => setShowEmoji(v => !v)}
+            type="button"
+            onClick={(e) => { e.preventDefault(); setShowEmoji(!showEmoji); }}
             disabled={isRecording}
             className={cn("w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5 touch-manipulation",
               showEmoji ? "text-primary bg-primary/15" : "text-muted-foreground hover:text-primary hover:bg-primary/10")}
@@ -247,7 +250,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
 
         {/* Attach */}
         <button
-          onClick={() => fileInputRef.current?.click()}
+          type="button"
+          onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
           disabled={anyUploading || isRecording}
           className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shrink-0 mb-0.5 touch-manipulation"
         >
@@ -302,7 +306,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
         {/* Send or Record */}
         {text.trim() ? (
           <motion.button
-            onClick={handleSend}
+            type="button"
+            onClick={(e) => { e.preventDefault(); handleSend(); }}
             disabled={disabled}
             whileTap={{ scale: 0.88 }}
             whileHover={{ scale: 1.08 }}
@@ -312,7 +317,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
           </motion.button>
         ) : isRecording ? (
           <motion.button
-            onClick={stopRecording}
+            type="button"
+            onClick={(e) => { e.preventDefault(); stopRecording(); }}
             whileTap={{ scale: 0.88 }}
             className="w-10 h-10 rounded-full bg-destructive flex items-center justify-center shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-destructive/40"
             animate={{ boxShadow: ["0 0 8px hsl(0 72% 51% / 0.4)", "0 0 20px hsl(0 72% 51% / 0.7)", "0 0 8px hsl(0 72% 51% / 0.4)"] }}
@@ -322,7 +328,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
           </motion.button>
         ) : (
           <motion.button
-            onClick={startRecording}
+            type="button"
+            onClick={(e) => { e.preventDefault(); startRecording(); }}
             disabled={anyUploading || disabled}
             whileTap={{ scale: 0.88 }}
             whileHover={{ scale: 1.1 }}

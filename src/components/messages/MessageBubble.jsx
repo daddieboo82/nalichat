@@ -249,7 +249,8 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
         </div>
 
         <button
-          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+          type="button"
+          onClick={(e) => { e.preventDefault(); setShowEmojiPicker(!showEmojiPicker); }}
           className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
           title="More reactions"
         >

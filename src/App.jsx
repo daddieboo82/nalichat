@@ -36,6 +36,7 @@ import ThankYou from '@/pages/ThankYou';
 import PricingPlans from '@/components/pricing/PricingPlans';
 import Privacy from '@/pages/Privacy';
 import Studio from '@/pages/Studio';
+import CoverArt from '@/pages/CoverArt';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -114,6 +115,7 @@ const AuthenticatedApp = () => {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/pricing" element={<PricingPlans />} />
+          <Route path="/cover-art" element={<CoverArt />} />
         </Route>
       </Route>
       <Route path="/privacy" element={<Privacy />} />

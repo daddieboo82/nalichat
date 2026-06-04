@@ -11,6 +11,7 @@ import MultiTrackEditor from "@/components/studio/MultiTrackEditor";
 import SessionTimer from "@/components/studio/SessionTimer";
 import ProjectSettingsDialog from "@/components/studio/ProjectSettingsDialog";
 import MilestonesPanel from "@/components/studio/MilestonesPanel";
+import TrackImporter from "@/components/studio/TrackImporter";
 import UpgradeModal from "@/components/billing/UpgradeModal";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -438,16 +439,12 @@ export default function Studio() {
                     <SelectItem value="complete">Complete</SelectItem>
                   </SelectContent>
                 </Select>
-                <input ref={fileInputRef} type="file" accept="audio/*" className="hidden" onChange={addTrack} />
                 {canEdit && (
-                  <Button
-                    className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 h-8 text-sm font-semibold shadow-md shadow-primary/20 transition-all hover:scale-105 active:scale-95"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                  >
-                    {uploading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-1.5" />}
-                    Add Track
-                  </Button>
+                  <TrackImporter
+                    projectId={selectedProjectId}
+                    currentUser={currentUser}
+                    onSuccess={() => queryClient.invalidateQueries({ queryKey: ["tracks", selectedProjectId] })}
+                  />
                 )}
               </div>
             </div>

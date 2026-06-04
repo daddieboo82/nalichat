@@ -10,6 +10,7 @@ import MediaViewer from "./MediaViewer";
 import AudioWaveform from "./AudioWaveform";
 import EmojiReactionPicker from "./EmojiReactionPicker";
 import CustomMediaPlayer from "../audio/CustomMediaPlayer";
+import ChatSessionViewer from "./ChatSessionViewer";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -131,7 +132,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
         ) : null}
       </div>
 
-      <div className={cn("max-w-[72%] sm:max-w-[65%] flex flex-col", isOwn && "items-end")}>
+      <div className={cn("max-w-[72%] sm:max-w-[65%] flex flex-col", isOwn && "items-end", message.type === "session" && "max-w-[90%] sm:max-w-[85%]")}>
         {showAvatar && !isOwn && (
           <p className="text-[11px] text-muted-foreground/70 mb-1 ml-1 font-semibold">{message.sender_name}</p>
         )}
@@ -150,9 +151,12 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
           isOwn
             ? "bg-gradient-to-br from-primary via-primary to-pink-500 text-white rounded-br-sm shadow-xl shadow-primary/20"
             : "bg-card/80 border border-border/60 rounded-bl-sm shadow-sm backdrop-blur-sm",
-          hasFile && message.type !== "audio" ? "p-2" : "px-4 py-2.5"
+          (hasFile && message.type !== "audio") || message.type === "session" ? "p-2" : "px-4 py-2.5",
+          message.type === "session" && isOwn && "from-transparent to-transparent bg-transparent text-foreground shadow-none border border-primary/30"
         )}>
-          {hasFile ? (
+          {message.type === "session" ? (
+            <ChatSessionViewer message={message} currentUser={currentUser} />
+          ) : hasFile ? (
             <FileAttachment message={message} isOwn={isOwn} onOpenViewer={() => {
               if (message.type === "audio" || message.file_type?.startsWith("audio")) {
                 onPlayAudio?.(message);
@@ -173,7 +177,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
               </ReactMarkdown>
             </div>
           )}
-          {hasFile && message.text && message.type !== "audio" && (
+          {hasFile && message.text && message.type !== "audio" && message.type !== "session" && (
             <p className="text-sm mt-2 px-2 pb-1">{message.text}</p>
           )}
         </div>

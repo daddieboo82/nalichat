@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile } from "lucide-react";
+import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resumableUpload } from "@/lib/resumableUpload";
 import { sounds } from "@/hooks/use-sound";
@@ -206,6 +206,21 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
 
       <div className="p-2.5 sm:p-3 flex items-end gap-1.5 sm:gap-2">
         <input ref={fileInputRef} type="file" className="hidden" multiple onChange={handleFileChange} accept="*/*" />
+
+        {/* Start Session */}
+        <button
+          onClick={() => {
+            const name = prompt("Session name:", "New Recording Session");
+            if (name) {
+              onSend({ text: name, type: "session" });
+            }
+          }}
+          disabled={isRecording || anyUploading}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shrink-0 mb-0.5 touch-manipulation"
+          title="Start Live Recording Session"
+        >
+          <Layers className="w-5 h-5 text-indigo-400" />
+        </button>
 
         {/* Emoji */}
         <div className="relative">

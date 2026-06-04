@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Upload, Music, Loader2, FolderOpen, Disc3, ChevronLeft, Search, Settings } from "lucide-react";
+import { Plus, Upload, Music, Loader2, FolderOpen, Disc3, ChevronLeft, Search, Settings, Flag } from "lucide-react";
 import MultiTrackEditor from "@/components/studio/MultiTrackEditor";
 import SessionTimer from "@/components/studio/SessionTimer";
 import ProjectSettingsDialog from "@/components/studio/ProjectSettingsDialog";
+import MilestonesPanel from "@/components/studio/MilestonesPanel";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,7 @@ export default function Studio() {
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState("");
   const [showProjectSettings, setShowProjectSettings] = useState(false);
+  const [showMilestones, setShowMilestones] = useState(false);
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -257,6 +259,15 @@ export default function Studio() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <SessionTimer />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className={cn("rounded-xl hover:bg-secondary", showMilestones && "bg-primary/20 text-primary")}
+                  onClick={() => setShowMilestones(v => !v)}
+                  title="Milestones"
+                >
+                  <Flag className="w-4 h-4" />
+                </Button>
                 {isOwner && (
                   <Button
                     size="icon"
@@ -293,16 +304,25 @@ export default function Studio() {
               </div>
             </div>
 
-            {/* Multi-Track Editor */}
-            <MultiTrackEditor
-              tracks={tracks}
-              selectedProject={selectedProject}
-              projectTitle={selectedProject?.title}
-              onTrackUpdate={(id, data) => updateTrack.mutate({ id, data })}
-              onTrackDelete={(id) => deleteTrack.mutate(id)}
-              canEdit={canEdit}
-              currentUser={currentUser}
-            />
+            {/* Multi-Track Editor + optional Milestones panel */}
+            <div className="flex flex-1 min-h-0">
+              <div className="flex-1 min-w-0">
+                <MultiTrackEditor
+                  tracks={tracks}
+                  selectedProject={selectedProject}
+                  projectTitle={selectedProject?.title}
+                  onTrackUpdate={(id, data) => updateTrack.mutate({ id, data })}
+                  onTrackDelete={(id) => deleteTrack.mutate(id)}
+                  canEdit={canEdit}
+                  currentUser={currentUser}
+                />
+              </div>
+              {showMilestones && (
+                <div className="w-72 shrink-0 border-l border-border bg-card/50 overflow-hidden flex flex-col">
+                  <MilestonesPanel projectId={selectedProject.id} canEdit={canEdit} />
+                </div>
+              )}
+            </div>
 
             {showProjectSettings && (
               <ProjectSettingsDialog

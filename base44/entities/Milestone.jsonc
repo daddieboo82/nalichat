@@ -1,0 +1,46 @@
+{
+  "name": "Milestone",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "ID of the parent Project"
+    },
+    "title": {
+      "type": "string",
+      "description": "Milestone title"
+    },
+    "description": {
+      "type": "string"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Target completion date"
+    },
+    "completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium"
+    },
+    "created_by_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "title"
+  ]
+}

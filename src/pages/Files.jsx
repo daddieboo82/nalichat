@@ -212,7 +212,10 @@ export default function Files() {
 
   const deleteFolderMutation = useMutation({
     mutationFn: (id) => base44.entities.Folder.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["folders"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["folders"] });
+      setCurrentFolderId(null);
+    },
   });
 
   const moveToFolderMutation = useMutation({

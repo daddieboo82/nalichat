@@ -1139,16 +1139,23 @@ export default function Studio() {
                                newStartTime = Math.round(newStartTime / gridSize) * gridSize;
                             }
                             
-                            setTracks(prev => prev.map(t => 
-                              t.id === track.id ? { ...t, startTime: newStartTime } : t
-                            ));
+                            target.style.left = `${newStartTime * 20 * zoom}px`;
+                            target.dataset.newStartTime = newStartTime;
                           };
                           
                           const handleUp = (upEvent) => {
                             target.releasePointerCapture(upEvent.pointerId);
                             target.removeEventListener('pointermove', handleMove);
                             target.removeEventListener('pointerup', handleUp);
-                            pushToHistory(tracksRef.current);
+                            
+                            const newStartTimeStr = target.dataset.newStartTime;
+                            if (newStartTimeStr !== undefined) {
+                              const newStartTime = parseFloat(newStartTimeStr);
+                              setTracksWithHistory(prev => prev.map(t => 
+                                t.id === track.id ? { ...t, startTime: newStartTime } : t
+                              ));
+                              delete target.dataset.newStartTime;
+                            }
                           };
                           
                           target.addEventListener('pointermove', handleMove);
@@ -1278,14 +1285,22 @@ export default function Studio() {
                             
                             const handleMove = (moveEvent) => {
                               const currentX = Math.max(0, Math.min(1 - (track.fadeOut || 0), (moveEvent.clientX - rect.left) / rect.width));
-                              setTracks(prev => prev.map(t => t.id === track.id ? { ...t, fadeIn: currentX } : t));
+                              target.style.left = `calc(${currentX * 100}% - 12px)`;
+                              if (target.previousElementSibling) {
+                                target.previousElementSibling.style.width = `${currentX * 100}%`;
+                              }
+                              target.dataset.newFade = currentX;
                             };
                             
                             const handleUp = (upEvent) => {
                               target.releasePointerCapture(upEvent.pointerId);
                               target.removeEventListener('pointermove', handleMove);
                               target.removeEventListener('pointerup', handleUp);
-                              pushToHistory(tracksRef.current);
+                              const newFadeStr = target.dataset.newFade;
+                              if (newFadeStr !== undefined) {
+                                setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, fadeIn: parseFloat(newFadeStr) } : t));
+                                delete target.dataset.newFade;
+                              }
                             };
                             
                             target.addEventListener('pointermove', handleMove);
@@ -1312,14 +1327,22 @@ export default function Studio() {
                             
                             const handleMove = (moveEvent) => {
                               const currentX = Math.max(0, Math.min(1 - (track.fadeIn || 0), 1 - ((moveEvent.clientX - rect.left) / rect.width)));
-                              setTracks(prev => prev.map(t => t.id === track.id ? { ...t, fadeOut: currentX } : t));
+                              target.style.right = `calc(${currentX * 100}% - 12px)`;
+                              if (target.previousElementSibling) {
+                                target.previousElementSibling.style.width = `${currentX * 100}%`;
+                              }
+                              target.dataset.newFade = currentX;
                             };
                             
                             const handleUp = (upEvent) => {
                               target.releasePointerCapture(upEvent.pointerId);
                               target.removeEventListener('pointermove', handleMove);
                               target.removeEventListener('pointerup', handleUp);
-                              pushToHistory(tracksRef.current);
+                              const newFadeStr = target.dataset.newFade;
+                              if (newFadeStr !== undefined) {
+                                setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, fadeOut: parseFloat(newFadeStr) } : t));
+                                delete target.dataset.newFade;
+                              }
                             };
                             
                             target.addEventListener('pointermove', handleMove);

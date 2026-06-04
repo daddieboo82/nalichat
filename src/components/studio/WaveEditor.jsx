@@ -297,13 +297,21 @@ export default function WaveEditor({ track, onClose, onSave }) {
                           
                           const handleMove = (moveEvent) => {
                             const currentX = Math.max(0, Math.min(selection.end - 0.01, (moveEvent.clientX - rect.left) / rect.width));
-                            setSelection(prev => ({ ...prev, start: currentX }));
+                            if (target.parentElement) {
+                              target.parentElement.style.left = `${currentX * 100}%`;
+                            }
+                            target.dataset.newStart = currentX;
                           };
                           
                           const handleUp = (upEvent) => {
                             target.releasePointerCapture(upEvent.pointerId);
                             target.removeEventListener('pointermove', handleMove);
                             target.removeEventListener('pointerup', handleUp);
+                            const newStartStr = target.dataset.newStart;
+                            if (newStartStr !== undefined) {
+                              setSelection(prev => ({ ...prev, start: parseFloat(newStartStr) }));
+                              delete target.dataset.newStart;
+                            }
                           };
                           
                           target.addEventListener('pointermove', handleMove);
@@ -325,13 +333,21 @@ export default function WaveEditor({ track, onClose, onSave }) {
                           
                           const handleMove = (moveEvent) => {
                             const currentX = Math.max(selection.start + 0.01, Math.min(1, (moveEvent.clientX - rect.left) / rect.width));
-                            setSelection(prev => ({ ...prev, end: currentX }));
+                            if (target.parentElement) {
+                              target.parentElement.style.right = `${(1 - currentX) * 100}%`;
+                            }
+                            target.dataset.newEnd = currentX;
                           };
                           
                           const handleUp = (upEvent) => {
                             target.releasePointerCapture(upEvent.pointerId);
                             target.removeEventListener('pointermove', handleMove);
                             target.removeEventListener('pointerup', handleUp);
+                            const newEndStr = target.dataset.newEnd;
+                            if (newEndStr !== undefined) {
+                              setSelection(prev => ({ ...prev, end: parseFloat(newEndStr) }));
+                              delete target.dataset.newEnd;
+                            }
                           };
                           
                           target.addEventListener('pointermove', handleMove);
@@ -360,13 +376,22 @@ export default function WaveEditor({ track, onClose, onSave }) {
                         
                         const handleMove = (moveEvent) => {
                           const currentX = Math.max(0, Math.min(1 - fade.out, (moveEvent.clientX - rect.left) / rect.width));
-                          setFade(prev => ({ ...prev, in: currentX }));
+                          target.style.left = `calc(${currentX * 100}% - 12px)`;
+                          if (target.previousElementSibling) {
+                            target.previousElementSibling.style.width = `${currentX * 100}%`;
+                          }
+                          target.dataset.newFade = currentX;
                         };
                         
                         const handleUp = (upEvent) => {
                           target.releasePointerCapture(upEvent.pointerId);
                           target.removeEventListener('pointermove', handleMove);
                           target.removeEventListener('pointerup', handleUp);
+                          const newFadeStr = target.dataset.newFade;
+                          if (newFadeStr !== undefined) {
+                            setFade(prev => ({ ...prev, in: parseFloat(newFadeStr) }));
+                            delete target.dataset.newFade;
+                          }
                         };
                         
                         target.addEventListener('pointermove', handleMove);
@@ -393,13 +418,22 @@ export default function WaveEditor({ track, onClose, onSave }) {
                         
                         const handleMove = (moveEvent) => {
                           const currentX = Math.max(0, Math.min(1 - fade.in, 1 - ((moveEvent.clientX - rect.left) / rect.width)));
-                          setFade(prev => ({ ...prev, out: currentX }));
+                          target.style.right = `calc(${currentX * 100}% - 12px)`;
+                          if (target.previousElementSibling) {
+                            target.previousElementSibling.style.width = `${currentX * 100}%`;
+                          }
+                          target.dataset.newFade = currentX;
                         };
                         
                         const handleUp = (upEvent) => {
                           target.releasePointerCapture(upEvent.pointerId);
                           target.removeEventListener('pointermove', handleMove);
                           target.removeEventListener('pointerup', handleUp);
+                          const newFadeStr = target.dataset.newFade;
+                          if (newFadeStr !== undefined) {
+                            setFade(prev => ({ ...prev, out: parseFloat(newFadeStr) }));
+                            delete target.dataset.newFade;
+                          }
                         };
                         
                         target.addEventListener('pointermove', handleMove);
@@ -420,13 +454,22 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     />
                   )}
                   
-                  {track.waveform && track.waveform.map((val, i) => (
-                    <div 
-                      key={i} 
-                      className={cn("flex-1 rounded-full opacity-90 transition-all", track.color)}
-                      style={{ height: `${Math.max(2, val * 100)}%` }}
-                    />
-                  ))}
+                  {track.waveform && track.waveform.length > 0 && (
+                    <div className="absolute inset-x-0 overflow-hidden pointer-events-none bottom-1 top-5">
+                      <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                        <path 
+                          d={(() => {
+                            const wLen = track.waveform.length - 1 || 1;
+                            let d = `M 0,50 `;
+                            for(let i=0; i<=wLen; i++) d += `L ${(i/wLen)*1000},${50 - Math.max(0.02, track.waveform[i])*50} `;
+                            for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, track.waveform[i])*50} `;
+                            return d + 'Z';
+                          })()}
+                          className={cn("opacity-90 drop-shadow-md", waveformFills[track.color] || "fill-primary")}
+                        />
+                      </svg>
+                    </div>
+                  )}
                 </div>
               </div>
 

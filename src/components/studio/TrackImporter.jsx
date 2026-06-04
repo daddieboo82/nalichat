@@ -106,14 +106,25 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
 
     setUploading(false);
     onSuccess?.();
+    
+    // Auto-close after successful upload
+    const allSuccess = pendingItems.every(item => 
+      queue.some(q => q.id === item.id && q.status === "success")
+    );
+    if (allSuccess && pendingItems.length > 0) {
+      setTimeout(() => {
+        setQueue([]);
+        setOpen(false);
+      }, 1500);
+    }
   };
 
   const clearQueue = () => {
-    setQueue(queue.filter(item => item.status !== "success"));
-    if (queue.every(item => item.status === "success")) {
-      setQueue([]);
-      setOpen(false);
-    }
+   const remaining = queue.filter(item => item.status !== "success");
+   setQueue(remaining);
+   if (remaining.length === 0) {
+     setOpen(false);
+   }
   };
 
   const pendingCount = queue.filter(item => item.status === "pending" || item.status === "uploading").length;

@@ -81,6 +81,8 @@ export default function ConversationList({ conversations, myConversations, selec
                   ? "bg-primary text-primary-foreground shadow-md" 
                   : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
+              title={`Filter by ${f}`}
+              aria-label={`Filter by ${f}`}
             >
               {f}
             </button>
@@ -115,6 +117,8 @@ export default function ConversationList({ conversations, myConversations, selec
                   ? "bg-background/80 shadow-md border border-border/50 z-10"
                   : "hover:bg-secondary/40 border border-transparent"
               )}
+              title={`Open chat with ${displayName}`}
+              aria-label={`Open chat with ${displayName}`}
             >
               <div className="relative shrink-0">
                 <Avatar className="w-12 h-12 shadow-sm">
@@ -161,6 +165,8 @@ export default function ConversationList({ conversations, myConversations, selec
                 key={user.id}
                 onClick={() => { onStartDM(user); setSearch(""); }}
                 className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-secondary/40 transition-all text-left group"
+                title={`Start conversation with ${user.display_name || user.full_name}`}
+                aria-label={`Start conversation with ${user.display_name || user.full_name}`}
               >
                 <Avatar className="w-12 h-12 shadow-sm opacity-80 group-hover:opacity-100 transition-opacity">
                   <AvatarImage src={user.avatar_url} />
@@ -188,6 +194,8 @@ export default function ConversationList({ conversations, myConversations, selec
                   setSearch("");
                 }}
                 className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-secondary/40 transition-all text-left group"
+                title={`Join public room ${room.name}`}
+                aria-label={`Join public room ${room.name}`}
               >
                 <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
                   <Hash className="w-5 h-5 text-accent" />

@@ -52,7 +52,7 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
     return (
       <div className="relative group">
         <img src={message.file_url} alt={message.file_name} className="rounded-xl w-full max-w-[280px] sm:max-w-[300px] max-h-[220px] object-cover block cursor-pointer hover:brightness-90 transition-all" onClick={() => onOpenViewer(message)} />
-        <button onClick={() => onOpenViewer(message)} className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity hover:bg-black/60">
+        <button onClick={() => onOpenViewer(message)} className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity hover:bg-black/60" title="Expand Image" aria-label="Expand Image">
           <Maximize2 className="w-4 h-4 text-white" />
         </button>
         {message.text && <p className="text-sm mt-2">{message.text}</p>}
@@ -76,7 +76,7 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
 
   return (
     <div className="min-w-[180px] sm:min-w-[220px]">
-      <button onClick={handleDownload} className="w-full flex items-center gap-3 hover:opacity-80 transition-opacity group text-left">
+      <button onClick={handleDownload} className="w-full flex items-center gap-3 hover:opacity-80 transition-opacity group text-left" title="Download File" aria-label="Download File">
         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", isOwn ? "bg-white/20" : "bg-primary/20")}>
           <Icon className={cn("w-5 h-5", isOwn ? "text-white" : "text-primary")} />
         </div>
@@ -223,6 +223,8 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
           <button
             onClick={() => onOpenThread?.(message)}
             className={cn("flex items-center gap-1.5 mt-1 text-[10px] text-primary/70 hover:text-primary transition-colors font-medium", isOwn ? "self-end mr-1" : "ml-1")}
+            title="View Replies"
+            aria-label="View Replies"
           >
             <MessageSquareQuote className="w-3 h-3" />
             {message.thread_reply_count} {message.thread_reply_count === 1 ? "reply" : "replies"}

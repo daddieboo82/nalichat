@@ -72,6 +72,8 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
                   key={user.id}
                   onClick={() => { onSelectUser(user); onOpenChange(false); }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-primary/10 transition-colors text-left"
+                  title={`Start chat with ${user.display_name || user.full_name}`}
+                  aria-label={`Start chat with ${user.display_name || user.full_name}`}
                 >
                   <Avatar className="w-10 h-10">
                     <AvatarImage src={user.avatar_url} />
@@ -97,6 +99,8 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
               key={user.id}
               onClick={() => { onSelectUser(user); onOpenChange(false); }}
               className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors text-left"
+              title={`Start chat with ${user.display_name || user.full_name}`}
+              aria-label={`Start chat with ${user.display_name || user.full_name}`}
             >
               <Avatar className="w-10 h-10">
                 <AvatarImage src={user.avatar_url} />

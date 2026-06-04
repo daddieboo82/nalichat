@@ -176,6 +176,24 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
         {canEdit && (
           <BounceDialog projectTitle={projectTitle || selectedProject?.title} project={selectedProject} tracks={tracks} />
         )}
+
+        {tracks.length > 0 && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-8 gap-1.5 text-xs bg-secondary/50 border-border/50 hover:bg-secondary hover:text-foreground" 
+            onClick={async () => {
+              setZipping(true);
+              await downloadFilesAsZip(tracks, `${projectTitle || selectedProject?.title || "session"}-stems.zip`);
+              setZipping(false);
+            }}
+            disabled={zipping}
+            title="Download all stems as ZIP"
+          >
+            {zipping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FolderArchive className="w-3.5 h-3.5" />}
+            Export All Stems
+          </Button>
+        )}
       </div>
 
       {/* Selection toolbar */}

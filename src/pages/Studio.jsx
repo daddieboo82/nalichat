@@ -26,6 +26,7 @@ export default function Studio() {
   const [zoom, setZoom] = useState(1);
   const playheadRef = useRef(null);
   const [editingTrack, setEditingTrack] = useState(null);
+  const [selectedTrackId, setSelectedTrackId] = useState(1);
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
   const [isMetronomeOn, setIsMetronomeOn] = useState(true);
   
@@ -300,9 +301,11 @@ export default function Studio() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, height: 0 }}
+                onClick={() => setSelectedTrackId(track.id)}
                 className={cn(
-                  "h-28 border-b border-border/40 p-3 flex flex-col justify-between transition-colors",
-                  track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40"
+                  "h-28 border-b border-border/40 p-3 flex flex-col justify-between transition-all cursor-pointer border-l-2",
+                  track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40",
+                  selectedTrackId === track.id ? "border-l-primary bg-secondary/30" : "border-l-transparent"
                 )}
               >
                 <div className="flex items-center justify-between">
@@ -379,7 +382,15 @@ export default function Studio() {
             {/* Waveform Rows */}
             <div className="flex flex-col">
               {tracks.map((track) => (
-                <div key={track.id} className={cn("h-28 border-b border-border/20 relative group", track.muted ? "opacity-30" : "")}>
+                <div 
+                  key={track.id} 
+                  onClick={() => setSelectedTrackId(track.id)}
+                  className={cn(
+                    "h-28 border-b border-border/20 relative group transition-colors", 
+                    track.muted ? "opacity-30" : "",
+                    selectedTrackId === track.id ? "bg-primary/5" : ""
+                  )}
+                >
                   {/* Grid lines */}
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px)] bg-[size:100px_100%]" />
                   

@@ -9,6 +9,13 @@ import {
   Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle,
   Crosshair, PenTool, Link2, Unlock, TrendingUp, Option
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -418,6 +425,26 @@ export default function Studio() {
     toast.success("Tracks duplicated");
   };
 
+  const deleteTrack = (trackId) => {
+    if (audioElementsRef.current[trackId]) {
+      audioElementsRef.current[trackId].pause();
+      delete audioElementsRef.current[trackId];
+    }
+    setTracks(prev => prev.filter(t => t.id !== trackId));
+    setSelectedTrackIds(prev => prev.filter(id => id !== trackId));
+    toast.success("Track deleted");
+  };
+
+  const duplicateTrack = (track) => {
+    if (tracks.length >= maxTracks) {
+      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      return;
+    }
+    const nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    setTracks(prev => [...prev, { ...track, id: nextId, name: `${track.name} (Copy)` }]);
+    toast.success("Track duplicated");
+  };
+
   const splitSelectedTracks = () => {
     if (selectedTrackIds.length === 0) return;
     
@@ -662,7 +689,28 @@ export default function Studio() {
                   <div className="flex items-center gap-0.5">
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")} title="Elastic Audio"><Activity className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")} title="Show Automation"><TrendingUp className="w-3.5 h-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="w-6 h-6 text-muted-foreground hover:text-foreground" title="Track Options"><Settings2 className="w-3.5 h-3.5" /></Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="w-6 h-6 text-muted-foreground hover:text-foreground" title="Track Options"><Settings2 className="w-3.5 h-3.5" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuItem onClick={() => {
+                          const newName = prompt("Enter new track name:", track.name);
+                          if (newName) {
+                            setTracks(tracks.map(t => t.id === track.id ? { ...t, name: newName } : t));
+                          }
+                        }}>
+                          <PenTool className="w-4 h-4 mr-2" /> Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => duplicateTrack(track)}>
+                          <Copy className="w-4 h-4 mr-2" /> Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={() => deleteTrack(track.id)}>
+                          <Trash2 className="w-4 h-4 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
                 

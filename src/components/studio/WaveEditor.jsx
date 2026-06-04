@@ -188,7 +188,14 @@ export default function WaveEditor({ track, onClose, onSave }) {
               </div>
 
               {/* Huge Waveform View */}
-              <div className="flex-1 relative overflow-x-auto overflow-y-hidden custom-scrollbar p-8 flex items-center justify-start">
+              <div 
+                className="flex-1 relative overflow-x-auto overflow-y-hidden custom-scrollbar p-8 flex items-center justify-start"
+                onWheel={(e) => {
+                  if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && !e.ctrlKey && !e.metaKey) {
+                    e.currentTarget.scrollLeft += e.deltaY;
+                  }
+                }}
+              >
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
                 <div 
                   className={cn("relative h-64 bg-card/20 rounded-xl border border-white/5 flex items-center justify-between gap-px overflow-hidden", 
@@ -224,9 +231,65 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   {/* Selection Overlay */}
                   {selection.start !== selection.end && (
                     <div 
-                      className="absolute top-0 bottom-0 bg-white/10 border-x border-white/30 z-10 pointer-events-none"
+                      className="absolute top-0 bottom-0 bg-primary/20 border-x-2 border-primary z-10 pointer-events-none"
                       style={{ left: `${selection.start * 100}%`, right: `${(1 - selection.end) * 100}%` }}
-                    />
+                    >
+                      {/* Left Figure */}
+                      <div 
+                        className="absolute top-0 bottom-0 -left-3 w-6 cursor-ew-resize flex items-center justify-center hover:bg-white/10 pointer-events-auto"
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          const target = e.currentTarget;
+                          const container = target.parentElement.parentElement;
+                          const rect = container.getBoundingClientRect();
+                          target.setPointerCapture(e.pointerId);
+                          
+                          const handleMove = (moveEvent) => {
+                            const currentX = Math.max(0, Math.min(selection.end - 0.01, (moveEvent.clientX - rect.left) / rect.width));
+                            setSelection(prev => ({ ...prev, start: currentX }));
+                          };
+                          
+                          const handleUp = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleMove);
+                            target.removeEventListener('pointerup', handleUp);
+                          };
+                          
+                          target.addEventListener('pointermove', handleMove);
+                          target.addEventListener('pointerup', handleUp);
+                        }}
+                      >
+                        <div className="w-1.5 h-8 bg-primary rounded-full shadow-sm" />
+                      </div>
+                      
+                      {/* Right Figure */}
+                      <div 
+                        className="absolute top-0 bottom-0 -right-3 w-6 cursor-ew-resize flex items-center justify-center hover:bg-white/10 pointer-events-auto"
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          const target = e.currentTarget;
+                          const container = target.parentElement.parentElement;
+                          const rect = container.getBoundingClientRect();
+                          target.setPointerCapture(e.pointerId);
+                          
+                          const handleMove = (moveEvent) => {
+                            const currentX = Math.max(selection.start + 0.01, Math.min(1, (moveEvent.clientX - rect.left) / rect.width));
+                            setSelection(prev => ({ ...prev, end: currentX }));
+                          };
+                          
+                          const handleUp = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleMove);
+                            target.removeEventListener('pointerup', handleUp);
+                          };
+                          
+                          target.addEventListener('pointermove', handleMove);
+                          target.addEventListener('pointerup', handleUp);
+                        }}
+                      >
+                        <div className="w-1.5 h-8 bg-primary rounded-full shadow-sm" />
+                      </div>
+                    </div>
                   )}
 
                   {/* Fade In Overlay */}

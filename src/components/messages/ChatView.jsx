@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, ArrowLeft, Search as SearchIcon, Phone, Video, Info, MoreHorizontal } from "lucide-react";
+import { MessageSquare, ArrowLeft, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2 } from "lucide-react";
 import MediaViewerModal from "@/components/explore/MediaViewerModal";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
@@ -20,6 +20,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
   const [threadMessage, setThreadMessage] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
+  const [callState, setCallState] = useState(null);
   const scrollRef = useRef(null);
   const prevLenRef = useRef(0);
   const markedRef = useRef(new Set());
@@ -110,10 +111,10 @@ export default function ChatView({ conversation, messages, currentUser, users, o
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl border-border/50 bg-background/95 backdrop-blur-xl">
-                <DropdownMenuItem className="py-2.5 rounded-lg cursor-pointer">
+                <DropdownMenuItem onClick={() => setCallState({ type: 'audio' })} className="py-2.5 rounded-lg cursor-pointer">
                   <Phone className="w-4 h-4 mr-2 text-muted-foreground" /> Audio Call
                 </DropdownMenuItem>
-                <DropdownMenuItem className="py-2.5 rounded-lg cursor-pointer">
+                <DropdownMenuItem onClick={() => setCallState({ type: 'video' })} className="py-2.5 rounded-lg cursor-pointer">
                   <Video className="w-4 h-4 mr-2 text-muted-foreground" /> Video Call
                 </DropdownMenuItem>
                 {conversation?.type === "group" && (
@@ -218,6 +219,40 @@ export default function ChatView({ conversation, messages, currentUser, users, o
           open={!!selectedMedia}
           onOpenChange={(isOpen) => !isOpen && setSelectedMedia(null)}
         />
+      )}
+
+      {/* Call UI Overlay */}
+      {callState && (
+        <div className="absolute inset-0 z-50 bg-background/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-200">
+          <Avatar className="w-32 h-32 mb-6 shadow-2xl ring-4 ring-primary/20">
+            <AvatarImage src={avatarSrc} />
+            <AvatarFallback className={cn("text-4xl text-white font-bold bg-gradient-to-br", avatarGradient)}>
+              {displayName?.[0]?.toUpperCase() || "?"}
+            </AvatarFallback>
+          </Avatar>
+          
+          <h2 className="text-3xl font-heading font-bold mb-2">{displayName}</h2>
+          <p className="text-muted-foreground mb-12 flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {callState.type === 'video' ? 'Starting video call...' : 'Calling...'}
+          </p>
+          
+          <div className="flex items-center gap-6">
+            {callState.type === 'video' && (
+              <Button size="icon" variant="outline" className="w-14 h-14 rounded-full bg-secondary/50 border-white/10 hover:bg-secondary">
+                <Video className="w-6 h-6" />
+              </Button>
+            )}
+            <Button 
+              size="icon" 
+              variant="destructive" 
+              className="w-16 h-16 rounded-full shadow-lg shadow-destructive/20 hover:scale-105 transition-transform"
+              onClick={() => setCallState(null)}
+            >
+              <Phone className="w-7 h-7 rotate-[135deg]" />
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );

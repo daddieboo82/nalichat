@@ -63,6 +63,37 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (entityName === 'Message') {
+      const senderId = data.sender_id;
+      const senderName = data.sender_name || 'Someone';
+      const conversationId = data.conversation_id;
+      const text = data.text || (data.type === 'audio' ? 'sent a voice message' : 'sent a file');
+
+      if (!conversationId) return Response.json({ ok: true });
+
+      // Get the conversation to find all participants
+      const convos = await base44.asServiceRole.entities.Conversation.filter({ id: conversationId });
+      const convo = convos[0];
+      if (!convo || !convo.participant_ids) return Response.json({ ok: true });
+
+      const recipients = convo.participant_ids.filter(id => id !== senderId);
+      await Promise.all(
+        recipients.map(recipientId =>
+          base44.asServiceRole.entities.Notification.create({
+            recipient_id: recipientId,
+            type: 'comment',
+            actor_id: senderId,
+            actor_name: senderName,
+            actor_avatar: data.sender_avatar || null,
+            message: `sent you a message: "${text.slice(0, 80)}${text.length > 80 ? '…' : ''}"`,
+            link: '/messages',
+            read: false,
+          })
+        )
+      );
+      console.log(`Notified ${recipients.length} users about new message from ${senderName}`);
+    }
+
     if (entityName === 'SharedFile') {
       const uploaderId = data.uploader_id;
       const fileName = data.name || 'a file';

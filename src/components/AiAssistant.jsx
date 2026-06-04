@@ -80,27 +80,27 @@ export default function AiAssistant() {
       {open && (
         <div className={cn(
           "fixed bottom-24 right-4 z-50 bg-card border border-border rounded-2xl shadow-2xl shadow-black/40 flex flex-col transition-all duration-300",
-          minimized ? "w-64 h-14" : expanded ? "w-[92vw] sm:w-[440px] h-[640px] max-h-[80vh]" : "w-80 sm:w-96 h-[500px]"
+          minimized ? "w-64 max-w-[calc(100vw-32px)] h-14" : expanded ? "w-[calc(100vw-32px)] sm:w-[440px] h-[640px] max-h-[calc(100dvh-120px)] sm:max-h-[80vh]" : "w-[calc(100vw-32px)] sm:w-96 h-[500px] max-h-[calc(100dvh-120px)] sm:max-h-[80vh]"
         )}>
           {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-gradient-to-r from-primary/10 to-accent/10 rounded-t-2xl shrink-0">
+          <div className="flex items-center gap-1 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 border-b border-border bg-gradient-to-r from-primary/10 to-accent/10 rounded-t-2xl shrink-0">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 pl-2 sm:pl-0">
               <p className="font-heading font-bold text-sm">Nali</p>
-              {!minimized && <p className="text-[10px] text-muted-foreground">AI Creative Assistant</p>}
+              {!minimized && <p className="text-[10px] text-muted-foreground truncate">AI Creative Assistant</p>}
             </div>
             {!minimized && (
-              <button onClick={() => setExpanded(v => !v)} className="text-muted-foreground hover:text-foreground p-1" title={expanded ? "Shrink" : "Expand"}>
-                {expanded ? <Shrink className="w-4 h-4" /> : <Expand className="w-4 h-4" />}
+              <button onClick={() => setExpanded(v => !v)} className="text-muted-foreground hover:text-foreground p-2 sm:p-1" title={expanded ? "Shrink" : "Expand"}>
+                {expanded ? <Shrink className="w-5 h-5 sm:w-4 sm:h-4" /> : <Expand className="w-5 h-5 sm:w-4 sm:h-4" />}
               </button>
             )}
-            <button onClick={() => setMinimized(v => !v)} className="text-muted-foreground hover:text-foreground p-1">
-              {minimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+            <button onClick={() => setMinimized(v => !v)} className="text-muted-foreground hover:text-foreground p-2 sm:p-1">
+              {minimized ? <Maximize2 className="w-5 h-5 sm:w-4 sm:h-4" /> : <Minimize2 className="w-5 h-5 sm:w-4 sm:h-4" />}
             </button>
-            <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-1">
-              <X className="w-4 h-4" />
+            <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-2 sm:p-1 mr-[-4px]">
+              <X className="w-6 h-6 sm:w-4 sm:h-4" />
             </button>
           </div>
 

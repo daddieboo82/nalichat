@@ -380,23 +380,23 @@ export default function WaveEditor({ track, onClose, onSave }) {
           initial={{ scale: 0.98, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.98, opacity: 0 }}
-          className="bg-[#1c1c1e] text-white shadow-2xl rounded-lg w-full max-w-[1400px] h-[90vh] flex flex-col overflow-hidden ring-1 ring-white/10"
+          className="bg-background text-foreground shadow-2xl rounded-xl w-full max-w-[1400px] h-[90vh] flex flex-col overflow-hidden ring-1 ring-border"
         >
-          {/* Menu Bar - Sound Forge Style */}
-          <div className="flex items-center px-2 py-1 bg-[#2b2b2b] border-b border-black text-xs text-white/90 shadow-sm shrink-0">
+          {/* Menu Bar - Studio Style */}
+          <div className="flex items-center px-4 py-2 bg-card/80 backdrop-blur border-b border-border/50 text-xs text-foreground/90 shadow-sm shrink-0">
             <div className="flex gap-1">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">File</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('New File not implemented yet')}>New <DropdownMenuShortcut className="text-current opacity-70">Ctrl+N</DropdownMenuShortcut></DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Open File not implemented yet')}>Open... <DropdownMenuShortcut className="text-current opacity-70">Ctrl+O</DropdownMenuShortcut></DropdownMenuItem>
+                <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans">
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('New File not implemented yet')}>New <DropdownMenuShortcut className="text-current opacity-70">Ctrl+N</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('Open File not implemented yet')}>Open... <DropdownMenuShortcut className="text-current opacity-70">Ctrl+O</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={handleSave}>Save <DropdownMenuShortcut className="text-current opacity-70">Ctrl+S</DropdownMenuShortcut></DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Save As not implemented yet')}>Save As...</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={handleSave}>Save <DropdownMenuShortcut className="text-current opacity-70">Ctrl+S</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('Save As not implemented yet')}>Save As...</DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={onClose}>Close <DropdownMenuShortcut className="text-current opacity-70">Esc</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={onClose}>Close <DropdownMenuShortcut className="text-current opacity-70">Esc</DropdownMenuShortcut></DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -404,16 +404,16 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Edit</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={handleUndo} disabled={historyIdx <= 0}>Undo <DropdownMenuShortcut className="text-current opacity-70">Ctrl+Z</DropdownMenuShortcut></DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={handleRedo} disabled={historyIdx >= history.length - 1}>Redo <DropdownMenuShortcut className="text-current opacity-70">Ctrl+Y</DropdownMenuShortcut></DropdownMenuItem>
+                <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans">
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={handleUndo} disabled={historyIdx <= 0}>Undo <DropdownMenuShortcut className="text-current opacity-70">Ctrl+Z</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={handleRedo} disabled={historyIdx >= history.length - 1}>Redo <DropdownMenuShortcut className="text-current opacity-70">Ctrl+Y</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" disabled={!selectionRange && !selectedSegmentId} onClick={() => { if(selectionRange) handleRangeDelete(); else { setSegments(prev => { const newSegs = prev.filter(s => s.id !== selectedSegmentId); saveHistory(newSegs); setSelectedSegmentId(null); return newSegs; }); }}}>Delete <DropdownMenuShortcut className="text-current opacity-70">Del</DropdownMenuShortcut></DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={handleRangeSplit} disabled={!selectionRange}>Split</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" disabled={!selectionRange && !selectedSegmentId} onClick={() => { if(selectionRange) handleRangeDelete(); else { setSegments(prev => { const newSegs = prev.filter(s => s.id !== selectedSegmentId); saveHistory(newSegs); setSelectedSegmentId(null); return newSegs; }); }}}>Delete <DropdownMenuShortcut className="text-current opacity-70">Del</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={handleRangeSplit} disabled={!selectionRange}>Split</DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setActiveTool('select')}>Select Tool <DropdownMenuShortcut className="text-current opacity-70">1</DropdownMenuShortcut></DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setActiveTool('move')}>Event Tool <DropdownMenuShortcut className="text-current opacity-70">2</DropdownMenuShortcut></DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setActiveTool('range')}>Range Tool <DropdownMenuShortcut className="text-current opacity-70">4</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => setActiveTool('select')}>Select Tool <DropdownMenuShortcut className="text-current opacity-70">1</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => setActiveTool('move')}>Event Tool <DropdownMenuShortcut className="text-current opacity-70">2</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => setActiveTool('range')}>Range Tool <DropdownMenuShortcut className="text-current opacity-70">4</DropdownMenuShortcut></DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -421,12 +421,12 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">View</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setZoom(z => Math.min(1000, z * 1.5))}>Zoom In</DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setZoom(z => Math.max(0.5, z / 1.5))}>Zoom Out</DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setZoom(1)}>Zoom Normal</DropdownMenuItem>
+                <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans">
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => setZoom(z => Math.min(1000, z * 1.5))}>Zoom In</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => setZoom(z => Math.max(0.5, z / 1.5))}>Zoom Out</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => setZoom(1)}>Zoom Normal</DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setSnapToGrid(!snapToGrid)}>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => setSnapToGrid(!snapToGrid)}>
                     {snapToGrid ? "✓ " : ""}Snap to Grid
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -436,12 +436,12 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Process</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Process Mute not implemented yet')}>Mute</DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Process Reverse not implemented yet')}>Reverse</DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Process Normalize not implemented yet')}>Normalize</DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Process Fade In not implemented yet')}>Fade In</DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Process Fade Out not implemented yet')}>Fade Out</DropdownMenuItem>
+                <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans">
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('Process Mute not implemented yet')}>Mute</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('Process Reverse not implemented yet')}>Reverse</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('Process Normalize not implemented yet')}>Normalize</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('Process Fade In not implemented yet')}>Fade In</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('Process Fade Out not implemented yet')}>Fade Out</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -449,9 +449,9 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Effects</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
+                <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans">
                   {EFFECTS.map(eff => (
-                    <DropdownMenuItem key={eff.id} className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => addEffect(eff)}>
+                    <DropdownMenuItem key={eff.id} className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => addEffect(eff)}>
                       {eff.name}...
                     </DropdownMenuItem>
                   ))}
@@ -462,11 +462,11 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Tools</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setActiveEnvelope(activeEnvelope === 'volume' ? null : 'volume')}>
+                <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans">
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => setActiveEnvelope(activeEnvelope === 'volume' ? null : 'volume')}>
                     {activeEnvelope === 'volume' ? "✓ " : ""}Volume Envelope
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setActiveEnvelope(activeEnvelope === 'pan' ? null : 'pan')}>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => setActiveEnvelope(activeEnvelope === 'pan' ? null : 'pan')}>
                     {activeEnvelope === 'pan' ? "✓ " : ""}Pan Envelope
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -476,8 +476,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Options</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Preferences modal not implemented yet')}>Preferences...</DropdownMenuItem>
+                <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans">
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('Preferences modal not implemented yet')}>Preferences...</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -485,94 +485,94 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Help</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="z-[110] bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('Help not implemented yet')}>Contents and Index</DropdownMenuItem>
+                <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans">
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('Help not implemented yet')}>Contents and Index</DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => toast.info('About Wave Editor')}>About Wave Editor</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onClick={() => toast.info('About Wave Editor')}>About Wave Editor</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
 
           {/* Standard Toolbar */}
-          <div className="flex items-center px-2 py-1.5 bg-[#3a3a3a] border-b border-[#222] gap-2 shrink-0 shadow-md">
-            <div className="flex gap-0.5 bg-[#2b2b2b] p-0.5 rounded border border-[#1a1a1c] shadow-inner">
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-white/80 hover:bg-[#555] rounded-sm" title="New">
+          <div className="flex items-center px-4 py-2 bg-card/40 border-b border-border/40 gap-2 shrink-0 shadow-md">
+            <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md" title="New">
                 <FileText className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-white/80 hover:bg-[#555] rounded-sm" title="Open">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md" title="Open">
                 <FolderOpen className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={handleSave} className="h-7 w-7 text-white/80 hover:bg-[#555] rounded-sm" title="Save">
+              <Button variant="ghost" size="icon" onClick={handleSave} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md" title="Save">
                 <Save className="w-4 h-4" />
               </Button>
             </div>
 
-            <div className="w-px h-6 bg-[#1a1a1c] mx-1 border-r border-[#444]" />
+            <div className="w-px h-5 bg-border/50 mx-1 border-none" />
 
-            <div className="flex gap-0.5 bg-[#2b2b2b] p-0.5 rounded border border-[#1a1a1c] shadow-inner">
-              <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIdx <= 0} className="h-7 w-7 text-white/80 hover:bg-[#555] disabled:opacity-30 rounded-sm" title="Undo">
+            <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
+              <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIdx <= 0} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 disabled:opacity-30 rounded-md" title="Undo">
                 <Undo2 className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIdx >= history.length - 1} className="h-7 w-7 text-white/80 hover:bg-[#555] disabled:opacity-30 rounded-sm" title="Redo">
+              <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIdx >= history.length - 1} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 disabled:opacity-30 rounded-md" title="Redo">
                 <Redo2 className="w-4 h-4" />
               </Button>
             </div>
 
-            <div className="w-px h-6 bg-[#1a1a1c] mx-1 border-r border-[#444]" />
+            <div className="w-px h-5 bg-border/50 mx-1 border-none" />
 
-            <div className="flex gap-0.5 bg-[#2b2b2b] p-0.5 rounded border border-[#1a1a1c] shadow-inner">
-              <Button variant="ghost" size="icon" onClick={() => setActiveTool('select')} className={cn("h-7 w-7 rounded-sm", activeTool === 'select' ? "bg-[#555] shadow-inner" : "text-white/80 hover:bg-[#444]")} title="Edit Tool">
+            <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
+              <Button variant="ghost" size="icon" onClick={() => setActiveTool('select')} className={cn("h-7 w-7 rounded-md", activeTool === 'select' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")} title="Edit Tool">
                 <MousePointer2 className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => setActiveTool('range')} className={cn("h-7 w-7 rounded-sm", activeTool === 'range' ? "bg-[#555] shadow-inner" : "text-white/80 hover:bg-[#444]")} title="Time Zoom/Selection Tool">
+              <Button variant="ghost" size="icon" onClick={() => setActiveTool('range')} className={cn("h-7 w-7 rounded-md", activeTool === 'range' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")} title="Time Zoom/Selection Tool">
                 <SquareDashedBottom className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => setActiveTool('move')} className={cn("h-7 w-7 rounded-sm", activeTool === 'move' ? "bg-[#555] shadow-inner" : "text-white/80 hover:bg-[#444]")} title="Event Tool">
+              <Button variant="ghost" size="icon" onClick={() => setActiveTool('move')} className={cn("h-7 w-7 rounded-md", activeTool === 'move' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")} title="Event Tool">
                 <MoveHorizontal className="w-4 h-4" />
               </Button>
             </div>
 
-            <div className="w-px h-6 bg-[#1a1a1c] mx-1 border-r border-[#444]" />
+            <div className="w-px h-5 bg-border/50 mx-1 border-none" />
 
             <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setSnapToGrid(!snapToGrid)} 
-                className={cn("h-7 px-2 text-xs", snapToGrid ? "bg-[#555] shadow-inner text-white border border-[#1a1a1c]" : "text-white/80 hover:bg-[#444] border border-transparent")}
+                className={cn("h-7 px-2 text-xs", snapToGrid ? "bg-primary/20 text-primary rounded-md" : "text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md")}
                 title="Snap to Events/Grid"
               >
                 <Magnet className="w-3.5 h-3.5 mr-1" />
                 Snap
             </Button>
             
-            <div className="w-px h-6 bg-[#1a1a1c] mx-1 border-r border-[#444]" />
+            <div className="w-px h-5 bg-border/50 mx-1 border-none" />
 
-            <div className="flex gap-0.5 bg-[#2b2b2b] p-0.5 rounded border border-[#1a1a1c] shadow-inner">
-              <Button variant="ghost" size="sm" onClick={() => setActiveEnvelope(activeEnvelope === 'volume' ? null : 'volume')} className={cn("h-7 px-2 text-xs", activeEnvelope === 'volume' ? "bg-[#555] shadow-inner text-white" : "text-white/80 hover:bg-[#444]")}>Vol Env</Button>
-              <Button variant="ghost" size="sm" onClick={() => setActiveEnvelope(activeEnvelope === 'pan' ? null : 'pan')} className={cn("h-7 px-2 text-xs", activeEnvelope === 'pan' ? "bg-[#555] shadow-inner text-white" : "text-white/80 hover:bg-[#444]")}>Pan Env</Button>
+            <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
+              <Button variant="ghost" size="sm" onClick={() => setActiveEnvelope(activeEnvelope === 'volume' ? null : 'volume')} className={cn("h-7 px-2 text-xs rounded-md", activeEnvelope === 'volume' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary/80")}>Vol Env</Button>
+              <Button variant="ghost" size="sm" onClick={() => setActiveEnvelope(activeEnvelope === 'pan' ? null : 'pan')} className={cn("h-7 px-2 text-xs rounded-md", activeEnvelope === 'pan' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary/80")}>Pan Env</Button>
             </div>
 
             <div className="flex-1" />
 
-            <div className="flex flex-col bg-[#e5e5e5] px-2 py-0.5 rounded shadow-inner border border-[#888] border-t-[#aaa] border-l-[#aaa]">
-              <span className="text-[8px] text-[#444] font-sans font-bold leading-none mb-0.5 uppercase">Selection</span>
+            <div className="flex flex-col bg-secondary/30 px-3 py-1 rounded-lg shadow-inner border border-border/50">
+              <span className="text-[8px] text-muted-foreground font-sans font-bold leading-none mb-1 uppercase">Selection</span>
               <div className="flex gap-4">
                 <div className="flex flex-col">
-                  <span className="text-[7px] text-[#666] leading-none mb-0.5">Start</span>
-                  <span className="text-[10px] text-black font-mono leading-none">
+                  <span className="text-[7px] text-muted-foreground/70 leading-none mb-0.5">Start</span>
+                  <span className="text-[10px] text-foreground font-mono leading-none">
                     {selectionRange ? selectionRange.start.toFixed(4) : "0.0000"}
                   </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[7px] text-[#666] leading-none mb-0.5">End</span>
-                  <span className="text-[10px] text-black font-mono leading-none">
+                  <span className="text-[7px] text-muted-foreground/70 leading-none mb-0.5">End</span>
+                  <span className="text-[10px] text-foreground font-mono leading-none">
                     {selectionRange ? selectionRange.end.toFixed(4) : "0.0000"}
                   </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[7px] text-[#666] leading-none mb-0.5">Length</span>
-                  <span className="text-[10px] text-black font-mono leading-none">
+                  <span className="text-[7px] text-muted-foreground/70 leading-none mb-0.5">Length</span>
+                  <span className="text-[10px] text-foreground font-mono leading-none">
                     {selectionRange ? Math.abs(selectionRange.end - selectionRange.start).toFixed(4) : "0.0000"}
                   </span>
                 </div>
@@ -580,56 +580,56 @@ export default function WaveEditor({ track, onClose, onSave }) {
             </div>
 
             {/* Time Display */}
-            <div className="bg-black border border-[#555] border-t-[#111] border-l-[#111] px-3 py-1 rounded shadow-inner flex flex-col justify-center min-w-[140px]">
-              <span className="text-[10px] text-green-500/70 font-mono leading-none mb-0.5">POSITION</span>
-              <span className="text-green-500 font-mono text-lg leading-none tracking-widest font-bold">
+            <div className="bg-[#0a0a0c] border border-border/50 px-4 py-1.5 rounded-lg shadow-inner flex flex-col justify-center min-w-[140px]">
+              <span className="text-[10px] text-primary/70 font-mono leading-none mb-0.5">POSITION</span>
+              <span className="text-primary font-mono text-xl leading-none tracking-widest font-bold">
                 {String(Math.floor(playhead / 60)).padStart(2, '0')}:
                 {String(Math.floor(playhead % 60)).padStart(2, '0')}.
                 {String(Math.floor((playhead % 1) * 10000)).padStart(4, '0')}
               </span>
             </div>
 
-            <Button variant="ghost" size="sm" onClick={onClose} className="ml-2 h-8 text-white/80 hover:text-white bg-red-500/20 hover:bg-red-500/40">
+            <Button variant="ghost" size="sm" onClick={onClose} className="ml-2 h-8 rounded-lg text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20">
               <X className="w-4 h-4 mr-1" /> Close
             </Button>
           </div>
 
           {/* Main Editor Area */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-[#222]">
+          <div className="flex-1 flex flex-col overflow-hidden bg-[#0a0a0c]">
             
-            {/* Playback Controls (Sound Forge Transport) */}
-            <div className="h-10 bg-[#333] border-b border-[#111] flex items-center px-4 gap-4 shadow-sm shrink-0 justify-between">
-              <div className="flex gap-1 bg-[#222] p-1 rounded-sm border border-[#111] shadow-inner items-center">
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white hover:bg-[#555] rounded-sm" onClick={() => setPlayhead(0)}>
+            {/* Playback Controls */}
+            <div className="h-12 bg-card/40 border-b border-border/40 flex items-center px-4 gap-4 shadow-sm shrink-0 justify-between">
+              <div className="flex gap-1 bg-secondary/30 p-1.5 rounded-xl border border-border/50 shadow-inner items-center">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(0)}>
                   <SkipBack className="w-4 h-4 fill-current" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white hover:bg-[#555] rounded-sm" onClick={() => setPlayhead(Math.max(0, playhead - 5))}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(Math.max(0, playhead - 5))}>
                   <Rewind className="w-4 h-4 fill-current" />
                 </Button>
-                <Button variant="ghost" size="icon" className={cn("h-7 w-7 rounded-sm", isPlaying ? "text-green-400 bg-green-400/10 shadow-inner" : "text-[#ccc] hover:text-white hover:bg-[#555]")} onClick={() => setIsPlaying(!isPlaying)}>
+                <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-lg", isPlaying ? "text-primary bg-primary/20 shadow-inner" : "text-muted-foreground hover:text-foreground hover:bg-secondary")} onClick={() => setIsPlaying(!isPlaying)}>
                   <Play className="w-4 h-4 fill-current" />
                 </Button>
-                <Button variant="ghost" size="icon" className={cn("h-7 w-7 rounded-sm", !isPlaying ? "text-[#ccc] bg-[#444] shadow-inner" : "text-[#ccc] hover:text-white hover:bg-[#555]")} onClick={() => setIsPlaying(false)}>
+                <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-lg", !isPlaying ? "text-muted-foreground bg-secondary shadow-inner" : "text-muted-foreground hover:text-foreground hover:bg-secondary")} onClick={() => setIsPlaying(false)}>
                   <Square className="w-4 h-4 fill-current" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white hover:bg-[#555] rounded-sm" onClick={() => setPlayhead(Math.min(track?.duration || 40, playhead + 5))}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(Math.min(track?.duration || 40, playhead + 5))}>
                   <FastForward className="w-4 h-4 fill-current" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white hover:bg-[#555] rounded-sm" onClick={() => setPlayhead(track?.duration || 40)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(track?.duration || 40)}>
                   <SkipForward className="w-4 h-4 fill-current" />
                 </Button>
-                <div className="w-px h-5 bg-[#444] mx-1" />
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-400 hover:bg-red-500/20 rounded-sm">
+                <div className="w-px h-6 bg-border/50 mx-1" />
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg">
                   <Circle className="w-4 h-4 fill-current" />
                 </Button>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white" onClick={() => setZoom(z => Math.max(0.5, z / 1.5))}>
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-foreground hover:bg-secondary/50 rounded-lg" onClick={() => setZoom(z => Math.max(0.5, z / 1.5))}>
                   <ZoomOut className="w-4 h-4" />
                 </Button>
-                <Slider value={[zoom]} min={0.5} max={200} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-32 [&_[role=slider]]:bg-[#ccc] [&_[role=slider]]:border-none" />
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white" onClick={() => setZoom(z => Math.min(1000, z * 1.5))}>
+                <Slider value={[zoom]} min={0.5} max={200} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-32" />
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-foreground hover:bg-secondary/50 rounded-lg" onClick={() => setZoom(z => Math.min(1000, z * 1.5))}>
                   <ZoomIn className="w-4 h-4" />
                 </Button>
               </div>
@@ -637,7 +637,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
             {/* Data Window (Waveform) */}
             <div 
-              className="flex-1 relative bg-[#cfcfcf] overflow-x-auto overflow-y-hidden custom-scrollbar focus:outline-none touch-none shadow-[inset_0_0_10px_rgba(0,0,0,0.5)] border-[3px] border-[#888] border-t-[#666] border-l-[#666] m-2" 
+              className="flex-1 relative bg-[#0f0f13] overflow-x-auto overflow-y-hidden custom-scrollbar focus:outline-none touch-none border-y border-border/50 m-0" 
               ref={containerRef} 
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
@@ -656,10 +656,10 @@ export default function WaveEditor({ track, onClose, onSave }) {
               {(() => {
                 const rulerMultiplier = zoom > 100 ? 100 : zoom > 10 ? 10 : 2;
                 return (
-                  <div className="absolute top-0 left-0 right-0 h-6 bg-[#e5e5e5] border-b border-[#aaa] z-10 pointer-events-none" style={{ width: `${100 * zoom}%`, minWidth: '100%' }}>
+                  <div className="absolute top-0 left-0 right-0 h-6 bg-card/40 border-b border-border/30 z-10 pointer-events-none" style={{ width: `${100 * zoom}%`, minWidth: '100%' }}>
                     {Array.from({ length: Math.ceil((track?.duration || 40) * rulerMultiplier) }).map((_, i) => (
-                      <div key={i} className={cn("absolute bottom-0 border-l border-[#888]", i % rulerMultiplier === 0 ? "h-full" : (rulerMultiplier >= 10 && i % (rulerMultiplier/10) === 0 ? "h-3" : "h-1.5"))} style={{ left: `${(i/((track?.duration || 40)*rulerMultiplier))*100}%` }}>
-                        {i % rulerMultiplier === 0 && <span className="absolute top-0.5 left-1 text-[9px] text-black font-sans">{i/rulerMultiplier}</span>}
+                      <div key={i} className={cn("absolute bottom-0 border-l border-border/40", i % rulerMultiplier === 0 ? "h-full" : (rulerMultiplier >= 10 && i % (rulerMultiplier/10) === 0 ? "h-3" : "h-1.5"))} style={{ left: `${(i/((track?.duration || 40)*rulerMultiplier))*100}%` }}>
+                        {i % rulerMultiplier === 0 && <span className="absolute top-0.5 left-1 text-[9px] text-muted-foreground/50 font-sans">{i/rulerMultiplier}</span>}
                       </div>
                     ))}
                   </div>
@@ -667,7 +667,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
               })()}
               
               {/* Center Line (Zero Crossing) */}
-              <div className="absolute top-1/2 left-0 right-0 h-px bg-[#888] pointer-events-none z-0" style={{ width: `${100 * zoom}%`, minWidth: '100%' }} />
+              <div className="absolute top-1/2 left-0 right-0 h-px bg-border/50 pointer-events-none z-0" style={{ width: `${100 * zoom}%`, minWidth: '100%' }} />
 
               {/* Range Selection Overlay */}
               {selectionRange && (
@@ -722,10 +722,10 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       handleSegmentDragEnd(seg.id, Math.max(0, seg.startOffset + timeShift));
                     }}
                     className={cn(
-                      "audio-segment absolute top-0 bottom-0 border-l border-r overflow-hidden flex items-center transition-all group",
-                      activeTool === 'move' ? "cursor-grab active:cursor-grabbing hover:border-black/50" : "",
+                      "audio-segment absolute top-0 bottom-0 border border-white/10 rounded-lg overflow-hidden flex items-center transition-all group shadow-sm bg-card/40 backdrop-blur",
+                      activeTool === 'move' ? "cursor-grab active:cursor-grabbing hover:border-white/30" : "",
                       activeTool === 'split' ? "hover:border-red-500/50 cursor-crosshair" : "",
-                      selectedSegmentId === seg.id ? "border-black shadow-[0_0_15px_rgba(0,0,0,0.2)] z-10 bg-black/5" : "border-black/20 z-0"
+                      selectedSegmentId === seg.id ? "border-primary shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)] z-10" : "z-0"
                     )}
                     style={{
                       left: `${(seg.startOffset / (track?.duration || 40)) * 100}%`,
@@ -733,8 +733,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     }}
                   >
                     {/* Header bar of segment */}
-                    <div className="absolute top-0 left-0 right-0 h-4 bg-[#b5b5b5] border-b border-[#999] flex items-center px-1 z-20 pointer-events-none">
-                      <span className="text-[9px] text-black font-sans truncate font-semibold">{track.name} - Event {idx+1}</span>
+                    <div className="absolute top-0 left-0 right-0 h-5 bg-card/60 border-b border-border/30 backdrop-blur flex items-center px-2 z-20 pointer-events-none">
+                      <span className="text-[10px] text-muted-foreground font-sans truncate font-semibold">{track.name} - Event {idx+1}</span>
                     </div>
 
                     {/* Left Trim Handle */}
@@ -1017,7 +1017,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     </div>
 
                     {/* Waveform */}
-                    <svg className="w-full h-full pt-4 pb-0 pointer-events-none" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                    <svg className="w-full h-full pt-5 pb-0 pointer-events-none" preserveAspectRatio="none" viewBox="0 0 1000 100">
                       <path 
                         d={(() => {
                           const wf = seg.waveform || [];
@@ -1027,27 +1027,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                           for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*45*(seg.gain ?? 1)} `;
                           return d + 'Z';
                         })()}
-                        className="fill-[#1b5e20] opacity-80 mix-blend-multiply"
-                      />
-                      <path 
-                        d={(() => {
-                          const wf = seg.waveform || [];
-                          const wLen = wf.length - 1 || 1;
-                          let d = `M 0,50 `;
-                          for(let i=0; i<=wLen; i++) d += `L ${(i/wLen)*1000},${50 - Math.max(0.02, wf[i])*45*(seg.gain ?? 1)} `;
-                          return d;
-                        })()}
-                        className="stroke-[#2e7d32] stroke-1 fill-none"
-                      />
-                      <path 
-                        d={(() => {
-                          const wf = seg.waveform || [];
-                          const wLen = wf.length - 1 || 1;
-                          let d = `M 0,50 `;
-                          for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*45*(seg.gain ?? 1)} `;
-                          return d;
-                        })()}
-                        className="stroke-[#2e7d32] stroke-1 fill-none"
+                        className={cn("opacity-90 drop-shadow-md", waveformFills[track?.color] || "fill-primary")}
                       />
                     </svg>
                   </motion.div>

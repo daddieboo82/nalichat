@@ -18,6 +18,16 @@ Deno.serve(async (req) => {
     const createdDate = new Date(user.created_date);
     const diffHours = (now - createdDate) / (1000 * 60 * 60);
     const hasOneHourFree = diffHours < 1;
+    const isAdmin = user.role === 'admin';
+
+    if (isAdmin) {
+      return Response.json({
+        plan: 'pro',
+        status: 'active',
+        trialActive: false,
+        hasAccess: true,
+      });
+    }
 
     const activeSubs = subs.filter(s => s.status === 'active' || s.status === 'trial');
 

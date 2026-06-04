@@ -13,6 +13,8 @@ import NavRipple from '@/components/layout/NavRipple';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { OnboardingProvider, useOnboarding } from '@/lib/OnboardingContext';
 import OnboardingOverlay from '@/components/onboarding/OnboardingOverlay';
+import { MediaPlayerProvider } from '@/lib/MediaPlayerContext.jsx';
+import GlobalMediaPlayer from '@/components/media/GlobalMediaPlayer';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -74,6 +76,7 @@ const AuthenticatedApp = () => {
         }}
         completedSteps={new Set()}
       />
+      <GlobalMediaPlayer />
       <AnimatePresence mode="wait">
       <Routes location={location}>
       <Route path="/login" element={<Login />} />
@@ -117,18 +120,20 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <OnboardingProvider>
-          <QueryClientProvider client={queryClientInstance}>
+          <MediaPlayerProvider>
+            <QueryClientProvider client={queryClientInstance}>
             {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
             <NavRipple />
             <Router>
               <AuthenticatedApp />
             </Router>
             <Toaster />
-          </QueryClientProvider>
-        </OnboardingProvider>
-      </AuthProvider>
-    </ErrorBoundary>
-  )
+            </QueryClientProvider>
+            </MediaPlayerProvider>
+            </OnboardingProvider>
+            </AuthProvider>
+            </ErrorBoundary>
+            )
 }
 
 export default App

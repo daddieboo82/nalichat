@@ -972,11 +972,11 @@ export default function Studio() {
                         </>
                       )}
 
-                      <div className={cn("absolute inset-x-3 flex items-center justify-start gap-px overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-2 top-6")}>
+                      <div className={cn("absolute inset-x-0 flex items-center justify-between gap-[1px] overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-2 top-6")}>
                         {track.waveform.map((val, i) => (
                           <div 
                             key={i} 
-                            className={cn("w-1 rounded-full opacity-80 shrink-0", track.color)}
+                            className={cn("flex-1 rounded-full opacity-80", track.color)}
                             style={{ height: `${Math.max(5, val * 100)}%` }}
                           />
                         ))}

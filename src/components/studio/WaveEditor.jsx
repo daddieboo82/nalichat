@@ -112,9 +112,17 @@ export default function WaveEditor({ track, onClose, onSave }) {
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const clickX = e.clientX - rect.left + containerRef.current.scrollLeft;
+      const clickY = e.clientY - rect.top;
+      const isRulerClick = clickY <= 24;
+
       const totalWidth = rect.width * zoom;
       let clickTime = (clickX / totalWidth) * (track?.duration || 40);
       clickTime = getSnappedTime(clickTime);
+
+      if (isRulerClick) {
+        setPlayhead(clickTime);
+        return;
+      }
 
       if (activeTool === 'range' || (activeTool === 'select' && !segmentEl)) {
         setIsDraggingRange(true);

@@ -1,13 +1,27 @@
 import { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Send } from "lucide-react";
+import { Search, Send, Loader2 } from "lucide-react";
 
-export default function NewChatDialog({ open, onOpenChange, users, onSelectUser }) {
+export default function NewChatDialog({ open, onOpenChange, users, onSelectUser, currentUserId }) {
   const [search, setSearch] = useState("");
+
+  // Fetch contacts for the current user
+  const { data: contacts = [], isLoading: contactsLoading } = useQuery({
+    queryKey: ["contacts", currentUserId],
+    queryFn: () => base44.entities.Contact.filter({ user_id: currentUserId }),
+    enabled: open && !!currentUserId,
+  });
+
+  // Get contact users and filter
+  const contactUsers = contacts
+    .map(contact => users.find(u => u.id === contact.contact_user_id))
+    .filter(Boolean);
   
   const filtered = users.filter(u => {
     const query = search.toLowerCase();
@@ -44,6 +58,40 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser 
           />
         </div>
         <div className="max-h-[340px] overflow-y-auto space-y-1">
+          {contactsLoading && (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {!search && contactUsers.length > 0 && (
+            <>
+              <p className="text-xs font-semibold text-muted-foreground px-3 py-2 uppercase">My Contacts</p>
+              {contactUsers.map(user => (
+                <button
+                  key={user.id}
+                  onClick={() => { onSelectUser(user); onOpenChange(false); }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-primary/10 transition-colors text-left"
+                >
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={user.avatar_url} />
+                    <AvatarFallback className="bg-primary/20 text-primary font-bold text-sm">
+                      {(user.display_name || user.full_name || "?")[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{user.display_name || user.full_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user.bio || user.email || "No bio"}</p>
+                  </div>
+                  <Badge className={`text-[10px] ${roleColors[user.role] || "bg-secondary text-secondary-foreground"} border-0`}>
+                    {user.role?.toUpperCase()}
+                  </Badge>
+                </button>
+              ))}
+              {filtered.length > 0 && <p className="text-xs font-semibold text-muted-foreground px-3 py-2 mt-3 uppercase">Other Users</p>}
+            </>
+          )}
+
           {filtered.map(user => (
             <button
               key={user.id}
@@ -65,6 +113,7 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser 
               </Badge>
             </button>
           ))}
+
           {filtered.length === 0 && search && (
             <div className="text-center py-8">
               <p className="text-sm text-muted-foreground mb-3">No users found matching "{search}"</p>

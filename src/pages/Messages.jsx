@@ -313,6 +313,7 @@ export default function Messages() {
         onOpenChange={setShowNewDM}
         users={otherUsers}
         onSelectUser={(u) => { startDM(u); setShowNewDM(false); }}
+        currentUserId={currentUser?.id}
       />
       <GroupChatDialog
         open={showNewGroup}

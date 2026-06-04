@@ -177,7 +177,7 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
         </div>
 
         {/* Right: Generation Area */}
-        <div className="w-full md:w-2/3 flex flex-col items-center justify-center border border-border bg-card/50 rounded-xl p-4 sm:p-8 relative overflow-y-auto custom-scrollbar">
+        <div className="w-full md:w-2/3 flex flex-col items-center justify-center border border-border bg-card/50 rounded-xl p-4 pb-28 sm:p-8 sm:pb-28 md:pb-8 relative overflow-y-auto custom-scrollbar">
           <div className="flex flex-col items-center w-full max-w-md">
             <div className="w-full aspect-square bg-black/50 rounded-2xl border-2 border-border overflow-hidden relative shadow-2xl flex items-center justify-center mb-6">
               {generatedImage ? (
@@ -212,8 +212,14 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                 <Button 
                   size="lg" 
                   className="flex-[2] min-w-[140px] h-14 text-lg gap-2 bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/25 text-white"
-                  onClick={() => selectedPost && generateArtMutation.mutate(selectedPost)}
-                  disabled={!selectedPost || generateArtMutation.isPending || isUploading}
+                  onClick={() => {
+                    if (!selectedPost) {
+                      toast.error("Please select a track first to generate cover art.");
+                      return;
+                    }
+                    generateArtMutation.mutate(selectedPost);
+                  }}
+                  disabled={generateArtMutation.isPending || isUploading}
                 >
                   <Wand2 className="w-5 h-5" />
                   {selectedPost?.image_url ? 'Generate New' : 'Generate Cover'}
@@ -223,8 +229,14 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                   variant="outline"
                   size="lg" 
                   className="flex-1 min-w-[100px] h-14 gap-2 border-primary/50 text-primary hover:bg-primary/10 bg-transparent"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={!selectedPost || generateArtMutation.isPending || isUploading}
+                  onClick={() => {
+                    if (!selectedPost) {
+                      toast.error("Please select a track first to upload an image.");
+                      return;
+                    }
+                    fileInputRef.current?.click();
+                  }}
+                  disabled={generateArtMutation.isPending || isUploading}
                 >
                   {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                   Upload

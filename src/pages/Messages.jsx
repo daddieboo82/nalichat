@@ -9,7 +9,7 @@ import ChatView from "@/components/messages/ChatView";
 import NewChatDialog from "@/components/messages/NewChatDialog";
 import GroupChatDialog from "@/components/messages/GroupChatDialog";
 import ExternalMessageDialog from "@/components/messages/ExternalMessageDialog";
-import { notify } from "@/lib/notifications";
+import { sounds } from "@/hooks/use-sound";
 import { MessageSquare, Users, Mail, Plus, Zap, UserPlus, Hash, Search, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -71,13 +71,16 @@ export default function Messages() {
 
   useEffect(() => {
     const unsub = base44.entities.Message.subscribe((event) => {
+      if (event.type === "create" && currentUser?.id && event.data?.sender_id !== currentUser?.id) {
+        sounds.notification();
+      }
       if (event.data?.conversation_id === selectedConvId) {
         queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
       }
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     });
     return unsub;
-  }, [selectedConvId, queryClient]);
+  }, [selectedConvId, queryClient, currentUser]);
 
   const editMessage = useMutation({
     mutationFn: async ({ id, text }) => {
@@ -102,17 +105,6 @@ export default function Messages() {
         last_message_text: msgData.text || `Sent a ${msgData.type}`,
         last_message_at: new Date().toISOString(),
       });
-      const conv = queryClient.getQueryData(["conversations"])?.find(c => c.id === selectedConvId);
-      if (["file", "audio", "session", "image"].includes(msgData.type) && conv) {
-        const recipients = (conv.participant_ids || []).filter(id => id !== currentUser.id);
-        await Promise.all(recipients.map(rid => notify({
-          recipientId: rid,
-          actor: currentUser,
-          type: "file",
-          message: `sent you a file: ${msgData.file_name || msgData.type}`,
-          link: "/messages",
-        })));
-      }
       return msg;
     },
     onMutate: async (msgData) => {
@@ -185,13 +177,6 @@ export default function Messages() {
         name,
         participant_ids: [currentUser.id, ...participant_ids],
       });
-      await Promise.all(participant_ids.map(rid => notify({
-        recipientId: rid,
-        actor: currentUser,
-        type: "session_invite",
-        message: `invited you to the session "${name || "Untitled"}"`,
-        link: "/messages",
-      }).catch(() => {})));
       await queryClient.invalidateQueries({ queryKey: ["conversations"] });
       setSelectedConvId(conv.id);
     } catch (err) {}

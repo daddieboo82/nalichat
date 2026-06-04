@@ -66,7 +66,10 @@ export default function Messages() {
 
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", selectedConvId],
-    queryFn: () => base44.entities.Message.filter({ conversation_id: selectedConvId }, "created_date", 300),
+    queryFn: async () => {
+      const msgs = await base44.entities.Message.filter({ conversation_id: selectedConvId }, "-created_date", 300);
+      return msgs.reverse();
+    },
     enabled: !!selectedConvId,
     refetchInterval: 5000,
   });

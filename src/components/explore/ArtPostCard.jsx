@@ -21,8 +21,12 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
             <img
               src={post.image_url}
               alt={post.title}
-              className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="w-full object-cover transition-transform duration-500 group-hover:scale-105 bg-secondary"
               style={{ maxHeight: large ? 280 : 220 }}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "https://images.unsplash.com/photo-1614149162883-504ce4d13909?q=80&w=600&auto=format&fit=crop";
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-primary/40 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="absolute bottom-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">

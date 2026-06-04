@@ -93,7 +93,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
           />
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+        <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar pr-4">
           {["all", "artist", "producer", "engineer", "ar"].map(r => (
             <button
               key={r}

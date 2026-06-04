@@ -1,22 +1,22 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Music, MessageSquare, Compass, ArrowRight, Users } from 'lucide-react';
+import { Sparkles, Music, MessageSquare, Compass, ArrowRight, Users, Mic } from 'lucide-react';
 
 const quickStarts = [
+  {
+    icon: Mic,
+    title: 'Open Studio',
+    desc: 'Produce & record tracks',
+    link: '/studio',
+    color: 'from-primary to-pink-500',
+  },
   {
     icon: Compass,
     title: 'Explore Music',
     desc: 'Discover tracks & artists',
     link: '/explore',
     color: 'from-pink-500 to-red-500',
-  },
-  {
-    icon: Music,
-    title: 'Build Playlists',
-    desc: 'Curate your sound',
-    link: '/playlists',
-    color: 'from-purple-500 to-pink-500',
   },
   {
     icon: MessageSquare,

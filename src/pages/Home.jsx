@@ -14,72 +14,74 @@ import { sounds } from "@/hooks/use-sound";
 
 const features = [
   {
+    icon: Headphones,
+    label: "Pro Studio DAW",
+    path: "/studio",
+    description: "Multi-track recording, wave editor, effects & VST plugins right in your browser",
+    gradient: "from-primary to-pink-500",
+    badge: "Pro",
+  },
+  {
     icon: MessageSquare,
-    label: "Messages",
+    label: "Unlimited Messages",
     path: "/messages",
-    description: "Real-time messaging, voice notes & file sharing with artists",
-    gradient: "from-primary to-primary/50",
-    badge: "Core",
+    description: "Real-time messaging, unlimited voice notes & high-res file sharing",
+    gradient: "from-accent to-cyan-500",
+    badge: "Free",
   },
   {
     icon: Compass,
-    label: "Explore",
+    label: "Explore & Release",
     path: "/explore",
-    description: "Discover trending tracks & connect with creators",
+    description: "Drop your music, discover trending tracks & connect with creators",
     gradient: "from-indigo-500 to-purple-500",
   },
   {
     icon: Music,
     label: "Playlists",
     path: "/playlists",
-    description: "Curate & share your favorite collections",
-    gradient: "from-accent to-accent/50",
-  },
-  {
-    icon: Users,
-    label: "Network",
-    path: "/network",
-    description: "Find your next collaborator or fan",
-    gradient: "from-lime-500 to-green-500",
+    description: "Curate, share, and vibe to your favorite artist collections",
+    gradient: "from-green-500 to-emerald-500",
   },
   {
     icon: Trophy,
     label: "Leaderboard",
     path: "/leaderboard",
-    description: "Climb rankings & showcase your talent",
+    description: "Climb rankings & showcase your talent to the world",
     gradient: "from-pink-500 to-rose-500",
   },
   {
     icon: BarChart3,
-    label: "Analytics",
+    label: "Deep Analytics",
     path: "/analytics",
-    description: "Track plays, reach & audience growth",
+    description: "Track plays, reach, audience growth & listener engagement",
     gradient: "from-cyan-500 to-blue-500",
+    badge: "Pro",
   },
 ];
 
 const steps = [
   {
     number: "01",
-    icon: Users,
-    title: "Connect with Creators",
-    description: "Find collaborators via Network, start conversations in Messages, and build your creative circle.",
+    icon: Headphones,
+    title: "Produce in Studio",
+    description: "Record, mix, and master using our built-in DAW. Start with your free 1-hour trial or upgrade for unlimited access.",
     color: "text-primary",
     bg: "bg-primary/10",
   },
   {
     number: "02",
-    icon: Music,
-    title: "Share & Discover",
-    description: "Upload your tracks to Explore, listen to trending music, save to Playlists, and engage with the community.",
+    icon: Users,
+    title: "Collaborate Live",
+    description: "Find artists in Network and share high-res audio instantly in Messages to build your track together.",
     color: "text-pink-400",
     bg: "bg-pink-400/10",
   },
   {
     number: "03",
     icon: Trophy,
-    title: "Grow Your Audience",
-    description: "Climb the Leaderboard, track Analytics, and watch your reach expand as listeners discover your work.",
+    title: "Release & Grow",
+    description: "Drop your music to Explore, climb the Leaderboard, and watch your reach expand with deep Analytics.",
     color: "text-accent",
     bg: "bg-accent/10",
   },
@@ -195,24 +197,24 @@ export default function Home() {
             Make Music.<br className="hidden md:block" /> Together.
           </h1>
           <p className="text-xl text-muted-foreground mb-10 leading-relaxed max-w-2xl mx-auto">
-            Connect with artists. Share your sound. Build your fanbase. All in one place.
+            Record in the Pro Studio. Connect with artists. Share your sound. All in one place.
           </p>
 
           {/* CTAs */}
           <div className="flex gap-4 justify-center flex-wrap">
             {user ? (
               <>
-                <Link to="/messages">
+                <Link to="/studio">
                   <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7">
-                    <MessageSquare className="w-5 h-5 mr-2" />
-                    Start Messaging
+                    <Headphones className="w-5 h-5 mr-2" />
+                    Open Studio
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/explore">
+                <Link to="/messages">
                   <Button size="lg" variant="outline" className="rounded-xl text-base px-7">
-                    <Compass className="w-5 h-5 mr-2" />
-                    Explore Tracks
+                    <MessageSquare className="w-5 h-5 mr-2" />
+                    Messages
                   </Button>
                 </Link>
               </>
@@ -221,7 +223,7 @@ export default function Home() {
                 <Link to="/register">
                   <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7">
                     <Sparkles className="w-5 h-5 mr-2" />
-                    Join Free
+                    Start Free Trial
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
@@ -238,7 +240,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mt-5 text-sm text-muted-foreground">
-             ✅ Free forever · 💳 No credit card · 👥 50K+ creators already collaborating
+             ✅ 1 Hour Free Trial · 🚀 Full Studio Access · 💳 No credit card to start
             </p>
           )}
         </motion.div>
@@ -277,21 +279,21 @@ export default function Home() {
           <div className="absolute -inset-px bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-3xl pointer-events-none" />
           <div className="relative z-10">
             <h2 className="font-heading font-bold text-4xl mb-3">What You Can Actually Do</h2>
-            <p className="text-muted-foreground text-lg mb-10 max-w-2xl">Everything you need to discover music, collaborate with artists, and grow your audience:</p>
+            <p className="text-muted-foreground text-lg mb-10 max-w-2xl">Everything you need to discover music, collaborate with artists, produce your sound, and grow your audience:</p>
             
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 {
-                  title: "🎧 Discover Music",
-                  items: ["Browse trending tracks", "Find new artists", "Save to playlists", "Follow creators"]
+                  title: "🎧 Produce in the Studio",
+                  items: ["Full DAW Interface", "Unlimited Tracks", "Real-time Wave Editor", "High-fidelity effects"]
                 },
                 {
                   title: "💬 Connect & Collaborate",
-                  items: ["Real-time messaging", "Share files instantly", "Find collaborators", "Network with peers"]
+                  items: ["Unlimited messaging", "Voice notes & files", "Find collaborators", "Network with peers"]
                 },
                 {
                   title: "📈 Build Your Presence",
-                  items: ["Share your tracks", "Climb the leaderboard", "Track your stats", "Grow your following"]
+                  items: ["Release your tracks", "Climb the leaderboard", "Track your stats", "Grow your following"]
                 }
               ].map((block) => (
                 <div key={block.title} className="border border-border/50 rounded-2xl p-6 bg-card/50 hover:border-primary/30 transition-colors">
@@ -557,8 +559,8 @@ export default function Home() {
               </h3>
               <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
                 {user
-                  ? "Connect with collaborators, discover new music, and grow your audience."
-                  : "Join thousands of artists already creating, collaborating, and growing on NaliChat — completely free."}
+                  ? "Open the Studio, connect with collaborators, discover new music, and grow your audience."
+                  : "Join thousands of artists already producing, collaborating, and growing on NaliChat. Try the Pro Studio free for 1 hour."}
               </p>
               <div className="flex gap-4 justify-center flex-wrap">
                 {user ? (
@@ -595,7 +597,7 @@ export default function Home() {
                 )}
               </div>
               {!user && (
-                <p className="mt-5 text-sm text-muted-foreground">No credit card required · Cancel anytime</p>
+                <p className="mt-5 text-sm text-muted-foreground">No credit card required to start · 1 hour free Studio access</p>
               )}
             </div>
           </div>

@@ -393,7 +393,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
           {/* Menu Bar - Studio Style */}
           <div className="flex items-center px-4 py-2 bg-card/80 backdrop-blur border-b border-border/50 text-xs text-foreground/90 shadow-sm shrink-0">
             <div className="flex gap-1">
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">File</Button>
                 </DropdownMenuTrigger>
@@ -408,7 +408,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Edit</Button>
                 </DropdownMenuTrigger>
@@ -425,7 +425,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">View</Button>
                 </DropdownMenuTrigger>
@@ -440,7 +440,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Process</Button>
                 </DropdownMenuTrigger>
@@ -453,7 +453,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Effects</Button>
                 </DropdownMenuTrigger>
@@ -466,7 +466,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Tools</Button>
                 </DropdownMenuTrigger>
@@ -480,7 +480,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Options</Button>
                 </DropdownMenuTrigger>
@@ -489,7 +489,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Help</Button>
                 </DropdownMenuTrigger>

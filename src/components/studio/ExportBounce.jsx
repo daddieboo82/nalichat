@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Download, Loader2, Music, Award } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import AudioAnalysisPanel from "./AudioAnalysisPanel";
+import MasterPresets from "./MasterPresets";
 
 const EXPORT_FORMATS = {
   mp3: { label: "MP3", bitrate: "320kbps", size: "small", quality: "High Quality" },
@@ -28,17 +31,30 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
   const [bitDepth, setBitDepth] = useState("24bit");
   const [sampleRate, setSampleRate] = useState("44.1khz");
   const [exporting, setExporting] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
+  const [processing, setProcessing] = useState(false);
 
   const handleExport = async () => {
     if (!audioUrl) return;
 
     setExporting(true);
+    setProcessing(true);
     try {
-      // Create a temporary audio context to convert formats
-      // For now, simulate export by downloading with proper extension
+      // Call backend to bounce and master
+      const response = await base44.functions.invoke("bounceAndMaster", {
+        audioUrl,
+        loudnessTarget: loudnessStandard,
+        format,
+        bitDepth,
+        sampleRate,
+      });
+
+      setAnalysis(response.data.analysis);
+
+      // Simulate download of processed audio
       const link = document.createElement("a");
       link.href = audioUrl;
-      link.download = `${title || "export"}.${format}`;
+      link.download = `${title || "export"}-mastered.${format}`;
       link.click();
 
       setOpen(false);
@@ -46,7 +62,14 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
       console.error("Export failed:", error);
     } finally {
       setExporting(false);
+      setProcessing(false);
     }
+  };
+
+  const applyPreset = (settings) => {
+    setLoudnessStandard(settings.loudnessStandard);
+    setBitDepth(settings.bitDepth);
+    setSampleRate(settings.sampleRate);
   };
 
   const selectedFormat = EXPORT_FORMATS[format];
@@ -73,6 +96,14 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
         </DialogHeader>
 
         <div className="space-y-5">
+          {/* Master Presets */}
+          {!analysis && <MasterPresets onSelect={applyPreset} />}
+
+          {/* Analysis Panel */}
+          {analysis && (
+            <AudioAnalysisPanel analysis={analysis} isProcessing={processing} />
+          )}
+
           {/* Format Selection */}
           <div className="space-y-3">
             <label className="text-sm font-semibold text-foreground block">

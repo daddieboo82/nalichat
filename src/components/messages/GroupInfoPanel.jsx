@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Users, Pencil, Check } from "lucide-react";
+import { X, Users, Pencil, Check, LogOut } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 
-export default function GroupInfoPanel({ conversation, users, onClose }) {
+export default function GroupInfoPanel({ conversation, users, currentUser, onClose }) {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(conversation?.name || "");
   const queryClient = useQueryClient();
@@ -18,6 +18,14 @@ export default function GroupInfoPanel({ conversation, users, onClose }) {
     await base44.entities.Conversation.update(conversation.id, { name: nameValue.trim() });
     queryClient.invalidateQueries({ queryKey: ["conversations"] });
     setEditingName(false);
+  };
+
+  const leaveGroup = async () => {
+    if (!currentUser) return;
+    const newParticipants = conversation.participant_ids?.filter(id => id !== currentUser.id) || [];
+    await base44.entities.Conversation.update(conversation.id, { participant_ids: newParticipants });
+    queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    onClose();
   };
 
   return (
@@ -83,6 +91,17 @@ export default function GroupInfoPanel({ conversation, users, onClose }) {
             ))}
           </div>
         </div>
+      </div>
+      
+      <div className="p-4 border-t border-border/50 shrink-0">
+        <Button 
+          variant="outline" 
+          className="w-full text-red-500 hover:text-red-600 hover:bg-red-500/10 border-red-500/20"
+          onClick={leaveGroup}
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Leave Group
+        </Button>
       </div>
     </div>
   );

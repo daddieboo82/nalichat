@@ -229,6 +229,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
         <GroupInfoPanel
           conversation={conversation}
           users={users}
+          currentUser={currentUser}
           onClose={() => setShowGroupInfo(false)}
         />
       )}

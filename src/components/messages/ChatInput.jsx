@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile, Layers } from "lucide-react";
+import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile, Layers, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resumableUpload } from "@/lib/resumableUpload";
 import { sounds } from "@/hooks/use-sound";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiReactionPicker from "./EmojiReactionPicker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessage, onCancelEdit, disabled, onTyping }) {
   const [text, setText] = useState("");
@@ -21,6 +22,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
   const [uploads, setUploads] = useState([]); // [{name, progress, done}]
   const [dragOver, setDragOver] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showFeatures, setShowFeatures] = useState(false);
+  const [sessionName, setSessionName] = useState("New Recording Session");
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -148,7 +151,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
 
   return (
     <div
-      className={cn("w-full transition-all duration-300", dragOver && "bg-primary/5")}
+      className={cn("w-full rounded-3xl transition-all duration-300", dragOver && "bg-primary/5")}
       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
@@ -207,22 +210,86 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       <div className="p-2.5 sm:p-3 flex items-end gap-1.5 sm:gap-2">
         <input ref={fileInputRef} type="file" className="hidden" multiple onChange={handleFileChange} accept="*/*" />
 
-        {/* Start Session */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            const name = prompt("Session name:", "New Recording Session");
-            if (name) {
-              onSend({ text: name, type: "session" });
-            }
-          }}
-          disabled={isRecording || anyUploading}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shrink-0 mb-0.5 touch-manipulation"
-          title="Start Live Recording Session"
-        >
-          <Layers className="w-5 h-5 text-indigo-400" />
-        </button>
+        {/* Start Session / Additional Features */}
+        <Popover open={showFeatures} onOpenChange={setShowFeatures}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              disabled={isRecording || anyUploading}
+              className={cn("w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5 touch-manipulation",
+                showFeatures ? "text-primary bg-primary/15" : "text-muted-foreground hover:text-primary hover:bg-primary/10")}
+              title="Additional Features"
+            >
+              <Layers className="w-5 h-5 text-indigo-400" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent side="top" align="start" className="w-64 p-3 rounded-xl border border-border/60 shadow-xl bg-card/95 backdrop-blur-md mb-2">
+            <div className="space-y-3">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Features</h4>
+              
+              <div className="space-y-2">
+                <div className="group relative">
+                  <div className="flex items-center gap-3 px-2 py-1.5">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 shrink-0">
+                      <Layers className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="block text-sm font-medium text-foreground">Live Session</span>
+                    </div>
+                  </div>
+                  <div className="px-2 pb-2 pt-1">
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="text" 
+                        value={sessionName}
+                        onChange={e => setSessionName(e.target.value)}
+                        className="flex-1 bg-secondary/50 border border-border/50 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary/50 text-foreground"
+                        placeholder="Session name"
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && sessionName.trim()) {
+                            onSend({ text: sessionName.trim(), type: "session" });
+                            setShowFeatures(false);
+                            setSessionName("New Recording Session");
+                          }
+                        }}
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          if (sessionName.trim()) {
+                            onSend({ text: sessionName.trim(), type: "session" });
+                            setShowFeatures(false);
+                            setSessionName("New Recording Session");
+                          }
+                        }}
+                        className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-md hover:bg-primary/90"
+                      >
+                        Start
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-primary/10 transition-colors text-left"
+                  onClick={() => {
+                    fileInputRef.current?.click();
+                    setShowFeatures(false);
+                  }}
+                >
+                  <div className="w-8 h-8 rounded-full bg-pink-500/10 flex items-center justify-center text-pink-500 shrink-0">
+                    <Music className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-foreground">Share Music</span>
+                    <span className="block text-[10px] text-muted-foreground">Upload audio or stems</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
 
         {/* Emoji */}
         <div className="relative">

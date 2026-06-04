@@ -1,7 +1,7 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Volume2, Plus, Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Volume2 } from "lucide-react";
 import TrackArrangeItem from "./TrackArrangeItem";
 import TrackImporter from "./TrackImporter";
 
@@ -15,6 +15,7 @@ export default function StudioArrange({
   currentUser,
 }) {
   const [selectedTrackId, setSelectedTrackId] = useState(null);
+  const queryClient = useQueryClient();
 
   if (tracks.length === 0) {
     return (
@@ -38,6 +39,7 @@ export default function StudioArrange({
                 projectId={project.id}
                 currentUser={currentUser}
                 onSuccess={() => {}}
+                onRefreshTracks={() => queryClient.invalidateQueries({ queryKey: ["tracks", project.id] })}
               />
             </div>
           )}
@@ -70,6 +72,7 @@ export default function StudioArrange({
               projectId={project.id}
               currentUser={currentUser}
               onSuccess={() => {}}
+              onRefreshTracks={() => queryClient.invalidateQueries({ queryKey: ["tracks", project.id] })}
             />
           </div>
         )}

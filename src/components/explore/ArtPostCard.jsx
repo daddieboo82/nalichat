@@ -1,16 +1,25 @@
 import { useState } from "react";
-import { Heart, Eye, Music, MessageCircle, Play } from "lucide-react";
+import { Heart, Eye, Music, MessageCircle, Play, Pause } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import MediaViewerModal from "./MediaViewerModal";
+import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 
 export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist, onComment, large }) {
   const [showMedia, setShowMedia] = useState(false);
   const liked = post.liked_by?.includes(currentUser?.id);
+  const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
+  const isActive = currentTrack?.id === post.id;
 
   return (
     <>
-      <div className={cn("break-inside-avoid mb-4 bg-card rounded-2xl overflow-hidden border border-border group hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 cursor-pointer", large && "")} onClick={() => setShowMedia(true)}>
+      <div className={cn("break-inside-avoid mb-4 bg-card rounded-2xl overflow-hidden border border-border group hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 cursor-pointer", large && "")} onClick={() => {
+        if (post.file_url) {
+          playTrack(post);
+        } else {
+          setShowMedia(true);
+        }
+      }}>
         {post.image_url && (
           <div className="relative overflow-hidden">
             <img
@@ -26,9 +35,9 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
               </span>
             </div>
             {post.file_url && (
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40">
-                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-                  <Play className="w-5 h-5 fill-current text-white ml-1" />
+              <div className={cn("absolute inset-0 flex items-center justify-center transition-opacity duration-300", isActive ? "opacity-100 bg-black/60" : "opacity-0 group-hover:opacity-100 bg-black/40")}>
+                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center hover:scale-110 transition-transform">
+                  {isActive && isPlaying ? <Pause className="w-5 h-5 fill-current text-white" /> : <Play className="w-5 h-5 fill-current text-white ml-1" />}
                 </div>
               </div>
             )}

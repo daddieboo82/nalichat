@@ -12,6 +12,7 @@ import AppLoader from '@/components/layout/AppLoader';
 import NavRipple from '@/components/layout/NavRipple';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { OnboardingProvider, useOnboarding } from '@/lib/OnboardingContext';
+import { AudioPlayerProvider } from '@/lib/AudioPlayerContext';
 import OnboardingOverlay from '@/components/onboarding/OnboardingOverlay';
 
 import Login from '@/pages/Login';
@@ -115,6 +116,7 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <OnboardingProvider>
+          <AudioPlayerProvider>
           <QueryClientProvider client={queryClientInstance}>
             {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
             <NavRipple />
@@ -123,6 +125,7 @@ function App() {
             </Router>
             <Toaster />
           </QueryClientProvider>
+          </AudioPlayerProvider>
         </OnboardingProvider>
       </AuthProvider>
     </ErrorBoundary>

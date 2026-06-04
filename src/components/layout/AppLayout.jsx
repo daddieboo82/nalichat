@@ -11,6 +11,7 @@ import { useOnboarding } from "@/lib/OnboardingContext";
 import OnboardingOverlay from "@/components/onboarding/OnboardingOverlay";
 import GlobalInviteDialog from "@/components/GlobalInviteDialog";
 import GlobalMessageDialog from "@/components/GlobalMessageDialog";
+import GlobalAudioPlayer from "@/components/audio/GlobalAudioPlayer";
 
 export default function AppLayout() {
   const location = useLocation();
@@ -54,6 +55,7 @@ export default function AppLayout() {
       />
       <GlobalInviteDialog open={showInvite} onOpenChange={setShowInvite} />
       <GlobalMessageDialog open={showMessage} onOpenChange={setShowMessage} />
+      <GlobalAudioPlayer />
     </div>
   );
 }

@@ -1,11 +1,17 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Image as ImageIcon, Music, Loader2, Save, Wand2, Upload, Download } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Music, Loader2, Save, Wand2, Upload, Download, Folder, ListMusic, Smartphone, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
 import { Link } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function CoverArt() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -17,25 +23,44 @@ export default function CoverArt() {
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
 
-  const createDemoTrackMutation = useMutation({
-    mutationFn: async () => {
-      if (!currentUser) return;
-      return await base44.entities.ArtPost.create({
-        title: "My First Hit (Demo)",
-        description: "A generated demo track for testing.",
+  const importFileInputRef = useRef(null);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleImportAudio = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !currentUser) return;
+    
+    if (!file.type.startsWith('audio/') && !file.type.startsWith('video/')) {
+      toast.error('Please upload an audio file');
+      return;
+    }
+
+    try {
+      setIsImporting(true);
+      toast.info('Uploading track...');
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.entities.ArtPost.create({
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        description: "Imported track",
         medium: "original",
         creator_id: currentUser.id,
         creator_name: currentUser.display_name || currentUser.full_name || "Unknown Artist",
-        file_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        genre: "Pop",
-        tags: ["demo", "pop", "upbeat"]
+        file_url: file_url,
+        genre: "Unknown",
+        tags: ["imported"]
       });
-    },
-    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["myArtPosts"] });
-      toast.success("Demo track created! You can now generate cover art.");
+      toast.success("Track imported successfully!");
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to import track');
+    } finally {
+      setIsImporting(false);
+      if (importFileInputRef.current) {
+        importFileInputRef.current.value = '';
+      }
     }
-  });
+  };
 
   useEffect(() => {
     base44.auth.me()
@@ -182,15 +207,33 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                 <Button asChild variant="outline" size="sm">
                   <Link to="/studio">Go to Studio</Link>
                 </Button>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  onClick={() => createDemoTrackMutation.mutate()}
-                  disabled={createDemoTrackMutation.isPending}
-                >
-                  {createDemoTrackMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Music className="w-4 h-4 mr-2" />}
-                  Create Demo Track
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="default" size="sm" disabled={isImporting}>
+                      {isImporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                      Import Track
+                      <ChevronDown className="w-4 h-4 ml-2 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => importFileInputRef.current?.click()}>
+                      <Smartphone className="w-4 h-4 mr-2" /> From Device
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => toast.info("Import from Files coming soon")}>
+                      <Folder className="w-4 h-4 mr-2" /> From Files
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => toast.info("Import from Playlist coming soon")}>
+                      <ListMusic className="w-4 h-4 mr-2" /> From Playlist
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <input 
+                  type="file" 
+                  ref={importFileInputRef} 
+                  className="hidden" 
+                  accept="audio/*,video/*" 
+                  onChange={handleImportAudio}
+                />
               </div>
             </div>
           ) : (

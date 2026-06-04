@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Loader2, AlertCircle, CheckCircle2, Wand2 } from "lucide-react";
+import { Sparkles, Loader2, AlertCircle, CheckCircle2, Wand2, ChevronDown, RotateCcw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { base44 } from "@/api/base44Client";
 import { renderMasteredMix } from "@/lib/autoMaster";
 
@@ -33,6 +34,9 @@ export default function BounceDialog({ projectTitle, project, tracks }) {
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const [autoMaster, setAutoMaster] = useState(true);
+  const [showManualParams, setShowManualParams] = useState(false);
+  const [params, setParams] = useState(FLAT_PARAMS);
+  const [savedParams, setSavedParams] = useState(null);
 
   const handleBounce = async () => {
     if (!bounceTitle.trim() || tracks.length === 0) return;
@@ -51,8 +55,8 @@ export default function BounceDialog({ projectTitle, project, tracks }) {
 
       // 1. AI mastering engineer decides the processing chain (skip when disabled)
       setStep(1);
-      let params = FLAT_PARAMS;
-      if (autoMaster) {
+      let masterParams = params;
+      if (autoMaster && !showManualParams) {
         const res = await base44.functions.invoke("aiMasterSession", {
           project_title: bounceTitle,
           genre: project?.genre,
@@ -60,12 +64,16 @@ export default function BounceDialog({ projectTitle, project, tracks }) {
           stems: validTracks.map(t => ({ name: t.name, type: t.type })),
         });
         if (res.data?.error) throw new Error(res.data.error);
-        params = res.data;
+        masterParams = res.data;
+        setParams(masterParams);
       }
+
+      // Save params before bouncing
+      setSavedParams(masterParams);
 
       // 2. Mix + apply the AI master in one render
       setStep(2);
-      const wav = await renderMasteredMix(validTracks, params);
+      const wav = await renderMasteredMix(validTracks, masterParams);
       const blob = new Blob([wav], { type: "audio/wav" });
 
       // 3. Upload + publish the finished, industry-ready song
@@ -95,6 +103,7 @@ export default function BounceDialog({ projectTitle, project, tracks }) {
         setDone(false);
         setBouncing(false);
         setError("");
+        setShowManualParams(false);
       }, 1400);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "Failed to produce song";
@@ -132,15 +141,83 @@ export default function BounceDialog({ projectTitle, project, tracks }) {
           />
 
           {!bouncing && !done && (
-            <div className="flex items-start gap-3 p-3 rounded-xl bg-secondary/40 border border-border">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
-                <Wand2 className="w-4 h-4 text-white" />
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-secondary/40 border border-border">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
+                  <Wand2 className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold">AI Auto-Mastering</p>
+                  <p className="text-xs text-muted-foreground">Industry-standard EQ, compression & limiting for a pro-finished sound.</p>
+                </div>
+                <Switch checked={autoMaster} onCheckedChange={setAutoMaster} />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">AI Auto-Mastering</p>
-                <p className="text-xs text-muted-foreground">Industry-standard EQ, compression & limiting for a pro-finished sound.</p>
-              </div>
-              <Switch checked={autoMaster} onCheckedChange={setAutoMaster} />
+
+              {autoMaster && (
+                <button
+                  onClick={() => setShowManualParams(!showManualParams)}
+                  className="w-full flex items-center justify-between p-2.5 rounded-lg bg-secondary/30 border border-border/50 hover:border-primary/50 transition-colors text-sm text-muted-foreground hover:text-foreground"
+                >
+                  <span>Manually adjust mastering</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showManualParams ? "rotate-180" : ""}`} />
+                </button>
+              )}
+
+              {showManualParams && (
+                <div className="p-3 rounded-xl bg-secondary/20 border border-border/50 space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground">Makeup Gain (dB)</label>
+                    <Slider
+                      min={-6}
+                      max={6}
+                      step={0.5}
+                      value={[params.makeup_gain_db]}
+                      onValueChange={([v]) => setParams({...params, makeup_gain_db: v})}
+                      className="w-full"
+                    />
+                    <span className="text-xs text-muted-foreground">{params.makeup_gain_db.toFixed(1)} dB</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground">Limiter Ceiling (dB)</label>
+                    <Slider
+                      min={-12}
+                      max={-0.1}
+                      step={0.5}
+                      value={[params.limiter_ceiling_db]}
+                      onValueChange={([v]) => setParams({...params, limiter_ceiling_db: v})}
+                      className="w-full"
+                    />
+                    <span className="text-xs text-muted-foreground">{params.limiter_ceiling_db.toFixed(1)} dB</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground">Presence Boost (dB)</label>
+                    <Slider
+                      min={-3}
+                      max={3}
+                      step={0.5}
+                      value={[params.presence.gain_db]}
+                      onValueChange={([v]) => setParams({...params, presence: {...params.presence, gain_db: v}})}
+                      className="w-full"
+                    />
+                    <span className="text-xs text-muted-foreground">{params.presence.gain_db.toFixed(1)} dB</span>
+                  </div>
+
+                  {savedParams && (
+                    <button
+                      onClick={() => {
+                        setParams(savedParams);
+                        setShowManualParams(false);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground hover:text-foreground rounded-lg border border-border/50 hover:bg-secondary/30 transition-colors"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Restore Last Bounce
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

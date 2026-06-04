@@ -44,7 +44,12 @@ const AuthenticatedApp = () => {
   useEffect(() => {
     if (location.pathname === '/') {
       const lastPath = localStorage.getItem('last_visited_path');
-      if (lastPath && lastPath !== '/') {
+      const isNewUser = sessionStorage.getItem('is_new_user') === 'true';
+      
+      if (isNewUser) {
+        // Just let them stay on home page and clear the flag
+        sessionStorage.removeItem('is_new_user');
+      } else if (lastPath && lastPath !== '/') {
         navigate(lastPath, { replace: true });
       } else if (isAuthenticated) {
         navigate('/messages', { replace: true });

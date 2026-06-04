@@ -29,6 +29,8 @@ export default function Login() {
   };
 
   const handleGoogle = () => {
+    // Note: We don't set is_new_user here because it's login, but it's possible 
+    // it's their first time through Google. We'll leave the default redirect path.
     base44.auth.loginWithProvider("google", "/");
   };
 

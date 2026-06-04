@@ -28,7 +28,9 @@ export default function Record() {
   const streamRef = useRef(null);
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser);
+    base44.auth.me().then(setCurrentUser).catch(() => {
+      window.location.href = '/login';
+    });
     navigator.mediaDevices.enumerateDevices().then(devs => {
       setDevices(devs.filter(d => d.kind === "audioinput"));
     });

@@ -7,7 +7,7 @@ import {
   Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical,
   Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
   Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle,
-  Crosshair, PenTool, Link2, Unlock, TrendingUp, Option
+  Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -59,8 +59,60 @@ export default function Studio() {
     { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
   ]);
 
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const historyRef = useRef([]);
+  const historyIndexRef = useRef(-1);
+  const tracksRef = useRef(tracks);
+
+  useEffect(() => {
+    tracksRef.current = tracks;
+  }, [tracks]);
+
+  useEffect(() => {
+    if (historyRef.current.length === 0) {
+      historyRef.current = [tracks];
+      historyIndexRef.current = 0;
+      setHistoryIndex(0);
+    }
+  }, []);
+
+  const pushToHistory = (newTracks) => {
+    let newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
+    newHistory.push(newTracks);
+    if (newHistory.length > 50) {
+      newHistory.shift();
+    }
+    historyRef.current = newHistory;
+    historyIndexRef.current = newHistory.length - 1;
+    setHistoryIndex(historyIndexRef.current);
+  };
+
+  const undo = () => {
+    if (historyIndexRef.current > 0) {
+      historyIndexRef.current -= 1;
+      setHistoryIndex(historyIndexRef.current);
+      setTracks(historyRef.current[historyIndexRef.current]);
+    }
+  };
+
+  const redo = () => {
+    if (historyIndexRef.current < historyRef.current.length - 1) {
+      historyIndexRef.current += 1;
+      setHistoryIndex(historyIndexRef.current);
+      setTracks(historyRef.current[historyIndexRef.current]);
+    }
+  };
+
+  const setTracksWithHistory = (updater) => {
+    setTracks(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      pushToHistory(next);
+      return next;
+    });
+  };
+
   const toggleTrackProperty = (id, prop) => {
-    setTracks(prev => prev.map(t => t.id === id ? { ...t, [prop]: !t[prop] } : t));
+    setTracksWithHistory(prev => prev.map(t => t.id === id ? { ...t, [prop]: !t[prop] } : t));
   };
 
   useEffect(() => {
@@ -232,7 +284,7 @@ export default function Studio() {
           console.error("Failed to parse waveform", e);
         }
         
-        setTracks(prev => prev.map(t => {
+        setTracksWithHistory(prev => prev.map(t => {
           if (t.armed) {
             return { 
               ...t, 
@@ -250,7 +302,7 @@ export default function Studio() {
       };
       mediaRecorderRef.current.stop();
     } else {
-      setTracks(prev => prev.map(t => {
+      setTracksWithHistory(prev => prev.map(t => {
         if (t.armed) {
           return { ...t, waveform: [], armed: false };
         }
@@ -342,7 +394,14 @@ export default function Studio() {
     const handleKeyDown = (e) => {
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
       
-      if (e.code === 'Space') {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault();
+        redo();
+      } else if (e.code === 'Space') {
         e.preventDefault();
         togglePlay();
       } else if (e.key === 'r' || e.key === 'R') {
@@ -359,15 +418,15 @@ export default function Studio() {
   }, [isPlaying, isRecording, togglePlay, toggleRecord]);
 
   const toggleMute = (trackId) => {
-    setTracks(tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t));
+    setTracksWithHistory(tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t));
   };
 
   const toggleSolo = (trackId) => {
-    setTracks(tracks.map(t => t.id === trackId ? { ...t, solo: !t.solo } : t));
+    setTracksWithHistory(tracks.map(t => t.id === trackId ? { ...t, solo: !t.solo } : t));
   };
 
   const toggleArm = (trackId) => {
-    setTracks(tracks.map(t => t.id === trackId ? { ...t, armed: !t.armed } : t));
+    setTracksWithHistory(tracks.map(t => t.id === trackId ? { ...t, armed: !t.armed } : t));
   };
 
   const updateVolume = (trackId, val) => {
@@ -394,7 +453,7 @@ export default function Studio() {
         delete audioElementsRef.current[id];
       }
     });
-    setTracks(tracks.filter(t => !selectedTrackIds.includes(t.id)));
+    setTracksWithHistory(tracks.filter(t => !selectedTrackIds.includes(t.id)));
     setSelectedTrackIds([]);
     toast.success("Selected tracks deleted");
   };
@@ -420,7 +479,7 @@ export default function Studio() {
       }
     });
 
-    setTracks([...tracks, ...newTracks]);
+    setTracksWithHistory([...tracks, ...newTracks]);
     setSelectedTrackIds([]);
     toast.success("Tracks duplicated");
   };
@@ -430,7 +489,7 @@ export default function Studio() {
       audioElementsRef.current[trackId].pause();
       delete audioElementsRef.current[trackId];
     }
-    setTracks(prev => prev.filter(t => t.id !== trackId));
+    setTracksWithHistory(prev => prev.filter(t => t.id !== trackId));
     setSelectedTrackIds(prev => prev.filter(id => id !== trackId));
     toast.success("Track deleted");
   };
@@ -441,7 +500,7 @@ export default function Studio() {
       return;
     }
     const nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
-    setTracks(prev => [...prev, { ...track, id: nextId, name: `${track.name} (Copy)` }]);
+    setTracksWithHistory(prev => [...prev, { ...track, id: nextId, name: `${track.name} (Copy)` }]);
     toast.success("Track duplicated");
   };
 
@@ -493,7 +552,7 @@ export default function Studio() {
     });
 
     if (splitCount > 0) {
-      setTracks([...updatedTracks, ...newTracksList]);
+      setTracksWithHistory([...updatedTracks, ...newTracksList]);
       toast.success("Clip split at playhead");
     } else {
       toast.error("Playhead is not positioned over the selected clip");
@@ -508,7 +567,7 @@ export default function Studio() {
 
     const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
     const colors = ["bg-primary", "bg-pink-500", "bg-accent", "bg-yellow-500", "bg-purple-500", "bg-green-500"];
-    setTracks([...tracks, {
+    setTracksWithHistory([...tracks, {
       id: newId,
       name: `New Track ${newId}`,
       color: colors[newId % colors.length],
@@ -532,7 +591,7 @@ export default function Studio() {
   };
 
   const saveTrackEffects = (trackId, updatedTrack) => {
-    setTracks(tracks.map(t => t.id === trackId ? updatedTrack : t));
+    setTracksWithHistory(tracks.map(t => t.id === trackId ? updatedTrack : t));
   };
 
   return (
@@ -616,6 +675,12 @@ export default function Studio() {
 
         <div className="h-5 w-px bg-border/50 mx-1 shrink-0" />
         
+        {/* Undo / Redo */}
+        <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
+          <Button variant="ghost" size="icon" onClick={undo} disabled={historyIndex <= 0} className="w-7 h-7 rounded text-muted-foreground hover:text-foreground disabled:opacity-30" title="Undo"><Undo className="w-3.5 h-3.5" /></Button>
+          <Button variant="ghost" size="icon" onClick={redo} disabled={historyIndex >= historyRef.current.length - 1} className="w-7 h-7 rounded text-muted-foreground hover:text-foreground disabled:opacity-30" title="Redo"><Redo className="w-3.5 h-3.5" /></Button>
+        </div>
+
         {/* Edit Modes */}
         <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
           <Button variant="ghost" size="sm" onClick={() => setEditMode('shuffle')} className={cn("px-2 py-1 h-7 text-xs rounded-md", editMode === 'shuffle' && "bg-primary/20 text-primary")}>Shuffle</Button>
@@ -697,7 +762,7 @@ export default function Studio() {
                         <DropdownMenuItem onClick={() => {
                           const newName = prompt("Enter new track name:", track.name);
                           if (newName) {
-                            setTracks(tracks.map(t => t.id === track.id ? { ...t, name: newName } : t));
+                            setTracksWithHistory(tracks.map(t => t.id === track.id ? { ...t, name: newName } : t));
                           }
                         }}>
                           <PenTool className="w-4 h-4 mr-2" /> Rename
@@ -742,6 +807,7 @@ export default function Studio() {
                     max={100} 
                     step={1} 
                     onValueChange={(val) => updateVolume(track.id, val)}
+                    onValueCommit={() => pushToHistory(tracksRef.current)}
                     className="flex-1"
                   />
                 </div>
@@ -910,7 +976,7 @@ export default function Studio() {
                              waveform: track.waveform.slice(splitIndex)
                            };
                            
-                           setTracks(prev => {
+                           setTracksWithHistory(prev => {
                              const idx = prev.findIndex(t => t.id === track.id);
                              const newTracks = [...prev];
                              newTracks.splice(idx, 1, trackPart1, trackPart2);
@@ -943,6 +1009,7 @@ export default function Studio() {
                             target.releasePointerCapture(upEvent.pointerId);
                             target.removeEventListener('pointermove', handleMove);
                             target.removeEventListener('pointerup', handleUp);
+                            pushToHistory(tracksRef.current);
                           };
                           
                           target.addEventListener('pointermove', handleMove);
@@ -993,6 +1060,7 @@ export default function Studio() {
                             target.releasePointerCapture(upEvent.pointerId);
                             target.removeEventListener('pointermove', handleMove);
                             target.removeEventListener('pointerup', handleUp);
+                            pushToHistory(tracksRef.current);
                           };
                           
                           target.addEventListener('pointermove', handleMove);
@@ -1038,6 +1106,7 @@ export default function Studio() {
                             target.releasePointerCapture(upEvent.pointerId);
                             target.removeEventListener('pointermove', handleMove);
                             target.removeEventListener('pointerup', handleUp);
+                            pushToHistory(tracksRef.current);
                           };
                           
                           target.addEventListener('pointermove', handleMove);
@@ -1077,6 +1146,7 @@ export default function Studio() {
                               target.releasePointerCapture(upEvent.pointerId);
                               target.removeEventListener('pointermove', handleMove);
                               target.removeEventListener('pointerup', handleUp);
+                              pushToHistory(tracksRef.current);
                             };
                             
                             target.addEventListener('pointermove', handleMove);
@@ -1110,6 +1180,7 @@ export default function Studio() {
                               target.releasePointerCapture(upEvent.pointerId);
                               target.removeEventListener('pointermove', handleMove);
                               target.removeEventListener('pointerup', handleUp);
+                              pushToHistory(tracksRef.current);
                             };
                             
                             target.addEventListener('pointermove', handleMove);

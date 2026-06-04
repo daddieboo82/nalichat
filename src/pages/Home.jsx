@@ -17,9 +17,9 @@ const features = [
     icon: MessageSquare,
     label: "Messages",
     path: "/messages",
-    description: "Real-time chat with artists & producers",
+    description: "Real-time collaboration with voice, video & file sharing",
     gradient: "from-primary to-primary/50",
-    badge: "Live",
+    badge: "Core",
   },
   {
     icon: Music,
@@ -218,10 +218,10 @@ export default function Home() {
           )}
 
           <h1 className="font-heading font-black text-5xl md:text-7xl mb-5 text-gradient-animate leading-tight">
-            Write. Record. Master.<br className="hidden md:block" /> Release.
+            Make Music.<br className="hidden md:block" /> Together.
           </h1>
           <p className="text-xl text-muted-foreground mb-10 leading-relaxed max-w-2xl mx-auto">
-            Everything you need to produce professional music from your laptop — multi-track studio, real-time collaboration, AI mastering, and a platform to reach listeners. All in one app. No experience required.
+            The artist collaboration platform. Real-time messaging, voice calls, multi-track studio, AI mastering—everything you need to create with your team and reach listeners.
           </p>
 
           {/* CTAs */}

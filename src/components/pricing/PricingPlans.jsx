@@ -8,11 +8,12 @@ const plans = [
   {
     name: "Free",
     price: "0",
-    description: "Get started creating",
+    description: "Connect with other artists",
     features: [
-      "1 Project",
-      "Basic Studio Tools",
-      "5 Messages/Day",
+      "Unlimited Messaging",
+      "Voice & Video Calls",
+      "1 Studio Project",
+      "File Sharing (2GB)",
       "Community Access",
     ],
     cta: "Start Free",
@@ -22,13 +23,14 @@ const plans = [
     name: "Artist Pro",
     price: "9.99",
     period: "/month",
-    description: "For serious creators",
+    description: "Collaborate & produce",
     features: [
-      "Unlimited Projects",
+      "Unlimited Messaging",
+      "Priority Notifications",
+      "Unlimited Studio Projects",
       "Advanced Studio Tools",
-      "Unlimited Messages",
+      "File Sharing (100GB)",
       "AI Mastering (5/month)",
-      "Analytics Dashboard",
       "Priority Support",
     ],
     cta: "Subscribe Now",
@@ -38,21 +40,22 @@ const plans = [
         frequency: "MONTH",
       },
       title: "Artist Pro - Monthly",
-      description: "Unlimited studio projects and messaging for artists",
+      description: "Unlimited messaging and collaboration with full studio access",
     },
   },
   {
     name: "Studio Elite",
     price: "24.99",
     period: "/month",
-    description: "For studios & labels",
+    description: "Team collaboration & mastery",
     features: [
       "Everything in Pro",
-      "Unlimited AI Mastering",
+      "Team Messaging (up to 5)",
       "Team Collaborators (5)",
+      "Unlimited AI Mastering",
+      "Unlimited File Sharing",
       "Custom Branding",
       "Advanced Analytics",
-      "API Access",
       "Dedicated Support",
     ],
     cta: "Subscribe Now",
@@ -62,7 +65,7 @@ const plans = [
         frequency: "MONTH",
       },
       title: "Studio Elite - Monthly",
-      description: "Full suite for professional studios and labels",
+      description: "Unlimited messaging and full production suite for teams",
     },
   },
 ];
@@ -109,7 +112,7 @@ export default function PricingPlans() {
           Simple, Transparent Pricing
         </h2>
         <p className="text-lg text-muted-foreground">
-          Choose the plan that fits your creative journey
+          Unlimited messaging on all plans. Upgrade for studio & production tools.
         </p>
       </div>
 

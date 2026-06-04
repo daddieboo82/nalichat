@@ -135,17 +135,26 @@ export default function Studio() {
     fetchSub();
   }, []);
 
-  // Simulate playback
+  // Smooth playback via RAF
   useEffect(() => {
-    let interval;
+    let animationFrameId;
+    let lastTime = performance.now();
+    
+    const updateTime = (time) => {
+      const delta = (time - lastTime) / 1000;
+      lastTime = time;
+      setCurrentTime((prev) => {
+        const newTime = prev + delta;
+        return newTime > 100 ? 0 : newTime; // Loop at 100s
+      });
+      animationFrameId = requestAnimationFrame(updateTime);
+    };
+
     if (isPlaying || isRecording) {
-      interval = setInterval(() => {
-        setCurrentTime((prev) => {
-          return prev + 0.05 > 100 ? 0 : prev + 0.05;
-        });
-      }, 50);
+      lastTime = performance.now();
+      animationFrameId = requestAnimationFrame(updateTime);
     }
-    return () => clearInterval(interval);
+    return () => cancelAnimationFrame(animationFrameId);
   }, [isPlaying, isRecording]);
 
   const togglePlay = () => {
@@ -740,8 +749,9 @@ export default function Studio() {
             <Button variant="ghost" size="icon" title="MIDI Controller" onClick={() => toast.info(hardware.midi ? "MIDI Controller connected" : "No MIDI Controller detected")} className={cn("w-8 h-8 rounded-lg hover:bg-secondary transition-colors", hardware.midi ? "text-green-400" : "text-muted-foreground/50")}><Keyboard className="w-4 h-4" /></Button>
           </div>
 
-          <div className="font-mono text-xl text-primary font-bold bg-primary/10 px-4 py-1.5 rounded-lg border border-primary/20 w-32 text-center">
+          <div className="font-mono text-xl text-primary font-bold bg-[#0a0a0c] px-4 py-1.5 rounded-lg border border-border w-36 text-center shadow-inner tracking-widest relative group">
             {formatTime(currentTime)}
+            {isRecording && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
           </div>
           
           <div className="hidden md:flex items-center gap-2">
@@ -910,18 +920,15 @@ export default function Studio() {
         {/* Timeline & Waveforms (Right Area) */}
         <div className="flex-1 relative overflow-auto custom-scrollbar flex flex-col bg-[#0f0f13]">
           {/* Timeline Header */}
-          <div className="h-8 border-b border-border/30 bg-card/40 sticky top-0 z-20 flex items-end px-4 overflow-hidden">
+          <div className="h-8 border-b border-border/30 bg-card/40 sticky top-0 z-20 flex items-end px-0 overflow-hidden relative">
             {/* Timeline markers */}
-            <div style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px` }}>
-              <div 
-                className="w-[2000px] h-full relative cursor-pointer select-none" 
-                style={{ transform: `scaleX(${zoom})`, transformOrigin: 'left' }}
+            <div className="h-full relative cursor-pointer select-none" style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px` }}
               onPointerDown={(e) => {
                 const target = e.currentTarget;
                 const updatePosition = (clientX) => {
                   const rect = target.getBoundingClientRect();
-                  const x = (clientX - rect.left) / zoom;
-                  setCurrentTime(Math.max(0, x / 20));
+                  const x = clientX - rect.left;
+                  setCurrentTime(Math.max(0, x / (20 * zoom)));
                 };
                 updatePosition(e.clientX);
                 
@@ -934,27 +941,29 @@ export default function Studio() {
                 window.addEventListener('pointerup', handleUp);
               }}
             >
-              {Array.from({ length: 50 }).map((_, i) => (
-                <div key={i} className="absolute bottom-0 text-[10px] text-muted-foreground/50 border-l border-border/40 pl-1 h-3" style={{ left: `${i * 100}px` }}>
-                  0:{i.toString().padStart(2, '0')}
-                </div>
-              ))}
-              </div>
+              {Array.from({ length: 100 }).map((_, i) => {
+                const seconds = i * 5; // Every 5 seconds
+                const position = seconds * 20 * zoom;
+                return (
+                  <div key={i} className="absolute bottom-0 text-[10px] text-muted-foreground/50 border-l border-border/40 pl-1 h-3" style={{ left: `${position}px` }}>
+                    {Math.floor(seconds / 60)}:{(seconds % 60).toString().padStart(2, '0')}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           {/* Tracks Area */}
           <div style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px`, minHeight: '100%' }}>
             <div 
-              className="relative w-[2000px] min-h-full cursor-text select-none" 
-              style={{ transform: `scaleX(${zoom})`, transformOrigin: 'top left' }}
+              className="relative w-full min-h-full cursor-text select-none" 
               onPointerDown={(e) => {
               if (e.target.closest('.audio-clip')) return;
               const target = e.currentTarget;
               const updatePosition = (clientX) => {
                 const rect = target.getBoundingClientRect();
-                const x = (clientX - rect.left) / zoom;
-                setCurrentTime(Math.max(0, x / 20));
+                const x = clientX - rect.left;
+                setCurrentTime(Math.max(0, x / (20 * zoom)));
               };
               updatePosition(e.clientX);
               
@@ -970,11 +979,11 @@ export default function Studio() {
             {/* Playhead */}
             <div 
               ref={playheadRef}
-              className="absolute top-0 bottom-0 w-[2px] bg-primary z-30 pointer-events-none group"
-              style={{ left: `${currentTime * 20}px` }}
+              className="absolute top-0 bottom-0 w-[2px] bg-primary z-30 pointer-events-none group shadow-[0_0_10px_rgba(var(--primary),0.8)]"
+              style={{ left: `${currentTime * 20 * zoom}px` }}
             >
-              <div className="absolute top-0 -translate-x-1/2 w-8 h-8 bg-primary rounded-b-sm shadow-md flex items-center justify-center cursor-ew-resize pointer-events-auto hover:bg-primary/90">
-                <div className="w-[2px] h-4 bg-background/50 rounded-full" />
+              <div className="absolute top-0 -translate-x-1/2 w-4 h-4 bg-primary rounded-b flex items-center justify-center cursor-ew-resize pointer-events-auto hover:bg-primary/90 shadow-md">
+                <div className="w-0.5 h-2 bg-background/80 rounded-full" />
               </div>
             </div>
 
@@ -992,7 +1001,7 @@ export default function Studio() {
                   )}
                 >
                   {/* Grid lines */}
-                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px)] bg-[size:100px_100%]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px)]" style={{ backgroundSize: `${100 * zoom}px 100%` }} />
                   
                   {/* Automation Lane Background */}
                   {track.showAutomation && (
@@ -1013,8 +1022,8 @@ export default function Studio() {
                         isRecording ? "border-l-2 border-red-500 bg-red-500/10" : "w-[2px] bg-red-500/50"
                       )}
                       style={{ 
-                        left: `${(isRecording && recordingStartTime !== null ? recordingStartTime : currentTime) * 20}px`,
-                        width: isRecording && recordingStartTime !== null ? `${Math.max(0, currentTime - recordingStartTime) * 20}px` : '2px'
+                        left: `${(isRecording && recordingStartTime !== null ? recordingStartTime : currentTime) * 20 * zoom}px`,
+                        width: isRecording && recordingStartTime !== null ? `${Math.max(0, currentTime - recordingStartTime) * 20 * zoom}px` : '2px'
                       }}
                     >
                       <div className={cn(
@@ -1086,7 +1095,7 @@ export default function Studio() {
                             const deltaTime = deltaX / (20 * zoom);
                             let newStartTime = Math.max(0, initialStartTime + deltaTime);
                             if (editMode === 'grid') {
-                               newStartTime = Math.round(newStartTime);
+                               newStartTime = Math.round(newStartTime / gridSize) * gridSize;
                             }
                             
                             setTracks(prev => prev.map(t => 
@@ -1105,10 +1114,10 @@ export default function Studio() {
                           target.addEventListener('pointerup', handleUp);
                         }
                       }}
-                      className="audio-clip absolute top-2 bottom-2 rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-grab active:cursor-grabbing"
+                      className="audio-clip absolute top-2 bottom-2 rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-grab active:cursor-grabbing shadow-sm"
                       style={{ 
-                        left: `${(track.startTime !== undefined ? track.startTime : 0) * 20}px`,
-                        width: `${(track.duration !== undefined ? track.duration : 40) * 20}px`
+                        left: `${(track.startTime !== undefined ? track.startTime : 0) * 20 * zoom}px`,
+                        width: `${(track.duration !== undefined ? track.duration : 40) * 20 * zoom}px`
                       }}
                     >
                       {/* Left Trim Handle */}
@@ -1280,12 +1289,12 @@ export default function Studio() {
                         </div>
                       )}
 
-                      <div className={cn("absolute inset-x-0 flex items-center justify-between gap-[1px] overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-2 top-6")}>
+                      <div className={cn("absolute inset-x-0 flex items-center justify-between gap-0 overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-1 top-5")}>
                         {track.waveform.map((val, i) => (
                           <div 
                             key={i} 
-                            className={cn("flex-1 rounded-full opacity-80", track.color)}
-                            style={{ height: `${Math.max(5, val * 100)}%` }}
+                            className={cn("flex-1 opacity-90 transition-all duration-300", track.color)}
+                            style={{ height: `${Math.max(2, val * 100)}%`, margin: '0 0.5px', borderRadius: '1px' }}
                           />
                         ))}
                       </div>

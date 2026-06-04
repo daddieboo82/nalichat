@@ -409,6 +409,61 @@ export default function Studio() {
     toast.success("Tracks duplicated");
   };
 
+  const splitSelectedTracks = () => {
+    if (selectedTrackIds.length === 0) return;
+    
+    if (tracks.length + selectedTrackIds.length > maxTracks) {
+      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      return;
+    }
+
+    let nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    let splitCount = 0;
+    
+    const newTracksList = [];
+
+    const updatedTracks = tracks.map(t => {
+      if (selectedTrackIds.includes(t.id) && t.waveform && t.waveform.length > 0) {
+        const clipStart = t.startTime !== undefined ? t.startTime : 0;
+        const clipDuration = t.duration !== undefined ? t.duration : 40;
+        const clipEnd = clipStart + clipDuration;
+        
+        if (currentTime > clipStart && currentTime < clipEnd) {
+          const splitRatio = (currentTime - clipStart) / clipDuration;
+          const splitIndex = Math.floor(t.waveform.length * splitRatio);
+          
+          const waveformPart1 = t.waveform.slice(0, splitIndex);
+          const waveformPart2 = t.waveform.slice(splitIndex);
+          
+          splitCount++;
+          
+          newTracksList.push({
+            ...t,
+            id: nextId++,
+            name: `${t.name} (Cut)`,
+            waveform: waveformPart2,
+            startTime: currentTime,
+            duration: clipEnd - currentTime
+          });
+          
+          return {
+            ...t,
+            waveform: waveformPart1,
+            duration: currentTime - clipStart
+          };
+        }
+      }
+      return t;
+    });
+
+    if (splitCount > 0) {
+      setTracks([...updatedTracks, ...newTracksList]);
+      toast.success("Clip split at playhead");
+    } else {
+      toast.error("Playhead is not positioned over the selected clip");
+    }
+  };
+
   const addTrack = () => {
     if (tracks.length >= maxTracks) {
       toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
@@ -527,7 +582,7 @@ export default function Studio() {
         </span>
         <div className="h-5 w-px bg-border/50 mx-2 shrink-0" />
         <div className="flex items-center gap-1 shrink-0">
-          <Button variant="ghost" size="icon" className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground"><Scissors className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={splitSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50"><Scissors className="w-4 h-4" /></Button>
           <Button variant="ghost" size="icon" onClick={duplicateSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50"><Copy className="w-4 h-4" /></Button>
           <Button variant="ghost" size="icon" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-red-400 disabled:opacity-50"><Trash2 className="w-4 h-4" /></Button>
         </div>

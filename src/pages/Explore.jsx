@@ -76,7 +76,8 @@ export default function Explore() {
   const filtered = posts.filter(p =>
     !search || p.title?.toLowerCase().includes(search.toLowerCase()) ||
     p.creator_name?.toLowerCase().includes(search.toLowerCase()) ||
-    p.tags?.some(t => t.toLowerCase().includes(search.toLowerCase()))
+    p.genre?.toLowerCase().includes(search.toLowerCase()) ||
+    (Array.isArray(p.tags) ? p.tags.some(t => t.toLowerCase().includes(search.toLowerCase())) : false)
   );
 
   const featured = filtered.filter(p => p.featured || p.likes > 5);
@@ -116,6 +117,9 @@ export default function Explore() {
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
+              id="explore-search"
+              type="search"
+              name="search"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search by title, artist, tag..."

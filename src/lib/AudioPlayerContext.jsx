@@ -58,10 +58,13 @@ export function AudioPlayerProvider({ children }) {
   const togglePlay = () => {
     if (isPlaying) {
       audioRef.current.pause();
+      setIsPlaying(false);
     } else {
-      audioRef.current.play().catch(console.error);
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(e => {
+        console.error("Playback failed:", e);
+        setIsPlaying(false);
+      });
     }
-    setIsPlaying(!isPlaying);
   };
 
   const seek = (time) => {

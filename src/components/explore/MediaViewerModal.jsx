@@ -30,10 +30,13 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
+        setIsPlaying(false);
       } else {
-        audioRef.current.play();
+        audioRef.current.play().then(() => setIsPlaying(true)).catch(e => {
+          console.error("Playback failed:", e);
+          setIsPlaying(false);
+        });
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -244,7 +247,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                     )}
                  </div>
                  
-                 {post.tags?.length > 0 && (
+                 {Array.isArray(post.tags) && post.tags.length > 0 && (
                    <div className="flex flex-wrap gap-2 mb-8">
                      {post.tags.map(tag => (
                        <span key={tag} className="text-xs text-white/50 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">

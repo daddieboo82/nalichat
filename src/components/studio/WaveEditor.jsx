@@ -5,7 +5,8 @@ import { Slider } from '@/components/ui/slider';
 import { 
   X, Play, Pause, Scissors, Copy, Trash2, 
   Activity, Radio, Waves, Settings2, SlidersHorizontal,
-  VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair, Loader2, Undo2, Redo2, Maximize2, SplitSquareHorizontal, Magnet, SquareDashedBottom
+  VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair, Loader2, Undo2, Redo2, Maximize2, SplitSquareHorizontal, Magnet, SquareDashedBottom,
+  FileText, FolderOpen, SkipBack, Rewind, Square, FastForward, SkipForward, Circle, ZoomIn, ZoomOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -359,84 +360,157 @@ export default function WaveEditor({ track, onClose, onSave }) {
           exit={{ scale: 0.98, opacity: 0 }}
           className="bg-[#1c1c1e] text-white shadow-2xl rounded-lg w-full max-w-[1400px] h-[90vh] flex flex-col overflow-hidden ring-1 ring-white/10"
         >
-          {/* Header - Ableton Style */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-[#252528]">
-            <div className="flex items-center gap-4">
-              <div className={cn("w-3 h-3 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)]", track.color)} />
-              <h3 className="font-medium text-sm tracking-wide">{track.name}</h3>
-            </div>
-            
-            {/* Transport Controls */}
-            <div className="flex items-center gap-1 bg-[#151516] p-1 rounded-md">
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-white/70 hover:text-white" onClick={() => setPlayhead(0)}>
-                <div className="w-1 h-3 bg-current" />
-              </Button>
-              <Button variant="ghost" size="icon" className={cn("h-7 w-7", isPlaying ? "text-green-400 bg-green-400/10" : "text-white/70 hover:text-white")} onClick={() => setIsPlaying(!isPlaying)}>
-                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={onClose} className="h-8 text-white/70 hover:text-white">Cancel</Button>
-              <Button size="sm" onClick={handleSave} className="h-8 bg-primary hover:bg-primary/90 text-white gap-2 rounded-md">
-                <Save className="w-3.5 h-3.5" /> Save
-              </Button>
+          {/* Menu Bar - Sound Forge Style */}
+          <div className="flex items-center px-2 py-1 bg-[#2b2b2b] border-b border-black text-xs text-white/90 shadow-sm shrink-0">
+            <div className="flex gap-1">
+              <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20">File</Button>
+              <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20">Edit</Button>
+              <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20">View</Button>
+              <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20">Process</Button>
+              <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20">Effects</Button>
+              <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20">Tools</Button>
+              <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20">Options</Button>
+              <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20">Help</Button>
             </div>
           </div>
 
-          {/* Main DAW View */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            
-            {/* Toolbar */}
-            <div className="h-10 bg-[#2d2d30] border-b border-white/5 flex items-center px-4 gap-4 text-sm shrink-0">
-              <div className="flex items-center gap-1 bg-[#1a1a1c] p-1 rounded-md border border-white/5">
-                <Button variant="ghost" size="icon" onClick={() => setActiveTool('select')} className={cn("h-6 w-6 rounded", activeTool === 'select' && "bg-primary/20 text-primary")} title="Select / Move Playhead (Shortcut: 1)">
-                  <MousePointer2 className="w-3.5 h-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => setActiveTool('move')} className={cn("h-6 w-6 rounded", activeTool === 'move' && "bg-primary/20 text-primary")} title="Move Segments (Shortcut: 2)">
-                  <MoveHorizontal className="w-3.5 h-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => setActiveTool('split')} className={cn("h-6 w-6 rounded", activeTool === 'split' && "bg-primary/20 text-primary")} title="Split Segment (Shortcut: 3)">
-                  <Scissors className="w-3.5 h-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => setActiveTool('range')} className={cn("h-6 w-6 rounded", activeTool === 'range' && "bg-primary/20 text-primary")} title="Time Range Selection (Shortcut: 4)">
-                  <SquareDashedBottom className="w-3.5 h-3.5" />
-                </Button>
-              </div>
+          {/* Standard Toolbar */}
+          <div className="flex items-center px-2 py-1.5 bg-[#3a3a3a] border-b border-[#222] gap-2 shrink-0 shadow-md">
+            <div className="flex gap-0.5 bg-[#2b2b2b] p-0.5 rounded border border-[#1a1a1c] shadow-inner">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-white/80 hover:bg-[#555] rounded-sm" title="New">
+                <FileText className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-white/80 hover:bg-[#555] rounded-sm" title="Open">
+                <FolderOpen className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleSave} className="h-7 w-7 text-white/80 hover:bg-[#555] rounded-sm" title="Save">
+                <Save className="w-4 h-4" />
+              </Button>
+            </div>
 
-              <div className="w-px h-4 bg-white/10" />
+            <div className="w-px h-6 bg-[#1a1a1c] mx-1 border-r border-[#444]" />
 
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIdx <= 0} className="h-6 w-6 text-white/70 disabled:opacity-30" title="Undo (Cmd+Z)">
-                  <Undo2 className="w-3.5 h-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIdx >= history.length - 1} className="h-6 w-6 text-white/70 disabled:opacity-30" title="Redo (Cmd+Shift+Z)">
-                  <Redo2 className="w-3.5 h-3.5" />
-                </Button>
-              </div>
+            <div className="flex gap-0.5 bg-[#2b2b2b] p-0.5 rounded border border-[#1a1a1c] shadow-inner">
+              <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIdx <= 0} className="h-7 w-7 text-white/80 hover:bg-[#555] disabled:opacity-30 rounded-sm" title="Undo">
+                <Undo2 className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIdx >= history.length - 1} className="h-7 w-7 text-white/80 hover:bg-[#555] disabled:opacity-30 rounded-sm" title="Redo">
+                <Redo2 className="w-4 h-4" />
+              </Button>
+            </div>
 
-              <div className="w-px h-4 bg-white/10" />
+            <div className="w-px h-6 bg-[#1a1a1c] mx-1 border-r border-[#444]" />
 
-              <Button 
+            <div className="flex gap-0.5 bg-[#2b2b2b] p-0.5 rounded border border-[#1a1a1c] shadow-inner">
+              <Button variant="ghost" size="icon" onClick={() => setActiveTool('select')} className={cn("h-7 w-7 rounded-sm", activeTool === 'select' ? "bg-[#555] shadow-inner" : "text-white/80 hover:bg-[#444]")} title="Edit Tool">
+                <MousePointer2 className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setActiveTool('range')} className={cn("h-7 w-7 rounded-sm", activeTool === 'range' ? "bg-[#555] shadow-inner" : "text-white/80 hover:bg-[#444]")} title="Time Zoom/Selection Tool">
+                <SquareDashedBottom className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setActiveTool('move')} className={cn("h-7 w-7 rounded-sm", activeTool === 'move' ? "bg-[#555] shadow-inner" : "text-white/80 hover:bg-[#444]")} title="Event Tool">
+                <MoveHorizontal className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="w-px h-6 bg-[#1a1a1c] mx-1 border-r border-[#444]" />
+
+            <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setSnapToGrid(!snapToGrid)} 
-                className={cn("h-6 px-2 text-[10px] uppercase font-bold tracking-wider", snapToGrid ? "bg-primary/20 text-primary border border-primary/30" : "text-white/50 border border-transparent")}
-                title="Snap to Grid"
+                className={cn("h-7 px-2 text-xs", snapToGrid ? "bg-[#555] shadow-inner text-white border border-[#1a1a1c]" : "text-white/80 hover:bg-[#444] border border-transparent")}
+                title="Snap to Events/Grid"
               >
-                <Magnet className="w-3 h-3 mr-1" />
+                <Magnet className="w-3.5 h-3.5 mr-1" />
                 Snap
-              </Button>
+            </Button>
+            
+            <div className="flex-1" />
 
-              <div className="ml-auto flex items-center gap-3">
-                <span className="text-white/50 text-[10px] uppercase tracking-wider font-bold">Zoom</span>
-                <Slider value={[zoom]} min={0.5} max={15} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-32 [&_[role=slider]]:bg-white [&_[role=slider]]:border-none" />
+            <div className="flex flex-col bg-[#e5e5e5] px-2 py-0.5 rounded shadow-inner border border-[#888] border-t-[#aaa] border-l-[#aaa]">
+              <span className="text-[8px] text-[#444] font-sans font-bold leading-none mb-0.5 uppercase">Selection</span>
+              <div className="flex gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[7px] text-[#666] leading-none mb-0.5">Start</span>
+                  <span className="text-[10px] text-black font-mono leading-none">
+                    {selectionRange ? selectionRange.start.toFixed(3) : "0.000"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[7px] text-[#666] leading-none mb-0.5">End</span>
+                  <span className="text-[10px] text-black font-mono leading-none">
+                    {selectionRange ? selectionRange.end.toFixed(3) : "0.000"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[7px] text-[#666] leading-none mb-0.5">Length</span>
+                  <span className="text-[10px] text-black font-mono leading-none">
+                    {selectionRange ? Math.abs(selectionRange.end - selectionRange.start).toFixed(3) : "0.000"}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Arrangement View */}
+            {/* Time Display */}
+            <div className="bg-black border border-[#555] border-t-[#111] border-l-[#111] px-3 py-1 rounded shadow-inner flex flex-col justify-center min-w-[140px]">
+              <span className="text-[10px] text-green-500/70 font-mono leading-none mb-0.5">POSITION</span>
+              <span className="text-green-500 font-mono text-lg leading-none tracking-widest font-bold">
+                {String(Math.floor(playhead / 60)).padStart(2, '0')}:
+                {String(Math.floor(playhead % 60)).padStart(2, '0')}.
+                {String(Math.floor((playhead % 1) * 1000)).padStart(3, '0')}
+              </span>
+            </div>
+
+            <Button variant="ghost" size="sm" onClick={onClose} className="ml-2 h-8 text-white/80 hover:text-white bg-red-500/20 hover:bg-red-500/40">
+              <X className="w-4 h-4 mr-1" /> Close
+            </Button>
+          </div>
+
+          {/* Main Editor Area */}
+          <div className="flex-1 flex flex-col overflow-hidden bg-[#222]">
+            
+            {/* Playback Controls (Sound Forge Transport) */}
+            <div className="h-10 bg-[#333] border-b border-[#111] flex items-center px-4 gap-4 shadow-sm shrink-0 justify-between">
+              <div className="flex gap-1 bg-[#222] p-1 rounded-sm border border-[#111] shadow-inner items-center">
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white hover:bg-[#555] rounded-sm" onClick={() => setPlayhead(0)}>
+                  <SkipBack className="w-4 h-4 fill-current" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white hover:bg-[#555] rounded-sm" onClick={() => setPlayhead(Math.max(0, playhead - 5))}>
+                  <Rewind className="w-4 h-4 fill-current" />
+                </Button>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7 rounded-sm", isPlaying ? "text-green-400 bg-green-400/10 shadow-inner" : "text-[#ccc] hover:text-white hover:bg-[#555]")} onClick={() => setIsPlaying(!isPlaying)}>
+                  <Play className="w-4 h-4 fill-current" />
+                </Button>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7 rounded-sm", !isPlaying ? "text-[#ccc] bg-[#444] shadow-inner" : "text-[#ccc] hover:text-white hover:bg-[#555]")} onClick={() => setIsPlaying(false)}>
+                  <Square className="w-4 h-4 fill-current" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white hover:bg-[#555] rounded-sm" onClick={() => setPlayhead(Math.min(track?.duration || 40, playhead + 5))}>
+                  <FastForward className="w-4 h-4 fill-current" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white hover:bg-[#555] rounded-sm" onClick={() => setPlayhead(track?.duration || 40)}>
+                  <SkipForward className="w-4 h-4 fill-current" />
+                </Button>
+                <div className="w-px h-5 bg-[#444] mx-1" />
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-400 hover:bg-red-500/20 rounded-sm">
+                  <Circle className="w-4 h-4 fill-current" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white" onClick={() => setZoom(z => Math.max(0.5, z - 0.5))}>
+                  <ZoomOut className="w-4 h-4" />
+                </Button>
+                <Slider value={[zoom]} min={0.5} max={15} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-32 [&_[role=slider]]:bg-[#ccc] [&_[role=slider]]:border-none" />
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white" onClick={() => setZoom(z => Math.min(15, z + 0.5))}>
+                  <ZoomIn className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Data Window (Waveform) */}
             <div 
-              className="flex-1 relative bg-[#151516] overflow-x-auto overflow-y-hidden custom-scrollbar focus:outline-none touch-none" 
+              className="flex-1 relative bg-[#cfcfcf] overflow-x-auto overflow-y-hidden custom-scrollbar focus:outline-none touch-none shadow-[inset_0_0_10px_rgba(0,0,0,0.5)] border-[3px] border-[#888] border-t-[#666] border-l-[#666] m-2" 
               ref={containerRef} 
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
@@ -451,45 +525,29 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 }
               }}
             >
-              {/* Spectral Background Simulation */}
-              <div className="absolute inset-0 opacity-30 pointer-events-none mix-blend-screen" style={{
-                background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #2563eb 2px, #8b5cf6 4px), repeating-linear-gradient(90deg, #151516, #151516 4px, transparent 4px, transparent 8px)',
-                backgroundSize: '100% 100%, 10px 10px'
-              }}>
-                {/* Simulated spectral hotspots */}
-                {Array.from({length: 30}).map((_, i) => (
-                  <div key={i} className="absolute rounded-full blur-[20px] bg-primary/50 mix-blend-screen animate-pulse" style={{
-                    left: `${Math.random() * 100}%`,
-                    top: `${Math.random() * 100}%`,
-                    width: `${50 + Math.random() * 150}px`,
-                    height: `${20 + Math.random() * 60}px`,
-                    animationDuration: `${1 + Math.random() * 4}s`
-                  }} />
-                ))}
-              </div>
-              
-              {/* Timeline Grid */}
-              <div className="absolute inset-0 pointer-events-none border-t border-white/5" style={{ width: `${100 * zoom}%`, minWidth: '100%' }}>
-                {Array.from({ length: Math.ceil(track?.duration || 40) }).map((_, i) => (
-                  <div key={i} className="absolute top-0 bottom-0 border-l border-white/5" style={{ left: `${(i/(track?.duration || 40))*100}%` }}>
-                    <span className="absolute top-1 left-1 text-[9px] text-white/30 font-mono">{i}s</span>
+              {/* Timeline Ruler */}
+              <div className="absolute top-0 left-0 right-0 h-6 bg-[#e5e5e5] border-b border-[#aaa] z-10 pointer-events-none" style={{ width: `${100 * zoom}%`, minWidth: '100%' }}>
+                {Array.from({ length: Math.ceil((track?.duration || 40) * 2) }).map((_, i) => (
+                  <div key={i} className={cn("absolute bottom-0 border-l border-[#888]", i % 2 === 0 ? "h-full" : "h-2")} style={{ left: `${(i/((track?.duration || 40)*2))*100}%` }}>
+                    {i % 2 === 0 && <span className="absolute top-0.5 left-1 text-[9px] text-black font-sans">{i/2}</span>}
                   </div>
                 ))}
               </div>
+              
+              {/* Center Line (Zero Crossing) */}
+              <div className="absolute top-1/2 left-0 right-0 h-px bg-[#888] pointer-events-none z-0" style={{ width: `${100 * zoom}%`, minWidth: '100%' }} />
 
               {/* Range Selection Overlay */}
               {selectionRange && (
                 <>
                 <div 
-                  className="absolute top-8 bottom-4 bg-blue-500/20 border-l border-r border-blue-500 pointer-events-none z-20"
+                  className="absolute top-6 bottom-0 bg-black/20 border-l border-r border-black/50 pointer-events-none z-20 mix-blend-multiply"
                   style={{
                     left: `${(Math.min(selectionRange.start, selectionRange.end) / (track?.duration || 40)) * 100 * zoom}%`,
                     width: `${(Math.abs(selectionRange.end - selectionRange.start) / (track?.duration || 40)) * 100 * zoom}%`
                   }}
                 >
-                  <div className="absolute top-1 left-1 bg-blue-500 text-white text-[9px] px-1 rounded shadow">
-                    {(Math.abs(selectionRange.end - selectionRange.start)).toFixed(2)}s
-                  </div>
+
                 </div>
 
                 {/* Floating Context Menu */}
@@ -517,7 +575,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
               )}
 
               {/* Segments Container */}
-              <div className="absolute top-8 bottom-4 left-0" style={{ width: `${100 * zoom}%`, minWidth: '100%' }}>
+              <div className="absolute top-6 bottom-0 left-0" style={{ width: `${100 * zoom}%`, minWidth: '100%' }}>
                 {segments.map((seg, idx) => (
                   <motion.div
                     key={seg.id}
@@ -532,10 +590,10 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       handleSegmentDragEnd(seg.id, Math.max(0, seg.startOffset + timeShift));
                     }}
                     className={cn(
-                      "audio-segment absolute top-0 bottom-0 rounded-md border bg-[#1c1c1e]/80 backdrop-blur-sm overflow-hidden flex items-center shadow-lg transition-all group",
-                      activeTool === 'move' ? "cursor-grab active:cursor-grabbing hover:border-primary/50" : "",
+                      "audio-segment absolute top-0 bottom-0 border-l border-r overflow-hidden flex items-center transition-all group",
+                      activeTool === 'move' ? "cursor-grab active:cursor-grabbing hover:border-black/50" : "",
                       activeTool === 'split' ? "hover:border-red-500/50 cursor-crosshair" : "",
-                      selectedSegmentId === seg.id ? "border-primary shadow-[0_0_15px_rgba(var(--primary),0.5)] z-10" : "border-white/20 z-0"
+                      selectedSegmentId === seg.id ? "border-black shadow-[0_0_15px_rgba(0,0,0,0.2)] z-10 bg-black/5" : "border-black/20 z-0"
                     )}
                     style={{
                       left: `${(seg.startOffset / (track?.duration || 40)) * 100}%`,
@@ -543,8 +601,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     }}
                   >
                     {/* Header bar of segment */}
-                    <div className="absolute top-0 left-0 right-0 h-5 bg-black/40 flex items-center px-2 group-hover:bg-primary/20 transition-colors z-20 pointer-events-none">
-                      <span className="text-[10px] text-white/80 font-mono truncate">{track.name} [{idx+1}]</span>
+                    <div className="absolute top-0 left-0 right-0 h-4 bg-[#b5b5b5] border-b border-[#999] flex items-center px-1 z-20 pointer-events-none">
+                      <span className="text-[9px] text-black font-sans truncate font-semibold">{track.name} - Event {idx+1}</span>
                     </div>
 
                     {/* Left Trim Handle */}
@@ -726,7 +784,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     </div>
 
                     {/* Waveform */}
-                    <svg className="w-full h-full pt-5 pb-1 pointer-events-none" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                    <svg className="w-full h-full pt-4 pb-0 pointer-events-none" preserveAspectRatio="none" viewBox="0 0 1000 100">
                       <path 
                         d={(() => {
                           const wf = seg.waveform || [];
@@ -736,7 +794,27 @@ export default function WaveEditor({ track, onClose, onSave }) {
                           for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*45*(seg.gain ?? 1)} `;
                           return d + 'Z';
                         })()}
-                        className={cn("opacity-90", waveformFills[track.color] || "fill-primary")}
+                        className="fill-[#1b5e20] opacity-80 mix-blend-multiply"
+                      />
+                      <path 
+                        d={(() => {
+                          const wf = seg.waveform || [];
+                          const wLen = wf.length - 1 || 1;
+                          let d = `M 0,50 `;
+                          for(let i=0; i<=wLen; i++) d += `L ${(i/wLen)*1000},${50 - Math.max(0.02, wf[i])*45*(seg.gain ?? 1)} `;
+                          return d;
+                        })()}
+                        className="stroke-[#2e7d32] stroke-1 fill-none"
+                      />
+                      <path 
+                        d={(() => {
+                          const wf = seg.waveform || [];
+                          const wLen = wf.length - 1 || 1;
+                          let d = `M 0,50 `;
+                          for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*45*(seg.gain ?? 1)} `;
+                          return d;
+                        })()}
+                        className="stroke-[#2e7d32] stroke-1 fill-none"
                       />
                     </svg>
                   </motion.div>

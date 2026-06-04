@@ -3,7 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -40,9 +40,11 @@ const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
-    if (location.pathname === '/') {
+    if (isInitialMount.current && location.pathname === '/') {
+      isInitialMount.current = false;
       const lastPath = localStorage.getItem('last_visited_path');
       const isNewUser = sessionStorage.getItem('is_new_user') === 'true';
       
@@ -51,11 +53,11 @@ const AuthenticatedApp = () => {
         sessionStorage.removeItem('is_new_user');
       } else if (lastPath && lastPath !== '/') {
         navigate(lastPath, { replace: true });
-      } else if (isAuthenticated) {
-        navigate('/messages', { replace: true });
       }
+    } else {
+      isInitialMount.current = false;
     }
-  }, [location.pathname, isAuthenticated, navigate]);
+  }, [location.pathname, navigate]);
 
   useEffect(() => {
     const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];

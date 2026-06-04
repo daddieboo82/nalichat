@@ -13,7 +13,6 @@ import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import { useSystemTheme } from "@/hooks/use-system-theme";
 import SoundToggle from "@/components/layout/SoundToggle";
 import { sounds } from "@/hooks/use-sound";
-import TutorialButton from "@/components/TutorialButton";
 
 const navItems = [
   { icon: MessageSquare, label: "Messages", path: "/messages" },
@@ -94,7 +93,6 @@ export default function AppLayout() {
           {/* User Actions */}
           <div className="flex items-center gap-1 shrink-0">
             <SoundToggle />
-            <TutorialButton />
             <NotificationBell />
             <Link
               to="/profile"

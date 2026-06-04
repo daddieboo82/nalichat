@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef, useContext } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Bot, X, Send, Minimize2, Maximize2, Sparkles, Expand, Shrink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
-import { TutorialContext } from "@/lib/TutorialContext";
 
 export default function AiAssistant() {
   const [open, setOpen] = useState(false);
@@ -17,7 +16,6 @@ export default function AiAssistant() {
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const unsubRef = useRef(null);
-  const { startTutorial } = useContext(TutorialContext);
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
@@ -60,16 +58,6 @@ export default function AiAssistant() {
     const text = input.trim();
     setInput("");
     setLoading(true);
-    
-    // Check if user is asking for tutorial/help
-    const lowerText = text.toLowerCase();
-    if (lowerText.includes('tutorial') || lowerText.includes('help') || lowerText.includes('how to use') || lowerText.includes('guide')) {
-      setLoading(false);
-      setOpen(false);
-      startTutorial();
-      return;
-    }
-    
     let conv = conversation;
     if (!conv) conv = await initConversation();
     await base44.agents.addMessage(conv, { role: "user", content: text });

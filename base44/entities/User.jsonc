@@ -70,11 +70,6 @@
     "badge": {
       "type": "string",
       "description": "Special badge/title"
-    },
-    "tutorial_completed": {
-      "type": "boolean",
-      "default": false,
-      "description": "Whether user has completed the onboarding tutorial"
     }
   }
 }

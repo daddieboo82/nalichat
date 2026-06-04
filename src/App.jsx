@@ -10,8 +10,6 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLoader from '@/components/layout/AppLoader';
 import NavRipple from '@/components/layout/NavRipple';
-import { TutorialProvider } from '@/lib/TutorialContext';
-import TutorialOverlay from '@/components/TutorialOverlay';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -103,15 +101,12 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <TutorialProvider>
-          {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
-          <NavRipple />
-          <TutorialOverlay />
-          <Router>
-            <AuthenticatedApp />
-          </Router>
-          <Toaster />
-        </TutorialProvider>
+        {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
+        <NavRipple />
+        <Router>
+          <AuthenticatedApp />
+        </Router>
+        <Toaster />
       </QueryClientProvider>
     </AuthProvider>
   )

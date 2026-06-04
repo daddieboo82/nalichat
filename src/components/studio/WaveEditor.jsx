@@ -89,14 +89,15 @@ export default function WaveEditor({ track, onClose, onSave }) {
   };
 
   const handleContainerClick = (e) => {
-    if (e.target.closest('.audio-segment')) return;
-
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const clickX = e.clientX - rect.left + containerRef.current.scrollLeft;
       const totalWidth = rect.width * zoom;
       let clickTime = (clickX / totalWidth) * (track?.duration || 40);
       clickTime = getSnappedTime(clickTime);
+
+      const segmentEl = e.target.closest('.audio-segment');
+      const clickedSegId = segmentEl ? segmentEl.dataset.segmentId : null;
 
       if (activeTool === 'split') {
         const segIndex = segments.findIndex(s => clickTime > s.startOffset && clickTime < (s.startOffset + s.duration));
@@ -115,7 +116,11 @@ export default function WaveEditor({ track, onClose, onSave }) {
         }
       } else {
         setPlayhead(clickTime);
-        setSelectedSegmentId(null);
+        if (clickedSegId) {
+          setSelectedSegmentId(clickedSegId);
+        } else {
+          setSelectedSegmentId(null);
+        }
       }
     }
   };
@@ -358,6 +363,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 {segments.map((seg, idx) => (
                   <motion.div
                     key={seg.id}
+                    data-segment-id={seg.id}
                     drag={activeTool === 'move' ? 'x' : false}
                     dragMomentum={false}
                     onDragEnd={(e, info) => {
@@ -376,12 +382,6 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     style={{
                       left: `${(seg.startOffset / (track?.duration || 40)) * 100}%`,
                       width: `${(seg.duration / (track?.duration || 40)) * 100}%`
-                    }}
-                    onClick={(e) => {
-                        if (activeTool === 'select' || activeTool === 'move') {
-                          e.stopPropagation();
-                          setSelectedSegmentId(seg.id);
-                        }
                     }}
                   >
                     {/* Header bar of segment */}

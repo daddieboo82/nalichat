@@ -1131,9 +1131,25 @@ export default function Studio() {
                   {track.waveform && track.waveform.length > 0 && (
                     <div 
                       onDoubleClick={() => setEditingTrack(track)}
+                      onPointerMove={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
+                        if (activeTool === 'smart') {
+                          e.currentTarget.style.cursor = isTopHalf ? 'text' : 'grab';
+                        } else if (activeTool === 'grab') {
+                          e.currentTarget.style.cursor = 'grab';
+                        } else if (activeTool === 'cut') {
+                          e.currentTarget.style.cursor = 'crosshair';
+                        } else {
+                          e.currentTarget.style.cursor = 'default';
+                        }
+                      }}
                       onPointerDown={(e) => {
                         e.stopPropagation();
                         if (track.locked || activeTool === 'fade') return;
+                        
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
 
                         if (activeTool === 'cut') {
                            const target = e.currentTarget;
@@ -1171,7 +1187,15 @@ export default function Studio() {
                            return;
                         }
 
-                        if (activeTool === 'grab' || activeTool === 'smart') {
+                        if (activeTool === 'smart' && isTopHalf) {
+                          const clickX = e.clientX - rect.left;
+                          const clickRatio = clickX / rect.width;
+                          const newTime = (track.startTime || 0) + ((track.duration || 40) * clickRatio);
+                          updateCurrentTime(newTime);
+                          return;
+                        }
+
+                        if (activeTool === 'grab' || (activeTool === 'smart' && !isTopHalf)) {
                           const target = e.currentTarget;
                           const startX = e.clientX;
                           const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
@@ -1209,7 +1233,7 @@ export default function Studio() {
                           target.addEventListener('pointerup', handleUp);
                         }
                       }}
-                      className="audio-clip absolute top-2 bottom-2 rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-grab active:cursor-grabbing shadow-sm"
+                      className="audio-clip absolute top-2 bottom-2 rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors shadow-sm"
                       style={{ 
                         left: `${(track.startTime !== undefined ? track.startTime : 0) * 20 * zoom}px`,
                         width: `${(track.duration !== undefined ? track.duration : 40) * 20 * zoom}px`
@@ -1217,7 +1241,10 @@ export default function Studio() {
                     >
                       {/* Left Trim Handle */}
                       <div 
-                        className={cn("absolute top-0 bottom-0 left-0 w-3 z-20 group/handle flex justify-center items-center bg-black/20", (activeTool === 'trim' || activeTool === 'smart') ? "cursor-col-resize hover:bg-white/40" : "")}
+                        className={cn("absolute left-0 w-3 z-20 group/handle flex justify-center items-center bg-black/20", 
+                          (activeTool === 'trim' || activeTool === 'smart') ? "cursor-col-resize hover:bg-white/40" : "pointer-events-none opacity-0",
+                          activeTool === 'smart' ? "top-[50%] bottom-0" : "top-0 bottom-0"
+                        )}
                         onPointerDown={(e) => {
                           if (activeTool !== 'trim' && activeTool !== 'smart') return;
                           e.stopPropagation();
@@ -1265,7 +1292,10 @@ export default function Studio() {
 
                       {/* Right Trim Handle */}
                       <div 
-                        className={cn("absolute top-0 bottom-0 right-0 w-3 z-20 group/handle flex justify-center items-center bg-black/20", (activeTool === 'trim' || activeTool === 'smart') ? "cursor-col-resize hover:bg-white/40" : "")}
+                        className={cn("absolute right-0 w-3 z-20 group/handle flex justify-center items-center bg-black/20", 
+                          (activeTool === 'trim' || activeTool === 'smart') ? "cursor-col-resize hover:bg-white/40" : "pointer-events-none opacity-0",
+                          activeTool === 'smart' ? "top-[50%] bottom-0" : "top-0 bottom-0"
+                        )}
                         onPointerDown={(e) => {
                           if (activeTool !== 'trim' && activeTool !== 'smart') return;
                           e.stopPropagation();
@@ -1321,7 +1351,9 @@ export default function Studio() {
                         style={{ width: `${(track.fadeIn || 0) * 100}%` }}
                       />
                       {(activeTool === 'fade' || activeTool === 'smart') && (
-                        <div className="absolute top-0 bottom-0 w-6 cursor-ew-resize hover:bg-white/10 flex items-center justify-center group z-20 pointer-events-auto"
+                        <div className={cn("absolute w-6 hover:bg-white/10 flex justify-center group z-20 pointer-events-auto",
+                            activeTool === 'smart' ? "top-0 bottom-[50%] items-start cursor-crosshair" : "top-0 bottom-0 items-center cursor-ew-resize"
+                          )}
                           style={{ left: `calc(${(track.fadeIn || 0) * 100}% - 12px)` }}
                           onPointerDown={(e) => {
                             e.stopPropagation();
@@ -1354,7 +1386,9 @@ export default function Studio() {
                             target.addEventListener('pointerup', handleUp);
                           }}
                         >
-                          <div className="w-1 h-6 bg-white/50 group-hover:bg-white rounded-full transition-colors shadow-sm" />
+                          <div className={cn("bg-white/50 group-hover:bg-white transition-colors shadow-sm",
+                            activeTool === 'smart' ? "w-2 h-2 mt-1 rounded-sm border border-black/50" : "w-1 h-6 rounded-full"
+                          )} />
                         </div>
                       )}
 
@@ -1363,7 +1397,9 @@ export default function Studio() {
                         style={{ width: `${(track.fadeOut || 0) * 100}%` }}
                       />
                       {(activeTool === 'fade' || activeTool === 'smart') && (
-                        <div className="absolute top-0 bottom-0 w-6 cursor-ew-resize hover:bg-white/10 flex items-center justify-center group z-20 pointer-events-auto"
+                        <div className={cn("absolute w-6 hover:bg-white/10 flex justify-center group z-20 pointer-events-auto",
+                            activeTool === 'smart' ? "top-0 bottom-[50%] items-start cursor-crosshair" : "top-0 bottom-0 items-center cursor-ew-resize"
+                          )}
                           style={{ right: `calc(${(track.fadeOut || 0) * 100}% - 12px)` }}
                           onPointerDown={(e) => {
                             e.stopPropagation();
@@ -1396,7 +1432,9 @@ export default function Studio() {
                             target.addEventListener('pointerup', handleUp);
                           }}
                         >
-                          <div className="w-1 h-6 bg-white/50 group-hover:bg-white rounded-full transition-colors shadow-sm" />
+                          <div className={cn("bg-white/50 group-hover:bg-white transition-colors shadow-sm",
+                            activeTool === 'smart' ? "w-2 h-2 mt-1 rounded-sm border border-black/50" : "w-1 h-6 rounded-full"
+                          )} />
                         </div>
                       )}
 

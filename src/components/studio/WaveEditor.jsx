@@ -249,18 +249,34 @@ export default function WaveEditor({ track, onClose, onSave }) {
               >
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
                 <div 
-                  className={cn("relative h-64 bg-card/20 rounded-xl border border-white/5 flex items-center justify-between gap-px overflow-hidden", 
-                    activeTool === 'select' ? "cursor-text" : 
-                    activeTool === 'trim' ? "cursor-ew-resize" : 
-                    activeTool === 'fade' ? "cursor-crosshair" : "cursor-default"
-                  )} 
+                  className="relative h-64 bg-card/20 rounded-xl border border-white/5 flex items-center justify-between gap-px overflow-hidden"
                   style={{ width: `${100 * zoom}%`, minWidth: '100%' }}
+                  onPointerMove={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
+                    if (activeTool === 'smart') {
+                      e.currentTarget.style.cursor = isTopHalf ? 'text' : 'default';
+                    } else if (activeTool === 'select') {
+                      e.currentTarget.style.cursor = 'text';
+                    } else if (activeTool === 'fade') {
+                      e.currentTarget.style.cursor = 'crosshair';
+                    } else {
+                      e.currentTarget.style.cursor = 'default';
+                    }
+                  }}
                   onPointerDown={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
+
+                    if (activeTool === 'smart' && !isTopHalf) {
+                      setSelection({ start: 0, end: 1 });
+                      return;
+                    }
+
                     if (activeTool !== 'select' && activeTool !== 'smart') return;
                     if (e.target.closest('.selection-handle')) return; // Ignore if clicking on handles
-                    
+
                     const target = e.currentTarget;
-                    const rect = target.getBoundingClientRect();
                     const startX = (e.clientX - rect.left) / rect.width;
                     
                     const overlay = target.querySelector('.selection-overlay');
@@ -311,7 +327,10 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   >
                       {/* Left Figure */}
                       <div 
-                        className="selection-handle absolute top-0 bottom-0 -left-3 w-6 cursor-ew-resize flex items-center justify-center hover:bg-white/10 pointer-events-auto"
+                        className={cn("selection-handle absolute -left-3 w-6 flex items-center justify-center hover:bg-white/10 pointer-events-auto",
+                          (activeTool === 'trim' || activeTool === 'smart' || activeTool === 'select') ? "cursor-ew-resize" : "pointer-events-none opacity-0",
+                          activeTool === 'smart' ? "top-[50%] bottom-0" : "top-0 bottom-0"
+                        )}
                         onPointerDown={(e) => {
                           e.stopPropagation();
                           const target = e.currentTarget;
@@ -347,7 +366,10 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       
                       {/* Right Figure */}
                       <div 
-                        className="selection-handle absolute top-0 bottom-0 -right-3 w-6 cursor-ew-resize flex items-center justify-center hover:bg-white/10 pointer-events-auto"
+                        className={cn("selection-handle absolute -right-3 w-6 flex items-center justify-center hover:bg-white/10 pointer-events-auto",
+                          (activeTool === 'trim' || activeTool === 'smart' || activeTool === 'select') ? "cursor-ew-resize" : "pointer-events-none opacity-0",
+                          activeTool === 'smart' ? "top-[50%] bottom-0" : "top-0 bottom-0"
+                        )}
                         onPointerDown={(e) => {
                           e.stopPropagation();
                           const target = e.currentTarget;
@@ -388,7 +410,9 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     style={{ width: `${fade.in * 100}%` }}
                   />
                   {(activeTool === 'fade' || activeTool === 'smart') && (
-                    <div className="absolute top-0 bottom-0 w-6 cursor-ew-resize hover:bg-white/10 flex items-center justify-center group z-20 pointer-events-auto"
+                    <div className={cn("absolute w-6 hover:bg-white/10 flex justify-center group z-20 pointer-events-auto",
+                        activeTool === 'smart' ? "top-0 bottom-[50%] items-start cursor-crosshair" : "top-0 bottom-0 items-center cursor-ew-resize"
+                      )}
                       style={{ left: `calc(${fade.in * 100}% - 12px)` }}
                       onPointerDown={(e) => {
                         e.stopPropagation();
@@ -421,7 +445,9 @@ export default function WaveEditor({ track, onClose, onSave }) {
                         target.addEventListener('pointerup', handleUp);
                       }}
                     >
-                      <div className="w-1 h-6 bg-white/50 group-hover:bg-white rounded-full transition-colors shadow-sm" />
+                      <div className={cn("bg-white/50 group-hover:bg-white transition-colors shadow-sm",
+                        activeTool === 'smart' ? "w-2 h-2 mt-1 rounded-sm border border-black/50" : "w-1 h-6 rounded-full"
+                      )} />
                     </div>
                   )}
 
@@ -430,7 +456,9 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     style={{ width: `${fade.out * 100}%` }}
                   />
                   {(activeTool === 'fade' || activeTool === 'smart') && (
-                    <div className="absolute top-0 bottom-0 w-6 cursor-ew-resize hover:bg-white/10 flex items-center justify-center group z-20 pointer-events-auto"
+                    <div className={cn("absolute w-6 hover:bg-white/10 flex justify-center group z-20 pointer-events-auto",
+                        activeTool === 'smart' ? "top-0 bottom-[50%] items-start cursor-crosshair" : "top-0 bottom-0 items-center cursor-ew-resize"
+                      )}
                       style={{ right: `calc(${fade.out * 100}% - 12px)` }}
                       onPointerDown={(e) => {
                         e.stopPropagation();
@@ -463,7 +491,9 @@ export default function WaveEditor({ track, onClose, onSave }) {
                         target.addEventListener('pointerup', handleUp);
                       }}
                     >
-                      <div className="w-1 h-6 bg-white/50 group-hover:bg-white rounded-full transition-colors shadow-sm" />
+                      <div className={cn("bg-white/50 group-hover:bg-white transition-colors shadow-sm",
+                        activeTool === 'smart' ? "w-2 h-2 mt-1 rounded-sm border border-black/50" : "w-1 h-6 rounded-full"
+                      )} />
                     </div>
                   )}
 

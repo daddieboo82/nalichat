@@ -42,8 +42,25 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   const audioElements = useRef({});
 
   useEffect(() => {
+    const audioEls = Object.values(audioElements.current);
+    
+    const handleEnded = () => {
+      // Check if all playing tracks have ended
+      const anyPlaying = audioEls.some(el => el && !el.paused);
+      if (!anyPlaying) {
+        setIsPlaying(false);
+      }
+    };
+    
+    audioEls.forEach(el => {
+      if (el) el.addEventListener('ended', handleEnded);
+    });
+    
     return () => {
-      Object.values(audioElements.current).forEach(el => el?.pause());
+      audioEls.forEach(el => {
+        if (el) el.removeEventListener('ended', handleEnded);
+        el?.pause();
+      });
     };
   }, []);
 

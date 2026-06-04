@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, Pause, Square, Volume2, RotateCcw, FolderArchive, X, CheckSquare, Loader2, ZoomIn, ZoomOut, Headphones } from "lucide-react";
+import { Play, Pause, Square, Volume2, RotateCcw, FolderArchive, X, CheckSquare, Loader2, ZoomIn, ZoomOut, Headphones, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import TrackStrip from "./TrackStrip";
 import Timeline from "./Timeline";
@@ -114,7 +114,14 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           >
             <Square className="w-4 h-4" />
           </button>
-        </div>
+          <button
+            onClick={() => window.location.href = '/record'}
+            className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all hover:scale-105 active:scale-95"
+            title="Record"
+          >
+            <Mic className="w-4 h-4" />
+          </button>
+          </div>
 
         {/* Time display */}
         <div className="font-mono text-sm text-primary/80 bg-primary/5 border border-primary/15 px-3 py-1 rounded-lg min-w-[70px] text-center tabular-nums font-semibold">

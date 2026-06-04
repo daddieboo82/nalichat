@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Upload, Music, Loader2, FolderOpen, Disc3, ChevronLeft, Search, Settings, Flag } from "lucide-react";
+import { Plus, Upload, Music, Loader2, FolderOpen, Disc3, ChevronLeft, Search, Settings, Flag, Trash2 } from "lucide-react";
 import MultiTrackEditor from "@/components/studio/MultiTrackEditor";
 import SessionTimer from "@/components/studio/SessionTimer";
 import ProjectSettingsDialog from "@/components/studio/ProjectSettingsDialog";
@@ -428,16 +428,31 @@ export default function Studio() {
                   <Flag className="w-4 h-4" />
                 </Button>
                 {isOwner && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="rounded-xl w-8 h-8 hover:bg-secondary/60 text-muted-foreground"
-                    onClick={() => setShowProjectSettings(true)}
-                    title="Project settings"
-                  >
-                    <Settings className="w-4 h-4" />
-                  </Button>
-                )}
+                   <Button
+                     size="icon"
+                     variant="ghost"
+                     className="rounded-xl w-8 h-8 hover:bg-secondary/60 text-muted-foreground"
+                     onClick={() => setShowProjectSettings(true)}
+                     title="Project settings"
+                   >
+                     <Settings className="w-4 h-4" />
+                   </Button>
+                 )}
+                 {isOwner && (
+                   <Button
+                     size="icon"
+                     variant="ghost"
+                     className="rounded-xl w-8 h-8 hover:bg-destructive/20 hover:text-destructive text-muted-foreground transition-colors"
+                     onClick={() => {
+                       if (window.confirm(`Delete project "${selectedProject.title}"? This cannot be undone.`)) {
+                         deleteProject.mutate(selectedProject.id);
+                       }
+                     }}
+                     title="Delete project"
+                   >
+                     <Trash2 className="w-4 h-4" />
+                   </Button>
+                 )}
                 <Select
                   value={selectedProject.status}
                   onValueChange={(v) => updateProject.mutate({ id: selectedProject.id, data: { status: v } })}

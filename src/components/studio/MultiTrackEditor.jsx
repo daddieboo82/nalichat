@@ -154,7 +154,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   return (
     <div className="h-full flex flex-col overflow-hidden relative bg-background">
       {/* Transport Controls */}
-      <div className="px-8 py-3 border-b border-border flex items-center gap-4 flex-wrap bg-secondary/30">
+      <div className="px-4 py-2 border-b border-border flex items-center gap-2 flex-wrap bg-secondary/30">
         {/* Play/Stop/Rewind */}
         <div className="flex items-center gap-1.5">
           <button
@@ -193,13 +193,13 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           </div>
 
         {/* Time display */}
-        <div className="font-mono text-sm font-bold text-primary bg-secondary/40 border border-border px-3 py-2 rounded-sm min-w-[80px] text-center tabular-nums">
+        <div className="font-mono text-xs font-bold text-primary bg-secondary/40 border border-border px-2 py-1 rounded-sm min-w-[65px] text-center tabular-nums">
           {Math.floor(currentTime / 60)}:{String(Math.floor(currentTime % 60)).padStart(2, "0")}
         </div>
 
         {/* Master volume with peak meter */}
-        <div className="flex items-center gap-3 px-3 py-2 bg-secondary/30 rounded-sm">
-          <Headphones className="w-4 h-4 text-foreground/60 shrink-0" />
+        <div className="flex items-center gap-2 px-2 py-1.5 bg-secondary/30 rounded-sm">
+          <Headphones className="w-3 h-3 text-foreground/60 shrink-0" />
           <div className="flex flex-col gap-1 flex-1">
             <input
               type="range"
@@ -225,23 +225,23 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
               />
             </div>
           </div>
-          <span className="text-[10px] font-mono font-bold text-foreground/70 tabular-nums w-8">{masterVolume}dB</span>
+          <span className="text-[9px] font-mono font-bold text-foreground/70 tabular-nums w-7">{masterVolume}dB</span>
         </div>
 
         {/* Zoom controls */}
-        <div className="flex items-center gap-2 ml-auto px-3 py-2 bg-secondary/30 rounded-sm">
+        <div className="flex items-center gap-1.5 ml-auto px-2 py-1.5 bg-secondary/30 rounded-sm">
           <button
             onClick={() => setZoom(Math.max(0.5, zoom - 0.2))}
-            className="w-6 h-6 rounded-sm flex items-center justify-center bg-border/60 text-foreground/70 hover:bg-border hover:text-foreground transition-colors"
+            className="w-5 h-5 rounded-sm flex items-center justify-center bg-border/60 text-foreground/70 hover:bg-border hover:text-foreground transition-colors"
           >
-            <ZoomOut className="w-3 h-3" />
+            <ZoomOut className="w-2.5 h-2.5" />
           </button>
-          <span className="text-[9px] font-mono font-bold text-foreground/70 w-10 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
+          <span className="text-[8px] font-mono font-bold text-foreground/70 w-8 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
           <button
             onClick={() => setZoom(Math.min(3, zoom + 0.2))}
-            className="w-6 h-6 rounded-sm flex items-center justify-center bg-border/60 text-foreground/70 hover:bg-border hover:text-foreground transition-colors"
+            className="w-5 h-5 rounded-sm flex items-center justify-center bg-border/60 text-foreground/70 hover:bg-border hover:text-foreground transition-colors"
           >
-            <ZoomIn className="w-3 h-3" />
+            <ZoomIn className="w-2.5 h-2.5" />
           </button>
         </div>
 
@@ -288,15 +288,15 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
 
       {/* Selection toolbar */}
       {selectedTrackIds.length > 0 && (
-        <div className="px-8 py-2 border-b border-border bg-primary/10 flex items-center gap-4">
-          <CheckSquare className="w-4 h-4 text-primary" />
-          <span className="text-xs font-bold font-mono text-primary uppercase">{selectedTrackIds.length} Track{selectedTrackIds.length > 1 ? "s" : ""} Selected</span>
-          <Button size="sm" className="rounded-sm bg-primary hover:bg-primary/90 h-7 text-xs font-bold ml-auto" onClick={handleDownloadTracksZip} disabled={zipping}>
-            {zipping ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <FolderArchive className="w-3 h-3 mr-1" />}
+        <div className="px-4 py-1.5 border-b border-border bg-primary/10 flex items-center gap-2">
+          <CheckSquare className="w-3.5 h-3.5 text-primary" />
+          <span className="text-[10px] font-bold font-mono text-primary uppercase">{selectedTrackIds.length} Track{selectedTrackIds.length > 1 ? "s" : ""} Selected</span>
+          <Button size="sm" className="rounded-sm bg-primary hover:bg-primary/90 h-6 text-[10px] font-bold ml-auto" onClick={handleDownloadTracksZip} disabled={zipping}>
+            {zipping ? <Loader2 className="w-2.5 h-2.5 mr-1 animate-spin" /> : <FolderArchive className="w-2.5 h-2.5 mr-1" />}
             Export
           </Button>
-          <Button size="sm" variant="ghost" className="rounded-sm h-7 text-xs text-foreground/60 hover:bg-border/50" onClick={clearTrackSelection}>
-            <X className="w-3 h-3 mr-1" /> Clear
+          <Button size="sm" variant="ghost" className="rounded-sm h-6 text-[10px] text-foreground/60 hover:bg-border/50" onClick={clearTrackSelection}>
+            <X className="w-2.5 h-2.5 mr-1" /> Clear
           </Button>
         </div>
       )}

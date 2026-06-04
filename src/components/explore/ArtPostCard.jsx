@@ -1,29 +1,40 @@
-import { Heart, Eye, Music, MessageCircle } from "lucide-react";
+import { useState } from "react";
+import { Heart, Eye, Music, MessageCircle, Play } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import MediaViewerModal from "./MediaViewerModal";
 
 export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist, onComment, large }) {
+  const [showMedia, setShowMedia] = useState(false);
   const liked = post.liked_by?.includes(currentUser?.id);
 
   return (
-    <div className={cn("break-inside-avoid mb-4 bg-card rounded-2xl overflow-hidden border border-border group hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1", large && "")}>
-      {post.image_url && (
-        <div className="relative overflow-hidden">
-          <img
-            src={post.image_url}
-            alt={post.title}
-            className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            style={{ maxHeight: large ? 280 : 220 }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-primary/40 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="absolute bottom-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <span className="flex items-center gap-1 bg-black/60 text-white text-[10px] px-2 py-1 rounded-full">
-              <Eye className="w-3 h-3" /> {post.views || 0}
-            </span>
+    <>
+      <div className={cn("break-inside-avoid mb-4 bg-card rounded-2xl overflow-hidden border border-border group hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 cursor-pointer", large && "")} onClick={() => setShowMedia(true)}>
+        {post.image_url && (
+          <div className="relative overflow-hidden">
+            <img
+              src={post.image_url}
+              alt={post.title}
+              className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              style={{ maxHeight: large ? 280 : 220 }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-primary/40 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute bottom-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="flex items-center gap-1 bg-black/60 text-white text-[10px] px-2 py-1 rounded-full">
+                <Eye className="w-3 h-3" /> {post.views || 0}
+              </span>
+            </div>
+            {post.file_url && (
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40">
+                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+                  <Play className="w-5 h-5 fill-current text-white ml-1" />
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
-      <div className="p-3">
+        )}
+        <div className="p-3">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
             <h3 className="font-heading font-semibold text-sm truncate">{post.title}</h3>
@@ -89,6 +100,9 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
           </div>
         </div>
       </div>
-    </div>
+      </div>
+
+      <MediaViewerModal post={post} open={showMedia} onOpenChange={setShowMedia} />
+    </>
   );
 }

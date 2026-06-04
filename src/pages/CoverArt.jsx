@@ -177,6 +177,14 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                 )}
               </div>
 
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*" 
+                onChange={handleFileUpload}
+              />
+              
               {!generatedImage ? (
                 <div className="flex gap-4 w-full">
                   <Button 
@@ -189,13 +197,6 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                     {selectedPost.image_url ? 'Generate New' : 'Generate Cover'}
                   </Button>
                   
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={handleFileUpload}
-                  />
                   <Button 
                     variant="outline"
                     size="lg" 
@@ -212,20 +213,31 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                   <Button 
                     variant="outline" 
                     size="lg" 
-                    className="flex-1 h-12"
+                    className="flex-[1.5] h-12 gap-2"
                     onClick={() => generateArtMutation.mutate(selectedPost)}
-                    disabled={generateArtMutation.isPending || saveArtMutation.isPending}
+                    disabled={generateArtMutation.isPending || saveArtMutation.isPending || isUploading}
                   >
+                    <Wand2 className="w-4 h-4" />
                     Retry
                   </Button>
                   <Button 
+                    variant="outline"
                     size="lg" 
-                    className="flex-1 h-12 gap-2"
-                    onClick={() => saveArtMutation.mutate()}
-                    disabled={saveArtMutation.isPending}
+                    className="flex-[1.5] h-12 gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={generateArtMutation.isPending || saveArtMutation.isPending || isUploading}
                   >
-                    {saveArtMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                    Save to Track
+                    {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    Upload
+                  </Button>
+                  <Button 
+                    size="lg" 
+                    className="flex-[2] h-12 gap-2 bg-primary hover:bg-primary/90 text-white"
+                    onClick={() => saveArtMutation.mutate()}
+                    disabled={saveArtMutation.isPending || isUploading}
+                  >
+                    {saveArtMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Save
                   </Button>
                 </div>
               )}

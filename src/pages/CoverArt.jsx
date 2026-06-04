@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Image as ImageIcon, Music, Loader2, Save, Wand2 } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Music, Loader2, Save, Wand2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useRef } from "react";
 
 export default function CoverArt() {
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedPost, setSelectedPost] = useState(null);
   const [generatedImage, setGeneratedImage] = useState(null);
   const [generatingStatus, setGeneratingStatus] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -78,6 +81,32 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
       setSelectedPost(null);
     }
   });
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedPost) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setGeneratedImage(file_url);
+      toast.success('Image uploaded successfully! You can now save it to your track.');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to upload image');
+    } finally {
+      setIsUploading(false);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   if (!currentUser) return <div className="p-8 text-center">Please log in to use the Cover Art Creator.</div>;
 
@@ -149,15 +178,35 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
               </div>
 
               {!generatedImage ? (
-                <Button 
-                  size="lg" 
-                  className="w-full h-14 text-lg gap-2 bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/25"
-                  onClick={() => generateArtMutation.mutate(selectedPost)}
-                  disabled={generateArtMutation.isPending}
-                >
-                  <Wand2 className="w-5 h-5" />
-                  {selectedPost.image_url ? 'Generate New Cover' : 'Generate Cover Art'}
-                </Button>
+                <div className="flex gap-4 w-full">
+                  <Button 
+                    size="lg" 
+                    className="flex-[2] h-14 text-lg gap-2 bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/25"
+                    onClick={() => generateArtMutation.mutate(selectedPost)}
+                    disabled={generateArtMutation.isPending || isUploading}
+                  >
+                    <Wand2 className="w-5 h-5" />
+                    {selectedPost.image_url ? 'Generate New' : 'Generate Cover'}
+                  </Button>
+                  
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleFileUpload}
+                  />
+                  <Button 
+                    variant="outline"
+                    size="lg" 
+                    className="flex-1 h-14 gap-2 border-primary/50 text-primary hover:bg-primary/10"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={generateArtMutation.isPending || isUploading}
+                  >
+                    {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                    Upload
+                  </Button>
+                </div>
               ) : (
                 <div className="flex gap-4 w-full">
                   <Button 

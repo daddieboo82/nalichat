@@ -5,8 +5,6 @@ import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import MessageBubble from "./MessageBubble";
-import MessageInput from "./MessageInput";
-import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import GroupInfoPanel from "./GroupInfoPanel";
 import TypingIndicator from "./TypingIndicator";

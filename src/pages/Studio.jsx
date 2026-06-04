@@ -709,9 +709,10 @@ export default function Studio() {
           {/* Timeline Header */}
           <div className="h-8 border-b border-border/30 bg-card/40 sticky top-0 z-20 flex items-end px-4 overflow-hidden">
             {/* Timeline markers */}
-            <div 
-              className="w-[2000px] h-full relative cursor-pointer select-none" 
-              style={{ transform: `scaleX(${zoom})`, transformOrigin: 'left' }}
+            <div style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px` }}>
+              <div 
+                className="w-[2000px] h-full relative cursor-pointer select-none" 
+                style={{ transform: `scaleX(${zoom})`, transformOrigin: 'left' }}
               onPointerDown={(e) => {
                 const target = e.currentTarget;
                 const updatePosition = (clientX) => {
@@ -735,14 +736,16 @@ export default function Studio() {
                   0:{i.toString().padStart(2, '0')}
                 </div>
               ))}
+              </div>
             </div>
           </div>
 
           {/* Tracks Area */}
-          <div 
-            className="relative w-[2000px] min-h-full cursor-text select-none" 
-            style={{ transform: `scaleX(${zoom})`, transformOrigin: 'top left' }}
-            onPointerDown={(e) => {
+          <div style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px`, minHeight: '100%' }}>
+            <div 
+              className="relative w-[2000px] min-h-full cursor-text select-none" 
+              style={{ transform: `scaleX(${zoom})`, transformOrigin: 'top left' }}
+              onPointerDown={(e) => {
               if (e.target.closest('.audio-clip')) return;
               const target = e.currentTarget;
               const updatePosition = (clientX) => {
@@ -1023,6 +1026,7 @@ export default function Studio() {
                   )}
                 </div>
               ))}
+            </div>
             </div>
           </div>
         </div>

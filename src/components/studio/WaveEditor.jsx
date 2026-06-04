@@ -188,15 +188,15 @@ export default function WaveEditor({ track, onClose, onSave }) {
               </div>
 
               {/* Huge Waveform View */}
-              <div className="flex-1 relative overflow-auto custom-scrollbar p-8 flex items-center justify-center">
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:40px_40px]" />
+              <div className="flex-1 relative overflow-x-auto overflow-y-hidden custom-scrollbar p-8 flex items-center justify-start">
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
                 <div 
-                  className={cn("relative w-full max-w-[2000px] h-64 bg-card/20 rounded-xl border border-white/5 flex items-center justify-between gap-px overflow-hidden", 
+                  className={cn("relative h-64 bg-card/20 rounded-xl border border-white/5 flex items-center justify-between gap-px overflow-hidden", 
                     activeTool === 'select' ? "cursor-text" : 
                     activeTool === 'trim' ? "cursor-ew-resize" : 
                     activeTool === 'fade' ? "cursor-crosshair" : "cursor-default"
                   )} 
-                  style={{ transform: `scaleX(${zoom})` }}
+                  style={{ width: `${100 * zoom}%`, minWidth: '100%' }}
                   onPointerDown={(e) => {
                     if (activeTool !== 'select' && activeTool !== 'smart') return;
                     const target = e.currentTarget;

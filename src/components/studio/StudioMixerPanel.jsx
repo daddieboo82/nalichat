@@ -29,9 +29,9 @@ export default function StudioMixerPanel({
   }
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col">
+    <div className="flex-1 overflow-y-auto flex flex-col">
       {/* Mixer Header */}
-      <div className="bg-secondary/40 border-b border-border/40 px-6 py-4 flex items-center justify-between">
+      <div className="sticky top-0 bg-secondary/40 border-b border-border/40 px-6 py-4 flex items-center justify-between z-10">
         <h3 className="font-heading font-bold text-foreground">Mixer</h3>
         <p className="text-xs text-muted-foreground">{tracks.length} Track{tracks.length !== 1 ? "s" : ""}</p>
       </div>

@@ -47,9 +47,9 @@ export default function StudioArrange({
   }
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col">
+    <div className="flex-1 overflow-y-auto flex flex-col">
       {/* Track Headers with Time Ruler */}
-      <div className="bg-secondary/40 border-b border-border/40 px-6 py-3 flex gap-4 items-start">
+      <div className="sticky top-0 bg-secondary/40 border-b border-border/40 px-6 py-3 flex gap-4 items-start z-10">
         <div className="w-48 shrink-0">
           <p className="text-xs text-muted-foreground uppercase font-semibold">Tracks</p>
         </div>

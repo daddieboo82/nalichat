@@ -144,7 +144,7 @@ export default function StudioNew() {
       </div>
 
       {/* Main Studio Area */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+      <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
         {mode === "record" ? (
           <StudioRecorder
             project={selectedProject}

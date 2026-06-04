@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Play, Pause, Square, Volume2, RotateCcw, FolderArchive, X, CheckSquare, Loader2, ZoomIn, ZoomOut, Headphones, Mic } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import TrackStrip from "./TrackStrip";
 import Timeline from "./Timeline";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 
 export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete, projectTitle, canEdit = true, currentUser }) {
+  const queryClient = useQueryClient();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -253,7 +255,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
           const { file_url } = await base44.integrations.Core.UploadFile({ file });
           await base44.entities.Track.create({
             project_id: selectedProject.id,
-            name,
+            name: name || "Recording",
             file_url,
             type: "vocal",
             volume: 75,
@@ -261,8 +263,9 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
             muted: false,
             solo: false,
             uploaded_by: currentUser.id,
+            duration: 0,
           });
-          onTrackUpdate(null, null);
+          queryClient.invalidateQueries({ queryKey: ["tracks", selectedProject.id] });
         }}
       />
 

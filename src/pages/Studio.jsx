@@ -188,13 +188,36 @@ export default function Studio() {
 
   const stopRecordingProcess = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.onstop = () => {
+      mediaRecorderRef.current.onstop = async () => {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const audioUrl = URL.createObjectURL(blob);
         
+        let realWaveform = generateWaveform(120);
+        try {
+          const arrayBuffer = await blob.arrayBuffer();
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+          const channelData = audioBuffer.getChannelData(0);
+          const numPoints = 120;
+          const blockSize = Math.floor(channelData.length / numPoints);
+          const waveform = [];
+          for (let i = 0; i < numPoints; i++) {
+            let start = i * blockSize;
+            let sum = 0;
+            for (let j = 0; j < blockSize; j++) {
+              sum += Math.abs(channelData[start + j]);
+            }
+            waveform.push(sum / blockSize);
+          }
+          const max = Math.max(...waveform);
+          realWaveform = max > 0 ? waveform.map(val => val / max) : waveform.map(() => 0.05);
+        } catch (e) {
+          console.error("Failed to parse waveform", e);
+        }
+        
         setTracks(prev => prev.map(t => {
           if (t.armed) {
-            return { ...t, waveform: generateWaveform(120), armed: false, audioUrl };
+            return { ...t, waveform: realWaveform, armed: false, audioUrl };
           }
           return t;
         }));
@@ -204,7 +227,7 @@ export default function Studio() {
     } else {
       setTracks(prev => prev.map(t => {
         if (t.armed) {
-          return { ...t, waveform: generateWaveform(120), armed: false };
+          return { ...t, waveform: [], armed: false };
         }
         return t;
       }));

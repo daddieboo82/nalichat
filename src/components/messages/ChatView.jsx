@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageSquare, ArrowLeft, Search as SearchIcon, Phone, Video, Info, MoreHorizontal } from "lucide-react";
+import MediaViewerModal from "@/components/explore/MediaViewerModal";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
   const prevLenRef = useRef(0);
   const markedRef = useRef(new Set());
   const typingTimeoutRef = useRef(null);
+  const [selectedMedia, setSelectedMedia] = useState(null);
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -148,6 +150,15 @@ export default function ChatView({ conversation, messages, currentUser, users, o
               onCopy={() => navigator.clipboard.writeText(item.text || "")}
               onDelete={async (id) => await base44.entities.Message.delete(id)}
               currentUser={currentUser}
+              onPlayAudio={(msg) => {
+                setSelectedMedia({
+                  id: msg.id,
+                  title: msg.file_name || "Audio message",
+                  file_url: msg.file_url,
+                  creator_name: msg.sender_name,
+                  creator_avatar: msg.sender_avatar
+                });
+              }}
             />
           )
         )}
@@ -198,6 +209,14 @@ export default function ChatView({ conversation, messages, currentUser, users, o
           onClose={() => setShowSearch(false)}
           onSelectMessage={(msg) => scrollRef.current?.scrollIntoView({ behavior: "smooth" })}
           users={users}
+        />
+      )}
+
+      {selectedMedia && (
+        <MediaViewerModal
+          post={selectedMedia}
+          open={!!selectedMedia}
+          onOpenChange={(isOpen) => !isOpen && setSelectedMedia(null)}
         />
       )}
     </div>

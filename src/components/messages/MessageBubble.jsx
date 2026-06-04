@@ -36,7 +36,7 @@ function ReadReceipts({ readBy, users }) {
 function FileAttachment({ message, isOwn, onOpenViewer }) {
   const [dlProgress, setDlProgress] = useState(null); // null = idle, 0-100 = downloading
   const isImage = message.type === "image" || message.file_type?.startsWith("image");
-  const isAudio = message.type === "audio" || message.file_type?.startsWith("audio");
+  const isAudio = message.type === "audio" || message.file_type?.startsWith("audio") || !!message.file_name?.match(/\.(mp3|wav|ogg|m4a|aac)$/i) || !!message.file_url?.match(/\.(mp3|wav|ogg|m4a|aac)(\?.*)?$/i);
   const isVideo = message.file_type?.startsWith("video");
 
   const handleDownload = async (e) => {
@@ -102,7 +102,7 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
 const gradients = ["from-primary to-pink-500","from-accent to-cyan-400","from-yellow-500 to-orange-500","from-green-400 to-emerald-600","from-purple-500 to-indigo-500"];
 const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.length];
 
-export default function MessageBubble({ message, isOwn, showAvatar, onReply, onEdit, onReact, onOpenThread, users, onCopy, onDelete, currentUser }) {
+export default function MessageBubble({ message, isOwn, showAvatar, onReply, onEdit, onReact, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio }) {
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -153,7 +153,13 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
           hasFile && message.type !== "audio" ? "p-2" : "px-4 py-2.5"
         )}>
           {hasFile ? (
-            <FileAttachment message={message} isOwn={isOwn} onOpenViewer={() => setViewerOpen(true)} />
+            <FileAttachment message={message} isOwn={isOwn} onOpenViewer={() => {
+              if (message.type === "audio" || message.file_type?.startsWith("audio")) {
+                onPlayAudio?.(message);
+              } else {
+                setViewerOpen(true);
+              }
+            }} />
           ) : (
             <div className={cn("text-[15px] leading-relaxed break-words whitespace-pre-wrap", isOwn ? "text-white" : "text-foreground")}>
               <ReactMarkdown

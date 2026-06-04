@@ -70,7 +70,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 1200);
 
     const isImage = file.type.startsWith("image");
-    const isAudio = file.type.startsWith("audio");
+    const isAudio = file.type.startsWith("audio") || !!file.name.match(/\.(mp3|wav|ogg|m4a|aac)$/i);
     const isVideo = file.type.startsWith("video");
     const type = isImage ? "image" : isAudio ? "audio" : isVideo ? "video" : "file";
     onSend({ text: "", type, file_url, file_name: file.name, file_size: file.size, file_type: file.type });

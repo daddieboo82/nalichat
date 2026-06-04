@@ -6,6 +6,8 @@ import Timeline from "./Timeline";
 import BounceDialog from "./BounceDialog";
 import StemQueue from "./StemQueue";
 import RecordingDialog from "./RecordingDialog";
+import StudioMixer from "./StudioMixer";
+import StudioProperties from "./StudioProperties";
 import { downloadFilesAsZip } from "@/lib/downloadZip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -23,6 +25,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   const [selectedTrackIds, setSelectedTrackIds] = useState([]);
   const [zipping, setZipping] = useState(false);
   const [recordingDialogOpen, setRecordingDialogOpen] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState(null);
   const peakRef = useRef(null);
 
   const queueIds = new Set(queue.map(t => t.id));
@@ -130,9 +133,9 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
   }, [tracks.length]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden relative" style={{ background: "hsl(240 10% 3%)" }}>
+    <div className="h-full flex flex-col overflow-hidden relative" style={{ background: "linear-gradient(135deg, hsl(240 10% 3%), hsl(240 8% 5%))" }}>
       {/* Transport Controls */}
-      <div className="px-4 py-2.5 border-b border-border/50 flex items-center gap-3 flex-wrap" style={{ background: "hsl(240 8% 7% / 0.9)" }}>
+      <div className="px-4 py-2.5 border-b border-border/40 flex items-center gap-3 flex-wrap" style={{ background: "linear-gradient(to right, hsl(240 8% 7%), hsl(240 8% 9%))" }}>
         {/* Play/Stop/Rewind */}
         <div className="flex items-center gap-1.5">
           <button
@@ -280,72 +283,89 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
         </div>
       )}
 
-      {/* Timeline & Tracks */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        <Timeline
-          currentTime={currentTime}
-          duration={duration}
-          zoom={zoom}
-          onClick={handleTimelineClick}
+      {/* Main Layout: Mixer | Timeline | Properties */}
+      <div className="flex-1 overflow-hidden flex">
+        {/* Left: Mixer */}
+        <StudioMixer
+          tracks={tracks}
+          onTrackUpdate={onTrackUpdate}
+          selectedTrack={selectedTrack}
+          onSelectTrack={setSelectedTrack}
         />
 
-        {/* Tracks Container */}
-        <div className="flex-1 overflow-y-auto">
-          {tracks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-16 gap-4">
-              <div className="w-20 h-20 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-2xl shadow-primary/10">
-                <Volume2 className="w-9 h-9 text-primary/40" />
-              </div>
-              <div className="text-center">
-                <p className="font-heading font-semibold text-lg">No tracks loaded</p>
-                <p className="text-sm text-muted-foreground/70 mt-1">Upload audio files to start mixing</p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-1.5 p-3">
-              {tracks.map((track, idx) => (
-                <div
-                  key={track.id}
-                  className={cn(
-                    "rounded-xl border transition-all flex items-start gap-2",
-                    selectedTrackIds.includes(track.id)
-                      ? "border-primary/60 ring-1 ring-primary/20 bg-primary/5"
-                      : "border-border/50 bg-card/50 hover:border-primary/30 hover:bg-card/70"
-                  )}
-                  style={{ padding: "10px 12px" }}
-                >
-                  <Checkbox
-                    checked={selectedTrackIds.includes(track.id)}
-                    onCheckedChange={() => toggleTrackSelect(track.id)}
-                    className="mt-3 shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <TrackStrip
-                        track={track}
-                        isPlaying={isPlaying}
-                        currentTime={currentTime}
-                        onUpdate={(data) => canEdit && onTrackUpdate(track.id, data)}
-                        onDelete={() => canEdit && onTrackDelete(track.id)}
-                        audioRef={(ref) => {
-                          if (ref) {
-                            audioElements.current[track.id] = ref;
-                            if (ref.duration > 0) setDuration(prev => Math.max(prev, ref.duration));
-                          } else {
-                            delete audioElements.current[track.id];
-                          }
-                        }}
-                        masterVolume={masterVolume}
-                        inQueue={queueIds.has(track.id)}
-                        onToggleQueue={() => toggleQueue(track)}
-                        canEdit={canEdit}
-                        currentUser={currentUser}
-                      />
-                  </div>
+        {/* Center: Timeline & Tracks */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <Timeline
+            currentTime={currentTime}
+            duration={duration}
+            zoom={zoom}
+            onClick={handleTimelineClick}
+          />
+
+          {/* Tracks Container */}
+          <div className="flex-1 overflow-y-auto bg-gradient-to-b from-secondary/10 via-transparent to-transparent">
+            {tracks.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-16 gap-4">
+                <div className="w-20 h-20 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-2xl shadow-primary/10">
+                  <Volume2 className="w-9 h-9 text-primary/40" />
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="text-center">
+                  <p className="font-heading font-semibold text-lg">No tracks loaded</p>
+                  <p className="text-sm text-muted-foreground/70 mt-1">Upload audio files to start mixing</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5 p-3">
+                {tracks.map((track, idx) => (
+                  <div
+                    key={track.id}
+                    onClick={() => setSelectedTrack(track)}
+                    className={cn(
+                      "rounded-lg border transition-all flex items-start gap-2 cursor-pointer",
+                      selectedTrack?.id === track.id
+                        ? "border-primary/60 ring-1 ring-primary/30 bg-primary/8 shadow-sm shadow-primary/20"
+                        : "border-border/40 bg-card/40 hover:border-primary/40 hover:bg-card/60"
+                    )}
+                    style={{ padding: "8px 10px" }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <TrackStrip
+                          track={track}
+                          isPlaying={isPlaying}
+                          currentTime={currentTime}
+                          onUpdate={(data) => canEdit && onTrackUpdate(track.id, data)}
+                          onDelete={() => canEdit && onTrackDelete(track.id)}
+                          audioRef={(ref) => {
+                            if (ref) {
+                              audioElements.current[track.id] = ref;
+                              if (ref.duration > 0) setDuration(prev => Math.max(prev, ref.duration));
+                            } else {
+                              delete audioElements.current[track.id];
+                            }
+                          }}
+                          masterVolume={masterVolume}
+                          inQueue={queueIds.has(track.id)}
+                          onToggleQueue={() => toggleQueue(track)}
+                          canEdit={canEdit}
+                          currentUser={currentUser}
+                        />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Right: Properties Panel */}
+        <StudioProperties
+          selectedTrack={selectedTrack}
+          onTrackDelete={(id) => {
+            onTrackDelete(id);
+            setSelectedTrack(null);
+          }}
+          onTrackUpdate={onTrackUpdate}
+        />
       </div>
     </div>
   );

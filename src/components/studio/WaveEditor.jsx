@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { 
   X, Play, Pause, Scissors, Copy, Trash2, 
   Activity, Radio, Waves, Settings2, SlidersHorizontal,
-  VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair, Loader2
+  VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair, Loader2, Undo2, Redo2, Maximize2, SplitSquareHorizontal
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Knob } from '@/components/ui/knob';
 
 const waveformFills = {
   "bg-primary": "fill-primary",
@@ -20,68 +21,181 @@ const waveformFills = {
 };
 
 const EFFECTS = [
-  { id: 'eq', name: 'Parametric EQ', icon: SlidersHorizontal },
-  { id: 'reverb', name: 'Studio Reverb', icon: Waves },
-  { id: 'delay', name: 'Echo Delay', icon: Activity },
-  { id: 'compressor', name: 'Compressor', icon: Radio },
-  { id: 'distortion', name: 'Distortion', icon: Wand2 },
+  { id: 'eq', name: 'EQ Eight', icon: SlidersHorizontal, params: [{name: 'Low', min: -15, max: 15}, {name: 'Mid', min: -15, max: 15}, {name: 'High', min: -15, max: 15}, {name: 'Freq', min: 20, max: 20000}] },
+  { id: 'reverb', name: 'Valhalla Reverb', icon: Waves, params: [{name: 'Decay', min: 0, max: 10}, {name: 'Size', min: 0, max: 100}, {name: 'Mix', min: 0, max: 100}] },
+  { id: 'delay', name: 'Echo', icon: Activity, params: [{name: 'Time', min: 1, max: 2000}, {name: 'Feedback', min: 0, max: 100}, {name: 'Mix', min: 0, max: 100}] },
+  { id: 'compressor', name: 'Glue Compressor', icon: Radio, params: [{name: 'Thresh', min: -60, max: 0}, {name: 'Ratio', min: 1, max: 20}, {name: 'Attack', min: 0, max: 100}, {name: 'Release', min: 0, max: 100}] },
+  { id: 'distortion', name: 'Saturator', icon: Wand2, params: [{name: 'Drive', min: 0, max: 100}, {name: 'Tone', min: 0, max: 100}, {name: 'Mix', min: 0, max: 100}] },
 ];
 
 export default function WaveEditor({ track, onClose, onSave }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeEffects, setActiveEffects] = useState([]);
-  const [selectedEffect, setSelectedEffect] = useState(null);
   const [zoom, setZoom] = useState(1);
-  const [activeTool, setActiveTool] = useState('smart'); // smart, select, trim, fade
-  const [selection, setSelection] = useState({ start: 0.25, end: 0.75 });
-  const [fade, setFade] = useState({ in: 0.1, out: 0.1 });
-  const [isScanning, setIsScanning] = useState(false);
+  const [activeTool, setActiveTool] = useState('select'); // select, split, move
+  const [segments, setSegments] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [historyIdx, setHistoryIdx] = useState(-1);
+  const [playhead, setPlayhead] = useState(0);
 
-  const toggleEffect = (effect) => {
-    if (activeEffects.some(e => e.id === effect.id)) {
-      setActiveEffects(activeEffects.filter(e => e.id !== effect.id));
-      if (selectedEffect?.id === effect.id) setSelectedEffect(null);
-    } else {
-      setActiveEffects([...activeEffects, { ...effect, params: { amount: 50, mix: 50 } }]);
-      setSelectedEffect(effect);
+  const containerRef = useRef(null);
+
+  // Initialize segments
+  useEffect(() => {
+    if (track && segments.length === 0) {
+      const initialSegs = track.segments && track.segments.length > 0 ? track.segments : [{
+        id: `seg_${Date.now()}`,
+        startOffset: 0, // time in track where this segment starts
+        sourceStart: 0, // normalized 0-1
+        sourceEnd: 1, // normalized 0-1
+        duration: track.duration || 40,
+        waveform: track.waveform || Array.from({length: 100}, () => Math.random())
+      }];
+      setSegments(initialSegs);
+      setHistory([initialSegs]);
+      setHistoryIdx(0);
+      if (track.effects) setActiveEffects(track.effects);
+    }
+  }, [track]);
+
+  const saveHistory = (newSegs) => {
+    const newHist = history.slice(0, historyIdx + 1);
+    newHist.push(newSegs);
+    setHistory(newHist);
+    setHistoryIdx(newHist.length - 1);
+    setSegments(newSegs);
+  };
+
+  const handleUndo = () => {
+    if (historyIdx > 0) {
+      setHistoryIdx(historyIdx - 1);
+      setSegments(history[historyIdx - 1]);
     }
   };
 
+  const handleRedo = () => {
+    if (historyIdx < history.length - 1) {
+      setHistoryIdx(historyIdx + 1);
+      setSegments(history[historyIdx + 1]);
+    }
+  };
+
+  const handleContainerClick = (e) => {
+    if (activeTool === 'split' && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const clickX = e.clientX - rect.left + containerRef.current.scrollLeft;
+      const totalWidth = rect.width * zoom;
+      const clickTime = (clickX / totalWidth) * (track?.duration || 40);
+
+      // Find segment at clickTime
+      const segIndex = segments.findIndex(s => clickTime >= s.startOffset && clickTime <= (s.startOffset + s.duration));
+      if (segIndex !== -1) {
+        const seg = segments[segIndex];
+        const splitRatio = (clickTime - seg.startOffset) / seg.duration;
+        
+        const splitSourceTime = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * splitRatio;
+        
+        const newSeg1 = {
+          ...seg,
+          id: `seg_${Date.now()}_1`,
+          sourceEnd: splitSourceTime,
+          duration: seg.duration * splitRatio,
+          waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * splitRatio))
+        };
+
+        const newSeg2 = {
+          ...seg,
+          id: `seg_${Date.now()}_2`,
+          startOffset: clickTime,
+          sourceStart: splitSourceTime,
+          duration: seg.duration * (1 - splitRatio),
+          waveform: seg.waveform.slice(Math.floor(seg.waveform.length * splitRatio))
+        };
+
+        const newSegs = [...segments];
+        newSegs.splice(segIndex, 1, newSeg1, newSeg2);
+        saveHistory(newSegs);
+        toast.success("Segment split");
+      }
+    } else if (activeTool === 'select' && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const clickX = e.clientX - rect.left + containerRef.current.scrollLeft;
+        const totalWidth = rect.width * zoom;
+        const clickTime = (clickX / totalWidth) * (track?.duration || 40);
+        setPlayhead(clickTime);
+    }
+  };
+
+  const handleSegmentDragEnd = (id, newOffset) => {
+    const newSegs = segments.map(s => s.id === id ? { ...s, startOffset: newOffset } : s);
+    saveHistory(newSegs);
+  };
+
+  const addEffect = (effect) => {
+    if (activeEffects.some(e => e.id === effect.id)) {
+        toast.info(`${effect.name} is already in the rack`);
+        return;
+    }
+    const initialParams = {};
+    effect.params.forEach(p => initialParams[p.name] = (p.min + p.max) / 2);
+    setActiveEffects([...activeEffects, { ...effect, paramValues: initialParams }]);
+  };
+
+  const updateEffectParam = (effectId, paramName, val) => {
+    setActiveEffects(prev => prev.map(e => {
+      if (e.id === effectId) {
+        return { ...e, paramValues: { ...e.paramValues, [paramName]: val } };
+      }
+      return e;
+    }));
+  };
+
+  const removeEffect = (id) => {
+    setActiveEffects(activeEffects.filter(e => e.id !== id));
+  };
+
   const handleSave = () => {
-    if (!track) return;
-    toast.success('Track saved with applied effects!');
-    onSave(track.id, { ...track, effects: activeEffects });
+    onSave(track.id, { ...track, segments, effects: activeEffects });
     onClose();
+    toast.success("Track edits saved!");
   };
 
-  const handleScanPlugins = () => {
-    setIsScanning(true);
-    setTimeout(() => {
-      setIsScanning(false);
-      toast.error("VST3/AU plugin scanning requires the NaliStudio Desktop Client.");
-    }, 2000);
-  };
+  // Playhead animation
+  useEffect(() => {
+    let interval;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setPlayhead(p => {
+          const next = p + 0.1;
+          if (next > (track?.duration || 40)) {
+            setIsPlaying(false);
+            return 0;
+          }
+          return next;
+        });
+      }, 100);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, track]);
 
-  // Power user keyboard shortcuts
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
-      
       if (e.code === 'Space') {
         e.preventDefault();
         setIsPlaying(p => !p);
       } else if (e.code === 'Escape') {
         e.preventDefault();
         onClose();
-      } else if (e.code === 'Enter') {
-        e.preventDefault();
-        handleSave();
+      } else if ((e.metaKey || e.ctrlKey) && e.code === 'KeyZ') {
+        if (e.shiftKey) handleRedo();
+        else handleUndo();
       }
     };
-    
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeEffects, track, onClose, onSave]);
+  }, [historyIdx, history]);
 
   if (!track) return null;
 
@@ -91,481 +205,229 @@ export default function WaveEditor({ track, onClose, onSave }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-md p-4 md:p-8"
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur-xl p-4"
       >
         <motion.div 
-          initial={{ scale: 0.95, y: 20 }}
-          animate={{ scale: 1, y: 0 }}
-          exit={{ scale: 0.95, y: 20 }}
-          className="bg-card border border-border/50 shadow-2xl rounded-2xl w-full max-w-6xl h-full max-h-[800px] flex flex-col overflow-hidden ring-1 ring-white/10"
+          initial={{ scale: 0.98, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.98, opacity: 0 }}
+          className="bg-[#1c1c1e] text-white shadow-2xl rounded-lg w-full max-w-[1400px] h-[90vh] flex flex-col overflow-hidden ring-1 ring-white/10"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border/50 bg-card/50">
-            <div className="flex items-center gap-3">
-              <div className={cn("w-3 h-3 rounded-full", track.color)} />
-              <div>
-                <h3 className="font-heading font-bold text-lg leading-tight">{track.name}</h3>
-                <p className="text-xs text-muted-foreground">Waveform Editor & Effects Chain</p>
-              </div>
+          {/* Header - Ableton Style */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-[#252528]">
+            <div className="flex items-center gap-4">
+              <div className={cn("w-3 h-3 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)]", track.color)} />
+              <h3 className="font-medium text-sm tracking-wide">{track.name}</h3>
             </div>
+            
+            {/* Transport Controls */}
+            <div className="flex items-center gap-1 bg-[#151516] p-1 rounded-md">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-white/70 hover:text-white" onClick={() => setPlayhead(0)}>
+                <div className="w-1 h-3 bg-current" />
+              </Button>
+              <Button variant="ghost" size="icon" className={cn("h-7 w-7", isPlaying ? "text-green-400 bg-green-400/10" : "text-white/70 hover:text-white")} onClick={() => setIsPlaying(!isPlaying)}>
+                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+              </Button>
+            </div>
+
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-              <Button size="sm" onClick={handleSave} className="bg-primary hover:bg-primary/90 text-white gap-2">
-                <Save className="w-4 h-4" /> Apply Changes
+              <Button variant="ghost" size="sm" onClick={onClose} className="h-8 text-white/70 hover:text-white">Cancel</Button>
+              <Button size="sm" onClick={handleSave} className="h-8 bg-primary hover:bg-primary/90 text-white gap-2 rounded-md">
+                <Save className="w-3.5 h-3.5" /> Save
               </Button>
             </div>
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1 flex overflow-hidden">
-            {/* Left Panel: Effects Chain */}
-            <div className="w-64 border-r border-border/50 bg-card/30 flex flex-col">
-              <div className="p-3 text-sm font-semibold border-b border-border/50 text-muted-foreground flex items-center justify-between">
-                <span>Effects Chain</span>
-                <Button variant="ghost" size="icon" className="w-6 h-6" onClick={() => toast.info("Toggle effects from the list below to build your chain.")}>
-                  <Plus className="w-4 h-4" />
+          {/* Main DAW View */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            
+            {/* Toolbar */}
+            <div className="h-10 bg-[#2d2d30] border-b border-white/5 flex items-center px-4 gap-4 text-sm shrink-0">
+              <div className="flex items-center gap-1 bg-[#1a1a1c] p-1 rounded-md border border-white/5">
+                <Button variant="ghost" size="icon" onClick={() => setActiveTool('select')} className={cn("h-6 w-6 rounded", activeTool === 'select' && "bg-primary/20 text-primary")} title="Select / Move Playhead">
+                  <MousePointer2 className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => setActiveTool('move')} className={cn("h-6 w-6 rounded", activeTool === 'move' && "bg-primary/20 text-primary")} title="Move Segments">
+                  <MoveHorizontal className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => setActiveTool('split')} className={cn("h-6 w-6 rounded", activeTool === 'split' && "bg-primary/20 text-primary")} title="Split Segment">
+                  <Scissors className="w-3.5 h-3.5" />
                 </Button>
               </div>
-              <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                {EFFECTS.map(effect => {
-                  const isActive = activeEffects.some(e => e.id === effect.id);
-                  const Icon = effect.icon;
-                  return (
-                    <button
-                      key={effect.id}
-                      onClick={() => toggleEffect(effect)}
-                      className={cn(
-                        "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all border",
-                        isActive 
-                          ? "bg-primary/10 border-primary/30 text-primary shadow-inner" 
-                          : "bg-transparent border-transparent text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
-                      )}
-                    >
-                      <span className="flex items-center gap-2">
-                        <Icon className="w-4 h-4" />
-                        {effect.name}
-                      </span>
-                      <div className={cn("w-2 h-2 rounded-full", isActive ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.8)]" : "bg-muted-foreground/30")} />
-                    </button>
-                  );
-                })}
 
-                <div className="mt-6 pt-4 border-t border-border/50 px-2">
-                  <p className="text-xs text-muted-foreground font-medium mb-2">VST Plugins</p>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleScanPlugins}
-                    disabled={isScanning}
-                    className="w-full text-xs h-8 border-dashed border-border/50 bg-transparent hover:bg-secondary/30"
+              <div className="w-px h-4 bg-white/10" />
+
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIdx <= 0} className="h-6 w-6 text-white/70 disabled:opacity-30">
+                  <Undo2 className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIdx >= history.length - 1} className="h-6 w-6 text-white/70 disabled:opacity-30">
+                  <Redo2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+
+              <div className="ml-auto flex items-center gap-3">
+                <span className="text-white/50 text-xs">Zoom</span>
+                <Slider value={[zoom]} min={0.5} max={5} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-32 [&_[role=slider]]:bg-white [&_[role=slider]]:border-none" />
+              </div>
+            </div>
+
+            {/* Arrangement View */}
+            <div className="flex-1 relative bg-[#151516] overflow-x-auto overflow-y-hidden custom-scrollbar" ref={containerRef} onClick={handleContainerClick}>
+              {/* Spectral Background Simulation */}
+              <div className="absolute inset-0 opacity-30 pointer-events-none mix-blend-screen" style={{
+                background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #2563eb 2px, #8b5cf6 4px), repeating-linear-gradient(90deg, #151516, #151516 4px, transparent 4px, transparent 8px)',
+                backgroundSize: '100% 100%, 10px 10px'
+              }}>
+                {/* Simulated spectral hotspots */}
+                {Array.from({length: 30}).map((_, i) => (
+                  <div key={i} className="absolute rounded-full blur-[20px] bg-primary/50 mix-blend-screen animate-pulse" style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    width: `${50 + Math.random() * 150}px`,
+                    height: `${20 + Math.random() * 60}px`,
+                    animationDuration: `${1 + Math.random() * 4}s`
+                  }} />
+                ))}
+              </div>
+              
+              {/* Timeline Grid */}
+              <div className="absolute inset-0 pointer-events-none border-t border-white/5" style={{ width: `${100 * zoom}%`, minWidth: '100%' }}>
+                {Array.from({ length: Math.ceil(track?.duration || 40) }).map((_, i) => (
+                  <div key={i} className="absolute top-0 bottom-0 border-l border-white/5" style={{ left: `${(i/(track?.duration || 40))*100}%` }}>
+                    <span className="absolute top-1 left-1 text-[9px] text-white/30 font-mono">{i}s</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Segments Container */}
+              <div className="absolute top-8 bottom-4 left-0" style={{ width: `${100 * zoom}%`, minWidth: '100%' }}>
+                {segments.map((seg, idx) => (
+                  <motion.div
+                    key={seg.id}
+                    drag={activeTool === 'move' ? 'x' : false}
+                    dragMomentum={false}
+                    onDragEnd={(e, info) => {
+                      if (activeTool !== 'move') return;
+                      const rect = containerRef.current.getBoundingClientRect();
+                      const totalWidth = rect.width * zoom;
+                      const timeShift = (info.offset.x / totalWidth) * (track?.duration || 40);
+                      handleSegmentDragEnd(seg.id, Math.max(0, seg.startOffset + timeShift));
+                    }}
+                    className={cn(
+                      "absolute top-0 bottom-0 rounded-md border border-white/20 bg-[#1c1c1e]/80 backdrop-blur-sm overflow-hidden flex items-center shadow-lg transition-colors group",
+                      activeTool === 'move' ? "cursor-grab active:cursor-grabbing hover:border-primary/50" : "",
+                      activeTool === 'split' ? "hover:border-red-500/50 cursor-crosshair" : ""
+                    )}
+                    style={{
+                      left: `${(seg.startOffset / (track?.duration || 40)) * 100}%`,
+                      width: `${(seg.duration / (track?.duration || 40)) * 100}%`
+                    }}
+                    onClick={(e) => {
+                        // Prevent container click when moving or doing other things
+                        if (activeTool === 'move') e.stopPropagation();
+                    }}
                   >
-                    {isScanning ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Plus className="w-3 h-3 mr-2" />}
-                    {isScanning ? "Scanning..." : "Scan Plugins..."}
-                  </Button>
+                    {/* Header bar of segment */}
+                    <div className="absolute top-0 left-0 right-0 h-5 bg-black/40 flex items-center px-2 group-hover:bg-primary/20 transition-colors">
+                      <span className="text-[10px] text-white/80 font-mono truncate">{track.name} [{idx+1}]</span>
+                    </div>
+
+                    {/* Waveform */}
+                    <svg className="w-full h-full pt-5 pb-1" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                      <path 
+                        d={(() => {
+                          const wf = seg.waveform || [];
+                          const wLen = wf.length - 1 || 1;
+                          let d = `M 0,50 `;
+                          for(let i=0; i<=wLen; i++) d += `L ${(i/wLen)*1000},${50 - Math.max(0.02, wf[i])*45} `;
+                          for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*45} `;
+                          return d + 'Z';
+                        })()}
+                        className={cn("opacity-90", waveformFills[track.color] || "fill-primary")}
+                      />
+                    </svg>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Playhead */}
+              <div 
+                className="absolute top-0 bottom-0 w-[2px] bg-primary z-30 shadow-[0_0_12px_rgba(var(--primary),1)] pointer-events-none"
+                style={{ left: `${(playhead / (track?.duration || 40)) * 100 * zoom}%` }}
+              >
+                <div className="absolute top-0 -translate-x-1/2 w-4 h-4 bg-primary flex items-center justify-center">
+                   <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[6px] border-l-transparent border-r-transparent border-t-black mt-1" />
                 </div>
               </div>
             </div>
 
-            {/* Center Panel: Waveform & Editor */}
-            <div className="flex-1 flex flex-col bg-[#08080a]">
-              {/* Tool bar */}
-              <div className="h-12 border-b border-border/30 bg-card/40 flex items-center px-4 gap-2">
-                <Button variant="ghost" size="icon" onClick={() => setIsPlaying(!isPlaying)} className={cn(isPlaying && "text-primary")}>
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                </Button>
-                <div className="w-px h-4 bg-border/50 mx-2" />
-                
-                <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-lg">
-                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('trim')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'trim' && "bg-primary/20 text-primary")} title="Trim"><MoveHorizontal className="w-3.5 h-3.5" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('select')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'select' && "bg-primary/20 text-primary")} title="Select"><MousePointer2 className="w-3.5 h-3.5" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('fade')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'fade' && "bg-primary/20 text-primary")} title="Fade"><Crosshair className="w-3.5 h-3.5" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('smart')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'smart' && "border-primary text-primary bg-primary/10")} title="Smart Tool">
-                     <div className="flex flex-col gap-0.5 items-center">
-                       <div className="flex gap-[1px]"><MoveHorizontal className="w-2.5 h-2.5"/><MousePointer2 className="w-2.5 h-2.5"/></div>
-                     </div>
-                  </Button>
-                </div>
-
-                <div className="w-px h-4 bg-border/50 mx-2" />
-                <Button variant="ghost" size="icon" onClick={() => {
-                  if (selection.start !== selection.end) {
-                    const minStart = Math.min(selection.start, selection.end);
-                    const maxEnd = Math.max(selection.start, selection.end);
-                    const newWaveform = track.waveform.slice(
-                      Math.floor(minStart * track.waveform.length),
-                      Math.floor(maxEnd * track.waveform.length)
-                    );
-                    const newTrack = {
-                      ...track,
-                      waveform: newWaveform,
-                      duration: (track.duration || 40) * (maxEnd - minStart),
-                      startTime: (track.startTime || 0) + ((track.duration || 40) * minStart)
-                    };
-                    onSave(track.id, newTrack);
-                  } else {
-                    toast.error("Use the Select tool to highlight a region first to trim");
-                  }
-                }} className="text-muted-foreground hover:text-foreground" title="Trim to Selection"><Scissors className="w-4 h-4" /></Button>
-                <Button variant="ghost" size="icon" onClick={() => {
-                  if (selection.start !== selection.end) {
-                    toast.success("Selection copied to clipboard");
-                  } else {
-                    toast.error("Make a selection first to copy");
-                  }
-                }} className="text-muted-foreground hover:text-foreground"><Copy className="w-4 h-4" /></Button>
-                <Button variant="ghost" size="icon" onClick={() => {
-                  if (selection.start !== selection.end) {
-                    const minStart = Math.min(selection.start, selection.end);
-                    const maxEnd = Math.max(selection.start, selection.end);
-                    const newWaveform = [
-                      ...track.waveform.slice(0, Math.floor(minStart * track.waveform.length)),
-                      ...track.waveform.slice(Math.floor(maxEnd * track.waveform.length))
-                    ];
-                    const newTrack = {
-                      ...track,
-                      waveform: newWaveform,
-                      duration: (track.duration || 40) * (1 - (maxEnd - minStart))
-                    };
-                    setSelection({ start: 0, end: 0 });
-                    onSave(track.id, newTrack);
-                    toast.success("Selection deleted");
-                  } else {
-                    toast.error("Make a selection first to delete");
-                  }
-                }} className="text-muted-foreground hover:text-red-400"><Trash2 className="w-4 h-4" /></Button>
-                <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
-                  <Settings2 className="w-4 h-4" /> Zoom
-                  <Slider value={[zoom]} min={0.5} max={3} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-24" />
+            {/* Effects Rack - Ableton Device View Style */}
+            <div className="h-[280px] bg-[#1f1f21] border-t border-white/10 flex shrink-0">
+              {/* Rack Header/Browser */}
+              <div className="w-56 bg-[#151516] border-r border-white/5 flex flex-col text-sm">
+                <div className="p-3 border-b border-white/5 font-semibold text-white/90 bg-[#1c1c1e] text-xs uppercase tracking-wider">Audio Effects</div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                  {EFFECTS.map(eff => (
+                    <button
+                      key={eff.id}
+                      onClick={() => addEffect(eff)}
+                      className="w-full text-left px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/10 rounded flex items-center justify-between group transition-colors"
+                    >
+                      <span className="flex items-center gap-2"><eff.icon className="w-3.5 h-3.5" /> {eff.name}</span>
+                      <Plus className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-primary" />
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Huge Waveform View */}
-              <div 
-                className="flex-1 relative overflow-x-auto overflow-y-hidden custom-scrollbar p-8 flex items-center justify-start"
-                onWheel={(e) => {
-                  if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && !e.ctrlKey && !e.metaKey) {
-                    e.currentTarget.scrollLeft += e.deltaY;
-                  }
-                }}
-              >
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
-                <div 
-                  className="relative h-64 bg-card/20 rounded-xl border border-white/5 flex items-center justify-between gap-px overflow-hidden"
-                  style={{ width: `${100 * zoom}%`, minWidth: '100%' }}
-                  onPointerMove={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
-                    if (activeTool === 'smart') {
-                      e.currentTarget.style.cursor = isTopHalf ? 'text' : 'default';
-                    } else if (activeTool === 'select') {
-                      e.currentTarget.style.cursor = 'text';
-                    } else if (activeTool === 'fade') {
-                      e.currentTarget.style.cursor = 'crosshair';
-                    } else {
-                      e.currentTarget.style.cursor = 'default';
-                    }
-                  }}
-                  onPointerDown={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
-
-                    if (activeTool === 'smart' && !isTopHalf) {
-                      setSelection({ start: 0, end: 1 });
-                      return;
-                    }
-
-                    if (activeTool !== 'select' && activeTool !== 'smart') return;
-                    if (e.target.closest('.selection-handle')) return; // Ignore if clicking on handles
-
-                    const target = e.currentTarget;
-                    const startX = (e.clientX - rect.left) / rect.width;
-                    
-                    const overlay = target.querySelector('.selection-overlay');
-                    if (overlay) {
-                      overlay.style.display = 'block';
-                      overlay.style.left = `${startX * 100}%`;
-                      overlay.style.right = `${(1 - startX) * 100}%`;
-                    }
-                    
-                    target.setPointerCapture(e.pointerId);
-                    
-                    const handleMove = (moveEvent) => {
-                      const currentX = Math.max(0, Math.min(1, (moveEvent.clientX - rect.left) / rect.width));
-                      const minX = Math.min(startX, currentX);
-                      const maxX = Math.max(startX, currentX);
-                      if (overlay) {
-                        overlay.style.left = `${minX * 100}%`;
-                        overlay.style.right = `${(1 - maxX) * 100}%`;
-                      }
-                      target.dataset.newStart = minX;
-                      target.dataset.newEnd = maxX;
-                    };
-                    
-                    const handleUp = (upEvent) => {
-                      target.releasePointerCapture(upEvent.pointerId);
-                      target.removeEventListener('pointermove', handleMove);
-                      target.removeEventListener('pointerup', handleUp);
-                      
-                      const newStartStr = target.dataset.newStart;
-                      const newEndStr = target.dataset.newEnd;
-                      if (newStartStr !== undefined && newEndStr !== undefined) {
-                        setSelection({ start: parseFloat(newStartStr), end: parseFloat(newEndStr) });
-                        delete target.dataset.newStart;
-                        delete target.dataset.newEnd;
-                      } else {
-                        setSelection({ start: startX, end: startX });
-                      }
-                    };
-                    
-                    target.addEventListener('pointermove', handleMove);
-                    target.addEventListener('pointerup', handleUp);
-                  }}
-                >
-                  {/* Selection Overlay */}
-                  <div 
-                    className={cn("selection-overlay absolute top-0 bottom-0 bg-primary/20 border-x-2 border-primary z-10 pointer-events-none", selection.start === selection.end ? "hidden" : "block")}
-                    style={{ left: `${selection.start * 100}%`, right: `${(1 - selection.end) * 100}%` }}
-                  >
-                      {/* Left Figure */}
-                      <div 
-                        className={cn("selection-handle absolute -left-3 w-6 flex items-center justify-center hover:bg-white/10 pointer-events-auto",
-                          (activeTool === 'trim' || activeTool === 'smart' || activeTool === 'select') ? "cursor-ew-resize" : "pointer-events-none opacity-0",
-                          activeTool === 'smart' ? "top-[50%] bottom-0" : "top-0 bottom-0"
-                        )}
-                        onPointerDown={(e) => {
-                          e.stopPropagation();
-                          const target = e.currentTarget;
-                          const container = target.parentElement.parentElement;
-                          const rect = container.getBoundingClientRect();
-                          target.setPointerCapture(e.pointerId);
-                          
-                          const handleMove = (moveEvent) => {
-                            const currentX = Math.max(0, Math.min(selection.end - 0.01, (moveEvent.clientX - rect.left) / rect.width));
-                            if (target.parentElement) {
-                              target.parentElement.style.left = `${currentX * 100}%`;
-                            }
-                            target.dataset.newStart = currentX;
-                          };
-                          
-                          const handleUp = (upEvent) => {
-                            target.releasePointerCapture(upEvent.pointerId);
-                            target.removeEventListener('pointermove', handleMove);
-                            target.removeEventListener('pointerup', handleUp);
-                            const newStartStr = target.dataset.newStart;
-                            if (newStartStr !== undefined) {
-                              setSelection(prev => ({ ...prev, start: parseFloat(newStartStr) }));
-                              delete target.dataset.newStart;
-                            }
-                          };
-                          
-                          target.addEventListener('pointermove', handleMove);
-                          target.addEventListener('pointerup', handleUp);
-                        }}
-                      >
-                        <div className="w-1.5 h-8 bg-primary rounded-full shadow-sm" />
-                      </div>
-                      
-                      {/* Right Figure */}
-                      <div 
-                        className={cn("selection-handle absolute -right-3 w-6 flex items-center justify-center hover:bg-white/10 pointer-events-auto",
-                          (activeTool === 'trim' || activeTool === 'smart' || activeTool === 'select') ? "cursor-ew-resize" : "pointer-events-none opacity-0",
-                          activeTool === 'smart' ? "top-[50%] bottom-0" : "top-0 bottom-0"
-                        )}
-                        onPointerDown={(e) => {
-                          e.stopPropagation();
-                          const target = e.currentTarget;
-                          const container = target.parentElement.parentElement;
-                          const rect = container.getBoundingClientRect();
-                          target.setPointerCapture(e.pointerId);
-                          
-                          const handleMove = (moveEvent) => {
-                            const currentX = Math.max(selection.start + 0.01, Math.min(1, (moveEvent.clientX - rect.left) / rect.width));
-                            if (target.parentElement) {
-                              target.parentElement.style.right = `${(1 - currentX) * 100}%`;
-                            }
-                            target.dataset.newEnd = currentX;
-                          };
-                          
-                          const handleUp = (upEvent) => {
-                            target.releasePointerCapture(upEvent.pointerId);
-                            target.removeEventListener('pointermove', handleMove);
-                            target.removeEventListener('pointerup', handleUp);
-                            const newEndStr = target.dataset.newEnd;
-                            if (newEndStr !== undefined) {
-                              setSelection(prev => ({ ...prev, end: parseFloat(newEndStr) }));
-                              delete target.dataset.newEnd;
-                            }
-                          };
-                          
-                          target.addEventListener('pointermove', handleMove);
-                          target.addEventListener('pointerup', handleUp);
-                        }}
-                      >
-                        <div className="w-1.5 h-8 bg-primary rounded-full shadow-sm" />
-                      </div>
-                    </div>
-
-                  {/* Fade In/Out Overlays & Handles */}
-                  <div 
-                    className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none"
-                    style={{ width: `${fade.in * 100}%` }}
-                  />
-                  {(activeTool === 'fade' || activeTool === 'smart') && (
-                    <div className={cn("absolute w-6 hover:bg-white/10 flex justify-center group z-20 pointer-events-auto",
-                        activeTool === 'smart' ? "top-0 bottom-[50%] items-start cursor-crosshair" : "top-0 bottom-0 items-center cursor-ew-resize"
-                      )}
-                      style={{ left: `calc(${fade.in * 100}% - 12px)` }}
-                      onPointerDown={(e) => {
-                        e.stopPropagation();
-                        const target = e.currentTarget;
-                        const container = target.parentElement;
-                        const rect = container.getBoundingClientRect();
-                        target.setPointerCapture(e.pointerId);
-                        
-                        const handleMove = (moveEvent) => {
-                          const currentX = Math.max(0, Math.min(1 - fade.out, (moveEvent.clientX - rect.left) / rect.width));
-                          target.style.left = `calc(${currentX * 100}% - 12px)`;
-                          if (target.previousElementSibling) {
-                            target.previousElementSibling.style.width = `${currentX * 100}%`;
-                          }
-                          target.dataset.newFade = currentX;
-                        };
-                        
-                        const handleUp = (upEvent) => {
-                          target.releasePointerCapture(upEvent.pointerId);
-                          target.removeEventListener('pointermove', handleMove);
-                          target.removeEventListener('pointerup', handleUp);
-                          const newFadeStr = target.dataset.newFade;
-                          if (newFadeStr !== undefined) {
-                            setFade(prev => ({ ...prev, in: parseFloat(newFadeStr) }));
-                            delete target.dataset.newFade;
-                          }
-                        };
-                        
-                        target.addEventListener('pointermove', handleMove);
-                        target.addEventListener('pointerup', handleUp);
-                      }}
-                    >
-                      <div className={cn("bg-white/50 group-hover:bg-white transition-colors shadow-sm",
-                        activeTool === 'smart' ? "w-2 h-2 mt-1 rounded-sm border border-black/50" : "w-1 h-6 rounded-full"
-                      )} />
-                    </div>
-                  )}
-
-                  <div 
-                    className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none"
-                    style={{ width: `${fade.out * 100}%` }}
-                  />
-                  {(activeTool === 'fade' || activeTool === 'smart') && (
-                    <div className={cn("absolute w-6 hover:bg-white/10 flex justify-center group z-20 pointer-events-auto",
-                        activeTool === 'smart' ? "top-0 bottom-[50%] items-start cursor-crosshair" : "top-0 bottom-0 items-center cursor-ew-resize"
-                      )}
-                      style={{ right: `calc(${fade.out * 100}% - 12px)` }}
-                      onPointerDown={(e) => {
-                        e.stopPropagation();
-                        const target = e.currentTarget;
-                        const container = target.parentElement;
-                        const rect = container.getBoundingClientRect();
-                        target.setPointerCapture(e.pointerId);
-                        
-                        const handleMove = (moveEvent) => {
-                          const currentX = Math.max(0, Math.min(1 - fade.in, 1 - ((moveEvent.clientX - rect.left) / rect.width)));
-                          target.style.right = `calc(${currentX * 100}% - 12px)`;
-                          if (target.previousElementSibling) {
-                            target.previousElementSibling.style.width = `${currentX * 100}%`;
-                          }
-                          target.dataset.newFade = currentX;
-                        };
-                        
-                        const handleUp = (upEvent) => {
-                          target.releasePointerCapture(upEvent.pointerId);
-                          target.removeEventListener('pointermove', handleMove);
-                          target.removeEventListener('pointerup', handleUp);
-                          const newFadeStr = target.dataset.newFade;
-                          if (newFadeStr !== undefined) {
-                            setFade(prev => ({ ...prev, out: parseFloat(newFadeStr) }));
-                            delete target.dataset.newFade;
-                          }
-                        };
-                        
-                        target.addEventListener('pointermove', handleMove);
-                        target.addEventListener('pointerup', handleUp);
-                      }}
-                    >
-                      <div className={cn("bg-white/50 group-hover:bg-white transition-colors shadow-sm",
-                        activeTool === 'smart' ? "w-2 h-2 mt-1 rounded-sm border border-black/50" : "w-1 h-6 rounded-full"
-                      )} />
-                    </div>
-                  )}
-
-                  {/* Playhead */}
-                  {isPlaying && (
-                    <motion.div 
-                      initial={{ left: 0 }}
-                      animate={{ left: "100%" }}
-                      transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                      className="absolute top-0 bottom-0 w-px bg-primary z-20 shadow-[0_0_10px_rgba(var(--primary),0.8)]"
-                    />
-                  )}
-                  
-                  {track.waveform && track.waveform.length > 0 && (
-                    <div className="absolute inset-x-0 overflow-hidden pointer-events-none bottom-1 top-5">
-                      <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">
-                        <path 
-                          d={(() => {
-                            const wLen = track.waveform.length - 1 || 1;
-                            let d = `M 0,50 `;
-                            for(let i=0; i<=wLen; i++) d += `L ${(i/wLen)*1000},${50 - Math.max(0.02, track.waveform[i])*50} `;
-                            for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, track.waveform[i])*50} `;
-                            return d + 'Z';
-                          })()}
-                          className={cn("opacity-90 drop-shadow-md", waveformFills[track.color] || "fill-primary")}
-                        />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Bottom Panel: Effect Params */}
-              <div className="h-48 border-t border-border/50 bg-card/60 p-4">
-                {selectedEffect ? (
-                  <div className="h-full flex flex-col">
-                    <h4 className="font-medium flex items-center gap-2 mb-4">
-                      <selectedEffect.icon className="w-4 h-4 text-primary" />
-                      {selectedEffect.name} Settings
-                    </h4>
-                    <div className="flex gap-8">
-                      <div className="w-64 space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-xs"><span>Amount</span><span className="text-muted-foreground">50%</span></div>
-                          <Slider defaultValue={[50]} max={100} step={1} />
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-xs"><span>Mix (Dry/Wet)</span><span className="text-muted-foreground">75%</span></div>
-                          <Slider defaultValue={[75]} max={100} step={1} className="[&_[role=slider]]:bg-primary" />
-                        </div>
-                      </div>
-                      <div className="flex-1 grid grid-cols-4 gap-4">
-                        {/* Fake knobs */}
-                        {[1, 2, 3, 4].map(i => (
-                          <div key={i} className="flex flex-col items-center justify-center p-4 bg-background/50 rounded-xl border border-border/30">
-                            <div className="w-12 h-12 rounded-full border-4 border-secondary relative mb-2">
-                              <div className="absolute top-1/2 left-1/2 w-1 h-4 bg-primary origin-bottom -translate-x-1/2 -translate-y-full rotate-[45deg]" />
-                            </div>
-                            <span className="text-[10px] text-muted-foreground uppercase">Param {i}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+              {/* Devices Area */}
+              <div className="flex-1 flex overflow-x-auto custom-scrollbar p-3 gap-3 bg-[#252528] items-center shadow-[inset_0_4px_20px_rgba(0,0,0,0.2)]">
+                {activeEffects.length === 0 ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-white/20">
+                    <SlidersHorizontal className="w-12 h-12 mb-3" />
+                    <p className="text-sm font-medium">Click effects on the left to build your signal chain</p>
                   </div>
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground/50">
-                    <SlidersHorizontal className="w-8 h-8 mb-2 opacity-50" />
-                    <p className="text-sm">Select an effect from the chain to edit parameters</p>
-                  </div>
+                  <AnimatePresence>
+                    {activeEffects.map((eff, index) => (
+                      <motion.div 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        key={eff.id} 
+                        className="bg-[#2d2d30] border border-white/10 rounded-lg shrink-0 flex flex-col shadow-xl overflow-hidden h-full min-w-[200px]"
+                      >
+                        <div className="bg-[#1f1f21] px-3 py-2 flex items-center justify-between border-b border-black/50 shadow-sm">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center shadow-inner">
+                              <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
+                            </div>
+                            <span className="text-xs font-bold text-white/90">{eff.name}</span>
+                          </div>
+                          <button onClick={() => removeEffect(eff.id)} className="text-white/40 hover:text-red-400 transition-colors p-1 hover:bg-white/5 rounded">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <div className="p-4 flex flex-wrap gap-4 h-full items-start justify-center overflow-y-auto custom-scrollbar">
+                          {eff.params.map(p => (
+                            <Knob 
+                              key={p.name}
+                              label={p.name}
+                              min={p.min}
+                              max={p.max}
+                              value={eff.paramValues[p.name]}
+                              onChange={(v) => updateEffectParam(eff.id, p.name, v)}
+                            />
+                          ))}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 )}
               </div>
             </div>
+
           </div>
         </motion.div>
       </motion.div>

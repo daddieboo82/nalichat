@@ -44,6 +44,15 @@ export default function ChatView({ conversation, messages, currentUser, users, o
     unread.forEach(m => base44.entities.Message.update(m.id, { read_by: [...(m.read_by || []), currentUser.id] }));
   }, [messages, currentUser]);
 
+  useEffect(() => {
+    setReplyTo(null);
+    setEditingMessage(null);
+    setShowGroupInfo(false);
+    setThreadMessage(null);
+    setShowSearch(false);
+    setCallState(null);
+  }, [conversation?.id]);
+
   const getOtherUser = () => {
     if (conversation?.type === "group") return null;
     const otherId = conversation?.participant_ids?.find(id => id !== currentUser?.id);
@@ -143,13 +152,23 @@ export default function ChatView({ conversation, messages, currentUser, users, o
               message={item}
               isOwn={item.sender_id === currentUser?.id}
               showAvatar={item.showAvatar}
-              onReply={setReplyTo}
-              onEdit={setEditingMessage}
+              onReply={(msg) => {
+                setReplyTo(msg);
+                setEditingMessage(null);
+              }}
+              onEdit={(msg) => {
+                setEditingMessage(msg);
+                setReplyTo(null);
+              }}
               onReact={onReact}
               onOpenThread={setThreadMessage}
               users={users}
               onCopy={() => navigator.clipboard.writeText(item.text || "")}
-              onDelete={async (id) => await base44.entities.Message.delete(id)}
+              onDelete={async (id) => {
+                if (editingMessage?.id === id) setEditingMessage(null);
+                if (replyTo?.id === id) setReplyTo(null);
+                await base44.entities.Message.delete(id);
+              }}
               currentUser={currentUser}
               onPlayAudio={(msg) => {
                 setSelectedMedia({
@@ -177,6 +196,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
       <div className="absolute bottom-0 left-0 right-0 z-20 p-2 sm:p-4 pointer-events-none">
         <div className="pointer-events-auto w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-visible bg-background/90 backdrop-blur-2xl border border-border/50">
           <ChatInput
+            key={conversation?.id || "chat"}
             onSend={(payload) => {
               if (editingMessage && payload.type === 'text') {
                 onEditMessage(editingMessage.id, payload.text);

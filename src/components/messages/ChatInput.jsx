@@ -77,10 +77,16 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     const isVideo = file.type.startsWith("video");
     const type = isImage ? "image" : isAudio ? "audio" : isVideo ? "video" : "file";
     onSend({ text: "", type, file_url, file_name: file.name, file_size: file.size, file_type: file.type });
+    onCancelReply?.();
+    onCancelEdit?.();
   };
 
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      onCancelReply?.();
+      onCancelEdit?.();
+    }
     for (const file of files) uploadFile(file); // parallel
     e.target.value = "";
   };
@@ -89,11 +95,17 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     e.preventDefault();
     setDragOver(false);
     const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      onCancelReply?.();
+      onCancelEdit?.();
+    }
     for (const file of files) uploadFile(file);
   };
 
   const startRecording = async () => {
     sounds.recStart();
+    onCancelReply?.();
+    onCancelEdit?.();
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -115,6 +127,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
         setUploads(u => u.map(x => x.id === id ? { ...x, progress: 100, done: true } : x));
         setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 1200);
         onSend({ text: "", type: "audio", file_url, file_name: "Voice Message", file_type: "audio/webm", duration: recordingTime });
+        onCancelReply?.();
+        onCancelEdit?.();
       } catch {
         setUploads(u => u.map(x => x.id === id ? { ...x, error: true } : x));
         setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 3000);
@@ -253,6 +267,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
                             onSend({ text: sessionName.trim(), type: "session" });
                             setShowFeatures(false);
                             setSessionName("New Recording Session");
+                            onCancelReply?.();
+                            onCancelEdit?.();
                           }
                         }}
                       />
@@ -263,6 +279,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
                             onSend({ text: sessionName.trim(), type: "session" });
                             setShowFeatures(false);
                             setSessionName("New Recording Session");
+                            onCancelReply?.();
+                            onCancelEdit?.();
                           }
                         }}
                         className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-md hover:bg-primary/90"

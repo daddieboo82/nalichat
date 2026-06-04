@@ -109,9 +109,10 @@ export default function WaveEditor({ track, onClose, onSave }) {
       let clickTime = (clickX / totalWidth) * (track?.duration || 40);
       clickTime = getSnappedTime(clickTime);
 
-      if (activeTool === 'range') {
+      if (activeTool === 'range' || (activeTool === 'select' && !segmentEl)) {
         setIsDraggingRange(true);
         setSelectionRange({ start: clickTime, end: clickTime });
+        if (activeTool === 'select') setPlayhead(clickTime);
         return;
       }
 
@@ -144,7 +145,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
   };
 
   const handlePointerMove = (e) => {
-    if (isDraggingRange && activeTool === 'range' && containerRef.current) {
+    if (isDraggingRange && (activeTool === 'range' || activeTool === 'select') && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const clickX = e.clientX - rect.left + containerRef.current.scrollLeft;
       const totalWidth = rect.width * zoom;
@@ -193,6 +194,73 @@ export default function WaveEditor({ track, onClose, onSave }) {
     setActiveEffects(activeEffects.filter(e => e.id !== id));
   };
 
+  const handleRangeDelete = () => {
+    if (!selectionRange) return;
+    const { start, end } = selectionRange;
+    setSegments(prev => {
+        let newSegs = [];
+        prev.forEach(seg => {
+            const segEnd = seg.startOffset + seg.duration;
+            if (segEnd <= start || seg.startOffset >= end) {
+                newSegs.push(seg);
+            } else if (seg.startOffset < start && segEnd > end) {
+                const ratio1 = (start - seg.startOffset) / seg.duration;
+                const ratio2 = (end - seg.startOffset) / seg.duration;
+                const sEnd1 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio1;
+                const sStart2 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio2;
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd1, duration: start - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio1)) });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart2, duration: segEnd - end, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio2)) });
+            } else if (seg.startOffset < start && segEnd <= end) {
+                const ratio = (start - seg.startOffset) / seg.duration;
+                const sEnd = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
+                newSegs.push({ ...seg, sourceEnd: sEnd, duration: start - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio)) });
+            } else if (seg.startOffset >= start && segEnd > end) {
+                const ratio = (end - seg.startOffset) / seg.duration;
+                const sStart = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
+                newSegs.push({ ...seg, startOffset: end, sourceStart: sStart, duration: segEnd - end, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio)) });
+            }
+        });
+        saveHistory(newSegs);
+        setSelectionRange(null);
+        return newSegs;
+    });
+  };
+
+  const handleRangeSplit = () => {
+    if (!selectionRange) return;
+    const { start, end } = selectionRange;
+    setSegments(prev => {
+        let newSegs = [];
+        prev.forEach(seg => {
+            const segEnd = seg.startOffset + seg.duration;
+            if (segEnd <= start || seg.startOffset >= end) {
+                newSegs.push(seg);
+            } else if (seg.startOffset < start && segEnd > end) {
+                const ratio1 = (start - seg.startOffset) / seg.duration;
+                const ratio2 = (end - seg.startOffset) / seg.duration;
+                const sEnd1 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio1;
+                const sStart2 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio2;
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd1, duration: start - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio1)) });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_mid_${seg.id}`, startOffset: start, sourceStart: sEnd1, sourceEnd: sStart2, duration: end - start, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio1), Math.floor(seg.waveform.length * ratio2)) });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart2, duration: segEnd - end, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio2)) });
+            } else if (seg.startOffset < start && segEnd <= end) {
+                const ratio = (start - seg.startOffset) / seg.duration;
+                const sEnd = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd, duration: start - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio)) });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: start, sourceStart: sEnd, duration: segEnd - start, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio)) });
+            } else if (seg.startOffset >= start && segEnd > end) {
+                const ratio = (end - seg.startOffset) / seg.duration;
+                const sStart = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sStart, duration: end - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio)) });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart, duration: segEnd - end, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio)) });
+            }
+        });
+        saveHistory(newSegs);
+        setSelectionRange(null);
+        return newSegs;
+    });
+  };
+
   const handleSave = () => {
     onSave(track.id, { ...track, segments, effects: activeEffects });
     onClose();
@@ -232,34 +300,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
         else handleUndo();
       } else if (e.code === 'Backspace' || e.code === 'Delete') {
         if (selectionRange) {
-           const { start, end } = selectionRange;
-           setSegments(prev => {
-              let newSegs = [];
-              prev.forEach(seg => {
-                  const segEnd = seg.startOffset + seg.duration;
-                  if (segEnd <= start || seg.startOffset >= end) {
-                      newSegs.push(seg);
-                  } else if (seg.startOffset < start && segEnd > end) {
-                      const ratio1 = (start - seg.startOffset) / seg.duration;
-                      const ratio2 = (end - seg.startOffset) / seg.duration;
-                      const sEnd1 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio1;
-                      const sStart2 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio2;
-                      newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd1, duration: start - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio1)) });
-                      newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart2, duration: segEnd - end, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio2)) });
-                  } else if (seg.startOffset < start && segEnd <= end) {
-                      const ratio = (start - seg.startOffset) / seg.duration;
-                      const sEnd = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
-                      newSegs.push({ ...seg, sourceEnd: sEnd, duration: start - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio)) });
-                  } else if (seg.startOffset >= start && segEnd > end) {
-                      const ratio = (end - seg.startOffset) / seg.duration;
-                      const sStart = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
-                      newSegs.push({ ...seg, startOffset: end, sourceStart: sStart, duration: segEnd - end, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio)) });
-                  }
-              });
-              saveHistory(newSegs);
-              setSelectionRange(null);
-              return newSegs;
-           });
+           handleRangeDelete();
         } else {
             setSegments(prev => {
               if (!selectedSegmentId) return prev;
@@ -438,6 +479,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
               {/* Range Selection Overlay */}
               {selectionRange && (
+                <>
                 <div 
                   className="absolute top-8 bottom-4 bg-blue-500/20 border-l border-r border-blue-500 pointer-events-none z-20"
                   style={{
@@ -449,6 +491,29 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     {(Math.abs(selectionRange.end - selectionRange.start)).toFixed(2)}s
                   </div>
                 </div>
+
+                {/* Floating Context Menu */}
+                {!isDraggingRange && Math.abs(selectionRange.end - selectionRange.start) > 0.05 && (
+                  <div 
+                    className="absolute top-2 z-50 flex items-center gap-1 bg-[#252528] p-1 rounded-md shadow-2xl border border-white/10"
+                    style={{
+                       left: `${((Math.min(selectionRange.start, selectionRange.end) + Math.abs(selectionRange.end - selectionRange.start)/2) / (track?.duration || 40)) * 100 * zoom}%`,
+                       transform: 'translateX(-50%)'
+                    }}
+                  >
+                    <Button size="sm" variant="ghost" className="h-7 text-xs text-white/80 hover:text-white px-2 gap-1" onClick={(e) => { e.stopPropagation(); handleRangeSplit(); }}>
+                      <Scissors className="w-3 h-3" /> Split
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-400/10 px-2 gap-1" onClick={(e) => { e.stopPropagation(); handleRangeDelete(); }}>
+                      <Trash2 className="w-3 h-3" /> Delete
+                    </Button>
+                    <div className="w-px h-3 bg-white/10 mx-1" />
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-white/50 hover:text-white" onClick={(e) => { e.stopPropagation(); setSelectionRange(null); }}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+                </>
               )}
 
               {/* Segments Container */}

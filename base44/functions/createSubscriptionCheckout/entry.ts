@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       },
       callbackUrls: {
         thankYouPageUrl: `${origin}/thank-you`,
-        errorUrl: `${origin}/`,
+        errorUrl: `${origin}/pricing`,
       },
     };
 

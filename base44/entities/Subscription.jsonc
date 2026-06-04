@@ -1,0 +1,54 @@
+{
+  "name": "Subscription",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the subscribed user"
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "free",
+        "pro"
+      ],
+      "default": "free",
+      "description": "Subscription tier"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "canceled",
+        "ended",
+        "pending",
+        "trial"
+      ],
+      "default": "active",
+      "description": "Current subscription status"
+    },
+    "subscription_id": {
+      "type": "string",
+      "description": "Wix subscription ID (from order_approved webhook)"
+    },
+    "checkout_id": {
+      "type": "string",
+      "description": "Checkout session ID for correlation"
+    },
+    "trial_end_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the trial ends (7 days from creation)"
+    },
+    "current_period_end": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When current billing cycle ends"
+    }
+  },
+  "required": [
+    "user_id",
+    "plan",
+    "status"
+  ]
+}

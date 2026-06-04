@@ -11,6 +11,7 @@ import MultiTrackEditor from "@/components/studio/MultiTrackEditor";
 import SessionTimer from "@/components/studio/SessionTimer";
 import ProjectSettingsDialog from "@/components/studio/ProjectSettingsDialog";
 import MilestonesPanel from "@/components/studio/MilestonesPanel";
+import UpgradeModal from "@/components/billing/UpgradeModal";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useOnboarding } from "@/lib/OnboardingContext";
@@ -38,6 +39,8 @@ export default function Studio() {
   const [showMilestones, setShowMilestones] = useState(false);
   const [showStudioTip, setShowStudioTip] = useState(isFirstTime);
   const [dragActive, setDragActive] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeTrigger, setUpgradeTrigger] = useState("projects");
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -46,6 +49,15 @@ export default function Studio() {
   const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
     queryFn: () => base44.entities.Project.list("-updated_date"),
+  });
+
+  const { data: subscription } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: async () => {
+      const subs = await base44.entities.Subscription.filter({ user_id: currentUser?.id });
+      return subs[0] || { plan: "free", status: "active" };
+    },
+    enabled: !!currentUser?.id,
   });
 
   const { data: tracks = [] } = useQuery({
@@ -66,14 +78,20 @@ export default function Studio() {
   );
 
   const createProject = useMutation({
-    mutationFn: () => base44.entities.Project.create({
-      title: newProjectTitle,
-      owner_id: currentUser.id,
-      bpm: newProjectBpm,
-      key: newProjectKey,
-      status: "draft",
-      collaborator_ids: [],
-    }),
+    mutationFn: () => {
+      // Check project limit for free tier
+      if (subscription?.plan === "free" && projects.length >= 3) {
+        throw new Error("PROJECT_LIMIT");
+      }
+      return base44.entities.Project.create({
+        title: newProjectTitle,
+        owner_id: currentUser.id,
+        bpm: newProjectBpm,
+        key: newProjectKey,
+        status: "draft",
+        collaborator_ids: [],
+      });
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       setSelectedProjectId(data.id);
@@ -81,6 +99,13 @@ export default function Studio() {
       setNewProjectTitle("");
       setShowStudioTip(false);
       markStepComplete("studio");
+    },
+    onError: (err) => {
+      if (err.message === "PROJECT_LIMIT") {
+        setShowUpgradeModal(true);
+        setUpgradeTrigger("projects");
+        setShowNewProject(false);
+      }
     },
   });
 
@@ -188,7 +213,14 @@ export default function Studio() {
               </div>
               <h2 className="font-heading font-bold text-base">Studio</h2>
             </div>
-            <Dialog open={showNewProject} onOpenChange={setShowNewProject}>
+            <Dialog open={showNewProject} onOpenChange={(v) => {
+              if (subscription?.plan === "free" && projects.length >= 3 && v) {
+                setShowUpgradeModal(true);
+                setUpgradeTrigger("projects");
+                return;
+              }
+              setShowNewProject(v);
+            }}>
               <DialogTrigger asChild>
                 <div className="relative">
                   {showStudioTip && (
@@ -202,6 +234,9 @@ export default function Studio() {
                   <Button size="icon" variant="ghost" className="rounded-xl w-8 h-8 hover:bg-primary/20 hover:text-primary transition-all hover:scale-105">
                     <Plus className="w-4 h-4" />
                   </Button>
+                  {subscription?.plan === "free" && projects.length >= 3 && (
+                    <div className="absolute -top-2 -right-2 w-5 h-5 bg-destructive rounded-full flex items-center justify-center text-white text-xs font-bold">3</div>
+                  )}
                 </div>
               </DialogTrigger>
               <DialogContent className="bg-card border-border shadow-2xl">
@@ -448,6 +483,13 @@ export default function Studio() {
           </>
         )}
       </div>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        open={showUpgradeModal} 
+        onOpenChange={setShowUpgradeModal}
+        triggerReason={upgradeTrigger}
+      />
     </div>
   );
 }

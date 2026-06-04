@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward, Square, ShoppingCart } from "lucide-react";
+import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward, Square, ShoppingCart, Maximize2 } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
+import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +14,7 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
   const audioRef = useRef(null);
   const { addToCart, items } = useCart();
   const inCart = items.some(item => item.id === post?.id);
+  const { playTrack } = useAudioPlayer();
 
   useEffect(() => {
     if (!open) {
@@ -271,7 +273,19 @@ export default function MediaViewerModal({ post, open, onOpenChange }) {
                        <FastForward className="w-5 h-5 sm:w-6 sm:h-6" />
                      </Button>
 
-                     <div className="w-10 sm:w-12" /> {/* Placeholder to balance the stop button */}
+                     <Button
+                       variant="ghost"
+                       size="icon"
+                       className="rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors h-10 w-10 sm:h-12 sm:w-12"
+                       onClick={() => {
+                         stopPlayback();
+                         onOpenChange(false);
+                         playTrack(post);
+                       }}
+                       title="Open in Global Player"
+                     >
+                       <Maximize2 className="w-5 h-5 sm:w-6 sm:h-6" />
+                     </Button>
                    </div>
                  </div>
                </div>

@@ -30,8 +30,8 @@ export default function Studio() {
   const [isMetronomeOn, setIsMetronomeOn] = useState(true);
   
   const [tracks, setTracks] = useState([
-    { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, waveform: generateWaveform(120) },
-    { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, waveform: generateWaveform(120) },
+    { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120) },
+    { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(120) },
   ]);
 
   useEffect(() => {
@@ -87,6 +87,10 @@ export default function Studio() {
   };
 
   const toggleRecord = () => {
+    if (!isRecording && !tracks.some(t => t.armed)) {
+      toast.error("Please arm at least one track to record (click the circle icon on a track)");
+      return;
+    }
     if (isPlaying) setIsPlaying(false);
     setIsRecording(!isRecording);
     if (!isRecording) {
@@ -133,6 +137,10 @@ export default function Studio() {
     setTracks(tracks.map(t => t.id === trackId ? { ...t, solo: !t.solo } : t));
   };
 
+  const toggleArm = (trackId) => {
+    setTracks(tracks.map(t => t.id === trackId ? { ...t, armed: !t.armed } : t));
+  };
+
   const updateVolume = (trackId, val) => {
     setTracks(tracks.map(t => t.id === trackId ? { ...t, volume: val[0] } : t));
   };
@@ -153,6 +161,7 @@ export default function Studio() {
       pan: 50,
       muted: false,
       solo: false,
+      armed: false,
       waveform: generateWaveform(120)
     }]);
     toast.success("Track added");
@@ -317,7 +326,10 @@ export default function Studio() {
                   >
                     S
                   </button>
-                  <button className="px-2 py-0.5 rounded text-xs font-bold bg-secondary text-muted-foreground hover:bg-red-500/20 hover:text-red-400 transition-all flex items-center justify-center">
+                  <button 
+                    onClick={() => toggleArm(track.id)}
+                    className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center", track.armed ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-red-500/20 hover:text-red-400")}
+                  >
                     <Circle className="w-3 h-3 fill-current" />
                   </button>
                 </div>

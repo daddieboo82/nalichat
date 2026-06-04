@@ -7,15 +7,12 @@ import DesktopNav from "@/components/navigation/DesktopNav";
 import MobileHeader from "@/components/navigation/MobileHeader";
 import MobileNav from "@/components/navigation/MobileNav";
 import { useSystemTheme } from "@/hooks/use-system-theme";
-import { useOnboarding } from "@/lib/OnboardingContext";
-import OnboardingOverlay from "@/components/onboarding/OnboardingOverlay";
 import GlobalInviteDialog from "@/components/GlobalInviteDialog";
 import GlobalMessageDialog from "@/components/GlobalMessageDialog";
 import GlobalAudioPlayer from "@/components/audio/GlobalAudioPlayer";
 
 export default function AppLayout() {
   const location = useLocation();
-  const { skipOnboarding } = useOnboarding();
   const [showHelp, setShowHelp] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
@@ -48,11 +45,6 @@ export default function AppLayout() {
       <AiAssistant />
 
       {/* Modals */}
-      <OnboardingOverlay
-        isOpen={showHelp}
-        onComplete={() => setShowHelp(false)}
-        completedSteps={new Set()}
-      />
       <GlobalInviteDialog open={showInvite} onOpenChange={setShowInvite} />
       <GlobalMessageDialog open={showMessage} onOpenChange={setShowMessage} />
       <GlobalAudioPlayer />

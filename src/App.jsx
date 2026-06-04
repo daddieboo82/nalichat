@@ -11,9 +11,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLoader from '@/components/layout/AppLoader';
 import NavRipple from '@/components/layout/NavRipple';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { OnboardingProvider, useOnboarding } from '@/lib/OnboardingContext';
 import { AudioPlayerProvider } from '@/lib/AudioPlayerContext';
-import OnboardingOverlay from '@/components/onboarding/OnboardingOverlay';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -40,9 +38,7 @@ import Studio from '@/pages/Studio';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
-  const { isFirstTime, skipOnboarding } = useOnboarding();
   const location = useLocation();
-  const [showOnboarding, setShowOnboarding] = useState(isFirstTime);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -66,14 +62,6 @@ const AuthenticatedApp = () => {
 
   return (
     <>
-      <OnboardingOverlay 
-        isOpen={showOnboarding && !location.pathname.includes('/login') && !location.pathname.includes('/register')}
-        onComplete={() => {
-          setShowOnboarding(false);
-          skipOnboarding();
-        }}
-        completedSteps={new Set()}
-      />
       <AnimatePresence mode="wait">
       <Routes location={location}>
       <Route path="/login" element={<Login />} />
@@ -115,8 +103,7 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <OnboardingProvider>
-          <AudioPlayerProvider>
+        <AudioPlayerProvider>
           <QueryClientProvider client={queryClientInstance}>
             {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
             <NavRipple />
@@ -125,8 +112,7 @@ function App() {
             </Router>
             <Toaster />
           </QueryClientProvider>
-          </AudioPlayerProvider>
-        </OnboardingProvider>
+        </AudioPlayerProvider>
       </AuthProvider>
     </ErrorBoundary>
   )

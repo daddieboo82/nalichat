@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   { icon: Users, label: "Network", path: "/network" },
 ];
 
-export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick }) {
+export default function DesktopNav({ onMessageClick, onInviteClick }) {
   const location = useLocation();
   const [user, setUser] = useState(null);
 
@@ -85,13 +85,6 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
           <div className="border-l border-border/30 pl-2 flex items-center gap-2">
             <SoundToggle />
             <NotificationBell />
-            <button
-              onClick={onHelpClick}
-              title="Help & Tutorial"
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
-            >
-              <HelpCircle className="w-4.5 h-4.5" />
-            </button>
             <Link
               to="/settings"
               title="Settings"

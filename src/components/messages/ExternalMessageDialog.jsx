@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,9 +55,10 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className="bg-card border-border max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-heading">Send External Message</DialogTitle>
-        </DialogHeader>
+         <DialogHeader>
+           <DialogTitle className="font-heading">Send External Message</DialogTitle>
+           <DialogDescription>Send an email or SMS message to anyone</DialogDescription>
+         </DialogHeader>
 
         {/* Tab switcher */}
         <div className="flex gap-2 p-1 bg-secondary/30 rounded-xl">

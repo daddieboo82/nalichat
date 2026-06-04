@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,9 +27,10 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-card border-border">
-        <DialogHeader>
-          <DialogTitle className="font-heading flex items-center gap-2"><Users className="w-5 h-5 text-primary" /> New Group</DialogTitle>
-        </DialogHeader>
+         <DialogHeader>
+           <DialogTitle className="font-heading flex items-center gap-2"><Users className="w-5 h-5 text-primary" /> New Group</DialogTitle>
+           <DialogDescription>Create a group chat and add members</DialogDescription>
+         </DialogHeader>
         <div className="space-y-4">
           <Input value={name} onChange={e => setName(e.target.value)} placeholder="Group name..." className="bg-secondary/50 border-0 rounded-xl" />
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search people..." className="bg-secondary/50 border-0 rounded-xl" />

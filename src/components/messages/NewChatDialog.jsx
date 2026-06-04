@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -29,9 +29,10 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card border-border max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-heading">Start a Chat</DialogTitle>
-        </DialogHeader>
+         <DialogHeader>
+           <DialogTitle className="font-heading">Start a Chat</DialogTitle>
+           <DialogDescription>Select a user to begin a conversation</DialogDescription>
+         </DialogHeader>
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input

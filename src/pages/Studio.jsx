@@ -199,6 +199,17 @@ export default function Studio() {
     }
   };
 
+  if (!currentUser) {
+    return (
+      <div className="h-full flex items-center justify-center" style={{ background: "hsl(240 10% 3%)" }}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+          <p className="text-sm text-muted-foreground font-heading">Loading studio...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex" style={{ background: "hsl(240 10% 3%)" }}>
       {/* Project Sidebar — hidden on mobile when a project is open */}

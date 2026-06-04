@@ -204,7 +204,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
       transition={{ duration: 0.2, ease: "easeOut" }}
       className={cn("flex gap-2 group mb-0.5 py-0.5", isOwn ? "flex-row-reverse" : "flex-row", showAvatar ? "mt-4" : "mt-0.5")}
       onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => { setShowActions(false); setShowEmojiPicker(false); }}
+      onMouseLeave={() => { setShowActions(false); }}
     >
       {/* Avatar */}
       <div className="w-8 shrink-0 mt-auto">
@@ -309,7 +309,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
       {/* Hover action buttons */}
       <div className={cn(
         "flex items-center gap-1 opacity-0 transition-all self-center shrink-0 relative",
-        showActions && "opacity-100",
+        (showActions || showEmojiPicker) && "opacity-100",
         isOwn ? "flex-row order-first mr-2" : "flex-row ml-2"
       )}>
         <div className="hidden md:flex items-center gap-1 mr-1">

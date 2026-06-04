@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Removed Tabs dependency
 import { cn } from "@/lib/utils";
 import { Search, X } from "lucide-react";
 
@@ -48,13 +48,20 @@ export default function EmojiReactionPicker({ onSelect, onClose, position = "top
       </div>
 
       {!search && (
-        <TabsList className="w-full grid grid-cols-6 mb-3 h-8">
+        <div className="w-full grid grid-cols-6 gap-1 mb-3 h-8 bg-secondary/40 p-1 rounded-lg">
           {Object.entries(EMOJI_CATEGORIES).map(([key, { label }]) => (
-            <TabsTrigger key={key} value={key} className="text-xs p-0 h-full rounded-lg">
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={cn(
+                "text-xs p-0 h-full rounded-md flex items-center justify-center transition-all",
+                activeTab === key ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
               {label.split(" ")[0]}
-            </TabsTrigger>
+            </button>
           ))}
-        </TabsList>
+        </div>
       )}
 
       <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">

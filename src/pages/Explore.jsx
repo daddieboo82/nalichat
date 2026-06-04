@@ -14,8 +14,19 @@ const MEDIUMS = ["all", "original", "remix", "cover", "beat", "production", "mix
 
 export default function Explore() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
+  const urlParams = new URLSearchParams(window.location.search);
+  const [filter, setFilter] = useState(urlParams.get("filter") || "all");
+  const [search, setSearch] = useState(urlParams.get("search") || "");
+
+  // Update URL when search or filter changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filter !== "all") params.set("filter", filter);
+    if (search) params.set("search", search);
+    
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [filter, search]);
   const [showUpload, setShowUpload] = useState(false);
   const [selectedTrackForPlaylist, setSelectedTrackForPlaylist] = useState(null);
   const [commentTrack, setCommentTrack] = useState(null);

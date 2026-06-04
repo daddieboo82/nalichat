@@ -9,6 +9,7 @@ import MobileNav from "@/components/navigation/MobileNav";
 import { useSystemTheme } from "@/hooks/use-system-theme";
 import GlobalInviteDialog from "@/components/GlobalInviteDialog";
 import GlobalMessageDialog from "@/components/GlobalMessageDialog";
+import GlobalHelpDialog from "@/components/GlobalHelpDialog";
 import GlobalAudioPlayer from "@/components/audio/GlobalAudioPlayer";
 
 export default function AppLayout() {
@@ -47,6 +48,7 @@ export default function AppLayout() {
       {/* Modals */}
       <GlobalInviteDialog open={showInvite} onOpenChange={setShowInvite} />
       <GlobalMessageDialog open={showMessage} onOpenChange={setShowMessage} />
+      <GlobalHelpDialog open={showHelp} onOpenChange={setShowHelp} />
       <GlobalAudioPlayer />
     </div>
   );

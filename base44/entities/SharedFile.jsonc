@@ -39,6 +39,10 @@
       "type": "string",
       "description": "Optional project association"
     },
+    "folder_id": {
+      "type": "string",
+      "description": "Optional folder ID for organization"
+    },
     "tags": {
       "type": "array",
       "items": {

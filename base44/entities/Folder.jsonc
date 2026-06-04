@@ -1,0 +1,27 @@
+{
+  "name": "Folder",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Folder name"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Associated project ID"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "User ID of the folder creator"
+    },
+    "color": {
+      "type": "string",
+      "description": "Optional folder color hex code",
+      "default": "#5B5BFF"
+    }
+  },
+  "required": [
+    "name",
+    "owner_id"
+  ]
+}

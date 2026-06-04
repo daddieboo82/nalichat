@@ -5,6 +5,7 @@ import { Sparkles, Image as ImageIcon, Music, Loader2, Save, Wand2, Upload, Down
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
+import { Link } from "react-router-dom";
 
 export default function CoverArt() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -154,9 +155,12 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
           {isLoading ? (
             <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
           ) : posts.length === 0 ? (
-            <div className="text-center p-8 text-muted-foreground text-sm">
-              <Music className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              No tracks found. Upload a track first!
+            <div className="text-center p-8 flex flex-col items-center justify-center text-muted-foreground text-sm">
+              <Music className="w-8 h-8 mx-auto mb-3 opacity-50" />
+              <p className="mb-4">No tracks found. You need a track to generate cover art.</p>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/studio">Go to Studio</Link>
+              </Button>
             </div>
           ) : (
             posts.map(post => (

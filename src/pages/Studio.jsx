@@ -813,8 +813,98 @@ export default function Studio() {
                         width: `${(track.duration !== undefined ? track.duration : 40) * 20}px`
                       }}
                     >
-                      <div className="absolute top-1 left-2 text-[10px] font-medium text-white/50">{track.name} - Take 1</div>
-                      <div className="absolute inset-x-0 bottom-2 top-6 flex items-center justify-start gap-px px-2 overflow-hidden">
+                      {/* Left Trim Handle */}
+                      <div 
+                        className="absolute top-0 bottom-0 left-0 w-3 cursor-col-resize hover:bg-white/40 z-20 group/handle flex justify-center items-center bg-black/20"
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          const target = e.currentTarget;
+                          const startX = e.clientX;
+                          const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
+                          const initialDuration = track.duration !== undefined ? track.duration : 40;
+                          const initialWaveform = [...track.waveform];
+                          
+                          target.setPointerCapture(e.pointerId);
+                          
+                          const handleMove = (moveEvent) => {
+                            const deltaX = moveEvent.clientX - startX;
+                            const deltaTime = deltaX / (20 * zoom);
+                            
+                            if (deltaTime < initialDuration - 1) { 
+                               const trimAmount = Math.max(0, deltaTime); 
+                               const splitRatio = trimAmount / initialDuration;
+                               const splitIndex = Math.floor(initialWaveform.length * splitRatio);
+                               
+                               setTracks(prev => prev.map(t => 
+                                t.id === track.id ? { 
+                                  ...t, 
+                                  startTime: initialStartTime + trimAmount,
+                                  duration: initialDuration - trimAmount,
+                                  waveform: initialWaveform.slice(splitIndex)
+                                } : t
+                              ));
+                            }
+                          };
+                          
+                          const handleUp = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleMove);
+                            target.removeEventListener('pointerup', handleUp);
+                          };
+                          
+                          target.addEventListener('pointermove', handleMove);
+                          target.addEventListener('pointerup', handleUp);
+                        }}
+                      >
+                        <div className="w-[2px] h-4 bg-white/50 group-hover/handle:bg-white rounded-full" />
+                      </div>
+
+                      {/* Right Trim Handle */}
+                      <div 
+                        className="absolute top-0 bottom-0 right-0 w-3 cursor-col-resize hover:bg-white/40 z-20 group/handle flex justify-center items-center bg-black/20"
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          const target = e.currentTarget;
+                          const startX = e.clientX;
+                          const initialDuration = track.duration !== undefined ? track.duration : 40;
+                          const initialWaveform = [...track.waveform];
+                          
+                          target.setPointerCapture(e.pointerId);
+                          
+                          const handleMove = (moveEvent) => {
+                            const deltaX = moveEvent.clientX - startX;
+                            const deltaTime = deltaX / (20 * zoom);
+                            
+                            if (-deltaTime < initialDuration - 1) {
+                               const trimAmount = Math.max(0, -deltaTime); 
+                               const keepRatio = (initialDuration - trimAmount) / initialDuration;
+                               const keepIndex = Math.floor(initialWaveform.length * keepRatio);
+                               
+                               setTracks(prev => prev.map(t => 
+                                t.id === track.id ? { 
+                                  ...t, 
+                                  duration: initialDuration - trimAmount,
+                                  waveform: initialWaveform.slice(0, keepIndex)
+                                } : t
+                              ));
+                            }
+                          };
+                          
+                          const handleUp = (upEvent) => {
+                            target.releasePointerCapture(upEvent.pointerId);
+                            target.removeEventListener('pointermove', handleMove);
+                            target.removeEventListener('pointerup', handleUp);
+                          };
+                          
+                          target.addEventListener('pointermove', handleMove);
+                          target.addEventListener('pointerup', handleUp);
+                        }}
+                      >
+                        <div className="w-[2px] h-4 bg-white/50 group-hover/handle:bg-white rounded-full" />
+                      </div>
+
+                      <div className="absolute top-1 left-4 text-[10px] font-medium text-white/50 pointer-events-none">{track.name} - Take 1</div>
+                      <div className="absolute inset-x-3 bottom-2 top-6 flex items-center justify-start gap-px overflow-hidden pointer-events-none">
                         {track.waveform.map((val, i) => (
                           <div 
                             key={i} 

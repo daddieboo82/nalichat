@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  MessageSquare, Music, Users, Mic, BarChart3, Sparkles,
+  MessageSquare, Music, Users, BarChart3, Sparkles,
   Trophy, Compass, Play, ArrowRight, Zap, Shield, Star,
   Headphones, Radio, Wand2, FileAudio, ChevronRight
 } from "lucide-react";
@@ -28,22 +28,7 @@ const features = [
     description: "Curate & share your sound",
     gradient: "from-accent to-accent/50",
   },
-  {
-    icon: Mic,
-    label: "Studio",
-    path: "/studio",
-    description: "Multi-track production workspace",
-    gradient: "from-purple-500 to-purple-600",
-    badge: "Pro",
-  },
-  {
-    icon: Sparkles,
-    label: "AI Editor",
-    path: "/studio-editor",
-    description: "AI mastering & stem analysis",
-    gradient: "from-yellow-500 to-orange-500",
-    badge: "AI",
-  },
+
   {
     icon: BarChart3,
     label: "Analytics",
@@ -85,22 +70,6 @@ const steps = [
   },
   {
     number: "02",
-    icon: Mic,
-    title: "Build in the Studio",
-    description: "Upload stems, record ideas, and collaborate on multi-track sessions with others in real time.",
-    color: "text-accent",
-    bg: "bg-accent/10",
-  },
-  {
-    number: "03",
-    icon: Sparkles,
-    title: "Let AI Enhance It",
-    description: "Use Nali AI to master your tracks, generate artist bios, suggest tags, and automate tasks.",
-    color: "text-yellow-400",
-    bg: "bg-yellow-400/10",
-  },
-  {
-    number: "04",
     icon: Radio,
     title: "Share & Grow",
     description: "Post to Explore, climb the leaderboard, build playlists, and watch your audience expand.",
@@ -115,16 +84,8 @@ const testimonials = [
     role: "Producer",
     avatar: "J",
     color: "from-primary to-pink-500",
-    quote: "Went from garage bedroom to 10K followers in 3 months. Finished 8 tracks using the studio. Found my mastering engineer here.",
+    quote: "Went from garage bedroom to 10K followers in 3 months. Found my collaborators here and released 8 tracks together.",
     metric: "8 tracks released",
-  },
-  {
-    name: "Amara S.",
-    role: "Singer-Songwriter",
-    avatar: "A",
-    color: "from-accent to-cyan-400",
-    quote: "AI mastering saved me $200/track. My demos now sound like $5K studio sessions. Landed 2 placements from Explore.",
-    metric: "$2.4K saved",
   },
   {
     name: "Dre M.",
@@ -139,10 +100,9 @@ const testimonials = [
 const pillars = [
   { icon: Zap, label: "Real-time collaboration", color: "text-yellow-400" },
   { icon: Shield, label: "Your files, your rights", color: "text-green-400" },
-  { icon: Star, label: "AI-powered tools", color: "text-purple-400" },
-  { icon: Headphones, label: "Studio-quality audio", color: "text-accent" },
+  { icon: Star, label: "Community-driven", color: "text-purple-400" },
+  { icon: Headphones, label: "High-quality audio", color: "text-accent" },
   { icon: FileAudio, label: "Multi-format support", color: "text-pink-400" },
-  { icon: Wand2, label: "One-click mastering", color: "text-primary" },
 ];
 
 const containerVariants = {
@@ -242,10 +202,10 @@ export default function Home() {
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/studio">
+                <Link to="/explore">
                   <Button size="lg" variant="outline" className="rounded-xl text-base px-7">
-                    <Mic className="w-5 h-5 mr-2" />
-                    Open Studio
+                    <Compass className="w-5 h-5 mr-2" />
+                    Explore Tracks
                   </Button>
                 </Link>
               </>
@@ -271,7 +231,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mt-5 text-sm text-muted-foreground">
-             ✅ Free forever · 💳 No credit card · 👥 50K+ creators already shipping
+             ✅ Free forever · 💳 No credit card · 👥 50K+ creators already collaborating
             </p>
           )}
         </motion.div>
@@ -315,12 +275,8 @@ export default function Home() {
             <div className="grid md:grid-cols-2 gap-8">
               {[
                 {
-                  title: "🎙️ Record & Produce",
-                  items: ["Upload stems from any DAW", "Build multi-track projects", "Real-time tempo sync", "Professional mixing workspace"]
-                },
-                {
-                  title: "🤖 AI-Powered Mastering",
-                  items: ["One-click audio mastering", "Stem analysis & suggestions", "BPM & genre detection", "Instant artist bio generation"]
+                  title: "🎵 Discover & Enjoy",
+                  items: ["Browse trending tracks", "Discover new artists", "Save to playlists", "Listen to previews"]
                 },
                 {
                   title: "💬 Collaborate in Real-Time",
@@ -596,26 +552,26 @@ export default function Home() {
               </h3>
               <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
                 {user
-                  ? "Your studio, your collaborators, and your AI partner are all waiting."
+                  ? "Connect with collaborators, discover new music, and grow your audience."
                   : "Join thousands of artists already creating, collaborating, and growing on NaliChat — completely free."}
               </p>
               <div className="flex gap-4 justify-center flex-wrap">
                 {user ? (
-                  <>
-                    <Link to="/studio">
-                      <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 px-8">
-                        <Mic className="w-5 h-5 mr-2" />
-                        Open Studio
-                      </Button>
-                    </Link>
-                    <Link to="/explore">
-                      <Button size="lg" variant="outline" className="rounded-xl px-8">
-                        <Compass className="w-5 h-5 mr-2" />
-                        Explore Tracks
-                      </Button>
-                    </Link>
-                  </>
-                ) : (
+                    <>
+                      <Link to="/messages">
+                        <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 px-8">
+                          <MessageSquare className="w-5 h-5 mr-2" />
+                          Start Collaborating
+                        </Button>
+                      </Link>
+                      <Link to="/explore">
+                        <Button size="lg" variant="outline" className="rounded-xl px-8">
+                          <Compass className="w-5 h-5 mr-2" />
+                          Explore Tracks
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
                   <>
                     <Link to="/register">
                       <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 px-8 text-base glow-primary">

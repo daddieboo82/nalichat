@@ -51,6 +51,14 @@
     },
     "description": {
       "type": "string"
+    },
+    "likes": {
+      "type": "number",
+      "default": 0
+    },
+    "views": {
+      "type": "number",
+      "default": 0
     }
   },
   "required": [

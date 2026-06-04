@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Star, Flame, Heart, Award, Crown, Medal } from "lucide-react";
+import { Trophy, Star, Flame, Heart, Award, Crown, Medal, Music, Image as ImageIcon, Video, FileText } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
-const TABS = ["xp", "likes", "posts"];
+const USER_TABS = ["xp", "likes", "posts"];
+const CONTENT_TABS = ["songs", "pics", "videos"];
 
 export default function Leaderboard() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [tab, setTab] = useState("xp");
+  const [mode, setMode] = useState("users");
+  const [userTab, setUserTab] = useState("xp");
+  const [contentTab, setContentTab] = useState("songs");
 
   useEffect(() => { base44.auth.me().then(setCurrentUser); }, []);
 
@@ -28,6 +31,11 @@ export default function Leaderboard() {
     queryFn: () => base44.entities.Achievement.list(),
   });
 
+  const { data: sharedFiles = [] } = useQuery({
+    queryKey: ["leaderboard-files"],
+    queryFn: () => base44.entities.SharedFile.list("-created_date", 200),
+  });
+
   const postCountByUser = {};
   const likesCountByUser = {};
   posts.forEach(p => {
@@ -41,17 +49,30 @@ export default function Leaderboard() {
   });
 
   const sorted = [...users].sort((a, b) => {
-    if (tab === "xp") return (b.xp || 0) - (a.xp || 0);
-    if (tab === "likes") return (likesCountByUser[b.id] || 0) - (likesCountByUser[a.id] || 0);
-    if (tab === "posts") return (postCountByUser[b.id] || 0) - (postCountByUser[a.id] || 0);
+    if (userTab === "xp") return (b.xp || 0) - (a.xp || 0);
+    if (userTab === "likes") return (likesCountByUser[b.id] || 0) - (likesCountByUser[a.id] || 0);
+    if (userTab === "posts") return (postCountByUser[b.id] || 0) - (postCountByUser[a.id] || 0);
     return 0;
   }).slice(0, 50);
 
   const getValue = (user) => {
-    if (tab === "xp") return `${user.xp || 0} XP`;
-    if (tab === "likes") return `${likesCountByUser[user.id] || 0} ❤️`;
-    if (tab === "posts") return `${postCountByUser[user.id] || 0} posts`;
+    if (userTab === "xp") return `${user.xp || 0} XP`;
+    if (userTab === "likes") return `${likesCountByUser[user.id] || 0} ❤️`;
+    if (userTab === "posts") return `${postCountByUser[user.id] || 0} posts`;
   };
+
+  const topSongs = [...posts].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 20);
+  const topPics = sharedFiles.filter(f => f.file_type === 'image').sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 20);
+  const topVideos = sharedFiles.filter(f => f.file_type === 'video').sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 20);
+
+  const getCurrentContentList = () => {
+    if (contentTab === "songs") return topSongs;
+    if (contentTab === "pics") return topPics;
+    if (contentTab === "videos") return topVideos;
+    return [];
+  };
+
+  const currentContent = getCurrentContentList();
 
   const myRank = sorted.findIndex(u => u.id === currentUser?.id) + 1;
 
@@ -80,24 +101,44 @@ export default function Leaderboard() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 sm:px-8 py-6">
-        {/* Tabs */}
-        <div className="flex gap-2 bg-secondary/50 rounded-xl p-1 mb-6">
-          {TABS.map(t => (
+        {/* Mode Toggle */}
+        <div className="flex justify-center mb-6">
+          <div className="flex gap-1 bg-secondary/50 p-1 rounded-xl w-full max-w-sm">
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={cn(
-                "flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition-colors",
-                tab === t ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
+              onClick={() => setMode("users")}
+              className={cn("flex-1 py-2 rounded-lg text-sm font-bold transition-all", mode === "users" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground")}
             >
-              {t === "xp" ? "⚡ XP" : t === "likes" ? "❤️ Likes" : "🎨 Posts"}
+              Top Users
             </button>
-          ))}
+            <button
+              onClick={() => setMode("content")}
+              className={cn("flex-1 py-2 rounded-lg text-sm font-bold transition-all", mode === "content" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground")}
+            >
+              Top Content
+            </button>
+          </div>
         </div>
 
-        {/* Top 3 podium */}
-        {sorted.length >= 3 && (
+        {mode === "users" && (
+          <>
+            {/* User Tabs */}
+            <div className="flex gap-2 bg-secondary/30 rounded-xl p-1 mb-6">
+              {USER_TABS.map(t => (
+                <button
+                  key={t}
+                  onClick={() => setUserTab(t)}
+                  className={cn(
+                    "flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition-colors",
+                    userTab === t ? "bg-card text-foreground shadow-sm border border-border/50" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {t === "xp" ? "⚡ XP" : t === "likes" ? "❤️ Likes" : "🎨 Posts"}
+                </button>
+              ))}
+            </div>
+
+            {/* Top 3 podium */}
+            {sorted.length >= 3 && (
           <div className="flex items-end justify-center gap-3 mb-8">
             {[sorted[1], sorted[0], sorted[2]].map((user, i) => {
               const realRank = i === 0 ? 2 : i === 1 ? 1 : 3;
@@ -157,6 +198,88 @@ export default function Leaderboard() {
             </div>
           ))}
         </div>
+          </>
+        )}
+
+        {mode === "content" && (
+          <>
+            <div className="flex gap-2 bg-secondary/30 rounded-xl p-1 mb-6">
+              {CONTENT_TABS.map(t => (
+                <button
+                  key={t}
+                  onClick={() => setContentTab(t)}
+                  className={cn(
+                    "flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition-colors flex items-center justify-center gap-1.5",
+                    contentTab === t ? "bg-card text-foreground shadow-sm border border-border/50" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {t === "songs" && <Music className="w-4 h-4" />}
+                  {t === "pics" && <ImageIcon className="w-4 h-4" />}
+                  {t === "videos" && <Video className="w-4 h-4" />}
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              {currentContent.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground bg-secondary/20 rounded-xl border border-border/50">
+                  <p className="font-semibold">No {contentTab} uploaded yet.</p>
+                  <p className="text-sm">Be the first to upload one!</p>
+                </div>
+              ) : (
+                currentContent.map((item, i) => (
+                  <div key={item.id} className="flex items-center gap-4 p-3 rounded-xl border border-border bg-card/60 hover:bg-card transition-colors">
+                    <div className="w-8 text-center shrink-0 flex flex-col items-center">
+                      {i < 3 ? RANK_ICONS[i] : <span className="text-sm text-muted-foreground font-bold">#{i + 1}</span>}
+                    </div>
+                    
+                    {contentTab === "songs" ? (
+                      <div className="w-12 h-12 rounded-md bg-secondary shrink-0 overflow-hidden relative border border-border/50">
+                        {item.image_url ? (
+                          <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary"><Music className="w-6 h-6" /></div>
+                        )}
+                      </div>
+                    ) : contentTab === "pics" ? (
+                      <div className="w-14 h-14 rounded-md bg-secondary shrink-0 overflow-hidden relative border border-border/50">
+                        {item.file_url ? (
+                          <img src={item.file_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary"><ImageIcon className="w-6 h-6" /></div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="w-16 h-12 rounded-md bg-secondary shrink-0 overflow-hidden relative border border-border/50">
+                        <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary relative">
+                           {item.file_url ? (
+                             <video src={item.file_url} className="w-full h-full object-cover opacity-50" />
+                           ) : null}
+                           <Video className="w-6 h-6 absolute" />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm truncate">{item.title || item.name || "Untitled"}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        by {item.creator_name || item.uploader_name || "Unknown"}
+                      </p>
+                    </div>
+                    
+                    <div className="shrink-0 text-right pr-2">
+                      <div className="flex items-center gap-1.5 text-primary bg-primary/10 px-2.5 py-1 rounded-full text-xs font-bold">
+                        <Heart className="w-3.5 h-3.5 fill-current" />
+                        {item.likes || 0}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

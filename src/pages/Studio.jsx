@@ -383,6 +383,32 @@ export default function Studio() {
     toast.success("Selected tracks deleted");
   };
 
+  const duplicateSelectedTracks = () => {
+    if (selectedTrackIds.length === 0) return;
+    
+    if (tracks.length + selectedTrackIds.length > maxTracks) {
+      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      return;
+    }
+
+    const newTracks = [];
+    let nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+
+    tracks.forEach(t => {
+      if (selectedTrackIds.includes(t.id)) {
+        newTracks.push({
+          ...t,
+          id: nextId++,
+          name: `${t.name} (Copy)`
+        });
+      }
+    });
+
+    setTracks([...tracks, ...newTracks]);
+    setSelectedTrackIds([]);
+    toast.success("Tracks duplicated");
+  };
+
   const addTrack = () => {
     if (tracks.length >= maxTracks) {
       toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
@@ -502,7 +528,7 @@ export default function Studio() {
         <div className="h-5 w-px bg-border/50 mx-2 shrink-0" />
         <div className="flex items-center gap-1 shrink-0">
           <Button variant="ghost" size="icon" className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground"><Scissors className="w-4 h-4" /></Button>
-          <Button variant="ghost" size="icon" className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground"><Copy className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={duplicateSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50"><Copy className="w-4 h-4" /></Button>
           <Button variant="ghost" size="icon" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-red-400 disabled:opacity-50"><Trash2 className="w-4 h-4" /></Button>
         </div>
         <div className="h-5 w-px bg-border/50 mx-2 shrink-0" />

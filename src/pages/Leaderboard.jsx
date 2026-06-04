@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import MediaViewerModal from "@/components/explore/MediaViewerModal";
 import { cn } from "@/lib/utils";
 
-const USER_TABS = ["xp", "likes", "posts"];
+const USER_TABS = ["xp", "likes", "posts", "achievements"];
 const CONTENT_TABS = ["songs", "pics", "videos"];
 
 export default function Leaderboard() {
@@ -55,6 +55,7 @@ export default function Leaderboard() {
     if (userTab === "xp") return (b.xp || 0) - (a.xp || 0);
     if (userTab === "likes") return (likesCountByUser[b.id] || 0) - (likesCountByUser[a.id] || 0);
     if (userTab === "posts") return (postCountByUser[b.id] || 0) - (postCountByUser[a.id] || 0);
+    if (userTab === "achievements") return (achievementCountByUser[b.id] || 0) - (achievementCountByUser[a.id] || 0);
     return 0;
   }).slice(0, 50);
 
@@ -62,6 +63,7 @@ export default function Leaderboard() {
     if (userTab === "xp") return `${user.xp || 0} XP`;
     if (userTab === "likes") return `${likesCountByUser[user.id] || 0} ❤️`;
     if (userTab === "posts") return `${postCountByUser[user.id] || 0} posts`;
+    if (userTab === "achievements") return `${achievementCountByUser[user.id] || 0} 🏆`;
   };
 
   const topSongs = [...posts].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 20);
@@ -147,7 +149,7 @@ export default function Leaderboard() {
                     userTab === t ? "bg-card text-foreground shadow-sm border border-border/50" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {t === "xp" ? "⚡ XP" : t === "likes" ? "❤️ Likes" : "🎨 Posts"}
+                  {t === "xp" ? "⚡ XP" : t === "likes" ? "❤️ Likes" : t === "posts" ? "🎨 Posts" : "🏆 Awards"}
                 </button>
               ))}
             </div>

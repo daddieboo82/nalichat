@@ -9,6 +9,7 @@ import NewChatDialog from "@/components/messages/NewChatDialog";
 import GroupChatDialog from "@/components/messages/GroupChatDialog";
 import ExternalMessageDialog from "@/components/messages/ExternalMessageDialog";
 import InviteTab from "@/components/messages/InviteTab";
+import ContactsTab from "@/components/messages/ContactsTab";
 import { notify } from "@/lib/notifications";
 import { MessageSquare, Users, Mail, Plus, Zap, UserPlus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -219,12 +220,13 @@ export default function Messages() {
         "shrink-0 transition-all flex flex-col",
         selectedConvId ? "hidden sm:flex" : "flex w-full sm:w-[320px]"
       )}>
-        {/* Tabs for Chats and Invite */}
+        {/* Tabs for Chats, Contacts, and Invite */}
         {!selectedConvId && (
           <div className="px-4 pt-5 pb-3 border-b border-border/40">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="chats">Chats</TabsTrigger>
+                <TabsTrigger value="contacts">Contacts</TabsTrigger>
                 <TabsTrigger value="invite">Invite</TabsTrigger>
               </TabsList>
             </Tabs>
@@ -276,13 +278,24 @@ export default function Messages() {
           </>
         )}
 
-        {/* Invite Tab */}
-        {activeTab === "invite" && !selectedConvId && (
-          <div className="flex-1 overflow-hidden">
-            <InviteTab />
-          </div>
-        )}
-      </div>
+        {/* Contacts Tab */}
+         {activeTab === "contacts" && !selectedConvId && (
+           <ContactsTab
+             currentUserId={currentUser?.id}
+             onMessageContact={(userId) => {
+               const user = users.find(u => u.id === userId);
+               if (user) startDM(user);
+             }}
+           />
+         )}
+
+         {/* Invite Tab */}
+         {activeTab === "invite" && !selectedConvId && (
+           <div className="flex-1 overflow-hidden">
+             <InviteTab />
+           </div>
+         )}
+        </div>
 
       {/* Chat view — full width on mobile */}
       <div className={cn("flex-1 overflow-hidden flex flex-col", !selectedConvId && "hidden sm:flex")}>

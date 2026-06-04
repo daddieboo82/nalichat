@@ -7,7 +7,7 @@ import {
   Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical,
   Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
   Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle,
-  Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo
+  Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -811,6 +811,21 @@ export default function Studio() {
         <Button onClick={addTrack} variant="secondary" size="sm" className="gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
           <Plus className="w-4 h-4" /> Add Track
         </Button>
+        <Button 
+          onClick={() => {
+            if (selectedTrackIds.length === 1) {
+              const track = tracks.find(t => t.id === selectedTrackIds[0]);
+              if (track) setEditingTrack(track);
+            } else {
+              toast.error("Please select exactly one track to add plugins");
+            }
+          }} 
+          variant="secondary" 
+          size="sm" 
+          className="gap-2 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 shrink-0"
+        >
+          <SlidersHorizontal className="w-4 h-4" /> Add Plugins
+        </Button>
 
         <div className="h-5 w-px bg-border/50 mx-1 shrink-0" />
         
@@ -891,6 +906,7 @@ export default function Studio() {
                     <span className="truncate">{track.name}</span>
                   </div>
                   <div className="flex items-center gap-0.5">
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setEditingTrack(track); }} className="w-6 h-6 text-muted-foreground hover:text-accent" title="Add Plugins"><SlidersHorizontal className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")} title="Elastic Audio"><Activity className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")} title="Show Automation"><TrendingUp className="w-3.5 h-3.5" /></Button>
                     <DropdownMenu>

@@ -303,9 +303,9 @@ export default function Studio() {
                 exit={{ opacity: 0, height: 0 }}
                 onClick={() => setSelectedTrackId(track.id)}
                 className={cn(
-                  "h-28 border-b border-border/40 p-3 flex flex-col justify-between transition-all cursor-pointer border-l-2",
+                  "h-28 border-b border-border/40 p-3 flex flex-col justify-between transition-all cursor-pointer border-l-4",
                   track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40",
-                  selectedTrackId === track.id ? "border-l-primary bg-secondary/30" : "border-l-transparent"
+                  selectedTrackId === track.id ? "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]" : "border-l-transparent"
                 )}
               >
                 <div className="flex items-center justify-between">
@@ -386,9 +386,9 @@ export default function Studio() {
                   key={track.id} 
                   onClick={() => setSelectedTrackId(track.id)}
                   className={cn(
-                    "h-28 border-b border-border/20 relative group transition-colors", 
+                    "h-28 border-b border-border/20 relative group transition-all", 
                     track.muted ? "opacity-30" : "",
-                    selectedTrackId === track.id ? "bg-primary/5" : ""
+                    selectedTrackId === track.id ? "bg-primary/15 shadow-[inset_0_0_30px_hsl(var(--primary)/0.1)]" : ""
                   )}
                 >
                   {/* Grid lines */}

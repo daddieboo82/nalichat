@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward, Square, ShoppingCart, Maximize2 } from "lucide-react";
+import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward, Square, ShoppingCart, Maximize2, Download, Share2 } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
+import { toast } from "sonner";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -138,13 +139,13 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    <p className="text-sm text-white/70 line-clamp-3 mb-6 leading-relaxed">{post.description}</p>
                  )}
 
-                 <div className="flex items-center gap-4 mb-8">
+                 <div className="flex flex-wrap items-center gap-4 mb-8">
                    {post.price > 0 && (
                      <Button 
                        size="lg"
                        onClick={() => addToCart(post)}
                        disabled={inCart}
-                       className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 gap-2 h-14 px-8 text-base rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
+                       className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 gap-2 h-14 px-6 sm:px-8 text-base rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
                      >
                        <ShoppingCart className="w-5 h-5" />
                        {inCart ? "In Cart" : `Buy for $${post.price.toFixed(2)}`}
@@ -153,7 +154,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    {post.price === 0 && (
                      <Button 
                        size="lg"
-                       className="bg-white/10 text-white border border-white/10 shadow-lg gap-2 h-14 px-8 text-base rounded-full flex-shrink-0 cursor-default"
+                       className="bg-white/10 text-white border border-white/10 shadow-lg gap-2 h-14 px-6 sm:px-8 text-base rounded-full flex-shrink-0 cursor-default"
                      >
                        Free
                      </Button>
@@ -168,6 +169,47 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                        Add to Playlist
                      </Button>
                    )}
+                   
+                   {post.file_url && (
+                     <Button
+                       size="lg"
+                       onClick={() => {
+                         const a = document.createElement('a');
+                         a.href = post.file_url;
+                         a.download = post.title || 'download';
+                         a.target = '_blank';
+                         document.body.appendChild(a);
+                         a.click();
+                         document.body.removeChild(a);
+                         toast.success("Download started");
+                       }}
+                       className="bg-white/10 text-white hover:bg-white/20 border border-white/10 shadow-lg gap-2 h-14 px-6 text-base rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
+                     >
+                       <Download className="w-5 h-5" />
+                       Download
+                     </Button>
+                   )}
+                   
+                   <Button
+                     size="lg"
+                     onClick={() => {
+                       const textToShare = `Check out this track: ${post.title} on NaliChat!`;
+                       if (navigator.share) {
+                         navigator.share({
+                           title: post.title,
+                           text: textToShare,
+                           url: window.location.href,
+                         }).catch(console.error);
+                       } else {
+                         navigator.clipboard.writeText(`${textToShare} ${window.location.href}`);
+                         toast.success("Link copied to clipboard to share in messages!");
+                       }
+                     }}
+                     className="bg-white/10 text-white hover:bg-white/20 border border-white/10 shadow-lg gap-2 h-14 px-6 text-base rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
+                   >
+                     <Share2 className="w-5 h-5" />
+                     Share
+                   </Button>
                  </div>
 
                  <div className="grid grid-cols-2 gap-4 mb-8">

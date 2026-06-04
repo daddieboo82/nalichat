@@ -213,7 +213,7 @@ export default function Studio() {
       muted: false,
       solo: false,
       armed: false,
-      waveform: generateWaveform(120)
+      waveform: []
     }]);
     toast.success("Track added");
   };
@@ -436,21 +436,23 @@ export default function Studio() {
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px)] bg-[size:100px_100%]" />
                   
                   {/* Audio Region (Clip) */}
-                  <div 
-                    onDoubleClick={() => setEditingTrack(track)}
-                    className="absolute top-2 bottom-2 left-10 w-[800px] rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-pointer"
-                  >
-                    <div className="absolute top-1 left-2 text-[10px] font-medium text-white/50">{track.name} - Take 1</div>
-                    <div className="absolute inset-x-0 bottom-2 top-6 flex items-center justify-center gap-px px-2">
-                      {track.waveform.map((val, i) => (
-                        <div 
-                          key={i} 
-                          className={cn("w-1 rounded-full opacity-80", track.color)}
-                          style={{ height: `${val * 100}%` }}
-                        />
-                      ))}
+                  {track.waveform && track.waveform.length > 0 && (
+                    <div 
+                      onDoubleClick={() => setEditingTrack(track)}
+                      className="absolute top-2 bottom-2 left-10 w-[800px] rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-pointer"
+                    >
+                      <div className="absolute top-1 left-2 text-[10px] font-medium text-white/50">{track.name} - Take 1</div>
+                      <div className="absolute inset-x-0 bottom-2 top-6 flex items-center justify-center gap-px px-2">
+                        {track.waveform.map((val, i) => (
+                          <div 
+                            key={i} 
+                            className={cn("w-1 rounded-full opacity-80", track.color)}
+                            style={{ height: `${val * 100}%` }}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>

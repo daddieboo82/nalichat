@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { downloadFilesAsZip } from "@/lib/downloadZip";
 import { useToast } from "@/components/ui/use-toast";
 import CustomMediaPlayer from "@/components/audio/CustomMediaPlayer";
+import { resumableDownload } from "@/lib/resumableUpload";
 
 const typeIcons = {
   audio: Music,
@@ -39,6 +40,43 @@ function detectFileType(file) {
   if (file.name.match(/\.(als|flp|logic|ptx|rpp|cpr)$/i)) return "session";
   if (file.type.includes("pdf") || file.type.includes("document")) return "document";
   return "other";
+}
+
+function FileDownloadButton({ file }) {
+  const [dlProgress, setDlProgress] = useState(null);
+
+  const handleDownload = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dlProgress !== null) return;
+    setDlProgress(0);
+    try {
+      await resumableDownload(file.file_url, file.name || "file", (pct) => setDlProgress(pct));
+    } catch (error) {
+      console.error("Download failed", error);
+    }
+    setDlProgress(null);
+  };
+
+  if (dlProgress !== null) {
+    return (
+      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/20 text-primary text-[10px] font-bold">
+        {dlProgress}%
+      </div>
+    );
+  }
+
+  return (
+    <Button 
+      size="icon" 
+      variant="ghost" 
+      className="w-8 h-8 rounded-lg hover:bg-primary/20 hover:text-primary transition-colors" 
+      onClick={handleDownload}
+      title="Download file"
+    >
+      <Download className="w-4 h-4" />
+    </Button>
+  );
 }
 
 export default function Files() {
@@ -319,12 +357,8 @@ export default function Files() {
                             <CustomMediaPlayer src={file.file_url} className="mt-2" />
                           )}
                         </div>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <a href={file.file_url} target="_blank" rel="noopener noreferrer">
-                            <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg">
-                              <Download className="w-3.5 h-3.5" />
-                            </Button>
-                          </a>
+                        <div className="flex gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                          <FileDownloadButton file={file} />
                           {file.uploader_id === currentUser?.id && (
                             <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg text-destructive" onClick={() => deleteMutation.mutate(file.id)}>
                               <Trash2 className="w-3.5 h-3.5" />

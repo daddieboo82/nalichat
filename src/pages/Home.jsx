@@ -145,39 +145,41 @@ export default function Home() {
       <DailyRecommendation />
 
       {/* ── Hero ── */}
-      <section className="relative min-h-[520px] flex items-center justify-center overflow-hidden px-6 py-16">
+      <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden px-6 py-24">
         {/* Animated blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-primary/25 rounded-full blur-3xl animate-float-blob" />
-          <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-accent/25 rounded-full blur-3xl animate-float-blob" style={{ animationDelay: "-5s" }} />
-          <div className="absolute top-1/3 left-1/2 w-80 h-80 bg-pink-500/15 rounded-full blur-3xl animate-float-blob" style={{ animationDelay: "-9s" }} />
+          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-primary/30 rounded-full blur-[100px] animate-float-blob" />
+          <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] bg-accent/30 rounded-full blur-[100px] animate-float-blob" style={{ animationDelay: "-5s" }} />
+          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-pink-500/20 rounded-full blur-[100px] animate-float-blob" style={{ animationDelay: "-9s" }} />
+          <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-yellow-500/20 rounded-full blur-[80px] animate-float-blob" style={{ animationDelay: "-3s" }} />
         </div>
 
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="relative z-10 text-center max-w-4xl"
+          initial={{ opacity: 0, y: -20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
+          className="relative z-10 text-center max-w-5xl mx-auto"
         >
           {/* Logo icon */}
-          <div className="mb-6 flex justify-center">
+          <div className="mb-8 flex justify-center relative">
+            <div className="absolute inset-0 bg-primary/30 blur-2xl rounded-full scale-150 animate-pulse" />
             <motion.div
               animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary via-pink-500 to-accent flex items-center justify-center glow-primary shadow-2xl"
+              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+              className="relative z-10 w-24 h-24 rounded-3xl bg-gradient-to-br from-primary via-pink-500 to-accent flex items-center justify-center glow-primary shadow-2xl border border-white/20"
             >
-              <Music className="w-10 h-10 text-white" />
+              <Music className="w-12 h-12 text-white" />
             </motion.div>
           </div>
 
           {/* Personalized greeting */}
           {user && (
             <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-sm font-semibold tracking-widest text-primary mb-3 uppercase"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-sm font-bold tracking-[0.2em] text-primary mb-4 uppercase drop-shadow-md"
             >
-              Welcome back, {user.full_name?.split(" ")[0] || "Artist"} 🎧
+              Welcome back, {user.full_name?.split(" ")[0] || "Artist"} 🚀
             </motion.p>
           )}
 
@@ -186,18 +188,22 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
-              className="inline-flex items-center gap-2 bg-primary/10 border border-primary/30 text-primary text-xs font-semibold px-4 py-1.5 rounded-full mb-5"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/20 to-pink-500/20 border border-primary/40 text-foreground text-xs font-bold px-5 py-2 rounded-full mb-6 backdrop-blur-md"
             >
-              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-              The music collaboration platform
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+              </span>
+              The Ultimate Music Collaboration Hub
             </motion.div>
           )}
 
-          <h1 className="font-heading font-black text-5xl md:text-7xl mb-5 text-gradient-animate leading-tight">
-            Make Music.<br className="hidden md:block" /> Together.
+          <h1 className="font-heading font-black text-6xl md:text-8xl lg:text-[7rem] mb-6 tracking-tight leading-[1.05] drop-shadow-xl text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/60">
+            Make Music.<br className="hidden md:block" /> 
+            <span className="text-gradient-animate drop-shadow-2xl">Together.</span>
           </h1>
-          <p className="text-xl text-muted-foreground mb-10 leading-relaxed max-w-2xl mx-auto">
-            Record in the Pro Studio. Connect with artists. Share your sound. All in one place.
+          <p className="text-xl md:text-2xl text-foreground/80 font-medium mb-12 leading-relaxed max-w-3xl mx-auto drop-shadow-md">
+            Record in the Pro Studio. Connect with artists globally. Share your sound with the world. All in one explosive platform.
           </p>
 
           {/* CTAs */}
@@ -393,9 +399,9 @@ export default function Home() {
 
         {/* ── Features Grid ── */}
         <div>
-          <div className="mb-10">
-            <h2 className="font-heading font-bold text-4xl mb-3 text-gradient-animate inline-block">Everything You Need</h2>
-            <p className="text-muted-foreground text-lg">One platform. Every tool a music creator could want.</p>
+          <div className="mb-12 text-center md:text-left">
+            <h2 className="font-heading font-black text-5xl mb-4 text-gradient-animate drop-shadow-lg inline-block">Everything You Need</h2>
+            <p className="text-foreground/70 text-xl font-medium">One explosive platform. Every tool a music creator could want.</p>
           </div>
 
           <motion.div
@@ -403,30 +409,32 @@ export default function Home() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {features.map((feature) => {
               const Icon = feature.icon;
               return (
-                <motion.div key={feature.path} variants={itemVariants}>
-                  <Link to={feature.path} onClick={() => sounds.click()}>
-                    <div className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${feature.gradient} p-0.5 h-full transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl`}>
-                      <div className="relative h-full bg-card rounded-2xl p-6 shimmer-hover">
-                        <div className={`absolute -inset-8 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-15 blur-2xl transition-opacity duration-300`} />
-                        <div className="relative z-10">
+                <motion.div key={feature.path} variants={itemVariants} className="h-full">
+                  <Link to={feature.path} onClick={() => sounds.click()} className="block h-full">
+                    <div className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${feature.gradient} p-0.5 h-full transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]`}>
+                      <div className="relative h-full bg-card/90 backdrop-blur-xl rounded-[22px] p-8 shimmer-hover flex flex-col justify-between overflow-hidden">
+                        <div className={`absolute -inset-10 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-20 blur-3xl transition-opacity duration-500`} />
+                        
+                        <div className="relative z-10 flex-1">
                           {feature.badge && (
-                            <span className={`absolute top-0 right-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r ${feature.gradient} text-white`}>
+                            <span className={`absolute top-0 right-0 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-gradient-to-r ${feature.gradient} text-white shadow-lg`}>
                               {feature.badge}
                             </span>
                           )}
-                          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 shadow-lg transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}>
-                            <Icon className="w-6 h-6 text-white" />
+                          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 shadow-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
+                            <Icon className="w-7 h-7 text-white" />
                           </div>
-                          <h3 className="font-heading font-bold text-lg mb-1">{feature.label}</h3>
-                          <p className="text-sm text-muted-foreground">{feature.description}</p>
-                          <div className="flex items-center gap-1 mt-3 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity text-foreground/70">
-                            Open <ChevronRight className="w-3 h-3" />
-                          </div>
+                          <h3 className="font-heading font-black text-2xl mb-2 text-foreground group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-br group-hover:from-white group-hover:to-white/70 transition-colors duration-300">{feature.label}</h3>
+                          <p className="text-base text-foreground/70 font-medium leading-relaxed">{feature.description}</p>
+                        </div>
+                        
+                        <div className="relative z-10 flex items-center gap-2 mt-6 text-sm font-bold opacity-0 -translate-x-4 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 text-foreground">
+                          Explore feature <ArrowRight className="w-4 h-4" />
                         </div>
                       </div>
                     </div>
@@ -516,80 +524,85 @@ export default function Home() {
 
         {/* ── Stats ── */}
         <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, type: "spring" }}
           viewport={{ once: true }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          className="grid grid-cols-1 md:grid-cols-3 gap-8"
         >
           {[
-           { value: "10K+", label: "Tracks Shared", from: "from-primary", to: "to-pink-500", hover: "hover:border-primary/50 hover:glow-primary" },
-           { value: "50K+", label: "Active Creators", from: "from-accent", to: "to-cyan-400", hover: "hover:border-accent/50 hover:glow-accent" },
-           { value: "100K+", label: "Conversations", from: "from-pink-500", to: "to-purple-500", hover: "hover:border-pink-500/50" },
+           { value: "10K+", label: "Tracks Shared", from: "from-primary", to: "to-pink-500", hover: "hover:border-primary/50 hover:shadow-[0_0_40px_-10px_rgba(var(--primary-rgb),0.5)]" },
+           { value: "50K+", label: "Active Creators", from: "from-accent", to: "to-cyan-400", hover: "hover:border-accent/50 hover:shadow-[0_0_40px_-10px_rgba(var(--accent-rgb),0.5)]" },
+           { value: "100K+", label: "Conversations", from: "from-pink-500", to: "to-purple-500", hover: "hover:border-pink-500/50 hover:shadow-[0_0_40px_-10px_rgba(236,72,153,0.5)]" },
           ].map((stat) => (
             <div
               key={stat.label}
-              className={`bg-card border border-border rounded-2xl p-10 text-center transition-all duration-300 ${stat.hover} hover:-translate-y-1`}
+              className={`bg-card/80 backdrop-blur-xl border-2 border-border/50 rounded-[2rem] p-12 text-center transition-all duration-500 ${stat.hover} hover:-translate-y-2 group overflow-hidden relative`}
             >
-              <p className={`text-6xl font-black mb-2 bg-gradient-to-br ${stat.from} ${stat.to} bg-clip-text text-transparent`}>{stat.value}</p>
-              <p className="text-muted-foreground">{stat.label}</p>
+              <div className={`absolute inset-0 bg-gradient-to-br ${stat.from} ${stat.to} opacity-0 group-hover:opacity-10 transition-opacity duration-500 blur-xl`} />
+              <div className="relative z-10">
+                <p className={`text-7xl font-black mb-3 bg-gradient-to-br ${stat.from} ${stat.to} bg-clip-text text-transparent tracking-tighter drop-shadow-sm group-hover:scale-110 transition-transform duration-500`}>{stat.value}</p>
+                <p className="text-foreground/80 font-bold tracking-wide uppercase text-sm">{stat.label}</p>
+              </div>
             </div>
           ))}
         </motion.div>
 
         {/* ── Final CTA ── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, type: "spring" }}
           viewport={{ once: true }}
-          className="mb-12"
+          className="mb-24"
         >
-          <div className="relative overflow-hidden bg-gradient-to-br from-primary/20 via-card to-accent/20 border border-primary/30 rounded-3xl p-12 text-center">
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute -top-20 -right-20 w-72 h-72 bg-primary/15 rounded-full blur-3xl" />
-              <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-accent/15 rounded-full blur-3xl" />
+          <div className="relative overflow-hidden bg-gradient-to-br from-primary/30 via-card to-accent/30 border-2 border-primary/40 rounded-[3rem] p-16 text-center shadow-[0_0_100px_-20px_rgba(var(--primary-rgb),0.3)]">
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/40 rounded-full blur-[100px] animate-pulse" />
+              <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent/40 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
+              <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem]" />
             </div>
+            
             <div className="relative z-10">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center glow-primary">
-                <Music className="w-8 h-8 text-white" />
+              <div className="w-24 h-24 mx-auto mb-8 rounded-[2rem] bg-gradient-to-br from-primary via-pink-500 to-accent flex items-center justify-center glow-primary shadow-2xl animate-float-blob border border-white/20">
+                <Sparkles className="w-12 h-12 text-white" />
               </div>
-              <h3 className="font-heading font-black text-4xl md:text-5xl mb-4">
+              <h3 className="font-heading font-black text-5xl md:text-7xl mb-6 text-gradient-animate drop-shadow-xl tracking-tight">
                 {user ? `Keep Creating, ${user.full_name?.split(" ")[0] || "Artist"}` : "Your Music Deserves a Stage"}
               </h3>
-              <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+              <p className="text-xl text-foreground/80 font-medium mb-10 max-w-3xl mx-auto leading-relaxed">
                 {user
-                  ? "Open the Studio, connect with collaborators, discover new music, and grow your audience."
-                  : "Join thousands of artists already producing, collaborating, and growing on NaliChat. Try the Pro Studio free for 1 hour."}
+                  ? "Open the Studio, connect with collaborators, discover new music, and grow your audience to new heights."
+                  : "Join thousands of artists already producing, collaborating, and growing on NaliChat. The stage is set."}
               </p>
-              <div className="flex gap-4 justify-center flex-wrap">
+              <div className="flex gap-6 justify-center flex-wrap">
                 {user ? (
                     <>
-                      <Link to="/messages">
-                        <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 px-8">
-                          <MessageSquare className="w-5 h-5 mr-2" />
-                          Start Collaborating
+                      <Link to="/studio">
+                        <Button size="lg" className="rounded-2xl h-16 px-10 text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105">
+                          <Headphones className="w-6 h-6 mr-3" />
+                          Launch Studio
                         </Button>
                       </Link>
-                      <Link to="/explore">
-                        <Button size="lg" variant="outline" className="rounded-xl px-8">
-                          <Compass className="w-5 h-5 mr-2" />
-                          Explore Tracks
+                      <Link to="/messages">
+                        <Button size="lg" variant="outline" className="rounded-2xl h-16 px-10 text-xl font-bold border-border hover:bg-secondary transition-all hover:scale-105 backdrop-blur-md bg-card/50">
+                          <MessageSquare className="w-6 h-6 mr-3" />
+                          Collaborate
                         </Button>
                       </Link>
                     </>
                   ) : (
                   <>
                     <Link to="/register">
-                      <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 px-8 text-base glow-primary">
-                        <Sparkles className="w-5 h-5 mr-2" />
-                        Get Started Free
-                        <ArrowRight className="w-4 h-4 ml-2" />
+                      <Button size="lg" className="rounded-2xl h-16 px-10 text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30">
+                        <Zap className="w-6 h-6 mr-3" />
+                        Start Free Trial
+                        <ArrowRight className="w-6 h-6 ml-3" />
                       </Button>
                     </Link>
                     <Link to="/explore">
-                      <Button size="lg" variant="outline" className="rounded-xl px-8">
-                        <Compass className="w-5 h-5 mr-2" />
+                      <Button size="lg" variant="outline" className="rounded-2xl h-16 px-10 text-xl font-bold border-border hover:bg-secondary transition-all hover:scale-105 backdrop-blur-md bg-card/50">
+                        <Compass className="w-6 h-6 mr-3" />
                         Explore Tracks
                       </Button>
                     </Link>
@@ -597,7 +610,9 @@ export default function Home() {
                 )}
               </div>
               {!user && (
-                <p className="mt-5 text-sm text-muted-foreground">No credit card required to start · 1 hour free Studio access</p>
+                <p className="mt-8 text-sm font-bold text-muted-foreground tracking-wide uppercase">
+                  ✨ No credit card required · 1 hour free Studio access ✨
+                </p>
               )}
             </div>
           </div>

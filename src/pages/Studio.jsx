@@ -38,6 +38,7 @@ export default function Studio() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const audioElementsRef = useRef({});
+  const fileInputRef = useRef(null);
   const [editingTrack, setEditingTrack] = useState(null);
   const [selectedTrackIds, setSelectedTrackIds] = useState([1]);
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
@@ -594,6 +595,64 @@ export default function Studio() {
     setTracksWithHistory(tracks.map(t => t.id === trackId ? updatedTrack : t));
   };
 
+  const handleImportClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (tracks.length >= maxTracks) {
+        toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+        return;
+      }
+      
+      const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+      const colors = ["bg-primary", "bg-pink-500", "bg-accent", "bg-yellow-500", "bg-purple-500", "bg-green-500"];
+      const fileUrl = URL.createObjectURL(file);
+      
+      setTracksWithHistory([...tracks, {
+        id: newId,
+        name: file.name,
+        color: colors[newId % colors.length],
+        volume: 75,
+        pan: 50,
+        muted: false,
+        solo: false,
+        armed: false,
+        waveform: generateWaveform(120),
+        startTime: 0,
+        duration: 40,
+        audioUrl: fileUrl,
+        locked: false,
+        grouped: false,
+        showAutomation: false,
+        elasticAudio: false,
+        fadeIn: 0,
+        fadeOut: 0
+      }]);
+      toast.success(`Imported ${file.name}`);
+      e.target.value = null;
+    }
+  };
+
+  const handleExport = () => {
+    if (tracks.length === 0) {
+      toast.error("No tracks to export");
+      return;
+    }
+    const element = document.createElement("a");
+    const file = new Blob(["Simulated exported audio data from NaliStudio"], {type: 'audio/wav'});
+    element.href = URL.createObjectURL(file);
+    element.download = "NaliStudio_Mixdown.wav";
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    toast.success("Exported Mixdown.wav");
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-background text-foreground overflow-hidden">
       {/* Top Toolbar */}
@@ -657,10 +716,11 @@ export default function Studio() {
           </div>
           
           <div className="hidden md:flex items-center gap-2">
-            <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={() => toast("Imported WAV/MP3/MIDI")}>
+            <input type="file" ref={fileInputRef} className="hidden" accept="audio/*" onChange={handleFileChange} />
+            <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleImportClick}>
               <Upload className="w-4 h-4" /> Import
             </Button>
-            <Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary" onClick={() => toast.success("Exporting to WAV (24-bit)")}>
+            <Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary" onClick={handleExport}>
               <Download className="w-4 h-4" /> Export
             </Button>
           </div>

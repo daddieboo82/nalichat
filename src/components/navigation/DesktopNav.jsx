@@ -5,12 +5,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import SoundToggle from "@/components/layout/SoundToggle";
-import { MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, HelpCircle, UserPlus, Send } from "lucide-react";
+import { MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, HelpCircle, UserPlus, Send, Mic } from "lucide-react";
 import { sounds } from "@/hooks/use-sound";
 
 const NAV_ITEMS = [
   { icon: MessageSquare, label: "Messages", path: "/messages" },
   { icon: Compass, label: "Explore", path: "/explore" },
+  { icon: Mic, label: "Studio", path: "/studio" },
   { icon: Music, label: "Playlists", path: "/playlists" },
   { icon: FileText, label: "Files", path: "/files" },
   { icon: BarChart3, label: "Analytics", path: "/analytics" },

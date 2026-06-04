@@ -1,521 +1,306 @@
-import { useState, useRef, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Upload, Music, Loader2, FolderOpen, Disc3, ChevronLeft, Search, Settings, Flag, Trash2 } from "lucide-react";
-import MultiTrackEditor from "@/components/studio/MultiTrackEditor";
-import SessionTimer from "@/components/studio/SessionTimer";
-import ProjectSettingsDialog from "@/components/studio/ProjectSettingsDialog";
-import MilestonesPanel from "@/components/studio/MilestonesPanel";
-import TrackImporter from "@/components/studio/TrackImporter";
-import UpgradeModal from "@/components/billing/UpgradeModal";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { useOnboarding } from "@/lib/OnboardingContext";
-import TutorialTooltip from "@/components/onboarding/TutorialTooltip";
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { 
+  Play, Square, Circle, Mic, Plus, Settings2, Volume2, 
+  Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical,
+  Maximize2, Pause, Layers
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { base44 } from '@/api/base44Client';
+import { toast } from 'sonner';
 
-const statusColors = {
-  draft: "bg-muted text-muted-foreground",
-  in_progress: "bg-primary/20 text-primary",
-  mixing: "bg-accent/20 text-accent",
-  mastering: "bg-chart-4/20 text-chart-4",
-  complete: "bg-green-500/20 text-green-400",
+// Fake waveform generator
+const generateWaveform = (length = 100) => {
+  return Array.from({ length }, () => Math.random() * 0.8 + 0.1);
 };
 
 export default function Studio() {
-  const { isFirstTime, markStepComplete } = useOnboarding();
-  const [currentUser, setCurrentUser] = useState(null);
-  const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [showNewProject, setShowNewProject] = useState(false);
-  const [newProjectTitle, setNewProjectTitle] = useState("");
-  const [newProjectBpm, setNewProjectBpm] = useState(120);
-  const [newProjectKey, setNewProjectKey] = useState("C");
-  const [uploading, setUploading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [showProjectSettings, setShowProjectSettings] = useState(false);
-  const [showMilestones, setShowMilestones] = useState(false);
-  const [showStudioTip, setShowStudioTip] = useState(isFirstTime);
-  const [dragActive, setDragActive] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeTrigger, setUpgradeTrigger] = useState("projects");
-  const fileInputRef = useRef(null);
-  const queryClient = useQueryClient();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const playheadRef = useRef(null);
+  
+  const [tracks, setTracks] = useState([
+    { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, waveform: generateWaveform(120) },
+    { id: 2, name: "Backing Vocals", color: "bg-pink-500", volume: 60, pan: 30, muted: false, solo: false, waveform: generateWaveform(120) },
+    { id: 3, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, waveform: generateWaveform(120) },
+    { id: 4, name: "Adlibs", color: "bg-yellow-500", volume: 40, pan: 80, muted: true, solo: false, waveform: generateWaveform(120) },
+  ]);
 
-  useEffect(() => { base44.auth.me().then(setCurrentUser); }, []);
+  // Simulate playback
+  useEffect(() => {
+    let interval;
+    if (isPlaying || isRecording) {
+      interval = setInterval(() => {
+        setCurrentTime((prev) => (prev + 0.1 > 100 ? 0 : prev + 0.1));
+      }, 50);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, isRecording]);
 
-  const { data: projects = [] } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => base44.entities.Project.list("-updated_date"),
-  });
+  const togglePlay = () => {
+    if (isRecording) setIsRecording(false);
+    setIsPlaying(!isPlaying);
+  };
 
-  const { data: subscription } = useQuery({
-    queryKey: ["subscription"],
-    queryFn: async () => {
-      const subs = await base44.entities.Subscription.filter({ user_id: currentUser?.id });
-      return subs[0] || { plan: "free", status: "active" };
-    },
-    enabled: !!currentUser?.id,
-  });
-
-  const { data: tracks = [] } = useQuery({
-    queryKey: ["tracks", selectedProjectId],
-    queryFn: () => base44.entities.Track.filter({ project_id: selectedProjectId }),
-    enabled: !!selectedProjectId,
-  });
-
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
-
-  // Role helpers
-  const isOwner = selectedProject?.owner_id === currentUser?.id;
-  const myRole = selectedProject?.collaborator_roles?.[currentUser?.id] || "viewer";
-  const canEdit = isOwner || myRole === "editor";
-
-  const filteredProjects = projects.filter(p =>
-    p.title?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const createProject = useMutation({
-    mutationFn: () => {
-      // Check project limit for free tier
-      if (subscription?.plan === "free" && projects.length >= 3) {
-        throw new Error("PROJECT_LIMIT");
-      }
-      return base44.entities.Project.create({
-        title: newProjectTitle,
-        owner_id: currentUser.id,
-        bpm: newProjectBpm,
-        key: newProjectKey,
-        status: "draft",
-        collaborator_ids: [],
-      });
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      setSelectedProjectId(data.id);
-      setShowNewProject(false);
-      setNewProjectTitle("");
-      setShowStudioTip(false);
-      markStepComplete("studio");
-    },
-    onError: (err) => {
-      if (err.message === "PROJECT_LIMIT") {
-        setShowUpgradeModal(true);
-        setUpgradeTrigger("projects");
-        setShowNewProject(false);
-      }
-    },
-  });
-
-  const addTrack = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedProjectId || !currentUser) return;
-    setUploading(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.entities.Track.create({
-        project_id: selectedProjectId,
-        name: file.name.replace(/\.[^/.]+$/, ""),
-        file_url,
-        type: "vocal",
-        volume: 75,
-        pan: 0,
-        muted: false,
-        solo: false,
-        uploaded_by: currentUser.id,
-      });
-      queryClient.invalidateQueries({ queryKey: ["tracks", selectedProjectId] });
-    } finally {
-      setUploading(false);
-      e.target.value = "";
+  const toggleRecord = () => {
+    if (isPlaying) setIsPlaying(false);
+    setIsRecording(!isRecording);
+    if (!isRecording) {
+      toast.success("Recording started");
     }
   };
 
-  const updateTrack = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Track.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tracks", selectedProjectId] }),
-  });
-
-  const deleteTrack = useMutation({
-    mutationFn: (id) => base44.entities.Track.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tracks", selectedProjectId] }),
-  });
-
-  const updateProject = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Project.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projects"] }),
-  });
-
-  const deleteProject = useMutation({
-    mutationFn: (id) => base44.entities.Project.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      setSelectedProjectId(null);
-    },
-  });
-
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
+  const stop = () => {
+    setIsPlaying(false);
+    setIsRecording(false);
+    setCurrentTime(0);
   };
 
-  const handleDrop = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (!selectedProjectId || !currentUser) return;
-
-    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("audio/"));
-    if (files.length === 0) return;
-
-    setUploading(true);
-    try {
-      for (const file of files) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        await base44.entities.Track.create({
-          project_id: selectedProjectId,
-          name: file.name.replace(/\.[^/.]+$/, ""),
-          file_url,
-          type: "vocal",
-          volume: 75,
-          pan: 0,
-          muted: false,
-          solo: false,
-          uploaded_by: currentUser.id,
-        });
-      }
-      queryClient.invalidateQueries({ queryKey: ["tracks", selectedProjectId] });
-    } finally {
-      setUploading(false);
-    }
+  const toggleMute = (trackId) => {
+    setTracks(tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t));
   };
 
-  if (!currentUser) {
-    return (
-      <div className="h-full flex items-center justify-center" style={{ background: "hsl(240 10% 3%)" }}>
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-          <p className="text-sm text-muted-foreground font-heading">Loading studio...</p>
-        </div>
-      </div>
-    );
-  }
+  const toggleSolo = (trackId) => {
+    setTracks(tracks.map(t => t.id === trackId ? { ...t, solo: !t.solo } : t));
+  };
+
+  const updateVolume = (trackId, val) => {
+    setTracks(tracks.map(t => t.id === trackId ? { ...t, volume: val[0] } : t));
+  };
+
+  const addTrack = () => {
+    const newId = Math.max(...tracks.map(t => t.id)) + 1;
+    const colors = ["bg-primary", "bg-pink-500", "bg-accent", "bg-yellow-500", "bg-purple-500", "bg-green-500"];
+    setTracks([...tracks, {
+      id: newId,
+      name: `New Track ${newId}`,
+      color: colors[newId % colors.length],
+      volume: 75,
+      pan: 50,
+      muted: false,
+      solo: false,
+      waveform: generateWaveform(120)
+    }]);
+    toast.success("Track added");
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    const ms = Math.floor((seconds % 1) * 100);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+  };
 
   return (
-    <div className="h-full flex" style={{ background: "hsl(240 10% 3%)" }}>
-      {/* Project Sidebar — hidden on mobile when a project is open */}
-      <div className={cn(
-        "w-full md:w-68 border-r border-border/50 flex-col shrink-0",
-        selectedProjectId ? "hidden md:flex" : "flex"
-      )} style={{ background: "hsl(240 10% 5%)", minWidth: "260px", maxWidth: "268px" }}>
-        <div className="p-4 border-b border-border/40">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center shadow-lg shadow-primary/20">
-                <Music className="w-3.5 h-3.5 text-white" />
-              </div>
-              <h2 className="font-heading font-bold text-base">Studio</h2>
-            </div>
-            <Dialog open={showNewProject} onOpenChange={(v) => {
-              if (subscription?.plan === "free" && projects.length >= 3 && v) {
-                setShowUpgradeModal(true);
-                setUpgradeTrigger("projects");
-                return;
-              }
-              setShowNewProject(v);
-            }}>
-              <DialogTrigger asChild>
-                <div className="relative">
-                  {showStudioTip && (
-                    <TutorialTooltip
-                      title="Create a Project"
-                      description="Start by making a new project to organize your tracks"
-                      position="bottom"
-                      onDismiss={() => setShowStudioTip(false)}
-                    />
-                  )}
-                  <Button size="icon" variant="ghost" className="rounded-xl w-8 h-8 hover:bg-primary/20 hover:text-primary transition-all hover:scale-105">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                  {subscription?.plan === "free" && projects.length >= 3 && (
-                    <div className="absolute -top-2 -right-2 w-5 h-5 bg-destructive rounded-full flex items-center justify-center text-white text-xs font-bold">3</div>
-                  )}
-                </div>
-              </DialogTrigger>
-              <DialogContent className="bg-card border-border shadow-2xl">
-                <DialogHeader>
-                  <DialogTitle className="font-heading text-lg">New Project</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <Input
-                    placeholder="Give your project a title..."
-                    value={newProjectTitle}
-                    onChange={e => setNewProjectTitle(e.target.value)}
-                    className="bg-secondary/50 border-border/50 rounded-xl focus:border-primary/50"
-                    autoFocus
-                  />
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <label className="text-xs text-muted-foreground/70 mb-1.5 block font-medium">BPM</label>
-                      <Input
-                        type="number"
-                        value={newProjectBpm}
-                        onChange={e => setNewProjectBpm(Number(e.target.value))}
-                        className="bg-secondary/50 border-border/50 rounded-xl"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="text-xs text-muted-foreground/70 mb-1.5 block font-medium">Key</label>
-                      <Select value={newProjectKey} onValueChange={setNewProjectKey}>
-                        <SelectTrigger className="bg-secondary/50 border-border/50 rounded-xl">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"].map(k => (
-                            <SelectItem key={k} value={k}>{k} Major</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <Button
-                    className="w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/20 font-semibold"
-                    onClick={() => createProject.mutate()}
-                    disabled={!newProjectTitle.trim() || createProject.isPending}
-                  >
-                    {createProject.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-                    Create Project
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
-            <Input
-              placeholder="Search projects..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="bg-secondary/30 border-border/40 rounded-xl pl-9 h-9 text-sm focus:border-primary/40"
-            />
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-background text-foreground overflow-hidden">
+      {/* Top Toolbar */}
+      <div className="h-16 border-b border-border/50 bg-card/80 backdrop-blur flex items-center justify-between px-4 shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="font-heading font-black text-xl text-gradient-animate tracking-tight flex items-center gap-2">
+            <Mic className="w-6 h-6 text-primary" />
+            NaliStudio <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest ml-2">Pro</span>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-1.5">
-          {projects.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 p-6">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <FolderOpen className="w-7 h-7 opacity-30" />
-              </div>
-              <p className="text-sm text-center leading-relaxed opacity-70">No projects yet.<br/>Tap + to create your first!</p>
-            </div>
-          ) : filteredProjects.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 p-6">
-              <Search className="w-8 h-8 opacity-20" />
-              <p className="text-sm text-center opacity-60">No matches for "{search}"</p>
-            </div>
-          ) : (
-            <div className="px-2 space-y-0.5">
-              {filteredProjects.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => setSelectedProjectId(p.id)}
-                  className={cn(
-                    "w-full text-left px-3 py-2.5 rounded-xl transition-all group",
-                    selectedProjectId === p.id
-                      ? "bg-primary/15 shadow-sm"
-                      : "hover:bg-secondary/40"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                      selectedProjectId === p.id ? "bg-primary/20" : "bg-secondary/50 group-hover:bg-primary/10"
-                    )}>
-                      <Disc3 className={cn("w-3.5 h-3.5 transition-colors", selectedProjectId === p.id ? "text-primary" : "text-muted-foreground group-hover:text-primary/70")} />
-                    </div>
-                    <p className={cn("font-medium text-sm truncate flex-1", selectedProjectId === p.id && "text-primary")}>{p.title}</p>
-                    {selectedProjectId === p.id && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
+        {/* Transport Controls */}
+        <div className="flex items-center gap-2 bg-background/50 p-1.5 rounded-xl border border-border/50 shadow-inner">
+          <Button variant="ghost" size="icon" className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground">
+            <Rewind className="w-5 h-5" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={stop}
+            className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"
+          >
+            <Square className="w-5 h-5 fill-current" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={togglePlay}
+            className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}
+          >
+            {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleRecord}
+            className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}
+          >
+            {isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}
+            <Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} />
+          </Button>
+          <Button variant="ghost" size="icon" className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground">
+            <FastForward className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Right Tools */}
+        <div className="flex items-center gap-3">
+          <div className="font-mono text-xl text-primary font-bold bg-primary/10 px-4 py-1.5 rounded-lg border border-primary/20 w-32 text-center">
+            {formatTime(currentTime)}
+          </div>
+          <Button variant="outline" className="gap-2 rounded-xl hidden md:flex border-border/50">
+            <Save className="w-4 h-4" /> Save Project
+          </Button>
+          <Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary hidden md:flex">
+            <Download className="w-4 h-4" /> Export Mix
+          </Button>
+        </div>
+      </div>
+
+      {/* Toolbar 2 (Tools) */}
+      <div className="h-12 border-b border-border/40 bg-card/40 flex items-center px-4 gap-4 shrink-0">
+        <Button onClick={addTrack} variant="secondary" size="sm" className="gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20">
+          <Plus className="w-4 h-4" /> Add Track
+        </Button>
+        <div className="h-5 w-px bg-border/50 mx-2" />
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground"><Scissors className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="icon" className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground"><Copy className="w-4 h-4" /></Button>
+        </div>
+        <div className="h-5 w-px bg-border/50 mx-2" />
+        <div className="flex items-center gap-3 ml-auto text-sm text-muted-foreground">
+          <Maximize2 className="w-4 h-4" /> Zoom
+          <Slider 
+            value={[zoom]} 
+            min={0.5} 
+            max={3} 
+            step={0.1}
+            onValueChange={(v) => setZoom(v[0])}
+            className="w-24"
+          />
+        </div>
+      </div>
+
+      {/* Main Workspace */}
+      <div className="flex-1 flex overflow-hidden bg-[#0a0a0c]">
+        {/* Track Headers (Left Sidebar) */}
+        <div className="w-64 border-r border-border/50 bg-card/60 flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)]">
+          <AnimatePresence>
+            {tracks.map((track) => (
+              <motion.div 
+                key={track.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, height: 0 }}
+                className={cn(
+                  "h-28 border-b border-border/40 p-3 flex flex-col justify-between transition-colors",
+                  track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 font-medium text-sm truncate">
+                    <div className={cn("w-2 h-2 rounded-full", track.color)} />
+                    <span className="truncate">{track.name}</span>
                   </div>
-                  <div className="flex items-center gap-2 mt-1.5 ml-9">
-                    <Badge className={`text-[9px] border-0 ${statusColors[p.status] || statusColors.draft}`}>
-                      {p.status?.replace("_", " ").toUpperCase()}
-                    </Badge>
-                    {p.bpm && <span className="text-[10px] text-muted-foreground/60">{p.bpm} BPM</span>}
-                    {p.key && <span className="text-[10px] text-muted-foreground/60">{p.key}</span>}
-                  </div>
-                </button>
+                  <Button variant="ghost" size="icon" className="w-6 h-6 text-muted-foreground hover:text-foreground"><Settings2 className="w-3.5 h-3.5" /></Button>
+                </div>
+                
+                <div className="flex items-center gap-2 mt-2">
+                  <button 
+                    onClick={() => toggleMute(track.id)}
+                    className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all", track.muted ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-secondary/80")}
+                  >
+                    M
+                  </button>
+                  <button 
+                    onClick={() => toggleSolo(track.id)}
+                    className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all", track.solo ? "bg-yellow-500 text-white" : "bg-secondary text-muted-foreground hover:bg-secondary/80")}
+                  >
+                    S
+                  </button>
+                  <button className="px-2 py-0.5 rounded text-xs font-bold bg-secondary text-muted-foreground hover:bg-red-500/20 hover:text-red-400 transition-all flex items-center justify-center">
+                    <Circle className="w-3 h-3 fill-current" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3 mt-3">
+                  <Volume2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <Slider 
+                    value={[track.volume]} 
+                    max={100} 
+                    step={1} 
+                    onValueChange={(val) => updateVolume(track.id, val)}
+                    className="flex-1"
+                  />
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          {/* Empty space filler */}
+          <div className="flex-1 bg-card/20 min-h-[100px]" />
+        </div>
+
+        {/* Timeline & Waveforms (Right Area) */}
+        <div className="flex-1 relative overflow-auto custom-scrollbar flex flex-col bg-[#0f0f13]">
+          {/* Timeline Header */}
+          <div className="h-8 border-b border-border/30 bg-card/40 sticky top-0 z-20 flex items-end px-4 overflow-hidden">
+            {/* Timeline markers */}
+            <div className="w-[2000px] h-full relative" style={{ transform: `scaleX(${zoom})`, transformOrigin: 'left' }}>
+              {Array.from({ length: 50 }).map((_, i) => (
+                <div key={i} className="absolute bottom-0 text-[10px] text-muted-foreground/50 border-l border-border/40 pl-1 h-3" style={{ left: `${i * 100}px` }}>
+                  0:{i.toString().padStart(2, '0')}
+                </div>
               ))}
             </div>
-          )}
+          </div>
+
+          {/* Tracks Area */}
+          <div className="relative w-[2000px] min-h-full" style={{ transform: `scaleX(${zoom})`, transformOrigin: 'top left' }}>
+            {/* Playhead */}
+            <div 
+              ref={playheadRef}
+              className="absolute top-0 bottom-0 w-px bg-primary z-30 pointer-events-none"
+              style={{ left: `${currentTime * 20}px` }}
+            >
+              <div className="absolute top-0 -translate-x-1/2 w-3 h-3 bg-primary rotate-45" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
+            </div>
+
+            {/* Waveform Rows */}
+            <div className="flex flex-col">
+              {tracks.map((track) => (
+                <div key={track.id} className={cn("h-28 border-b border-border/20 relative group", track.muted ? "opacity-30" : "")}>
+                  {/* Grid lines */}
+                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px)] bg-[size:100px_100%]" />
+                  
+                  {/* Audio Region (Clip) */}
+                  <div className="absolute top-2 bottom-2 left-10 w-[800px] rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors cursor-pointer">
+                    <div className="absolute top-1 left-2 text-[10px] font-medium text-white/50">{track.name} - Take 1</div>
+                    <div className="absolute inset-x-0 bottom-2 top-6 flex items-center justify-center gap-px px-2">
+                      {track.waveform.map((val, i) => (
+                        <div 
+                          key={i} 
+                          className={cn("w-1 rounded-full opacity-80", track.color)}
+                          style={{ height: `${val * 100}%` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Main Studio Area */}
-      <div
-        className={cn(
-          "flex-1 flex-col min-w-0",
-          selectedProjectId ? "flex" : "hidden md:flex"
-        )}
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-      >
-        {dragActive && (
-          <div className="absolute inset-0 bg-primary/20 border-2 border-dashed border-primary rounded-lg pointer-events-none flex items-center justify-center z-40">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-primary/30 flex items-center justify-center mx-auto mb-2">
-                <Upload className="w-8 h-8 text-primary" />
-              </div>
-              <p className="text-primary font-semibold">Drop audio files here</p>
-            </div>
-          </div>
-        )}
-
-        {!selectedProject ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-pink-500/20 border border-primary/20 flex items-center justify-center mx-auto mb-5 shadow-2xl shadow-primary/10">
-                <Music className="w-11 h-11 text-primary/50" />
-              </div>
-              <p className="font-heading font-semibold text-xl mb-2">Select a Project</p>
-              <p className="text-sm text-muted-foreground/70">or create a new one to start mixing</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Project Header */}
-            <div className="px-4 md:px-5 py-3 border-b border-border/50 flex items-center justify-between backdrop-blur-xl gap-2" style={{ background: "hsl(240 8% 7% / 0.95)" }}>
-              <div className="flex items-center gap-2 min-w-0">
-                <button
-                  onClick={() => setSelectedProjectId(null)}
-                  className="md:hidden p-2 -ml-1 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all shrink-0"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <h1 className="text-lg font-heading font-bold truncate">{selectedProject.title}</h1>
-                    <span className="text-[10px] px-2 py-1 rounded-full bg-primary/20 text-primary font-semibold whitespace-nowrap">Professional Studio</span>
-                  </div>
-                  <div className="flex items-center gap-2.5 mt-0.5">
-                    <Badge className={`text-[9px] border-0 ${statusColors[selectedProject.status]}`}>
-                      {selectedProject.status?.replace("_", " ").toUpperCase()}
-                    </Badge>
-                    {selectedProject.bpm && <span className="text-[11px] text-muted-foreground/60">{selectedProject.bpm} BPM</span>}
-                    {selectedProject.key && <span className="text-[11px] text-muted-foreground/60">Key: {selectedProject.key}</span>}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <SessionTimer />
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className={cn("rounded-xl w-8 h-8 transition-all", showMilestones ? "bg-primary/20 text-primary" : "hover:bg-secondary/60 text-muted-foreground")}
-                  onClick={() => setShowMilestones(v => !v)}
-                  title="Milestones"
-                >
-                  <Flag className="w-4 h-4" />
-                </Button>
-                {isOwner && (
-                   <Button
-                     size="icon"
-                     variant="ghost"
-                     className="rounded-xl w-8 h-8 hover:bg-secondary/60 text-muted-foreground"
-                     onClick={() => setShowProjectSettings(true)}
-                     title="Project settings"
-                   >
-                     <Settings className="w-4 h-4" />
-                   </Button>
-                 )}
-                 {isOwner && (
-                   <Button
-                     size="icon"
-                     variant="ghost"
-                     className="rounded-xl w-8 h-8 hover:bg-destructive/20 hover:text-destructive text-muted-foreground transition-colors"
-                     onClick={() => {
-                       if (window.confirm(`Delete project "${selectedProject.title}"? This cannot be undone.`)) {
-                         deleteProject.mutate(selectedProject.id);
-                       }
-                     }}
-                     title="Delete project"
-                   >
-                     <Trash2 className="w-4 h-4" />
-                   </Button>
-                 )}
-                <Select
-                  value={selectedProject.status}
-                  onValueChange={(v) => updateProject.mutate({ id: selectedProject.id, data: { status: v } })}
-                >
-                  <SelectTrigger className="w-32 bg-secondary/40 border-border/50 rounded-xl text-xs h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="mixing">Mixing</SelectItem>
-                    <SelectItem value="mastering">Mastering</SelectItem>
-                    <SelectItem value="complete">Complete</SelectItem>
-                  </SelectContent>
-                </Select>
-                {canEdit && (
-                  <TrackImporter
-                    projectId={selectedProjectId}
-                    currentUser={currentUser}
-                    onSuccess={() => queryClient.invalidateQueries({ queryKey: ["tracks", selectedProjectId] })}
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Multi-Track Editor + optional Milestones panel */}
-            <div className="flex flex-1 min-h-0">
-              <div className="flex-1 min-w-0">
-                <MultiTrackEditor
-                  tracks={tracks}
-                  selectedProject={selectedProject}
-                  projectTitle={selectedProject?.title}
-                  onTrackUpdate={(id, data) => updateTrack.mutate({ id, data })}
-                  onTrackDelete={(id) => deleteTrack.mutate(id)}
-                  canEdit={canEdit}
-                  currentUser={currentUser}
-                />
-              </div>
-              {showMilestones && (
-                <div className="w-72 shrink-0 border-l border-border bg-card/50 overflow-hidden flex flex-col">
-                  <MilestonesPanel projectId={selectedProject.id} canEdit={canEdit} />
-                </div>
-              )}
-            </div>
-
-            {showProjectSettings && (
-              <ProjectSettingsDialog
-                project={selectedProject}
-                open={showProjectSettings}
-                onOpenChange={setShowProjectSettings}
-                onDelete={(id) => deleteProject.mutate(id)}
-              />
-            )}
-          </>
-        )}
+      {/* Bottom Mixer / Status Bar */}
+      <div className="h-10 border-t border-border/50 bg-card/80 flex items-center justify-between px-4 text-xs text-muted-foreground shrink-0">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
+          <span className="text-primary font-medium">44.1 kHz / 24-bit</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <span>CPU: <span className="text-green-400">12%</span></span>
+          <span>RAM: <span className="text-green-400">28%</span></span>
+        </div>
       </div>
-
-      {/* Upgrade Modal */}
-      <UpgradeModal 
-        open={showUpgradeModal} 
-        onOpenChange={setShowUpgradeModal}
-        triggerReason={upgradeTrigger}
-      />
     </div>
   );
 }

@@ -62,7 +62,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
   const getSnappedTime = (time) => {
     if (!snapToGrid) return time;
-    const snapInterval = zoom > 5 ? 0.1 : zoom > 2 ? 0.5 : 1;
+    const snapInterval = zoom > 200 ? 0.001 : zoom > 50 ? 0.01 : zoom > 10 ? 0.05 : zoom > 5 ? 0.1 : zoom > 2 ? 0.5 : 1;
     return Math.round(time / snapInterval) * snapInterval;
   };
 
@@ -422,8 +422,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">View</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="bg-[#e5e5e5] text-black border-[#888] shadow-md rounded-none w-48 font-sans">
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setZoom(z => Math.min(15, z + 0.5))}>Zoom In</DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setZoom(z => Math.max(0.5, z - 0.5))}>Zoom Out</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setZoom(z => Math.min(1000, z * 1.5))}>Zoom In</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setZoom(z => Math.max(0.5, z / 1.5))}>Zoom Out</DropdownMenuItem>
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setZoom(1)}>Zoom Normal</DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-none cursor-default" onClick={() => setSnapToGrid(!snapToGrid)}>
@@ -561,19 +561,19 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <div className="flex flex-col">
                   <span className="text-[7px] text-[#666] leading-none mb-0.5">Start</span>
                   <span className="text-[10px] text-black font-mono leading-none">
-                    {selectionRange ? selectionRange.start.toFixed(3) : "0.000"}
+                    {selectionRange ? selectionRange.start.toFixed(4) : "0.0000"}
                   </span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[7px] text-[#666] leading-none mb-0.5">End</span>
                   <span className="text-[10px] text-black font-mono leading-none">
-                    {selectionRange ? selectionRange.end.toFixed(3) : "0.000"}
+                    {selectionRange ? selectionRange.end.toFixed(4) : "0.0000"}
                   </span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[7px] text-[#666] leading-none mb-0.5">Length</span>
                   <span className="text-[10px] text-black font-mono leading-none">
-                    {selectionRange ? Math.abs(selectionRange.end - selectionRange.start).toFixed(3) : "0.000"}
+                    {selectionRange ? Math.abs(selectionRange.end - selectionRange.start).toFixed(4) : "0.0000"}
                   </span>
                 </div>
               </div>
@@ -585,7 +585,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
               <span className="text-green-500 font-mono text-lg leading-none tracking-widest font-bold">
                 {String(Math.floor(playhead / 60)).padStart(2, '0')}:
                 {String(Math.floor(playhead % 60)).padStart(2, '0')}.
-                {String(Math.floor((playhead % 1) * 1000)).padStart(3, '0')}
+                {String(Math.floor((playhead % 1) * 10000)).padStart(4, '0')}
               </span>
             </div>
 
@@ -625,11 +625,11 @@ export default function WaveEditor({ track, onClose, onSave }) {
               </div>
 
               <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white" onClick={() => setZoom(z => Math.max(0.5, z - 0.5))}>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white" onClick={() => setZoom(z => Math.max(0.5, z / 1.5))}>
                   <ZoomOut className="w-4 h-4" />
                 </Button>
-                <Slider value={[zoom]} min={0.5} max={15} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-32 [&_[role=slider]]:bg-[#ccc] [&_[role=slider]]:border-none" />
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white" onClick={() => setZoom(z => Math.min(15, z + 0.5))}>
+                <Slider value={[zoom]} min={0.5} max={200} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-32 [&_[role=slider]]:bg-[#ccc] [&_[role=slider]]:border-none" />
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#ccc] hover:text-white" onClick={() => setZoom(z => Math.min(1000, z * 1.5))}>
                   <ZoomIn className="w-4 h-4" />
                 </Button>
               </div>
@@ -648,18 +648,23 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 if (e.ctrlKey || e.metaKey) {
                   e.preventDefault();
                   const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-                  setZoom(z => Math.max(0.5, Math.min(15, z * zoomFactor)));
+                  setZoom(z => Math.max(0.5, Math.min(1000, z * zoomFactor)));
                 }
               }}
             >
               {/* Timeline Ruler */}
-              <div className="absolute top-0 left-0 right-0 h-6 bg-[#e5e5e5] border-b border-[#aaa] z-10 pointer-events-none" style={{ width: `${100 * zoom}%`, minWidth: '100%' }}>
-                {Array.from({ length: Math.ceil((track?.duration || 40) * 2) }).map((_, i) => (
-                  <div key={i} className={cn("absolute bottom-0 border-l border-[#888]", i % 2 === 0 ? "h-full" : "h-2")} style={{ left: `${(i/((track?.duration || 40)*2))*100}%` }}>
-                    {i % 2 === 0 && <span className="absolute top-0.5 left-1 text-[9px] text-black font-sans">{i/2}</span>}
+              {(() => {
+                const rulerMultiplier = zoom > 100 ? 100 : zoom > 10 ? 10 : 2;
+                return (
+                  <div className="absolute top-0 left-0 right-0 h-6 bg-[#e5e5e5] border-b border-[#aaa] z-10 pointer-events-none" style={{ width: `${100 * zoom}%`, minWidth: '100%' }}>
+                    {Array.from({ length: Math.ceil((track?.duration || 40) * rulerMultiplier) }).map((_, i) => (
+                      <div key={i} className={cn("absolute bottom-0 border-l border-[#888]", i % rulerMultiplier === 0 ? "h-full" : (rulerMultiplier >= 10 && i % (rulerMultiplier/10) === 0 ? "h-3" : "h-1.5"))} style={{ left: `${(i/((track?.duration || 40)*rulerMultiplier))*100}%` }}>
+                        {i % rulerMultiplier === 0 && <span className="absolute top-0.5 left-1 text-[9px] text-black font-sans">{i/rulerMultiplier}</span>}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
               
               {/* Center Line (Zero Crossing) */}
               <div className="absolute top-1/2 left-0 right-0 h-px bg-[#888] pointer-events-none z-0" style={{ width: `${100 * zoom}%`, minWidth: '100%' }} />

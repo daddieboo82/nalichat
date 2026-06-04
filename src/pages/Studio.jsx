@@ -69,7 +69,7 @@ export default function Studio() {
   const [renamingTrack, setRenamingTrack] = useState(null);
   const [newTrackName, setNewTrackName] = useState("");
   const [selectedTrackIds, setSelectedTrackIds] = useState([1]);
-  const [showExport, setShowExport] = useState(false);
+
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
   const [recordingStartTime, setRecordingStartTime] = useState(null);
   
@@ -828,15 +828,12 @@ export default function Studio() {
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleSave}>
               <Save className="w-4 h-4" /> Save
             </Button>
-            <Button 
-              className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary" 
-              onClick={() => setShowExport(true)}
-            >
-              <Download className="w-4 h-4" /> Export
-            </Button>
             <BounceDialog
-              open={showExport}
-              onOpenChange={setShowExport}
+              trigger={
+                <Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary">
+                  <Download className="w-4 h-4" /> Export
+                </Button>
+              }
               projectTitle="Untitled Studio Project"
               project={{ genre: "Electronic", bpm: 120 }}
               tracks={tracks}

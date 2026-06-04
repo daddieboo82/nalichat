@@ -28,8 +28,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    const formattedItems = items.map(item => ({
+      ...item,
+      price: String(item.price)
+    }));
+
     const payload = {
-      cart: { items },
+      cart: { items: formattedItems },
       callbackUrls,
     };
 

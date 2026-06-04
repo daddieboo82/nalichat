@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Play, Pause, X, Volume2 } from "lucide-react";
+import { ArrowLeft, Play, Pause, X, Volume2, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CustomMediaPlayer from "@/components/audio/CustomMediaPlayer";
 import { Slider } from "@/components/ui/slider";
@@ -15,8 +15,14 @@ export default function PlaylistDetail() {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(100);
+  const [currentUser, setCurrentUser] = useState(null);
   const audioRef = useRef(null);
+  const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser);
+  }, []);
 
   const { data: playlist, isLoading: playlistLoading } = useQuery({
     queryKey: ["playlist", playlistId],
@@ -38,6 +44,40 @@ export default function PlaylistDetail() {
     },
     enabled: !!playlist?.track_ids?.length,
   });
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file) => {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const newPost = await base44.entities.ArtPost.create({
+        title: file.name,
+        file_url,
+        creator_id: currentUser.id,
+        creator_name: currentUser.display_name || currentUser.full_name,
+        creator_avatar: currentUser.avatar_url,
+        medium: "original"
+      });
+      const updated = {
+        ...playlist,
+        track_ids: [...(playlist.track_ids || []), newPost.id]
+      };
+      await base44.entities.Playlist.update(playlistId, {
+        track_ids: updated.track_ids
+      });
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
+      queryClient.invalidateQueries({ queryKey: ["playlistTracks"] });
+    }
+  });
+
+  const handleUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file && currentUser) {
+      uploadMutation.mutate(file);
+    }
+    e.target.value = "";
+  };
 
   const removeTrackMutation = useMutation({
     mutationFn: async (trackId) => {
@@ -140,6 +180,15 @@ export default function PlaylistDetail() {
           <h1 className="text-xl font-heading font-bold">{playlist.name}</h1>
           <p className="text-xs text-muted-foreground">{tracks.length} tracks</p>
         </div>
+        {currentUser && (
+          <div>
+            <input ref={fileInputRef} type="file" accept="audio/*" className="hidden" onChange={handleUpload} />
+            <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploadMutation.isPending}>
+              {uploadMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+              Upload Track
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Main Content */}

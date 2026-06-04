@@ -51,7 +51,12 @@ export default function StudioNew() {
   const isCollaborator = selectedProject?.collaborator_ids?.includes(currentUser?.id);
   const canEdit = isOwner || (isCollaborator && selectedProject?.collaborator_roles?.[currentUser?.id] === "editor");
 
-  const { past, future, push, undo, redo } = useUndoRedo();
+  const undoRedo = useUndoRedo();
+  const past = undoRedo?.past || [];
+  const future = undoRedo?.future || [];
+  const push = undoRedo?.push || (() => {});
+  const undo = undoRedo?.undo || (() => {});
+  const redo = undoRedo?.redo || (() => {});
 
   const updateTrackMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Track.update(id, data),

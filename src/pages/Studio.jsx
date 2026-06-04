@@ -116,11 +116,16 @@ export default function Studio() {
     if (!isRecording) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: { echoCancellation: true, noiseSuppression: true } 
+          audio: { 
+            echoCancellation: false, 
+            noiseSuppression: false,
+            autoGainControl: false,
+            latency: 0
+          } 
         });
         mediaStreamRef.current = stream;
         
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
         audioContextRef.current = audioCtx;
         const source = audioCtx.createMediaStreamSource(stream);
         

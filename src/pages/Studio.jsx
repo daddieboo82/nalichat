@@ -599,6 +599,7 @@ export default function Studio() {
         {/* Tools */}
         <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
           <Button variant="ghost" size="icon" onClick={() => setActiveTool('trim')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'trim' && "bg-primary/20 text-primary")} title="Trim Tool"><MoveHorizontal className="w-3.5 h-3.5" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => setActiveTool('cut')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'cut' && "bg-primary/20 text-primary")} title="Cut Tool"><Scissors className="w-3.5 h-3.5" /></Button>
           <Button variant="ghost" size="icon" onClick={() => setActiveTool('grab')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'grab' && "bg-primary/20 text-primary")} title="Grabber Tool"><MousePointer2 className="w-3.5 h-3.5" /></Button>
           <Button variant="ghost" size="icon" onClick={() => setActiveTool('fade')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'fade' && "bg-primary/20 text-primary")} title="Fade Tool"><Crosshair className="w-3.5 h-3.5" /></Button>
           <Button variant="ghost" size="icon" onClick={() => setActiveTool('smart')} className={cn("w-7 h-7 rounded text-muted-foreground border border-transparent hover:text-foreground", activeTool === 'smart' && "border-primary text-primary bg-primary/10")} title="Smart Tool">
@@ -830,6 +831,43 @@ export default function Studio() {
                       onPointerDown={(e) => {
                         e.stopPropagation();
                         if (track.locked || activeTool === 'fade') return;
+
+                        if (activeTool === 'cut') {
+                           const target = e.currentTarget;
+                           const rect = target.getBoundingClientRect();
+                           const clickX = e.clientX - rect.left;
+                           const clickRatio = clickX / rect.width;
+                           
+                           const splitDuration = track.duration * clickRatio;
+                           const splitTime = track.startTime + splitDuration;
+                           
+                           let nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+                           const splitIndex = Math.floor(track.waveform.length * clickRatio);
+                           
+                           const trackPart1 = {
+                             ...track,
+                             duration: splitDuration,
+                             waveform: track.waveform.slice(0, splitIndex)
+                           };
+                           
+                           const trackPart2 = {
+                             ...track,
+                             id: nextId,
+                             name: `${track.name} (Cut)`,
+                             startTime: splitTime,
+                             duration: track.duration - splitDuration,
+                             waveform: track.waveform.slice(splitIndex)
+                           };
+                           
+                           setTracks(prev => {
+                             const idx = prev.findIndex(t => t.id === track.id);
+                             const newTracks = [...prev];
+                             newTracks.splice(idx, 1, trackPart1, trackPart2);
+                             return newTracks;
+                           });
+                           return;
+                        }
+
                         const target = e.currentTarget;
                         const startX = e.clientX;
                         const initialStartTime = track.startTime !== undefined ? track.startTime : 0;

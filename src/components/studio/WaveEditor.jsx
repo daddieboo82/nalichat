@@ -160,7 +160,25 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 </div>
 
                 <div className="w-px h-4 bg-border/50 mx-2" />
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground"><Scissors className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={() => {
+                  if (selection.start !== selection.end) {
+                    const minStart = Math.min(selection.start, selection.end);
+                    const maxEnd = Math.max(selection.start, selection.end);
+                    const newWaveform = track.waveform.slice(
+                      Math.floor(minStart * track.waveform.length),
+                      Math.floor(maxEnd * track.waveform.length)
+                    );
+                    const newTrack = {
+                      ...track,
+                      waveform: newWaveform,
+                      duration: (track.duration || 40) * (maxEnd - minStart),
+                      startTime: (track.startTime || 0) + ((track.duration || 40) * minStart)
+                    };
+                    onSave(track.id, newTrack);
+                  } else {
+                    toast.error("Use the Select tool to highlight a region first to trim");
+                  }
+                }} className="text-muted-foreground hover:text-foreground" title="Trim to Selection"><Scissors className="w-4 h-4" /></Button>
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground"><Copy className="w-4 h-4" /></Button>
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-400"><Trash2 className="w-4 h-4" /></Button>
                 <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">

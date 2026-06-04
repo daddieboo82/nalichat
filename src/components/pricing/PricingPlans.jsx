@@ -62,8 +62,9 @@ export default function PricingPlans() {
   };
 
   return (
-    <section className="py-16 px-6 max-w-7xl mx-auto">
-      <div className="text-center mb-12">
+    <div className="h-full overflow-y-auto bg-background">
+      <section className="py-16 px-6 max-w-7xl mx-auto">
+        <div className="text-center mb-12">
         <h2 className="font-heading font-black text-4xl mb-4">
           Unlock Full Access
         </h2>
@@ -136,6 +137,7 @@ export default function PricingPlans() {
           </motion.div>
         ))}
       </div>
-    </section>
+      </section>
+    </div>
   );
 }

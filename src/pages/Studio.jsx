@@ -593,12 +593,20 @@ export default function Studio() {
           <div className="h-8 border-b border-border/30 bg-card/40 sticky top-0 z-20 flex items-end px-4 overflow-hidden">
             {/* Timeline markers */}
             <div 
-              className="w-[2000px] h-full relative cursor-pointer" 
+              className="w-[2000px] h-full relative cursor-pointer select-none" 
               style={{ transform: `scaleX(${zoom})`, transformOrigin: 'left' }}
               onPointerDown={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const x = (e.clientX - rect.left) / zoom;
                 setCurrentTime(Math.max(0, x / 20));
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }}
+              onPointerMove={(e) => {
+                if (e.buttons === 1 && e.currentTarget.hasPointerCapture(e.pointerId)) {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = (e.clientX - rect.left) / zoom;
+                  setCurrentTime(Math.max(0, x / 20));
+                }
               }}
             >
               {Array.from({ length: 50 }).map((_, i) => (
@@ -611,22 +619,32 @@ export default function Studio() {
 
           {/* Tracks Area */}
           <div 
-            className="relative w-[2000px] min-h-full cursor-text" 
+            className="relative w-[2000px] min-h-full cursor-text select-none" 
             style={{ transform: `scaleX(${zoom})`, transformOrigin: 'top left' }}
             onPointerDown={(e) => {
               if (e.target.closest('.audio-clip')) return;
               const rect = e.currentTarget.getBoundingClientRect();
               const x = (e.clientX - rect.left) / zoom;
               setCurrentTime(Math.max(0, x / 20));
+              e.currentTarget.setPointerCapture(e.pointerId);
+            }}
+            onPointerMove={(e) => {
+              if (e.buttons === 1 && e.currentTarget.hasPointerCapture(e.pointerId)) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / zoom;
+                setCurrentTime(Math.max(0, x / 20));
+              }
             }}
           >
             {/* Playhead */}
             <div 
               ref={playheadRef}
-              className="absolute top-0 bottom-0 w-px bg-primary z-30 pointer-events-none"
+              className="absolute top-0 bottom-0 w-[2px] bg-primary z-30 pointer-events-none group"
               style={{ left: `${currentTime * 20}px` }}
             >
-              <div className="absolute top-0 -translate-x-1/2 w-3 h-3 bg-primary rotate-45" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
+              <div className="absolute top-0 -translate-x-1/2 w-5 h-6 bg-primary rounded-b-sm shadow-md flex items-center justify-center">
+                <div className="w-[2px] h-3 bg-background/50 rounded-full" />
+              </div>
             </div>
 
             {/* Waveform Rows */}
@@ -680,12 +698,12 @@ export default function Studio() {
                       }}
                     >
                       <div className="absolute top-1 left-2 text-[10px] font-medium text-white/50">{track.name} - Take 1</div>
-                      <div className="absolute inset-x-0 bottom-2 top-6 flex items-center justify-center gap-px px-2">
+                      <div className="absolute inset-x-0 bottom-2 top-6 flex items-center justify-start gap-px px-2 overflow-hidden">
                         {track.waveform.map((val, i) => (
                           <div 
                             key={i} 
-                            className={cn("w-1 rounded-full opacity-80", track.color)}
-                            style={{ height: `${val * 100}%` }}
+                            className={cn("w-1 rounded-full opacity-80 shrink-0", track.color)}
+                            style={{ height: `${Math.max(5, val * 100)}%` }}
                           />
                         ))}
                       </div>

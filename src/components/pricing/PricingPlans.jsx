@@ -10,6 +10,7 @@ const plans = [
     price: "0",
     description: "Discover & collaborate with artists",
     features: [
+      "Unlimited Studio Tracks",
       "Unlimited Messaging & Voice Notes",
       "Browse & Listen to Tracks",
       "Create & Share Playlists",
@@ -22,7 +23,7 @@ const plans = [
   },
   {
     name: "Creator",
-    price: "7.99",
+    price: "9.99",
     period: "/month",
     description: "Upload & share your music",
     features: [
@@ -32,7 +33,6 @@ const plans = [
       "File Sharing (50GB)",
       "Custom Artist Profile",
       "Playlist Management Tools",
-      "Weekly Creator Support",
     ],
     cta: "Subscribe Now",
     popular: true,
@@ -46,17 +46,17 @@ const plans = [
   },
   {
     name: "Artist Pro",
-    price: "14.99",
+    price: "19.99",
     period: "/month",
     description: "Advanced collaboration & growth",
     features: [
       "Everything in Creator",
+      "Unlimited Studio Tracks",
       "File Sharing (250GB)",
       "Collaboration Tools (up to 5 people)",
       "Advanced Analytics & Insights",
       "Audience Management Tools",
       "Priority Support",
-      "Early Access to New Features",
     ],
     cta: "Subscribe Now",
     popular: false,

@@ -5,7 +5,8 @@ import { Slider } from '@/components/ui/slider';
 import { 
   Play, Square, Circle, Mic, Plus, Settings2, Volume2, 
   Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical,
-  Maximize2, Pause, Layers
+  Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
+  Cpu
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
@@ -22,13 +23,31 @@ export default function Studio() {
   const [currentTime, setCurrentTime] = useState(0);
   const [zoom, setZoom] = useState(1);
   const playheadRef = useRef(null);
+  const [maxTracks, setMaxTracks] = useState(2); // Free tier default
   
   const [tracks, setTracks] = useState([
     { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, waveform: generateWaveform(120) },
-    { id: 2, name: "Backing Vocals", color: "bg-pink-500", volume: 60, pan: 30, muted: false, solo: false, waveform: generateWaveform(120) },
-    { id: 3, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, waveform: generateWaveform(120) },
-    { id: 4, name: "Adlibs", color: "bg-yellow-500", volume: 40, pan: 80, muted: true, solo: false, waveform: generateWaveform(120) },
+    { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, waveform: generateWaveform(120) },
   ]);
+
+  useEffect(() => {
+    const fetchSub = async () => {
+      try {
+        const user = await base44.auth.me();
+        if (user) {
+          const subs = await base44.entities.Subscription.list('-created_date', 10);
+          const activeSub = subs.find(s => s.user_id === user.id && s.status === 'active');
+          if (activeSub) {
+            if (activeSub.plan === 'creator') setMaxTracks(16);
+            else if (activeSub.plan === 'pro') setMaxTracks(999);
+          }
+        }
+      } catch (e) {
+        // Not logged in or no sub
+      }
+    };
+    fetchSub();
+  }, []);
 
   // Simulate playback
   useEffect(() => {
@@ -73,7 +92,7 @@ export default function Studio() {
   };
 
   const addTrack = () => {
-    const newId = Math.max(...tracks.map(t => t.id)) + 1;
+    const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
     const colors = ["bg-primary", "bg-pink-500", "bg-accent", "bg-yellow-500", "bg-purple-500", "bg-green-500"];
     setTracks([...tracks, {
       id: newId,
@@ -141,32 +160,50 @@ export default function Studio() {
           </Button>
         </div>
 
-        {/* Right Tools */}
-        <div className="flex items-center gap-3">
+        {/* Right Tools - Hardware & Export */}
+        <div className="flex items-center gap-2">
+          {/* Hardware Config */}
+          <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
+            <Button variant="ghost" size="icon" title="Audio Interface" className="w-8 h-8 rounded-lg text-green-400 hover:bg-secondary"><Cpu className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon" title="Microphone Input" className="w-8 h-8 rounded-lg text-green-400 hover:bg-secondary"><Mic className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon" title="Headphones Output" className="w-8 h-8 rounded-lg text-green-400 hover:bg-secondary"><Headphones className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon" title="MIDI Controller" className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Keyboard className="w-4 h-4" /></Button>
+          </div>
+
           <div className="font-mono text-xl text-primary font-bold bg-primary/10 px-4 py-1.5 rounded-lg border border-primary/20 w-32 text-center">
             {formatTime(currentTime)}
           </div>
-          <Button variant="outline" className="gap-2 rounded-xl hidden md:flex border-border/50">
-            <Save className="w-4 h-4" /> Save Project
-          </Button>
-          <Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary hidden md:flex">
-            <Download className="w-4 h-4" /> Export Mix
-          </Button>
+          
+          <div className="hidden md:flex items-center gap-2">
+            <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={() => toast("Imported WAV/MP3/MIDI")}>
+              <Upload className="w-4 h-4" /> Import
+            </Button>
+            <Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary" onClick={() => toast.success("Exporting to WAV (24-bit)")}>
+              <Download className="w-4 h-4" /> Export
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Toolbar 2 (Tools) */}
-      <div className="h-12 border-b border-border/40 bg-card/40 flex items-center px-4 gap-4 shrink-0">
-        <Button onClick={addTrack} variant="secondary" size="sm" className="gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20">
+      <div className="h-12 border-b border-border/40 bg-card/40 flex items-center px-4 gap-4 shrink-0 overflow-x-auto custom-scrollbar">
+        <Button onClick={addTrack} variant="secondary" size="sm" className="gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
           <Plus className="w-4 h-4" /> Add Track
         </Button>
-        <div className="h-5 w-px bg-border/50 mx-2" />
-        <div className="flex items-center gap-1">
+        <span className="text-xs font-medium text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md shrink-0">
+          Tracks: {tracks.length}
+        </span>
+        <div className="h-5 w-px bg-border/50 mx-2 shrink-0" />
+        <div className="flex items-center gap-1 shrink-0">
           <Button variant="ghost" size="icon" className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground"><Scissors className="w-4 h-4" /></Button>
           <Button variant="ghost" size="icon" className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground"><Copy className="w-4 h-4" /></Button>
         </div>
-        <div className="h-5 w-px bg-border/50 mx-2" />
-        <div className="flex items-center gap-3 ml-auto text-sm text-muted-foreground">
+        <div className="h-5 w-px bg-border/50 mx-2 shrink-0" />
+        <div className="flex items-center gap-2 shrink-0 text-sm text-muted-foreground bg-secondary/30 px-3 py-1 rounded-lg">
+          <span className="font-medium text-foreground">Formats:</span> 
+          <span>WAV</span> • <span>MP3</span> • <span>FLAC</span> • <span>OGG</span> • <span>MIDI</span>
+        </div>
+        <div className="flex items-center gap-3 ml-auto text-sm text-muted-foreground shrink-0 pl-4">
           <Maximize2 className="w-4 h-4" /> Zoom
           <Slider 
             value={[zoom]} 

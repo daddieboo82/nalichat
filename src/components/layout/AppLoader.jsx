@@ -11,6 +11,13 @@ export default function AppLoader({ onDone }) {
   const rafRef = useRef(null);
   const startRef = useRef(Date.now());
 
+  // play startup sound
+  useEffect(() => {
+    const audio = new Audio("https://actions.google.com/sounds/v1/science_fiction/power_up.ogg");
+    audio.volume = 0.5;
+    audio.play().catch((e) => console.warn("Autoplay blocked:", e));
+  }, []);
+
   // animate equalizer bars
   useEffect(() => {
     const tick = () => {

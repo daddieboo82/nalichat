@@ -257,9 +257,14 @@ export default function Studio() {
     });
   }, [tracks]);
 
-  // Hardware Detection
+  // Hardware Detection - Refined and Optimized
   useEffect(() => {
-    const updateDevices = async () => {
+    let mounted = true;
+    let midiAccessRef = null;
+
+    const checkDevices = async () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+      
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         
@@ -267,47 +272,62 @@ export default function Studio() {
         let hasInterface = false;
         let hasOutput = false;
 
-        devices.forEach(device => {
+        for (const device of devices) {
           if (device.kind === 'audioinput') {
             hasMic = true;
-            if (/usb|interface|focusrite|steinberg|behringer|audio|universal/i.test(device.label)) {
+            const label = device.label.toLowerCase();
+            if (label && (label.includes('usb') || label.includes('interface') || label.includes('focusrite') || label.includes('steinberg') || label.includes('behringer') || label.includes('universal'))) {
               hasInterface = true;
             }
           }
           if (device.kind === 'audiooutput') {
             hasOutput = true;
           }
-        });
+        }
 
         let hasMidi = false;
         if (navigator.requestMIDIAccess) {
           try {
-            const midiAccess = await navigator.requestMIDIAccess();
-            hasMidi = midiAccess.inputs.size > 0;
-            
-            midiAccess.onstatechange = () => {
-              setHardware(prev => ({ ...prev, midi: midiAccess.inputs.size > 0 }));
-            };
+            if (!midiAccessRef) {
+              midiAccessRef = await navigator.requestMIDIAccess({ sysex: false });
+              midiAccessRef.onstatechange = (e) => {
+                if (mounted) {
+                   setHardware(prev => ({ ...prev, midi: e.currentTarget.inputs.size > 0 }));
+                }
+              };
+            }
+            hasMidi = midiAccessRef.inputs.size > 0;
           } catch (e) {
-            console.log("MIDI not supported or denied");
+            console.warn("MIDI access denied or unsupported");
           }
         }
 
-        setHardware({
-          mic: hasMic,
-          interface: hasInterface,
-          output: hasOutput,
-          midi: hasMidi
-        });
+        if (mounted) {
+          setHardware({
+            mic: hasMic,
+            interface: hasInterface,
+            output: hasOutput,
+            midi: hasMidi
+          });
+        }
       } catch (err) {
-        console.error("Error enumerating devices:", err);
+        console.error("Hardware detection error:", err);
       }
     };
 
-    updateDevices();
-    navigator.mediaDevices.addEventListener('devicechange', updateDevices);
+    checkDevices();
+    if (navigator.mediaDevices) {
+      navigator.mediaDevices.addEventListener('devicechange', checkDevices);
+    }
+    
     return () => {
-      navigator.mediaDevices.removeEventListener('devicechange', updateDevices);
+      mounted = false;
+      if (navigator.mediaDevices) {
+        navigator.mediaDevices.removeEventListener('devicechange', checkDevices);
+      }
+      if (midiAccessRef) {
+        midiAccessRef.onstatechange = null;
+      }
     };
   }, []);
 

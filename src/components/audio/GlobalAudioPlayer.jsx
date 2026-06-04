@@ -24,7 +24,7 @@ export default function GlobalAudioPlayer() {
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 100, opacity: 0 }}
-        className="fixed bottom-[calc(3.75rem+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-3xl border-t border-white/10 shadow-[0_-20px_40px_-10px_rgba(0,0,0,0.5)] text-white safe-bottom"
+        className="fixed bottom-[calc(3.75rem+env(safe-area-inset-bottom))] md:bottom-[53px] left-0 right-0 z-50 bg-black/95 backdrop-blur-3xl border-t border-white/10 shadow-[0_-20px_40px_-10px_rgba(0,0,0,0.5)] text-white safe-bottom"
       >
         {/* Progress Bar Top */}
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-white/10 group cursor-pointer hover:h-2 transition-all" onClick={(e) => {
@@ -33,7 +33,7 @@ export default function GlobalAudioPlayer() {
           seek(percent * duration);
         }}>
           <div 
-            className="absolute top-0 left-0 h-full bg-white relative transition-all"
+            className="absolute top-0 left-0 h-full bg-white transition-all"
             style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
           >
              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_10px_rgba(255,255,255,0.5)]" />

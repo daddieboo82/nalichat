@@ -111,7 +111,7 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
         </div>
 
         {post.file_url && (
-          <CustomMediaPlayer src={post.file_url} className="mt-2" />
+          <CustomMediaPlayer src={post.file_url} title={post.title} className="mt-2" />
         )}
       </div>
       </div>

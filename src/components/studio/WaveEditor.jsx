@@ -77,20 +77,51 @@ export default function WaveEditor({ track, onClose, onSave }) {
   // Initialize segments
   useEffect(() => {
     if (track && segments.length === 0) {
-      const initialSegs = track.segments && track.segments.length > 0 ? track.segments : [{
-        id: `seg_${Date.now()}`,
-        startOffset: 0, // time in track where this segment starts
-        sourceStart: 0, // normalized 0-1
-        sourceEnd: 1, // normalized 0-1
-        duration: track.duration || 40,
-        waveform: track.waveform || Array.from({length: 100}, () => Math.random())
-      }];
-      setSegments(initialSegs);
-      setHistory([initialSegs]);
-      setHistoryIdx(0);
-      if (track.effects) setActiveEffects(track.effects);
+      let loadedAutosave = false;
+      try {
+        const saved = localStorage.getItem('nalistudio_waveeditor_autosave');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.trackId === track.id) {
+            setSegments(parsed.segments);
+            setHistory([parsed.segments]);
+            setHistoryIdx(0);
+            setActiveEffects(parsed.activeEffects || []);
+            loadedAutosave = true;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load autosave", e);
+      }
+
+      if (!loadedAutosave) {
+        const initialSegs = track.segments && track.segments.length > 0 ? track.segments : [{
+          id: `seg_${Date.now()}`,
+          startOffset: 0, // time in track where this segment starts
+          sourceStart: 0, // normalized 0-1
+          sourceEnd: 1, // normalized 0-1
+          duration: track.duration || 40,
+          waveform: track.waveform || Array.from({length: 100}, () => Math.random())
+        }];
+        setSegments(initialSegs);
+        setHistory([initialSegs]);
+        setHistoryIdx(0);
+        if (track.effects) setActiveEffects(track.effects);
+      }
     }
   }, [track]);
+
+  // Autosave when making changes
+  useEffect(() => {
+    if (track && segments.length > 0) {
+      try {
+        const stateToSave = { trackId: track.id, segments, activeEffects };
+        localStorage.setItem('nalistudio_waveeditor_autosave', JSON.stringify(stateToSave));
+      } catch (e) {
+        console.error("Failed to autosave", e);
+      }
+    }
+  }, [segments, activeEffects, track]);
 
   const saveHistory = (newSegs) => {
     const newHist = history.slice(0, historyIdx + 1);
@@ -293,9 +324,12 @@ export default function WaveEditor({ track, onClose, onSave }) {
   };
 
   const handleSave = () => {
+    try {
+      localStorage.removeItem('nalistudio_waveeditor_autosave');
+    } catch (e) {}
     onSave(track.id, { ...track, segments, effects: activeEffects });
     onClose();
-    toast.success("Track edits saved!");
+    toast.success("Track edits saved successfully!");
   };
 
   // Playhead animation

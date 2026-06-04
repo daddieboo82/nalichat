@@ -78,10 +78,32 @@ export default function Studio() {
     midi: false
   });
   
-  const [tracks, setTracks] = useState([
-    { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
-    { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
-  ]);
+  const [tracks, setTracks] = useState(() => {
+    try {
+      const saved = localStorage.getItem('nalistudio_project_autosave');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error("Failed to load project autosave", e);
+    }
+    return [
+      { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+      { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+    ];
+  });
+
+  // Autosave tracks
+  useEffect(() => {
+    if (tracks && tracks.length > 0) {
+      try {
+        localStorage.setItem('nalistudio_project_autosave', JSON.stringify(tracks));
+      } catch (e) {
+        console.error("Failed to autosave project", e);
+      }
+    }
+  }, [tracks]);
 
   const [historyIndex, setHistoryIndex] = useState(-1);
   const historyRef = useRef([]);
@@ -671,6 +693,15 @@ export default function Studio() {
     toast.success("Track added");
   };
 
+  const handleSave = () => {
+    try {
+      localStorage.setItem('nalistudio_project_autosave', JSON.stringify(tracks));
+      toast.success("Project saved successfully!");
+    } catch (e) {
+      toast.error("Failed to save project.");
+    }
+  };
+
   const saveTrackEffects = (trackId, updatedTrack) => {
     setTracksWithHistory(tracks.map(t => t.id === trackId ? updatedTrack : t));
   };
@@ -829,6 +860,9 @@ export default function Studio() {
             <input type="file" ref={fileInputRef} className="hidden" accept="audio/*,.mid,.midi,.flac,.ogg,.m4a,.wma,.aiff" onChange={handleFileChange} />
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleImportClick}>
               <Upload className="w-4 h-4" /> Import
+            </Button>
+            <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleSave}>
+              <Save className="w-4 h-4" /> Save
             </Button>
             <Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary" onClick={handleExport}>
               <Download className="w-4 h-4" /> Export

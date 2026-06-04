@@ -3,10 +3,13 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AppLoader from '@/components/layout/AppLoader';
+import NavRipple from '@/components/layout/NavRipple';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -93,9 +96,13 @@ const AuthenticatedApp = () => {
 };
 
 function App() {
+  const [loaded, setLoaded] = useState(false);
+
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
+        {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
+        <NavRipple />
         <Router>
           <AuthenticatedApp />
         </Router>

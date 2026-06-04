@@ -75,7 +75,7 @@ export default function AppLayout() {
                   key={path}
                   to={path}
                   title={label}
-                  onClick={() => sounds.click()}
+                  onClick={() => sounds.nav()}
                   className={cn(
                     "px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap text-xs font-medium group",
                     isActive

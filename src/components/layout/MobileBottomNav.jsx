@@ -1,6 +1,8 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Home, Compass, Mic, MessageSquare, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { sounds } from "@/hooks/use-sound";
 
 const tabs = [
   { icon: Home, label: "Home", path: "/" },
@@ -21,11 +23,9 @@ export default function MobileBottomNav() {
   const handleTap = (e, tabPath) => {
     e.preventDefault();
     const active = isActive(tabPath);
-    // Re-selecting the active tab resets it to its root path and scrolls to top.
+    sounds.click();
     if (active) {
-      if (path !== tabPath) {
-        navigate(tabPath);
-      }
+      if (path !== tabPath) navigate(tabPath);
       const scroller = document.querySelector("main");
       scroller?.scrollTo?.({ top: 0, behavior: "smooth" });
       return;
@@ -51,7 +51,20 @@ export default function MobileBottomNav() {
                 active ? "text-primary" : "text-muted-foreground"
               )}
             >
-              <Icon className={cn("w-5 h-5", active && "scale-110 transition-transform")} />
+              <motion.div
+                animate={active ? { scale: [1, 1.25, 1.1], y: [0, -3, 0] } : { scale: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+              >
+                {active && (
+                  <motion.div
+                    className="absolute w-8 h-8 rounded-full bg-primary/20 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                    initial={{ scale: 0, opacity: 0.6 }}
+                    animate={{ scale: 2, opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                  />
+                )}
+                <Icon className="w-5 h-5" />
+              </motion.div>
               <span className="text-[10px] font-medium">{label}</span>
             </a>
           );

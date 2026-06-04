@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Mic, Square, Play, Pause, Save, Trash2, Loader2, Radio } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { sounds } from "@/hooks/use-sound";
 
 export default function Record() {
   const [isRecording, setIsRecording] = useState(false);
@@ -48,6 +49,7 @@ export default function Record() {
   };
 
   const startRecording = async () => {
+    sounds.recStart();
     const constraints = { audio: inputDevice ? { deviceId: { exact: inputDevice } } : true };
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     streamRef.current = stream;
@@ -87,6 +89,7 @@ export default function Record() {
   };
 
   const stopRecording = () => {
+    sounds.recStop();
     mediaRecorderRef.current?.stop();
     setIsRecording(false);
     setIsPaused(false);
@@ -149,62 +152,92 @@ export default function Record() {
           </Select>
         </div>
 
-        {/* Visualizer */}
-        <div className="bg-card rounded-2xl border border-border p-8 mb-8">
-          <div className="flex items-end justify-center gap-1 h-32 mb-6">
-            {visualData.map((v, i) => (
+        {/* Immersive Visualizer */}
+        <div className="relative flex flex-col items-center justify-center mb-8">
+          {/* Ambient outer glow */}
+          <AnimatePresence>
+            {isRecording && !isPaused && (
               <motion.div
-                key={i}
-                className={cn(
-                  "w-1.5 rounded-full",
-                  isRecording && !isPaused ? "bg-primary" : "bg-muted-foreground/20"
-                )}
-                animate={{ height: Math.max(4, v * 128) }}
-                transition={{ duration: 0.05 }}
+                className="absolute inset-0 rounded-full pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{ background: "radial-gradient(circle, hsl(265 80% 60% / 0.18) 0%, transparent 70%)" }}
               />
-            ))}
-          </div>
-
-          {/* Timer */}
-          <div className="text-center mb-6">
-            <p className="text-5xl font-mono font-bold tracking-wider">{formatTime(currentTime)}</p>
-            {isRecording && (
-              <div className="flex items-center justify-center gap-2 mt-2">
-                <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
-                <span className="text-sm text-destructive font-medium">{isPaused ? "Paused" : "Recording"}</span>
-              </div>
             )}
-          </div>
+          </AnimatePresence>
 
-          {/* Controls */}
-          <div className="flex items-center justify-center gap-4">
-            {!isRecording ? (
-              <Button
-                size="lg"
-                className="rounded-full w-20 h-20 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/30"
-                onClick={startRecording}
-              >
-                <Mic className="w-8 h-8" />
-              </Button>
-            ) : (
-              <>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="rounded-full w-14 h-14 border-border"
-                  onClick={togglePause}
+          {/* Radial bar ring */}
+          <div className="relative w-72 h-72 flex items-center justify-center">
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 288 288" style={{ overflow: "visible" }}>
+              {visualData.slice(0, 48).map((v, i) => {
+                const angle = (i / 48) * 2 * Math.PI - Math.PI / 2;
+                const innerR = 90;
+                const barH = isRecording && !isPaused ? Math.max(4, v * 50) : 4;
+                const outerR = innerR + barH;
+                const x1 = 144 + Math.cos(angle) * innerR;
+                const y1 = 144 + Math.sin(angle) * innerR;
+                const x2 = 144 + Math.cos(angle) * outerR;
+                const y2 = 144 + Math.sin(angle) * outerR;
+                const hue = 265 + (i / 48) * 80;
+                const lit = isRecording && !isPaused ? 55 + v * 25 : 30;
+                return (
+                  <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
+                    stroke={`hsl(${hue} 80% ${lit}%)`}
+                    strokeWidth="2.5" strokeLinecap="round"
+                    style={{ transition: "all 0.06s ease" }}
+                  />
+                );
+              })}
+            </svg>
+
+            {/* Center button */}
+            <div className="relative z-10 flex flex-col items-center gap-3">
+              {!isRecording ? (
+                <motion.button
+                  onClick={startRecording}
+                  whileTap={{ scale: 0.93 }}
+                  whileHover={{ scale: 1.05 }}
+                  className="w-24 h-24 rounded-full flex items-center justify-center shadow-2xl shadow-primary/40"
+                  style={{ background: "linear-gradient(135deg, hsl(265 80% 60%), hsl(340 80% 60%))" }}
+                  animate={{ boxShadow: ["0 0 20px hsl(265 80% 60% / 0.3)", "0 0 40px hsl(265 80% 60% / 0.55)", "0 0 20px hsl(265 80% 60% / 0.3)"] }}
+                  transition={{ repeat: Infinity, duration: 2.5 }}
                 >
-                  {isPaused ? <Radio className="w-6 h-6" /> : <Pause className="w-6 h-6" />}
-                </Button>
-                <Button
-                  size="lg"
-                  className="rounded-full w-20 h-20 bg-destructive hover:bg-destructive/90 shadow-lg shadow-destructive/30"
-                  onClick={stopRecording}
-                >
-                  <Square className="w-7 h-7" />
-                </Button>
-              </>
-            )}
+                  <Mic className="w-9 h-9 text-white" />
+                </motion.button>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <motion.button
+                    onClick={stopRecording}
+                    whileTap={{ scale: 0.93 }}
+                    className="w-24 h-24 rounded-full bg-destructive flex items-center justify-center shadow-2xl shadow-destructive/40"
+                    animate={{ boxShadow: isPaused ? undefined : ["0 0 15px hsl(0 72% 51% / 0.4)", "0 0 35px hsl(0 72% 51% / 0.7)", "0 0 15px hsl(0 72% 51% / 0.4)"] }}
+                    transition={{ repeat: Infinity, duration: 1 }}
+                  >
+                    <Square className="w-8 h-8 text-white" />
+                  </motion.button>
+                  <button
+                    onClick={togglePause}
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground bg-secondary/60 hover:bg-secondary transition-all"
+                  >
+                    {isPaused ? <Radio className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+                  </button>
+                </div>
+              )}
+
+              {/* Timer */}
+              <p className="text-3xl font-mono font-black tracking-wider mt-1">{formatTime(currentTime)}</p>
+              {isRecording && (
+                <div className="flex items-center gap-1.5">
+                  <motion.div
+                    className="w-1.5 h-1.5 rounded-full bg-destructive"
+                    animate={{ opacity: isPaused ? 0.4 : [1, 0.2, 1] }}
+                    transition={{ repeat: Infinity, duration: 0.9 }}
+                  />
+                  <span className="text-xs text-destructive font-semibold">{isPaused ? "Paused" : "REC"}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

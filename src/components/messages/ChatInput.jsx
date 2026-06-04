@@ -3,6 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resumableUpload } from "@/lib/resumableUpload";
+import { sounds } from "@/hooks/use-sound";
+import { motion, AnimatePresence } from "framer-motion";
 
 const EMOJI_LIST = ["😀","😂","🥰","😎","🤩","😮","😢","😡","👍","👎","❤️","🔥","🎵","🎤","🎸","🥁","💯","🙏","✨","🎉","💪","🤝","🎶","🎧"];
 
@@ -29,6 +31,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
 
   const handleSend = () => {
     if (!text.trim() || disabled) return;
+    sounds.upload();
     const payload = { text: text.trim(), type: "text" };
     if (replyTo) {
       payload.reply_to_text = replyTo.text || `[${replyTo.type}]`;
@@ -81,11 +84,12 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
   };
 
   const startRecording = async () => {
+    sounds.recStart();
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      // Permission denied or mic unavailable — silently bail
+      sounds.error();
       return;
     }
     const recorder = new MediaRecorder(stream);
@@ -115,6 +119,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
   };
 
   const stopRecording = () => {
+    sounds.recStop();
     mediaRecorderRef.current?.stop();
     clearInterval(timerRef.current);
     setIsRecording(false);
@@ -137,7 +142,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
 
   return (
     <div
-      className={cn("border-t border-border/40 backdrop-blur-xl shrink-0 transition-all", dragOver && "bg-primary/5")}
+      className={cn("border-t border-border/40 backdrop-blur-xl shrink-0 transition-all duration-300", dragOver && "bg-primary/5 border-primary/40")}
       style={{ background: "hsl(240 10% 5% / 0.95)" }}
       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
       onDragLeave={() => setDragOver(false)}
@@ -219,14 +224,28 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
 
         {/* Recording or textarea */}
         {isRecording ? (
-          <div className="flex-1 flex items-center gap-2 sm:gap-3 bg-destructive/10 border border-destructive/30 rounded-2xl px-3 sm:px-4 py-2.5 h-10">
-            <div className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse shrink-0" />
+          <motion.div
+            className="flex-1 flex items-center gap-2 sm:gap-3 rounded-2xl px-3 sm:px-4 py-2.5 h-10 relative overflow-hidden"
+            style={{ background: "hsl(0 72% 51% / 0.1)", border: "1px solid hsl(0 72% 51% / 0.4)" }}
+            animate={{ boxShadow: ["0 0 0px hsl(0 72% 51% / 0)", "0 0 16px hsl(0 72% 51% / 0.3)", "0 0 0px hsl(0 72% 51% / 0)"] }}
+            transition={{ repeat: Infinity, duration: 1.2 }}
+          >
+            {/* pulsing waveform */}
+            <div className="flex items-center gap-0.5 h-5 shrink-0">
+              {[0.4,0.8,1,0.7,0.5,0.9,0.6].map((h, i) => (
+                <motion.div key={i} className="w-0.5 rounded-full bg-destructive"
+                  animate={{ scaleY: [h, 1, h] }}
+                  transition={{ repeat: Infinity, duration: 0.5 + i * 0.07, ease: "easeInOut" }}
+                  style={{ height: `${h * 20}px`, transformOrigin: "center" }}
+                />
+              ))}
+            </div>
             <span className="text-sm text-destructive font-mono font-bold">{fmt(recordingTime)}</span>
-            <span className="text-xs text-muted-foreground hidden sm:block">Recording...</span>
+            <span className="text-xs text-muted-foreground hidden sm:block">Recording…</span>
             <button onClick={cancelRecording} className="ml-auto text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-secondary/60 transition-all touch-manipulation">
               <X className="w-4 h-4" />
             </button>
-          </div>
+          </motion.div>
         ) : (
           <textarea
             ref={textareaRef}
@@ -250,28 +269,35 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
 
         {/* Send or Record */}
         {text.trim() ? (
-          <button
+          <motion.button
             onClick={handleSend}
             disabled={disabled}
-            className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center hover:opacity-90 transition-all shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-primary/30 hover:scale-105 active:scale-95"
+            whileTap={{ scale: 0.88 }}
+            whileHover={{ scale: 1.08 }}
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-primary/40"
           >
             <Send className="w-4 h-4 text-white" />
-          </button>
+          </motion.button>
         ) : isRecording ? (
-          <button
+          <motion.button
             onClick={stopRecording}
-            className="w-10 h-10 rounded-full bg-destructive flex items-center justify-center hover:bg-destructive/90 transition-all shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-destructive/30"
+            whileTap={{ scale: 0.88 }}
+            className="w-10 h-10 rounded-full bg-destructive flex items-center justify-center shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-destructive/40"
+            animate={{ boxShadow: ["0 0 8px hsl(0 72% 51% / 0.4)", "0 0 20px hsl(0 72% 51% / 0.7)", "0 0 8px hsl(0 72% 51% / 0.4)"] }}
+            transition={{ repeat: Infinity, duration: 1 }}
           >
             <StopCircle className="w-5 h-5 text-white" />
-          </button>
+          </motion.button>
         ) : (
-          <button
+          <motion.button
             onClick={startRecording}
             disabled={anyUploading || disabled}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shrink-0 mb-0.5 touch-manipulation"
+            whileTap={{ scale: 0.88 }}
+            whileHover={{ scale: 1.1 }}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0 mb-0.5 touch-manipulation"
           >
             <Mic className="w-5 h-5" />
-          </button>
+          </motion.button>
         )}
       </div>
     </div>

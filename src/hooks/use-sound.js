@@ -38,33 +38,54 @@ export const sounds = {
   /** Hover — very subtle high tick */
   hover: () => playTone({ frequency: 900, type: "sine", duration: 0.04, volume: 0.05 }),
 
-  /** Success — two-tone chime */
+  /** Success — warm three-tone rise */
   success: () => {
-    playTone({ frequency: 880, type: "sine", duration: 0.1, volume: 0.15 });
-    setTimeout(() => playTone({ frequency: 1100, type: "sine", duration: 0.14, volume: 0.12 }), 80);
+    playTone({ frequency: 660, type: "sine", duration: 0.09, volume: 0.14 });
+    setTimeout(() => playTone({ frequency: 880, type: "sine", duration: 0.1, volume: 0.12 }), 80);
+    setTimeout(() => playTone({ frequency: 1100, type: "sine", duration: 0.14, volume: 0.11 }), 160);
   },
 
-  /** Notification pop */
+  /** Notification pop — rising duo */
   notification: () => {
     playTone({ frequency: 520, type: "sine", duration: 0.08, volume: 0.14 });
     setTimeout(() => playTone({ frequency: 780, type: "sine", duration: 0.1, volume: 0.11 }), 60);
   },
 
-  /** Like / heart */
+  /** Like / heart — sparkle */
   like: () => {
     playTone({ frequency: 700, type: "sine", duration: 0.07, volume: 0.13 });
     setTimeout(() => playTone({ frequency: 1050, type: "sine", duration: 0.1, volume: 0.10 }), 55);
+    setTimeout(() => playTone({ frequency: 1400, type: "sine", duration: 0.08, volume: 0.07 }), 110);
   },
 
-  /** Upload / file send */
+  /** Message send — soft swoosh trio */
   upload: () => {
-    playTone({ frequency: 440, type: "sine", duration: 0.08, volume: 0.12 });
-    setTimeout(() => playTone({ frequency: 660, type: "sine", duration: 0.12, volume: 0.10 }), 70);
-    setTimeout(() => playTone({ frequency: 880, type: "sine", duration: 0.14, volume: 0.09 }), 140);
+    playTone({ frequency: 440, type: "sine", duration: 0.07, volume: 0.11 });
+    setTimeout(() => playTone({ frequency: 660, type: "sine", duration: 0.1, volume: 0.09 }), 60);
+    setTimeout(() => playTone({ frequency: 880, type: "sine", duration: 0.12, volume: 0.08 }), 120);
+  },
+
+  /** Recording start — deep pulse */
+  recStart: () => {
+    playTone({ frequency: 220, type: "sine", duration: 0.15, volume: 0.18 });
+    setTimeout(() => playTone({ frequency: 330, type: "sine", duration: 0.2, volume: 0.14 }), 100);
+  },
+
+  /** Recording stop — affirming drop */
+  recStop: () => {
+    playTone({ frequency: 440, type: "sine", duration: 0.12, volume: 0.15 });
+    setTimeout(() => playTone({ frequency: 330, type: "sine", duration: 0.16, volume: 0.12 }), 90);
+    setTimeout(() => playTone({ frequency: 220, type: "sine", duration: 0.2, volume: 0.10 }), 180);
   },
 
   /** Error / alert */
-  error: () => playTone({ frequency: 240, type: "sawtooth", duration: 0.18, volume: 0.14 }),
+  error: () => {
+    playTone({ frequency: 300, type: "sawtooth", duration: 0.1, volume: 0.14 });
+    setTimeout(() => playTone({ frequency: 220, type: "sawtooth", duration: 0.18, volume: 0.12 }), 80);
+  },
+
+  /** Page nav — light whoosh */
+  nav: () => playTone({ frequency: 480, type: "sine", duration: 0.1, volume: 0.09, attack: 0.02, decay: 0.1 }),
 };
 
 /**

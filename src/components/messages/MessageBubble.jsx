@@ -183,63 +183,67 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
   );
 }
 
+const gradients = ["from-primary to-pink-500","from-accent to-cyan-400","from-yellow-500 to-orange-500","from-green-400 to-emerald-600","from-purple-500 to-indigo-500"];
+const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.length];
+
 export default function MessageBubble({ message, isOwn, showAvatar, onReply, onReact, onOpenThread, users }) {
   const [showActions, setShowActions] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
 
   const hasFile = message.file_url && message.type !== "text";
+  const avatarGradient = getGradient(message.sender_name);
 
   return (
     <div
-      className={cn("flex gap-2 group mb-1", isOwn ? "flex-row-reverse" : "flex-row")}
+      className={cn("flex gap-2 group mb-0.5 py-0.5", isOwn ? "flex-row-reverse" : "flex-row")}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => { setShowActions(false); setShowReactions(false); }}
     >
       {/* Avatar */}
-      <div className="w-7 shrink-0 mt-auto">
-        {showAvatar && !isOwn && (
-          <Avatar className="w-7 h-7">
+      <div className="w-8 shrink-0 mt-auto">
+        {showAvatar && !isOwn ? (
+          <Avatar className="w-8 h-8 shadow-md">
             <AvatarImage src={message.sender_avatar} />
-            <AvatarFallback className="bg-primary/20 text-primary text-[10px] font-bold">
+            <AvatarFallback className={cn("text-[10px] font-bold text-white bg-gradient-to-br", avatarGradient)}>
               {message.sender_name?.[0]?.toUpperCase() || "?"}
             </AvatarFallback>
           </Avatar>
-        )}
+        ) : null}
       </div>
 
-      <div className={cn("max-w-[70%] flex flex-col", isOwn && "items-end")}>
+      <div className={cn("max-w-[72%] sm:max-w-[65%] flex flex-col", isOwn && "items-end")}>
         {showAvatar && !isOwn && (
-          <p className="text-[10px] text-muted-foreground mb-1 ml-1 font-medium">{message.sender_name}</p>
+          <p className="text-[11px] text-muted-foreground/70 mb-1 ml-1 font-semibold">{message.sender_name}</p>
         )}
 
         {/* Reply-to preview */}
         {message.reply_to_text && (
-          <div className={cn("px-3 py-1.5 rounded-xl mb-1 border-l-2 text-xs opacity-70 max-w-full", isOwn ? "bg-primary/30 border-white/40 text-right" : "bg-secondary border-primary")}>
-            <p className="font-medium text-[10px] mb-0.5">{message.reply_to_sender}</p>
-            <p className="truncate">{message.reply_to_text}</p>
+          <div className={cn("px-3 py-1.5 rounded-xl mb-1.5 border-l-2 text-xs max-w-full backdrop-blur-sm", isOwn ? "bg-white/10 border-white/30 text-right" : "bg-secondary/60 border-primary/50")}>
+            <p className="font-semibold text-[10px] mb-0.5 text-primary">{message.reply_to_sender}</p>
+            <p className="truncate opacity-70">{message.reply_to_text}</p>
           </div>
         )}
 
         {/* Bubble */}
         <div className={cn(
-          "relative rounded-2xl px-4 py-2.5 min-w-[60px] transition-shadow",
+          "relative rounded-2xl min-w-[60px] transition-all",
           isOwn
-            ? "bg-gradient-to-br from-primary to-pink-500 text-primary-foreground rounded-br-md shadow-lg shadow-primary/25"
-            : "bg-card border border-border rounded-bl-md",
-          hasFile && message.type !== "audio" && "p-2"
+            ? "bg-gradient-to-br from-primary via-primary to-pink-500 text-white rounded-br-sm shadow-xl shadow-primary/20"
+            : "bg-card/80 border border-border/60 rounded-bl-sm shadow-sm backdrop-blur-sm",
+          hasFile && message.type !== "audio" ? "p-2" : "px-4 py-2.5"
         )}>
           {hasFile ? (
             <FileAttachment message={message} isOwn={isOwn} onOpenViewer={() => setViewerOpen(true)} />
           ) : (
-            <p className="text-sm leading-relaxed break-words">{message.text}</p>
+            <p className={cn("text-sm leading-relaxed break-words", isOwn ? "text-white" : "text-foreground")}>{message.text}</p>
           )}
           {hasFile && message.text && message.type !== "audio" && (
             <p className="text-sm mt-2 px-2 pb-1">{message.text}</p>
           )}
         </div>
 
-        {/* Reactions display — aggregate per-user keys (emoji__userId) into counts */}
+        {/* Reactions display */}
         {(() => {
           const counts = {};
           for (const emoji of Object.values(message.reactions || {})) {
@@ -248,19 +252,19 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
           const entries = Object.entries(counts);
           if (entries.length === 0) return null;
           return (
-            <div className={cn("flex gap-1 flex-wrap mt-1", isOwn && "justify-end")}>
+            <div className={cn("flex gap-1 flex-wrap mt-1.5", isOwn && "justify-end")}>
               {entries.map(([emoji, count]) => (
                 <button key={emoji} onClick={() => onReact?.(message.id, emoji)}
-                  className="bg-secondary border border-border rounded-full px-2 py-0.5 text-xs hover:bg-primary/10 transition-colors">
-                  {emoji} {count > 1 && <span className="opacity-70">{count}</span>}
+                  className="bg-secondary/80 border border-border/60 rounded-full px-2 py-0.5 text-xs hover:bg-primary/15 hover:border-primary/30 transition-all hover:scale-105 active:scale-95 shadow-sm">
+                  {emoji} {count > 1 && <span className="opacity-60 font-medium ml-0.5">{count}</span>}
                 </button>
               ))}
             </div>
           );
         })()}
 
-        <div className={cn("flex items-center gap-1 mt-0.5", isOwn ? "justify-end mr-1" : "ml-1")}>
-          <p className="text-[10px] text-muted-foreground">
+        <div className={cn("flex items-center gap-1.5 mt-1", isOwn ? "justify-end mr-1" : "ml-1")}>
+          <p className="text-[10px] text-muted-foreground/50">
             {format(new Date(message.created_date), "h:mm a")}
           </p>
           {isOwn && (
@@ -270,7 +274,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
         {message.thread_reply_count > 0 && (
           <button
             onClick={() => onOpenThread?.(message)}
-            className={cn("flex items-center gap-1 mt-1 text-[10px] text-primary hover:underline", isOwn ? "self-end mr-1" : "ml-1")}
+            className={cn("flex items-center gap-1.5 mt-1 text-[10px] text-primary/70 hover:text-primary transition-colors font-medium", isOwn ? "self-end mr-1" : "ml-1")}
           >
             <MessageSquareQuote className="w-3 h-3" />
             {message.thread_reply_count} {message.thread_reply_count === 1 ? "reply" : "replies"}
@@ -280,25 +284,25 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
 
       {/* Hover action buttons */}
       <div className={cn(
-        "flex items-center gap-1 opacity-0 transition-opacity self-center shrink-0",
+        "flex items-center gap-0.5 opacity-0 transition-all self-center shrink-0",
         showActions && "opacity-100",
         isOwn ? "flex-row order-first mr-1" : "flex-row ml-1"
       )}>
         <div className="relative">
           <button
             onClick={() => setShowReactions(!showReactions)}
-            className="w-7 h-7 rounded-full bg-secondary border border-border flex items-center justify-center hover:bg-muted transition-colors"
+            className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
           >
             <Smile className="w-3.5 h-3.5 text-muted-foreground" />
           </button>
           {showReactions && (
             <div className={cn(
-              "absolute bottom-full mb-1 flex gap-1 bg-card border border-border rounded-2xl p-1.5 shadow-xl z-50",
+              "absolute bottom-full mb-2 flex gap-0.5 bg-card/95 border border-border/60 rounded-2xl p-2 shadow-2xl z-50 backdrop-blur-xl",
               isOwn ? "right-0" : "left-0"
             )}>
               {QUICK_REACTIONS.map(emoji => (
                 <button key={emoji} onClick={() => { onReact?.(message.id, emoji); setShowReactions(false); }}
-                  className="text-lg hover:scale-125 transition-transform leading-none p-0.5">
+                  className="text-xl hover:scale-130 transition-transform leading-none p-1 rounded-lg hover:bg-secondary/60">
                   {emoji}
                 </button>
               ))}
@@ -307,13 +311,13 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onR
         </div>
         <button
           onClick={() => onReply?.(message)}
-          className="w-7 h-7 rounded-full bg-secondary border border-border flex items-center justify-center hover:bg-muted transition-colors"
+          className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
         >
           <Reply className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
         <button
           onClick={() => onOpenThread?.(message)}
-          className="w-7 h-7 rounded-full bg-secondary border border-border flex items-center justify-center hover:bg-muted transition-colors"
+          className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
           title="Open thread"
         >
           <MessageSquareQuote className="w-3.5 h-3.5 text-muted-foreground" />

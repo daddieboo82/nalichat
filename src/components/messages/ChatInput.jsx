@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Send, Paperclip, Mic, X, StopCircle, UploadCloud } from "lucide-react";
+import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resumableUpload } from "@/lib/resumableUpload";
+
+const EMOJI_LIST = ["😀","😂","🥰","😎","🤩","😮","😢","😡","👍","👎","❤️","🔥","🎵","🎤","🎸","🥁","💯","🙏","✨","🎉","💪","🤝","🎶","🎧"];
+
 
 export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, onTyping }) {
   const [text, setText] = useState("");
@@ -10,6 +13,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
   const [recordingTime, setRecordingTime] = useState(0);
   const [uploads, setUploads] = useState([]); // [{name, progress, done}]
   const [dragOver, setDragOver] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -127,27 +131,42 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
 
   return (
     <div
-      className={cn("border-t border-border bg-card/60 backdrop-blur-sm transition-colors shrink-0", dragOver && "bg-primary/5")}
+      className={cn("border-t border-border/40 backdrop-blur-xl shrink-0 transition-all", dragOver && "bg-primary/5")}
+      style={{ background: "hsl(240 10% 5% / 0.95)" }}
       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
     >
       {/* Reply preview */}
       {replyTo && (
-        <div className="px-3 sm:px-4 pt-3 flex items-center gap-2">
-          <div className="flex-1 border-l-2 border-primary pl-2 py-0.5">
+        <div className="px-4 pt-3 flex items-center gap-2 animate-in slide-in-from-bottom-1 duration-200">
+          <div className="flex-1 border-l-2 border-primary/70 pl-3 py-1 bg-primary/5 rounded-r-lg">
             <p className="text-[10px] text-primary font-semibold">{replyTo.sender_name}</p>
-            <p className="text-xs text-muted-foreground truncate">{replyTo.text || `[${replyTo.type}]`}</p>
+            <p className="text-xs text-muted-foreground/80 truncate">{replyTo.text || `[${replyTo.type}]`}</p>
           </div>
-          <button onClick={onCancelReply} className="text-muted-foreground hover:text-foreground p-1">
+          <button onClick={onCancelReply} className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-secondary/60 transition-all">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
+      {/* Emoji picker */}
+      {showEmoji && (
+        <div className="px-4 pt-2 animate-in slide-in-from-bottom-2 duration-150">
+          <div className="flex flex-wrap gap-1 p-2 bg-secondary/30 rounded-xl border border-border/40 max-h-24 overflow-y-auto">
+            {EMOJI_LIST.map(e => (
+              <button key={e} onClick={() => { setText(t => t + e); setShowEmoji(false); textareaRef.current?.focus(); }}
+                className="text-xl p-1 rounded-lg hover:bg-secondary/80 transition-all hover:scale-110 active:scale-95">
+                {e}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Upload progress bars */}
       {uploads.length > 0 && (
-        <div className="px-3 sm:px-4 pt-2 space-y-1.5">
+        <div className="px-4 pt-2 space-y-1.5">
           {uploads.map(u => (
             <div key={u.id} className="flex items-center gap-2">
               <UploadCloud className={cn("w-3.5 h-3.5 shrink-0", u.error ? "text-destructive" : "text-primary")} />
@@ -155,10 +174,10 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
                 <div className="flex justify-between items-center mb-0.5">
                   <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{u.name}</p>
                   <p className="text-[10px] text-muted-foreground shrink-0 ml-1">
-                    {u.error ? "Failed" : u.done ? "Done" : `${u.progress}%`}
+                    {u.error ? "Failed" : u.done ? "Done ✓" : `${u.progress}%`}
                   </p>
                 </div>
-                <div className="h-1 bg-secondary rounded-full overflow-hidden">
+                <div className="h-0.5 bg-secondary/60 rounded-full overflow-hidden">
                   <div
                     className={cn("h-full rounded-full transition-all duration-300", u.error ? "bg-destructive" : u.done ? "bg-accent" : "bg-primary")}
                     style={{ width: `${u.progress}%` }}
@@ -170,25 +189,35 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
         </div>
       )}
 
-      <div className="p-2 sm:p-3 flex items-end gap-1.5 sm:gap-2">
+      <div className="p-2.5 sm:p-3 flex items-end gap-1.5 sm:gap-2">
         <input ref={fileInputRef} type="file" className="hidden" multiple onChange={handleFileChange} accept="*/*" />
+
+        {/* Emoji */}
+        <button
+          onClick={() => setShowEmoji(v => !v)}
+          disabled={isRecording}
+          className={cn("w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5 touch-manipulation",
+            showEmoji ? "text-primary bg-primary/15" : "text-muted-foreground hover:text-primary hover:bg-primary/10")}
+        >
+          <Smile className="w-5 h-5" />
+        </button>
 
         {/* Attach */}
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={anyUploading || isRecording}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0 mb-0.5 touch-manipulation"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shrink-0 mb-0.5 touch-manipulation"
         >
           <Paperclip className="w-5 h-5" />
         </button>
 
         {/* Recording or textarea */}
         {isRecording ? (
-          <div className="flex-1 flex items-center gap-2 sm:gap-3 bg-destructive/10 border border-destructive/20 rounded-2xl px-3 sm:px-4 py-2.5 h-10">
+          <div className="flex-1 flex items-center gap-2 sm:gap-3 bg-destructive/10 border border-destructive/30 rounded-2xl px-3 sm:px-4 py-2.5 h-10">
             <div className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse shrink-0" />
-            <span className="text-sm text-destructive font-mono font-semibold">{fmt(recordingTime)}</span>
+            <span className="text-sm text-destructive font-mono font-bold">{fmt(recordingTime)}</span>
             <span className="text-xs text-muted-foreground hidden sm:block">Recording...</span>
-            <button onClick={cancelRecording} className="ml-auto text-muted-foreground hover:text-foreground p-1 touch-manipulation">
+            <button onClick={cancelRecording} className="ml-auto text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-secondary/60 transition-all touch-manipulation">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -200,8 +229,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
               setText(e.target.value);
               onTyping?.();
             }}
-            placeholder={dragOver ? "Drop files here..." : "Message..."}
-            className="flex-1 bg-secondary/50 border border-border rounded-2xl px-3 sm:px-4 py-2.5 text-sm resize-none min-h-[40px] max-h-[120px] focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground"
+            placeholder={dragOver ? "📎 Drop files here..." : "Message..."}
+            className="flex-1 bg-secondary/30 border border-border/50 rounded-2xl px-4 py-2.5 text-sm resize-none min-h-[40px] max-h-[120px] focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 placeholder:text-muted-foreground/50 transition-all"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -218,14 +247,14 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
           <button
             onClick={handleSend}
             disabled={disabled}
-            className="w-9 h-9 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors shrink-0 mb-0.5 touch-manipulation"
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center hover:opacity-90 transition-all shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-primary/30 hover:scale-105 active:scale-95"
           >
-            <Send className="w-4 h-4 text-primary-foreground" />
+            <Send className="w-4 h-4 text-white" />
           </button>
         ) : isRecording ? (
           <button
             onClick={stopRecording}
-            className="w-9 h-9 rounded-full bg-destructive flex items-center justify-center hover:bg-destructive/90 transition-colors shrink-0 mb-0.5 touch-manipulation"
+            className="w-10 h-10 rounded-full bg-destructive flex items-center justify-center hover:bg-destructive/90 transition-all shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-destructive/30"
           >
             <StopCircle className="w-5 h-5 text-white" />
           </button>
@@ -233,7 +262,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, disabled, on
           <button
             onClick={startRecording}
             disabled={anyUploading || disabled}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0 mb-0.5 touch-manipulation"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shrink-0 mb-0.5 touch-manipulation"
           >
             <Mic className="w-5 h-5" />
           </button>

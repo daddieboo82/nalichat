@@ -163,6 +163,26 @@
   -webkit-backdrop-filter: blur(12px);
 }
 
+/* Slide in animations */
+@keyframes slide-in-from-bottom-1 {
+  from { transform: translateY(4px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes slide-in-from-bottom-2 {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-in { animation-duration: 150ms; animation-fill-mode: both; }
+.slide-in-from-bottom-1 { animation-name: slide-in-from-bottom-1; }
+.slide-in-from-bottom-2 { animation-name: slide-in-from-bottom-2; }
+.duration-150 { animation-duration: 150ms; }
+.duration-200 { animation-duration: 200ms; }
+
+/* Studio track hover glow */
+.track-glow:hover {
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.2), 0 4px 20px -4px hsl(var(--primary) / 0.25);
+}
+
 /* Slow floating blobs */
 @keyframes float-blob {
   0%, 100% { transform: translate(0, 0) scale(1); }

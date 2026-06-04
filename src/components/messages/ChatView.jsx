@@ -62,13 +62,16 @@ export default function ChatView({ conversation, messages, currentUser, users, o
 
   if (!conversation) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-background/50">
-        <div className="text-center">
-          <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
-            <MessageSquare className="w-10 h-10 text-primary/40" />
+      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground relative overflow-hidden" style={{ background: "hsl(240 10% 3.5%)" }}>
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        </div>
+        <div className="text-center relative z-10">
+          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-pink-500/20 border border-primary/20 flex items-center justify-center mx-auto mb-5 shadow-2xl shadow-primary/10">
+            <MessageSquare className="w-11 h-11 text-primary/60" />
           </div>
-          <p className="font-heading font-bold text-xl mb-2">Your Messages</p>
-          <p className="text-sm text-muted-foreground">Select a conversation or start a new one</p>
+          <p className="font-heading font-bold text-2xl mb-2">Your Messages</p>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">Select a conversation from the left, or start a new one to connect with artists</p>
         </div>
       </div>
     );
@@ -96,29 +99,32 @@ export default function ChatView({ conversation, messages, currentUser, users, o
     groups.push({ type: "msg", ...msg });
   }
 
+  const gradients = ["from-primary to-pink-500","from-accent to-cyan-400","from-yellow-500 to-orange-500","from-green-400 to-emerald-600","from-purple-500 to-indigo-500"];
+  const avatarGradient = gradients[(displayName?.charCodeAt(0) || 0) % gradients.length];
+
   return (
     <div className="flex-1 flex overflow-hidden">
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden" style={{ background: "hsl(240 10% 3.5%)" }}>
       {/* Header */}
-      <div className="h-16 border-b border-border flex items-center px-3 sm:px-5 gap-2 sm:gap-3 shrink-0 bg-card/70 backdrop-blur-sm">
+      <div className="h-16 border-b border-border/50 flex items-center px-3 sm:px-5 gap-2 sm:gap-3 shrink-0 backdrop-blur-xl" style={{ background: "hsl(240 10% 5% / 0.9)" }}>
         {/* Back button — mobile only */}
         <button onClick={onBack} className="sm:hidden w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors shrink-0 touch-manipulation">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <Avatar className="w-9 h-9 shrink-0">
+        <Avatar className="w-10 h-10 shrink-0 shadow-lg">
           <AvatarImage src={avatarSrc} />
-          <AvatarFallback className="bg-primary/20 text-primary font-bold text-sm">
+          <AvatarFallback className={cn("font-bold text-sm bg-gradient-to-br text-white", avatarGradient)}>
             {displayName?.[0]?.toUpperCase() || "?"}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
           <p className="font-heading font-semibold text-sm truncate">{displayName}</p>
-          {subtitle && <p className="text-[10px] text-muted-foreground capitalize">{subtitle}</p>}
+          {subtitle && <p className="text-[10px] text-muted-foreground/70 capitalize">{subtitle}</p>}
         </div>
         {conversation?.type === "group" && (
           <button
             onClick={() => setShowGroupInfo(v => !v)}
-            className={cn("w-8 h-8 rounded-xl flex items-center justify-center transition-colors", showGroupInfo ? "bg-primary/20 text-primary" : "hover:bg-secondary text-muted-foreground")}
+            className={cn("w-8 h-8 rounded-xl flex items-center justify-center transition-all", showGroupInfo ? "bg-primary/20 text-primary shadow-sm" : "hover:bg-secondary/60 text-muted-foreground")}
             title="Group info"
           >
             <Users className="w-4 h-4" />
@@ -127,18 +133,22 @@ export default function ChatView({ conversation, messages, currentUser, users, o
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-0.5">
         {groups.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
-            <p className="text-sm">No messages yet. Say hello! 👋</p>
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <MessageSquare className="w-8 h-8 opacity-30" />
+            </div>
+            <p className="text-sm font-medium">No messages yet</p>
+            <p className="text-xs text-muted-foreground/60">Be the first to say hello! 👋</p>
           </div>
         )}
         {groups.map((item, i) =>
           item.type === "date" ? (
-            <div key={item.key} className="flex items-center gap-3 my-4">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-[10px] text-muted-foreground font-medium px-2">{item.label}</span>
-              <div className="flex-1 h-px bg-border" />
+            <div key={item.key} className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px bg-border/50" />
+              <span className="text-[10px] text-muted-foreground/50 font-medium px-3 py-1 rounded-full bg-secondary/30 border border-border/30">{item.label}</span>
+              <div className="flex-1 h-px bg-border/50" />
             </div>
           ) : (
             <MessageBubble

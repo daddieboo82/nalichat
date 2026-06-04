@@ -14,20 +14,20 @@ import { sounds } from "@/hooks/use-sound";
 
 const features = [
   {
-    icon: Headphones,
-    label: "Pro Studio DAW",
-    path: "/studio",
-    description: "Multi-track recording, wave editor, effects & VST plugins right in your browser",
-    gradient: "from-primary to-pink-500",
-    badge: "Pro",
-  },
-  {
     icon: MessageSquare,
     label: "Unlimited Messages",
     path: "/messages",
     description: "Real-time messaging, unlimited voice notes & high-res file sharing",
-    gradient: "from-accent to-cyan-500",
+    gradient: "from-primary to-pink-500",
     badge: "Free",
+  },
+  {
+    icon: Headphones,
+    label: "Pro Studio DAW",
+    path: "/studio",
+    description: "Multi-track recording, wave editor, effects & VST plugins right in your browser",
+    gradient: "from-accent to-cyan-500",
+    badge: "Pro",
   },
   {
     icon: Compass,
@@ -168,7 +168,7 @@ export default function Home() {
               transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
               className="relative z-10 w-24 h-24 rounded-3xl bg-gradient-to-br from-primary via-pink-500 to-accent flex items-center justify-center glow-primary shadow-2xl border border-white/20"
             >
-              <Music className="w-12 h-12 text-white" />
+              <MessageSquare className="w-12 h-12 text-white" />
             </motion.div>
           </div>
 
@@ -179,7 +179,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               className="text-sm font-bold tracking-[0.2em] text-primary mb-4 uppercase drop-shadow-md"
             >
-              Welcome back, {user.full_name?.split(" ")[0] || "Artist"} 🚀
+              Welcome back, {user.full_name?.split(" ")[0] || "Creator"} 🚀
             </motion.p>
           )}
 
@@ -194,33 +194,33 @@ export default function Home() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
               </span>
-              The Ultimate Music Collaboration Hub
+              The Ultimate Messaging App for Creators
             </motion.div>
           )}
 
           <h1 className="font-heading font-black text-6xl md:text-8xl lg:text-[7rem] mb-6 tracking-tight leading-[1.05] drop-shadow-xl text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/60">
-            Make Music.<br className="hidden md:block" /> 
-            <span className="text-gradient-animate drop-shadow-2xl">Together.</span>
+            Real-Time.<br className="hidden md:block" /> 
+            <span className="text-gradient-animate drop-shadow-2xl">Messaging.</span>
           </h1>
           <p className="text-xl md:text-2xl text-foreground/80 font-medium mb-12 leading-relaxed max-w-3xl mx-auto drop-shadow-md">
-            Record in the Pro Studio. Connect with artists globally. Share your sound with the world. All in one explosive platform.
+            Connect instantly with artists globally. Share high-res audio, drop voice notes, and collaborate seamlessly in unlimited chats.
           </p>
 
           {/* CTAs */}
           <div className="flex gap-4 justify-center flex-wrap">
             {user ? (
               <>
-                <Link to="/studio">
+                <Link to="/messages">
                   <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7">
-                    <Headphones className="w-5 h-5 mr-2" />
-                    Open Studio
+                    <MessageSquare className="w-5 h-5 mr-2" />
+                    Open Messages
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/messages">
+                <Link to="/explore">
                   <Button size="lg" variant="outline" className="rounded-xl text-base px-7">
-                    <MessageSquare className="w-5 h-5 mr-2" />
-                    Messages
+                    <Compass className="w-5 h-5 mr-2" />
+                    Browse Tracks
                   </Button>
                 </Link>
               </>
@@ -228,8 +228,8 @@ export default function Home() {
               <>
                 <Link to="/register">
                   <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7">
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    Start Free Trial
+                    <MessageSquare className="w-5 h-5 mr-2" />
+                    Start Chatting Free
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
@@ -246,7 +246,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mt-5 text-sm text-muted-foreground">
-             ✅ 1 Hour Free Trial · 🚀 Full Studio Access · 💳 No credit card to start
+             ✅ Unlimited Messages · 🚀 High-Res Sharing · 💳 No credit card to start
             </p>
           )}
         </motion.div>
@@ -568,35 +568,35 @@ export default function Home() {
                 <Sparkles className="w-12 h-12 text-white" />
               </div>
               <h3 className="font-heading font-black text-5xl md:text-7xl mb-6 text-gradient-animate drop-shadow-xl tracking-tight">
-                {user ? `Keep Creating, ${user.full_name?.split(" ")[0] || "Artist"}` : "Your Music Deserves a Stage"}
+                {user ? `Start Chatting, ${user.full_name?.split(" ")[0] || "Creator"}` : "Collaboration Starts Here"}
               </h3>
               <p className="text-xl text-foreground/80 font-medium mb-10 max-w-3xl mx-auto leading-relaxed">
                 {user
-                  ? "Open the Studio, connect with collaborators, discover new music, and grow your audience to new heights."
-                  : "Join thousands of artists already producing, collaborating, and growing on NaliChat. The stage is set."}
+                  ? "Jump into your messages, share your latest ideas, and connect with your team instantly."
+                  : "Join thousands of artists already chatting, sharing, and collaborating on NaliChat."}
               </p>
               <div className="flex gap-6 justify-center flex-wrap">
                 {user ? (
                     <>
-                      <Link to="/studio">
+                      <Link to="/messages">
                         <Button size="lg" className="rounded-2xl h-16 px-10 text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105">
-                          <Headphones className="w-6 h-6 mr-3" />
-                          Launch Studio
+                          <MessageSquare className="w-6 h-6 mr-3" />
+                          Open Messages
                         </Button>
                       </Link>
-                      <Link to="/messages">
+                      <Link to="/explore">
                         <Button size="lg" variant="outline" className="rounded-2xl h-16 px-10 text-xl font-bold border-border hover:bg-secondary transition-all hover:scale-105 backdrop-blur-md bg-card/50">
-                          <MessageSquare className="w-6 h-6 mr-3" />
-                          Collaborate
+                          <Compass className="w-6 h-6 mr-3" />
+                          Explore Tracks
                         </Button>
                       </Link>
                     </>
                   ) : (
                   <>
                     <Link to="/register">
-                      <Button size="lg" className="rounded-2xl h-16 px-10 text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30">
-                        <Zap className="w-6 h-6 mr-3" />
-                        Start Free Trial
+                      <Button size="lg" className="rounded-xl h-16 px-10 text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30">
+                        <MessageSquare className="w-6 h-6 mr-3" />
+                        Start Chatting Free
                         <ArrowRight className="w-6 h-6 ml-3" />
                       </Button>
                     </Link>
@@ -611,7 +611,7 @@ export default function Home() {
               </div>
               {!user && (
                 <p className="mt-8 text-sm font-bold text-muted-foreground tracking-wide uppercase">
-                  ✨ No credit card required · 1 hour free Studio access ✨
+                  ✨ Completely free messaging · No credit card required ✨
                 </p>
               )}
             </div>

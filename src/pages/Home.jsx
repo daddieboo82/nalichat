@@ -8,6 +8,8 @@ import {
   Headphones, Radio, Wand2, FileAudio, ChevronRight
 } from "lucide-react";
 import { motion } from "framer-motion";
+import DailyRecommendation from "@/components/home/DailyRecommendation";
+import { sounds } from "@/hooks/use-sound";
 
 const features = [
   {
@@ -158,6 +160,9 @@ export default function Home() {
 
   return (
     <div className="h-full overflow-auto bg-background">
+
+      {/* ── Daily Recommendation ── */}
+      <DailyRecommendation />
 
       {/* ── Hero ── */}
       <section className="relative min-h-[520px] flex items-center justify-center overflow-hidden px-6 py-16">
@@ -379,7 +384,7 @@ export default function Home() {
               const Icon = feature.icon;
               return (
                 <motion.div key={feature.path} variants={itemVariants}>
-                  <Link to={feature.path}>
+                  <Link to={feature.path} onClick={() => sounds.click()}>
                     <div className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${feature.gradient} p-0.5 h-full transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl`}>
                       <div className="relative h-full bg-card rounded-2xl p-6 shimmer-hover">
                         <div className={`absolute -inset-8 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-15 blur-2xl transition-opacity duration-300`} />

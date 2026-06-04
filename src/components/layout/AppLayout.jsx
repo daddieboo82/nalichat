@@ -11,6 +11,8 @@ import NotificationBell from "@/components/notifications/NotificationBell";
 import MobileHeader from "@/components/layout/MobileHeader";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import { useSystemTheme } from "@/hooks/use-system-theme";
+import SoundToggle from "@/components/layout/SoundToggle";
+import { sounds } from "@/hooks/use-sound";
 
 const navItems = [
   { icon: MessageSquare, label: "Messages", path: "/messages" },
@@ -73,6 +75,7 @@ export default function AppLayout() {
                   key={path}
                   to={path}
                   title={label}
+                  onClick={() => sounds.click()}
                   className={cn(
                     "px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap text-xs font-medium group",
                     isActive
@@ -89,6 +92,7 @@ export default function AppLayout() {
 
           {/* User Actions */}
           <div className="flex items-center gap-1 shrink-0">
+            <SoundToggle />
             <NotificationBell />
             <Link
               to="/profile"

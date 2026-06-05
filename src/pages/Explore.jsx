@@ -74,10 +74,10 @@ export default function Explore() {
   });
 
   const filtered = posts.filter(p =>
-    !search || p.title?.toLowerCase().includes(search.toLowerCase()) ||
-    p.creator_name?.toLowerCase().includes(search.toLowerCase()) ||
-    p.genre?.toLowerCase().includes(search.toLowerCase()) ||
-    (Array.isArray(p.tags) ? p.tags.some(t => t.toLowerCase().includes(search.toLowerCase())) : false)
+    !search || String(p.title || '').toLowerCase().includes(search.toLowerCase()) ||
+    String(p.creator_name || '').toLowerCase().includes(search.toLowerCase()) ||
+    String(p.genre || '').toLowerCase().includes(search.toLowerCase()) ||
+    (Array.isArray(p.tags) ? p.tags.some(t => String(t || '').toLowerCase().includes(search.toLowerCase())) : false)
   );
 
   const featured = filtered.filter(p => p.featured || p.likes > 5);

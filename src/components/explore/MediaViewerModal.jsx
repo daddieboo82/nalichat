@@ -147,7 +147,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                  )}
 
                  <div className="flex flex-wrap items-center gap-4 mb-8">
-                   {post.price > 0 && (
+                   {Number(post.price) > 0 && (
                      <Button 
                        size="lg"
                        type="button"
@@ -156,10 +156,10 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                        className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 gap-2 h-14 px-6 sm:px-8 text-base rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
                      >
                        <ShoppingCart className="w-5 h-5" />
-                       {inCart ? "In Cart" : `Buy for $${post.price.toFixed(2)}`}
+                       {inCart ? "In Cart" : `Buy for $${Number(post.price).toFixed(2)}`}
                      </Button>
                    )}
-                   {post.price === 0 && (
+                   {(!post.price || Number(post.price) === 0) && (
                      <Button 
                        size="lg"
                        className="bg-white/10 text-white border border-white/10 shadow-lg gap-2 h-14 px-6 sm:px-8 text-base rounded-full flex-shrink-0 cursor-default"
@@ -363,7 +363,9 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                          e.stopPropagation();
                          stopPlayback();
                          onOpenChange(false);
-                         playTrack(post);
+                         if (typeof playTrack === 'function') {
+                           playTrack(post);
+                         }
                        }}
                        title="Open in Global Player"
                      >

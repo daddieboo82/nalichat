@@ -103,8 +103,9 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
       const aiPrompt = await base44.integrations.Core.InvokeLLM({ prompt });
 
       setGeneratingStatus("Painting final masterpiece...");
-      const { url } = await base44.integrations.Core.GenerateImage({ prompt: aiPrompt });
-      return url;
+      const imgRes = await base44.integrations.Core.GenerateImage({ prompt: aiPrompt });
+      if (!imgRes || !imgRes.url) throw new Error("Image generation failed");
+      return imgRes.url;
     },
     onSuccess: (url) => {
       setGeneratedImage(url);

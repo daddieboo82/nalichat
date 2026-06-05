@@ -58,7 +58,7 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
                     e.stopPropagation();
                     if (isActive && isPlaying && audioPlayer?.togglePlay) {
                       audioPlayer.togglePlay();
-                    } else {
+                    } else if (typeof playTrack === 'function') {
                       playTrack({
                         id: post.id,
                         title: post.title,
@@ -135,9 +135,9 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
                 {post.medium}
               </span>
             )}
-            {post.price > 0 && (
+            {Number(post.price) > 0 && (
               <span className="text-[10px] bg-gradient-to-r from-primary to-pink-500 text-white px-2 py-0.5 rounded-full font-bold shadow-sm shadow-primary/30">
-                ${post.price.toFixed(2)}
+                ${Number(post.price).toFixed(2)}
               </span>
             )}
           </div>

@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
 
     // If trialEndDate has passed, we don't have access unless status is active and plan is pro
     let hasAccess = false;
-    if (sub.plan === 'pro') hasAccess = true;
+    if (sub.plan === 'pro' || sub.plan === 'pro_filesharing') hasAccess = true;
     if (sub.plan === 'trial') hasAccess = trialActive;
     if (hasTrialFree) hasAccess = true;
 

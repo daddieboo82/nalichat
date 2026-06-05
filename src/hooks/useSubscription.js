@@ -21,13 +21,15 @@ export function useSubscription() {
   });
 
   const isAdmin = user?.role === 'admin' || ADMIN_EMAILS.includes(user?.email);
-  const isPro = isAdmin || (subscription?.plan === 'pro' && subscription?.status === 'active');
+  const isPro = isAdmin || ((subscription?.plan === 'pro' || subscription?.plan === 'pro_filesharing') && subscription?.status === 'active');
+  const isProFilesharing = isAdmin || (subscription?.plan === 'pro_filesharing' && subscription?.status === 'active');
   const isTrialActive = subscription?.trialActive;
   const hasAccess = isAdmin || subscription?.hasAccess;
 
   return {
     subscription: isAdmin ? { ...subscription, plan: 'pro', status: 'active', hasAccess: true } : subscription,
     isPro,
+    isProFilesharing,
     isTrialActive,
     hasAccess,
     isLoading,

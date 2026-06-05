@@ -56,15 +56,15 @@ Deno.serve(async (req) => {
     }
 
     const item = {
-      name: 'NaliChat Pro',
+      name: planType === 'pro_filesharing' ? 'NaliChat Pro + 20GB Sharing' : 'NaliChat Pro',
       quantity: 1,
-      price: '24.95',
+      price: planType === 'pro_filesharing' ? '49.95' : '24.95',
       subscriptionInfo: {
         subscriptionSettings: {
           frequency: 'MONTH',
         },
-        title: 'NaliChat Pro',
-        description: 'Full access to all app features',
+        title: planType === 'pro_filesharing' ? 'NaliChat Pro + 20GB Sharing' : 'NaliChat Pro',
+        description: planType === 'pro_filesharing' ? 'Pro features plus 20GB of file sharing space' : 'Full access to all app features',
       },
     };
 

@@ -23,6 +23,20 @@ const plans = [
     cta: "Subscribe Now",
     popular: true,
   },
+  {
+    id: "pro_filesharing",
+    name: "Pro + 20GB Sharing",
+    price: "49.95",
+    period: "/month",
+    description: "Pro features plus 20GB of file sharing space",
+    features: [
+      "All Pro Features",
+      "20GB Dedicated File Sharing Space",
+      "High Priority Support",
+    ],
+    cta: "Subscribe Now",
+    popular: false,
+  },
 ];
 
 export default function PricingPlans() {

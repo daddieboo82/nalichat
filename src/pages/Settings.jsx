@@ -25,7 +25,7 @@ export default function Settings() {
   const [uploading, setUploading] = useState(false);
   const [genreInput, setGenreInput] = useState("");
   const fileRef = useRef(null);
-  const { subscription, isPro, isTrialActive, isLoading: subLoading } = useSubscription();
+  const { subscription, isPro, isProFilesharing, isTrialActive, isLoading: subLoading } = useSubscription();
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -193,7 +193,9 @@ export default function Settings() {
                 <div>
                   <div className="flex items-center gap-3">
                     <h3 className="font-heading font-semibold text-lg text-foreground">Current Status</h3>
-                    {isPro ? (
+                    {isProFilesharing ? (
+                      <Badge className="bg-primary/20 text-primary hover:bg-primary/20">Pro + 20GB Sharing Active</Badge>
+                    ) : isPro ? (
                       <Badge className="bg-primary/20 text-primary hover:bg-primary/20">Pro Active</Badge>
                     ) : isTrialActive || subscription?.hasAccess ? (
                       <Badge className="bg-accent/20 text-accent hover:bg-accent/20">Free Trial</Badge>

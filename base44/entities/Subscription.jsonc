@@ -10,7 +10,8 @@
       "type": "string",
       "enum": [
         "free",
-        "pro"
+        "pro",
+        "pro_filesharing"
       ],
       "default": "free",
       "description": "Subscription tier"

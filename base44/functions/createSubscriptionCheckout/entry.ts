@@ -35,27 +35,20 @@ Deno.serve(async (req) => {
     if (planType === 'trial') {
       item = {
         name: 'NaliChat 24-Hour Trial',
-        description: 'Full access for 24 hours',
         quantity: 1,
         price: '0.99',
       };
     } else {
       item = {
         name: 'NaliChat Pro',
-        description: 'Full access to all app features',
         quantity: 1,
         price: '9.99',
-        lineItemType: 'SUBSCRIPTION',
         subscriptionInfo: {
-          name: 'NaliChat Pro',
-          billingCycle: {
-            interval: 'MONTH',
-            count: 1,
+          subscriptionSettings: {
+            frequency: 'MONTH',
           },
-          paymentPlan: {
-            name: '$9.99/month',
-            price: '9.99',
-          },
+          title: 'NaliChat Pro',
+          description: 'Full access to all app features',
         },
       };
     }
@@ -70,13 +63,13 @@ Deno.serve(async (req) => {
       },
       callbackUrls: {
         thankYouPageUrl: `${origin}/thank-you`,
-        errorUrl: `${origin}/`,
+        postFlowUrl: `${origin}/`,
       },
     };
 
     console.log('Creating checkout with payload:', JSON.stringify(checkoutPayload));
 
-    const checkoutResponse = await fetch('https://www.wixapis.com/payments/base44/v1/checkout-sessions', {
+    const checkoutResponse = await fetch('https://www.wixapis.com/payments/platform/v1/checkout-sessions/construct', {
       method: 'POST',
       headers: {
         'Authorization': WIX_API_KEY,
@@ -104,7 +97,7 @@ Deno.serve(async (req) => {
     }
 
     const checkoutId = checkoutData.checkoutSession?.id;
-    const checkoutUrl = checkoutData.checkoutSession?.checkoutUrl;
+    const checkoutUrl = checkoutData.checkoutSession?.redirectUrl;
 
     if (!checkoutId || !checkoutUrl) {
       console.error('Missing checkout ID or URL in response:', checkoutData);

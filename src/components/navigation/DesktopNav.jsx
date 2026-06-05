@@ -115,7 +115,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
               <HelpCircle className="w-4.5 h-4.5" />
             </button>
             <SoundToggle />
-            <NotificationBell />
+            <NotificationBell direction="up" />
             <Link
               to="/settings"
               title="Settings"

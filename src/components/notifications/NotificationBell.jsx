@@ -14,7 +14,7 @@ const typeIcon = {
   session_invite: Users,
 };
 
-export default function NotificationBell() {
+export default function NotificationBell({ direction = "down" }) {
   const [user, setUser] = useState(null);
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
@@ -96,7 +96,10 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 bottom-full mb-2 md:bottom-auto md:top-full md:mt-2 w-80 max-w-[90vw] bg-card border border-border rounded-xl shadow-2xl shadow-black/40 z-50 overflow-hidden">
+        <div className={cn(
+          "absolute right-0 w-80 max-w-[90vw] bg-card border border-border rounded-xl shadow-2xl shadow-black/40 z-50 overflow-hidden",
+          direction === "up" ? "bottom-full mb-2" : "top-full mt-2"
+        )}>
           <div className="px-4 py-3 border-b border-border">
             <p className="font-heading font-bold text-sm">Notifications</p>
           </div>

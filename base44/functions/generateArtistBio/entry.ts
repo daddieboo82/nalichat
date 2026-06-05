@@ -9,53 +9,24 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch all users without bios
-    const allUsers = await base44.asServiceRole.entities.User.list('', 500);
-    const usersNeedingBios = allUsers.filter(u => !u.bio || u.bio.trim().length === 0);
+    // Generate a bio ONLY for the requesting user — never bulk-fill other users.
+    const prompt = `Generate a professional, engaging 2-3 sentence bio for a music industry professional with the following profile:
+Name: ${user.display_name || user.full_name}
+Role: ${user.artist_role || user.role || 'Music Professional'}
+Location: ${user.location || 'Not specified'}
+Genres: ${user.genres?.join(', ') || 'Not specified'}
+Website: ${user.website || 'Not specified'}
 
-    if (usersNeedingBios.length === 0) {
-      return Response.json({ message: 'No users need bios', generated: 0 });
-    }
+The bio should be written in first person, highlight their expertise, and sound authentic and inspiring. Keep it concise and suitable for a professional music network profile. Return only the bio text.`;
 
-    const generated = [];
-
-    // Generate bios for up to 10 users at a time
-    for (const artist of usersNeedingBios.slice(0, 10)) {
-      try {
-        const prompt = `Generate a professional, engaging 2-3 sentence bio for a music industry professional with the following profile:
-Name: ${artist.full_name}
-Role: ${artist.role || 'Music Professional'}
-Location: ${artist.location || 'Not specified'}
-Genres: ${artist.genres?.join(', ') || 'Not specified'}
-Website: ${artist.website || 'Not specified'}
-
-The bio should be written in first person, highlight their expertise, and sound authentic and inspiring. Keep it concise and suitable for a professional music network profile.`;
-
-        const bioResponse = await base44.asServiceRole.integrations.Core.InvokeLLM({
-          model: "claude_opus_4_8",
-          prompt: prompt,
-        });
-
-        const bio = bioResponse.trim();
-
-        // Update user with the generated bio
-        await base44.asServiceRole.entities.User.update(artist.id, { bio });
-
-        generated.push({
-          id: artist.id,
-          name: artist.full_name,
-          bio: bio,
-        });
-      } catch (error) {
-        console.error(`Failed to generate bio for ${artist.full_name}:`, error.message);
-      }
-    }
-
-    return Response.json({
-      message: `Generated ${generated.length} bios`,
-      generated,
-      remaining: usersNeedingBios.length - generated.length,
+    const bioResponse = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      model: "claude_opus_4_8",
+      prompt: prompt,
     });
+
+    const bio = bioResponse.trim();
+
+    return Response.json({ bio });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

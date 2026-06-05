@@ -23,13 +23,16 @@ export default function Onboarding() {
   });
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(u => {
-      setUser(u);
       if (u.onboarding_completed) {
-        navigate("/");
+        setRedirecting(true);
+        navigate("/", { replace: true });
+        return;
       }
+      setUser(u);
       setForm(f => ({
         ...f,
         display_name: u.display_name || u.full_name || "",
@@ -74,7 +77,7 @@ export default function Onboarding() {
     }
   };
 
-  if (!user) {
+  if (redirecting || !user) {
     return <div className="flex h-screen items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 

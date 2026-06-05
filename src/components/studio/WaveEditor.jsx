@@ -68,6 +68,20 @@ export default function WaveEditor({ track, onClose, onSave }) {
   };
 
   const containerRef = useRef(null);
+  const effectsContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (effectsContainerRef.current) {
+      setTimeout(() => {
+        if (effectsContainerRef.current) {
+          effectsContainerRef.current.scrollTo({
+            left: effectsContainerRef.current.scrollWidth,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
+    }
+  }, [activeEffects.length]);
 
   const getEnv = (seg, type) => {
     if (seg[type]) return seg[type];
@@ -1151,7 +1165,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
               </div>
 
               {/* Devices Area */}
-              <div className="flex-1 flex overflow-x-auto custom-scrollbar p-3 gap-3 bg-[#252528] items-center shadow-[inset_0_4px_20px_rgba(0,0,0,0.2)]">
+              <div ref={effectsContainerRef} className="flex-1 flex overflow-x-auto custom-scrollbar p-3 gap-3 bg-[#252528] items-stretch shadow-[inset_0_4px_20px_rgba(0,0,0,0.2)]">
                 {activeEffects.length === 0 ? (
                   <div className="w-full h-full flex flex-col items-center justify-center text-white/20">
                     <SlidersHorizontal className="w-12 h-12 mb-3" />

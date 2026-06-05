@@ -17,8 +17,15 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
 
   const sendSms = async () => {
     setSmsStatus(null);
-    if (!phone.trim()) {
+    const trimmed = phone.trim();
+    if (!trimmed) {
       setSmsStatus({ type: "error", message: "Please enter a phone number." });
+      return;
+    }
+    // Validate E.164-style number: optional +, 7-15 digits
+    const normalized = trimmed.replace(/[\s()-]/g, "");
+    if (!/^\+?\d{7,15}$/.test(normalized)) {
+      setSmsStatus({ type: "error", message: "Enter a valid phone number with country code (e.g. +1 555 123 4567)." });
       return;
     }
     setSendingSms(true);

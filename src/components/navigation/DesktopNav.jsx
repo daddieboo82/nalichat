@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import SoundToggle from "@/components/layout/SoundToggle";
-import { MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, HelpCircle, UserPlus, Send, Mic, ShoppingCart, Wand2 } from "lucide-react";
+import { Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, HelpCircle, UserPlus, Send, Mic, ShoppingCart, Wand2 } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
 import { sounds } from "@/hooks/use-sound";
 
@@ -77,13 +77,13 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
           )}
 
           {/* Communication */}
-          <button
-            onClick={onMessageClick}
-            title="Send Message"
+          <Link
+            to="/"
+            title="Home"
             className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
           >
-            <Send className="w-4.5 h-4.5" />
-          </button>
+            <Home className="w-4.5 h-4.5" />
+          </Link>
           <button
             onClick={onInviteClick}
             title="Invite Collaborators"

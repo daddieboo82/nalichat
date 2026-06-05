@@ -42,6 +42,7 @@ import Studio from '@/pages/Studio';
 import Record from '@/pages/Record';
 import CoverArt from '@/pages/CoverArt';
 import AiAssistant from '@/components/AiAssistant';
+import AskNaliHint from '@/components/AskNaliHint';
 import { base44 } from '@/api/base44Client';
 
 const AuthenticatedApp = () => {
@@ -162,6 +163,7 @@ function App() {
                   <AuthenticatedApp />
                 </Router>
                 {loaded && <AiAssistant />}
+                {loaded && <AskNaliHint />}
                 <Toaster />
                 <SonnerToaster />
               </MotionConfig>

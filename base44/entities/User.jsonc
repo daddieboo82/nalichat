@@ -6,9 +6,13 @@
       "type": "string",
       "enum": [
         "admin",
-        "user"
+        "user",
+        "artist",
+        "producer",
+        "engineer",
+        "ar"
       ],
-      "default": "user"
+      "default": "artist"
     },
     "display_name": {
       "type": "string"
@@ -16,60 +20,25 @@
     "bio": {
       "type": "string"
     },
-    "avatar_url": {
-      "type": "string"
-    },
-    "cover_url": {
-      "type": "string"
-    },
-    "genre": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "artist_role": {
-      "type": "string"
-    },
     "location": {
       "type": "string"
     },
-    "website": {
+    "avatar_url": {
       "type": "string"
     },
-    "xp": {
-      "type": "number",
-      "default": 0
-    },
-    "level": {
-      "type": "number",
-      "default": 1
-    },
-    "followers": {
+    "genres": {
       "type": "array",
       "items": {
         "type": "string"
       },
       "default": []
     },
-    "following": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "default": []
+    "phone": {
+      "type": "string"
     },
-    "total_posts": {
-      "type": "number",
-      "default": 0
-    },
-    "total_likes_received": {
-      "type": "number",
-      "default": 0
-    },
-    "badge": {
-      "type": "string",
-      "description": "Special badge/title"
+    "onboarding_completed": {
+      "type": "boolean",
+      "default": false
     }
   }
 }

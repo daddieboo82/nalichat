@@ -34,12 +34,15 @@ import Playlists from '@/pages/Playlists';
 import PlaylistDetail from '@/pages/PlaylistDetail';
 import Analytics from '@/pages/Analytics';
 import ThankYou from '@/pages/ThankYou';
+import Onboarding from '@/pages/Onboarding';
+import { useSubscription } from '@/hooks/useSubscription';
 import PricingPlans from '@/components/pricing/PricingPlans';
 import Privacy from '@/pages/Privacy';
 import Studio from '@/pages/Studio';
 import Record from '@/pages/Record';
 import CoverArt from '@/pages/CoverArt';
 import AiAssistant from '@/components/AiAssistant';
+import { base44 } from '@/api/base44Client';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -47,11 +50,34 @@ const AuthenticatedApp = () => {
   const navigate = useNavigate();
   const isInitialMount = useRef(true);
 
+  const { user } = useAuth();
+  const { hasAccess, isLoading: subLoading } = useSubscription();
+
   useEffect(() => {
     isInitialMount.current = false;
   }, []);
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const checkActivity = () => {
+      const lastActive = localStorage.getItem('last_activity');
+      if (lastActive && Date.now() - parseInt(lastActive, 10) > 24 * 60 * 60 * 1000) {
+        base44.auth.logout();
+      }
+    };
+    checkActivity();
+    const updateActivity = () => localStorage.setItem('last_activity', Date.now().toString());
+    window.addEventListener('mousemove', updateActivity, { passive: true });
+    window.addEventListener('keydown', updateActivity, { passive: true });
+    window.addEventListener('touchstart', updateActivity, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', updateActivity);
+      window.removeEventListener('keydown', updateActivity);
+      window.removeEventListener('touchstart', updateActivity);
+    };
+  }, [isAuthenticated]);
+
+  if (isLoadingPublicSettings || isLoadingAuth || (isAuthenticated && subLoading)) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -73,6 +99,14 @@ const AuthenticatedApp = () => {
     }
   }
 
+  if (isAuthenticated && user && !user.onboarding_completed && location.pathname !== '/onboarding' && location.pathname !== '/login' && location.pathname !== '/register') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  if (isAuthenticated && user && user.onboarding_completed && !hasAccess && location.pathname !== '/pricing' && location.pathname !== '/login' && location.pathname !== '/register' && location.pathname !== '/settings' && location.pathname !== '/profile' && !location.pathname.startsWith('/thank-you') && !location.pathname.startsWith('/ThankYou')) {
+    return <Navigate to="/pricing" replace />;
+  }
+
   return (
     <>
       <Routes location={location}>
@@ -80,6 +114,7 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/onboarding" element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />}><Onboarding /></ProtectedRoute>} />
       <Route element={<AppLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/explore" element={<Explore />} />

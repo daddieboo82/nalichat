@@ -46,18 +46,40 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
             Share this link anywhere — anyone can use it to join and start collaborating with you.
           </p>
 
-          <Button
-            variant="outline"
-            className="w-full rounded-lg"
-            onClick={() => {
-              const subject = "Join me on NaliChat";
-              const body = `I'm using NaliChat to collaborate on music. Join me here: ${inviteUrl}`;
-              window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            }}
-          >
-            <Mail className="w-4 h-4 mr-2" />
-            Share via Email
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1 rounded-lg"
+              onClick={() => {
+                const subject = "Join me on NaliChat";
+                const body = `I'm using NaliChat to collaborate on music. Join me here: ${inviteUrl}`;
+                window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+              }}
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Email
+            </Button>
+            
+            {navigator.share && (
+              <Button
+                variant="outline"
+                className="flex-1 rounded-lg"
+                onClick={async () => {
+                  try {
+                    await navigator.share({
+                      title: 'Join NaliChat',
+                      text: "I'm using NaliChat to collaborate on music. Join me here!",
+                      url: inviteUrl,
+                    });
+                  } catch (err) {
+                    console.error("Share failed", err);
+                  }
+                }}
+              >
+                Share...
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

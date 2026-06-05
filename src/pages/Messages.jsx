@@ -10,6 +10,7 @@ import ChatView from "@/components/messages/ChatView";
 import NewChatDialog from "@/components/messages/NewChatDialog";
 import GroupChatDialog from "@/components/messages/GroupChatDialog";
 import ExternalMessageDialog from "@/components/messages/ExternalMessageDialog";
+import GlobalInviteDialog from "@/components/GlobalInviteDialog";
 import { sounds } from "@/hooks/use-sound";
 import { MessageSquare, Users, Mail, Plus, Zap, UserPlus, Hash, Search, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,9 +33,18 @@ export default function Messages() {
   const [showExternal, setShowExternal] = useState(false);
   const queryClient = useQueryClient();
 
+  const [showInvite, setShowInvite] = useState(false);
+
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const unsub = base44.entities.User.subscribe(() => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    });
+    return unsub;
+  }, [queryClient]);
 
   useEffect(() => {
     const handleVisibilityChange = async () => {
@@ -256,6 +266,15 @@ export default function Messages() {
                       <span className="text-[10px] text-muted-foreground">Create a room</span>
                     </div>
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowInvite(true)} className="gap-3 cursor-pointer py-3 px-3 rounded-xl focus:bg-chart-3/10 focus:text-chart-3">
+                    <div className="w-8 h-8 rounded-full bg-chart-3/20 flex items-center justify-center">
+                      <UserPlus className="w-4 h-4 text-chart-3" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-sm">Send Invite</span>
+                      <span className="text-[10px] text-muted-foreground">Invite external users</span>
+                    </div>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -366,6 +385,10 @@ export default function Messages() {
       <ExternalMessageDialog
         open={showExternal}
         onOpenChange={setShowExternal}
+      />
+      <GlobalInviteDialog 
+        open={showInvite}
+        onOpenChange={setShowInvite}
       />
     </div>
   );

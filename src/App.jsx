@@ -3,7 +3,8 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, MotionConfig } from 'framer-motion';
+import { usePerformance } from '@/hooks/use-performance';
 import { useState, useEffect, useRef } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -108,7 +109,7 @@ const AuthenticatedApp = () => {
 
 function App() {
   const [loaded, setLoaded] = useState(false);
-  // App refreshed
+  const { isLowEnd } = usePerformance();
 
   return (
     <ErrorBoundary>
@@ -116,13 +117,15 @@ function App() {
         <AuthProvider>
           <AudioPlayerProvider>
             <CartProvider>
-              {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
-              <NavRipple />
-              <Router>
-                <AuthenticatedApp />
-              </Router>
-              <Toaster />
-              <SonnerToaster />
+              <MotionConfig reducedMotion={isLowEnd ? "always" : "user"}>
+                {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
+                {!isLowEnd && <NavRipple />}
+                <Router>
+                  <AuthenticatedApp />
+                </Router>
+                <Toaster />
+                <SonnerToaster />
+              </MotionConfig>
             </CartProvider>
           </AudioPlayerProvider>
         </AuthProvider>

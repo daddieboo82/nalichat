@@ -186,3 +186,25 @@
   opacity: 0;
 }
 .shimmer-hover:hover::after { opacity: 1; animation: shimmer 1s ease; }
+
+/* Performance Mode / Low Power Mode optimizations */
+.low-power-mode .animate-float-blob {
+  animation: none !important;
+  display: none !important; /* Hide giant background blobs on weak devices */
+}
+.low-power-mode .text-gradient-animate {
+  animation: none !important;
+  background-size: 100% 100% !important;
+}
+.low-power-mode .glass {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: hsl(240 8% 8% / 0.95); /* Opaque fallback */
+}
+.low-power-mode .shimmer-hover::after {
+  animation: none !important;
+  display: none !important;
+}
+.low-power-mode * {
+  box-shadow: none !important; /* Disable heavy glow shadows */
+}

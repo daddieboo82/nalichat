@@ -2,6 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/layout/PageTransition";
 import { useState } from "react";
+import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 
 import DesktopNav from "@/components/navigation/DesktopNav";
 import MobileHeader from "@/components/navigation/MobileHeader";
@@ -18,6 +19,8 @@ export default function AppLayout() {
   const [showHelp, setShowHelp] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
+  const audioPlayer = useAudioPlayer();
+  const hasAudioPlayer = !!audioPlayer?.currentTrack;
 
   useSystemTheme();
 
@@ -27,7 +30,7 @@ export default function AppLayout() {
       <MobileHeader />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
+      <main className={`flex-1 overflow-hidden ${hasAudioPlayer ? 'pb-[calc(7.75rem+env(safe-area-inset-bottom))] md:pb-[5rem]' : 'pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0'}`}>
         <AnimatePresence mode="wait">
           <PageTransition key={location.pathname}>
             <Outlet />

@@ -48,6 +48,21 @@ export default function UpgradeModal({ open, onOpenChange, triggerReason = "proj
       description: "Project collaboration is a Pro feature.",
       feature: "Invite collaborators and work together",
     },
+    studio: {
+      title: "Unlock NaliStudio Pro",
+      description: "NaliStudio Pro is an exclusive feature.",
+      feature: "Full studio access",
+    },
+    coverart: {
+      title: "Unlock AI Cover Art",
+      description: "AI Cover Art Creator is an exclusive Pro feature.",
+      feature: "Generate AI cover art",
+    },
+    analytics: {
+      title: "Unlock Analytics",
+      description: "Advanced analytics are exclusive to Pro members.",
+      feature: "Detailed audience insights",
+    },
   };
 
   const reason = reasons[triggerReason] || reasons.projects;

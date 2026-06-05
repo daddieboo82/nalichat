@@ -16,8 +16,8 @@ Deno.serve(async (req) => {
 
     const now = new Date();
     const createdDate = new Date(user.created_date);
-    const diffHours = (now - createdDate) / (1000 * 60 * 60);
-    const hasOneHourFree = diffHours < 1;
+    const diffDays = (now - createdDate) / (1000 * 60 * 60 * 24);
+    const hasTrialFree = diffDays <= 7;
     const isAdmin = user.role === 'admin';
 
     if (isAdmin) {
@@ -32,12 +32,12 @@ Deno.serve(async (req) => {
     const activeSubs = subs.filter(s => s.status === 'active' || s.status === 'trial');
 
     if (activeSubs.length === 0) {
-      // User has no active subscription - check 1 hour free
+      // User has no active subscription - check 7 days free
       return Response.json({
         plan: 'free',
         status: 'active',
         trialActive: false,
-        hasAccess: hasOneHourFree,
+        hasAccess: hasTrialFree,
       });
     }
 
@@ -45,11 +45,11 @@ Deno.serve(async (req) => {
     const trialEndDate = sub.trial_end_date ? new Date(sub.trial_end_date) : null;
     const trialActive = trialEndDate && now < trialEndDate;
 
-    // For 24-hour trial, if trialEndDate has passed, we don't have access unless status is active and plan is pro
+    // If trialEndDate has passed, we don't have access unless status is active and plan is pro
     let hasAccess = false;
     if (sub.plan === 'pro') hasAccess = true;
     if (sub.plan === 'trial') hasAccess = trialActive;
-    if (hasOneHourFree) hasAccess = true;
+    if (hasTrialFree) hasAccess = true;
 
     return Response.json({
       id: sub.id,

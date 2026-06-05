@@ -25,6 +25,8 @@ import { toast } from 'sonner';
 import WaveEditor from '@/components/studio/WaveEditor';
 import BounceDialog from '@/components/studio/BounceDialog';
 import { sounds } from '@/hooks/use-sound';
+import { useSubscription } from '@/hooks/useSubscription';
+import UpgradeModal from '@/components/billing/UpgradeModal';
 
 // Fake waveform generator - High-resolution for precision editing
 const generateWaveform = (length = 2000) => {
@@ -88,6 +90,9 @@ export default function Studio() {
     output: false,
     midi: false
   });
+
+  const { hasAccess, isLoading: isLoadingSub } = useSubscription();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
   const [tracks, setTracks] = useState(() => {
     try {
@@ -761,6 +766,21 @@ export default function Studio() {
   };
 
   // handleExport removed in favor of BounceDialog
+
+  if (!isLoadingSub && !hasAccess) {
+    return (
+      <div className="flex-1 flex flex-col h-[calc(100vh-4rem)] items-center justify-center p-8 bg-background">
+        <h2 className="text-2xl font-bold font-heading mb-4">NaliStudio Pro Required</h2>
+        <p className="text-muted-foreground mb-6 max-w-md text-center">
+          Your free trial has ended. Upgrade to Pro to continue using the Studio and access premium features.
+        </p>
+        <Button onClick={() => setShowUpgradeModal(true)} size="lg" className="bg-gradient-to-r from-primary to-pink-500 text-white shadow-lg">
+           View Plans & Upgrade
+        </Button>
+        <UpgradeModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} triggerReason="studio" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-background text-foreground overflow-hidden">

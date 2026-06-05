@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mail, Copy, Check, MessageSquare, Loader2 } from 'lucide-react';
+import { Mail, Copy, Check, MessageSquare, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function InviteTab() {
@@ -10,6 +10,7 @@ export default function InviteTab() {
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState('');
   const [sendingSms, setSendingSms] = useState(false);
+  const [smsStatus, setSmsStatus] = useState(null); // { type: 'success' | 'error', message }
 
   const getOrigin = () => {
     if (typeof window !== 'undefined') {
@@ -27,22 +28,31 @@ export default function InviteTab() {
   };
 
   const sendSms = async () => {
-    if (!phone.trim()) {
-      toast.error('Enter a phone number');
+    setSmsStatus(null);
+    const trimmed = phone.trim();
+    if (!trimmed) {
+      setSmsStatus({ type: 'error', message: 'Please enter a phone number.' });
+      return;
+    }
+    // Validate E.164-style number: optional +, 7-15 digits
+    const normalized = trimmed.replace(/[\s()-]/g, '');
+    if (!/^\+?\d{7,15}$/.test(normalized)) {
+      setSmsStatus({ type: 'error', message: 'Enter a valid phone number with country code (e.g. +1 555 123 4567).' });
       return;
     }
     setSendingSms(true);
     try {
-      const res = await base44.functions.invoke('sendSmsInvite', { phone: phone.trim(), link: inviteLink });
+      const res = await base44.functions.invoke('sendSmsInvite', { phone: trimmed, link: inviteLink });
       if (res.data?.success) {
         toast.success('Invite sent via SMS!');
+        setSmsStatus({ type: 'success', message: `Invite sent to ${trimmed}!` });
         setPhone('');
       } else {
-        toast.error(res.data?.error || 'Failed to send SMS');
+        setSmsStatus({ type: 'error', message: res.data?.error || 'Failed to send SMS.' });
       }
     } catch (err) {
       console.error('Failed to send SMS invite:', err);
-      toast.error('Failed to send SMS');
+      setSmsStatus({ type: 'error', message: 'Failed to send SMS. Please try again.' });
     } finally {
       setSendingSms(false);
     }
@@ -114,7 +124,7 @@ export default function InviteTab() {
             <Input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => { setPhone(e.target.value); setSmsStatus(null); }}
               placeholder="+1 555 123 4567"
               className="flex-1 text-sm"
             />
@@ -122,9 +132,16 @@ export default function InviteTab() {
               {sendingSms ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send'}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Include the country code (e.g. +1 for US numbers).
-          </p>
+          {smsStatus ? (
+            <p className={`text-xs mt-2 flex items-center gap-1.5 font-medium ${smsStatus.type === 'success' ? 'text-green-500' : 'text-destructive'}`}>
+              {smsStatus.type === 'success' ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+              {smsStatus.message}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-2">
+              Include the country code (e.g. +1 for US numbers).
+            </p>
+          )}
         </div>
 
         <p className="text-xs text-muted-foreground">

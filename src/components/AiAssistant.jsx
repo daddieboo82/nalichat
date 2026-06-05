@@ -53,10 +53,6 @@ export default function AiAssistant() {
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
-  useEffect(() => {
-    openChat();
-  }, []);
-
   const send = async () => {
     if (!input.trim() || loading) return;
     const text = input.trim();
@@ -100,8 +96,11 @@ export default function AiAssistant() {
                 {expanded ? <Shrink className="w-5 h-5 sm:w-4 sm:h-4" /> : <Expand className="w-5 h-5 sm:w-4 sm:h-4" />}
               </button>
             )}
-            <button onClick={() => setMinimized(v => !v)} className="text-muted-foreground hover:text-foreground p-2 sm:p-1 mr-[-4px]">
+            <button onClick={() => setMinimized(v => !v)} className="text-muted-foreground hover:text-foreground p-2 sm:p-1">
               {minimized ? <Maximize2 className="w-5 h-5 sm:w-4 sm:h-4" /> : <Minimize2 className="w-5 h-5 sm:w-4 sm:h-4" />}
+            </button>
+            <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-2 sm:p-1 mr-[-4px]">
+              <X className="w-6 h-6 sm:w-4 sm:h-4" />
             </button>
           </div>
 

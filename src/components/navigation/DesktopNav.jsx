@@ -36,7 +36,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
 
   return (
     <nav className="hidden md:block relative z-50 border-t border-border/50 backdrop-blur-xl" style={{ background: "hsl(240 8% 6% / 0.95)" }}>
-      <div className="max-w-7xl mx-auto px-3 py-1.5 flex items-center justify-between gap-1">
+      <div className="w-full px-4 py-2 flex items-center justify-between gap-4">
         {/* Logo */}
         <Link to="/" className="group shrink-0">
           <div className="flex items-center gap-2">
@@ -48,7 +48,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
         </Link>
 
         {/* Main Navigation */}
-        <div className="flex items-center gap-0.5 justify-center flex-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex items-center justify-center flex-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] gap-2 lg:gap-4 px-2">
           {NAV_ITEMS.map(({ icon: Icon, label, path }) => (
             <Link
               key={path}
@@ -56,24 +56,24 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
               title={label}
               onClick={() => sounds.nav()}
               className={cn(
-                "px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap text-xs font-medium group",
+                "px-3 py-2 rounded-xl flex items-center gap-2 transition-all whitespace-nowrap text-sm font-semibold group",
                 isActive(path)
                   ? "bg-primary/15 text-primary shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
               )}
             >
-              <Icon className={cn("w-3.5 h-3.5 transition-transform group-hover:scale-110", isActive(path) && "text-primary")} />
-              <span className="hidden xl:inline">{label}</span>
+              <Icon className={cn("w-4 h-4 transition-transform group-hover:scale-110", isActive(path) && "text-primary")} />
+              <span className="hidden lg:inline">{label}</span>
             </Link>
           ))}
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           {(!user || (user?.role !== "admin" && !ADMIN_EMAILS.includes(user?.email))) && (
             <Link
               to="/pricing"
-              className="hidden lg:flex h-8 px-4 rounded-full bg-gradient-to-r from-primary to-accent text-white font-semibold text-xs items-center hover:opacity-90 transition-opacity mr-1 shadow-lg shadow-primary/20"
+              className="hidden lg:flex h-9 px-5 rounded-full bg-gradient-to-r from-primary to-accent text-white font-bold text-sm items-center hover:opacity-90 transition-opacity mr-2 shadow-lg shadow-primary/20"
             >
               {user ? "Upgrade to Pro" : "Pricing"}
             </Link>
@@ -83,62 +83,62 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
           <Link
             to="/"
             title="Home"
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
           >
-            <Home className="w-4.5 h-4.5" />
+            <Home className="w-5 h-5" />
           </Link>
           <button
             onClick={onInviteClick}
             title="Invite Collaborators"
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
           >
-            <UserPlus className="w-4.5 h-4.5" />
+            <UserPlus className="w-5 h-5" />
           </button>
 
           <button
             onClick={() => setIsOpen(true)}
             title="Shopping Cart"
-            className="relative w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
+            className="relative w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
           >
-            <ShoppingCart className="w-4.5 h-4.5" />
+            <ShoppingCart className="w-5 h-5" />
             {items.length > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary text-[9px] font-bold text-white flex items-center justify-center border-2 border-background">
+              <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary text-[10px] font-bold text-white flex items-center justify-center border-[1.5px] border-background">
                 {items.length}
               </span>
             )}
           </button>
 
           {/* System */}
-          <div className="border-l border-border/30 pl-2 flex items-center gap-2">
+          <div className="border-l border-border/30 pl-2 ml-1 flex items-center gap-1.5">
             <button
               onClick={onHelpClick}
               title="Help"
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
             >
-              <HelpCircle className="w-4.5 h-4.5" />
+              <HelpCircle className="w-5 h-5" />
             </button>
             <SoundToggle />
             <NotificationBell direction="up" />
             <Link
               to="/settings"
               title="Settings"
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
             >
-              <Settings className="w-4.5 h-4.5" />
+              <Settings className="w-5 h-5" />
             </Link>
             <button
               onClick={() => base44.auth.logout()}
               title="Log out"
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95"
             >
-              <LogOut className="w-4.5 h-4.5" />
+              <LogOut className="w-5 h-5" />
             </button>
 
             {/* Profile Avatar */}
-            <Link to="/profile" className="ml-1">
-              <Avatar className="w-9 h-9 border-2 border-border/50 hover:border-primary/50 transition-all cursor-pointer shadow-md">
+            <Link to="/profile" className="ml-2">
+              <Avatar className="w-10 h-10 border-2 border-border/50 hover:border-primary/50 transition-all cursor-pointer shadow-md">
                 <AvatarImage src={user?.avatar_url} />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-pink-500 text-white text-xs font-bold">
+                <AvatarFallback className="bg-gradient-to-br from-primary to-pink-500 text-white text-sm font-bold">
                   {user?.display_name?.[0] || user?.full_name?.[0] || "?"}
                 </AvatarFallback>
               </Avatar>

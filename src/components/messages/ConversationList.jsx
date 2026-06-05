@@ -84,7 +84,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
 
       {/* Trending Topics */}
       {!search && (
-        <div className="px-6 mb-3 flex gap-2 overflow-x-auto shrink-0 pb-2">
+        <div className="pl-6 mb-3 flex gap-2 overflow-x-auto no-scrollbar shrink-0 pb-2 after:content-[''] after:w-6 after:shrink-0">
           <span className="text-xs font-bold text-muted-foreground uppercase flex items-center shrink-0 mr-1">Trending:</span>
           {["#TikTokMusic", "#ViralSounds", "#DrakeVsKendrick", "#AIinMusic", "#Eurovision", "#Grammys", "#BeatMakers"].map(topic => (
              <button

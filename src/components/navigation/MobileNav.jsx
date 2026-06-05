@@ -8,8 +8,7 @@ const TABS = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Compass, label: "Explore", path: "/explore" },
   { icon: Mic, label: "Studio", path: "/studio" },
-  { icon: Wand2, label: "Covers", path: "/cover-art" },
-  { icon: MessageSquare, label: "Chat", path: "/messages" },
+  { icon: MessageSquare, label: "Messages", path: "/messages" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 
@@ -36,7 +35,7 @@ export default function MobileNav() {
       className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border bg-card/90 backdrop-blur-md select-none"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="flex items-stretch justify-around flex-nowrap overflow-x-auto scrollbar-none">
+      <div className="flex items-stretch justify-around">
         {TABS.map(({ icon: Icon, label, path: tabPath }) => {
           const active = isActive(tabPath);
           return (

@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
         name: 'NaliChat Pro',
         description: 'Full access to all app features',
         quantity: 1,
-        price: '24.95',
+        price: '9.99',
         lineItemType: 'SUBSCRIPTION',
         subscriptionInfo: {
           name: 'NaliChat Pro',
@@ -53,8 +53,8 @@ Deno.serve(async (req) => {
             count: 1,
           },
           paymentPlan: {
-            name: '$24.95/month',
-            price: '24.95',
+            name: '$9.99/month',
+            price: '9.99',
           },
         },
       };

@@ -94,10 +94,10 @@ export default function UpgradeModal({ open, onOpenChange, triggerReason = "proj
 
           <div className="p-3 rounded-xl bg-accent/10 border border-accent/20">
             <p className="text-center text-sm font-semibold text-accent">
-              7-Day Free Trial — No credit card required
+              Upgrade to NaliChat Pro
             </p>
             <p className="text-center text-xs text-muted-foreground mt-1">
-              Then $9.99/month. Cancel anytime.
+              $9.99/month. Cancel anytime.
             </p>
           </div>
 
@@ -130,7 +130,7 @@ export default function UpgradeModal({ open, onOpenChange, triggerReason = "proj
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Start Free Trial
+                  Upgrade Now
                 </>
               )}
             </Button>

@@ -15,6 +15,8 @@ export function AudioPlayerProvider({ children }) {
     audioRef.current.playsInline = true;
     audioRef.current.setAttribute('playsinline', '');
     audioRef.current.setAttribute('webkit-playsinline', '');
+    audioRef.current.setAttribute('controlsList', 'nodownload nofullscreen noremoteplayback');
+    audioRef.current.disablePictureInPicture = true;
   }
 
   useEffect(() => {

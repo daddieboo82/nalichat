@@ -122,7 +122,15 @@ export default function CustomMediaPlayer({ src, className, title }) {
       
       {/* Main player content */}
       <div className="relative bg-card/95 backdrop-blur-xl rounded-2xl p-4 flex flex-col gap-4">
-        <audio ref={audioRef} src={src} preload="metadata" />
+        <audio 
+          ref={audioRef} 
+          src={src} 
+          preload="metadata" 
+          playsInline
+          webkitPlaysInline
+          controlsList="nodownload nofullscreen noremoteplayback"
+          disablePictureInPicture
+        />
         
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">

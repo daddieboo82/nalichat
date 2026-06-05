@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward, Square, ShoppingCart, Minimize2, Download, Share2 } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
 import { toast } from "sonner";
@@ -131,16 +132,20 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                  
                  <h2 className="text-3xl md:text-5xl font-heading font-black text-white mb-2 leading-tight drop-shadow-lg line-clamp-2">{post.title}</h2>
                  
-                 <div className="flex items-center gap-3 mt-4 mb-6">
+                 <Link 
+                   to={`/profile?id=${post.creator_id}`}
+                   onClick={() => onOpenChange(false)}
+                   className="flex items-center gap-3 mt-4 mb-6 hover:opacity-80 transition-opacity"
+                 >
                    <Avatar className="w-10 h-10 ring-2 ring-white/10">
                      <AvatarImage src={post.creator_avatar} />
                      <AvatarFallback className="bg-primary/20 text-primary">{post.creator_name?.[0]?.toUpperCase()}</AvatarFallback>
                    </Avatar>
                    <div>
-                     <p className="text-sm font-semibold text-white/90">{post.creator_name || "Anonymous"}</p>
+                     <p className="text-sm font-semibold text-white/90 hover:underline">{post.creator_name || "Anonymous"}</p>
                      <p className="text-xs text-white/50">Creator</p>
                    </div>
-                 </div>
+                 </Link>
 
                  {post.description && (
                    <p className="text-sm text-white/70 line-clamp-3 mb-6 leading-relaxed">{post.description}</p>
@@ -274,7 +279,9 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    onPlay={() => setIsPlaying(true)}
                    onPause={() => setIsPlaying(false)}
                    playsInline
-                   webkit-playsinline="true"
+                   webkitPlaysInline
+                   controlsList="nodownload nofullscreen noremoteplayback"
+                   disablePictureInPicture
                  />
 
                  <div className="flex flex-col gap-4">

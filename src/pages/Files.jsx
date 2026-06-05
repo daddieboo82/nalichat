@@ -10,6 +10,7 @@ import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, L
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { downloadFilesAsZip } from "@/lib/downloadZip";
 import { useToast } from "@/components/ui/use-toast";
 import { resumableDownload } from "@/lib/resumableUpload";
@@ -115,6 +116,7 @@ export default function Files() {
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [showMoveFolder, setShowMoveFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderProject, setNewFolderProject] = useState("none");
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -165,15 +167,32 @@ export default function Files() {
     queryFn: () => base44.entities.SharedFile.list("-created_date"),
   });
 
-  const { data: folders = [] } = useQuery({
-    queryKey: ["folders"],
-    queryFn: () => currentUser ? base44.entities.Folder.filter({ owner_id: currentUser.id }) : [],
+  const { data: projects = [] } = useQuery({
+    queryKey: ["projects"],
+    queryFn: async () => {
+      if (!currentUser) return [];
+      const all = await base44.entities.Project.list();
+      return all.filter(p => p.owner_id === currentUser.id || (p.collaborator_ids || []).includes(currentUser.id));
+    },
     enabled: !!currentUser,
   });
+
+  const { data: folders = [] } = useQuery({
+    queryKey: ["folders"],
+    queryFn: () => currentUser ? base44.entities.Folder.list("-created_date", 500) : [],
+    enabled: !!currentUser,
+  });
+
+  const accessibleFolders = React.useMemo(() => {
+    if (!currentUser) return [];
+    const userProjectIds = projects.map(p => p.id);
+    return folders.filter(f => f.owner_id === currentUser.id || (f.project_id && userProjectIds.includes(f.project_id)));
+  }, [folders, projects, currentUser]);
 
   const uploadMutation = useMutation({
     mutationFn: async (filesArray) => {
       setUploading(true);
+      const currentFolderObj = currentFolderId ? folders.find(f => f.id === currentFolderId) : null;
       for (const file of filesArray) {
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
         await base44.entities.SharedFile.create({
@@ -184,6 +203,7 @@ export default function Files() {
           uploader_id: currentUser.id,
           uploader_name: currentUser.display_name || currentUser.full_name,
           folder_id: currentFolderId,
+          project_id: currentFolderObj?.project_id || null,
         });
       }
       setUploading(false);
@@ -201,10 +221,12 @@ export default function Files() {
     mutationFn: (name) => base44.entities.Folder.create({
       name,
       owner_id: currentUser.id,
+      project_id: newFolderProject === "none" ? null : newFolderProject,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["folders"] });
       setNewFolderName("");
+      setNewFolderProject("none");
       setShowNewFolder(false);
       toast({ title: "Folder created", description: `${newFolderName} is ready for files.` });
     },
@@ -219,10 +241,15 @@ export default function Files() {
   });
 
   const moveToFolderMutation = useMutation({
-    mutationFn: ({ fileIds, folderId }) =>
-      Promise.all(fileIds.map(id =>
-        base44.entities.SharedFile.update(id, { folder_id: folderId })
-      )),
+    mutationFn: ({ fileIds, folderId }) => {
+      const targetFolder = folders.find(f => f.id === folderId);
+      return Promise.all(fileIds.map(id =>
+        base44.entities.SharedFile.update(id, { 
+          folder_id: folderId,
+          project_id: targetFolder?.project_id || null
+        })
+      ));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shared-files"] });
       setSelectedIds([]);
@@ -232,14 +259,21 @@ export default function Files() {
   });
 
   const currentFolder = currentFolderId ? folders.find(f => f.id === currentFolderId) : null;
-  const filesInFolder = currentFolderId ? files.filter(f => f.folder_id === currentFolderId) : files.filter(f => !f.folder_id);
+  
+  const accessibleFiles = React.useMemo(() => {
+    if (!currentUser) return [];
+    const userProjectIds = projects.map(p => p.id);
+    return files.filter(f => f.uploader_id === currentUser.id || (f.project_id && userProjectIds.includes(f.project_id)));
+  }, [files, projects, currentUser]);
+
+  const filesInFolder = currentFolderId ? files.filter(f => f.folder_id === currentFolderId) : accessibleFiles.filter(f => !f.folder_id);
 
   const filtered = React.useMemo(() => filesInFolder.filter(f => {
     if (typeFilter !== "all" && f?.file_type !== typeFilter) return false;
     return (f?.name || "").toLowerCase().includes(search.toLowerCase());
   }), [filesInFolder, typeFilter, search]);
 
-  const filteredFolders = React.useMemo(() => folders.filter(f => (f?.name || "").toLowerCase().includes(search.toLowerCase())), [folders, search]);
+  const filteredFolders = React.useMemo(() => accessibleFolders.filter(f => (f?.name || "").toLowerCase().includes(search.toLowerCase())), [accessibleFolders, search]);
 
   const handleUpload = (e) => {
     const files = Array.from(e.target.files || []);
@@ -316,7 +350,7 @@ export default function Files() {
               {selectedIds.length} selected
             </div>
             <div className="flex items-center gap-2">
-              {folders.length > 0 && (
+              {accessibleFolders.length > 0 && (
                 <Button 
                   size="sm" 
                   variant="outline"
@@ -393,7 +427,7 @@ export default function Files() {
               </>
             )}
           </div>
-        ) : !currentFolderId && (filteredFolders.length > 0 || folders.length > 0) ? (
+        ) : !currentFolderId && (filteredFolders.length > 0 || accessibleFolders.length > 0) ? (
           <div className="space-y-4">
             {filteredFolders.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -411,9 +445,10 @@ export default function Files() {
                         <FolderOpen className="w-5 h-5 text-accent" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm">{folder.name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="font-medium text-sm truncate">{folder.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
                           {files.filter(f => f.folder_id === folder.id).length} files
+                          {folder.project_id && projects.find(p => p.id === folder.project_id) && ` • ${projects.find(p => p.id === folder.project_id).title}`}
                         </p>
                       </div>
                     </div>
@@ -582,6 +617,19 @@ export default function Files() {
                 }
               }}
             />
+            {projects.length > 0 && (
+              <Select value={newFolderProject} onValueChange={setNewFolderProject}>
+                <SelectTrigger className="bg-secondary/50 border-0 rounded-lg h-10 w-full text-sm">
+                  <SelectValue placeholder="Select Project (Optional)" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value="none">No Project (Personal)</SelectItem>
+                  {projects.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1 rounded-lg" onClick={() => setShowNewFolder(false)}>
                 Cancel
@@ -606,17 +654,22 @@ export default function Files() {
             <DialogTitle className="font-heading">Move to Folder</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
-            {folders.map((folder) => (
+            {accessibleFolders.map((folder) => (
               <button
                 key={folder.id}
                 onClick={() => moveToFolderMutation.mutate({ fileIds: selectedIds, folderId: folder.id })}
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors text-left"
               >
                 <FolderOpen className="w-4 h-4 text-accent shrink-0" />
-                <span className="font-medium text-sm">{folder.name}</span>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="font-medium text-sm truncate">{folder.name}</span>
+                  {folder.project_id && projects.find(p => p.id === folder.project_id) && (
+                    <span className="text-[10px] text-muted-foreground truncate">{projects.find(p => p.id === folder.project_id).title}</span>
+                  )}
+                </div>
               </button>
             ))}
-            {folders.length === 0 && (
+            {accessibleFolders.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">No folders yet. Create one first.</p>
             )}
           </div>

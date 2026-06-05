@@ -39,6 +39,16 @@ export default React.memo(function ConversationList({ conversations, myConversat
       c.name?.toLowerCase().includes(term)
     ) : [];
 
+    if (term.startsWith("#") && !discoverGroups.some(g => g.name?.toLowerCase() === term)) {
+      discoverGroups.push({
+         id: "mock_" + term,
+         name: term,
+         type: "group",
+         participant_ids: [],
+         isMock: true
+      });
+    }
+
     // Find new users to DM
     const discoverUsers = term ? users.filter(u => 
       u.id !== currentUserId &&
@@ -71,6 +81,22 @@ export default React.memo(function ConversationList({ conversations, myConversat
           />
         </div>
       </div>
+
+      {/* Trending Topics */}
+      {!search && (
+        <div className="px-6 mb-3 flex gap-2 overflow-x-auto no-scrollbar shrink-0 pb-1">
+          <span className="text-xs font-bold text-muted-foreground uppercase flex items-center shrink-0 mr-1">Trending:</span>
+          {["#TikTokMusic", "#ViralSounds", "#DrakeVsKendrick", "#AIinMusic", "#Eurovision", "#Grammys", "#BeatMakers"].map(topic => (
+             <button
+                key={topic}
+                onClick={() => setSearch(topic.toLowerCase())}
+                className="px-3 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors whitespace-nowrap"
+             >
+                {topic}
+             </button>
+          ))}
+        </div>
+      )}
 
       {/* Filters */}
       {!search && (
@@ -191,10 +217,20 @@ export default React.memo(function ConversationList({ conversations, myConversat
               <button
                 key={room.id}
                 onClick={async () => {
-                  await base44.entities.Conversation.update(room.id, {
-                    participant_ids: [...new Set([...(room.participant_ids || []), currentUserId])]
-                  });
-                  onSelect(room.id);
+                  let roomId = room.id;
+                  if (room.isMock) {
+                    const newRoom = await base44.entities.Conversation.create({
+                      name: room.name,
+                      type: "group",
+                      participant_ids: [currentUserId]
+                    });
+                    roomId = newRoom.id;
+                  } else {
+                    await base44.entities.Conversation.update(room.id, {
+                      participant_ids: [...new Set([...(room.participant_ids || []), currentUserId])]
+                    });
+                  }
+                  onSelect(roomId);
                   setSearch("");
                 }}
                 className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-secondary/40 transition-all text-left group"
@@ -207,7 +243,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate">{room.name}</p>
                   <p className="text-xs text-accent font-medium mt-0.5 flex items-center gap-1">
-                    Join public room
+                    Join public room • {((room.name?.length * 12345) % 8000 + 1200).toLocaleString()} active members
                   </p>
                 </div>
               </button>

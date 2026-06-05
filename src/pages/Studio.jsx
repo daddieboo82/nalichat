@@ -80,6 +80,7 @@ export default function Studio() {
   
   const [bounceOpen, setBounceOpen] = useState(false);
   const [bounceRedirect, setBounceRedirect] = useState(null);
+  const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
   
   const [hardware, setHardware] = useState({
     mic: false,
@@ -813,6 +814,7 @@ export default function Studio() {
         <div className="flex items-center gap-2">
           {/* Hardware Config */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
+            <Button variant="ghost" size="icon" title="Hardware Preferences" onClick={() => setShowPreferencesDialog(true)} className="w-8 h-8 rounded-lg hover:bg-secondary transition-colors text-muted-foreground"><Settings2 className="w-4 h-4" /></Button>
             <Button variant="ghost" size="icon" title="Audio Interface" onClick={() => toast.info(hardware.interface ? "Audio Interface connected" : "No Audio Interface detected")} className={cn("w-8 h-8 rounded-lg hover:bg-secondary transition-colors", hardware.interface ? "text-green-400" : "text-muted-foreground/50")}><Cpu className="w-4 h-4" /></Button>
             <Button variant="ghost" size="icon" title="Microphone Input" onClick={() => toast.info(hardware.mic ? "Microphone connected" : "No Microphone detected")} className={cn("w-8 h-8 rounded-lg hover:bg-secondary transition-colors", hardware.mic ? "text-green-400" : "text-muted-foreground/50")}><Mic className="w-4 h-4" /></Button>
             <Button variant="ghost" size="icon" title="Headphones Output" onClick={() => toast.info(hardware.output ? "Audio Output connected" : "No Audio Output detected")} className={cn("w-8 h-8 rounded-lg hover:bg-secondary transition-colors", hardware.output ? "text-green-400" : "text-muted-foreground/50")}><Headphones className="w-4 h-4" /></Button>
@@ -955,12 +957,24 @@ export default function Studio() {
                   tracks.some(t => t.solo) && !track.solo && "opacity-40 grayscale"
                 )}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 font-medium text-sm truncate">
-                    <div className={cn("w-2 h-2 rounded-full", track.color)} />
-                    <span className="truncate">{track.name}</span>
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col min-w-0 mr-2">
+                    <div className="flex items-center gap-2 font-medium text-sm truncate">
+                      <div className={cn("w-2 h-2 rounded-full shrink-0", track.color)} />
+                      <span className="truncate">{track.name}</span>
+                    </div>
+                    <select 
+                      className="bg-transparent border-none text-[9px] text-muted-foreground focus:ring-0 cursor-pointer hover:text-foreground p-0 m-0 mt-0.5 outline-none w-max"
+                      title="Track Input Routing"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <option>In: Default Mic</option>
+                      <option>In: Audio Interface</option>
+                      <option>In: MIDI Keyboard</option>
+                      <option>In: None</option>
+                    </select>
                   </div>
-                  <div className="flex items-center gap-0.5">
+                  <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setEditingTrack(track); }} className="w-6 h-6 text-muted-foreground hover:text-accent" title="Add Plugins"><SlidersHorizontal className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")} title="Elastic Audio"><Activity className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")} title="Show Automation"><TrendingUp className="w-3.5 h-3.5" /></Button>
@@ -1506,6 +1520,46 @@ export default function Studio() {
         onClose={() => setEditingTrack(null)} 
         onSave={saveTrackEffects}
       />
+
+      <Dialog open={showPreferencesDialog} onOpenChange={setShowPreferencesDialog}>
+        <DialogContent className="max-w-md bg-card border-border text-foreground z-[200]">
+          <DialogHeader>
+            <DialogTitle>Hardware Preferences</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4 text-sm">
+            <div className="flex flex-col gap-1.5">
+              <span className="font-medium">Audio Input Device</span>
+              <select className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-xs text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                <option>System Default</option>
+                {hardware.interface && <option>USB Audio Interface</option>}
+                {hardware.mic && <option>Built-in Microphone</option>}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="font-medium">Audio Output Device</span>
+              <select className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-xs text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                <option>System Default</option>
+                {hardware.output && <option>Headphones / External</option>}
+              </select>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Sample Rate</span>
+              <span className="text-muted-foreground text-xs">44.1 kHz</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Buffer Size</span>
+              <span className="text-muted-foreground text-xs">256 samples</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-medium">MIDI Devices</span>
+              <span className={cn("text-xs font-semibold", hardware.midi ? "text-green-500" : "text-muted-foreground")}>{hardware.midi ? "Connected" : "None detected"}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowPreferencesDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!renamingTrack} onOpenChange={(open) => !open && setRenamingTrack(null)}>
         <DialogContent>

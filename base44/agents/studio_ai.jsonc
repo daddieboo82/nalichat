@@ -43,14 +43,16 @@
       "allowed_operations": [
         "create",
         "read",
-        "update"
+        "update",
+        "delete"
       ]
     },
     {
       "entity_name": "Message",
       "allowed_operations": [
         "create",
-        "read"
+        "read",
+        "delete"
       ]
     },
     {
@@ -165,9 +167,9 @@
   "selected_skill_names": [],
   "selected_workspace_skill_ids": [],
   "model": "claude_opus_4_8",
-  "whatsapp_greeting": null,
-  "telegram_greeting": null,
-  "line_greeting": null,
+  "whatsapp_greeting": "",
+  "telegram_greeting": "",
+  "line_greeting": "",
   "memory_config": {
     "enabled": true,
     "scope": "both",

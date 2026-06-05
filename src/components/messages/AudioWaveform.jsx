@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react";
 
-export default function AudioWaveform({ src, isPlaying, progress }) {
+export default function AudioWaveform({ isPlaying, progress }) {
   const canvasRef = useRef(null);
-  const audioRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -48,15 +47,14 @@ export default function AudioWaveform({ src, isPlaying, progress }) {
   }, [progress, isPlaying]);
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full flex items-center">
       <canvas
         ref={canvasRef}
         width={250}
         height={40}
-        className="w-full rounded-lg cursor-pointer"
+        className="w-full h-full rounded-lg"
         style={{ display: "block" }}
       />
-      <audio ref={audioRef} src={src} />
     </div>
   );
 }

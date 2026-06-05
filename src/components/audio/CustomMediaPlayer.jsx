@@ -4,6 +4,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import AudioWaveform from "../messages/AudioWaveform";
 
 export default function CustomMediaPlayer({ src, className, title }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -207,14 +208,19 @@ export default function CustomMediaPlayer({ src, className, title }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full group/slider px-1">
-          <Slider 
-            value={[currentTime]} 
-            max={duration || 100} 
-            step={0.1} 
-            onValueChange={handleSeek}
-            className="flex-1 cursor-pointer [&_[role=slider]]:w-3 [&_[role=slider]]:h-3 [&_[role=slider]]:opacity-0 group-hover/slider:[&_[role=slider]]:opacity-100 transition-all [&_[role=slider]]:transition-opacity [&_[role=slider]]:border-primary [&_[role=slider]]:shadow-sm" 
-          />
+        <div className="flex items-center gap-3 w-full group/slider px-1 mt-1">
+          <div className="relative flex-1 h-10 flex items-center">
+            <div className="absolute inset-0 pointer-events-none opacity-80 flex items-center">
+              <AudioWaveform isPlaying={isPlaying} progress={duration ? (currentTime / duration) * 100 : 0} />
+            </div>
+            <Slider 
+              value={[currentTime]} 
+              max={duration || 100} 
+              step={0.1} 
+              onValueChange={handleSeek}
+              className="relative z-10 w-full cursor-pointer [&_[role=slider]]:w-3 [&_[role=slider]]:h-3 [&_[role=slider]]:opacity-0 group-hover/slider:[&_[role=slider]]:opacity-100 transition-all [&_[role=slider]]:transition-opacity [&_[role=slider]]:border-primary [&_[role=slider]]:shadow-sm" 
+            />
+          </div>
           
           <div className="flex items-center gap-2 shrink-0 w-24 hidden sm:flex">
             <Button 

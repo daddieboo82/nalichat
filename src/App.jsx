@@ -97,6 +97,7 @@ const AuthenticatedApp = () => {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/pricing" element={<PricingPlans />} />
+          <Route path="/PricingPlans" element={<PricingPlans />} />
           <Route path="/cover-art" element={<CoverArt />} />
         </Route>
       </Route>

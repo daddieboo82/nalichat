@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import DeleteAccountDialog from "@/components/settings/DeleteAccountDialog";
 import DeviceSelector from "@/components/audio/DeviceSelector";
 import { sounds } from "@/hooks/use-sound";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];
 
@@ -24,6 +25,7 @@ export default function Settings() {
   const [uploading, setUploading] = useState(false);
   const [genreInput, setGenreInput] = useState("");
   const fileRef = useRef(null);
+  const { subscription, isPro, isTrialActive, isLoading: subLoading } = useSubscription();
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -162,18 +164,51 @@ export default function Settings() {
         {user?.role !== "admin" && !ADMIN_EMAILS.includes(user?.email) && (
           <div className="mt-12 pt-8 border-t border-border">
             <h2 className="text-xl font-heading font-bold mb-6">Subscription & Billing</h2>
-            <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
-              <div>
-                <h3 className="font-heading font-semibold text-lg text-foreground">Pro Plan</h3>
-                <p className="text-sm text-muted-foreground mt-1">Unlock all studio features, unlimited tracks, and advanced collaboration tools.</p>
+            
+            {!subLoading && (
+              <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50 mb-4">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-heading font-semibold text-lg text-foreground">Current Status</h3>
+                    {isPro ? (
+                      <Badge className="bg-primary/20 text-primary hover:bg-primary/20">Pro Active</Badge>
+                    ) : isTrialActive || subscription?.hasAccess ? (
+                      <Badge className="bg-accent/20 text-accent hover:bg-accent/20">Free Trial</Badge>
+                    ) : (
+                      <Badge variant="outline">Free Plan</Badge>
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-2 space-y-1">
+                    <p>Account created: {new Date(user.created_date).toLocaleDateString()}</p>
+                    
+                    {subscription?.hasAccess && !isPro && (
+                      <p className="text-accent font-medium">
+                        You are currently in your 7-day free trial period.
+                      </p>
+                    )}
+                    
+                    {subscription?.trialEndsAt && isTrialActive && (
+                      <p>Trial ends on: {new Date(subscription.trialEndsAt).toLocaleDateString()}</p>
+                    )}
+                  </div>
+                </div>
               </div>
-              <Link to="/pricing">
-                <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white border-0 gap-2 font-semibold">
-                  <CreditCard className="w-4 h-4" />
-                  View Plans
-                </Button>
-              </Link>
-            </div>
+            )}
+
+            {!isPro && (
+              <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
+                <div>
+                  <h3 className="font-heading font-semibold text-lg text-foreground">Upgrade to Pro</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Unlock all studio features, unlimited tracks, and advanced collaboration tools.</p>
+                </div>
+                <Link to="/pricing">
+                  <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white border-0 gap-2 font-semibold">
+                    <CreditCard className="w-4 h-4" />
+                    View Plans
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         )}
 

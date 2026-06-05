@@ -99,7 +99,7 @@ export default function Explore() {
                 <Sparkles className="w-5 h-5 text-primary" />
                 <span className="text-xs text-primary font-semibold uppercase tracking-wider">Gallery</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-heading font-black text-gradient-animate inline-block">Explore & Discover</h1>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-heading font-black text-gradient-animate inline-block">Explore & Discover</h1>
               <p className="text-muted-foreground text-sm mt-1">Tracks from producers worldwide</p>
             </div>
             <button

@@ -221,27 +221,27 @@ export default function Home() {
             </motion.div>
           )}
 
-          <h1 className="font-heading font-black text-6xl md:text-8xl lg:text-[7rem] mb-6 tracking-tight leading-[1.05] drop-shadow-xl text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/60">
+          <h1 className="font-heading font-black text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] mb-6 tracking-tight leading-[1.05] drop-shadow-xl text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/60">
             Real-Time.<br className="hidden md:block" /> 
             <span className="text-gradient-animate drop-shadow-2xl">Messaging.</span>
           </h1>
-          <p className="text-xl md:text-2xl text-foreground/80 font-medium mb-12 leading-relaxed max-w-3xl mx-auto drop-shadow-md">
+          <p className="text-lg sm:text-xl md:text-2xl text-foreground/80 font-medium mb-10 md:mb-12 leading-relaxed max-w-3xl mx-auto drop-shadow-md">
             Connect instantly with artists globally. Share high-res audio, drop voice notes, and collaborate seamlessly in unlimited chats.
           </p>
 
           {/* CTAs */}
-          <div className="flex gap-4 justify-center flex-wrap">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full max-w-sm mx-auto sm:max-w-none">
             {user ? (
               <>
-                <Link to="/messages">
-                  <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7">
+                <Link to="/messages" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7">
                     <MessageSquare className="w-5 h-5 mr-2" />
                     Open Messages
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/explore">
-                  <Button size="lg" variant="outline" className="rounded-xl text-base px-7">
+                <Link to="/explore" className="w-full sm:w-auto">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-xl text-base px-7">
                     <Compass className="w-5 h-5 mr-2" />
                     Browse Tracks
                   </Button>
@@ -249,15 +249,15 @@ export default function Home() {
               </>
             ) : (
               <>
-                <Link to="/register">
-                  <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7">
+                <Link to="/register" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7">
                     <MessageSquare className="w-5 h-5 mr-2" />
                     Start Chatting Free
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/explore">
-                  <Button size="lg" variant="outline" className="rounded-xl text-base px-7">
+                <Link to="/explore" className="w-full sm:w-auto">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-xl text-base px-7">
                     <Play className="w-5 h-5 mr-2" />
                     Browse Tracks
                   </Button>
@@ -307,7 +307,7 @@ export default function Home() {
         >
           <div className="absolute -inset-px bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-3xl pointer-events-none" />
           <div className="relative z-10">
-            <h2 className="font-heading font-bold text-4xl mb-3">What You Can Actually Do</h2>
+            <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">What You Can Actually Do</h2>
             <p className="text-muted-foreground text-lg mb-10 max-w-2xl">Everything you need to discover music, collaborate with artists, produce your sound, and grow your audience:</p>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -360,16 +360,16 @@ export default function Home() {
           viewport={{ once: true }}
         >
           <Link to={user ? "/messages" : "/register"}>
-            <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-card to-accent/10 border border-primary/20 p-8 md:p-12 hover:border-primary/40 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/20">
+            <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-card to-accent/10 border border-primary/20 p-6 sm:p-8 md:p-12 hover:border-primary/40 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/20">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/8 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors duration-500" />
 
-              <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-8">
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6 md:gap-8">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs font-bold tracking-widest text-primary uppercase bg-primary/10 px-3 py-1 rounded-full">Live Collaboration</span>
                   </div>
-                  <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3 flex items-center gap-3">
+                  <h2 className="font-heading font-bold text-2xl sm:text-3xl md:text-4xl mb-3 flex items-center gap-3">
                    <MessageSquare className="w-8 h-8 text-primary shrink-0" />
                    Real-Time Messaging
                   </h2>
@@ -430,8 +430,8 @@ export default function Home() {
 
         {/* ── Features Grid ── */}
         <div>
-          <div className="mb-12 text-center md:text-left">
-            <h2 className="font-heading font-black text-5xl mb-4 text-gradient-animate drop-shadow-lg inline-block">Everything You Need</h2>
+          <div className="mb-10 md:mb-12 text-center md:text-left">
+            <h2 className="font-heading font-black text-3xl sm:text-4xl md:text-5xl mb-4 text-gradient-animate drop-shadow-lg inline-block">Everything You Need</h2>
             <p className="text-foreground/70 text-xl font-medium">One explosive platform. Every tool a music creator could want.</p>
           </div>
 
@@ -478,8 +478,8 @@ export default function Home() {
 
         {/* ── How it Works ── */}
         <div>
-          <div className="text-center mb-12">
-            <h2 className="font-heading font-bold text-4xl mb-3">How It Works</h2>
+          <div className="text-center mb-10 md:mb-12">
+            <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">How It Works</h2>
             <p className="text-muted-foreground text-lg max-w-xl mx-auto">From zero to released — NaliChat covers every step of your creative process.</p>
           </div>
           <motion.div
@@ -512,7 +512,7 @@ export default function Home() {
         {/* ── Testimonials ── */}
         <div>
           <div className="text-center mb-10">
-            <h2 className="font-heading font-bold text-4xl mb-3">Loved by Creators</h2>
+            <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">Loved by Creators</h2>
             <p className="text-muted-foreground text-lg">What artists are saying about NaliChat</p>
           </div>
           <motion.div
@@ -568,12 +568,12 @@ export default function Home() {
           ].map((stat) => (
             <div
               key={stat.label}
-              className={`bg-card/80 backdrop-blur-xl border-2 border-border/50 rounded-[2rem] p-12 text-center transition-all duration-500 ${stat.hover} hover:-translate-y-2 group overflow-hidden relative`}
+              className={`bg-card/80 backdrop-blur-xl border-2 border-border/50 rounded-3xl md:rounded-[2rem] p-8 md:p-12 text-center transition-all duration-500 ${stat.hover} hover:-translate-y-2 group overflow-hidden relative`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.from} ${stat.to} opacity-0 group-hover:opacity-10 transition-opacity duration-500 blur-xl`} />
               <div className="relative z-10">
-                <p className={`text-7xl font-black mb-3 bg-gradient-to-br ${stat.from} ${stat.to} bg-clip-text text-transparent tracking-tighter drop-shadow-sm group-hover:scale-110 transition-transform duration-500`}>{stat.value}</p>
-                <p className="text-foreground/80 font-bold tracking-wide uppercase text-sm">{stat.label}</p>
+                <p className={`text-5xl sm:text-6xl md:text-7xl font-black mb-3 bg-gradient-to-br ${stat.from} ${stat.to} bg-clip-text text-transparent tracking-tighter drop-shadow-sm group-hover:scale-110 transition-transform duration-500`}>{stat.value}</p>
+                <p className="text-foreground/80 font-bold tracking-wide uppercase text-xs md:text-sm">{stat.label}</p>
               </div>
             </div>
           ))}
@@ -587,7 +587,7 @@ export default function Home() {
           viewport={{ once: true }}
           className="mb-24"
         >
-          <div className="relative overflow-hidden bg-gradient-to-br from-primary/30 via-card to-accent/30 border-2 border-primary/40 rounded-[3rem] p-16 text-center shadow-[0_0_100px_-20px_rgba(var(--primary-rgb),0.3)]">
+          <div className="relative overflow-hidden bg-gradient-to-br from-primary/30 via-card to-accent/30 border-2 border-primary/40 rounded-3xl md:rounded-[3rem] p-8 sm:p-12 md:p-16 text-center shadow-[0_0_100px_-20px_rgba(var(--primary-rgb),0.3)]">
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
               <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/40 rounded-full blur-[100px] animate-pulse" />
               <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent/40 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
@@ -595,45 +595,45 @@ export default function Home() {
             </div>
             
             <div className="relative z-10">
-              <div className="w-24 h-24 mx-auto mb-8 rounded-[2rem] bg-gradient-to-br from-primary via-pink-500 to-accent flex items-center justify-center glow-primary shadow-2xl animate-float-blob border border-white/20">
-                <Sparkles className="w-12 h-12 text-white" />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto mb-6 md:mb-8 rounded-[2rem] bg-gradient-to-br from-primary via-pink-500 to-accent flex items-center justify-center glow-primary shadow-2xl animate-float-blob border border-white/20">
+                <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white" />
               </div>
-              <h3 className="font-heading font-black text-5xl md:text-7xl mb-6 text-gradient-animate drop-shadow-xl tracking-tight">
+              <h3 className="font-heading font-black text-4xl sm:text-5xl md:text-7xl mb-4 md:mb-6 text-gradient-animate drop-shadow-xl tracking-tight">
                 {user ? `Start Chatting, ${user.full_name?.split(" ")[0] || "Creator"}` : "Collaboration Starts Here"}
               </h3>
-              <p className="text-xl text-foreground/80 font-medium mb-10 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-lg sm:text-xl text-foreground/80 font-medium mb-8 md:mb-10 max-w-3xl mx-auto leading-relaxed">
                 {user
                   ? "Jump into your messages, share your latest ideas, and connect with your team instantly."
                   : "Join thousands of artists already chatting, sharing, and collaborating on NaliChat."}
               </p>
-              <div className="flex gap-6 justify-center flex-wrap">
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center w-full max-w-sm mx-auto sm:max-w-none">
                 {user ? (
                     <>
-                      <Link to="/messages">
-                        <Button size="lg" className="rounded-2xl h-16 px-10 text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105">
-                          <MessageSquare className="w-6 h-6 mr-3" />
+                      <Link to="/messages" className="w-full sm:w-auto">
+                        <Button size="lg" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105">
+                          <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
                           Open Messages
                         </Button>
                       </Link>
-                      <Link to="/explore">
-                        <Button size="lg" variant="outline" className="rounded-2xl h-16 px-10 text-xl font-bold border-border hover:bg-secondary transition-all hover:scale-105 backdrop-blur-md bg-card/50">
-                          <Compass className="w-6 h-6 mr-3" />
+                      <Link to="/explore" className="w-full sm:w-auto">
+                        <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold border-border hover:bg-secondary transition-all hover:scale-105 backdrop-blur-md bg-card/50">
+                          <Compass className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
                           Explore Tracks
                         </Button>
                       </Link>
                     </>
                   ) : (
                   <>
-                    <Link to="/register">
-                      <Button size="lg" className="rounded-xl h-16 px-10 text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30">
-                        <MessageSquare className="w-6 h-6 mr-3" />
+                    <Link to="/register" className="w-full sm:w-auto">
+                      <Button size="lg" className="w-full sm:w-auto rounded-xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30">
+                        <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
                         Start Chatting Free
-                        <ArrowRight className="w-6 h-6 ml-3" />
+                        <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2 md:ml-3" />
                       </Button>
                     </Link>
-                    <Link to="/explore">
-                      <Button size="lg" variant="outline" className="rounded-2xl h-16 px-10 text-xl font-bold border-border hover:bg-secondary transition-all hover:scale-105 backdrop-blur-md bg-card/50">
-                        <Compass className="w-6 h-6 mr-3" />
+                    <Link to="/explore" className="w-full sm:w-auto">
+                      <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold border-border hover:bg-secondary transition-all hover:scale-105 backdrop-blur-md bg-card/50">
+                        <Compass className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
                         Explore Tracks
                       </Button>
                     </Link>

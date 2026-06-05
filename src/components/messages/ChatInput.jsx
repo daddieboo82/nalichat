@@ -191,7 +191,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             <p className="text-[10px] text-accent font-semibold mb-0.5">Editing Message</p>
             <p className="text-xs text-muted-foreground/80 truncate">{editingMessage.text}</p>
           </div>
-          <button onClick={() => { onCancelEdit?.(); setText(""); }} className="text-muted-foreground hover:text-foreground p-1.5 rounded-full hover:bg-secondary/60 transition-all" title="Cancel Edit" aria-label="Cancel Edit">
+          <button onClick={() => { sounds.click(); onCancelEdit?.(); setText(""); }} className="text-muted-foreground hover:text-foreground p-1.5 rounded-full hover:bg-secondary/60 transition-all" title="Cancel Edit" aria-label="Cancel Edit">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -204,7 +204,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             <p className="text-[10px] text-primary font-semibold">{replyTo.sender_name}</p>
             <p className="text-xs text-muted-foreground/80 truncate">{replyTo.text || `[${replyTo.type}]`}</p>
           </div>
-          <button onClick={onCancelReply} className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-secondary/60 transition-all" title="Cancel Reply" aria-label="Cancel Reply">
+          <button onClick={() => { sounds.click(); onCancelReply?.(); }} className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-secondary/60 transition-all" title="Cancel Reply" aria-label="Cancel Reply">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -295,6 +295,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
                       <button 
                         type="button"
                         onClick={() => {
+                          sounds.click();
                           if (sessionName.trim()) {
                             const payload = { text: sessionName.trim(), type: "session" };
                             if (replyTo) {

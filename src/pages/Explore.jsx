@@ -9,6 +9,7 @@ import PullToRefresh from "@/components/layout/PullToRefresh";
 import UploadArtDialog from "@/components/explore/UploadArtDialog";
 import AddToPlaylistDialog from "@/components/explore/AddToPlaylistDialog";
 import TrackCommentsDialog from "@/components/explore/TrackCommentsDialog";
+import { sounds } from "@/hooks/use-sound";
 
 const MEDIUMS = ["all", "original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
 
@@ -143,7 +144,7 @@ export default function Explore() {
           {MEDIUMS.map(m => (
             <button
               key={m}
-              onClick={() => setFilter(m)}
+              onClick={() => { sounds.click(); setFilter(m); }}
               title={`Filter by ${m}`}
               aria-label={`Filter by ${m}`}
               className={cn(

@@ -548,14 +548,17 @@ export default function Studio() {
   }, [isPlaying, isRecording, togglePlay, toggleRecord]);
 
   const toggleMute = (trackId) => {
+    sounds.click();
     setTracksWithHistory(tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t));
   };
 
   const toggleSolo = (trackId) => {
+    sounds.click();
     setTracksWithHistory(tracks.map(t => t.id === trackId ? { ...t, solo: !t.solo } : t));
   };
 
   const toggleArm = (trackId) => {
+    sounds.click();
     setTracksWithHistory(tracks.map(t => t.id === trackId ? { ...t, armed: !t.armed } : t));
   };
 
@@ -577,6 +580,7 @@ export default function Studio() {
 
   const deleteSelectedTracks = () => {
     if (selectedTrackIds.length === 0) return;
+    sounds.error();
     selectedTrackIds.forEach(id => {
       if (audioElementsRef.current[id]) {
         audioElementsRef.current[id].pause();
@@ -590,6 +594,7 @@ export default function Studio() {
 
   const duplicateSelectedTracks = () => {
     if (selectedTrackIds.length === 0) return;
+    sounds.success();
     
     if (tracks.length + selectedTrackIds.length > maxTracks) {
       toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
@@ -636,6 +641,7 @@ export default function Studio() {
 
   const splitSelectedTracks = () => {
     if (selectedTrackIds.length === 0) return;
+    sounds.click();
     
     if (tracks.length + selectedTrackIds.length > maxTracks) {
       toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
@@ -691,6 +697,7 @@ export default function Studio() {
   };
 
   const addTrack = () => {
+    sounds.click();
     if (tracks.length >= maxTracks) {
       toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
       return;

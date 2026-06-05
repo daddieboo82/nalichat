@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { resumableDownload } from "@/lib/resumableUpload";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import LargeFileTransfer from "@/components/files/LargeFileTransfer";
+import { sounds } from "@/hooks/use-sound";
 
 const typeIcons = {
   audio: Music,
@@ -51,6 +52,7 @@ function FileDownloadButton({ file }) {
     e.preventDefault();
     e.stopPropagation();
     if (dlProgress !== null) return;
+    sounds.click();
     setDlProgress(0);
     try {
       await resumableDownload(file.file_url, file.name || "file", (pct) => setDlProgress(pct));
@@ -87,6 +89,7 @@ function FileShareButton({ file }) {
   const handleShare = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    sounds.click();
     const url = `${window.location.origin}/files?download=${file.id}`;
     navigator.clipboard.writeText(url);
     toast({ title: "Link copied", description: "Share link copied to clipboard" });
@@ -208,13 +211,19 @@ export default function Files() {
       }
       setUploading(false);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["shared-files"] }),
+    onSuccess: () => {
+      sounds.upload();
+      queryClient.invalidateQueries({ queryKey: ["shared-files"] });
+    },
     onError: () => setUploading(false),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.SharedFile.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["shared-files"] }),
+    onSuccess: () => {
+      sounds.error();
+      queryClient.invalidateQueries({ queryKey: ["shared-files"] });
+    },
   });
 
   const createFolderMutation = useMutation({
@@ -224,6 +233,7 @@ export default function Files() {
       project_id: newFolderProject === "none" ? null : newFolderProject,
     }),
     onSuccess: () => {
+      sounds.success();
       queryClient.invalidateQueries({ queryKey: ["folders"] });
       setNewFolderName("");
       setNewFolderProject("none");

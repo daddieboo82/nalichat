@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import DeleteAccountDialog from "@/components/settings/DeleteAccountDialog";
 import DeviceSelector from "@/components/audio/DeviceSelector";
+import { sounds } from "@/hooks/use-sound";
 
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];
 
@@ -66,6 +67,7 @@ export default function Settings() {
     setSaving(true);
     try {
       await base44.auth.updateMe(form);
+      sounds.success();
       toast.success("Profile updated!");
     } finally {
       setSaving(false);

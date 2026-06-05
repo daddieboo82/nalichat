@@ -6,6 +6,7 @@ import MediaViewerModal from "./MediaViewerModal";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { useCart } from "@/lib/CartContext";
 import { toast } from "sonner";
+import { sounds } from "@/hooks/use-sound";
 
 import React from "react";
 
@@ -91,21 +92,26 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
           </div>
           <div className="flex items-center gap-1.5">
             <button
-              onClick={(e) => { e.stopPropagation(); onComment?.(post); }}
+              onClick={(e) => { e.stopPropagation(); sounds.click(); onComment?.(post); }}
               className="p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
               title="Comments"
             >
               <MessageCircle className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); onAddToPlaylist?.(post.id); }}
+              onClick={(e) => { e.stopPropagation(); sounds.click(); onAddToPlaylist?.(post.id); }}
               className="p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
               title="Add to playlist"
             >
               <Music className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); onLike?.(e); }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                onLike?.(e); 
+                if (!liked) sounds.like();
+                else sounds.click();
+              }}
               title="Like"
               aria-label="Like"
               className={cn(
@@ -145,6 +151,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
               <button
                 onClick={(e) => {
                    e.stopPropagation();
+                   sounds.click();
                    if (cart && cart.addItem) {
                      cart.addItem({
                        id: post.id,

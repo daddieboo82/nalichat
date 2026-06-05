@@ -29,6 +29,8 @@ import { useSubscription } from '@/hooks/useSubscription';
 import UpgradeModal from '@/components/billing/UpgradeModal';
 import { Link } from 'react-router-dom';
 import { separateStems, generateMelody } from '@/lib/audioProcessing';
+import { useStudioPresence } from '@/hooks/useStudioPresence';
+import LivePresenceBar from '@/components/studio/LivePresenceBar';
 
 // Fake waveform generator - High-resolution for precision editing
 const generateWaveform = (length = 2000) => {
@@ -98,6 +100,9 @@ export default function Studio() {
 
   const { hasAccess, isLoading: isLoadingSub } = useSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Real-time collaborator presence
+  const { peers: livePeers, setActivity } = useStudioPresence('studio-main');
   
   const [tracks, setTracks] = useState(() => {
     try {
@@ -257,6 +262,7 @@ export default function Studio() {
     
     if (!isPlaying) {
       sounds.nav();
+      setActivity("Playing the mix ▶️");
       tracks.forEach(track => {
         if (track.audioUrl && (!track.muted || track.solo)) {
           let audio = audioElementsRef.current[track.id];
@@ -511,6 +517,7 @@ export default function Studio() {
         
         setIsRecording(true);
         setRecordingStartTime(currentTimeRef.current);
+        setActivity("Recording 🎙️");
         toast.success("Recording started (Mic active)");
         sounds.recStart();
       } catch (err) {
@@ -717,6 +724,7 @@ export default function Studio() {
 
   const addTrack = () => {
     sounds.click();
+    setActivity("Adding a track ➕");
     if (tracks.length >= maxTracks) {
       toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
       return;
@@ -958,6 +966,9 @@ export default function Studio() {
 
         {/* Right Tools - Hardware & Export */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* Live Collaborators */}
+          <LivePresenceBar peers={livePeers} />
+
           {/* Quick Record */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
              <Link to="/record">
@@ -1184,7 +1195,7 @@ export default function Studio() {
                     </select>
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setEditingTrack(track); }} className="w-6 h-6 text-muted-foreground hover:text-accent" title="Add Plugins"><SlidersHorizontal className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setActivity(`Editing ${track.name}`); setEditingTrack(track); }} className="w-6 h-6 text-muted-foreground hover:text-accent" title="Add Plugins"><SlidersHorizontal className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("hidden sm:flex w-6 h-6 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")} title="Elastic Audio"><Activity className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("hidden sm:flex w-6 h-6 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")} title="Show Automation"><TrendingUp className="w-3.5 h-3.5" /></Button>
                     <DropdownMenu>

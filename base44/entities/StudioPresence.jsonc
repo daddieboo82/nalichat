@@ -1,0 +1,33 @@
+{
+  "name": "StudioPresence",
+  "type": "object",
+  "properties": {
+    "room_id": {
+      "type": "string",
+      "description": "Identifier for the shared studio room/project being worked on"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "ID of the user present in the room"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "user_avatar": {
+      "type": "string"
+    },
+    "activity": {
+      "type": "string",
+      "description": "Human-readable description of what the user is currently doing (e.g. 'Recording', 'Editing Vocals Lead')"
+    },
+    "last_heartbeat": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of the last presence heartbeat \u2014 used to detect who is still active"
+    }
+  },
+  "required": [
+    "room_id",
+    "user_id"
+  ]
+}

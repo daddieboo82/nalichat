@@ -14,6 +14,8 @@ import DeviceSelector from "@/components/audio/DeviceSelector";
 
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];
 
+const ADMIN_EMAILS = ["bossglop43@gmail.com"];
+
 export default function Settings() {
   const [user, setUser] = useState(null);
   const [form, setForm] = useState({ display_name: "", bio: "", role: "artist", location: "", genres: [], avatar_url: "" });
@@ -155,7 +157,7 @@ export default function Settings() {
           </Button>
         </div>
 
-        {user?.role !== "admin" && user?.email !== "bossglop43@gmail.com" && (
+        {user?.role !== "admin" && !ADMIN_EMAILS.includes(user?.email) && (
           <div className="mt-12 pt-8 border-t border-border">
             <h2 className="text-xl font-heading font-bold mb-6">Subscription & Billing</h2>
             <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">

@@ -7,6 +7,8 @@ import { Link } from "react-router-dom";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useCart } from "@/lib/CartContext";
 
+const ADMIN_EMAILS = ["bossglop43@gmail.com"];
+
 const SUBPAGE_PREFIXES = ["/playlist/", "/record", "/settings", "/analytics"];
 
 const TITLES = {
@@ -67,7 +69,7 @@ export default function MobileHeader() {
 
         {/* Right Section */}
         <div className="flex items-center gap-1 shrink-0">
-          {user?.role !== "admin" && user?.email !== "bossglop43@gmail.com" && (
+          {user?.role !== "admin" && !ADMIN_EMAILS.includes(user?.email) && (
             <Link
               to="/pricing"
               className="h-6 px-3 rounded-full bg-gradient-to-r from-primary to-accent text-white font-semibold text-[10px] items-center justify-center flex mr-0.5 shadow-sm"

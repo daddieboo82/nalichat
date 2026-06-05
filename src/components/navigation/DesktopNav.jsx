@@ -131,16 +131,6 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
             >
               <LogOut className="w-5 h-5" />
             </button>
-
-            {/* Profile Avatar */}
-            <Link to="/profile" className="ml-2">
-              <Avatar className="w-10 h-10 border-2 border-border/50 hover:border-primary/50 transition-all cursor-pointer shadow-md">
-                <AvatarImage src={user?.avatar_url} />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-pink-500 text-white text-sm font-bold">
-                  {user?.display_name?.[0] || user?.full_name?.[0] || "?"}
-                </AvatarFallback>
-              </Avatar>
-            </Link>
           </div>
         </div>
       </div>

@@ -84,25 +84,33 @@ export default function Settings() {
         <h1 className="text-2xl font-heading font-bold mb-8">Profile Settings</h1>
 
         {/* Avatar */}
-        <div className="flex items-center gap-6 mb-8">
-          <div className="relative group">
-            <Avatar className="w-20 h-20 rounded-2xl">
-              <AvatarImage src={form.avatar_url} className="rounded-2xl" />
-              <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold rounded-2xl">
-                {form.display_name?.[0]?.toUpperCase() || "?"}
+        <div className="flex items-center gap-6 mb-8 bg-gradient-to-r from-primary/10 to-pink-500/10 p-6 rounded-3xl border border-primary/20 shadow-lg relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-pink-500/20 blur-3xl rounded-full pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/20 blur-3xl rounded-full pointer-events-none" />
+          
+          <div className="relative group shrink-0">
+            <div className="absolute -inset-1 bg-gradient-to-br from-primary to-pink-500 rounded-full blur opacity-70 group-hover:opacity-100 transition duration-500" />
+            <Avatar className="w-24 h-24 rounded-full border-4 border-background relative z-10 shadow-xl">
+              <AvatarImage src={form.avatar_url} className="rounded-full object-cover" />
+              <AvatarFallback className="bg-gradient-to-br from-primary to-pink-500 text-white text-3xl font-black rounded-full">
+                {form.display_name?.[0]?.toUpperCase() || user.full_name?.[0]?.toUpperCase() || "?"}
               </AvatarFallback>
             </Avatar>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
             <button
               onClick={() => fileRef.current?.click()}
-              className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+              className="absolute inset-1 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20 backdrop-blur-sm cursor-pointer"
             >
-              {uploading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Camera className="w-5 h-5 text-white" />}
+              {uploading ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-6 h-6 text-white" />}
             </button>
           </div>
-          <div>
-            <p className="font-heading font-semibold">{user.full_name}</p>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
+          <div className="relative z-10">
+            <h2 className="text-3xl font-heading font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-pink-500 drop-shadow-sm">
+              {user.full_name}
+            </h2>
+            <p className="text-sm font-medium text-muted-foreground mt-1 bg-background/50 px-3 py-1 rounded-full inline-block border border-border/50">
+              {user.email}
+            </p>
           </div>
         </div>
 

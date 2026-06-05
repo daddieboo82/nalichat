@@ -89,14 +89,6 @@ export default function MobileHeader() {
             )}
           </button>
           <NotificationBell />
-          <Link to="/profile" className="p-1 rounded-lg hover:bg-primary/10 transition-all select-none">
-            <Avatar className="w-7 h-7 border border-border">
-              <AvatarImage src={user?.avatar_url} />
-              <AvatarFallback className="bg-primary/20 text-primary text-[10px] font-bold">
-                {user?.display_name?.[0] || user?.full_name?.[0] || "?"}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
         </div>
       </div>
     </header>

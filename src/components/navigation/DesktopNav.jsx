@@ -19,7 +19,6 @@ const NAV_ITEMS = [
   { icon: Wand2, label: "AI Cover", path: "/cover-art" },
   { icon: Music, label: "Playlists", path: "/playlists" },
   { icon: FileText, label: "Files", path: "/files" },
-  { icon: BarChart3, label: "Analytics", path: "/analytics" },
   { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
 ];
 

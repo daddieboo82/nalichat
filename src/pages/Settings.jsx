@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Save, Loader2, X, Plus, CreditCard } from "lucide-react";
+import { Camera, Save, Loader2, X, Plus, CreditCard, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import DeleteAccountDialog from "@/components/settings/DeleteAccountDialog";
@@ -159,6 +159,22 @@ export default function Settings() {
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Save Profile
           </Button>
+        </div>
+
+        <div className="mt-12 pt-8 border-t border-border">
+          <h2 className="text-xl font-heading font-bold mb-6">Creator Tools</h2>
+          <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
+            <div>
+              <h3 className="font-heading font-semibold text-lg text-foreground">Analytics Dashboard</h3>
+              <p className="text-sm text-muted-foreground mt-1">Track plays, reach, audience growth & listener engagement.</p>
+            </div>
+            <Link to="/analytics">
+              <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-0 gap-2 font-semibold">
+                <BarChart3 className="w-4 h-4" />
+                View Analytics
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {user?.role !== "admin" && !ADMIN_EMAILS.includes(user?.email) && (

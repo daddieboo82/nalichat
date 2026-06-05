@@ -6,7 +6,7 @@ import {
   MessageSquare, Music, Users, BarChart3, Sparkles,
   Trophy, Compass, Play, ArrowRight, Zap, Shield, Star,
   Headphones, Radio, Wand2, FileAudio, ChevronRight,
-  Image, Cloud, UserCircle
+  Image, Cloud, UserCircle, Video, Layers, ShoppingCart
 } from "lucide-react";
 import { motion } from "framer-motion";
 import DailyRecommendation from "@/components/home/DailyRecommendation";
@@ -23,19 +23,27 @@ const features = [
     badge: "Free",
   },
   {
-    icon: Headphones,
-    label: "Pro Studio DAW",
+    icon: Video,
+    label: "Live Jam Rooms",
     path: "/studio",
-    description: "Multi-track recording, wave editor, effects & VST plugins right in your browser",
+    description: "Real-time multiplayer Studio co-editing with live audio and video.",
     gradient: "from-accent to-cyan-500",
     badge: "Pro",
   },
   {
-    icon: Compass,
-    label: "Explore & Release",
-    path: "/explore",
-    description: "Drop your music, discover trending tracks & connect with creators",
+    icon: Layers,
+    label: "AI Stem Engine",
+    path: "/studio",
+    description: "Instantly separate stems or generate royalty-free background samples on the fly.",
     gradient: "from-indigo-500 to-purple-500",
+    badge: "New",
+  },
+  {
+    icon: ShoppingCart,
+    label: "Stems Marketplace",
+    path: "/explore",
+    description: "Drop your music, discover trending tracks, and buy or sell stem licenses.",
+    gradient: "from-blue-500 to-indigo-500",
   },
   {
     icon: Wand2,
@@ -43,14 +51,6 @@ const features = [
     path: "/cover-art",
     description: "Generate stunning album covers for your tracks using AI.",
     gradient: "from-yellow-400 to-orange-500",
-    badge: "New",
-  },
-  {
-    icon: Cloud,
-    label: "Cloud Storage",
-    path: "/files",
-    description: "Securely store, organize, and share your audio files and stems.",
-    gradient: "from-blue-500 to-indigo-500",
   },
   {
     icon: Music,
@@ -86,25 +86,25 @@ const features = [
 const steps = [
   {
     number: "01",
-    icon: Headphones,
-    title: "Produce in Studio",
-    description: "Record, mix, and master using our built-in DAW. Start with your free 1-hour trial or upgrade for unlimited access.",
+    icon: Layers,
+    title: "Produce with AI & Stems",
+    description: "Record, mix, and master using our built-in DAW. Use AI to separate stems or generate new samples instantly.",
     color: "text-primary",
     bg: "bg-primary/10",
   },
   {
     number: "02",
-    icon: Users,
-    title: "Collaborate Live",
-    description: "Find artists in Network and share high-res audio instantly in Messages to build your track together.",
+    icon: Video,
+    title: "Collaborate Live in Jam Rooms",
+    description: "Launch a live Audio/Video Jam Room right in the Studio to co-edit tracks with your collaborators in real-time.",
     color: "text-pink-400",
     bg: "bg-pink-400/10",
   },
   {
     number: "03",
-    icon: Trophy,
-    title: "Release & Grow",
-    description: "Drop your music to Explore, climb the Leaderboard, and watch your reach expand with deep Analytics.",
+    icon: ShoppingCart,
+    title: "Release & Sell Licenses",
+    description: "Drop your music to Explore, climb the Leaderboard, and securely sell stem licenses directly to your fans.",
     color: "text-accent",
     bg: "bg-accent/10",
   },
@@ -314,11 +314,11 @@ export default function Home() {
               {[
                 {
                   title: "🎧 Produce in the Studio",
-                  items: ["Full DAW Interface", "Unlimited Tracks", "Real-time Wave Editor", "High-fidelity effects"]
+                  items: ["Full DAW Interface", "Live Video Jam Rooms", "AI Stem Separation", "AI Stem Generation"]
                 },
                 {
                   title: "💬 Connect & Collaborate",
-                  items: ["Unlimited messaging", "Voice notes & files", "Find collaborators", "Network with peers"]
+                  items: ["Unlimited messaging", "Real-time Co-editing", "Find collaborators", "Network with peers"]
                 },
                 {
                   title: "🎨 Create & Manage",
@@ -326,7 +326,7 @@ export default function Home() {
                 },
                 {
                   title: "📈 Build Your Presence",
-                  items: ["Release your tracks", "Climb the leaderboard", "Track your stats", "Grow your following"]
+                  items: ["Release your tracks", "Buy & Sell Stem Licenses", "Climb the leaderboard", "Grow your following"]
                 },
                 {
                   title: "👤 Showcase Talent",

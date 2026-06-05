@@ -31,27 +31,42 @@ Deno.serve(async (req) => {
     const bodyParams = await req.json().catch(() => ({}));
     const planType = bodyParams.plan || 'pro';
 
-    let item;
     if (planType === 'trial') {
-      item = {
-        name: 'NaliChat 24-Hour Trial',
-        quantity: 1,
-        price: '0.99',
-      };
-    } else {
-      item = {
-        name: 'NaliChat Pro',
-        quantity: 1,
-        price: '9.99',
-        subscriptionInfo: {
-          subscriptionSettings: {
-            frequency: 'MONTH',
-          },
-          title: 'NaliChat Pro',
-          description: 'Full access to all app features',
-        },
-      };
+      const existing = await base44.asServiceRole.entities.Subscription.filter({ user_id: user.id, plan: 'trial' });
+      if (existing.length > 0) {
+        return Response.json({ error: 'You have already used your free trial.' });
+      }
+
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 7);
+      
+      try {
+        await base44.asServiceRole.entities.Subscription.create({
+          user_id: user.id,
+          plan: 'trial',
+          status: 'active',
+          trial_end_date: trialEndDate.toISOString(),
+        });
+        console.log('Created free trial subscription for user:', user.id);
+        return Response.json({ trialStarted: true });
+      } catch (dbError) {
+        console.error('Failed to create trial subscription:', dbError);
+        return Response.json({ error: 'Failed to start trial' }, { status: 500 });
+      }
     }
+
+    const item = {
+      name: 'NaliChat Pro',
+      quantity: 1,
+      price: '9.99',
+      subscriptionInfo: {
+        subscriptionSettings: {
+          frequency: 'MONTH',
+        },
+        title: 'NaliChat Pro',
+        description: 'Full access to all app features',
+      },
+    };
 
     // Create checkout session
     const checkoutPayload = {
@@ -106,13 +121,9 @@ Deno.serve(async (req) => {
 
     // Create pending subscription record
     const trialEndDate = new Date();
-    if (planType === 'trial') {
-      trialEndDate.setHours(trialEndDate.getHours() + 24);
-    } else {
-      // For Pro, we just set a far future date if it's not a free trial,
-      // but if we don't have free trial for Pro, we just don't need trial_end_date.
-      trialEndDate.setDate(trialEndDate.getDate() + 30);
-    }
+    // For Pro, we just set a far future date if it's not a free trial,
+    // but if we don't have free trial for Pro, we just don't need trial_end_date.
+    trialEndDate.setDate(trialEndDate.getDate() + 30);
 
     try {
       await base44.asServiceRole.entities.Subscription.create({

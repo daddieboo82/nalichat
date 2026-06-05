@@ -8,16 +8,16 @@ import { useAuth } from "@/lib/AuthContext";
 const plans = [
   {
     id: "trial",
-    name: "24-Hour Trial",
-    price: "0.99",
-    period: "/24h",
-    description: "Full access for 24 hours",
+    name: "7-Day Free Trial",
+    price: "0.00",
+    period: "/7 days",
+    description: "Full access for 7 days",
     features: [
-      "24 Hours Full Studio Access",
+      "7 Days Full Studio Access",
       "Unlimited Tracks",
       "All Pro Features",
     ],
-    cta: "Start Trial",
+    cta: "Start Free Trial",
     popular: false,
   },
   {
@@ -56,6 +56,10 @@ export default function PricingPlans() {
 
       if (response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
+      } else if (response.data.trialStarted) {
+        window.location.href = "/";
+      } else if (response.data.error) {
+        alert(response.data.error);
       }
     } catch (error) {
       console.error("Checkout error:", error);

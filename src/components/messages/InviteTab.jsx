@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mail, Copy, Check } from 'lucide-react';
+import { Mail, Copy, Check, MessageSquare, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function InviteTab() {
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [sendingSms, setSendingSms] = useState(false);
 
   const getOrigin = () => {
     if (typeof window !== 'undefined') {
@@ -21,6 +24,28 @@ export default function InviteTab() {
     navigator.clipboard.writeText(inviteLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const sendSms = async () => {
+    if (!phone.trim()) {
+      toast.error('Enter a phone number');
+      return;
+    }
+    setSendingSms(true);
+    try {
+      const res = await base44.functions.invoke('sendSmsInvite', { phone: phone.trim(), link: inviteLink });
+      if (res.data?.success) {
+        toast.success('Invite sent via SMS!');
+        setPhone('');
+      } else {
+        toast.error(res.data?.error || 'Failed to send SMS');
+      }
+    } catch (err) {
+      console.error('Failed to send SMS invite:', err);
+      toast.error('Failed to send SMS');
+    } finally {
+      setSendingSms(false);
+    }
   };
 
   const shareViaEmail = async () => {
@@ -75,11 +100,33 @@ export default function InviteTab() {
 
         <Button
           onClick={copyLink}
-          className="w-full mb-3"
+          className="w-full mb-6"
         >
           Copy Invite Link
         </Button>
-        
+
+        <div className="bg-card rounded-lg p-4 mb-3 border border-border/40 text-left">
+          <label className="text-sm font-medium flex items-center gap-2 mb-2">
+            <MessageSquare className="w-4 h-4 text-primary" />
+            Invite via SMS
+          </label>
+          <div className="flex items-center gap-2">
+            <Input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+1 555 123 4567"
+              className="flex-1 text-sm"
+            />
+            <Button onClick={sendSms} disabled={sendingSms} className="shrink-0">
+              {sendingSms ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send'}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Include the country code (e.g. +1 for US numbers).
+          </p>
+        </div>
+
         <p className="text-xs text-muted-foreground">
           Share this link with anyone you want to invite to collaborate
         </p>

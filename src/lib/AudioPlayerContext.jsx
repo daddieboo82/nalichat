@@ -44,25 +44,7 @@ export function AudioPlayerProvider({ children }) {
     };
   }, []);
 
-  useEffect(() => {
-    let isMounted = true;
-    if (currentTrack?.file_url) {
-      try {
-        audioRef.current.src = currentTrack.file_url;
-        audioRef.current.play().then(() => {
-          if (isMounted) setIsPlaying(true);
-        }).catch(e => {
-          console.warn("Autoplay blocked:", e.message);
-          if (isMounted) setIsPlaying(false);
-        });
-      } catch (e) {
-        console.error("Audio src error:", e);
-      }
-    }
-    return () => {
-      isMounted = false;
-    };
-  }, [currentTrack]);
+
 
   useEffect(() => {
     if (audioRef.current && !isNaN(volume)) {
@@ -104,6 +86,20 @@ export function AudioPlayerProvider({ children }) {
       togglePlay();
     } else {
       setCurrentTrack(track);
+      if (audioRef.current && track?.file_url) {
+        try {
+          audioRef.current.src = track.file_url;
+          audioRef.current.load();
+          audioRef.current.play().then(() => {
+            setIsPlaying(true);
+          }).catch(e => {
+            console.warn("Autoplay blocked:", e.message);
+            setIsPlaying(false);
+          });
+        } catch (e) {
+          console.error("Audio src error:", e);
+        }
+      }
     }
   };
 

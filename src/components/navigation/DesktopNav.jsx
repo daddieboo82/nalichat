@@ -15,7 +15,6 @@ const NAV_ITEMS = [
   { icon: MessageSquare, label: "Messages", path: "/messages" },
   { icon: Compass, label: "Explore", path: "/explore" },
   { icon: Mic, label: "Studio", path: "/studio" },
-  { icon: Radio, label: "Record", path: "/record" },
   { icon: Wand2, label: "AI Cover", path: "/cover-art" },
   { icon: Music, label: "Playlists", path: "/playlists" },
   { icon: FileText, label: "Files", path: "/files" },

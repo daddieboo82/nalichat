@@ -8,7 +8,7 @@ import {
   Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
   Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle,
   Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2,
-  Image as ImageIcon, Users, Video, VideoOff
+  Image as ImageIcon, Users, Video, VideoOff, Radio
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -27,6 +27,7 @@ import BounceDialog from '@/components/studio/BounceDialog';
 import { sounds } from '@/hooks/use-sound';
 import { useSubscription } from '@/hooks/useSubscription';
 import UpgradeModal from '@/components/billing/UpgradeModal';
+import { Link } from 'react-router-dom';
 
 // Fake waveform generator - High-resolution for precision editing
 const generateWaveform = (length = 2000) => {
@@ -844,6 +845,16 @@ export default function Studio() {
 
         {/* Right Tools - Hardware & Export */}
         <div className="flex items-center gap-2">
+          {/* Quick Record */}
+          <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
+             <Link to="/record">
+               <Button variant="outline" size="sm" className="gap-2 rounded-xl border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-400">
+                 <Radio className="w-4 h-4 animate-pulse" />
+                 Quick Record
+               </Button>
+             </Link>
+          </div>
+
           {/* Jam Room */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
              <Button variant={jamRoomActive ? "default" : "outline"} size="sm" onClick={() => setJamRoomActive(!jamRoomActive)} className={cn("gap-2 rounded-xl border-border/50", jamRoomActive && "bg-green-500 hover:bg-green-600 text-white border-transparent")}>

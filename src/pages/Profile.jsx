@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Edit3, Award, Star, Grid, Heart, Users, Zap, Save, X, Sparkles } from "lucide-react";
@@ -13,7 +14,10 @@ const ROLES = ["Producer", "Beatmaker", "Sound Engineer", "Mixing Engineer", "Ma
 const GENRES = ["Hip-Hop", "Trap", "Lo-Fi", "Electronic", "House", "Techno", "Ambient", "R&B", "Indie", "Alternative"];
 
 export default function Profile() {
-  const [user, setUser] = useState(null);
+  const location = useLocation();
+  const targetUserId = new URLSearchParams(location.search).get("id");
+  
+  const [currentUser, setCurrentUser] = useState(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -23,7 +27,35 @@ export default function Profile() {
   const coverRef = useRef();
   const queryClient = useQueryClient();
 
-  useEffect(() => { base44.auth.me().then(u => { setUser(u); setForm(u); }); }, []);
+  useEffect(() => { 
+    base44.auth.me().then(u => { 
+      setCurrentUser(u);
+    }); 
+  }, []);
+
+  const { data: targetUser } = useQuery({
+    queryKey: ["user", targetUserId],
+    queryFn: async () => {
+      if (!targetUserId) return null;
+      // In case User.get fails for regular users, fallback to finding them in User.list()
+      try {
+        return await base44.entities.User.get(targetUserId);
+      } catch (err) {
+        const allUsers = await base44.entities.User.list();
+        return allUsers.find(u => u.id === targetUserId) || null;
+      }
+    },
+    enabled: !!targetUserId,
+  });
+
+  const user = targetUserId ? targetUser : currentUser;
+  const isMe = currentUser && user && currentUser.id === user.id;
+
+  useEffect(() => {
+    if (user && isMe) {
+      setForm(user);
+    }
+  }, [user, isMe]);
 
   const { data: myPosts = [] } = useQuery({
     queryKey: ["my-posts", user?.id],
@@ -48,7 +80,7 @@ export default function Profile() {
       genre: form.genre,
     });
     const updated = await base44.auth.me();
-    setUser(updated);
+    setCurrentUser(updated);
     setForm(updated);
     setEditing(false);
     } finally { setSaving(false); }
@@ -62,7 +94,7 @@ export default function Profile() {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       await base44.auth.updateMe({ avatar_url: file_url });
       const updated = await base44.auth.me();
-      setUser(updated);
+      setCurrentUser(updated);
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -77,7 +109,7 @@ export default function Profile() {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       await base44.auth.updateMe({ cover_url: file_url });
       const updated = await base44.auth.me();
-      setUser(updated);
+      setCurrentUser(updated);
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -101,10 +133,14 @@ export default function Profile() {
       <div className="relative h-40 sm:h-52 bg-gradient-to-br from-primary/30 via-secondary to-accent/20 overflow-hidden">
         {user.cover_url && <img src={user.cover_url} className="w-full h-full object-cover" alt="cover" />}
         <div className="absolute inset-0 bg-black/20" />
-        <button onClick={() => coverRef.current?.click()} className="absolute top-3 right-3 bg-black/40 text-white p-2 rounded-xl hover:bg-black/60 transition-colors">
-          <Camera className="w-4 h-4" />
-        </button>
-        <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={uploadCover} />
+        {isMe && (
+          <>
+            <button onClick={() => coverRef.current?.click()} className="absolute top-3 right-3 bg-black/40 text-white p-2 rounded-xl hover:bg-black/60 transition-colors">
+              <Camera className="w-4 h-4" />
+            </button>
+            <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={uploadCover} />
+          </>
+        )}
       </div>
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
@@ -115,10 +151,14 @@ export default function Profile() {
               <AvatarImage src={user.avatar_url} />
               <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">{user.display_name?.[0] || user.full_name?.[0]}</AvatarFallback>
             </Avatar>
-            <button onClick={() => avatarRef.current?.click()} className="absolute bottom-0 right-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors">
-              <Camera className="w-3 h-3 text-white" />
-            </button>
-            <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
+            {isMe && (
+              <>
+                <button onClick={() => avatarRef.current?.click()} className="absolute bottom-0 right-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors">
+                  <Camera className="w-3 h-3 text-white" />
+                </button>
+                <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
+              </>
+            )}
           </div>
           <div className="flex-1 min-w-0 pb-2">
             <div className="flex items-center gap-2 flex-wrap">
@@ -127,13 +167,15 @@ export default function Profile() {
             </div>
             <p className="text-muted-foreground text-sm capitalize">{user.artist_role || "Producer"}</p>
           </div>
-          <button
-            onClick={() => editing ? save() : setEditing(true)}
-            className="pb-2 flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
-          >
-            {editing ? <Save className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
-            {editing ? "Save" : "Edit"}
-          </button>
+          {isMe && (
+            <button
+              onClick={() => editing ? save() : setEditing(true)}
+              className="pb-2 flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+            >
+              {editing ? <Save className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+              {editing ? "Save" : "Edit"}
+            </button>
+          )}
         </div>
 
         {/* XP Bar */}

@@ -12,6 +12,9 @@ export function AudioPlayerProvider({ children }) {
   
   if (!audioRef.current) {
     audioRef.current = new Audio();
+    audioRef.current.playsInline = true;
+    audioRef.current.setAttribute('playsinline', '');
+    audioRef.current.setAttribute('webkit-playsinline', '');
   }
 
   useEffect(() => {

@@ -5,11 +5,13 @@ import { Trophy, Star, Flame, Heart, Award, Crown, Medal, Music, Image as ImageI
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import MediaViewerModal from "@/components/explore/MediaViewerModal";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 const USER_TABS = ["xp", "likes", "posts", "achievements"];
 const CONTENT_TABS = ["songs", "pics", "videos"];
 
 export default function Leaderboard() {
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [mode, setMode] = useState("users");
   const [userTab, setUserTab] = useState("xp");
@@ -185,8 +187,9 @@ export default function Leaderboard() {
           {sorted.map((user, i) => (
             <div
               key={user.id}
+              onClick={() => navigate(`/profile?id=${user.id}`)}
               className={cn(
-                "flex items-center gap-3 p-3 rounded-xl border transition-colors",
+                "flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer",
                 user.id === currentUser?.id ? "border-primary/40 bg-primary/5" : "border-border bg-card/60 hover:bg-card"
               )}
             >
@@ -275,7 +278,7 @@ export default function Leaderboard() {
                       <div className="w-16 h-12 rounded-md bg-secondary shrink-0 overflow-hidden relative border border-border/50">
                         <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary relative">
                            {item.file_url ? (
-                             <video src={item.file_url} className="w-full h-full object-cover opacity-50" />
+                             <video src={item.file_url} playsInline webkit-playsinline="true" className="w-full h-full object-cover opacity-50" />
                            ) : null}
                            <Video className="w-6 h-6 absolute" />
                         </div>

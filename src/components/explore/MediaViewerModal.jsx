@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward, Square, ShoppingCart, Maximize2, Download, Share2 } from "lucide-react";
+import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward, Square, ShoppingCart, Minimize2, Download, Share2 } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
 import { toast } from "sonner";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
@@ -273,6 +273,8 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    onEnded={() => setIsPlaying(false)}
                    onPlay={() => setIsPlaying(true)}
                    onPause={() => setIsPlaying(false)}
+                   playsInline
+                   webkit-playsinline="true"
                  />
 
                  <div className="flex flex-col gap-4">
@@ -369,7 +371,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                        }}
                        title="Open in Global Player"
                      >
-                       <Maximize2 className="w-5 h-5 sm:w-6 sm:h-6" />
+                       <Minimize2 className="w-5 h-5 sm:w-6 sm:h-6" />
                      </Button>
                    </div>
                  </div>

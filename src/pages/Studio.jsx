@@ -7,8 +7,8 @@ import {
   Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical,
   Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
   Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle,
-  Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal,
-  Image as ImageIcon, Radio
+  Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2,
+  Image as ImageIcon, Users, Video, VideoOff, Radio
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -91,6 +91,9 @@ export default function Studio() {
     output: false,
     midi: false
   });
+  const [jamRoomActive, setJamRoomActive] = useState(false);
+  const [jamVideoActive, setJamVideoActive] = useState(false);
+
   const { hasAccess, isLoading: isLoadingSub } = useSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
@@ -903,6 +906,19 @@ export default function Studio() {
              </Link>
           </div>
 
+          {/* Jam Room */}
+          <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
+             <Button variant={jamRoomActive ? "default" : "outline"} size="sm" onClick={() => setJamRoomActive(!jamRoomActive)} className={cn("gap-2 rounded-xl border-border/50", jamRoomActive && "bg-green-500 hover:bg-green-600 text-white border-transparent")}>
+               <Users className="w-4 h-4" />
+               {jamRoomActive ? "Jam Room Active" : "Start Jam Room"}
+             </Button>
+             {jamRoomActive && (
+               <Button variant="ghost" size="icon" onClick={() => setJamVideoActive(!jamVideoActive)} className="w-8 h-8 rounded-lg hover:bg-secondary">
+                 {jamVideoActive ? <Video className="w-4 h-4 text-green-400" /> : <VideoOff className="w-4 h-4 text-muted-foreground" />}
+               </Button>
+             )}
+          </div>
+
           {/* Hardware Config */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
             <Button variant="ghost" size="icon" title="Hardware Preferences" onClick={() => setShowPreferencesDialog(true)} className="w-8 h-8 rounded-lg hover:bg-secondary transition-colors text-muted-foreground"><Settings2 className="w-4 h-4" /></Button>
@@ -973,6 +989,56 @@ export default function Studio() {
         >
           <SlidersHorizontal className="w-4 h-4" /> Add Plugins
         </Button>
+        <Button 
+          onClick={() => {
+            if (selectedTrackIds.length === 0) {
+               toast.error("Please select a track to separate");
+               return;
+            }
+            toast.info("AI is separating stems... (simulated)");
+            setTimeout(() => {
+              const track = tracks.find(t => t.id === selectedTrackIds[0]);
+              if (track) {
+                 const newId1 = Math.max(...tracks.map(t => t.id)) + 1;
+                 const newId2 = newId1 + 1;
+                 setTracksWithHistory(prev => [...prev, 
+                   {...track, id: newId1, name: `${track.name} (Vocals)`, color: "bg-pink-500"},
+                   {...track, id: newId2, name: `${track.name} (Instrumental)`, color: "bg-accent"}
+                 ]);
+                 toast.success("Stems separated successfully!");
+              }
+            }, 3000);
+          }} 
+          variant="secondary" 
+          size="sm" 
+          className="gap-2 h-8 rounded-lg bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 shrink-0"
+        >
+          <Layers className="w-4 h-4" /> AI Separate
+        </Button>
+        <Button
+          onClick={() => {
+             toast.info("AI is generating stem... (simulated)");
+             setTimeout(() => {
+               const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+               const colors = ["bg-primary", "bg-pink-500", "bg-accent", "bg-yellow-500", "bg-purple-500", "bg-green-500"];
+               setTracksWithHistory(prev => [...prev, {
+                  id: newId,
+                  name: `AI Generated Synth`,
+                  color: colors[newId % colors.length],
+                  volume: 75, pan: 50, muted: false, solo: false, armed: false,
+                  waveform: generateWaveform(2000),
+                  startTime: 0, duration: 20
+               }]);
+               toast.success("AI Stem generated!");
+             }, 3000);
+          }}
+          variant="secondary" 
+          size="sm" 
+          className="gap-2 h-8 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 shrink-0"
+        >
+          <Wand2 className="w-4 h-4" /> AI Generate
+        </Button>
+
         <div className="h-5 w-px bg-border/50 mx-1 shrink-0" />
         
         {/* Undo / Redo */}
@@ -1029,6 +1095,41 @@ export default function Studio() {
 
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden bg-[#0a0a0c] relative">
+        {/* Jam Room Floating Overlay */}
+        <AnimatePresence>
+          {jamRoomActive && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="absolute bottom-4 right-4 z-50 flex gap-2"
+            >
+              {/* Fake Collaborator Video 1 */}
+              <div className="w-32 h-24 bg-card/90 backdrop-blur border border-border rounded-xl shadow-xl overflow-hidden relative">
+                {jamVideoActive ? (
+                  <div className="absolute inset-0 bg-secondary/80 flex items-center justify-center">
+                    <Video className="w-6 h-6 text-muted-foreground opacity-50" />
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-secondary/50">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center text-white font-bold">J</div>
+                  </div>
+                )}
+                <div className="absolute bottom-1 left-2 text-[10px] font-bold text-white drop-shadow-md">Jordan</div>
+                <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,1)]" />
+              </div>
+              
+              {/* Fake Collaborator Video 2 */}
+              <div className="w-32 h-24 bg-card/90 backdrop-blur border border-border rounded-xl shadow-xl overflow-hidden relative">
+                <div className="absolute inset-0 flex items-center justify-center bg-secondary/50">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center text-white font-bold">D</div>
+                </div>
+                <div className="absolute bottom-1 left-2 text-[10px] font-bold text-white drop-shadow-md">Dre</div>
+                <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,1)]" />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {/* Track Headers (Left Sidebar) */}
         <div className="w-64 border-r border-border/50 bg-card/60 flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)]">
           <AnimatePresence>
@@ -1218,14 +1319,14 @@ export default function Studio() {
                   {/* Grid lines */}
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px)]" style={{ backgroundSize: `${100 * zoom}px 100%` }} />
                   
-                  {/* Volume Automation Lane (reflects real track volume) */}
+                  {/* Automation Lane Background */}
                   {track.showAutomation && (
                     <div className="absolute bottom-0 left-0 right-0 h-16 border-t border-white/5 bg-black/40">
-                       <div
-                         className="absolute left-0 right-0 h-px bg-primary/50"
-                         style={{ top: `${100 - track.volume}%` }}
-                         title={`Volume: ${track.volume}%`}
-                       />
+                       {/* Mock Automation Line */}
+                       <div className="absolute top-1/2 left-0 right-0 h-px bg-primary/30" />
+                       <div className="absolute top-1/2 left-1/4 w-2 h-2 -mt-1 -ml-1 rounded-full bg-primary hover:scale-150 cursor-pointer transition-transform" />
+                       <div className="absolute top-1/3 left-1/2 w-2 h-2 -mt-1 -ml-1 rounded-full bg-primary hover:scale-150 cursor-pointer transition-transform" />
+                       <div className="absolute top-2/3 left-3/4 w-2 h-2 -mt-1 -ml-1 rounded-full bg-primary hover:scale-150 cursor-pointer transition-transform" />
                     </div>
                   )}
 
@@ -1637,7 +1738,11 @@ export default function Studio() {
           <span className="text-primary font-medium">44.1 kHz / 24-bit • Opus Codec Active</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-muted-foreground">{formatTime(currentTimeRef.current)} elapsed</span>
+          <span className="hidden sm:flex items-center gap-1 text-green-500/80 mr-2" title="Optimized Strided Buffer Rendering Active">
+            <Activity className="w-3.5 h-3.5" /> Strided Rendering
+          </span>
+          <span>CPU: <span className="text-green-400">12%</span></span>
+          <span>RAM: <span className="text-green-400">28%</span></span>
         </div>
       </div>
 

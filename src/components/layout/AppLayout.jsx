@@ -2,7 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/layout/PageTransition";
 import { useState } from "react";
-import AiAssistant from "@/components/AiAssistant";
+
 import DesktopNav from "@/components/navigation/DesktopNav";
 import MobileHeader from "@/components/navigation/MobileHeader";
 import MobileNav from "@/components/navigation/MobileNav";
@@ -43,8 +43,7 @@ export default function AppLayout() {
         onHelpClick={() => setShowHelp(true)}
       />
 
-      {/* Omnipresent AI */}
-      <AiAssistant />
+
 
       {/* Modals */}
       <GlobalInviteDialog open={showInvite} onOpenChange={setShowInvite} />

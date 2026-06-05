@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     const item = {
       name: 'NaliChat Pro',
       quantity: 1,
-      price: '9.99',
+      price: '24.95',
       subscriptionInfo: {
         subscriptionSettings: {
           frequency: 'MONTH',

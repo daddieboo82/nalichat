@@ -74,11 +74,11 @@ export default function PricingPlans() {
       <section className="py-16 px-6 max-w-7xl mx-auto">
         <div className="text-center mb-12">
         <h2 className="font-heading font-black text-4xl mb-4">
-          Unlock Full Access
+          Choose Your Plan
         </h2>
         <p className="text-lg text-muted-foreground">
-          Your 7-day free trial has expired or you don't have an active subscription.
-          Upgrade now to continue creating!
+          Start with a 7-day free trial. Select a plan below to unlock the full studio,
+          unlimited tracks, file sharing, and more.
         </p>
       </div>
 

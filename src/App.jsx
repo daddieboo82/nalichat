@@ -82,6 +82,8 @@ const AuthenticatedApp = () => {
       <Route element={<AppLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/explore" element={<Explore />} />
+        <Route path="/pricing" element={<PricingPlans />} />
+        <Route path="/PricingPlans" element={<PricingPlans />} />
       </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route element={<AppLayout />}>
@@ -96,8 +98,6 @@ const AuthenticatedApp = () => {
           <Route path="/playlist/:playlistId" element={<PlaylistDetail />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/thank-you" element={<ThankYou />} />
-          <Route path="/pricing" element={<PricingPlans />} />
-          <Route path="/PricingPlans" element={<PricingPlans />} />
           <Route path="/cover-art" element={<CoverArt />} />
         </Route>
       </Route>

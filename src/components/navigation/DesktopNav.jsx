@@ -69,12 +69,12 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
 
         {/* Right Section */}
         <div className="flex items-center gap-2 shrink-0">
-          {user?.role !== "admin" && !ADMIN_EMAILS.includes(user?.email) && (
+          {(!user || (user?.role !== "admin" && !ADMIN_EMAILS.includes(user?.email))) && (
             <Link
               to="/pricing"
               className="hidden lg:flex h-8 px-4 rounded-full bg-gradient-to-r from-primary to-accent text-white font-semibold text-xs items-center hover:opacity-90 transition-opacity mr-1 shadow-lg shadow-primary/20"
             >
-              Upgrade to Pro
+              {user ? "Upgrade to Pro" : "Pricing"}
             </Link>
           )}
 

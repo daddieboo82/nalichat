@@ -69,12 +69,12 @@ export default function MobileHeader() {
 
         {/* Right Section */}
         <div className="flex items-center gap-1 shrink-0">
-          {user?.role !== "admin" && !ADMIN_EMAILS.includes(user?.email) && (
+          {(!user || (user?.role !== "admin" && !ADMIN_EMAILS.includes(user?.email))) && (
             <Link
               to="/pricing"
               className="h-6 px-3 rounded-full bg-gradient-to-r from-primary to-accent text-white font-semibold text-[10px] items-center justify-center flex mr-0.5 shadow-sm"
             >
-              PRO
+              {user ? "PRO" : "Pricing"}
             </Link>
           )}
           <button

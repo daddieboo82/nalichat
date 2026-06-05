@@ -256,10 +256,10 @@ export default function Home() {
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/explore" className="w-full sm:w-auto">
+                <Link to="/pricing" className="w-full sm:w-auto">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-xl text-base px-7">
-                    <Play className="w-5 h-5 mr-2" />
-                    Browse Tracks
+                    <Star className="w-5 h-5 mr-2" />
+                    View Pricing
                   </Button>
                 </Link>
               </>
@@ -622,10 +622,10 @@ export default function Home() {
                         <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2 md:ml-3" />
                       </Button>
                     </Link>
-                    <Link to="/explore" className="w-full sm:w-auto">
+                    <Link to="/pricing" className="w-full sm:w-auto">
                       <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold border-border hover:bg-secondary transition-all hover:scale-105 backdrop-blur-md bg-card/50">
-                        <Compass className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
-                        Explore Tracks
+                        <Star className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
+                        View Pricing
                       </Button>
                     </Link>
                   </>

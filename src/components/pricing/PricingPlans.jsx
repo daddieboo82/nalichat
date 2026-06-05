@@ -44,6 +44,10 @@ export default function PricingPlans() {
   const { user } = useAuth();
   
   const handleSubscribe = async (plan) => {
+    if (!user) {
+      base44.auth.redirectToLogin(window.location.pathname);
+      return;
+    }
     setLoading(true);
     try {
       const response = await base44.functions.invoke("createSubscriptionCheckout", {

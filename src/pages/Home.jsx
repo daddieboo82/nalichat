@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import DailyRecommendation from "@/components/home/DailyRecommendation";
-import FindSplit from './FindSplit';
 import QuickStartGuide from "@/components/home/QuickStartGuide";
 import { sounds } from "@/hooks/use-sound";
 
@@ -164,7 +163,7 @@ export default function Home() {
 
   return (
     <div className="h-full overflow-auto bg-background">
-      <FindSplit />
+
       {/* ── Daily Recommendation ── */}
       <DailyRecommendation />
 

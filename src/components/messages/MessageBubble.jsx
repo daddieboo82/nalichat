@@ -176,7 +176,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
                   code: ({node, inline, ...props}) => <code {...props} className={cn("px-1.5 py-0.5 rounded-md text-xs font-mono bg-black/10 dark:bg-white/10")} />
                 }}
               >
-                {message.text || ""}
+                {message.text}
               </ReactMarkdown>
             </div>
           )}

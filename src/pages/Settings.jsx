@@ -155,7 +155,7 @@ export default function Settings() {
           </Button>
         </div>
 
-        {user?.role !== "admin" && (
+        {user?.role !== "admin" && user?.email !== "bossglop43@gmail.com" && (
           <div className="mt-12 pt-8 border-t border-border">
             <h2 className="text-xl font-heading font-bold mb-6">Subscription & Billing</h2>
             <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">

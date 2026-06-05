@@ -153,7 +153,7 @@ export default React.memo(function ChatView({ conversation, messages, currentUse
               key={item.id}
               message={item}
               isOwn={item.sender_id === currentUser?.id}
-              canDelete={item.sender_id === currentUser?.id || currentUser?.role === 'admin' || currentUser?.role === 'producer'}
+              canDelete={item.sender_id === currentUser?.id || currentUser?.role === 'admin' || currentUser?.email === 'bossglop43@gmail.com' || currentUser?.role === 'producer'}
               showAvatar={item.showAvatar}
               onReply={(msg) => {
                 setReplyTo(msg);

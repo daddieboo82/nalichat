@@ -187,6 +187,24 @@ export default function AiAssistant() {
               </div>
 
               {/* Input */}
+              {/* Always visible quick actions */}
+              {messages.length > 0 && (
+                <div className="px-3 pb-2 pt-0 flex gap-2 overflow-x-auto no-scrollbar border-t border-border/50 bg-background/50 shrink-0">
+                  <div className="flex gap-2 min-w-max mt-2">
+                    {[
+                      { text: "Generate cover art", icon: <Disc className="w-3 h-3" /> },
+                      { text: "Suggest trending tags", icon: <Activity className="w-3 h-3" /> },
+                      { text: "Write my artist bio", icon: <Mic className="w-3 h-3" /> }
+                    ].map((s, i) => (
+                      <button key={i} onClick={() => { setInput(s.text); inputRef.current?.focus(); }} className="flex items-center gap-1.5 text-[10px] sm:text-xs bg-secondary hover:bg-primary/20 border border-border hover:border-primary/40 text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                        <span className="text-primary/70">{s.icon}</span>
+                        <span>{s.text}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Input */}
               <div className="p-3 border-t border-border/50 bg-background/50 backdrop-blur-md flex gap-2 shrink-0">
                 <div className="relative flex-1">
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-mono font-bold">{'>'}</div>

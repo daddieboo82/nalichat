@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, Music, ShoppingCart } from "lucide-react";
+import { ChevronLeft, Music, ShoppingCart, AudioLines } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -89,6 +89,12 @@ export default function MobileHeader() {
             )}
           </button>
           <NotificationBell />
+          <button
+            onClick={() => window.dispatchEvent(new Event('open-ai-assistant'))}
+            className="relative p-1.5 ml-1 rounded-lg flex items-center justify-center text-white bg-gradient-to-r from-primary to-accent shadow-lg shadow-primary/20 transition-all active:scale-95"
+          >
+            <AudioLines className="w-4 h-4 animate-pulse" />
+          </button>
         </div>
       </div>
     </header>

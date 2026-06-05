@@ -20,6 +20,12 @@ export default function AiAssistant() {
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
   useEffect(() => {
+    const handleOpen = () => openChat();
+    window.addEventListener('open-ai-assistant', handleOpen);
+    return () => window.removeEventListener('open-ai-assistant', handleOpen);
+  }, [conversation]);
+
+  useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
@@ -66,20 +72,6 @@ export default function AiAssistant() {
 
   return (
     <>
-      {/* Floating button */}
-      {!open && (
-        <button
-          onClick={openChat}
-          className="fixed bottom-24 md:bottom-8 right-4 z-[999999] group flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-primary via-fuchsia-500 to-accent rounded-full animate-spin blur-md opacity-75 group-hover:opacity-100 transition-opacity" style={{ animationDuration: '3s' }} />
-          <div className="relative w-14 h-14 bg-card border border-primary/50 rounded-full flex items-center justify-center overflow-hidden shadow-2xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20" />
-            <AudioLines className="w-7 h-7 text-primary animate-pulse drop-shadow-lg" />
-          </div>
-        </button>
-      )}
-
       {/* Chat panel */}
       {open && (
         <div className={cn(

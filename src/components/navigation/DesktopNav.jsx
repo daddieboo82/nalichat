@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import SoundToggle from "@/components/layout/SoundToggle";
-import { Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, HelpCircle, UserPlus, Send, Mic, Radio, ShoppingCart, Wand2 } from "lucide-react";
+import { Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, HelpCircle, UserPlus, Send, Mic, Radio, ShoppingCart, Wand2, AudioLines } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
 import { sounds } from "@/hooks/use-sound";
 
@@ -130,6 +130,13 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
               className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95"
             >
               <LogOut className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new Event('open-ai-assistant'))}
+              title="NALI.ai Assistant"
+              className="w-10 h-10 ml-1 rounded-xl flex items-center justify-center text-white bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20 transition-all active:scale-95"
+            >
+              <AudioLines className="w-5 h-5 animate-pulse" />
             </button>
           </div>
         </div>

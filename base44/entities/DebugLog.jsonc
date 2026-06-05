@@ -1,0 +1,10 @@
+{
+  "name": "DebugLog",
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

@@ -39,6 +39,7 @@ import Privacy from '@/pages/Privacy';
 import Studio from '@/pages/Studio';
 import CoverArt from '@/pages/CoverArt';
 import AiAssistant from '@/components/AiAssistant';
+import FindSplit from '@/pages/FindSplit';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -102,6 +103,7 @@ const AuthenticatedApp = () => {
         </Route>
       </Route>
       <Route path="/privacy" element={<Privacy />} />
+      <Route path="/find-split" element={<FindSplit />} />
       <Route path="*" element={<PageNotFound />} />
       </Routes>
     </>

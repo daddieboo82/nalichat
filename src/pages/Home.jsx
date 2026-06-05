@@ -225,7 +225,7 @@ export default function Home() {
             Real-Time.<br className="hidden md:block" /> 
             <span className="text-gradient-animate drop-shadow-2xl">Messaging.</span>
           </h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-foreground/80 font-medium mb-10 md:mb-12 leading-relaxed max-w-3xl mx-auto drop-shadow-md">
+          <p className="text-lg sm:text-xl md:text-2xl text-foreground/90 font-medium mb-10 md:mb-12 leading-relaxed max-w-3xl mx-auto">
             Connect instantly with artists globally. Share high-res audio, drop voice notes, and collaborate seamlessly in unlimited chats.
           </p>
 
@@ -279,8 +279,7 @@ export default function Home() {
       <section className="relative z-10 overflow-hidden border-y border-border bg-card/40 py-4">
         <motion.div
           initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
+          animate={{ opacity: 1 }}
           className="flex flex-wrap justify-center gap-3 px-6"
         >
           {pillars.map((p) => {
@@ -300,15 +299,14 @@ export default function Home() {
         {/* ── What You Can Do ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
           className="bg-card border border-border rounded-3xl p-8 md:p-12 overflow-hidden"
         >
           <div className="absolute -inset-px bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-3xl pointer-events-none" />
           <div className="relative z-10">
             <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">What You Can Actually Do</h2>
-            <p className="text-muted-foreground text-lg mb-10 max-w-2xl">Everything you need to discover music, collaborate with artists, produce your sound, and grow your audience:</p>
+            <p className="text-foreground/90 text-lg mb-10 max-w-2xl">Everything you need to discover music, collaborate with artists, produce your sound, and grow your audience:</p>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[
@@ -337,7 +335,7 @@ export default function Home() {
                   <h3 className="font-heading font-bold text-xl mb-4">{block.title}</h3>
                   <ul className="space-y-2">
                     {block.items.map((item) => (
-                      <li key={item} className="flex items-center gap-3 text-muted-foreground">
+                      <li key={item} className="flex items-center gap-3 text-foreground/90">
                         <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                         {item}
                       </li>
@@ -355,9 +353,8 @@ export default function Home() {
         {/* ── Messaging Hero Card ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
         >
           <Link to={user ? "/messages" : "/register"}>
             <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-card to-accent/10 border border-primary/20 p-6 sm:p-8 md:p-12 hover:border-primary/40 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/20">
@@ -373,7 +370,7 @@ export default function Home() {
                    <MessageSquare className="w-8 h-8 text-primary shrink-0" />
                    Real-Time Messaging
                   </h2>
-                  <p className="text-lg text-muted-foreground mb-6 max-w-xl">
+                  <p className="text-lg text-foreground/90 mb-6 max-w-xl">
                    Connect instantly with other artists. Share files, exchange ideas, and collaborate without friction. All conversations in one organized inbox.
                   </p>
                   <div className="flex items-center gap-2 text-primary font-semibold group-hover:gap-3 transition-all">
@@ -403,9 +400,8 @@ export default function Home() {
         {/* ── Nali AI Banner ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
         >
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-500/10 via-card to-primary/15 border border-yellow-500/20 p-8 md:p-10">
             <div className="absolute -top-20 -right-20 w-72 h-72 bg-primary/15 rounded-full blur-3xl" />
@@ -420,7 +416,7 @@ export default function Home() {
                   <span className="text-xs font-bold tracking-widest text-yellow-400 uppercase bg-yellow-400/10 px-3 py-1 rounded-full">Meet Nali AI</span>
                 </div>
                 <h2 className="font-heading font-bold text-2xl md:text-3xl mb-2">Your Personal Music Assistant</h2>
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-foreground/90 leading-relaxed">
                  Need help? You can ask Nali to perform tasks across the app, suggest track tags, or answer absolutely anything music-related. From production tips to navigating the studio, Nali is here to help you create your best work.
                 </p>
               </div>
@@ -438,8 +434,7 @@ export default function Home() {
           <motion.div
             variants={containerVariants}
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
+            animate="visible"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {features.map((feature) => {
@@ -461,7 +456,7 @@ export default function Home() {
                             <Icon className="w-7 h-7 text-white" />
                           </div>
                           <h3 className="font-heading font-black text-2xl mb-2 text-foreground group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-br group-hover:from-white group-hover:to-white/70 transition-colors duration-300">{feature.label}</h3>
-                          <p className="text-base text-foreground/70 font-medium leading-relaxed">{feature.description}</p>
+                          <p className="text-base text-foreground/90 font-medium leading-relaxed">{feature.description}</p>
                         </div>
                         
                         <div className="relative z-10 flex items-center gap-2 mt-6 text-sm font-bold opacity-0 -translate-x-4 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 text-foreground">
@@ -480,13 +475,12 @@ export default function Home() {
         <div>
           <div className="text-center mb-10 md:mb-12">
             <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">How It Works</h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">From zero to released — NaliChat covers every step of your creative process.</p>
+            <p className="text-foreground/90 text-lg max-w-xl mx-auto">From zero to released — NaliChat covers every step of your creative process.</p>
           </div>
           <motion.div
             variants={containerVariants}
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
+            animate="visible"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {steps.map((step) => {
@@ -501,7 +495,7 @@ export default function Home() {
                       <span className="text-4xl font-black text-border">{step.number}</span>
                     </div>
                     <h3 className="font-heading font-bold text-lg mb-2">{step.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+                    <p className="text-sm text-foreground/90 leading-relaxed">{step.description}</p>
                   </div>
                 </motion.div>
               );
@@ -513,13 +507,12 @@ export default function Home() {
         <div>
           <div className="text-center mb-10">
             <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">Loved by Creators</h2>
-            <p className="text-muted-foreground text-lg">What artists are saying about NaliChat</p>
+            <p className="text-foreground/90 text-lg">What artists are saying about NaliChat</p>
           </div>
           <motion.div
             variants={containerVariants}
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
+            animate="visible"
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
             {testimonials.map((t) => (
@@ -530,7 +523,7 @@ export default function Home() {
                       <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                     ))}
                   </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-5 italic">"{t.quote}"</p>
+                  <p className="text-sm text-foreground/90 leading-relaxed mb-5 italic">"{t.quote}"</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center text-white font-bold text-sm`}>
@@ -556,9 +549,8 @@ export default function Home() {
         {/* ── Stats ── */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, type: "spring" }}
-          viewport={{ once: true }}
           className="grid grid-cols-1 md:grid-cols-3 gap-8"
         >
           {[
@@ -582,9 +574,8 @@ export default function Home() {
         {/* ── Final CTA ── */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, type: "spring" }}
-          viewport={{ once: true }}
           className="mb-24"
         >
           <div className="relative overflow-hidden bg-gradient-to-br from-primary/30 via-card to-accent/30 border-2 border-primary/40 rounded-3xl md:rounded-[3rem] p-8 sm:p-12 md:p-16 text-center shadow-[0_0_100px_-20px_rgba(var(--primary-rgb),0.3)]">
@@ -601,7 +592,7 @@ export default function Home() {
               <h3 className="font-heading font-black text-4xl sm:text-5xl md:text-7xl mb-4 md:mb-6 text-gradient-animate drop-shadow-xl tracking-tight">
                 {user ? `Start Chatting, ${user.full_name?.split(" ")[0] || "Creator"}` : "Collaboration Starts Here"}
               </h3>
-              <p className="text-lg sm:text-xl text-foreground/80 font-medium mb-8 md:mb-10 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-lg sm:text-xl text-foreground/90 font-medium mb-8 md:mb-10 max-w-3xl mx-auto leading-relaxed">
                 {user
                   ? "Jump into your messages, share your latest ideas, and connect with your team instantly."
                   : "Join thousands of artists already chatting, sharing, and collaborating on NaliChat."}

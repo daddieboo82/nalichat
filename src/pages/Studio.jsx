@@ -757,17 +757,52 @@ export default function Studio() {
     }
   };
 
-  const handleFileChange = (e) => {
+  const decodeWaveform = async (file) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      const channelData = audioBuffer.getChannelData(0);
+      const numPoints = 2000;
+      const blockSize = Math.max(1, Math.floor(channelData.length / numPoints));
+      const stride = Math.max(1, Math.floor(blockSize / 64));
+      const waveform = new Float32Array(numPoints);
+      let maxVal = 0;
+      for (let i = 0; i < numPoints; i++) {
+        const start = i * blockSize;
+        let sum = 0, samples = 0;
+        for (let j = 0; j < blockSize; j += stride) {
+          sum += Math.abs(channelData[start + j] || 0);
+          samples++;
+        }
+        const val = sum / (samples || 1);
+        waveform[i] = val;
+        if (val > maxVal) maxVal = val;
+      }
+      audioCtx.close();
+      const normalized = maxVal > 0 ? Array.from(waveform).map(v => v / maxVal) : Array.from(waveform).map(() => 0.05);
+      return { waveform: normalized, duration: audioBuffer.duration };
+    } catch (err) {
+      console.error("Failed to decode audio file", err);
+      return { waveform: generateWaveform(2000), duration: 40 };
+    }
+  };
+
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       if (tracks.length >= maxTracks) {
         toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+        e.target.value = null;
         return;
       }
       
       const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
       const colors = ["bg-primary", "bg-pink-500", "bg-accent", "bg-yellow-500", "bg-purple-500", "bg-green-500"];
       const fileUrl = URL.createObjectURL(file);
+
+      toast.info(`Importing ${file.name}...`);
+      const { waveform, duration } = await decodeWaveform(file);
       
       setTracksWithHistory([...tracks, {
         id: newId,
@@ -778,9 +813,9 @@ export default function Studio() {
         muted: false,
         solo: false,
         armed: false,
-        waveform: generateWaveform(2000),
+        waveform,
         startTime: 0,
-        duration: 40,
+        duration: Math.max(1, duration),
         audioUrl: fileUrl,
         locked: false,
         grouped: false,
@@ -899,7 +934,7 @@ export default function Studio() {
           </div>
           
           <div className="hidden md:flex items-center gap-2">
-            <input type="file" ref={fileInputRef} className="hidden" accept="audio/*,.mid,.midi,.flac,.ogg,.m4a,.wma,.aiff" onChange={handleFileChange} />
+            <input type="file" ref={fileInputRef} className="hidden" accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} />
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleImportClick}>
               <Upload className="w-4 h-4" /> Import
             </Button>

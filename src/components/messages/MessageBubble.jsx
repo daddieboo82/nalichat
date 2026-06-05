@@ -103,7 +103,7 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
 const gradients = ["from-primary to-pink-500","from-accent to-cyan-400","from-yellow-500 to-orange-500","from-green-400 to-emerald-600","from-purple-500 to-indigo-500"];
 const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.length];
 
-export default function MessageBubble({ message, isOwn, showAvatar, onReply, onEdit, onReact, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio }) {
+export default function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio }) {
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -299,7 +299,7 @@ export default function MessageBubble({ message, isOwn, showAvatar, onReply, onE
           </button>
         )}
 
-        {isOwn && (
+        {(canDelete !== undefined ? canDelete : isOwn) && (
           <button
             onClick={() => onDelete?.(message.id)}
             className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-destructive/20 hover:border-destructive/30 hover:text-destructive transition-all shadow-sm"

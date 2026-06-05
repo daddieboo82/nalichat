@@ -151,6 +151,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
               key={item.id}
               message={item}
               isOwn={item.sender_id === currentUser?.id}
+              canDelete={item.sender_id === currentUser?.id || currentUser?.role === 'admin' || currentUser?.role === 'producer'}
               showAvatar={item.showAvatar}
               onReply={(msg) => {
                 setReplyTo(msg);

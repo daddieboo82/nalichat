@@ -45,28 +45,8 @@ const AuthenticatedApp = () => {
   const isInitialMount = useRef(true);
 
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      if (location.pathname === '/') {
-        const lastPath = localStorage.getItem('last_visited_path');
-        const isNewUser = sessionStorage.getItem('is_new_user') === 'true';
-        
-        if (isNewUser) {
-          // Just let them stay on home page and clear the flag
-          sessionStorage.removeItem('is_new_user');
-        } else if (lastPath && lastPath !== '/') {
-          navigate(lastPath, { replace: true });
-        }
-      }
-    }
-  }, [location.pathname, navigate]);
-
-  useEffect(() => {
-    const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
-    if (!authRoutes.includes(location.pathname)) {
-      localStorage.setItem('last_visited_path', location.pathname + location.search);
-    }
-  }, [location]);
+    isInitialMount.current = false;
+  }, []);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (

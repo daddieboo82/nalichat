@@ -333,7 +333,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             <EmojiReactionPicker 
               position="bottom" 
               onSelect={(emoji) => { 
-                setText(t => t + emoji); 
+                setText(t => (t || "") + emoji); 
                 setShowEmoji(false);
                 textareaRef.current?.focus(); 
               }} 

@@ -83,7 +83,7 @@ export default function EmojiReactionPicker({ onSelect, onClose, position = "top
       </div>
 
       {!search && (
-        <div className="w-full grid grid-cols-6 gap-1 mb-3 h-8 bg-secondary/40 p-1 rounded-lg">
+        <div className="w-full flex items-center justify-between gap-1 mb-3 h-8 bg-secondary/40 p-1 rounded-lg overflow-x-auto no-scrollbar">
           {Object.entries(EMOJI_CATEGORIES).map(([key, { label }]) => (
             <button
               type="button"
@@ -107,7 +107,12 @@ export default function EmojiReactionPicker({ onSelect, onClose, position = "top
           <button
             type="button"
             key={i}
-            onClick={() => { onSelect(emoji); onClose(); }}
+            onClick={(e) => { 
+              e.preventDefault(); 
+              e.stopPropagation(); 
+              onSelect(emoji); 
+              if (typeof onClose === 'function') onClose(); 
+            }}
             title={`Select emoji ${emoji}`}
             aria-label={`Select emoji ${emoji}`}
             className="w-8 h-8 flex items-center justify-center text-lg hover:bg-primary/20 rounded-lg transition-all hover:scale-110 active:scale-95"

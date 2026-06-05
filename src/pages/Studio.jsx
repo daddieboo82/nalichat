@@ -449,6 +449,8 @@ export default function Studio() {
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
+    // Stop overdub playback when recording ends
+    Object.values(audioElementsRef.current).forEach(audio => audio.pause());
     sounds.recStop();
   };
 
@@ -470,6 +472,20 @@ export default function Studio() {
           } 
         });
         mediaStreamRef.current = stream;
+
+        // Overdub: play back existing (non-armed) tracks while recording
+        tracks.forEach(track => {
+          if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
+            let audio = audioElementsRef.current[track.id];
+            if (!audio || audio.src !== track.audioUrl) {
+              audio = new Audio(track.audioUrl);
+              audioElementsRef.current[track.id] = audio;
+            }
+            audio.currentTime = currentTimeRef.current;
+            audio.volume = track.muted ? 0 : (track.volume / 100);
+            audio.play().catch(e => console.error("Overdub playback error:", e));
+          }
+        });
         
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
         audioContextRef.current = audioCtx;

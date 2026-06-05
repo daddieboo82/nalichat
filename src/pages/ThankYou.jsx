@@ -5,9 +5,11 @@ import { CheckCircle, Music, ArrowRight, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCart } from "@/lib/CartContext";
 
 export default function ThankYou() {
   const queryClient = useQueryClient();
+  const { clearCart } = useCart();
   const [processing, setProcessing] = useState(true);
 
   useEffect(() => {
@@ -20,6 +22,7 @@ export default function ThankYou() {
         // Refetch subscription status to pick up webhook changes
         await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for webhook
         await queryClient.invalidateQueries({ queryKey: ['subscription'] });
+        clearCart();
         setProcessing(false);
       } catch (error) {
         console.error('Error processing thank you:', error);

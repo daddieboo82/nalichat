@@ -6,7 +6,7 @@ import {
   X, Play, Pause, Scissors, Copy, Trash2, 
   Activity, Radio, Waves, Settings2, SlidersHorizontal,
   VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair, Loader2, Undo2, Redo2, Maximize2, SplitSquareHorizontal, Magnet, SquareDashedBottom,
-  FileText, FolderOpen, SkipBack, Rewind, Square, FastForward, SkipForward, Circle, ZoomIn, ZoomOut
+  FileText, FolderOpen, SkipBack, Rewind, Square, FastForward, SkipForward, Circle, ZoomIn, ZoomOut, ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -60,6 +60,12 @@ export default function WaveEditor({ track, onClose, onSave }) {
   const [isDraggingRange, setIsDraggingRange] = useState(false);
   const [activeEnvelope, setActiveEnvelope] = useState(null);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
+  const [collapsedEffects, setCollapsedEffects] = useState({});
+
+  const toggleCollapseEffect = (id) => {
+    setCollapsedEffects(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const containerRef = useRef(null);
 
@@ -328,8 +334,15 @@ export default function WaveEditor({ track, onClose, onSave }) {
       localStorage.removeItem('nalistudio_waveeditor_autosave');
     } catch (e) {}
     onSave(track.id, { ...track, segments, effects: activeEffects });
-    onClose();
     toast.success("Track edits saved successfully!");
+  };
+
+  const handleClose = () => {
+    try {
+      localStorage.removeItem('nalistudio_waveeditor_autosave');
+    } catch (e) {}
+    onSave(track.id, { ...track, segments, effects: activeEffects });
+    onClose();
   };
 
   // Playhead animation
@@ -359,7 +372,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
         setIsPlaying(p => !p);
       } else if (e.code === 'Escape') {
         e.preventDefault();
-        onClose();
+        handleClose();
       } else if ((e.metaKey || e.ctrlKey) && e.code === 'KeyZ') {
         if (e.shiftKey) handleRedo();
         else handleUndo();
@@ -438,7 +451,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={handleSave}>Save <DropdownMenuShortcut className="text-current opacity-70">Ctrl+S</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => toast.info('Save As not implemented yet')}>Save As...</DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={onClose}>Close <DropdownMenuShortcut className="text-current opacity-70">Esc</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={handleClose}>Close <DropdownMenuShortcut className="text-current opacity-70">Esc</DropdownMenuShortcut></DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -519,7 +532,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Options</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans">
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => toast.info('Preferences modal not implemented yet')}>Preferences...</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => setShowPreferencesDialog(true)}>Preferences...</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -631,7 +644,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
               </span>
             </div>
 
-            <Button variant="ghost" size="sm" onClick={onClose} className="ml-2 h-8 rounded-lg text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20">
+            <Button variant="ghost" size="sm" onClick={handleClose} className="ml-2 h-8 rounded-lg text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20">
               <X className="w-4 h-4 mr-1" /> Close
             </Button>
           </div>
@@ -1171,23 +1184,32 @@ export default function WaveEditor({ track, onClose, onSave }) {
                             >
                               Add to Chain
                             </button>
-                            <button onClick={() => removeEffect(eff.id)} className="text-white/40 hover:text-red-400 transition-colors p-1 hover:bg-white/5 rounded">
-                              <X className="w-3 h-3" />
+                            <button 
+                              onClick={() => toggleCollapseEffect(eff.id)} 
+                              className="text-white/40 hover:text-white transition-colors p-1 hover:bg-white/5 rounded"
+                              title="Toggle Visibility"
+                            >
+                              <ChevronDown className={cn("w-3 h-3 transition-transform", collapsedEffects[eff.id] && "-rotate-90")} />
+                            </button>
+                            <button onClick={() => removeEffect(eff.id)} className="text-white/40 hover:text-red-400 transition-colors p-1 hover:bg-white/5 rounded" title="Remove Effect">
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
                         </div>
-                        <div className="p-4 flex flex-wrap gap-4 h-full items-start justify-center overflow-y-auto custom-scrollbar">
-                          {eff.params.map(p => (
-                            <Knob 
-                              key={p.name}
-                              label={p.name}
-                              min={p.min}
-                              max={p.max}
-                              value={eff.paramValues[p.name]}
-                              onChange={(v) => updateEffectParam(eff.id, p.name, v)}
-                            />
-                          ))}
-                        </div>
+                        {!collapsedEffects[eff.id] && (
+                          <div className="p-4 flex flex-wrap gap-4 h-full items-start justify-center overflow-y-auto custom-scrollbar">
+                            {eff.params.map(p => (
+                              <Knob 
+                                key={p.name}
+                                label={p.name}
+                                min={p.min}
+                                max={p.max}
+                                value={eff.paramValues[p.name]}
+                                onChange={(v) => updateEffectParam(eff.id, p.name, v)}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </motion.div>
                     ))}
                   </AnimatePresence>
@@ -1239,6 +1261,43 @@ export default function WaveEditor({ track, onClose, onSave }) {
             </div>
             <div className="flex justify-end pt-4 border-t border-border">
               <Button onClick={() => setShowHelpDialog(false)}>Got it</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Preferences Dialog */}
+        <Dialog open={showPreferencesDialog} onOpenChange={setShowPreferencesDialog}>
+          <DialogContent className="max-w-md bg-card border-border text-foreground z-[200]">
+            <DialogHeader>
+              <DialogTitle>Audio Preferences</DialogTitle>
+              <DialogDescription>
+                Configure your audio hardware and editing settings.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Audio Input Device</span>
+                <span className="text-muted-foreground text-xs">System Default</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Audio Output Device</span>
+                <span className="text-muted-foreground text-xs">System Default</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Sample Rate</span>
+                <span className="text-muted-foreground text-xs">44.1 kHz</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Buffer Size</span>
+                <span className="text-muted-foreground text-xs">256 samples</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Hardware Acceleration</span>
+                <span className="text-green-500 text-xs font-semibold">Enabled</span>
+              </div>
+            </div>
+            <div className="flex justify-end pt-4 border-t border-border">
+              <Button onClick={() => setShowPreferencesDialog(false)}>Close</Button>
             </div>
           </DialogContent>
         </Dialog>

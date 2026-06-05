@@ -12,6 +12,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useSubscription } from '@/hooks/useSubscription';
 import UpgradeModal from '@/components/billing/UpgradeModal';
 
@@ -29,6 +35,61 @@ export default function CoverArt() {
 
   const importFileInputRef = useRef(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [showFilesDialog, setShowFilesDialog] = useState(false);
+  const [showPlaylistDialog, setShowPlaylistDialog] = useState(false);
+  const [selectedPlaylist, setSelectedPlaylist] = useState(null);
+
+  const { data: sharedFiles = [], isLoading: isLoadingFiles } = useQuery({
+    queryKey: ["mySharedFiles", currentUser?.id],
+    queryFn: () => currentUser ? base44.entities.SharedFile.filter({ uploader_id: currentUser.id }) : [],
+    enabled: showFilesDialog && !!currentUser,
+  });
+
+  const { data: myPlaylists = [], isLoading: isLoadingPlaylists } = useQuery({
+    queryKey: ["myPlaylists", currentUser?.id],
+    queryFn: () => currentUser ? base44.entities.Playlist.filter({ owner_id: currentUser.id }) : [],
+    enabled: showPlaylistDialog && !!currentUser,
+  });
+
+  const { data: playlistTracks = [], isLoading: isLoadingPlaylistTracks } = useQuery({
+    queryKey: ["playlistTracks", selectedPlaylist?.id],
+    queryFn: async () => {
+      if (!selectedPlaylist?.track_ids?.length) return [];
+      const tracks = [];
+      for (const id of selectedPlaylist.track_ids) {
+        try {
+           tracks.push(await base44.entities.ArtPost.get(id));
+        } catch (e) {}
+      }
+      return tracks.filter(t => t.creator_id === currentUser.id);
+    },
+    enabled: !!selectedPlaylist,
+  });
+
+  const handleImportSharedFile = async (file) => {
+    try {
+      setIsImporting(true);
+      setShowFilesDialog(false);
+      toast.info('Importing track from Files...');
+      await base44.entities.ArtPost.create({
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        description: "Imported from Files",
+        medium: "original",
+        creator_id: currentUser.id,
+        creator_name: currentUser.display_name || currentUser.full_name || "Unknown Artist",
+        file_url: file.file_url,
+        genre: "Unknown",
+        tags: ["imported"]
+      });
+      queryClient.invalidateQueries({ queryKey: ["myArtPosts"] });
+      toast.success("Track imported successfully!");
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to import track');
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   const handleImportAudio = async (event) => {
     const file = event.target.files?.[0];
@@ -240,10 +301,10 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                     <DropdownMenuItem onClick={() => importFileInputRef.current?.click()}>
                       <Smartphone className="w-4 h-4 mr-2" /> From Device
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => toast.info("Import from Files coming soon")}>
+                    <DropdownMenuItem onClick={() => setShowFilesDialog(true)}>
                       <Folder className="w-4 h-4 mr-2" /> From Files
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => toast.info("Import from Playlist coming soon")}>
+                    <DropdownMenuItem onClick={() => setShowPlaylistDialog(true)}>
                       <ListMusic className="w-4 h-4 mr-2" /> From Playlist
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -274,6 +335,103 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
             ))
           )}
         </div>
+
+        {/* Modals */}
+        <Dialog open={showFilesDialog} onOpenChange={setShowFilesDialog}>
+          <DialogContent className="max-w-md bg-card border-border">
+            <DialogHeader>
+              <DialogTitle>Import from Files</DialogTitle>
+            </DialogHeader>
+            <div className="max-h-96 overflow-y-auto space-y-2">
+              {isLoadingFiles ? (
+                <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+              ) : sharedFiles.filter(f => f.file_type === "audio" || f.file_type === "video").length === 0 ? (
+                <p className="text-center text-muted-foreground p-4">No audio or video files found in your Files.</p>
+              ) : (
+                sharedFiles
+                  .filter(f => f.file_type === "audio" || f.file_type === "video")
+                  .map(file => (
+                    <button
+                      key={file.id}
+                      className="w-full text-left p-3 rounded-lg border border-border hover:border-primary/50 transition-colors flex items-center gap-3"
+                      onClick={() => handleImportSharedFile(file)}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                        <Music className="w-5 h-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{file.name}</p>
+                      </div>
+                    </button>
+                  ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showPlaylistDialog} onOpenChange={(open) => {
+          setShowPlaylistDialog(open);
+          if (!open) setSelectedPlaylist(null);
+        }}>
+          <DialogContent className="max-w-md bg-card border-border">
+            <DialogHeader>
+              <DialogTitle>{selectedPlaylist ? "Select Track" : "Select Playlist"}</DialogTitle>
+            </DialogHeader>
+            <div className="max-h-96 overflow-y-auto space-y-2">
+              {!selectedPlaylist ? (
+                isLoadingPlaylists ? (
+                  <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                ) : myPlaylists.length === 0 ? (
+                  <p className="text-center text-muted-foreground p-4">No playlists found.</p>
+                ) : (
+                  myPlaylists.map(playlist => (
+                    <button
+                      key={playlist.id}
+                      className="w-full text-left p-3 rounded-lg border border-border hover:border-primary/50 transition-colors flex items-center gap-3"
+                      onClick={() => setSelectedPlaylist(playlist)}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
+                        <ListMusic className="w-5 h-5 text-accent" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{playlist.name}</p>
+                        <p className="text-xs text-muted-foreground">{playlist.track_ids?.length || 0} tracks</p>
+                      </div>
+                    </button>
+                  ))
+                )
+              ) : (
+                <>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedPlaylist(null)} className="mb-2">
+                    &larr; Back to Playlists
+                  </Button>
+                  {isLoadingPlaylistTracks ? (
+                    <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                  ) : playlistTracks.length === 0 ? (
+                    <p className="text-center text-muted-foreground p-4">No tracks owned by you in this playlist.</p>
+                  ) : (
+                    playlistTracks.map(track => (
+                      <button
+                        key={track.id}
+                        className="w-full text-left p-3 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                        onClick={() => {
+                          setSelectedPost(track);
+                          setGeneratedImage(null);
+                          setShowPlaylistDialog(false);
+                          setSelectedPlaylist(null);
+                          toast.success("Track selected!");
+                        }}
+                      >
+                        <p className="font-medium text-sm truncate">{track.title}</p>
+                        <p className="text-xs text-muted-foreground truncate">{track.genre || 'No genre'}</p>
+                      </button>
+                    ))
+                  )}
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Right: Generation Area */}
         <div className="w-full md:w-2/3 flex flex-col items-center justify-center border border-border bg-card/50 rounded-xl p-4 pb-28 sm:p-8 sm:pb-28 md:pb-8 relative overflow-y-auto custom-scrollbar">

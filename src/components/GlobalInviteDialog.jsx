@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Check, Mail, MessageSquare, Loader2 } from "lucide-react";
+import { Copy, Check, Mail, MessageSquare, Loader2, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { base44 } from "@/api/base44Client";
 
@@ -10,13 +10,15 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
   const [copied, setCopied] = useState(false);
   const [phone, setPhone] = useState("");
   const [sendingSms, setSendingSms] = useState(false);
+  const [smsStatus, setSmsStatus] = useState(null); // { type: 'success' | 'error', message: string }
   const { toast } = useToast();
 
   const inviteUrl = `https://nalichat.org/register`;
 
   const sendSms = async () => {
+    setSmsStatus(null);
     if (!phone.trim()) {
-      toast({ title: "Enter a phone number", variant: "destructive" });
+      setSmsStatus({ type: "error", message: "Please enter a phone number." });
       return;
     }
     setSendingSms(true);
@@ -24,13 +26,14 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
       const res = await base44.functions.invoke("sendSmsInvite", { phone: phone.trim(), link: inviteUrl });
       if (res.data?.success) {
         toast({ title: "Invite sent via SMS!" });
+        setSmsStatus({ type: "success", message: `Invite sent to ${phone.trim()}!` });
         setPhone("");
       } else {
-        toast({ title: res.data?.error || "Failed to send SMS", variant: "destructive" });
+        setSmsStatus({ type: "error", message: res.data?.error || "Failed to send SMS." });
       }
     } catch (err) {
       console.error("Failed to send SMS invite:", err);
-      toast({ title: "Failed to send SMS", variant: "destructive" });
+      setSmsStatus({ type: "error", message: "Failed to send SMS. Please try again." });
     } finally {
       setSendingSms(false);
     }
@@ -80,7 +83,7 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
               <Input
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => { setPhone(e.target.value); setSmsStatus(null); }}
                 placeholder="+1 555 123 4567"
                 className="flex-1 text-sm rounded-lg bg-background border-border"
               />
@@ -88,9 +91,16 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
                 {sendingSms ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send"}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Include the country code (e.g. +1 for US numbers).
-            </p>
+            {smsStatus ? (
+              <p className={`text-xs mt-2 flex items-center gap-1.5 font-medium ${smsStatus.type === "success" ? "text-green-500" : "text-destructive"}`}>
+                {smsStatus.type === "success" ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                {smsStatus.message}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-2">
+                Include the country code (e.g. +1 for US numbers).
+              </p>
+            )}
           </div>
 
           <div className="flex gap-2">

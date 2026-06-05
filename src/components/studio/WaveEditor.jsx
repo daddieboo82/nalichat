@@ -121,7 +121,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
           sourceStart: 0, // normalized 0-1
           sourceEnd: 1, // normalized 0-1
           duration: track.duration || 40,
-          waveform: track.waveform || Array.from({length: 100}, () => Math.random())
+          waveform: (track.waveform && track.waveform.length > 0) ? track.waveform : Array.from({length: 100}, () => 0.02)
         }];
         setSegments(initialSegs);
         setHistory([initialSegs]);

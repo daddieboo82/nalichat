@@ -8,7 +8,7 @@ import {
   Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
   Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle,
   Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2,
-  Image as ImageIcon, Users, Video, VideoOff, Radio
+  Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -28,6 +28,7 @@ import { sounds } from '@/hooks/use-sound';
 import { useSubscription } from '@/hooks/useSubscription';
 import UpgradeModal from '@/components/billing/UpgradeModal';
 import { Link } from 'react-router-dom';
+import { separateStems, generateMelody } from '@/lib/audioProcessing';
 
 // Fake waveform generator - High-resolution for precision editing
 const generateWaveform = (length = 2000) => {
@@ -93,6 +94,7 @@ export default function Studio() {
   });
   const [jamRoomActive, setJamRoomActive] = useState(false);
   const [jamVideoActive, setJamVideoActive] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(null); // 'separate' | 'generate' | null
 
   const { hasAccess, isLoading: isLoadingSub } = useSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -108,8 +110,8 @@ export default function Studio() {
       console.error("Failed to load project autosave", e);
     }
     return [
-      { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
-      { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+      { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+      { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
     ];
   });
 
@@ -738,6 +740,66 @@ export default function Studio() {
     toast.success("Track added");
   };
 
+  const handleSeparateStems = async () => {
+    if (selectedTrackIds.length === 0) {
+      toast.error("Please select a track to separate");
+      return;
+    }
+    const track = tracks.find(t => t.id === selectedTrackIds[0]);
+    if (!track || !track.audioUrl) {
+      toast.error("Selected track has no audio. Record or import audio first.");
+      return;
+    }
+    if (tracks.length + 2 > maxTracks) {
+      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      return;
+    }
+    setIsProcessing('separate');
+    toast.info("Separating stems by frequency...");
+    try {
+      const { vocals, instrumental } = await separateStems(track.audioUrl);
+      let nextId = Math.max(...tracks.map(t => t.id)) + 1;
+      setTracksWithHistory(prev => [...prev,
+        { ...track, id: nextId, name: `${track.name} (Vocals/Highs)`, color: "bg-pink-500", audioUrl: vocals.url, waveform: vocals.waveform, duration: vocals.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined },
+        { ...track, id: nextId + 1, name: `${track.name} (Instrumental/Lows)`, color: "bg-accent", audioUrl: instrumental.url, waveform: instrumental.waveform, duration: instrumental.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined }
+      ]);
+      toast.success("Stems separated!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to separate stems.");
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  const handleGenerateMelody = async () => {
+    if (tracks.length >= maxTracks) {
+      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      return;
+    }
+    setIsProcessing('generate');
+    toast.info("Generating melody...");
+    try {
+      const { url, waveform, duration } = await generateMelody({ seconds: 8, bpm: 120 });
+      const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+      const colors = ["bg-primary", "bg-pink-500", "bg-accent", "bg-yellow-500", "bg-purple-500", "bg-green-500"];
+      setTracksWithHistory(prev => [...prev, {
+        id: newId,
+        name: "Generated Melody",
+        color: colors[newId % colors.length],
+        volume: 75, pan: 50, muted: false, solo: false, armed: false,
+        waveform, startTime: 0, duration, audioUrl: url,
+        locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0
+      }]);
+      toast.success("Melody generated!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to generate melody.");
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
   const handleSave = () => {
     try {
       localStorage.setItem('nalistudio_project_autosave', JSON.stringify(tracks));
@@ -990,53 +1052,22 @@ export default function Studio() {
           <SlidersHorizontal className="w-4 h-4" /> Add Plugins
         </Button>
         <Button 
-          onClick={() => {
-            if (selectedTrackIds.length === 0) {
-               toast.error("Please select a track to separate");
-               return;
-            }
-            toast.info("AI is separating stems... (simulated)");
-            setTimeout(() => {
-              const track = tracks.find(t => t.id === selectedTrackIds[0]);
-              if (track) {
-                 const newId1 = Math.max(...tracks.map(t => t.id)) + 1;
-                 const newId2 = newId1 + 1;
-                 setTracksWithHistory(prev => [...prev, 
-                   {...track, id: newId1, name: `${track.name} (Vocals)`, color: "bg-pink-500"},
-                   {...track, id: newId2, name: `${track.name} (Instrumental)`, color: "bg-accent"}
-                 ]);
-                 toast.success("Stems separated successfully!");
-              }
-            }, 3000);
-          }} 
+          onClick={handleSeparateStems}
+          disabled={isProcessing}
           variant="secondary" 
           size="sm" 
-          className="gap-2 h-8 rounded-lg bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 shrink-0"
+          className="gap-2 h-8 rounded-lg bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 shrink-0 disabled:opacity-50"
         >
-          <Layers className="w-4 h-4" /> AI Separate
+          {isProcessing === 'separate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} Split Stems
         </Button>
         <Button
-          onClick={() => {
-             toast.info("AI is generating stem... (simulated)");
-             setTimeout(() => {
-               const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
-               const colors = ["bg-primary", "bg-pink-500", "bg-accent", "bg-yellow-500", "bg-purple-500", "bg-green-500"];
-               setTracksWithHistory(prev => [...prev, {
-                  id: newId,
-                  name: `AI Generated Synth`,
-                  color: colors[newId % colors.length],
-                  volume: 75, pan: 50, muted: false, solo: false, armed: false,
-                  waveform: generateWaveform(2000),
-                  startTime: 0, duration: 20
-               }]);
-               toast.success("AI Stem generated!");
-             }, 3000);
-          }}
+          onClick={handleGenerateMelody}
+          disabled={isProcessing}
           variant="secondary" 
           size="sm" 
-          className="gap-2 h-8 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 shrink-0"
+          className="gap-2 h-8 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 shrink-0 disabled:opacity-50"
         >
-          <Wand2 className="w-4 h-4" /> AI Generate
+          {isProcessing === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} Generate Melody
         </Button>
 
         <div className="h-5 w-px bg-border/50 mx-1 shrink-0" />
@@ -1102,30 +1133,17 @@ export default function Studio() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="absolute bottom-4 right-4 z-50 flex gap-2"
+              className="absolute bottom-4 right-4 z-50 flex flex-col items-end gap-2"
             >
-              {/* Fake Collaborator Video 1 */}
-              <div className="w-32 h-24 bg-card/90 backdrop-blur border border-border rounded-xl shadow-xl overflow-hidden relative">
-                {jamVideoActive ? (
-                  <div className="absolute inset-0 bg-secondary/80 flex items-center justify-center">
-                    <Video className="w-6 h-6 text-muted-foreground opacity-50" />
+              <div className="w-56 bg-card/90 backdrop-blur border border-border rounded-xl shadow-xl overflow-hidden p-4 flex flex-col items-center text-center">
+                <div className="relative mb-2">
+                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-green-400" />
                   </div>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-secondary/50">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center text-white font-bold">J</div>
-                  </div>
-                )}
-                <div className="absolute bottom-1 left-2 text-[10px] font-bold text-white drop-shadow-md">Jordan</div>
-                <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,1)]" />
-              </div>
-              
-              {/* Fake Collaborator Video 2 */}
-              <div className="w-32 h-24 bg-card/90 backdrop-blur border border-border rounded-xl shadow-xl overflow-hidden relative">
-                <div className="absolute inset-0 flex items-center justify-center bg-secondary/50">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center text-white font-bold">D</div>
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,1)]" />
                 </div>
-                <div className="absolute bottom-1 left-2 text-[10px] font-bold text-white drop-shadow-md">Dre</div>
-                <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,1)]" />
+                <p className="text-xs font-semibold text-foreground">Jam Room is live</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Share the room link from Messages to invite collaborators. They'll appear here when they join.</p>
               </div>
             </motion.div>
           )}
@@ -1321,12 +1339,8 @@ export default function Studio() {
                   
                   {/* Automation Lane Background */}
                   {track.showAutomation && (
-                    <div className="absolute bottom-0 left-0 right-0 h-16 border-t border-white/5 bg-black/40">
-                       {/* Mock Automation Line */}
-                       <div className="absolute top-1/2 left-0 right-0 h-px bg-primary/30" />
-                       <div className="absolute top-1/2 left-1/4 w-2 h-2 -mt-1 -ml-1 rounded-full bg-primary hover:scale-150 cursor-pointer transition-transform" />
-                       <div className="absolute top-1/3 left-1/2 w-2 h-2 -mt-1 -ml-1 rounded-full bg-primary hover:scale-150 cursor-pointer transition-transform" />
-                       <div className="absolute top-2/3 left-3/4 w-2 h-2 -mt-1 -ml-1 rounded-full bg-primary hover:scale-150 cursor-pointer transition-transform" />
+                    <div className="absolute bottom-0 left-0 right-0 h-16 border-t border-white/5 bg-black/40 flex items-center justify-center">
+                       <span className="text-[10px] text-muted-foreground/50">Open the Wave Editor to draw volume & pan automation</span>
                     </div>
                   )}
 
@@ -1738,11 +1752,13 @@ export default function Studio() {
           <span className="text-primary font-medium">44.1 kHz / 24-bit • Opus Codec Active</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="hidden sm:flex items-center gap-1 text-green-500/80 mr-2" title="Optimized Strided Buffer Rendering Active">
-            <Activity className="w-3.5 h-3.5" /> Strided Rendering
+          <span className="hidden sm:flex items-center gap-1.5">
+            <Volume2 className="w-3.5 h-3.5" /> {tracks.filter(t => t.audioUrl).length} with audio
           </span>
-          <span>CPU: <span className="text-green-400">12%</span></span>
-          <span>RAM: <span className="text-green-400">28%</span></span>
+          <span className="flex items-center gap-1.5">
+            <Circle className={cn("w-2.5 h-2.5", isRecording ? "fill-red-500 text-red-500 animate-pulse" : isPlaying ? "fill-green-500 text-green-500" : "fill-muted-foreground/40 text-muted-foreground/40")} />
+            {isRecording ? "Recording" : isPlaying ? "Playing" : "Idle"}
+          </span>
         </div>
       </div>
 

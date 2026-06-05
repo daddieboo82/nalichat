@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Compass, MessageSquare, User, Settings, Mic, Wand2 } from "lucide-react";
+import { Home, Compass, MessageSquare, User, Settings, Mic, Wand2, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
@@ -8,7 +8,7 @@ const TABS = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Compass, label: "Explore", path: "/explore" },
   { icon: Mic, label: "Studio", path: "/studio" },
-  { icon: MessageSquare, label: "Messages", path: "/messages" },
+  { icon: Radio, label: "Record", path: "/record" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 

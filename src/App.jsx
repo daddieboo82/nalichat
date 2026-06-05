@@ -37,6 +37,7 @@ import ThankYou from '@/pages/ThankYou';
 import PricingPlans from '@/components/pricing/PricingPlans';
 import Privacy from '@/pages/Privacy';
 import Studio from '@/pages/Studio';
+import Record from '@/pages/Record';
 import CoverArt from '@/pages/CoverArt';
 import AiAssistant from '@/components/AiAssistant';
 
@@ -92,6 +93,7 @@ const AuthenticatedApp = () => {
 
           <Route path="/settings" element={<Settings />} />
           <Route path="/studio" element={<Studio />} />
+          <Route path="/record" element={<Record />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/playlists" element={<Playlists />} />

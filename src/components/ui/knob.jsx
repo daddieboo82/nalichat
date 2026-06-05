@@ -33,7 +33,7 @@ export function Knob({ value, min = 0, max = 100, onChange, label, unit = "" }) 
   return (
     <div className="flex flex-col items-center gap-2">
       <div 
-        className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#2d2d30] border-2 border-[#151516] relative cursor-ns-resize shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center group"
+        className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#2d2d30] border-2 border-[#151516] relative cursor-ns-resize shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center group touch-none"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

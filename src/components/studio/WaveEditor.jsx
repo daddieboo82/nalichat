@@ -1161,9 +1161,20 @@ export default function WaveEditor({ track, onClose, onSave }) {
                             </div>
                             <span className="text-xs font-bold text-white/90">{eff.name}</span>
                           </div>
-                          <button onClick={() => removeEffect(eff.id)} className="text-white/40 hover:text-red-400 transition-colors p-1 hover:bg-white/5 rounded">
-                            <X className="w-3 h-3" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => {
+                                onSave(track.id, { ...track, segments, effects: activeEffects });
+                                toast.success(`${eff.name} added to chain`);
+                              }} 
+                              className="text-[10px] font-semibold bg-primary/20 text-primary hover:bg-primary/30 px-2 py-1 rounded transition-colors"
+                            >
+                              Add to Chain
+                            </button>
+                            <button onClick={() => removeEffect(eff.id)} className="text-white/40 hover:text-red-400 transition-colors p-1 hover:bg-white/5 rounded">
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
                         <div className="p-4 flex flex-wrap gap-4 h-full items-start justify-center overflow-y-auto custom-scrollbar">
                           {eff.params.map(p => (

@@ -440,7 +440,7 @@ export default function Home() {
             {features.map((feature) => {
               const Icon = feature.icon;
               return (
-                <motion.div key={feature.path} variants={itemVariants} className="h-full">
+                <motion.div key={feature.label} variants={itemVariants} className="h-full">
                   <Link to={feature.path} onClick={() => sounds.click()} className="block h-full">
                     <div className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${feature.gradient} p-0.5 h-full transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]`}>
                       <div className="relative h-full bg-card/90 backdrop-blur-xl rounded-[22px] p-8 shimmer-hover flex flex-col justify-between">

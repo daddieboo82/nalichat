@@ -36,19 +36,19 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
 
   return (
     <nav className="hidden md:block relative z-50 border-t border-border/50 backdrop-blur-xl" style={{ background: "hsl(240 8% 6% / 0.95)" }}>
-      <div className="max-w-7xl mx-auto px-3 py-1.5 flex items-center justify-between gap-2">
+      <div className="max-w-7xl mx-auto px-3 py-1.5 flex items-center justify-between gap-1">
         {/* Logo */}
         <Link to="/" className="group shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary via-pink-500 to-accent flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform">
               <Music className="w-4 h-4 text-white" />
             </div>
-            <span className="font-heading font-bold text-sm text-gradient-animate hidden lg:inline">NaliChat</span>
+            <span className="font-heading font-bold text-sm text-gradient-animate hidden xl:inline">NaliChat</span>
           </div>
         </Link>
 
         {/* Main Navigation */}
-        <div className="flex items-center gap-0.5 flex-wrap justify-center flex-1">
+        <div className="flex items-center gap-0.5 justify-center flex-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {NAV_ITEMS.map(({ icon: Icon, label, path }) => (
             <Link
               key={path}
@@ -63,13 +63,13 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
               )}
             >
               <Icon className={cn("w-3.5 h-3.5 transition-transform group-hover:scale-110", isActive(path) && "text-primary")} />
-              <span className="hidden lg:inline">{label}</span>
+              <span className="hidden xl:inline">{label}</span>
             </Link>
           ))}
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           {(!user || (user?.role !== "admin" && !ADMIN_EMAILS.includes(user?.email))) && (
             <Link
               to="/pricing"

@@ -9,6 +9,7 @@ const TABS = [
   { icon: Compass, label: "Explore", path: "/explore" },
   { icon: Mic, label: "Studio", path: "/studio" },
   { icon: Radio, label: "Record", path: "/record" },
+  { icon: MessageSquare, label: "Messages", path: "/messages" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 

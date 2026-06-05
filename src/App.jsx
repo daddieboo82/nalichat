@@ -99,7 +99,7 @@ const AuthenticatedApp = () => {
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/playlist/:playlistId" element={<PlaylistDetail />} />
           <Route path="/analytics" element={<Analytics />} />
-          <Route path="/thank-you" element={<ThankYou />} />
+          <Route path="/ThankYou" element={<ThankYou />} />
           <Route path="/cover-art" element={<CoverArt />} />
         </Route>
       </Route>

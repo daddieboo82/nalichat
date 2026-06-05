@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
         },
       },
       callbackUrls: {
-        thankYouPageUrl: `${origin}/thank-you`,
+        thankYouPageUrl: `${origin}/ThankYou`,
         postFlowUrl: `${origin}/`,
       },
     };

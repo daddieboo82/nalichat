@@ -22,7 +22,7 @@ export default function CartDrawer() {
       const res = await base44.functions.invoke("createCheckout", {
         items: checkoutItems,
         callbackUrls: {
-          thankYouPageUrl: window.location.origin + "/thank-you",
+          thankYouPageUrl: window.location.origin + "/ThankYou",
           postFlowUrl: window.location.origin + "/"
         }
       });

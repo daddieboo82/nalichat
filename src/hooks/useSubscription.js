@@ -18,7 +18,7 @@ export function useSubscription() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'producer';
+  const isAdmin = user?.role === 'admin';
   const isPro = isAdmin || (subscription?.plan === 'pro' && subscription?.status === 'active');
   const isTrialActive = subscription?.trialActive;
   const hasAccess = isAdmin || subscription?.hasAccess;

@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     const createdDate = new Date(user.created_date);
     const diffDays = (now - createdDate) / (1000 * 60 * 60 * 24);
     const hasTrialFree = diffDays <= 7;
-    const isAdmin = user.role === 'admin' || user.role === 'producer';
+    const isAdmin = user.role === 'admin';
 
     if (isAdmin) {
       return Response.json({

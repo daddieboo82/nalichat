@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Heart, Eye, Music, MessageCircle, Play, Pause } from "lucide-react";
+import { Heart, Eye, Music, MessageCircle, Play, Pause, ShoppingCart } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import MediaViewerModal from "./MediaViewerModal";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
+import { useCart } from "@/lib/CartContext";
+import { toast } from "sonner";
 
 import React from "react";
 
@@ -15,6 +17,8 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
   const currentTrack = audioPlayer?.currentTrack;
   const isPlaying = audioPlayer?.isPlaying;
   const isActive = currentTrack?.id === post.id;
+  
+  const cart = useCart();
 
   return (
     <>
@@ -138,9 +142,26 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
               </span>
             )}
             {Number(post.price) > 0 && (
-              <span className="text-[10px] bg-gradient-to-r from-primary to-pink-500 text-white px-2 py-0.5 rounded-full font-bold shadow-sm shadow-primary/30">
+              <button
+                onClick={(e) => {
+                   e.stopPropagation();
+                   if (cart && cart.addItem) {
+                     cart.addItem({
+                       id: post.id,
+                       title: post.title,
+                       price: Number(post.price),
+                       image_url: post.image_url,
+                       type: 'stem_license'
+                     });
+                     toast.success("License added to cart");
+                   }
+                }}
+                title="Buy License"
+                className="flex items-center gap-1 bg-gradient-to-r from-primary to-pink-500 text-white px-2 py-0.5 rounded-full font-bold shadow-sm shadow-primary/30 hover:opacity-90 active:scale-95 transition-all"
+              >
+                <ShoppingCart className="w-3 h-3" />
                 ${Number(post.price).toFixed(2)}
-              </span>
+              </button>
             )}
           </div>
         </div>

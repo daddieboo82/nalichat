@@ -185,11 +185,10 @@ export default function Settings() {
           </div>
         </div>
 
-        {user?.role !== "admin" && !ADMIN_EMAILS.includes(user?.email) && (
-          <div className="mt-12 pt-8 border-t border-border">
-            <h2 className="text-xl font-heading font-bold mb-6">Subscription & Billing</h2>
-            
-            {!subLoading && (
+        <div className="mt-12 pt-8 border-t border-border">
+          <h2 className="text-xl font-heading font-bold mb-6">Subscription & Billing</h2>
+          
+          {!subLoading && (
               <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50 mb-4">
                 <div>
                   <div className="flex items-center gap-3">
@@ -233,8 +232,7 @@ export default function Settings() {
                 </Link>
               </div>
             )}
-          </div>
-        )}
+        </div>
 
         <div className="mt-12 pt-8 border-t border-border">
           <h2 className="text-xl font-heading font-bold mb-6">Audio Devices</h2>

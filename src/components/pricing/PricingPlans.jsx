@@ -7,20 +7,6 @@ import { useAuth } from "@/lib/AuthContext";
 
 const plans = [
   {
-    id: "trial",
-    name: "7-Day Free Trial",
-    price: "0.00",
-    period: "/7 days",
-    description: "Full access for 7 days",
-    features: [
-      "7 Days Full Studio Access",
-      "Unlimited Tracks",
-      "All Pro Features",
-    ],
-    cta: "Start Free Trial",
-    popular: false,
-  },
-  {
     id: "pro",
     name: "Pro",
     price: "24.95",
@@ -77,7 +63,7 @@ export default function PricingPlans() {
           Unlock Full Access
         </h2>
         <p className="text-lg text-muted-foreground">
-          Your free hour has expired or you don't have an active subscription.
+          Your 7-day free trial has expired or you don't have an active subscription.
           Upgrade now to continue creating!
         </p>
       </div>

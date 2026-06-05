@@ -34,10 +34,11 @@ Deno.serve(async (req) => {
     if (activeSubs.length === 0) {
       // User has no active subscription - check 7 days free
       return Response.json({
-        plan: 'free',
+        plan: hasTrialFree ? 'trial' : 'free',
         status: 'active',
-        trialActive: false,
+        trialActive: hasTrialFree,
         hasAccess: hasTrialFree,
+        trialEndsAt: hasTrialFree ? new Date(createdDate.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString() : null,
       });
     }
 

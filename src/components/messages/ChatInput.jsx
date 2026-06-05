@@ -19,6 +19,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
   }, [editingMessage]);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const recordingTimeRef = useRef(0);
   const [uploads, setUploads] = useState([]); // [{name, progress, done}]
   const [dragOver, setDragOver] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -76,17 +77,21 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     const isAudio = file.type.startsWith("audio") || !!file.name.match(/\.(mp3|wav|ogg|m4a|aac)$/i);
     const isVideo = file.type.startsWith("video");
     const type = isImage ? "image" : isAudio ? "audio" : isVideo ? "video" : "file";
-    onSend({ text: "", type, file_url, file_name: file.name, file_size: file.size, file_type: file.type });
+    
+    const payload = { text: "", type, file_url, file_name: file.name, file_size: file.size, file_type: file.type };
+    if (replyTo) {
+      payload.reply_to_text = replyTo.text || `[${replyTo.type}]`;
+      payload.reply_to_sender = replyTo.sender_name;
+      payload.reply_to_id = replyTo.id;
+    }
+    
+    onSend(payload);
     onCancelReply?.();
     onCancelEdit?.();
   };
 
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      onCancelReply?.();
-      onCancelEdit?.();
-    }
     for (const file of files) uploadFile(file); // parallel
     e.target.value = "";
   };
@@ -95,17 +100,11 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     e.preventDefault();
     setDragOver(false);
     const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      onCancelReply?.();
-      onCancelEdit?.();
-    }
     for (const file of files) uploadFile(file);
   };
 
   const startRecording = async () => {
     sounds.recStart();
-    onCancelReply?.();
-    onCancelEdit?.();
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -118,15 +117,25 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
     recorder.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
-      const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-      const file = new File([blob], `voice-${Date.now()}.webm`, { type: "audio/webm" });
+      const mimeType = mediaRecorderRef.current.mimeType || "audio/webm";
+      const ext = mimeType.includes("mp4") ? "mp4" : mimeType.includes("ogg") ? "ogg" : mimeType.includes("wav") ? "wav" : "webm";
+      const blob = new Blob(chunksRef.current, { type: mimeType });
+      const file = new File([blob], `voice-${Date.now()}.${ext}`, { type: mimeType });
       const id = `voice-${Date.now()}`;
       setUploads(u => [...u, { id, name: "Voice Message", progress: 0, done: false, error: false }]);
       try {
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
         setUploads(u => u.map(x => x.id === id ? { ...x, progress: 100, done: true } : x));
         setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 1200);
-        onSend({ text: "", type: "audio", file_url, file_name: "Voice Message", file_type: "audio/webm", duration: recordingTime });
+        
+        const payload = { text: "", type: "audio", file_url, file_name: "Voice Message", file_type: mimeType, duration: recordingTimeRef.current };
+        if (replyTo) {
+          payload.reply_to_text = replyTo.text || `[${replyTo.type}]`;
+          payload.reply_to_sender = replyTo.sender_name;
+          payload.reply_to_id = replyTo.id;
+        }
+        
+        onSend(payload);
         onCancelReply?.();
         onCancelEdit?.();
       } catch {
@@ -134,11 +143,15 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
         setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 3000);
       }
       setRecordingTime(0);
+      recordingTimeRef.current = 0;
     };
     mediaRecorderRef.current = recorder;
     recorder.start();
     setIsRecording(true);
-    timerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
+    timerRef.current = setInterval(() => {
+      setRecordingTime(t => t + 1);
+      recordingTimeRef.current += 1;
+    }, 1000);
   };
 
   const stopRecording = () => {
@@ -158,6 +171,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     clearInterval(timerRef.current);
     setIsRecording(false);
     setRecordingTime(0);
+    recordingTimeRef.current = 0;
   };
 
   const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -264,7 +278,13 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
                         aria-label="Session Name Input"
                         onKeyDown={e => {
                           if (e.key === 'Enter' && sessionName.trim()) {
-                            onSend({ text: sessionName.trim(), type: "session" });
+                            const payload = { text: sessionName.trim(), type: "session" };
+                            if (replyTo) {
+                              payload.reply_to_text = replyTo.text || `[${replyTo.type}]`;
+                              payload.reply_to_sender = replyTo.sender_name;
+                              payload.reply_to_id = replyTo.id;
+                            }
+                            onSend(payload);
                             setShowFeatures(false);
                             setSessionName("New Recording Session");
                             onCancelReply?.();
@@ -276,7 +296,13 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
                         type="button"
                         onClick={() => {
                           if (sessionName.trim()) {
-                            onSend({ text: sessionName.trim(), type: "session" });
+                            const payload = { text: sessionName.trim(), type: "session" };
+                            if (replyTo) {
+                              payload.reply_to_text = replyTo.text || `[${replyTo.type}]`;
+                              payload.reply_to_sender = replyTo.sender_name;
+                              payload.reply_to_id = replyTo.id;
+                            }
+                            onSend(payload);
                             setShowFeatures(false);
                             setSessionName("New Recording Session");
                             onCancelReply?.();

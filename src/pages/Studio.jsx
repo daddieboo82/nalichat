@@ -997,19 +997,19 @@ export default function Studio() {
         </div>
 
         {/* Edit Modes */}
-        <div className="flex items-center gap-1 shrink-0 bg-secondary/40 p-1 rounded-lg ring-1 ring-border/40">
-          <Button variant="ghost" size="sm" onClick={() => setEditMode('shuffle')} className={cn("px-2 py-1 h-7 text-xs rounded-md transition-all", editMode === 'shuffle' ? "bg-primary text-primary-foreground shadow-[0_0_12px_hsl(var(--primary)/0.6)] font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>Shuffle</Button>
-          <Button variant="ghost" size="sm" onClick={() => setEditMode('slip')} className={cn("px-2 py-1 h-7 text-xs rounded-md transition-all", editMode === 'slip' ? "bg-primary text-primary-foreground shadow-[0_0_12px_hsl(var(--primary)/0.6)] font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>Slip</Button>
-          <Button variant="ghost" size="sm" onClick={() => setEditMode('grid')} className={cn("px-2 py-1 h-7 text-xs rounded-md transition-all", editMode === 'grid' ? "bg-primary text-primary-foreground shadow-[0_0_12px_hsl(var(--primary)/0.6)] font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>Grid</Button>
+        <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
+          <Button variant="ghost" size="sm" onClick={() => setEditMode('shuffle')} className={cn("px-2 py-1 h-7 text-xs rounded-md", editMode === 'shuffle' && "bg-primary/20 text-primary")}>Shuffle</Button>
+          <Button variant="ghost" size="sm" onClick={() => setEditMode('slip')} className={cn("px-2 py-1 h-7 text-xs rounded-md", editMode === 'slip' && "bg-primary/20 text-primary")}>Slip</Button>
+          <Button variant="ghost" size="sm" onClick={() => setEditMode('grid')} className={cn("px-2 py-1 h-7 text-xs rounded-md", editMode === 'grid' && "bg-primary/20 text-primary")}>Grid</Button>
         </div>
 
         {/* Tools */}
-        <div className="flex items-center gap-1 shrink-0 bg-secondary/40 p-1 rounded-lg ring-1 ring-border/40">
-          <Button variant="ghost" size="icon" onClick={() => setActiveTool('trim')} className={cn("w-7 h-7 rounded transition-all", activeTool === 'trim' ? "bg-primary text-primary-foreground shadow-[0_0_12px_hsl(var(--primary)/0.6)]" : "text-muted-foreground hover:text-foreground hover:bg-secondary")} title="Trim Tool"><MoveHorizontal className="w-4 h-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => setActiveTool('cut')} className={cn("w-7 h-7 rounded transition-all", activeTool === 'cut' ? "bg-primary text-primary-foreground shadow-[0_0_12px_hsl(var(--primary)/0.6)]" : "text-muted-foreground hover:text-foreground hover:bg-secondary")} title="Cut Tool"><Scissors className="w-4 h-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => setActiveTool('grab')} className={cn("w-7 h-7 rounded transition-all", activeTool === 'grab' ? "bg-primary text-primary-foreground shadow-[0_0_12px_hsl(var(--primary)/0.6)]" : "text-muted-foreground hover:text-foreground hover:bg-secondary")} title="Grabber Tool"><MousePointer2 className="w-4 h-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => setActiveTool('fade')} className={cn("w-7 h-7 rounded transition-all", activeTool === 'fade' ? "bg-primary text-primary-foreground shadow-[0_0_12px_hsl(var(--primary)/0.6)]" : "text-muted-foreground hover:text-foreground hover:bg-secondary")} title="Fade Tool"><Crosshair className="w-4 h-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => setActiveTool('smart')} className={cn("w-7 h-7 rounded border transition-all", activeTool === 'smart' ? "border-primary text-primary-foreground bg-primary shadow-[0_0_12px_hsl(var(--primary)/0.6)]" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary")} title="Smart Tool">
+        <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
+          <Button variant="ghost" size="icon" onClick={() => setActiveTool('trim')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'trim' && "bg-primary/20 text-primary")} title="Trim Tool"><MoveHorizontal className="w-3.5 h-3.5" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => setActiveTool('cut')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'cut' && "bg-primary/20 text-primary")} title="Cut Tool"><Scissors className="w-3.5 h-3.5" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => setActiveTool('grab')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'grab' && "bg-primary/20 text-primary")} title="Grabber Tool"><MousePointer2 className="w-3.5 h-3.5" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => setActiveTool('fade')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'fade' && "bg-primary/20 text-primary")} title="Fade Tool"><Crosshair className="w-3.5 h-3.5" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => setActiveTool('smart')} className={cn("w-7 h-7 rounded text-muted-foreground border border-transparent hover:text-foreground", activeTool === 'smart' && "border-primary text-primary bg-primary/10")} title="Smart Tool">
              <div className="flex flex-col gap-0.5 items-center">
                <div className="flex gap-[1px]"><MoveHorizontal className="w-2.5 h-2.5"/><MousePointer2 className="w-2.5 h-2.5"/></div>
              </div>
@@ -1411,11 +1411,7 @@ export default function Studio() {
                           target.addEventListener('pointerup', handleUp);
                         }
                       }}
-                      className={cn(
-                        "audio-clip absolute top-2 bottom-2 rounded-lg border overflow-hidden transition-colors shadow-md",
-                        selectedTrackIds.includes(track.id) ? "border-white/40 ring-1 ring-primary/40" : "border-white/15 group-hover:border-white/35",
-                        "bg-gradient-to-b from-black/30 to-black/50 backdrop-blur"
-                      )}
+                      className="audio-clip absolute top-2 bottom-2 rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors shadow-sm"
                       style={{ 
                         left: `${(track.startTime !== undefined ? track.startTime : 0) * 20 * zoom}px`,
                         width: `${(track.duration !== undefined ? track.duration : 40) * 20 * zoom}px`
@@ -1663,13 +1659,13 @@ export default function Studio() {
                                   <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
                                 </filter>
                               </defs>
-                              <g className={cn(baseFill, "drop-shadow-[0_0_4px_currentColor]")}>
+                              <g className={baseFill}>
                                 <path d={peakPath} fill={`url(#${gradId})`} />
                                 <path d={rmsPath} fill={`url(#${rmsId})`} filter={`url(#${glowId})`} />
-                                <path d={topLine} fill="none" stroke="currentColor" strokeWidth="1" strokeOpacity="1" vectorEffect="non-scaling-stroke" />
-                                <path d={botLine} fill="none" stroke="currentColor" strokeWidth="1" strokeOpacity="1" vectorEffect="non-scaling-stroke" />
+                                <path d={topLine} fill="none" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.95" vectorEffect="non-scaling-stroke" />
+                                <path d={botLine} fill="none" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.95" vectorEffect="non-scaling-stroke" />
                               </g>
-                              <line x1="0" y1="50" x2="1000" y2="50" stroke="#ffffff" strokeOpacity="0.1" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+                              <line x1="0" y1="50" x2="1000" y2="50" stroke="#ffffff" strokeOpacity="0.08" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
                             </svg>
                           );
                         })()}

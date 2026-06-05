@@ -246,18 +246,24 @@ export default function Home() {
                     Browse Tracks
                   </Button>
                 </Link>
+                <Link to="/pricing" className="w-full sm:w-auto">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-xl text-base px-7 border-primary text-primary hover:bg-primary/10">
+                    <Star className="w-5 h-5 mr-2" />
+                    View Pricing
+                  </Button>
+                </Link>
               </>
             ) : (
               <>
                 <Link to="/register" className="w-full sm:w-auto">
                   <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7">
                     <MessageSquare className="w-5 h-5 mr-2" />
-                    Start Chatting Free
+                    Start Free Trial
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
                 <Link to="/pricing" className="w-full sm:w-auto">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-xl text-base px-7">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-xl text-base px-7 border-primary text-primary hover:bg-primary/10">
                     <Star className="w-5 h-5 mr-2" />
                     View Pricing
                   </Button>
@@ -612,18 +618,24 @@ export default function Home() {
                           Explore Tracks
                         </Button>
                       </Link>
+                      <Link to="/pricing" className="w-full sm:w-auto">
+                        <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold border-primary text-primary hover:bg-primary/10 transition-all hover:scale-105 backdrop-blur-md">
+                          <Star className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
+                          Upgrade to Pro
+                        </Button>
+                      </Link>
                     </>
                   ) : (
                   <>
                     <Link to="/register" className="w-full sm:w-auto">
                       <Button size="lg" className="w-full sm:w-auto rounded-xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30">
                         <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
-                        Start Chatting Free
+                        Start Free Trial
                         <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2 md:ml-3" />
                       </Button>
                     </Link>
                     <Link to="/pricing" className="w-full sm:w-auto">
-                      <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold border-border hover:bg-secondary transition-all hover:scale-105 backdrop-blur-md bg-card/50">
+                      <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold border-primary text-primary hover:bg-primary/10 transition-all hover:scale-105 backdrop-blur-md">
                         <Star className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
                         View Pricing
                       </Button>

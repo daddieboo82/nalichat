@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import DeleteAccountDialog from "@/components/settings/DeleteAccountDialog";
 import DeviceSelector from "@/components/audio/DeviceSelector";
+import SoundToggle from "@/components/layout/SoundToggle";
 import { sounds } from "@/hooks/use-sound";
 import { useSubscription } from "@/hooks/useSubscription";
 
@@ -162,6 +163,19 @@ export default function Settings() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">
+          <h2 className="text-xl font-heading font-bold mb-6">Preferences</h2>
+          <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50 mb-6">
+            <div>
+              <h3 className="font-heading font-semibold text-lg text-foreground">UI Sound Effects</h3>
+              <p className="text-sm text-muted-foreground mt-1">Enable or disable satisfying audio feedback for button clicks and interactions.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-muted-foreground">Toggle:</span>
+              <div className="scale-125 bg-background border border-border rounded-xl p-1 shadow-sm">
+                <SoundToggle />
+              </div>
+            </div>
+          </div>
           <h2 className="text-xl font-heading font-bold mb-6">Creator Tools</h2>
           <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
             <div>

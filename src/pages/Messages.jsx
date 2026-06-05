@@ -320,6 +320,7 @@ export default function Messages() {
               onEditMessage={(id, text) => editMessage.mutate({ id, text })}
               onReact={handleReact}
               onBack={() => setSelectedConvId(null)}
+              onStartDM={startDM}
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 relative overflow-hidden">

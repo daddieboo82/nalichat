@@ -13,7 +13,7 @@ import ThreadPanel from "./ThreadPanel";
 import MessageSearch from "./MessageSearch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-export default function ChatView({ conversation, messages, currentUser, users, onSendMessage, onEditMessage, onReact, onBack }) {
+export default function ChatView({ conversation, messages, currentUser, users, onSendMessage, onEditMessage, onReact, onBack, onStartDM }) {
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -171,6 +171,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
                 await base44.entities.Message.delete(id);
               }}
               currentUser={currentUser}
+              onStartDM={onStartDM}
               onPlayAudio={(msg) => {
                 setSelectedMedia({
                   id: msg.id,
@@ -220,7 +221,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
 
       {/* Panels */}
       {showGroupInfo && conversation?.type === "group" && (
-        <GroupInfoPanel conversation={conversation} users={users} currentUser={currentUser} onClose={() => setShowGroupInfo(false)} />
+        <GroupInfoPanel conversation={conversation} users={users} currentUser={currentUser} onClose={() => setShowGroupInfo(false)} onStartDM={onStartDM} />
       )}
       {threadMessage && (
         <ThreadPanel parentMessage={threadMessage} currentUser={currentUser} onClose={() => setThreadMessage(null)} />

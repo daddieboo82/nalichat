@@ -6,7 +6,9 @@ import { X, Users, Pencil, Check, LogOut } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 
-export default function GroupInfoPanel({ conversation, users, currentUser, onClose }) {
+import { MessageSquare } from "lucide-react";
+
+export default function GroupInfoPanel({ conversation, users, currentUser, onClose, onStartDM }) {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(conversation?.name || "");
   const queryClient = useQueryClient();
@@ -89,6 +91,19 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
                   <p className="text-sm font-medium truncate">{u.display_name || u.full_name}</p>
                   <p className="text-[10px] text-muted-foreground capitalize">{u.role}</p>
                 </div>
+                {u.id !== currentUser?.id && onStartDM && (
+                  <button
+                    onClick={() => {
+                      onStartDM(u);
+                      onClose();
+                    }}
+                    className="w-8 h-8 rounded-full bg-secondary hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-colors shrink-0"
+                    title="Message privately"
+                    aria-label="Message privately"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             ))}
           </div>

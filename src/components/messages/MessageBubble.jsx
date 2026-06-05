@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, Copy, Trash2, Forward, Pencil } from "lucide-react";
+import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Forward, Pencil } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -103,7 +103,7 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
 const gradients = ["from-primary to-pink-500","from-accent to-cyan-400","from-yellow-500 to-orange-500","from-green-400 to-emerald-600","from-purple-500 to-indigo-500"];
 const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.length];
 
-export default function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio }) {
+export default function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM }) {
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -287,6 +287,20 @@ export default function MessageBubble({ message, isOwn, canDelete, showAvatar, o
         >
           <MessageSquareQuote className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
+
+        {!isOwn && onStartDM && (
+          <button
+            onClick={() => {
+              const otherUser = users?.find(u => u.id === message.sender_id);
+              if (otherUser) onStartDM(otherUser);
+            }}
+            className="w-7 h-7 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
+            title="Message privately"
+            aria-label="Message privately"
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+        )}
 
         {isOwn && message.type === "text" && (
           <button

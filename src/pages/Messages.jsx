@@ -81,7 +81,8 @@ export default function Messages() {
       return msgs.reverse();
     },
     enabled: !!selectedConvId,
-    refetchInterval: 5000,
+    refetchInterval: 20000, // safety net; real-time subscription handles live updates
+    staleTime: 1000 * 10,
   });
 
   useEffect(() => {

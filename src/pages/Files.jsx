@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -234,12 +234,12 @@ export default function Files() {
   const currentFolder = currentFolderId ? folders.find(f => f.id === currentFolderId) : null;
   const filesInFolder = currentFolderId ? files.filter(f => f.folder_id === currentFolderId) : files.filter(f => !f.folder_id);
 
-  const filtered = filesInFolder.filter(f => {
-    if (typeFilter !== "all" && f.file_type !== typeFilter) return false;
-    return (f.name || "").toLowerCase().includes(search.toLowerCase());
-  });
+  const filtered = React.useMemo(() => filesInFolder.filter(f => {
+    if (typeFilter !== "all" && f?.file_type !== typeFilter) return false;
+    return (f?.name || "").toLowerCase().includes(search.toLowerCase());
+  }), [filesInFolder, typeFilter, search]);
 
-  const filteredFolders = folders.filter(f => (f.name || "").toLowerCase().includes(search.toLowerCase()));
+  const filteredFolders = React.useMemo(() => folders.filter(f => (f?.name || "").toLowerCase().includes(search.toLowerCase())), [folders, search]);
 
   const handleUpload = (e) => {
     const files = Array.from(e.target.files || []);

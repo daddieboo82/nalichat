@@ -5,7 +5,9 @@ import { cn } from "@/lib/utils";
 import MediaViewerModal from "./MediaViewerModal";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 
-export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist, onComment, large }) {
+import React from "react";
+
+export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist, onComment, large }) {
   const [showMedia, setShowMedia] = useState(false);
   const liked = post.liked_by?.includes(currentUser?.id);
   const audioPlayer = useAudioPlayer();
@@ -149,4 +151,4 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
       <MediaViewerModal post={post} open={showMedia} onOpenChange={setShowMedia} onAddToPlaylist={onAddToPlaylist} />
     </>
   );
-}
+});

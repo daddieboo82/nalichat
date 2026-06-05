@@ -110,14 +110,17 @@ export default function Studio() {
     ];
   });
 
-  // Autosave tracks
+  // Autosave tracks (Debounced to prevent lag during rapid edits)
   useEffect(() => {
     if (tracks && tracks.length > 0) {
-      try {
-        localStorage.setItem('nalistudio_project_autosave', JSON.stringify(tracks));
-      } catch (e) {
-        console.error("Failed to autosave project", e);
-      }
+      const timeoutId = setTimeout(() => {
+        try {
+          localStorage.setItem('nalistudio_project_autosave', JSON.stringify(tracks));
+        } catch (e) {
+          console.error("Failed to autosave project", e);
+        }
+      }, 1000);
+      return () => clearTimeout(timeoutId);
     }
   }, [tracks]);
 

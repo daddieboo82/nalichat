@@ -240,7 +240,7 @@ export default function Profile() {
         {!editing && (
           <div className="mb-6">
             {user.bio && <p className="text-sm text-muted-foreground mb-2">{user.bio}</p>}
-            {user.genre?.length > 0 && (
+            {Array.isArray(user.genre) && user.genre.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {user.genre.map(g => <span key={g} className="text-[11px] bg-accent/10 text-accent px-2.5 py-0.5 rounded-full">{g}</span>)}
               </div>

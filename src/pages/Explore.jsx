@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Heart, Eye, Plus, Upload, X, Search, Sparkles } from "lucide-react";
@@ -73,14 +73,14 @@ export default function Explore() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["artposts"] }),
   });
 
-  const filtered = posts.filter(p =>
+  const filtered = React.useMemo(() => posts.filter(p =>
     !search || String(p.title || '').toLowerCase().includes(search.toLowerCase()) ||
     String(p.creator_name || '').toLowerCase().includes(search.toLowerCase()) ||
     String(p.genre || '').toLowerCase().includes(search.toLowerCase()) ||
     (Array.isArray(p.tags) ? p.tags.some(t => String(t || '').toLowerCase().includes(search.toLowerCase())) : false)
-  );
+  ), [posts, search]);
 
-  const featured = filtered.filter(p => p.featured || p.likes > 5);
+  const featured = React.useMemo(() => filtered.filter(p => p?.featured || (p?.likes || 0) > 5), [filtered]);
   const recent = filtered;
 
   return (

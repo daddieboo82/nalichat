@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
@@ -28,33 +28,39 @@ export default function Analytics() {
   });
 
   // Calculate aggregate stats
-  const totalViews = userPosts.reduce((sum, p) => sum + (p.views || 0), 0);
-  const totalLikes = userPosts.reduce((sum, p) => sum + (p.likes || 0), 0);
-  const avgLikesPerTrack = userPosts.length > 0 ? (totalLikes / userPosts.length).toFixed(1) : 0;
+  const { totalViews, totalLikes, avgLikesPerTrack, trackData, growthData } = React.useMemo(() => {
+    const views = userPosts.reduce((sum, p) => sum + (p.views || 0), 0);
+    const likes = userPosts.reduce((sum, p) => sum + (p.likes || 0), 0);
+    const avgLikes = userPosts.length > 0 ? (likes / userPosts.length).toFixed(1) : 0;
 
-  // Chart data - tracks by views
-  const trackData = [...userPosts]
-    .sort((a, b) => (b.views || 0) - (a.views || 0))
-    .slice(0, 10)
-    .map(p => ({
-      name: p.title?.substring(0, 15) || "Untitled",
-      views: p.views || 0,
-      likes: p.likes || 0,
-    }));
+    const tData = [...userPosts]
+      .sort((a, b) => (b.views || 0) - (a.views || 0))
+      .slice(0, 10)
+      .map(p => ({
+        name: p.title?.substring(0, 15) || "Untitled",
+        views: p.views || 0,
+        likes: p.likes || 0,
+      }));
 
-  // Growth data (simulated by created_date)
-  const growthData = [...userPosts]
-    .sort((a, b) => new Date(a.created_date) - new Date(b.created_date))
-    .reduce((acc, post, idx) => {
-      const lastEntry = acc[acc.length - 1] || { views: 0, likes: 0 };
-      acc.push({
-        track: idx + 1,
-        views: lastEntry.views + (post.views || 0),
-        likes: lastEntry.likes + (post.likes || 0),
-      });
-      return acc;
-    }, [])
-    .slice(Math.max(0, userPosts.length - 10));
+    const gData = [...userPosts]
+      .sort((a, b) => {
+        const da = a.created_date && !isNaN(new Date(a.created_date).getTime()) ? new Date(a.created_date).getTime() : 0;
+        const db = b.created_date && !isNaN(new Date(b.created_date).getTime()) ? new Date(b.created_date).getTime() : 0;
+        return da - db;
+      })
+      .reduce((acc, post, idx) => {
+        const lastEntry = acc[acc.length - 1] || { views: 0, likes: 0 };
+        acc.push({
+          track: idx + 1,
+          views: lastEntry.views + (post.views || 0),
+          likes: lastEntry.likes + (post.likes || 0),
+        });
+        return acc;
+      }, [])
+      .slice(Math.max(0, userPosts.length - 10));
+
+    return { totalViews: views, totalLikes: likes, avgLikesPerTrack: avgLikes, trackData: tData, growthData: gData };
+  }, [userPosts]);
 
   const statCards = [
     { label: "Total Views", value: totalViews, icon: Eye, color: "text-blue-500" },

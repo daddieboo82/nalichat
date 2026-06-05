@@ -13,7 +13,9 @@ import ThreadPanel from "./ThreadPanel";
 import MessageSearch from "./MessageSearch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-export default function ChatView({ conversation, messages, currentUser, users, onSendMessage, onEditMessage, onReact, onBack, onStartDM }) {
+import React from "react";
+
+export default React.memo(function ChatView({ conversation, messages, currentUser, users, onSendMessage, onEditMessage, onReact, onBack, onStartDM }) {
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -287,7 +289,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
       )}
     </div>
   );
-}
+});
 
 function formatDateLabel(date) {
   if (isNaN(date.getTime())) return "Unknown Date";

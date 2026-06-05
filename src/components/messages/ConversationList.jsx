@@ -7,7 +7,9 @@ import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 
-export default function ConversationList({ conversations, myConversations, selectedId, onSelect, users, currentUserId, onStartDM }) {
+import React from "react";
+
+export default React.memo(function ConversationList({ conversations, myConversations, selectedId, onSelect, users, currentUserId, onStartDM }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all"); // all, unread, groups
 
@@ -215,4 +217,4 @@ export default function ConversationList({ conversations, myConversations, selec
       </div>
     </div>
   );
-}
+});

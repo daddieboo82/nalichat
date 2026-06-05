@@ -102,7 +102,7 @@ export default function DailyRecommendation() {
               <Sparkles className="w-3 h-3 inline mr-1 text-accent" />Daily Pick
             </p>
             <Link to="/explore" onClick={() => sounds.click()}>
-              <p className="font-heading font-bold text-sm truncate hover:text-accent transition-colors">{post.title}</p>
+              <p className="font-heading font-bold text-sm hover:text-accent transition-colors line-clamp-2">{post.title}</p>
             </Link>
             <p className="text-xs text-muted-foreground truncate">{post.creator_name} · {post.genre || "Music"} · {post.likes || 0} likes</p>
           </div>

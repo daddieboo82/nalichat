@@ -443,7 +443,7 @@ export default function Home() {
                 <motion.div key={feature.path} variants={itemVariants} className="h-full">
                   <Link to={feature.path} onClick={() => sounds.click()} className="block h-full">
                     <div className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${feature.gradient} p-0.5 h-full transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]`}>
-                      <div className="relative h-full bg-card/90 backdrop-blur-xl rounded-[22px] p-8 shimmer-hover flex flex-col justify-between overflow-hidden">
+                      <div className="relative h-full bg-card/90 backdrop-blur-xl rounded-[22px] p-8 shimmer-hover flex flex-col justify-between">
                         <div className={`absolute -inset-10 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-20 blur-3xl transition-opacity duration-500`} />
                         
                         <div className="relative z-10 flex-1">
@@ -459,8 +459,8 @@ export default function Home() {
                           <p className="text-base text-foreground/90 font-medium leading-relaxed">{feature.description}</p>
                         </div>
                         
-                        <div className="relative z-10 flex items-center gap-2 mt-6 text-sm font-bold opacity-0 -translate-x-4 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 text-foreground">
-                          Explore feature <ArrowRight className="w-4 h-4" />
+                        <div className="relative z-10 flex items-center gap-2 mt-6 shrink-0 text-sm font-bold text-foreground group-hover:text-primary transition-colors duration-300">
+                          Explore feature <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </div>
                       </div>
                     </div>

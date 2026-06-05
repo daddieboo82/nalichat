@@ -70,7 +70,7 @@ export default function AiAssistant() {
       {!open && (
         <button
           onClick={openChat}
-          className="fixed bottom-24 right-4 z-40 w-11 h-11 rounded-lg bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+          className="fixed bottom-28 md:bottom-8 right-4 z-40 w-11 h-11 rounded-lg bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
         >
           <Sparkles className="w-5 h-5 text-white" />
         </button>
@@ -79,7 +79,7 @@ export default function AiAssistant() {
       {/* Chat panel */}
       {open && (
         <div className={cn(
-          "fixed bottom-24 right-4 z-50 bg-card border border-border rounded-2xl shadow-2xl shadow-black/40 flex flex-col transition-all duration-300",
+          "fixed bottom-28 md:bottom-8 right-4 z-50 bg-card border border-border rounded-2xl shadow-2xl shadow-black/40 flex flex-col transition-all duration-300",
           minimized ? "w-64 max-w-[calc(100vw-32px)] h-14" : expanded ? "w-[calc(100vw-32px)] sm:w-[440px] h-[640px] max-h-[calc(100dvh-120px)] sm:max-h-[80vh]" : "w-[calc(100vw-32px)] sm:w-96 h-[500px] max-h-[calc(100dvh-120px)] sm:max-h-[80vh]"
         )}>
           {/* Header */}

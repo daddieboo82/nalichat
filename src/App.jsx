@@ -124,7 +124,7 @@ function App() {
                 <Router>
                   <AuthenticatedApp />
                 </Router>
-                <AiAssistant />
+                {loaded && <AiAssistant />}
                 <Toaster />
                 <SonnerToaster />
               </MotionConfig>

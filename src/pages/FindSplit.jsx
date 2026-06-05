@@ -11,7 +11,10 @@ export default function FindSplit() {
       const found = [];
       for (const path in modules) {
         const content = await modules[path]();
-        const lines = content.split('\n');
+        const text = typeof content === 'string' ? content : (content?.default || '');
+        if (!text || typeof text.split !== 'function') continue;
+        
+        const lines = text.split('\n');
         lines.forEach((line, i) => {
           if (line.includes('.split(')) {
             found.push(`${path}:${i + 1}: ${line.trim()}`);

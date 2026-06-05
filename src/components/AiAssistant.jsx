@@ -114,7 +114,7 @@ export default function AiAssistant() {
                       <Sparkles className="w-6 h-6 text-primary" />
                     </div>
                     <p className="text-sm font-semibold">Hi{user ? `, ${user.display_name || user.full_name?.split(" ")[0]}` : ""}! 👋</p>
-                    <p className="text-xs text-muted-foreground mt-1">I'm Nali, your creative AI. I can answer anything <span className="text-primary">and</span> do tasks for you!</p>
+                    <p className="text-xs text-muted-foreground mt-1">I'm Nali, your creative AI. Ask me to do tasks in the app, or ask me absolutely anything music-related!</p>
                     <div className="flex flex-col gap-1.5 mt-4">
                       {["Create a new project for me", "Write & save my artist bio", "Make a playlist of my tracks", "Suggest tags for my latest track"].map(s => (
                         <button key={s} onClick={() => { setInput(s); inputRef.current?.focus(); }} className="text-xs bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground px-3 py-2 rounded-xl text-left transition-colors">
@@ -165,7 +165,7 @@ export default function AiAssistant() {
                   ref={inputRef}
                   value={input}
                   onChange={e => setInput(e.target.value)}
-                  placeholder="Ask Nali anything..."
+                  placeholder="Ask Nali to do a task, or ask a music question..."
                   className="flex-1 bg-secondary/50 border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/50"
                   onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                 />

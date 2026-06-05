@@ -417,11 +417,11 @@ export default function Home() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-bold tracking-widest text-yellow-400 uppercase bg-yellow-400/10 px-3 py-1 rounded-full">Powered by AI</span>
+                  <span className="text-xs font-bold tracking-widest text-yellow-400 uppercase bg-yellow-400/10 px-3 py-1 rounded-full">Meet Nali AI</span>
                 </div>
-                <h2 className="font-heading font-bold text-2xl md:text-3xl mb-2">Your Music, Your Community</h2>
+                <h2 className="font-heading font-bold text-2xl md:text-3xl mb-2">Your Personal Music Assistant</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                 Upload your tracks to Explore and let the community discover your sound. Get real-time feedback, build a fanbase, and watch your reach grow. All tracks are public by default, giving every artist equal exposure.
+                 Need help? You can ask Nali to perform tasks across the app, suggest track tags, or answer absolutely anything music-related. From production tips to navigating the studio, Nali is here to help you create your best work.
                 </p>
               </div>
             </div>

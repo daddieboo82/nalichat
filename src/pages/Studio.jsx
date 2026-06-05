@@ -911,19 +911,19 @@ export default function Studio() {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-background text-foreground overflow-hidden">
       {/* Top Toolbar */}
-      <div className="h-16 border-b border-border/50 bg-card/80 backdrop-blur flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="font-heading font-black text-xl text-gradient-animate tracking-tight flex items-center gap-2">
-            <Mic className="w-6 h-6 text-primary" />
-            NaliStudio 
-            <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest ml-2">Pro</span>
-            <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-green-500/30">Engine v2</span>
+      <div className="h-16 border-b border-border/50 bg-card/80 backdrop-blur flex items-center justify-between gap-2 px-2 sm:px-4 shrink-0 overflow-x-auto custom-scrollbar">
+        <div className="flex items-center gap-4 shrink-0">
+          <div className="font-heading font-black text-base sm:text-xl text-gradient-animate tracking-tight flex items-center gap-2">
+            <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <span className="hidden xs:inline sm:inline">NaliStudio</span>
+            <span className="hidden sm:inline text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest ml-2">Pro</span>
+            <span className="hidden lg:inline text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-green-500/30">Engine v2</span>
           </div>
         </div>
 
         {/* Transport Controls */}
-        <div className="flex items-center gap-2 bg-background/50 p-1.5 rounded-xl border border-border/50 shadow-inner">
-          <Button variant="ghost" size="icon" className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground">
+        <div className="flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0">
+          <Button variant="ghost" size="icon" className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground">
             <Rewind className="w-5 h-5" />
           </Button>
           <Button 
@@ -951,13 +951,13 @@ export default function Studio() {
             {isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}
             <Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} />
           </Button>
-          <Button variant="ghost" size="icon" className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="icon" className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground">
             <FastForward className="w-5 h-5" />
           </Button>
         </div>
 
         {/* Right Tools - Hardware & Export */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Quick Record */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
              <Link to="/record">
@@ -990,7 +990,7 @@ export default function Studio() {
             <Button variant="ghost" size="icon" title="MIDI Controller" onClick={() => toast.info(hardware.midi ? "MIDI Controller connected" : "No MIDI Controller detected")} className={cn("w-8 h-8 rounded-lg hover:bg-secondary transition-colors", hardware.midi ? "text-green-400" : "text-muted-foreground/50")}><Keyboard className="w-4 h-4" /></Button>
           </div>
 
-          <div className="font-mono text-xl text-primary font-bold bg-[#0a0a0c] px-4 py-1.5 rounded-lg border border-border w-36 text-center shadow-inner tracking-widest relative group">
+          <div className="font-mono text-sm sm:text-xl text-primary font-bold bg-[#0a0a0c] px-2 sm:px-4 py-1.5 rounded-lg border border-border w-24 sm:w-36 text-center shadow-inner tracking-tight sm:tracking-widest relative group shrink-0">
             <span ref={timeDisplayRef}>{formatTime(currentTimeRef.current)}</span>
             {isRecording && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
           </div>
@@ -1149,7 +1149,7 @@ export default function Studio() {
           )}
         </AnimatePresence>
         {/* Track Headers (Left Sidebar) */}
-        <div className="w-64 border-r border-border/50 bg-card/60 flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)]">
+        <div className="w-40 sm:w-64 border-r border-border/50 bg-card/60 flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)]">
           <AnimatePresence>
             {tracks.map((track) => (
               <motion.div 
@@ -1185,8 +1185,8 @@ export default function Studio() {
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setEditingTrack(track); }} className="w-6 h-6 text-muted-foreground hover:text-accent" title="Add Plugins"><SlidersHorizontal className="w-3.5 h-3.5" /></Button>
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")} title="Elastic Audio"><Activity className="w-3.5 h-3.5" /></Button>
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("w-6 h-6 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")} title="Show Automation"><TrendingUp className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("hidden sm:flex w-6 h-6 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")} title="Elastic Audio"><Activity className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("hidden sm:flex w-6 h-6 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")} title="Show Automation"><TrendingUp className="w-3.5 h-3.5" /></Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="w-6 h-6 text-muted-foreground hover:text-foreground" title="Track Options"><Settings2 className="w-3.5 h-3.5" /></Button>
@@ -1746,10 +1746,10 @@ export default function Studio() {
       </div>
 
       {/* Bottom Mixer / Status Bar */}
-      <div className="h-10 border-t border-border/50 bg-card/80 flex items-center justify-between px-4 text-xs text-muted-foreground shrink-0">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
-          <span className="text-primary font-medium">44.1 kHz / 24-bit • Opus Codec Active</span>
+      <div className="h-10 border-t border-border/50 bg-card/80 flex items-center justify-between px-3 sm:px-4 text-xs text-muted-foreground shrink-0 overflow-hidden">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
+          <span className="hidden md:inline text-primary font-medium truncate">44.1 kHz / 24-bit • Opus Codec Active</span>
         </div>
         <div className="flex items-center gap-4">
           <span className="hidden sm:flex items-center gap-1.5">

@@ -60,8 +60,8 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
               )}
             >
-              <Icon className={cn("w-4 h-4 transition-transform group-hover:scale-110", isActive(path) && "text-primary")} />
-              <span className="hidden lg:inline">{label}</span>
+              <Icon className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", isActive(path) && "text-primary")} />
+              <span className="hidden xl:inline">{label}</span>
             </Link>
           ))}
         </div>

@@ -61,7 +61,7 @@ export default function MobileNav() {
                 )}
                 <Icon className="w-5 h-5" />
               </motion.div>
-              <span className="text-[10px] font-medium">{label}</span>
+              <span className="text-[10px] font-medium leading-tight w-full text-center truncate px-0.5">{label}</span>
             </button>
           );
         })}

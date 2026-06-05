@@ -5,86 +5,122 @@
  */
 
 let ctx = null;
+let initialized = false;
 
 function getCtx() {
-  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (typeof window === "undefined") return null;
+  if (!ctx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      ctx = new AudioContext();
+    }
+  }
   return ctx;
 }
 
-function playTone({ frequency = 440, type = "sine", duration = 0.12, volume = 0.18, attack = 0.005, decay = 0.08 }) {
-  if (typeof window === "undefined") return;
-  if (localStorage.getItem("nali_sounds_off") === "1") return;
+function initAudio() {
+  if (initialized) return;
+  const ac = getCtx();
+  if (!ac) return;
+  if (ac.state === "suspended") {
+    ac.resume().catch(() => {});
+  }
   try {
-    const ac = getCtx();
-    if (ac.state === "suspended") ac.resume();
     const osc = ac.createOscillator();
     const gain = ac.createGain();
+    gain.gain.value = 0;
     osc.connect(gain);
     gain.connect(ac.destination);
-    osc.type = type;
-    osc.frequency.setValueAtTime(frequency, ac.currentTime);
-    gain.gain.setValueAtTime(0, ac.currentTime);
-    gain.gain.linearRampToValueAtTime(volume, ac.currentTime + attack);
-    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
     osc.start(ac.currentTime);
-    osc.stop(ac.currentTime + duration + decay);
-  } catch (_) { /* silently ignore */ }
+    osc.stop(ac.currentTime + 0.001);
+  } catch (e) {}
+  initialized = true;
+  
+  if (typeof document !== "undefined") {
+    document.removeEventListener('click', initAudio);
+    document.removeEventListener('touchstart', initAudio);
+    document.removeEventListener('keydown', initAudio);
+  }
+}
+
+if (typeof document !== "undefined") {
+  document.addEventListener('click', initAudio, { once: true });
+  document.addEventListener('touchstart', initAudio, { once: true });
+  document.addEventListener('keydown', initAudio, { once: true });
+}
+
+function playTone({ frequency = 440, type = "sine", duration = 0.12, volume = 0.18, attack = 0.005, decay = 0.08, delay = 0 }) {
+  if (typeof window === "undefined") return;
+  if (localStorage.getItem("nali_sounds_off") === "1") return;
+  
+  try {
+    const ac = getCtx();
+    if (!ac) return;
+
+    const play = () => {
+      try {
+        const t = ac.currentTime + 0.01 + delay;
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.connect(gain);
+        gain.connect(ac.destination);
+        osc.type = type;
+        osc.frequency.setValueAtTime(frequency, t);
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(volume, t + attack);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+        osc.start(t);
+        osc.stop(t + duration + decay);
+      } catch (e) {
+        console.warn("Tone error:", e);
+      }
+    };
+
+    if (ac.state === "suspended") {
+      ac.resume().then(play).catch(() => {});
+    } else {
+      play();
+    }
+  } catch (err) {
+    console.warn("AudioContext error:", err);
+  }
 }
 
 export const sounds = {
-  /** Soft click — nav or button press */
   click: () => playTone({ frequency: 600, type: "sine", duration: 0.07, volume: 0.12 }),
-
-  /** Hover — very subtle high tick */
   hover: () => playTone({ frequency: 900, type: "sine", duration: 0.04, volume: 0.05 }),
-
-  /** Success — warm three-tone rise */
   success: () => {
-    playTone({ frequency: 660, type: "sine", duration: 0.09, volume: 0.14 });
-    setTimeout(() => playTone({ frequency: 880, type: "sine", duration: 0.1, volume: 0.12 }), 80);
-    setTimeout(() => playTone({ frequency: 1100, type: "sine", duration: 0.14, volume: 0.11 }), 160);
+    playTone({ frequency: 660, type: "sine", duration: 0.09, volume: 0.14, delay: 0 });
+    playTone({ frequency: 880, type: "sine", duration: 0.1, volume: 0.12, delay: 0.08 });
+    playTone({ frequency: 1100, type: "sine", duration: 0.14, volume: 0.11, delay: 0.16 });
   },
-
-  /** Notification pop — rising duo */
   notification: () => {
-    playTone({ frequency: 520, type: "sine", duration: 0.08, volume: 0.14 });
-    setTimeout(() => playTone({ frequency: 780, type: "sine", duration: 0.1, volume: 0.11 }), 60);
+    playTone({ frequency: 520, type: "sine", duration: 0.08, volume: 0.14, delay: 0 });
+    playTone({ frequency: 780, type: "sine", duration: 0.1, volume: 0.11, delay: 0.06 });
   },
-
-  /** Like / heart — sparkle */
   like: () => {
-    playTone({ frequency: 700, type: "sine", duration: 0.07, volume: 0.13 });
-    setTimeout(() => playTone({ frequency: 1050, type: "sine", duration: 0.1, volume: 0.10 }), 55);
-    setTimeout(() => playTone({ frequency: 1400, type: "sine", duration: 0.08, volume: 0.07 }), 110);
+    playTone({ frequency: 700, type: "sine", duration: 0.07, volume: 0.13, delay: 0 });
+    playTone({ frequency: 1050, type: "sine", duration: 0.1, volume: 0.10, delay: 0.055 });
+    playTone({ frequency: 1400, type: "sine", duration: 0.08, volume: 0.07, delay: 0.11 });
   },
-
-  /** Message send — soft swoosh trio */
   upload: () => {
-    playTone({ frequency: 440, type: "sine", duration: 0.07, volume: 0.11 });
-    setTimeout(() => playTone({ frequency: 660, type: "sine", duration: 0.1, volume: 0.09 }), 60);
-    setTimeout(() => playTone({ frequency: 880, type: "sine", duration: 0.12, volume: 0.08 }), 120);
+    playTone({ frequency: 440, type: "sine", duration: 0.07, volume: 0.11, delay: 0 });
+    playTone({ frequency: 660, type: "sine", duration: 0.1, volume: 0.09, delay: 0.06 });
+    playTone({ frequency: 880, type: "sine", duration: 0.12, volume: 0.08, delay: 0.12 });
   },
-
-  /** Recording start — deep pulse */
   recStart: () => {
-    playTone({ frequency: 220, type: "sine", duration: 0.15, volume: 0.18 });
-    setTimeout(() => playTone({ frequency: 330, type: "sine", duration: 0.2, volume: 0.14 }), 100);
+    playTone({ frequency: 220, type: "sine", duration: 0.15, volume: 0.18, delay: 0 });
+    playTone({ frequency: 330, type: "sine", duration: 0.2, volume: 0.14, delay: 0.1 });
   },
-
-  /** Recording stop — affirming drop */
   recStop: () => {
-    playTone({ frequency: 440, type: "sine", duration: 0.12, volume: 0.15 });
-    setTimeout(() => playTone({ frequency: 330, type: "sine", duration: 0.16, volume: 0.12 }), 90);
-    setTimeout(() => playTone({ frequency: 220, type: "sine", duration: 0.2, volume: 0.10 }), 180);
+    playTone({ frequency: 440, type: "sine", duration: 0.12, volume: 0.15, delay: 0 });
+    playTone({ frequency: 330, type: "sine", duration: 0.16, volume: 0.12, delay: 0.09 });
+    playTone({ frequency: 220, type: "sine", duration: 0.2, volume: 0.10, delay: 0.18 });
   },
-
-  /** Error / alert */
   error: () => {
-    playTone({ frequency: 300, type: "sawtooth", duration: 0.1, volume: 0.14 });
-    setTimeout(() => playTone({ frequency: 220, type: "sawtooth", duration: 0.18, volume: 0.12 }), 80);
+    playTone({ frequency: 300, type: "sawtooth", duration: 0.1, volume: 0.14, delay: 0 });
+    playTone({ frequency: 220, type: "sawtooth", duration: 0.18, volume: 0.12, delay: 0.08 });
   },
-
-  /** Page nav — light whoosh */
   nav: () => playTone({ frequency: 480, type: "sine", duration: 0.1, volume: 0.09, attack: 0.02, decay: 0.1 }),
 };
 

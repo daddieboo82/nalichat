@@ -1617,18 +1617,58 @@ export default function Studio() {
                       )}
 
                       <div className={cn("absolute inset-x-0 overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-1 top-5")}>
-                        <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">
-                          <path 
-                            d={(() => {
-                              const wLen = track.waveform.length - 1 || 1;
-                              let d = `M 0,50 `;
-                              for(let i=0; i<=wLen; i++) d += `L ${(i/wLen)*1000},${50 - Math.max(0.02, track.waveform[i])*50} `;
-                              for(let i=wLen; i>=0; i--) d += `L ${(i/wLen)*1000},${50 + Math.max(0.02, track.waveform[i])*50} `;
-                              return d + 'Z';
-                            })()}
-                            className={cn("opacity-90 drop-shadow-md", waveformFills[track.color] || "fill-primary")}
-                          />
-                        </svg>
+                        {(() => {
+                          const wf = track.waveform;
+                          const wLen = wf.length - 1 || 1;
+                          const gradId = `studio-wf-grad-${track.id}`;
+                          const rmsId = `studio-wf-rms-${track.id}`;
+                          const glowId = `studio-wf-glow-${track.id}`;
+
+                          let peakPath = `M 0,50 `;
+                          for (let i = 0; i <= wLen; i++) peakPath += `L ${(i/wLen)*1000},${50 - Math.max(0.02, wf[i])*48} `;
+                          for (let i = wLen; i >= 0; i--) peakPath += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*48} `;
+                          peakPath += 'Z';
+
+                          let rmsPath = `M 0,50 `;
+                          for (let i = 0; i <= wLen; i++) rmsPath += `L ${(i/wLen)*1000},${50 - Math.max(0.015, wf[i])*48*0.62} `;
+                          for (let i = wLen; i >= 0; i--) rmsPath += `L ${(i/wLen)*1000},${50 + Math.max(0.015, wf[i])*48*0.62} `;
+                          rmsPath += 'Z';
+
+                          let topLine = `M 0,${50 - Math.max(0.02, wf[0])*48} `;
+                          for (let i = 1; i <= wLen; i++) topLine += `L ${(i/wLen)*1000},${50 - Math.max(0.02, wf[i])*48} `;
+                          let botLine = `M 0,${50 + Math.max(0.02, wf[0])*48} `;
+                          for (let i = 1; i <= wLen; i++) botLine += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*48} `;
+
+                          const baseFill = waveformFills[track.color] || "fill-primary";
+
+                          return (
+                            <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                              <defs>
+                                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="currentColor" stopOpacity="0.55" />
+                                  <stop offset="50%" stopColor="currentColor" stopOpacity="0.28" />
+                                  <stop offset="100%" stopColor="currentColor" stopOpacity="0.55" />
+                                </linearGradient>
+                                <linearGradient id={rmsId} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="currentColor" stopOpacity="1" />
+                                  <stop offset="50%" stopColor="currentColor" stopOpacity="0.85" />
+                                  <stop offset="100%" stopColor="currentColor" stopOpacity="1" />
+                                </linearGradient>
+                                <filter id={glowId} x="-5%" y="-20%" width="110%" height="140%">
+                                  <feGaussianBlur stdDeviation="0.6" result="b" />
+                                  <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                                </filter>
+                              </defs>
+                              <g className={baseFill}>
+                                <path d={peakPath} fill={`url(#${gradId})`} />
+                                <path d={rmsPath} fill={`url(#${rmsId})`} filter={`url(#${glowId})`} />
+                                <path d={topLine} fill="none" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.95" vectorEffect="non-scaling-stroke" />
+                                <path d={botLine} fill="none" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.95" vectorEffect="non-scaling-stroke" />
+                              </g>
+                              <line x1="0" y1="50" x2="1000" y2="50" stroke="#ffffff" strokeOpacity="0.08" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+                            </svg>
+                          );
+                        })()}
                       </div>
                     </div>
                   )}

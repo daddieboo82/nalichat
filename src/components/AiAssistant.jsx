@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { Bot, X, Send, Minimize2, Maximize2, Sparkles, Expand, Shrink } from "lucide-react";
+import { Bot, X, Send, Minimize2, Maximize2, Sparkles, Expand, Shrink, AudioLines, Disc, Activity, Mic, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 
@@ -70,9 +70,13 @@ export default function AiAssistant() {
       {!open && (
         <button
           onClick={openChat}
-          className="fixed bottom-24 md:bottom-8 right-4 z-[999999] w-14 h-14 rounded-full bg-gradient-to-br from-primary to-accent shadow-xl shadow-primary/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+          className="fixed bottom-24 md:bottom-8 right-4 z-[999999] group flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
         >
-          <Sparkles className="w-6 h-6 text-white" />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary via-fuchsia-500 to-accent rounded-full animate-spin blur-md opacity-75 group-hover:opacity-100 transition-opacity" style={{ animationDuration: '3s' }} />
+          <div className="relative w-14 h-14 bg-card border border-primary/50 rounded-full flex items-center justify-center overflow-hidden shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20" />
+            <AudioLines className="w-7 h-7 text-primary animate-pulse drop-shadow-lg" />
+          </div>
         </button>
       )}
 
@@ -83,13 +87,23 @@ export default function AiAssistant() {
           minimized ? "w-64 max-w-[calc(100vw-32px)] h-14" : expanded ? "w-[calc(100vw-32px)] sm:w-[440px] h-[640px] max-h-[calc(100dvh-120px)] sm:max-h-[80vh]" : "w-[calc(100vw-32px)] sm:w-96 h-[500px] max-h-[calc(100dvh-120px)] sm:max-h-[80vh]"
         )}>
           {/* Header */}
-          <div className="flex items-center gap-1 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 border-b border-border bg-gradient-to-r from-primary/10 to-accent/10 rounded-t-2xl shrink-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4 text-white" />
+          <div className="relative flex items-center gap-1 sm:gap-3 px-3 sm:px-4 py-3 border-b border-primary/20 bg-gradient-to-r from-background via-primary/10 to-background rounded-t-2xl shrink-0 overflow-hidden">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)] pointer-events-none" />
+            
+            <div className="relative w-9 h-9 rounded-full border border-primary/40 bg-card flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(var(--primary),0.3)]">
+              <AudioLines className="w-5 h-5 text-primary" />
             </div>
-            <div className="flex-1 min-w-0 pl-2 sm:pl-0">
-              <p className="font-heading font-bold text-sm">Nali</p>
-              {!minimized && <p className="text-[10px] text-muted-foreground truncate">AI Creative Assistant</p>}
+            
+            <div className="flex-1 min-w-0 pl-2 sm:pl-0 relative z-10">
+              <div className="flex items-center gap-2">
+                <p className="font-heading font-black text-base tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">NALI.ai</p>
+                <div className="flex gap-[3px] items-center h-4 ml-1">
+                  <div className="w-[3px] bg-primary waveform-bar rounded-full" />
+                  <div className="w-[3px] bg-primary waveform-bar rounded-full" style={{ animationDelay: "0.2s" }} />
+                  <div className="w-[3px] bg-primary waveform-bar rounded-full" style={{ animationDelay: "0.4s" }} />
+                </div>
+              </div>
+              {!minimized && <p className="text-[10px] text-primary/80 uppercase tracking-widest font-bold mt-0.5">Studio Co-Producer</p>}
             </div>
             {!minimized && (
               <button onClick={() => setExpanded(v => !v)} className="text-muted-foreground hover:text-foreground p-2 sm:p-1" title={expanded ? "Shrink" : "Expand"}>
@@ -109,16 +123,27 @@ export default function AiAssistant() {
               {/* Messages */}
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.length === 0 && (
-                  <div className="text-center py-6">
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                      <Sparkles className="w-6 h-6 text-primary" />
+                  <div className="text-center py-8">
+                    <div className="relative w-24 h-24 mx-auto mb-6">
+                      <div className="absolute inset-0 rounded-full border-t-2 border-primary animate-spin" style={{ animationDuration: '2s' }} />
+                      <div className="absolute inset-2 rounded-full border-r-2 border-accent animate-spin" style={{ animationDuration: '3s', animationDirection: 'reverse' }} />
+                      <div className="absolute inset-0 flex items-center justify-center bg-card rounded-full shadow-[0_0_30px_rgba(var(--primary-rgb),0.15)]">
+                        <Disc className="w-10 h-10 text-primary animate-pulse" />
+                      </div>
                     </div>
-                    <p className="text-sm font-semibold">Hi{user ? `, ${user.display_name || user.full_name?.split(" ")[0]}` : ""}! 👋</p>
-                    <p className="text-xs text-muted-foreground mt-1">I'm Nali, your creative AI. Ask me to do tasks in the app, or ask me absolutely anything music-related!</p>
-                    <div className="flex flex-col gap-1.5 mt-4">
-                      {["Create a new project for me", "Write & save my artist bio", "Make a playlist of my tracks", "Suggest tags for my latest track"].map(s => (
-                        <button key={s} onClick={() => { setInput(s); inputRef.current?.focus(); }} className="text-xs bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground px-3 py-2 rounded-xl text-left transition-colors">
-                          {s}
+                    <p className="text-lg font-heading font-black tracking-tight mb-2">SYSTEMS ONLINE{user ? `, ${user.full_name?.split(" ")[0].toUpperCase()}` : ""}</p>
+                    <p className="text-sm text-muted-foreground mb-8 max-w-[280px] mx-auto leading-relaxed">I'm Nali, your AI co-producer. Ready to mix, master, and manage your creative flow.</p>
+                    
+                    <div className="grid grid-cols-1 gap-2">
+                      {[
+                        { text: "Generate cover art for my track", icon: <Disc className="w-4 h-4" /> },
+                        { text: "Suggest some trending tags", icon: <Activity className="w-4 h-4" /> },
+                        { text: "Write my artist bio", icon: <Mic className="w-4 h-4" /> },
+                        { text: "Create a fresh playlist", icon: <Music className="w-4 h-4" /> }
+                      ].map((s, i) => (
+                        <button key={i} onClick={() => { setInput(s.text); inputRef.current?.focus(); }} className="flex items-center gap-3 text-xs bg-secondary/50 hover:bg-primary/10 border border-border hover:border-primary/30 text-foreground px-4 py-3 rounded-xl transition-all group">
+                          <span className="text-primary group-hover:scale-110 transition-transform">{s.icon}</span>
+                          <span className="text-left font-medium">{s.text}</span>
                         </button>
                       ))}
                     </div>
@@ -127,13 +152,15 @@ export default function AiAssistant() {
                 {messages.map((msg, i) => (
                   <div key={i} className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}>
                     {msg.role !== "user" && (
-                      <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0 mt-0.5">
-                        <Sparkles className="w-3 h-3 text-white" />
+                      <div className="w-7 h-7 rounded-full border border-primary/30 bg-card flex items-center justify-center shrink-0 mt-1 shadow-[0_0_10px_rgba(var(--primary-rgb),0.2)]">
+                        <AudioLines className="w-3.5 h-3.5 text-primary" />
                       </div>
                     )}
                     <div className={cn(
-                      "max-w-[80%] rounded-xl px-3 py-2 text-xs",
-                      msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"
+                      "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm",
+                      msg.role === "user" 
+                        ? "bg-primary text-primary-foreground rounded-tr-sm" 
+                        : "bg-secondary/80 border border-border/50 text-foreground rounded-tl-sm backdrop-blur-sm"
                     )}>
                       {msg.role === "user" ? (
                         <p>{msg.content}</p>
@@ -147,12 +174,12 @@ export default function AiAssistant() {
                 ))}
                 {loading && (
                   <div className="flex gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
-                      <Sparkles className="w-3 h-3 text-white" />
+                    <div className="w-7 h-7 rounded-full border border-primary/30 bg-card flex items-center justify-center shrink-0 mt-1 shadow-[0_0_10px_rgba(var(--primary-rgb),0.2)]">
+                      <AudioLines className="w-3.5 h-3.5 text-primary animate-pulse" />
                     </div>
-                    <div className="bg-secondary rounded-xl px-3 py-2">
+                    <div className="bg-secondary/80 border border-border/50 rounded-2xl rounded-tl-sm px-4 py-3 backdrop-blur-sm shadow-sm flex items-center">
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(i => <div key={i} className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
+                        {[0, 1, 2].map(i => <div key={i} className="w-1.5 h-1.5 bg-primary/70 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
                       </div>
                     </div>
                   </div>
@@ -160,21 +187,24 @@ export default function AiAssistant() {
               </div>
 
               {/* Input */}
-              <div className="p-3 border-t border-border flex gap-2 shrink-0">
-                <input
-                  ref={inputRef}
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  placeholder="Ask Nali to do a task, or ask a music question..."
-                  className="flex-1 bg-secondary/50 border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/50"
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                />
+              <div className="p-3 border-t border-border/50 bg-background/50 backdrop-blur-md flex gap-2 shrink-0">
+                <div className="relative flex-1">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-mono font-bold">{'>'}</div>
+                  <input
+                    ref={inputRef}
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    placeholder="Command Nali or ask a question..."
+                    className="w-full bg-secondary/40 border border-primary/20 rounded-xl pl-8 pr-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/70"
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                  />
+                </div>
                 <button
                   onClick={send}
                   disabled={!input.trim() || loading}
-                  className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  className="w-10 h-10 bg-primary/20 text-primary border border-primary/30 rounded-xl flex items-center justify-center hover:bg-primary hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-primary/20 disabled:hover:text-primary"
                 >
-                  <Send className="w-3.5 h-3.5 text-white" />
+                  <Send className="w-4 h-4" />
                 </button>
               </div>
             </>

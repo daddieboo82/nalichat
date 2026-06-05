@@ -15,9 +15,6 @@ Deno.serve(async (req) => {
     });
 
     const now = new Date();
-    const createdDate = new Date(user.created_date);
-    const diffDays = (now - createdDate) / (1000 * 60 * 60 * 24);
-    const hasTrialFree = diffDays <= 7;
     const isAdmin = user.role === 'admin' || user.email === 'bossglop43@gmail.com';
 
     if (isAdmin) {
@@ -32,12 +29,12 @@ Deno.serve(async (req) => {
     const activeSubs = subs.filter(s => s.status === 'active' || s.status === 'trial');
 
     if (activeSubs.length === 0) {
-      // User has no active subscription - check 7 days free
+      // User has no active subscription
       return Response.json({
         plan: 'free',
         status: 'active',
         trialActive: false,
-        hasAccess: hasTrialFree,
+        hasAccess: false,
       });
     }
 
@@ -49,7 +46,6 @@ Deno.serve(async (req) => {
     let hasAccess = false;
     if (sub.plan === 'pro') hasAccess = true;
     if (sub.plan === 'trial') hasAccess = trialActive;
-    if (hasTrialFree) hasAccess = true;
 
     return Response.json({
       id: sub.id,

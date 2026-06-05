@@ -52,7 +52,23 @@ export default function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist
             </div>
             {post.file_url && (
               <div className={cn("absolute inset-0 flex items-center justify-center transition-opacity duration-300", isActive ? "opacity-100 bg-black/60" : "opacity-0 group-hover:opacity-100 bg-black/40")}>
-                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center hover:scale-110 transition-transform">
+                <div 
+                  className="w-12 h-12 rounded-full bg-primary flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isActive && isPlaying && audioPlayer?.togglePlay) {
+                      audioPlayer.togglePlay();
+                    } else {
+                      playTrack({
+                        id: post.id,
+                        title: post.title,
+                        creator_name: post.creator_name || "Anonymous",
+                        file_url: post.file_url,
+                        image_url: post.image_url
+                      });
+                    }
+                  }}
+                >
                   {isActive && isPlaying ? <Pause className="w-5 h-5 fill-current text-white" /> : <Play className="w-5 h-5 fill-current text-white ml-1" />}
                 </div>
               </div>

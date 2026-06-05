@@ -31,11 +31,14 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
-        setIsPlaying(false);
       } else {
-        audioRef.current.play().then(() => setIsPlaying(true)).catch(e => {
+        if (audioPlayer?.isPlaying) {
+          if (typeof audioPlayer.togglePlay === 'function') {
+            audioPlayer.togglePlay();
+          }
+        }
+        audioRef.current.play().catch(e => {
           console.error("Playback failed:", e);
-          setIsPlaying(false);
         });
       }
     }
@@ -268,6 +271,8 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
                    onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
                    onEnded={() => setIsPlaying(false)}
+                   onPlay={() => setIsPlaying(true)}
+                   onPause={() => setIsPlaying(false)}
                  />
 
                  <div className="flex flex-col gap-4">

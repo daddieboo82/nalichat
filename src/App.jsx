@@ -64,14 +64,15 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      navigateToLogin();
+      // App-level auth required (Private App)
+      // Redirect to platform login
+      window.location.href = '/api/auth/login?next=' + encodeURIComponent(window.location.href);
       return null;
     }
   }
 
   return (
     <>
-      <AnimatePresence mode="wait">
       <Routes location={location}>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -102,7 +103,6 @@ const AuthenticatedApp = () => {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="*" element={<PageNotFound />} />
       </Routes>
-      </AnimatePresence>
     </>
   );
 };

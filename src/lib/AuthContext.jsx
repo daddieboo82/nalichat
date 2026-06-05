@@ -105,11 +105,13 @@ export const AuthProvider = ({ children }) => {
       setAuthChecked(true);
       
       // If user auth fails, it might be an expired token
+      // We just treat them as unauthenticated and let ProtectedRoute handle redirects
       if (error.status === 401 || error.status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        });
+        // Clear token from local storage directly to prevent repeated failing requests on future reloads
+        try {
+          localStorage.removeItem('base44_token');
+          sessionStorage.removeItem('base44_token');
+        } catch(e) {}
       }
     }
   };
@@ -128,8 +130,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(window.location.href);
+    // Navigate to the custom login page if available
+    window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
   };
 
   return (

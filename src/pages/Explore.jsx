@@ -103,7 +103,13 @@ export default function Explore() {
               <p className="text-muted-foreground text-sm mt-1">Tracks from producers worldwide</p>
             </div>
             <button
-              onClick={() => setShowUpload(true)}
+              onClick={() => {
+                if (!currentUser) {
+                  base44.auth.redirectToLogin();
+                  return;
+                }
+                setShowUpload(true);
+              }}
               title="Release Track"
               aria-label="Release Track"
               className="flex items-center gap-2 bg-gradient-to-r from-primary to-pink-500 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:opacity-90 transition-all glow-primary shimmer-hover"
@@ -172,7 +178,13 @@ export default function Explore() {
               <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="font-heading font-semibold">No tracks yet</p>
               <p className="text-sm mt-1">Be the first to release your music!</p>
-              <button onClick={() => setShowUpload(true)} title="Release Now" aria-label="Release Now" className="mt-4 bg-primary text-primary-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
+              <button onClick={() => {
+                if (!currentUser) {
+                  base44.auth.redirectToLogin();
+                  return;
+                }
+                setShowUpload(true);
+              }} title="Release Now" aria-label="Release Now" className="mt-4 bg-primary text-primary-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
                 Release Now
               </button>
             </div>

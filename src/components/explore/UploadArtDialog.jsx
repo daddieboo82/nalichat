@@ -40,7 +40,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
   };
 
   const submit = async () => {
-    if (!form.title || !audioFile) return;
+    if (!currentUser || !form.title || !audioFile) return;
     setLoading(true);
     let image_url = null;
     let file_url = null;
@@ -70,11 +70,19 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
       });
     } catch (err) {
       console.error(err);
+      setLoading(false);
+      return;
     }
-    // Award XP
-    const xp = (currentUser.xp || 0) + 50;
-    const level = Math.floor(xp / 200) + 1;
-    await base44.auth.updateMe({ xp, level, total_posts: (currentUser.total_posts || 0) + 1 });
+    
+    try {
+      // Award XP
+      const xp = (currentUser.xp || 0) + 50;
+      const level = Math.floor(xp / 200) + 1;
+      await base44.auth.updateMe({ xp, level, total_posts: (currentUser.total_posts || 0) + 1 });
+    } catch (err) {
+      console.error("Failed to update XP:", err);
+    }
+
     setLoading(false);
     onSuccess();
     setForm({ title: "", description: "", medium: "original", tags: [], price: "" });

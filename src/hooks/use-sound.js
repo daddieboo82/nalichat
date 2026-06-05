@@ -4,6 +4,11 @@
  * Users can disable sounds via localStorage key "nali_sounds_off".
  */
 
+// Always start with audio feedback on (reset persisted off-state)
+if (typeof window !== "undefined") {
+  localStorage.removeItem("nali_sounds_off");
+}
+
 let ctx = null;
 let initialized = false;
 

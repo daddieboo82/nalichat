@@ -9,7 +9,7 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  const inviteUrl = `${window.location.origin}/register`;
+  const inviteUrl = `https://nalichat.org/register`;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(inviteUrl);

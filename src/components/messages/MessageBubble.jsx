@@ -212,7 +212,7 @@ export default function MessageBubble({ message, isOwn, canDelete, showAvatar, o
 
         <div className={cn("flex items-center gap-1.5 mt-1", isOwn ? "justify-end mr-1" : "ml-1")}>
           <p className="text-[10px] text-muted-foreground/50 font-medium">
-            {message.created_date ? format(new Date(message.created_date), "h:mm a") : "..."}
+            {message.created_date && !isNaN(new Date(message.created_date).getTime()) ? format(new Date(message.created_date), "h:mm a") : "..."}
             {message.is_edited && " • Edited"}
           </p>
           {isOwn && (

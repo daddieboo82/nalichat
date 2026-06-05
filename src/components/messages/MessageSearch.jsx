@@ -73,7 +73,7 @@ export default function MessageSearch({ messages, onClose, onSelectMessage, user
                         {msg.text || `📎 ${msg.file_name}`}
                       </p>
                       <p className="text-xs text-muted-foreground/60 mt-1">
-                        {format(new Date(msg.created_date), "MMM d, h:mm a")}
+                        {msg.created_date && !isNaN(new Date(msg.created_date).getTime()) ? format(new Date(msg.created_date), "MMM d, h:mm a") : "..."}
                       </p>
                     </div>
                   </div>

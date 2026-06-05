@@ -143,7 +143,7 @@ export default function ConversationList({ conversations, myConversations, selec
                   <p className={cn("font-semibold truncate pr-2 text-[15px]", isSelected ? "text-primary" : "text-foreground")}>
                     {displayName}
                   </p>
-                  {conv.last_message_at && (
+                  {conv.last_message_at && !isNaN(new Date(conv.last_message_at).getTime()) && (
                     <span className={cn("text-[10px] shrink-0 font-medium", isSelected ? "text-primary/70" : "text-muted-foreground/60")}>
                       {formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: false }).replace('about ','').replace('less than a minute','now')}
                     </span>

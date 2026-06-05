@@ -26,7 +26,7 @@ function ThreadMessage({ msg, isOwn }) {
           {msg.text}
         </div>
         <p className="text-[9px] text-muted-foreground mt-0.5">
-          {format(new Date(msg.created_date), "h:mm a")}
+          {msg.created_date && !isNaN(new Date(msg.created_date).getTime()) ? format(new Date(msg.created_date), "h:mm a") : "..."}
         </p>
       </div>
     </div>
@@ -114,7 +114,7 @@ export default function ThreadPanel({ parentMessage, currentUser, onClose }) {
             <p className="text-[10px] font-semibold text-muted-foreground mb-0.5">{parentMessage.sender_name}</p>
             <p className="text-sm text-foreground">{parentMessage.text || `[${parentMessage.type}]`}</p>
             <p className="text-[9px] text-muted-foreground mt-1">
-              {format(new Date(parentMessage.created_date), "MMM d, h:mm a")}
+              {parentMessage.created_date && !isNaN(new Date(parentMessage.created_date).getTime()) ? format(new Date(parentMessage.created_date), "MMM d, h:mm a") : "..."}
             </p>
           </div>
         </div>

@@ -454,7 +454,7 @@ export default function Files() {
                             <span className="text-[10px] text-muted-foreground">{file.uploader_name || "Unknown"}</span>
                             <span className="text-[10px] text-muted-foreground">•</span>
                             <span className="text-[10px] text-muted-foreground">
-                              {formatDistanceToNow(new Date(file.created_date), { addSuffix: true })}
+                              {file.created_date && !isNaN(new Date(file.created_date).getTime()) ? formatDistanceToNow(new Date(file.created_date), { addSuffix: true }) : "..."}
                             </span>
                           </div>
                           {file.file_type === "audio" && (
@@ -525,7 +525,7 @@ export default function Files() {
                         <span className="text-[10px] text-muted-foreground">{file.uploader_name || "Unknown"}</span>
                         <span className="text-[10px] text-muted-foreground">•</span>
                         <span className="text-[10px] text-muted-foreground">
-                          {formatDistanceToNow(new Date(file.created_date), { addSuffix: true })}
+                          {file.created_date && !isNaN(new Date(file.created_date).getTime()) ? formatDistanceToNow(new Date(file.created_date), { addSuffix: true }) : "..."}
                         </span>
                       </div>
                       {file.file_type === "audio" && (

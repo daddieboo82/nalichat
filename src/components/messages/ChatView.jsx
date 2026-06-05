@@ -290,6 +290,7 @@ export default function ChatView({ conversation, messages, currentUser, users, o
 }
 
 function formatDateLabel(date) {
+  if (isNaN(date.getTime())) return "Unknown Date";
   const today = new Date();
   const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
   if (date.toDateString() === today.toDateString()) return "Today";

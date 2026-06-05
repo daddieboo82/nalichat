@@ -129,7 +129,7 @@ export default function NotificationBell() {
                         <span className="text-muted-foreground">{n.message}</span>
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {n.created_date ? formatDistanceToNow(new Date(n.created_date), { addSuffix: true }) : "just now"}
+                        {n.created_date && !isNaN(new Date(n.created_date).getTime()) ? formatDistanceToNow(new Date(n.created_date), { addSuffix: true }) : "just now"}
                       </p>
                     </div>
                   </div>

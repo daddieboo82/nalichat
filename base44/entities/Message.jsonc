@@ -74,6 +74,10 @@
       "type": "number",
       "description": "Cached count of replies in this thread",
       "default": 0
+    },
+    "is_edited": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [

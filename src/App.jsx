@@ -142,6 +142,7 @@ const AuthenticatedApp = () => {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="*" element={<PageNotFound />} />
       </Routes>
+      <AskNaliHint />
     </>
   );
 };
@@ -163,7 +164,6 @@ function App() {
                   <AuthenticatedApp />
                 </Router>
                 {loaded && <AiAssistant />}
-                {loaded && <AskNaliHint />}
                 <Toaster />
                 <SonnerToaster />
               </MotionConfig>

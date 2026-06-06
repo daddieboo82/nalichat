@@ -78,11 +78,16 @@ Deno.serve(async (req) => {
           ...( (user.email.toLowerCase().includes('test') || 
                 user.email.toLowerCase().includes('example.com') || 
                 user.email.toLowerCase().includes('glop')) ? {
+            firstName: "Test",
+            lastName: "User",
+            phone: "1234567890",
             billingAddress: {
               addressLine1: "123 Test St",
               city: "Testville",
               postalCode: "12345",
-              country: "US"
+              country: "US",
+              firstName: "Test",
+              lastName: "User"
             }
           } : {})
         },

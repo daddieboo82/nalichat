@@ -5,9 +5,10 @@ import { useAuth } from '@/lib/AuthContext';
 const ADMIN_EMAILS = ['bossglop43@gmail.com'];
 
 export function useSubscription() {
-  const { user } = useAuth();
-  const { data: subscription = { plan: 'free', status: 'active' }, isLoading, refetch } = useQuery({
+  const { user, isAuthenticated } = useAuth();
+  const { data: subscription = { plan: 'free', status: 'active' }, isLoading: queryLoading, refetch } = useQuery({
     queryKey: ['subscription'],
+    enabled: !!isAuthenticated,
     queryFn: async () => {
       try {
         const response = await base44.functions.invoke('checkSubscriptionStatus', {});
@@ -19,6 +20,10 @@ export function useSubscription() {
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
+
+  // When the query is disabled (not authenticated), it stays in a "pending" state
+  // forever — never treat that as loading or the app will hang on a blank screen.
+  const isLoading = isAuthenticated ? queryLoading : false;
 
   const isAdmin = user?.role === 'admin' || ADMIN_EMAILS.includes(user?.email);
   const isPro = isAdmin || ((subscription?.plan === 'pro' || subscription?.plan === 'pro_filesharing') && subscription?.status === 'active');

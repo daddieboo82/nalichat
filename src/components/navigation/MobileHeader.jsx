@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, Music, ShoppingCart, AudioLines, LogIn } from "lucide-react";
+import { ChevronLeft, Music, ShoppingCart, AudioLines, LogIn, Menu, Mic, Wand2, FileText, Trophy, Settings } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const ADMIN_EMAILS = ["bossglop43@gmail.com"];
 
@@ -60,11 +61,21 @@ export default function MobileHeader() {
               <ChevronLeft className="w-6 h-6" />
             </button>
           ) : (
-            <Link to="/" className="ml-1">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-                <Music className="w-4 h-4 text-white" />
-              </div>
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-1.5 -ml-1 rounded-lg text-foreground hover:bg-primary/10 active:bg-primary/20 transition-colors select-none">
+                  <Menu className="w-6 h-6" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56 mt-2 ml-2">
+                <DropdownMenuItem onClick={() => navigate('/studio')}><Mic className="w-4 h-4 mr-2" /> Studio</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/cover-art')}><Wand2 className="w-4 h-4 mr-2" /> AI Cover Art</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/playlists')}><Music className="w-4 h-4 mr-2" /> Playlists</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/files')}><FileText className="w-4 h-4 mr-2" /> Files</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/leaderboard')}><Trophy className="w-4 h-4 mr-2" /> Leaderboard</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/settings')}><Settings className="w-4 h-4 mr-2" /> Settings</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           <h1 className="font-heading font-bold text-base truncate">{title}</h1>
         </div>

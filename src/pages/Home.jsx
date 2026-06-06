@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import DailyRecommendation from "@/components/home/DailyRecommendation";
 import QuickStartGuide from "@/components/home/QuickStartGuide";
 import { sounds } from "@/hooks/use-sound";
+import { useAuth } from "@/lib/AuthContext";
 
 const features = [
   {
@@ -148,18 +149,10 @@ const itemVariants = {
 };
 
 export default function Home() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    base44.auth.me()
-      .then(setUser)
-      .catch(err => {
-        // Expected when not logged in
-        if (err.status !== 401 && err.status !== 403) {
-          console.warn("Auth check error:", err.message);
-        }
-      });
-  }, []);
+  const { user: authUser, isAuthenticated } = useAuth();
+  // Only treat as logged-in when both the flag and the user record are present,
+  // so the greeting disappears instantly on logout.
+  const user = isAuthenticated ? authUser : null;
 
   return (
     <div className="h-full overflow-auto bg-background">

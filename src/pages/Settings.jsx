@@ -220,20 +220,18 @@ export default function Settings() {
               </div>
             )}
 
-            {!isPro && (
-              <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
-                <div>
-                  <h3 className="font-heading font-semibold text-lg text-foreground">Upgrade to Pro</h3>
-                  <p className="text-sm text-muted-foreground mt-1">Unlock all studio features, unlimited tracks, and advanced collaboration tools.</p>
-                </div>
-                <Link to="/pricing">
-                  <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white border-0 gap-2 font-semibold">
-                    <CreditCard className="w-4 h-4" />
-                    View Plans
-                  </Button>
-                </Link>
+            <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
+              <div>
+                <h3 className="font-heading font-semibold text-lg text-foreground">{isPro ? "Manage Your Plan" : "Upgrade to Pro"}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{isPro ? "View all plans, compare features, or change your subscription." : "Unlock all studio features, unlimited tracks, and advanced collaboration tools."}</p>
               </div>
-            )}
+              <Link to="/pricing">
+                <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white border-0 gap-2 font-semibold">
+                  <CreditCard className="w-4 h-4" />
+                  View Plans
+                </Button>
+              </Link>
+            </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">

@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
@@ -82,7 +83,7 @@ export default function Studio() {
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
   const [recordingStartTime, setRecordingStartTime] = useState(null);
   
-  const [editMode, setEditMode] = useState('slip'); // slip, grid, shuffle
+  const [editMode, setEditMode] = useState('grid'); // slip, grid, shuffle
   const [activeTool, setActiveTool] = useState('smart'); // smart, trim, grab, fade
   const [gridSize, setGridSize] = useState(1);
 
@@ -1046,47 +1047,7 @@ export default function Studio() {
             {isRecording && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
           </div>
 
-          {/* BPM / Time Signature / Key display */}
-          <div className="hidden md:flex items-stretch gap-px bg-[#0a0a0c] rounded-lg border border-border shadow-inner overflow-hidden shrink-0">
-            <label className="flex flex-col items-center justify-center px-2.5 py-1 hover:bg-secondary/40 transition-colors cursor-text" title="Tempo (beats per minute)">
-              <span className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none">BPM</span>
-              <input
-                type="number"
-                min={20}
-                max={300}
-                value={bpm}
-                onChange={(e) => setBpm(Math.max(20, Math.min(300, Number(e.target.value) || 0)))}
-                className="w-9 bg-transparent text-center font-mono text-sm font-bold text-foreground outline-none border-none p-0 leading-tight [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-            </label>
-            <div className="flex flex-col items-center justify-center px-2.5 py-1 border-l border-border/60" title="Time signature">
-              <span className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none">Sig</span>
-              <select
-                value={timeSignature}
-                onChange={(e) => setTimeSignature(e.target.value)}
-                className="bg-transparent text-center font-mono text-sm font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none"
-              >
-                <option value="4/4">4/4</option>
-                <option value="3/4">3/4</option>
-                <option value="6/8">6/8</option>
-                <option value="5/4">5/4</option>
-                <option value="7/8">7/8</option>
-              </select>
-            </div>
-            <div className="flex flex-col items-center justify-center px-2.5 py-1 border-l border-border/60" title="Project key">
-              <span className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none">Key</span>
-              <select
-                value={songKey}
-                onChange={(e) => setSongKey(e.target.value)}
-                className="bg-transparent text-center font-mono text-sm font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none"
-              >
-                {["C Maj","G Maj","D Maj","A Maj","E Maj","F Maj","Bb Maj","A min","E min","B min","D min","G min","C min"].map(k => (
-                  <option key={k} value={k}>{k}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          
+
           <div className="hidden md:flex items-center gap-2">
             <input type="file" ref={fileInputRef} className="hidden" accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} />
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleImportClick}>
@@ -1176,6 +1137,49 @@ export default function Studio() {
           <Button variant="ghost" size="icon" onClick={undo} disabled={historyIndex <= 0} className="w-7 h-7 rounded text-muted-foreground hover:text-foreground disabled:opacity-30" title="Undo"><Undo className="w-3.5 h-3.5" /></Button>
           <Button variant="ghost" size="icon" onClick={redo} disabled={historyIndex >= historyRef.current.length - 1} className="w-7 h-7 rounded text-muted-foreground hover:text-foreground disabled:opacity-30" title="Redo"><Redo className="w-3.5 h-3.5" /></Button>
         </div>
+
+        {/* BPM / Time Signature / Key display */}
+        <div className="flex items-stretch gap-px bg-background/50 rounded-lg border border-border/50 shadow-inner overflow-hidden shrink-0">
+          <label className="flex flex-col items-center justify-center px-2 py-0.5 hover:bg-secondary/40 transition-colors cursor-text" title="Tempo (beats per minute)">
+            <span className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none">BPM</span>
+            <input
+              type="number"
+              min={20}
+              max={300}
+              value={bpm}
+              onChange={(e) => setBpm(Math.max(20, Math.min(300, Number(e.target.value) || 0)))}
+              className="w-8 bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            />
+          </label>
+          <div className="flex flex-col items-center justify-center px-2 py-0.5 border-l border-border/60" title="Time signature">
+            <span className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none">Sig</span>
+            <select
+              value={timeSignature}
+              onChange={(e) => setTimeSignature(e.target.value)}
+              className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none"
+            >
+              <option value="4/4">4/4</option>
+              <option value="3/4">3/4</option>
+              <option value="6/8">6/8</option>
+              <option value="5/4">5/4</option>
+              <option value="7/8">7/8</option>
+            </select>
+          </div>
+          <div className="flex flex-col items-center justify-center px-2 py-0.5 border-l border-border/60" title="Project key">
+            <span className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none">Key</span>
+            <select
+              value={songKey}
+              onChange={(e) => setSongKey(e.target.value)}
+              className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none"
+            >
+              {["C Maj","G Maj","D Maj","A Maj","E Maj","F Maj","Bb Maj","A min","E min","B min","D min","G min","C min"].map(k => (
+                <option key={k} value={k}>{k}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="h-5 w-px bg-border/50 mx-1 shrink-0" />
 
         {/* Edit Modes */}
         <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
@@ -1295,9 +1299,16 @@ export default function Studio() {
                       <GripVertical className="w-3.5 h-3.5" />
                     </span>
                   <div className="flex flex-col min-w-0">
-                    <div className="flex items-center gap-2 font-medium text-sm truncate">
+                    <div className="flex items-center gap-2 font-medium text-sm min-w-0">
                       <div className={cn("w-2 h-2 rounded-full shrink-0", track.color)} />
-                      <span className="truncate" title={track.name}>{track.name}</span>
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="truncate cursor-help">{track.name}</span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[240px] break-words">{track.name}</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                     <select 
                       className="bg-transparent border-none text-[9px] text-muted-foreground focus:ring-0 cursor-pointer hover:text-foreground p-0 m-0 mt-0.5 outline-none w-max"

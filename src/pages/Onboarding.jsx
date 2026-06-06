@@ -1,213 +1,129 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, ArrowRight, Loader2, Image as ImageIcon } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { sounds } from "@/hooks/use-sound";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Onboarding() {
-  const navigate = useNavigate();
-  const { checkUserAuth, user: authUser } = useAuth();
-  const [user, setUser] = useState(null);
-  const [form, setForm] = useState({ 
-    display_name: "", 
+  const { user, checkUserAuth, isAuthenticated } = useAuth();
+  
+  const [form, setForm] = useState({
+    display_name: "",
     birthdate: "",
-    bio: "", 
-    role: "artist", 
-    location: "", 
-    avatar_url: "",
-    onboarding_completed: true 
+    bio: "",
+    location: "",
+    onboarding_completed: true
   });
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    base44.auth.me().then(async u => {
-      // Admins (and anyone already onboarded) skip setup. Refresh the cached auth
-      // user first so the App.jsx gate sees the same value and doesn't bounce us
-      // back here in an endless redirect loop (which showed as a blank screen).
-      if (u.role === 'admin' || u.onboarding_completed) {
-        await checkUserAuth();
-        setRedirecting(true);
-        navigate("/", { replace: true });
-        return;
+    if (user) {
+      if (user.role === 'admin' || user.onboarding_completed) {
+        window.location.href = "/";
+      } else {
+        setForm(f => ({
+          ...f,
+          display_name: user.display_name || user.full_name || "",
+          birthdate: user.birthdate || "",
+          bio: user.bio || "",
+          location: user.location || "",
+        }));
+        setInitializing(false);
       }
-      setUser(u);
-      setForm(f => ({
-        ...f,
-        display_name: u.display_name || u.full_name || "",
-        birthdate: u.birthdate || "",
-        bio: u.bio || "",
-        // Never seed the profile role picker with an account role like "admin"/"user".
-        role: ["artist", "producer", "engineer", "ar"].includes(u.role) ? u.role : "artist",
-        location: u.location || "",
-        avatar_url: u.avatar_url || ""
-      }));
-    }).catch(() => {
-      setRedirecting(true);
-      navigate("/login", { replace: true });
-    });
-  }, [navigate, checkUserAuth]);
-
-  const handleUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setForm(f => ({ ...f, avatar_url: file_url }));
-    } catch (error) {
-      toast.error("Failed to upload avatar");
-    } finally {
-      setUploading(false);
-      e.target.value = "";
+    } else if (isAuthenticated === false) {
+        window.location.href = "/login";
     }
-  };
+  }, [user, isAuthenticated]);
 
   const handleSave = async () => {
-    if (!form.display_name) {
-      toast.error("Display name is required");
+    if (!form.display_name || !form.birthdate) {
+      toast.error("Please fill in required fields (Name and Birthdate)");
       return;
     }
-    if (!form.birthdate) {
-      toast.error("Birthdate is required");
-      return;
-    }
+    
     setLoading(true);
     try {
-      await base44.auth.updateMe(form);
-      // Refresh the cached auth user so App.jsx doesn't redirect back to onboarding
+      await base44.auth.updateMe({
+        display_name: form.display_name,
+        birthdate: form.birthdate,
+        bio: form.bio,
+        location: form.location,
+        onboarding_completed: true
+      });
+      
       await checkUserAuth();
-      sounds.success();
-      toast.success("Welcome to NaliChat!");
-      navigate("/");
+      
+      // Hard redirect to prevent router loops with stale auth state
+      window.location.href = "/";
     } catch (error) {
-      console.error(error);
-      toast.error(error.message || "Failed to complete onboarding");
-    } finally {
+      toast.error(error.message || "Failed to complete setup");
       setLoading(false);
     }
   };
 
-  if (redirecting || !user) {
-    return <div className="flex h-screen items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (initializing) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4 relative overflow-hidden">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-[100px]" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/20 rounded-full blur-[100px]" />
-      </div>
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md bg-card border rounded-2xl p-8 shadow-xl">
+        <h1 className="text-3xl font-bold mb-2">Welcome!</h1>
+        <p className="text-muted-foreground mb-8">Let's set up your profile before we continue.</p>
 
-      <div className="w-full max-w-lg bg-card/60 backdrop-blur-xl border border-border/50 rounded-[2rem] p-8 shadow-2xl relative z-10">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4 glow-primary">
-            <Sparkles className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-heading font-black mb-2">Set Up Your Profile</h1>
-          <p className="text-muted-foreground">Let's get to know you better before you start creating.</p>
-        </div>
-
-        <div className="space-y-6">
-          <div className="flex flex-col items-center justify-center mb-6">
-            <div className="relative group cursor-pointer">
-              <Avatar className="w-24 h-24 border-4 border-card shadow-xl">
-                <AvatarImage src={form.avatar_url} className="object-cover" />
-                <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
-                  {form.display_name?.[0] || user.full_name?.[0] || "?"}
-                </AvatarFallback>
-              </Avatar>
-              <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                {uploading ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <ImageIcon className="w-6 h-6 text-white" />}
-                <input type="file" className="hidden" accept="image/*" onChange={handleUpload} disabled={uploading} />
-              </label>
-            </div>
-            <p className="text-xs text-muted-foreground mt-3">Upload Profile Picture</p>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-1 block">Display Name *</label>
+            <Input 
+              value={form.display_name} 
+              onChange={e => setForm({...form, display_name: e.target.value})} 
+              placeholder="Your name"
+            />
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Display / Artist Name</label>
-              <Input 
-                value={form.display_name} 
-                onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))} 
-                className="bg-secondary/50 border-0 h-12" 
-                placeholder="What should we call you?"
-              />
-            </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Birthdate *</label>
+            <Input 
+              type="date"
+              value={form.birthdate} 
+              onChange={e => setForm({...form, birthdate: e.target.value})} 
+            />
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Birthdate</label>
-                <Input 
-                  type="date"
-                  value={form.birthdate} 
-                  onChange={e => setForm(f => ({ ...f, birthdate: e.target.value }))} 
-                  className="bg-secondary/50 border-0 h-12" 
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Email</label>
-                <Input 
-                  value={user.email || ""} 
-                  disabled
-                  className="bg-secondary/50 border-0 h-12 opacity-70" 
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Role</label>
-                <Select value={form.role} onValueChange={v => setForm(f => ({ ...f, role: v }))}>
-                  <SelectTrigger className="bg-secondary/50 border-0 h-12">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="artist">Artist</SelectItem>
-                    <SelectItem value="producer">Producer</SelectItem>
-                    <SelectItem value="engineer">Engineer</SelectItem>
-                    <SelectItem value="ar">A&R</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Location</label>
-                <Input 
-                  value={form.location} 
-                  onChange={e => setForm(f => ({ ...f, location: e.target.value }))} 
-                  className="bg-secondary/50 border-0 h-12" 
-                  placeholder="City, Country"
-                />
-              </div>
-            </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Location</label>
+            <Input 
+              value={form.location} 
+              onChange={e => setForm({...form, location: e.target.value})} 
+              placeholder="City, Country"
+            />
+          </div>
 
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Bio</label>
-              <Textarea 
-                value={form.bio} 
-                onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} 
-                className="bg-secondary/50 border-0 min-h-[100px] resize-none" 
-                placeholder="Tell the community about your musical journey..."
-              />
-            </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Bio</label>
+            <Textarea 
+              value={form.bio} 
+              onChange={e => setForm({...form, bio: e.target.value})} 
+              placeholder="Tell us about yourself..."
+              className="resize-none"
+            />
           </div>
 
           <Button 
-            className="w-full h-14 rounded-xl text-lg font-bold bg-gradient-to-r from-primary to-accent hover:opacity-90 glow-primary transition-all mt-4" 
+            className="w-full mt-6" 
             onClick={handleSave} 
-            disabled={loading || uploading}
+            disabled={loading}
           >
-            {loading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : "Complete Setup"}
-            {!loading && <ArrowRight className="w-5 h-5 ml-2" />}
+            {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Complete Setup"}
+            {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
           </Button>
         </div>
       </div>

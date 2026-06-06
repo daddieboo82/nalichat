@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import QuickStartGuide from "@/components/home/QuickStartGuide";
+import HowItWorks from "@/components/home/HowItWorks";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -104,33 +105,6 @@ const features = [
     description: "Track plays, reach, audience growth & listener engagement",
     gradient: "from-cyan-500 to-blue-500",
     badge: "Pro",
-  },
-];
-
-const steps = [
-  {
-    number: "01",
-    icon: Layers,
-    title: "Produce with AI & Stems",
-    description: "Record, mix, and master using our built-in DAW. Use AI to separate stems or generate new samples instantly.",
-    color: "text-primary",
-    bg: "bg-primary/10",
-  },
-  {
-    number: "02",
-    icon: Video,
-    title: "Collaborate Live in Jam Rooms",
-    description: "Launch a live Audio/Video Jam Room right in the Studio to co-edit tracks with your collaborators in real-time.",
-    color: "text-pink-400",
-    bg: "bg-pink-400/10",
-  },
-  {
-    number: "03",
-    icon: ShoppingCart,
-    title: "Release & Sell Licenses",
-    description: "Drop your music to Explore, climb the Leaderboard, and securely sell stem licenses directly to your fans.",
-    color: "text-accent",
-    bg: "bg-accent/10",
   },
 ];
 
@@ -498,36 +472,7 @@ export default function Home() {
         </div>
 
         {/* ── How it Works ── */}
-        <div>
-          <div className="text-center mb-10 md:mb-12">
-            <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">How It Works</h2>
-            <p className="text-foreground/90 text-lg max-w-xl mx-auto">From zero to released — NaliChat covers every step of your creative process.</p>
-          </div>
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {steps.map((step) => {
-              const Icon = step.icon;
-              return (
-                <motion.div key={step.number} variants={itemVariants} className="relative">
-                  <div className="bg-card border border-border rounded-2xl p-6 h-full hover:border-primary/40 transition-colors duration-300">
-                    <div className="flex items-center justify-between mb-5">
-                      <div className={`w-12 h-12 rounded-xl ${step.bg} flex items-center justify-center`}>
-                        <Icon className={`w-6 h-6 ${step.color}`} />
-                      </div>
-                      <span className="text-4xl font-black text-border">{step.number}</span>
-                    </div>
-                    <h3 className="font-heading font-bold text-lg mb-2">{step.title}</h3>
-                    <p className="text-sm text-foreground/90 leading-relaxed">{step.description}</p>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </div>
+        <HowItWorks />
 
         {/* ── Testimonials ── */}
         <div>

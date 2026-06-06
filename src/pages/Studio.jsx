@@ -126,8 +126,8 @@ export default function Studio() {
       console.error("Failed to load project autosave", e);
     }
     return [
-      { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
-      { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+      { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+      { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
     ];
   });
 

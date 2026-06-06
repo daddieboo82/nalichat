@@ -1929,7 +1929,7 @@ export default function Studio() {
               ].map((setting, i) => (
                 <DropdownMenuItem 
                   key={i}
-                  onClick={() => setAudioSettings(setting)}
+                  onClick={() => setAudioSettings({ sampleRate: setting.sr, bitDepth: setting.bd })}
                   className="cursor-pointer text-xs"
                 >
                   {setting.sr} / {setting.bd}

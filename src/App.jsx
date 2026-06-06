@@ -148,8 +148,16 @@ const AuthenticatedApp = () => {
 };
 
 function App() {
-  const [loaded, setLoaded] = useState(false);
+  // Only show the intro splash once per browser session — not on every reload/redirect
+  const [loaded, setLoaded] = useState(() => {
+    try { return sessionStorage.getItem('nali_splash_shown') === '1'; } catch { return false; }
+  });
   const { isLowEnd } = usePerformance();
+
+  const handleSplashDone = () => {
+    try { sessionStorage.setItem('nali_splash_shown', '1'); } catch {}
+    setLoaded(true);
+  };
 
   return (
     <ErrorBoundary>
@@ -158,7 +166,7 @@ function App() {
           <AudioPlayerProvider>
             <CartProvider>
               <MotionConfig reducedMotion={isLowEnd ? "always" : "user"}>
-                {!loaded && <AppLoader onDone={() => setLoaded(true)} />}
+                {!loaded && <AppLoader onDone={handleSplashDone} />}
                 {!isLowEnd && <NavRipple />}
                 <Router>
                   <AuthenticatedApp />

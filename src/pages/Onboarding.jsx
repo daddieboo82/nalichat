@@ -41,6 +41,9 @@ export default function Onboarding() {
         location: u.location || "",
         avatar_url: u.avatar_url || ""
       }));
+    }).catch(() => {
+      setRedirecting(true);
+      navigate("/login", { replace: true });
     });
   }, [navigate]);
 

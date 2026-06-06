@@ -9,7 +9,16 @@ Deno.serve(async (req) => {
     }
 
     const bodyText = await req.text();
-    const body = bodyText.replace(/^"|"$/g, '').trim();
+    let body = bodyText;
+    try {
+      const parsed = JSON.parse(bodyText);
+      if (parsed.data) {
+        body = parsed.data;
+      }
+    } catch {
+      // not JSON, keep as is
+    }
+    body = body.replace(/^"|"$/g, '').trim();
     if (!body || body.length === 0) {
       return Response.json({ error: 'Empty request body' }, { status: 400 });
     }

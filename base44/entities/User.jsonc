@@ -17,6 +17,11 @@
     "display_name": {
       "type": "string"
     },
+    "birthdate": {
+      "type": "string",
+      "format": "date",
+      "description": "User's date of birth"
+    },
     "bio": {
       "type": "string"
     },

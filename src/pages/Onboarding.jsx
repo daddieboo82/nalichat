@@ -17,6 +17,7 @@ export default function Onboarding() {
   const [user, setUser] = useState(null);
   const [form, setForm] = useState({ 
     display_name: "", 
+    birthdate: "",
     bio: "", 
     role: "artist", 
     location: "", 
@@ -42,6 +43,7 @@ export default function Onboarding() {
       setForm(f => ({
         ...f,
         display_name: u.display_name || u.full_name || "",
+        birthdate: u.birthdate || "",
         bio: u.bio || "",
         // Never seed the profile role picker with an account role like "admin"/"user".
         role: ["artist", "producer", "engineer", "ar"].includes(u.role) ? u.role : "artist",
@@ -72,6 +74,10 @@ export default function Onboarding() {
   const handleSave = async () => {
     if (!form.display_name) {
       toast.error("Display name is required");
+      return;
+    }
+    if (!form.birthdate) {
+      toast.error("Birthdate is required");
       return;
     }
     setLoading(true);
@@ -135,6 +141,26 @@ export default function Onboarding() {
                 className="bg-secondary/50 border-0 h-12" 
                 placeholder="What should we call you?"
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Birthdate</label>
+                <Input 
+                  type="date"
+                  value={form.birthdate} 
+                  onChange={e => setForm(f => ({ ...f, birthdate: e.target.value }))} 
+                  className="bg-secondary/50 border-0 h-12" 
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Email</label>
+                <Input 
+                  value={user.email || ""} 
+                  disabled
+                  className="bg-secondary/50 border-0 h-12 opacity-70" 
+                />
+              </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4">

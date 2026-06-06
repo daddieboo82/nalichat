@@ -1911,8 +1911,9 @@ export default function Studio() {
           <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="hidden md:inline text-primary font-medium truncate hover:underline outline-none cursor-pointer">
-                {audioSettings.sampleRate} / {audioSettings.bitDepth} • Opus Codec Active
+              <button className="text-primary font-medium truncate hover:underline outline-none cursor-pointer">
+                <span className="inline">{audioSettings.sampleRate} / {audioSettings.bitDepth}</span>
+                <span className="hidden sm:inline"> • Opus Codec Active</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48 bg-card border-border">

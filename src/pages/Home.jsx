@@ -13,6 +13,7 @@ import DailyRecommendation from "@/components/home/DailyRecommendation";
 import QuickStartGuide from "@/components/home/QuickStartGuide";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const features = [
   {
@@ -153,6 +154,8 @@ export default function Home() {
   // Only treat as logged-in when both the flag and the user record are present,
   // so the greeting disappears instantly on logout.
   const user = isAuthenticated ? authUser : null;
+  // Pro and admin users already have full access — don't show pricing/upgrade CTAs.
+  const { isPro } = useSubscription();
 
   return (
     <div className="h-full overflow-auto bg-background">
@@ -234,12 +237,14 @@ export default function Home() {
                   </Button>
                 </Link>
 
-                <Link to="/pricing" className="w-full sm:w-auto">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-xl text-base px-7 border-primary text-primary hover:bg-primary/10">
-                    <Star className="w-5 h-5 mr-2" />
-                    View Pricing
-                  </Button>
-                </Link>
+                {!isPro && (
+                  <Link to="/pricing" className="w-full sm:w-auto">
+                    <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-xl text-base px-7 border-primary text-primary hover:bg-primary/10">
+                      <Star className="w-5 h-5 mr-2" />
+                      View Pricing
+                    </Button>
+                  </Link>
+                )}
               </>
             ) : (
               <>
@@ -601,12 +606,14 @@ export default function Home() {
                         </Button>
                       </Link>
 
-                      <Link to="/pricing" className="w-full sm:w-auto">
-                        <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold border-primary text-primary hover:bg-primary/10 transition-all hover:scale-105 backdrop-blur-md">
-                          <Star className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
-                          Upgrade to Pro
-                        </Button>
-                      </Link>
+                      {!isPro && (
+                        <Link to="/pricing" className="w-full sm:w-auto">
+                          <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold border-primary text-primary hover:bg-primary/10 transition-all hover:scale-105 backdrop-blur-md">
+                            <Star className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
+                            Upgrade to Pro
+                          </Button>
+                        </Link>
+                      )}
                     </>
                   ) : (
                   <>

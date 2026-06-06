@@ -1439,6 +1439,16 @@ export default function Studio() {
                     </div>
                   )}
                   
+                  {/* Empty track placeholder — clarifies the track exists but has no audio yet */}
+                  {(!track.waveform || track.waveform.length === 0) && !track.armed && (
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none z-10">
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60 italic">
+                        <Mic className="w-3.5 h-3.5 shrink-0" />
+                        <span>Empty — arm &amp; record, import a file, or generate audio to fill this track</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Audio Region (Clip) */}
                   {track.waveform && track.waveform.length > 0 && (
                     <div 

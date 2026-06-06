@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
   const [currentUser, setCurrentUser] = useState(null);
@@ -39,11 +40,14 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
       await base44.entities.Playlist.update(playlistId, {
         track_ids: updatedTrackIds,
       });
+      return playlist;
     },
-    onSuccess: () => {
+    onSuccess: (playlist) => {
       queryClient.invalidateQueries({ queryKey: ["userPlaylists"] });
+      toast.success(`Added to "${playlist.name}"`);
       onOpenChange(false);
     },
+    onError: () => toast.error("Couldn't add to playlist. Please try again."),
   });
 
   const createAndAddMutation = useMutation({
@@ -56,11 +60,13 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
       });
       return newPlaylist;
     },
-    onSuccess: () => {
+    onSuccess: (newPlaylist) => {
       queryClient.invalidateQueries({ queryKey: ["userPlaylists"] });
+      toast.success(`Created "${newPlaylist.name}" and added the track`);
       setNewPlaylistName("");
       onOpenChange(false);
     },
+    onError: () => toast.error("Couldn't create playlist. Please try again."),
   });
 
   const isInPlaylist = (playlistId) => {

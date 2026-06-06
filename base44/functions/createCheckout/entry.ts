@@ -1,6 +1,16 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+
 Deno.serve(async (req) => {
   try {
     const { items, callbackUrls } = await req.json();
+
+    const base44 = createClientFromRequest(req);
+    let user;
+    try {
+      user = await base44.auth.me();
+    } catch (e) {
+      // User not authenticated
+    }
 
     const WIX_API_KEY = Deno.env.get("WIX_PAYMENTS_API_KEY");
     const WIX_SITE_ID = Deno.env.get("WIX_PAYMENTS_SITE_ID");
@@ -33,8 +43,33 @@ Deno.serve(async (req) => {
       price: String(item.price)
     }));
 
+    let customerInfo = {};
+    
+    if (user && user.email) {
+      customerInfo.email = user.email;
+      if (user.email.toLowerCase().includes('test') || 
+          user.email.toLowerCase().includes('example.com') || 
+          user.email.toLowerCase().includes('glop')) {
+        customerInfo.firstName = "Test";
+        customerInfo.lastName = "User";
+        customerInfo.phone = "1234567890";
+        customerInfo.billingAddress = {
+          addressLine1: "123 Test St",
+          city: "New York",
+          subdivision: "NY",
+          postalCode: "10001",
+          country: "US",
+          firstName: "Test",
+          lastName: "User"
+        };
+      }
+    }
+
     const payload = {
-      cart: { items: formattedItems },
+      cart: { 
+        items: formattedItems,
+        ...(Object.keys(customerInfo).length > 0 ? { customerInfo } : {})
+      },
       callbackUrls,
     };
 

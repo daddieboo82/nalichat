@@ -83,8 +83,9 @@ Deno.serve(async (req) => {
             phone: "1234567890",
             billingAddress: {
               addressLine1: "123 Test St",
-              city: "Testville",
-              postalCode: "12345",
+              city: "New York",
+              subdivision: "NY",
+              postalCode: "10001",
               country: "US",
               firstName: "Test",
               lastName: "User"

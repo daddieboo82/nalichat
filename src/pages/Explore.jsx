@@ -50,7 +50,8 @@ export default function Explore() {
       const liked_by = liked
         ? post.liked_by.filter(id => id !== currentUser.id)
         : [...(post.liked_by || []), currentUser.id];
-      return base44.entities.ArtPost.update(post.id, { liked_by, likes: liked_by.length });
+      const likes = Math.max(0, (post.likes || 0) + (liked ? -1 : 1));
+      return base44.entities.ArtPost.update(post.id, { liked_by, likes });
     },
     // Optimistic update so the heart + count flip instantly
     onMutate: async (post) => {
@@ -63,7 +64,8 @@ export default function Explore() {
         const liked_by = liked
           ? p.liked_by.filter(id => id !== currentUser.id)
           : [...(p.liked_by || []), currentUser.id];
-        return { ...p, liked_by, likes: liked_by.length };
+        const likes = Math.max(0, (p.likes || 0) + (liked ? -1 : 1));
+        return { ...p, liked_by, likes };
       });
       queryClient.setQueryData(["artposts", filter], update);
       return { previous, filter };

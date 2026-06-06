@@ -1146,14 +1146,13 @@ export default function Studio() {
           <label className="flex flex-col items-center justify-center px-2 py-0.5 hover:bg-secondary/40 transition-colors cursor-text" title="Tempo (beats per minute)">
             <span className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none">BPM</span>
             <input
-              type="number"
-              min={20}
-              max={300}
+              type="text"
+              inputMode="numeric"
               value={bpmInput}
-              onChange={(e) => setBpmInput(e.target.value)}
+              onChange={(e) => setBpmInput(e.target.value.replace(/[^0-9]/g, ''))}
               onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }}
               onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-              className="w-8 bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-8 bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight"
             />
           </label>
           <div className="flex flex-col items-center justify-center px-2 py-0.5 border-l border-border/60" title="Time signature">

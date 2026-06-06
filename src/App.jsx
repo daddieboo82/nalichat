@@ -40,6 +40,7 @@ const Onboarding = lazy(() => import('@/pages/Onboarding'));
 const PricingPlans = lazy(() => import('@/components/pricing/PricingPlans'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
 const Studio = lazy(() => import('@/pages/Studio'));
+const Relax = lazy(() => import('@/pages/Relax'));
 const Record = lazy(() => import('@/pages/Record'));
 const CoverArt = lazy(() => import('@/pages/CoverArt'));
 import AiAssistant from '@/components/AiAssistant';
@@ -138,6 +139,7 @@ const AuthenticatedApp = () => {
 
           <Route path="/settings" element={<Settings />} />
           <Route path="/studio" element={<Studio />} />
+          <Route path="/relax" element={<Relax />} />
           <Route path="/record" element={<Record />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />

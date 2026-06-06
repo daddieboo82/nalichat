@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,9 +24,15 @@ const NAV_ITEMS = [
 
 export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const { items, setIsOpen } = useCart();
-  const { isAuthenticated, navigateToLogin } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/", { replace: true });
+  };
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -119,7 +125,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
             </Link>
             {isAuthenticated ? (
               <button
-                onClick={() => base44.auth.logout()}
+                onClick={handleLogout}
                 title="Log out"
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95"
               >
@@ -127,7 +133,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
               </button>
             ) : (
               <button
-                onClick={navigateToLogin}
+                onClick={() => navigate("/login")}
                 title="Log in"
                 className="h-9 px-4 rounded-full flex items-center gap-2 text-sm font-bold bg-primary/15 text-primary hover:bg-primary/25 transition-all active:scale-95"
               >

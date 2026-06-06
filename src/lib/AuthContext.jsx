@@ -116,17 +116,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = (shouldRedirect = true) => {
+  const logout = () => {
+    // Clear the token locally without triggering a full-page hard reload (which
+    // causes a multi-second blank screen while the whole app re-boots).
+    try {
+      localStorage.removeItem('base44_token');
+      sessionStorage.removeItem('base44_token');
+    } catch (e) {}
     setUser(null);
     setIsAuthenticated(false);
-    
-    if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
-      base44.auth.logout(window.location.href);
-    } else {
-      // Just remove the token without redirect
-      base44.auth.logout();
-    }
   };
 
   const navigateToLogin = () => {

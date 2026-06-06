@@ -33,7 +33,7 @@ export default function MobileHeader() {
   const location = useLocation();
   const [user, setUser] = useState(null);
   const { items, setIsOpen } = useCart();
-  const { isAuthenticated, navigateToLogin } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -85,7 +85,7 @@ export default function MobileHeader() {
           <NotificationBell />
           {!isAuthenticated && (
             <button
-              onClick={navigateToLogin}
+              onClick={() => navigate("/login")}
               className="h-7 px-3 rounded-full flex items-center gap-1 text-[11px] font-bold bg-primary/15 text-primary active:scale-95 transition-all"
             >
               <LogIn className="w-3.5 h-3.5" /> Log in

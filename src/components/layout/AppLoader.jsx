@@ -8,7 +8,6 @@ export default function AppLoader({ onDone }) {
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState("intro"); // intro | loading | done
   const [bars, setBars] = useState(new Array(BARS).fill(0));
-  const rafRef = useRef(null);
   const startRef = useRef(Date.now());
 
   // play startup sound
@@ -18,14 +17,13 @@ export default function AppLoader({ onDone }) {
     audio.play().catch((e) => console.warn("Autoplay blocked:", e));
   }, []);
 
-  // animate equalizer bars
+  // animate equalizer bars — throttled to ~12fps so the splash doesn't hog
+  // the main thread while the app boots (keeps startup responsive).
   useEffect(() => {
-    const tick = () => {
+    const interval = setInterval(() => {
       setBars(prev => prev.map(() => Math.random()));
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
+    }, 80);
+    return () => clearInterval(interval);
   }, []);
 
   // fake progress ramp: 0→85 in 1.4s, then 85→100 in 0.4s

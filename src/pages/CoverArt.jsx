@@ -48,7 +48,12 @@ export default function CoverArt() {
     text: "",
     textColor: "#ffffff",
     textPosition: "center",
+    fontFamily: "sans-serif",
+    overlayScale: 30,
+    overlayX: 50,
+    overlayY: 50,
   });
+  const [overlayImageRef, setOverlayImageRef] = useState(null);
   const [isApplyingEdits, setIsApplyingEdits] = useState(false);
 
   const applyEdits = async () => {
@@ -72,9 +77,24 @@ export default function CoverArt() {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       ctx.filter = "none";
 
+      if (overlayImageRef) {
+        const overlayImg = new Image();
+        overlayImg.crossOrigin = "anonymous";
+        overlayImg.src = overlayImageRef;
+        await new Promise((resolve, reject) => {
+          overlayImg.onload = resolve;
+          overlayImg.onerror = reject;
+        });
+        const w = (canvas.width * editOptions.overlayScale) / 100;
+        const h = (overlayImg.height / overlayImg.width) * w;
+        const x = (canvas.width * editOptions.overlayX) / 100 - w / 2;
+        const y = (canvas.height * editOptions.overlayY) / 100 - h / 2;
+        ctx.drawImage(overlayImg, x, y, w, h);
+      }
+
       if (editOptions.text) {
         ctx.fillStyle = editOptions.textColor;
-        ctx.font = `bold ${canvas.height / 10}px sans-serif`;
+        ctx.font = `bold ${canvas.height / 10}px ${editOptions.fontFamily}`;
         ctx.textAlign = "center";
         
         let y;
@@ -510,14 +530,30 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                     style={{ filter: `brightness(${editOptions.brightness}%) contrast(${editOptions.contrast}%) saturate(${editOptions.saturation}%)` }}
                   />
                 )}
+                {overlayImageRef && (
+                  <img
+                    src={overlayImageRef}
+                    alt="Overlay"
+                    className="absolute"
+                    style={{
+                      width: `${editOptions.overlayScale}%`,
+                      left: `${editOptions.overlayX}%`,
+                      top: `${editOptions.overlayY}%`,
+                      transform: 'translate(-50%, -50%)',
+                      pointerEvents: 'none'
+                    }}
+                  />
+                )}
                 {editOptions.text && (
                   <div 
                     className="absolute left-0 right-0 text-center font-bold"
                     style={{ 
                       color: editOptions.textColor, 
                       fontSize: '32px',
+                      fontFamily: editOptions.fontFamily,
                       top: editOptions.textPosition === 'top' ? '15%' : editOptions.textPosition === 'bottom' ? '85%' : '50%',
-                      transform: 'translateY(-50%)'
+                      transform: 'translateY(-50%)',
+                      pointerEvents: 'none'
                     }}
                   >
                     {editOptions.text}
@@ -525,7 +561,7 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                 )}
               </div>
               
-              <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                 <div>
                   <label className="text-xs font-medium mb-1 block text-muted-foreground">Brightness ({editOptions.brightness}%)</label>
                   <input type="range" min="0" max="200" value={editOptions.brightness} onChange={e => setEditOptions({...editOptions, brightness: e.target.value})} className="w-full accent-primary" />
@@ -549,28 +585,75 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                 </div>
                 
                 {editOptions.text && (
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <label className="text-xs font-medium mb-1 block text-muted-foreground">Text Color</label>
-                      <input 
-                        type="color" 
-                        value={editOptions.textColor} 
-                        onChange={e => setEditOptions({...editOptions, textColor: e.target.value})}
-                        className="w-full h-8 rounded cursor-pointer bg-transparent border-0 p-0" 
-                      />
+                  <>
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <label className="text-xs font-medium mb-1 block text-muted-foreground">Text Color</label>
+                        <input 
+                          type="color" 
+                          value={editOptions.textColor} 
+                          onChange={e => setEditOptions({...editOptions, textColor: e.target.value})}
+                          className="w-full h-8 rounded cursor-pointer bg-transparent border-0 p-0" 
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs font-medium mb-1 block text-muted-foreground">Position</label>
+                        <select 
+                          value={editOptions.textPosition} 
+                          onChange={e => setEditOptions({...editOptions, textPosition: e.target.value})}
+                          className="w-full h-8 rounded border border-input bg-card px-2 text-sm text-foreground"
+                        >
+                          <option value="top">Top</option>
+                          <option value="center">Center</option>
+                          <option value="bottom">Bottom</option>
+                        </select>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <label className="text-xs font-medium mb-1 block text-muted-foreground">Position</label>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block text-muted-foreground">Font Family</label>
                       <select 
-                        value={editOptions.textPosition} 
-                        onChange={e => setEditOptions({...editOptions, textPosition: e.target.value})}
+                        value={editOptions.fontFamily} 
+                        onChange={e => setEditOptions({...editOptions, fontFamily: e.target.value})}
                         className="w-full h-8 rounded border border-input bg-card px-2 text-sm text-foreground"
                       >
-                        <option value="top">Top</option>
-                        <option value="center">Center</option>
-                        <option value="bottom">Bottom</option>
+                        <option value="sans-serif">Sans Serif</option>
+                        <option value="serif">Serif</option>
+                        <option value="monospace">Monospace</option>
+                        <option value="cursive">Cursive</option>
+                        <option value="fantasy">Fantasy</option>
+                        <option value="Inter">Inter</option>
+                        <option value="Space Grotesk">Space Grotesk</option>
                       </select>
                     </div>
+                  </>
+                )}
+
+                <div className="pt-2 border-t border-border">
+                  <label className="text-xs font-medium mb-1 block text-muted-foreground">Add Overlay Image (Logo/Sticker)</label>
+                  <Input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={e => {
+                      if (e.target.files && e.target.files[0]) {
+                        setOverlayImageRef(URL.createObjectURL(e.target.files[0]));
+                      }
+                    }} 
+                  />
+                </div>
+                
+                {overlayImageRef && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-muted-foreground">Scale ({editOptions.overlayScale}%)</label>
+                      <Button variant="ghost" size="sm" className="h-6 text-xs text-destructive" onClick={() => setOverlayImageRef(null)}>Remove Image</Button>
+                    </div>
+                    <input type="range" min="5" max="200" value={editOptions.overlayScale} onChange={e => setEditOptions({...editOptions, overlayScale: e.target.value})} className="w-full accent-primary" />
+                    
+                    <label className="text-xs font-medium block text-muted-foreground">Position X ({editOptions.overlayX}%)</label>
+                    <input type="range" min="0" max="100" value={editOptions.overlayX} onChange={e => setEditOptions({...editOptions, overlayX: e.target.value})} className="w-full accent-primary" />
+                    
+                    <label className="text-xs font-medium block text-muted-foreground">Position Y ({editOptions.overlayY}%)</label>
+                    <input type="range" min="0" max="100" value={editOptions.overlayY} onChange={e => setEditOptions({...editOptions, overlayY: e.target.value})} className="w-full accent-primary" />
                   </div>
                 )}
               </div>

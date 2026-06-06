@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, Music, ShoppingCart, AudioLines, LogIn, Menu, Mic, Wand2, FileText, Trophy, Settings } from "lucide-react";
+import { ChevronLeft, Music, ShoppingCart, AudioLines, LogIn, Menu, Mic, Wand2, FileText, Trophy, Settings, Gem } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -71,6 +71,7 @@ export default function MobileHeader() {
                 <DropdownMenuItem onClick={() => navigate('/playlists')}><Music className="w-4 h-4 mr-2" /> Playlists</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/files')}><FileText className="w-4 h-4 mr-2" /> Files</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/leaderboard')}><Trophy className="w-4 h-4 mr-2" /> Leaderboard</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/pricing')} className="text-primary font-medium"><Gem className="w-4 h-4 mr-2" /> Upgrade / Plans</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/settings')}><Settings className="w-4 h-4 mr-2" /> Settings</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
-import { Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, LogIn, HelpCircle, UserPlus, Send, Mic, Radio, ShoppingCart, Wand2, AudioLines, Plus } from "lucide-react";
+import { Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, LogIn, HelpCircle, UserPlus, Send, Mic, Radio, ShoppingCart, Wand2, AudioLines, Plus, Gem } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";
@@ -124,6 +124,13 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
               <HelpCircle className="w-5 h-5" />
             </button>
             <NotificationBell direction="up" />
+            <Link
+              to="/pricing"
+              title="Upgrade / Plans"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-primary bg-primary/10 hover:bg-primary/20 transition-all active:scale-95"
+            >
+              <Gem className="w-5 h-5" />
+            </Link>
             <Link
               to="/settings"
               title="Settings"

@@ -1,0 +1,118 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+
+// Weekly app health & enhancement scan run by Nali.
+// Scans app data for issues (broken/incomplete records, stale content) and
+// surfaces improvement opportunities, then notifies all admins via in-app
+// notification + email. Triggered by a scheduled automation (Sundays 4am ET).
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+
+    // --- Gather a lightweight snapshot of app data ---
+    const [artPosts, projects, tracks, sharedFiles, subscriptions, users] = await Promise.all([
+      base44.asServiceRole.entities.ArtPost.list('-created_date', 200),
+      base44.asServiceRole.entities.Project.list('-created_date', 200),
+      base44.asServiceRole.entities.Track.list('-created_date', 200),
+      base44.asServiceRole.entities.SharedFile.list('-created_date', 200),
+      base44.asServiceRole.entities.Subscription.list('-created_date', 200),
+      base44.asServiceRole.entities.User.list(),
+    ]);
+
+    // --- Detect concrete data issues ---
+    const issues = [];
+
+    const brokenPosts = artPosts.filter(p => !p.file_url && !p.image_url);
+    if (brokenPosts.length) issues.push(`${brokenPosts.length} ArtPost(s) have no audio or image attached.`);
+
+    const orphanTracks = tracks.filter(t => !t.file_url);
+    if (orphanTracks.length) issues.push(`${orphanTracks.length} Track(s) are missing an audio file_url.`);
+
+    const untitledProjects = projects.filter(p => !p.title || !p.title.trim());
+    if (untitledProjects.length) issues.push(`${untitledProjects.length} Project(s) have no title.`);
+
+    const filesNoUrl = sharedFiles.filter(f => !f.file_url);
+    if (filesNoUrl.length) issues.push(`${filesNoUrl.length} SharedFile(s) are missing a file_url.`);
+
+    // Subscriptions whose trial has already ended but are still marked 'trial'
+    const now = Date.now();
+    const staleTrials = subscriptions.filter(s =>
+      s.status === 'trial' && s.trial_end_date && new Date(s.trial_end_date).getTime() < now
+    );
+    if (staleTrials.length) issues.push(`${staleTrials.length} Subscription(s) are still 'trial' but the trial end date has passed.`);
+
+    const usersNoOnboarding = users.filter(u => !u.onboarding_completed);
+    if (usersNoOnboarding.length) issues.push(`${usersNoOnboarding.length} user(s) have not completed onboarding.`);
+
+    // --- Ask Nali (LLM) to summarize issues + suggest enhancements ---
+    const dataSummary = `
+App data snapshot (most recent records):
+- Users: ${users.length}
+- ArtPosts: ${artPosts.length}
+- Projects: ${projects.length}
+- Tracks: ${tracks.length}
+- SharedFiles: ${sharedFiles.length}
+- Subscriptions: ${subscriptions.length}
+
+Detected data issues:
+${issues.length ? issues.map(i => `- ${i}`).join('\n') : '- None detected'}
+`.trim();
+
+    const llmResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: `You are Nali, the AI assistant for NaliChat (a music collaboration app). This is your weekly app health report for the app owner. Based on the data snapshot below, write a concise, friendly report that:
+1. Summarizes any concrete issues that need fixing (use the detected issues).
+2. Suggests 2-4 practical enhancements or things worth keeping an eye on, based on usage patterns.
+Keep it short, scannable, and actionable. Address the owner directly.
+
+${dataSummary}`,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          headline: { type: 'string', description: 'One-line summary of app health' },
+          report: { type: 'string', description: 'The full markdown report body' },
+          needs_attention: { type: 'boolean', description: 'True if there are issues that need fixing' },
+        },
+        required: ['headline', 'report', 'needs_attention'],
+      },
+    });
+
+    const headline = llmResult?.headline || 'Weekly app health check complete';
+    const report = llmResult?.report || dataSummary;
+    const needsAttention = !!llmResult?.needs_attention || issues.length > 0;
+
+    // --- Notify all admins ---
+    const admins = users.filter(u => u.role === 'admin');
+
+    await Promise.all(
+      admins.map(admin =>
+        base44.asServiceRole.entities.Notification.create({
+          recipient_id: admin.id,
+          type: 'comment',
+          actor_id: 'nali-system',
+          actor_name: 'Nali',
+          actor_avatar: null,
+          message: `Weekly health check: ${headline}`,
+          link: '/',
+          read: false,
+        })
+      )
+    );
+
+    // Email each admin the full report
+    await Promise.all(
+      admins.filter(a => a.email).map(admin =>
+        base44.asServiceRole.integrations.Core.SendEmail({
+          from_name: 'Nali',
+          to: admin.email,
+          subject: `🎧 NaliChat Weekly Health Check — ${headline}`,
+          body: report,
+        })
+      )
+    );
+
+    console.log(`Nali health check done. Issues: ${issues.length}, admins notified: ${admins.length}`);
+    return Response.json({ ok: true, headline, needsAttention, issuesCount: issues.length, adminsNotified: admins.length });
+  } catch (error) {
+    console.error('naliHealthCheck error:', error.message);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+});

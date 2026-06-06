@@ -18,6 +18,7 @@ export default function Explore() {
   const urlParams = new URLSearchParams(window.location.search);
   const [filter, setFilter] = useState(urlParams.get("filter") || "all");
   const [search, setSearch] = useState(urlParams.get("search") || "");
+  const [showUpload, setShowUpload] = useState(urlParams.get("upload") === "true");
 
   // Update URL when search or filter changes
   useEffect(() => {
@@ -28,7 +29,6 @@ export default function Explore() {
     const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
     window.history.replaceState({}, '', newUrl);
   }, [filter, search]);
-  const [showUpload, setShowUpload] = useState(false);
   const [selectedTrackForPlaylist, setSelectedTrackForPlaylist] = useState(null);
   const [commentTrack, setCommentTrack] = useState(null);
   const queryClient = useQueryClient();

@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Compass, MessageSquare, User, Settings, Mic, Wand2, Radio } from "lucide-react";
+import { Home, Compass, MessageSquare, User, Settings, Mic, Wand2, Radio, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
@@ -7,7 +7,7 @@ import { sounds } from "@/hooks/use-sound";
 const TABS = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Compass, label: "Explore", path: "/explore" },
-  { icon: Mic, label: "Studio", path: "/studio" },
+  { icon: Plus, label: "Release", path: "/explore?upload=true", isAction: true },
   { icon: MessageSquare, label: "Messages", path: "/messages" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
@@ -36,8 +36,22 @@ export default function MobileNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="flex items-stretch justify-around">
-        {TABS.map(({ icon: Icon, label, path: tabPath }) => {
+        {TABS.map(({ icon: Icon, label, path: tabPath, isAction }) => {
           const active = isActive(tabPath);
+          
+          if (isAction) {
+            return (
+              <div key={tabPath} className="relative flex-1 flex items-center justify-center pt-1 pb-2">
+                <button
+                  onClick={() => handleTap(tabPath)}
+                  className="absolute -top-4 w-12 h-12 rounded-full bg-gradient-to-tr from-primary to-pink-500 flex items-center justify-center text-white shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+                >
+                  <Icon className="w-6 h-6" />
+                </button>
+              </div>
+            );
+          }
+
           return (
             <button
               key={tabPath}

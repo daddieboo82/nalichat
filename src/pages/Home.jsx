@@ -6,7 +6,8 @@ import {
   MessageSquare, Music, Users, BarChart3, Sparkles,
   Trophy, Compass, Play, ArrowRight, Zap, Shield, Star,
   Headphones, Radio, Wand2, FileAudio, ChevronRight,
-  Image, Cloud, UserCircle, Video, Layers, ShoppingCart
+  Image, Cloud, UserCircle, Video, Layers, ShoppingCart,
+  SlidersHorizontal, Tag, FolderKanban
 } from "lucide-react";
 import { motion } from "framer-motion";
 import QuickStartGuide from "@/components/home/QuickStartGuide";
@@ -38,6 +39,28 @@ const features = [
     description: "Instantly separate stems or generate royalty-free background samples on the fly.",
     gradient: "from-indigo-500 to-purple-500",
     badge: "New",
+  },
+  {
+    icon: SlidersHorizontal,
+    label: "AI Mastering",
+    path: "/studio",
+    description: "Automatically master your tracks to industry-standard loudness and clarity.",
+    gradient: "from-orange-500 to-red-500",
+    badge: "Pro",
+  },
+  {
+    icon: FolderKanban,
+    label: "Project Management",
+    path: "/studio",
+    description: "Create projects, organize tracks, set milestones, and manage collaborators & statuses.",
+    gradient: "from-teal-500 to-emerald-500",
+  },
+  {
+    icon: Tag,
+    label: "AI Tagging",
+    path: "/studio",
+    description: "Auto-suggest BPM, genre, and key for every track you upload.",
+    gradient: "from-fuchsia-500 to-pink-500",
   },
   {
     icon: ShoppingCart,
@@ -311,19 +334,23 @@ export default function Home() {
               {[
                 {
                   title: "🎧 Produce in the Studio",
-                  items: ["Full DAW Interface", "Live Video Jam Rooms", "AI Stem Separation", "AI Stem Generation"]
+                  items: ["Full DAW Interface", "Live Video Jam Rooms", "AI Stem Separation", "AI Stem Generation", "AI Mastering", "AI BPM/Genre/Key Tagging"]
+                },
+                {
+                  title: "📁 Projects & Organization",
+                  items: ["Create & manage projects", "Organize tracks & stems", "Set milestones & statuses", "Folders for files"]
                 },
                 {
                   title: "💬 Connect & Collaborate",
-                  items: ["Unlimited messaging", "Real-time Co-editing", "Find collaborators", "Network with peers"]
+                  items: ["Direct & group messaging", "Real-time Co-editing", "Find collaborators", "Secure file sharing", "Contacts & notifications"]
                 },
                 {
-                  title: "🎨 Create & Manage",
-                  items: ["AI Cover Art Generation", "Cloud File Storage", "Custom Playlists", "Stem Organization"]
+                  title: "🎨 Create & Share",
+                  items: ["Art posts with album art", "AI Cover Art Generation", "Cloud File Storage", "Custom Playlists"]
                 },
                 {
                   title: "📈 Build Your Presence",
-                  items: ["Release your tracks", "Buy & Sell Stem Licenses", "Climb the leaderboard", "Grow your following"]
+                  items: ["Release your tracks", "Stems Marketplace licensing", "Climb the leaderboard", "Grow your following"]
                 },
                 {
                   title: "👤 Showcase Talent",

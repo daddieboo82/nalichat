@@ -30,8 +30,11 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
   const { isAuthenticated, logout } = useAuth();
 
   const handleLogout = () => {
-    logout();
+    // Navigate to the public home route FIRST, then clear auth — this avoids a
+    // race where ProtectedRoute redirects to /login at the same time, which left
+    // the screen briefly blank during the exit animation.
     navigate("/", { replace: true });
+    logout();
   };
 
   useEffect(() => {

@@ -31,7 +31,7 @@ export default function AppLayout() {
 
       {/* Main Content */}
       <main className={`flex-1 overflow-hidden ${hasAudioPlayer ? 'pb-[calc(7.75rem+env(safe-area-inset-bottom))] md:pb-[5rem]' : 'pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0'}`}>
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           <PageTransition key={location.pathname}>
             <Outlet />
           </PageTransition>

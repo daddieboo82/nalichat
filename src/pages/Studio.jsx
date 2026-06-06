@@ -247,6 +247,9 @@ export default function Studio() {
     currentTimeRef.current = newTime;
     if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
     if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
+    Object.values(audioElementsRef.current).forEach(audio => {
+      audio.currentTime = newTime;
+    });
   };
 
   const togglePlay = () => {
@@ -592,6 +595,9 @@ export default function Studio() {
         setActiveTool('fade');
       } else if (e.key === 's' || e.key === 'S') {
         setActiveTool('smart');
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        updateCurrentTime(0);
       }
     };
     
@@ -993,7 +999,7 @@ export default function Studio() {
         {/* Transport Controls */}
         <div className="flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0">
           <TooltipProvider delayDuration={200}>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><Rewind className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Back to Start</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><Rewind className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Return to Zero <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Home</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><Square className="w-5 h-5 fill-current" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Enter</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={togglePlay} className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>{isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{isPlaying ? "Pause" : "Play"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={toggleRecord} className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}>{isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}<Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Record <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">R</kbd></TooltipContent></Tooltip>
@@ -1331,8 +1337,7 @@ export default function Studio() {
                         <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="w-6 h-6 text-muted-foreground hover:text-foreground" title="Track Options"><Settings2 className="w-3.5 h-3.5" /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenuItem onSelect={(e) => {
-                          e.preventDefault();
+                        <DropdownMenuItem onSelect={() => {
                           setRenamingTrack(track);
                           setNewTrackName(track.name);
                         }}>

@@ -43,11 +43,19 @@ export default function MobileNav() {
               key={tabPath}
               onClick={() => handleTap(tabPath)}
               className={cn(
-                "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 select-none transition-colors active:bg-primary/10",
+                "relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2 select-none transition-colors active:bg-primary/10",
                 active ? "text-primary" : "text-muted-foreground"
               )}
             >
+              {active && (
+                <motion.div
+                  layoutId="mobileNavPill"
+                  className="absolute inset-x-2 top-1 bottom-1 rounded-2xl bg-primary/10 border border-primary/20"
+                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                />
+              )}
               <motion.div
+                className="relative z-10"
                 animate={active ? { scale: [1, 1.25, 1.1], y: [0, -3, 0] } : { scale: 1, y: 0 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
               >
@@ -61,7 +69,7 @@ export default function MobileNav() {
                 )}
                 <Icon className="w-5 h-5" />
               </motion.div>
-              <span className="text-[10px] font-medium leading-tight w-full text-center truncate px-0.5">{label}</span>
+              <span className="relative z-10 text-[10px] font-medium leading-tight w-full text-center truncate px-0.5">{label}</span>
             </button>
           );
         })}

@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Bot, X, Send, Minimize2, Maximize2, Sparkles, Expand, Shrink, AudioLines, Disc, Activity, Mic, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+import TutorialTopics from "@/components/ai/TutorialTopics";
 
 export default function AiAssistant() {
   const [open, setOpen] = useState(false);
@@ -59,16 +60,17 @@ export default function AiAssistant() {
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
-  const send = async () => {
-    if (!input.trim() || loading) return;
-    const text = input.trim();
+  const sendText = async (text) => {
+    if (!text.trim() || loading) return;
     setInput("");
     setLoading(true);
     let conv = conversation;
     if (!conv) conv = await initConversation();
-    await base44.agents.addMessage(conv, { role: "user", content: text });
+    await base44.agents.addMessage(conv, { role: "user", content: text.trim() });
     // loading is cleared by the subscription when Nali's reply arrives
   };
+
+  const send = () => sendText(input);
 
   return (
     <>
@@ -139,6 +141,8 @@ export default function AiAssistant() {
                         </button>
                       ))}
                     </div>
+
+                    <TutorialTopics onPick={sendText} />
                   </div>
                 )}
                 {messages.map((msg, i) => (

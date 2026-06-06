@@ -5,7 +5,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, MotionConfig } from 'framer-motion';
 import { usePerformance } from '@/hooks/use-performance';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -23,24 +23,25 @@ import ResetPassword from '@/pages/ResetPassword';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Home from '@/pages/Home';
-import Messages from '@/pages/Messages';
-import Files from '@/pages/Files';
-
-import Settings from '@/pages/Settings';
-import Explore from '@/pages/Explore';
-import Leaderboard from '@/pages/Leaderboard';
-import Profile from '@/pages/Profile';
-import Playlists from '@/pages/Playlists';
-import PlaylistDetail from '@/pages/PlaylistDetail';
-import Analytics from '@/pages/Analytics';
-import ThankYou from '@/pages/ThankYou';
-import Onboarding from '@/pages/Onboarding';
 import { useSubscription } from '@/hooks/useSubscription';
-import PricingPlans from '@/components/pricing/PricingPlans';
-import Privacy from '@/pages/Privacy';
-import Studio from '@/pages/Studio';
-import Record from '@/pages/Record';
-import CoverArt from '@/pages/CoverArt';
+
+// Lazily-loaded routes — each downloads on demand so initial load & tab-switching are fastest.
+const Messages = lazy(() => import('@/pages/Messages'));
+const Files = lazy(() => import('@/pages/Files'));
+const Settings = lazy(() => import('@/pages/Settings'));
+const Explore = lazy(() => import('@/pages/Explore'));
+const Leaderboard = lazy(() => import('@/pages/Leaderboard'));
+const Profile = lazy(() => import('@/pages/Profile'));
+const Playlists = lazy(() => import('@/pages/Playlists'));
+const PlaylistDetail = lazy(() => import('@/pages/PlaylistDetail'));
+const Analytics = lazy(() => import('@/pages/Analytics'));
+const ThankYou = lazy(() => import('@/pages/ThankYou'));
+const Onboarding = lazy(() => import('@/pages/Onboarding'));
+const PricingPlans = lazy(() => import('@/components/pricing/PricingPlans'));
+const Privacy = lazy(() => import('@/pages/Privacy'));
+const Studio = lazy(() => import('@/pages/Studio'));
+const Record = lazy(() => import('@/pages/Record'));
+const CoverArt = lazy(() => import('@/pages/CoverArt'));
 import AiAssistant from '@/components/AiAssistant';
 import AskNaliHint from '@/components/AskNaliHint';
 import { base44 } from '@/api/base44Client';
@@ -113,6 +114,11 @@ const AuthenticatedApp = () => {
 
   return (
     <>
+      <Suspense fallback={
+        <div className="fixed inset-0 flex items-center justify-center bg-background">
+          <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        </div>
+      }>
       <Routes location={location}>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -145,6 +151,7 @@ const AuthenticatedApp = () => {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="*" element={<PageNotFound />} />
       </Routes>
+      </Suspense>
       <AskNaliHint />
     </>
   );

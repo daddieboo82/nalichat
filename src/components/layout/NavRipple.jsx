@@ -19,16 +19,8 @@ export default function NavRipple() {
     resize();
     window.addEventListener("resize", resize);
 
-    const addRipple = (e) => {
-      const x = e.clientX ?? e.touches?.[0]?.clientX;
-      const y = e.clientY ?? e.touches?.[0]?.clientY;
-      if (x == null) return;
-      ripples.current.push({ x, y, r: 0, alpha: 0.55, born: Date.now() });
-    };
-    window.addEventListener("click", addRipple);
-    window.addEventListener("touchstart", addRipple, { passive: true });
+    let rafId = null;
 
-    let rafId;
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const now = Date.now();
@@ -43,15 +35,30 @@ export default function NavRipple() {
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
-      rafId = requestAnimationFrame(draw);
+      // Stop looping once all ripples have faded — frees the main thread when idle.
+      if (ripples.current.length > 0) {
+        rafId = requestAnimationFrame(draw);
+      } else {
+        rafId = null;
+      }
     };
-    draw();
+
+    const addRipple = (e) => {
+      const x = e.clientX ?? e.touches?.[0]?.clientX;
+      const y = e.clientY ?? e.touches?.[0]?.clientY;
+      if (x == null) return;
+      ripples.current.push({ x, y, r: 0, alpha: 0.55, born: Date.now() });
+      // Kick the loop back on only when a ripple exists.
+      if (rafId == null) rafId = requestAnimationFrame(draw);
+    };
+    window.addEventListener("click", addRipple);
+    window.addEventListener("touchstart", addRipple, { passive: true });
 
     return () => {
       window.removeEventListener("resize", resize);
       window.removeEventListener("click", addRipple);
       window.removeEventListener("touchstart", addRipple);
-      cancelAnimationFrame(rafId);
+      if (rafId != null) cancelAnimationFrame(rafId);
     };
   }, []);
 

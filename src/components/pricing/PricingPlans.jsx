@@ -40,7 +40,7 @@ const plans = [
 ];
 
 export default function PricingPlans() {
-  const [loading, setLoading] = useState(false);
+  const [loadingPlanId, setLoadingPlanId] = useState(null);
   const { user } = useAuth();
   
   const handleSubscribe = async (plan) => {
@@ -48,7 +48,7 @@ export default function PricingPlans() {
       base44.auth.redirectToLogin(window.location.pathname);
       return;
     }
-    setLoading(true);
+    setLoadingPlanId(plan.id);
     try {
       const response = await base44.functions.invoke("createSubscriptionCheckout", {
         plan: plan.id,
@@ -65,7 +65,7 @@ export default function PricingPlans() {
       console.error("Checkout error:", error);
       alert("Failed to start checkout. Please try again.");
     } finally {
-      setLoading(false);
+      setLoadingPlanId(null);
     }
   };
 
@@ -123,14 +123,14 @@ export default function PricingPlans() {
 
               <Button
                 onClick={() => handleSubscribe(plan)}
-                disabled={loading}
+                disabled={loadingPlanId !== null}
                 className={`w-full rounded-xl mb-8 ${
                   plan.popular
                     ? "bg-primary hover:bg-primary/90"
                     : "bg-secondary hover:bg-secondary/80"
                 }`}
               >
-                {loading ? "Processing..." : plan.cta}
+                {loadingPlanId === plan.id ? "Processing..." : plan.cta}
               </Button>
 
               <div className="space-y-3">

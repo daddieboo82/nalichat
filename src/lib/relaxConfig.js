@@ -36,15 +36,16 @@ export function toEmbedUrl(url, mediaType) {
     const u = new URL(url);
     const host = u.hostname.replace("www.", "");
 
-    // YouTube
+    // YouTube — use the privacy-enhanced nocookie domain which avoids most
+    // "embedding disabled" (error 150/153) restrictions.
     if (host === "youtube.com" || host === "m.youtube.com") {
       const id = u.searchParams.get("v");
-      if (id) return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
-      if (u.pathname.startsWith("/embed/")) return `${url}${url.includes("?") ? "&" : "?"}autoplay=1`;
+      if (id) return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1`;
+      if (u.pathname.startsWith("/embed/")) return `${url.replace("youtube.com", "youtube-nocookie.com")}${url.includes("?") ? "&" : "?"}autoplay=1`;
     }
     if (host === "youtu.be") {
       const id = u.pathname.slice(1);
-      if (id) return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
+      if (id) return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1`;
     }
 
     // Vimeo

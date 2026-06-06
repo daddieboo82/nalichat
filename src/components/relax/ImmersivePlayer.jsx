@@ -20,6 +20,7 @@ export default function ImmersivePlayer({ item, onClose }) {
   const isLink = item.media_type === "link";
   const direct = isDirectMedia(item.media_url);
   const embed = toEmbedUrl(item.media_url, item.media_type);
+  const isYouTube = /youtube\.com|youtu\.be/.test(item.media_url || "");
 
   const renderStage = () => {
     if (isLink) {
@@ -100,6 +101,17 @@ export default function ImmersivePlayer({ item, onClose }) {
           </button>
 
           {renderStage()}
+
+          {isYouTube && !direct && (
+            <a
+              href={item.media_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" /> Video won't play? Watch on YouTube
+            </a>
+          )}
 
           <div className="mt-5 px-1">
             <div className="flex items-center gap-3 flex-wrap mb-2">

@@ -98,7 +98,7 @@ export default function Studio() {
   const [jamVideoActive, setJamVideoActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(null); // 'separate' | 'generate' | null
 
-  const { hasAccess, isLoading: isLoadingSub } = useSubscription();
+  const { hasAccess, isPro, isLoading: isLoadingSub } = useSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Real-time collaborator presence
@@ -190,24 +190,10 @@ export default function Studio() {
     setTracksWithHistory(prev => prev.map(t => t.id === id ? { ...t, [prop]: !t[prop] } : t));
   };
 
+  // Pro & admin users get unlimited tracks. Free trial users keep the default limit.
   useEffect(() => {
-    const fetchSub = async () => {
-      try {
-        const user = await base44.auth.me();
-        if (user) {
-          const subs = await base44.entities.Subscription.list('-created_date', 10);
-          const activeSub = subs.find(s => s.user_id === user.id && s.status === 'active');
-          if (activeSub) {
-            if (activeSub.plan === 'creator') setMaxTracks(16);
-            else if (activeSub.plan === 'pro') setMaxTracks(999);
-          }
-        }
-      } catch (e) {
-        // Not logged in or no sub
-      }
-    };
-    fetchSub();
-  }, []);
+    setMaxTracks(isPro ? 999 : 2);
+  }, [isPro]);
 
   // Smooth playback via RAF - Optimized to bypass React render cycle for award-winning performance
   useEffect(() => {

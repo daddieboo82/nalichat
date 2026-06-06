@@ -8,8 +8,9 @@ import {
   Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
   Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle,
   Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2,
-  Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2
+  Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical
 } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -188,6 +189,17 @@ export default function Studio() {
 
   const toggleTrackProperty = (id, prop) => {
     setTracksWithHistory(prev => prev.map(t => t.id === id ? { ...t, [prop]: !t[prop] } : t));
+  };
+
+  const handleReorderTracks = (result) => {
+    if (!result.destination || result.destination.index === result.source.index) return;
+    sounds.click();
+    setTracksWithHistory(prev => {
+      const next = Array.from(prev);
+      const [moved] = next.splice(result.source.index, 1);
+      next.splice(result.destination.index, 0, moved);
+      return next;
+    });
   };
 
   // Pro & admin users get unlimited tracks. Free trial users keep the default limit.
@@ -1187,24 +1199,37 @@ export default function Studio() {
         </AnimatePresence>
         {/* Track Headers (Left Sidebar) */}
         <div className="w-40 sm:w-64 border-r border-border/50 bg-card/60 flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)]">
-          <AnimatePresence>
-            {tracks.map((track) => (
-              <motion.div 
-                key={track.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, height: 0 }}
-                onClick={(e) => handleTrackClick(e, track.id)}
-                className={cn(
-                  "border-b border-border/40 p-3 flex flex-col justify-between transition-all cursor-pointer border-l-4",
-                  track.showAutomation ? "h-44" : "h-28",
-                  track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40",
-                  selectedTrackIds.includes(track.id) ? "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]" : "border-l-transparent",
-                  tracks.some(t => t.solo) && !track.solo && "opacity-40 grayscale"
-                )}
-              >
+          <DragDropContext onDragEnd={handleReorderTracks}>
+            <Droppable droppableId="studio-track-headers">
+              {(dropProvided) => (
+                <div ref={dropProvided.innerRef} {...dropProvided.droppableProps}>
+                  {tracks.map((track, index) => (
+                    <Draggable key={track.id} draggableId={String(track.id)} index={index} isDragDisabled={isRecording}>
+                      {(dragProvided, dragSnapshot) => (
+                        <div
+                          ref={dragProvided.innerRef}
+                          {...dragProvided.draggableProps}
+                          onClick={(e) => handleTrackClick(e, track.id)}
+                          className={cn(
+                            "border-b border-border/40 p-3 flex flex-col justify-between transition-all cursor-pointer border-l-4",
+                            track.showAutomation ? "h-44" : "h-28",
+                            track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40",
+                            selectedTrackIds.includes(track.id) ? "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]" : "border-l-transparent",
+                            tracks.some(t => t.solo) && !track.solo && "opacity-40 grayscale",
+                            dragSnapshot.isDragging && "shadow-xl ring-1 ring-primary/40 bg-secondary/60"
+                          )}
+                        >
                 <div className="flex items-start justify-between">
-                  <div className="flex flex-col min-w-0 mr-2">
+                  <div className="flex items-center min-w-0 mr-2">
+                    <span
+                      {...dragProvided.dragHandleProps}
+                      onClick={(e) => e.stopPropagation()}
+                      className="shrink-0 -ml-1 mr-1 p-0.5 text-muted-foreground/50 hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
+                      title="Drag to reorder track"
+                    >
+                      <GripVertical className="w-3.5 h-3.5" />
+                    </span>
+                  <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-2 font-medium text-sm truncate">
                       <div className={cn("w-2 h-2 rounded-full shrink-0", track.color)} />
                       <span className="truncate">{track.name}</span>
@@ -1219,6 +1244,7 @@ export default function Studio() {
                       <option>In: MIDI Keyboard</option>
                       <option>In: None</option>
                     </select>
+                  </div>
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setActivity(`Editing ${track.name}`); setEditingTrack(track); }} className="w-6 h-6 text-muted-foreground hover:text-accent" title="Add Plugins"><SlidersHorizontal className="w-3.5 h-3.5" /></Button>
@@ -1280,9 +1306,15 @@ export default function Studio() {
                     className="flex-1"
                   />
                 </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {dropProvided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
           {/* Empty space filler */}
           <div className="flex-1 bg-card/20 min-h-[100px]" />
         </div>

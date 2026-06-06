@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
-import SoundToggle from "@/components/layout/SoundToggle";
 import { Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, LogIn, HelpCircle, UserPlus, Send, Mic, Radio, ShoppingCart, Wand2, AudioLines } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";
@@ -117,7 +116,6 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
             >
               <HelpCircle className="w-5 h-5" />
             </button>
-            <SoundToggle />
             <NotificationBell direction="up" />
             <Link
               to="/settings"

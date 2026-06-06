@@ -5,6 +5,7 @@ import { Plus, Sparkles } from "lucide-react";
 import { RELAX_CATEGORIES, getCategoryMeta } from "@/lib/relaxConfig";
 import RelaxHero from "@/components/relax/RelaxHero";
 import MediaRow from "@/components/relax/MediaRow";
+import EndlessMediaRow from "@/components/relax/EndlessMediaRow";
 import ImmersivePlayer from "@/components/relax/ImmersivePlayer";
 import AddMediaDialog from "@/components/relax/AddMediaDialog";
 import { sounds } from "@/hooks/use-sound";
@@ -98,18 +99,22 @@ export default function Relax() {
       )}
 
       <div className="pt-6">
-        {categoryKeys.map((key) => (
-          <MediaRow
-            key={key}
-            categoryKey={key}
-            items={byCategory[key] || []}
-            onOpen={onOpen}
-            isAdmin={isAdmin}
-            onEdit={openEdit}
-            onDelete={handleDelete}
-            onAdd={openAdd}
-          />
-        ))}
+        {categoryKeys.map((key) =>
+          key === "movies" || key === "tv" ? (
+            <EndlessMediaRow key={key} categoryKey={key} onOpen={onOpen} />
+          ) : (
+            <MediaRow
+              key={key}
+              categoryKey={key}
+              items={byCategory[key] || []}
+              onOpen={onOpen}
+              isAdmin={isAdmin}
+              onEdit={openEdit}
+              onDelete={handleDelete}
+              onAdd={openAdd}
+            />
+          )
+        )}
       </div>
 
       {playing && <ImmersivePlayer item={playing} onClose={() => setPlaying(null)} />}

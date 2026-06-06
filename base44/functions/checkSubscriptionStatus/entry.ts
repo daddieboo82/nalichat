@@ -29,7 +29,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const activeSubs = subs.filter(s => s.status === 'active' || s.status === 'trial');
+    const activeSubs = subs
+      .filter(s => s.status === 'active' || s.status === 'trial')
+      .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
     if (activeSubs.length === 0) {
       // User has no active subscription - check 7 days free

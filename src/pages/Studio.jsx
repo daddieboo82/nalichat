@@ -34,6 +34,7 @@ import { separateStems, generateMelody, renderMixToWav, renderMixToMp3 } from '@
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import LivePresenceBar from '@/components/studio/LivePresenceBar';
 import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
+import MixerPanel from '@/components/studio/MixerPanel';
 
 // Fake waveform generator - High-resolution for precision editing
 const generateWaveform = (length = 2000) => {
@@ -87,6 +88,9 @@ export default function Studio() {
   const [editMode, setEditMode] = useState('grid'); // slip, grid, shuffle
   const [activeTool, setActiveTool] = useState('smart'); // smart, trim, grab, fade
   const [gridSize, setGridSize] = useState(1);
+
+  const [masterVolume, setMasterVolume] = useState(100);
+  const [showMixerPanel, setShowMixerPanel] = useState(false);
 
   // Session musical settings shown in the transport (BPM, time signature, key)
   const [bpm, setBpm] = useState(120);
@@ -279,7 +283,7 @@ export default function Studio() {
             audioElementsRef.current[track.id] = audio;
           }
           audio.currentTime = currentTimeRef.current;
-          audio.volume = track.muted ? 0 : (track.volume / 100);
+          audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100));
           audio.play().catch(e => console.error("Audio playback error:", e));
         }
       });
@@ -312,10 +316,10 @@ export default function Studio() {
     tracks.forEach(track => {
       const audio = audioElementsRef.current[track.id];
       if (audio) {
-        audio.volume = track.muted ? 0 : (track.volume / 100);
+        audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100));
       }
     });
-  }, [tracks]);
+  }, [tracks, masterVolume]);
 
   // Hardware Detection - Refined and Optimized
   useEffect(() => {
@@ -498,7 +502,7 @@ export default function Studio() {
               audioElementsRef.current[track.id] = audio;
             }
             audio.currentTime = currentTimeRef.current;
-            audio.volume = track.muted ? 0 : (track.volume / 100);
+            audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100));
             audio.play().catch(e => console.error("Overdub playback error:", e));
           }
         });
@@ -539,6 +543,7 @@ export default function Studio() {
   };
 
   const stop = () => {
+    const wasPlayingOrRecording = isPlaying || isRecording;
     setIsPlaying(false);
     if (isRecording) {
       setIsRecording(false);
@@ -546,11 +551,17 @@ export default function Studio() {
     } else {
       sounds.recStop();
     }
-    updateCurrentTime(0);
+    
     Object.values(audioElementsRef.current).forEach(audio => {
       audio.pause();
-      audio.currentTime = 0;
     });
+
+    if (!wasPlayingOrRecording) {
+      updateCurrentTime(0);
+      Object.values(audioElementsRef.current).forEach(audio => {
+        audio.currentTime = 0;
+      });
+    }
   };
 
   // Keyboard shortcuts for Power Users
@@ -976,9 +987,9 @@ export default function Studio() {
         <div className="flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><Rewind className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Back to Start</TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><Square className="w-5 h-5 fill-current" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Stop</TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={togglePlay} className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>{isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">{isPlaying ? "Pause" : "Play"}</TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={toggleRecord} className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}>{isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}<Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Record</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><Square className="w-5 h-5 fill-current" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Enter</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={togglePlay} className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>{isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{isPlaying ? "Pause" : "Play"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={toggleRecord} className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}>{isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}<Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Record <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">R</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><FastForward className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Fast-forward</TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
@@ -1108,8 +1119,10 @@ export default function Studio() {
         
         {/* Undo / Redo */}
         <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
-          <Button variant="ghost" size="icon" onClick={undo} disabled={historyIndex <= 0} className="w-7 h-7 rounded text-muted-foreground hover:text-foreground disabled:opacity-30" title="Undo"><Undo className="w-3.5 h-3.5" /></Button>
-          <Button variant="ghost" size="icon" onClick={redo} disabled={historyIndex >= historyRef.current.length - 1} className="w-7 h-7 rounded text-muted-foreground hover:text-foreground disabled:opacity-30" title="Redo"><Redo className="w-3.5 h-3.5" /></Button>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={undo} disabled={historyIndex <= 0} className="w-7 h-7 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"><Undo className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Undo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Z</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={redo} disabled={historyIndex >= historyRef.current.length - 1} className="w-7 h-7 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"><Redo className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Redo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
+          </TooltipProvider>
         </div>
 
         {/* BPM / Time Signature / Key display */}
@@ -1123,7 +1136,7 @@ export default function Studio() {
               onChange={(e) => setBpmInput(e.target.value.replace(/[^0-9]/g, ''))}
               onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }}
               onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-              className="w-8 bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight"
+              className="w-10 bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight"
             />
           </label>
           <div className="flex flex-col items-center justify-center px-2 py-0.5 border-l border-border/60" title="Time signature">
@@ -1279,7 +1292,7 @@ export default function Studio() {
                       <TooltipProvider delayDuration={200}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="truncate cursor-help" title={track.name}>{track.name}</span>
+                            <span className="line-clamp-2 text-xs font-semibold cursor-help break-words whitespace-normal" title={track.name}>{track.name}</span>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[240px] break-words">{track.name}</TooltipContent>
                         </Tooltip>
@@ -1714,7 +1727,7 @@ export default function Studio() {
                         <div className="w-[2px] h-4 bg-white/50 group-hover/handle:bg-white rounded-full" />
                       </div>
 
-                      <div className="absolute top-1 left-4 text-[10px] font-medium text-white/50 pointer-events-none flex items-center gap-1">
+                      <div className="absolute top-1 left-4 text-[10px] font-medium text-white/50 pointer-events-none flex items-center gap-1 truncate max-w-[90%]">
                         {track.name} - Take 1
                         {track.locked && <Link2 className="w-3 h-3 text-red-400" />}
                         {track.elasticAudio && <Activity className="w-3 h-3 text-blue-400" />}
@@ -1869,6 +1882,20 @@ export default function Studio() {
       {/* Bottom Mixer / Status Bar */}
       <div className="h-10 border-t border-border/50 bg-card/80 flex items-center justify-between px-3 sm:px-4 text-xs text-muted-foreground shrink-0 overflow-hidden">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          <Button variant="ghost" size="sm" onClick={() => setShowMixerPanel(!showMixerPanel)} className={cn("h-6 text-xs gap-1.5", showMixerPanel && "bg-secondary text-foreground")}>
+            <SlidersHorizontal className="w-3 h-3" /> Mixer
+          </Button>
+          <div className="hidden md:flex items-center gap-2 border-l border-r border-border/50 px-3 mx-1">
+            <Volume2 className="w-3 h-3 text-muted-foreground" title="Master Volume" />
+            <Slider 
+              value={[masterVolume]} 
+              max={100} 
+              step={1} 
+              onValueChange={(val) => setMasterVolume(val[0])}
+              className="w-20"
+            />
+            <span className="w-7 text-right font-mono text-[10px]">{masterVolume}%</span>
+          </div>
           <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -1914,6 +1941,17 @@ export default function Studio() {
         track={editingTrack} 
         onClose={() => setEditingTrack(null)} 
         onSave={saveTrackEffects}
+      />
+
+      <MixerPanel 
+        show={showMixerPanel} 
+        onClose={() => setShowMixerPanel(false)} 
+        tracks={tracks} 
+        masterVolume={masterVolume} 
+        setMasterVolume={setMasterVolume} 
+        updateVolume={updateVolume} 
+        toggleMute={toggleMute} 
+        toggleSolo={toggleSolo} 
       />
 
       <HardwarePreferencesDialog 

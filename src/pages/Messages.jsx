@@ -12,6 +12,8 @@ import GroupChatDialog from "@/components/messages/GroupChatDialog";
 import ExternalMessageDialog from "@/components/messages/ExternalMessageDialog";
 import GlobalInviteDialog from "@/components/GlobalInviteDialog";
 import { sounds } from "@/hooks/use-sound";
+import { toast } from "sonner";
+import ModerationBanner from "@/components/messages/ModerationBanner";
 import { MessageSquare, Users, Mail, Plus, Zap, UserPlus, Hash, Search, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -151,6 +153,10 @@ export default function Messages() {
 
   const sendMessage = useMutation({
     mutationFn: async (msgData) => {
+      if (currentUser?.is_banned) throw new Error("banned");
+      if (currentUser?.timeout_until && new Date(currentUser.timeout_until) > new Date()) {
+        throw new Error("timed_out");
+      }
       const msg = await base44.entities.Message.create({
         ...msgData,
         conversation_id: selectedConvId,
@@ -162,6 +168,20 @@ export default function Messages() {
         last_message_text: msgData.text || `Sent a ${msgData.type}`,
         last_message_at: new Date().toISOString(),
       });
+
+      // Run content moderation on text messages.
+      if (msgData.text && msgData.text.trim()) {
+        try {
+          const { data } = await base44.functions.invoke("moderateContent", {
+            text: msgData.text,
+            conversation_id: selectedConvId,
+            message_id: msg.id,
+          });
+          if (data?.flagged) {
+            return { ...msg, _flagged: data };
+          }
+        } catch (e) {}
+      }
       return msg;
     },
     onMutate: async (msgData) => {
@@ -184,6 +204,26 @@ export default function Messages() {
       if (ctx?.previous) queryClient.setQueryData(["messages", selectedConvId], ctx.previous);
     },
     onSuccess: (msg) => {
+      // If the message was flagged by moderation, remove it from the cache and warn the user.
+      if (msg?._flagged) {
+        const f = msg._flagged;
+        queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+          old.filter(m => !m._optimistic && m.id !== msg.id)
+        );
+        const labels = {
+          violence: "violence", racism: "racism", sexual_violence: "sexual violence",
+          bullying: "bullying", illegal_activity: "illegal activity",
+        };
+        if (f.is_banned) {
+          toast.error("You have been permanently banned for severe policy violations.");
+        } else if (f.action_taken === "timeout") {
+          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. You are timed out from sending messages.`);
+        } else {
+          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. This is a warning — repeated violations will result in a timeout.`);
+        }
+        base44.auth.me().then(setCurrentUser).catch(() => {});
+        return;
+      }
       // Swap the optimistic temp for the real saved message instantly (no refetch).
       queryClient.setQueryData(["messages", selectedConvId], (old = []) => {
         const withoutTemp = old.filter(m => !m._optimistic);
@@ -193,6 +233,9 @@ export default function Messages() {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
+
+  const isTimedOut = currentUser?.timeout_until && new Date(currentUser.timeout_until) > new Date();
+  const isBlocked = currentUser?.is_banned || isTimedOut;
 
   const handleReact = async (messageId, emoji) => {
     const msg = messages.find(m => m.id === messageId);
@@ -354,7 +397,15 @@ export default function Messages() {
               messages={messages}
               currentUser={currentUser}
               users={users}
-              onSendMessage={(data) => sendMessage.mutate(data)}
+              isBlocked={isBlocked}
+              moderationBanner={isBlocked ? <ModerationBanner currentUser={currentUser} /> : null}
+              onSendMessage={(data) => {
+                if (isBlocked) {
+                  toast.error(currentUser?.is_banned ? "You are banned from sending messages." : "You are timed out and cannot send messages right now.");
+                  return;
+                }
+                sendMessage.mutate(data);
+              }}
               onEditMessage={(id, text) => editMessage.mutate({ id, text })}
               onReact={handleReact}
               onBack={() => setSelectedConvId(null)}

@@ -17,7 +17,7 @@ import React from "react";
 
 const ADMIN_EMAILS = ["bossglop43@gmail.com"];
 
-export default React.memo(function ChatView({ conversation, messages, currentUser, users, onSendMessage, onEditMessage, onReact, onBack, onStartDM }) {
+export default React.memo(function ChatView({ conversation, messages, currentUser, users, onSendMessage, onEditMessage, onReact, onBack, onStartDM, isBlocked, moderationBanner }) {
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -200,6 +200,7 @@ export default React.memo(function ChatView({ conversation, messages, currentUse
 
       {/* Floating Input Area */}
       <div className="absolute bottom-0 left-0 right-0 z-20 p-2 sm:p-4 pointer-events-none">
+        {isBlocked ? moderationBanner : (
         <div className="pointer-events-auto w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-visible bg-background/90 backdrop-blur-2xl border border-border/50">
           <ChatInput
             key={conversation?.id || "chat"}
@@ -221,6 +222,7 @@ export default React.memo(function ChatView({ conversation, messages, currentUse
             }}
           />
         </div>
+        )}
       </div>
 
       {/* Panels */}

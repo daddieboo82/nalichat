@@ -1,0 +1,60 @@
+{
+  "name": "Violation",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the user who committed the violation"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "violence",
+        "racism",
+        "sexual_violence",
+        "bullying",
+        "illegal_activity"
+      ],
+      "description": "Category of policy violation detected"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium"
+    },
+    "content": {
+      "type": "string",
+      "description": "The offending message content that triggered the violation"
+    },
+    "conversation_id": {
+      "type": "string"
+    },
+    "message_id": {
+      "type": "string"
+    },
+    "action_taken": {
+      "type": "string",
+      "enum": [
+        "warning",
+        "timeout",
+        "ban"
+      ],
+      "description": "Enforcement action applied as a result of this violation"
+    },
+    "explanation": {
+      "type": "string",
+      "description": "AI explanation of why the content was flagged"
+    }
+  },
+  "required": [
+    "user_id",
+    "category"
+  ]
+}

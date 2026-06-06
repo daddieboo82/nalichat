@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-// Escalating timeout durations (in minutes) based on number of prior violations.
-const TIMEOUT_LADDER = [0, 60, 360, 1440, 4320]; // warning, 1h, 6h, 24h, 72h
+const TIMEOUT_48H_MINUTES = 48 * 60;
 
 Deno.serve(async (req) => {
   try {
@@ -50,23 +49,20 @@ Message to analyze: "${text}"`,
     }
 
     // Record the violation and escalate enforcement.
+    // 1st offence -> warning, 2nd offence -> 48h timeout, 3rd offence -> ban (admin appeal only).
     const priorCount = user.violation_count || 0;
     const newCount = priorCount + 1;
-
-    // High-severity sexual_violence (e.g. child exploitation) -> immediate ban.
-    const immediateBan = result.category === "sexual_violence" && result.severity === "high";
 
     let action_taken = "warning";
     let timeout_until = null;
     let is_banned = user.is_banned || false;
 
-    if (immediateBan || newCount >= 5) {
+    if (newCount >= 3) {
       action_taken = "ban";
       is_banned = true;
-    } else if (newCount >= 2) {
-      const minutes = TIMEOUT_LADDER[Math.min(newCount, TIMEOUT_LADDER.length - 1)] || 60;
+    } else if (newCount === 2) {
       action_taken = "timeout";
-      timeout_until = new Date(Date.now() + minutes * 60 * 1000).toISOString();
+      timeout_until = new Date(Date.now() + TIMEOUT_48H_MINUTES * 60 * 1000).toISOString();
     }
 
     await base44.asServiceRole.entities.Violation.create({

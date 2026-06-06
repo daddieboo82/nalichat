@@ -30,12 +30,12 @@ export default function ModerationBanner({ currentUser }) {
       </div>
       <div className="min-w-0">
         <p className="font-heading font-semibold text-sm text-destructive">
-          {banned ? "Account banned" : "You're timed out"}
+          {banned ? "Account banned" : "You're timed out (48 hours)"}
         </p>
         <p className="text-[12px] text-muted-foreground leading-snug">
           {banned
-            ? "Your account has been permanently restricted for severe policy violations."
-            : `Messaging is paused for content policy violations${remaining ? `. Try again in ${remaining}.` : "."}`}
+            ? "Your account has been banned for repeated policy violations. You can only message an admin to appeal."
+            : `Messaging is paused for a content policy violation${remaining ? `. Try again in ${remaining}.` : "."}`}
         </p>
       </div>
     </div>

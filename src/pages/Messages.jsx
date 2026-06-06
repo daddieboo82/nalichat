@@ -153,8 +153,13 @@ export default function Messages() {
 
   const sendMessage = useMutation({
     mutationFn: async (msgData) => {
-      if (currentUser?.is_banned) throw new Error("banned");
-      if (currentUser?.timeout_until && new Date(currentUser.timeout_until) > new Date()) {
+      // Banned users may only send to conversations that include an admin (appeals).
+      if (currentUser?.is_banned) {
+        const hasAdmin = selectedConv?.participant_ids?.some(
+          id => id !== currentUser.id && users.find(u => u.id === id)?.role === "admin"
+        );
+        if (!hasAdmin) throw new Error("banned");
+      } else if (currentUser?.timeout_until && new Date(currentUser.timeout_until) > new Date()) {
         throw new Error("timed_out");
       }
       const msg = await base44.entities.Message.create({
@@ -169,8 +174,8 @@ export default function Messages() {
         last_message_at: new Date().toISOString(),
       });
 
-      // Run content moderation on text messages.
-      if (msgData.text && msgData.text.trim()) {
+      // Run content moderation on text messages (skip for banned users appealing to an admin).
+      if (msgData.text && msgData.text.trim() && !currentUser?.is_banned) {
         try {
           const { data } = await base44.functions.invoke("moderateContent", {
             text: msgData.text,
@@ -215,11 +220,11 @@ export default function Messages() {
           bullying: "bullying", illegal_activity: "illegal activity",
         };
         if (f.is_banned) {
-          toast.error("You have been permanently banned for severe policy violations.");
+          toast.error("You have been banned for repeated policy violations. To appeal, message an admin.");
         } else if (f.action_taken === "timeout") {
-          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. You are timed out from sending messages.`);
+          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. 2nd offence — you are timed out for 48 hours.`);
         } else {
-          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. This is a warning — repeated violations will result in a timeout.`);
+          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. This is your 1st warning — a 2nd offence is a 48-hour timeout.`);
         }
         base44.auth.me().then(setCurrentUser).catch(() => {});
         return;
@@ -235,7 +240,6 @@ export default function Messages() {
   });
 
   const isTimedOut = currentUser?.timeout_until && new Date(currentUser.timeout_until) > new Date();
-  const isBlocked = currentUser?.is_banned || isTimedOut;
 
   const handleReact = async (messageId, emoji) => {
     const msg = messages.find(m => m.id === messageId);
@@ -289,6 +293,14 @@ export default function Messages() {
 
   const selectedConv = myConversations.find(c => c.id === selectedConvId);
   const otherUsers = users.filter(u => u.id !== currentUser?.id);
+
+  // Banned users may still message an admin (to appeal). Timed-out users are fully blocked.
+  const convHasAdmin = selectedConv?.participant_ids?.some(
+    id => id !== currentUser?.id && users.find(u => u.id === id)?.role === "admin"
+  );
+  const isBlocked = currentUser?.is_banned
+    ? !convHasAdmin
+    : isTimedOut;
 
   return (
     <div className="h-[calc(100dvh-70px)] sm:h-[calc(100vh-80px)] p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden">

@@ -144,6 +144,77 @@ export async function renderMixToWav(tracks) {
   return audioBufferToWav(rendered);
 }
 
+// Render the mixed-down tracks into an MP3 Blob (128kbps).
+export async function renderMixToMp3(tracks) {
+  const audioTracks = (tracks || []).filter(t => t.audioUrl);
+  if (audioTracks.length === 0) return null;
+
+  const hasSolo = audioTracks.some(t => t.solo);
+  const active = audioTracks.filter(t => (hasSolo ? t.solo : !t.muted));
+  if (active.length === 0) return null;
+
+  const decoded = await Promise.all(active.map(async (t) => ({
+    track: t,
+    buffer: await fetchAudioBuffer(t.audioUrl),
+  })));
+
+  const sampleRate = 44100;
+  const totalSeconds = Math.max(
+    ...decoded.map(d => (d.track.startTime || 0) + d.buffer.duration)
+  );
+  const length = Math.ceil(totalSeconds * sampleRate);
+  const offline = new OfflineAudioContext(2, length, sampleRate);
+
+  decoded.forEach(({ track, buffer }) => {
+    const src = offline.createBufferSource();
+    src.buffer = buffer;
+    const gain = offline.createGain();
+    gain.gain.value = (track.volume ?? 75) / 100;
+    src.connect(gain);
+    gain.connect(offline.destination);
+    src.start(track.startTime || 0);
+  });
+
+  const rendered = await offline.startRendering();
+
+  const { Mp3Encoder } = await import('lamejs');
+  const numChannels = rendered.numberOfChannels >= 2 ? 2 : 1;
+  const encoder = new Mp3Encoder(numChannels, rendered.sampleRate, 128);
+
+  const left = rendered.getChannelData(0);
+  const right = numChannels === 2 ? rendered.getChannelData(1) : null;
+
+  const toInt16 = (floatArr) => {
+    const out = new Int16Array(floatArr.length);
+    for (let i = 0; i < floatArr.length; i++) {
+      const s = Math.max(-1, Math.min(1, floatArr[i]));
+      out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+    }
+    return out;
+  };
+
+  const leftInt = toInt16(left);
+  const rightInt = right ? toInt16(right) : null;
+
+  const blockSize = 1152;
+  const mp3Data = [];
+  for (let i = 0; i < leftInt.length; i += blockSize) {
+    const leftChunk = leftInt.subarray(i, i + blockSize);
+    let mp3buf;
+    if (numChannels === 2) {
+      const rightChunk = rightInt.subarray(i, i + blockSize);
+      mp3buf = encoder.encodeBuffer(leftChunk, rightChunk);
+    } else {
+      mp3buf = encoder.encodeBuffer(leftChunk);
+    }
+    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+  }
+  const end = encoder.flush();
+  if (end.length > 0) mp3Data.push(end);
+
+  return new Blob(mp3Data, { type: 'audio/mp3' });
+}
+
 // Real audio synthesis: generate a chord progression melody as actual audio.
 export async function generateMelody({ seconds = 8, bpm = 120 } = {}) {
   const sampleRate = 44100;

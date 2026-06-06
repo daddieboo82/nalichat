@@ -28,7 +28,7 @@ import { sounds } from '@/hooks/use-sound';
 import { useSubscription } from '@/hooks/useSubscription';
 import UpgradeModal from '@/components/billing/UpgradeModal';
 import { Link } from 'react-router-dom';
-import { separateStems, generateMelody, renderMixToWav } from '@/lib/audioProcessing';
+import { separateStems, generateMelody, renderMixToWav, renderMixToMp3 } from '@/lib/audioProcessing';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import LivePresenceBar from '@/components/studio/LivePresenceBar';
 
@@ -901,15 +901,15 @@ export default function Studio() {
 
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const handleDownloadMix = async () => {
+  const handleDownloadMix = async (format = 'wav') => {
     if (!tracks.some(t => t.audioUrl)) {
       toast.error("No audio to export. Record or import a track first.");
       return;
     }
     setIsDownloading(true);
-    toast.info("Rendering your mix...");
+    toast.info(`Rendering your mix to ${format.toUpperCase()}...`);
     try {
-      const blob = await renderMixToWav(tracks);
+      const blob = format === 'mp3' ? await renderMixToMp3(tracks) : await renderMixToWav(tracks);
       if (!blob) {
         toast.error("Nothing to export (all tracks muted or empty).");
         return;
@@ -917,7 +917,7 @@ export default function Studio() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `NaliStudio Mix ${new Date().toISOString().slice(0, 10)}.wav`;
+      a.download = `NaliStudio Mix ${new Date().toISOString().slice(0, 10)}.${format}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1054,8 +1054,11 @@ export default function Studio() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={handleDownloadMix} disabled={isDownloading} className="cursor-pointer py-2">
+                <DropdownMenuItem onClick={() => handleDownloadMix('wav')} disabled={isDownloading} className="cursor-pointer py-2">
                   {isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />} Download Mix (WAV)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownloadMix('mp3')} disabled={isDownloading} className="cursor-pointer py-2">
+                  {isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />} Download Mix (MP3)
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { setBounceRedirect('explore'); setBounceOpen(true); }} className="cursor-pointer py-2">

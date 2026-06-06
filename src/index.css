@@ -105,6 +105,13 @@
   }
 }
 
+/* Landscape phones/tablets with limited height: tighten the bottom tab bar
+   so it doesn't eat the small amount of vertical space available. */
+@media (max-height: 500px) and (orientation: landscape) {
+  nav.lg\:hidden .flex.flex-col.items-center { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+  nav.lg\:hidden span { font-size: 9px; }
+}
+
 /* Safe-area padding so content never clips under notches / system bars */
 @supports (padding: env(safe-area-inset-top)) {
   .safe-top { padding-top: env(safe-area-inset-top); }

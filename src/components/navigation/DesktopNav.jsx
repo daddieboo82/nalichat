@@ -43,7 +43,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
   const isActive = (path) => location.pathname === path || (path !== "/" && location.pathname.startsWith(path));
 
   return (
-    <nav className="hidden md:block relative z-50 border-t border-border/50 backdrop-blur-xl" style={{ background: "hsl(240 8% 6% / 0.95)" }}>
+    <nav className="hidden lg:block relative z-50 border-t border-border/50 backdrop-blur-xl" style={{ background: "hsl(240 8% 6% / 0.95)" }}>
       <div className="w-full px-4 py-2 flex items-center justify-between gap-4">
         {/* Logo */}
         <Link to="/" className="group shrink-0">

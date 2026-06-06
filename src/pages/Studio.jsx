@@ -974,37 +974,13 @@ export default function Studio() {
 
         {/* Transport Controls */}
         <div className="flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0">
-          <Button variant="ghost" size="icon" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground">
-            <Rewind className="w-5 h-5" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={(e) => { stop(); e.currentTarget.blur(); }}
-            className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"
-          >
-            <Square className="w-5 h-5 fill-current" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={togglePlay}
-            className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}
-          >
-            {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggleRecord}
-            className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}
-          >
-            {isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}
-            <Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground">
-            <FastForward className="w-5 h-5" />
-          </Button>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><Rewind className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Back to Start</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><Square className="w-5 h-5 fill-current" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Stop</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={togglePlay} className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>{isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">{isPlaying ? "Pause" : "Play"}</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={toggleRecord} className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}>{isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}<Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Record</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><FastForward className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Fast-forward</TooltipContent></Tooltip>
+          </TooltipProvider>
         </div>
 
         {/* Right Tools - Hardware & Export */}
@@ -1040,7 +1016,7 @@ export default function Studio() {
             </Button>
           </div>
 
-          <div className="font-mono text-sm sm:text-xl text-primary font-bold bg-[#0a0a0c] px-2 sm:px-4 py-1.5 rounded-lg border border-border w-24 sm:w-36 text-center shadow-inner tracking-tight sm:tracking-widest relative group shrink-0">
+          <div className="font-mono text-sm sm:text-xl text-primary font-bold bg-[#0a0a0c] px-2 sm:px-4 py-1.5 rounded-lg border border-border w-24 sm:w-36 text-center shadow-inner tracking-tight sm:tracking-normal relative group shrink-0">
             <span ref={timeDisplayRef}>{formatTime(currentTimeRef.current)}</span>
             {isRecording && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
           </div>
@@ -1303,7 +1279,7 @@ export default function Studio() {
                       <TooltipProvider delayDuration={200}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="truncate cursor-help">{track.name}</span>
+                            <span className="truncate cursor-help" title={track.name}>{track.name}</span>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[240px] break-words">{track.name}</TooltipContent>
                         </Tooltip>
@@ -1313,6 +1289,7 @@ export default function Studio() {
                       className="bg-transparent border-none text-[9px] text-muted-foreground focus:ring-0 cursor-pointer hover:text-foreground p-0 m-0 mt-0.5 outline-none w-max"
                       title="Track Input Routing"
                       onClick={(e) => e.stopPropagation()}
+                      defaultValue={(track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic"}
                     >
                       <option>In: Default Mic</option>
                       <option>In: Audio Interface</option>
@@ -1422,7 +1399,7 @@ export default function Studio() {
                 const seconds = i * 5; // Every 5 seconds
                 const position = seconds * 20 * zoom;
                 return (
-                  <div key={i} className="absolute bottom-0 text-[10px] text-muted-foreground/50 border-l border-border/40 pl-1 h-3" style={{ left: `${position}px` }}>
+                  <div key={i} className="absolute bottom-0 text-[10px] text-muted-foreground/50 border-l border-border/40 pl-1 h-3 -ml-[1px]" style={{ left: `${position}px` }}>
                     {Math.floor(seconds / 60)}:{(seconds % 60).toString().padStart(2, '0')}
                   </div>
                 );
@@ -1456,7 +1433,7 @@ export default function Studio() {
             {/* Playhead */}
             <div 
               ref={playheadRef}
-              className="absolute top-0 bottom-0 w-[2px] bg-primary z-30 pointer-events-none group shadow-[0_0_10px_rgba(var(--primary),0.8)]"
+              className="absolute top-0 bottom-0 w-[2px] -ml-[1px] bg-primary z-30 pointer-events-none group shadow-[0_0_10px_rgba(var(--primary),0.8)]"
               style={{ left: `${currentTimeRef.current * 20 * zoom}px` }}
             >
               <div className="absolute top-0 -translate-x-1/2 w-4 h-4 bg-primary rounded-b flex items-center justify-center cursor-ew-resize pointer-events-auto hover:bg-primary/90 shadow-md">
@@ -1631,7 +1608,7 @@ export default function Studio() {
                           target.addEventListener('pointerup', handleUp);
                         }
                       }}
-                      className="audio-clip absolute top-2 bottom-2 rounded-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors shadow-sm"
+                      className="audio-clip absolute top-2 bottom-2 rounded-r-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors shadow-sm"
                       style={{ 
                         left: `${(track.startTime !== undefined ? track.startTime : 0) * 20 * zoom}px`,
                         width: `${(track.duration !== undefined ? track.duration : 40) * 20 * zoom}px`
@@ -1864,20 +1841,9 @@ export default function Studio() {
                           return (
                             <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">
                               <defs>
-                                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="currentColor" stopOpacity="0.55" />
-                                  <stop offset="50%" stopColor="currentColor" stopOpacity="0.28" />
-                                  <stop offset="100%" stopColor="currentColor" stopOpacity="0.55" />
-                                </linearGradient>
-                                <linearGradient id={rmsId} x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="currentColor" stopOpacity="1" />
-                                  <stop offset="50%" stopColor="currentColor" stopOpacity="0.85" />
-                                  <stop offset="100%" stopColor="currentColor" stopOpacity="1" />
-                                </linearGradient>
-                                <filter id={glowId} x="-5%" y="-20%" width="110%" height="140%">
-                                  <feGaussianBlur stdDeviation="0.6" result="b" />
-                                  <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-                                </filter>
+                                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.55" /><stop offset="50%" stopColor="currentColor" stopOpacity="0.28" /><stop offset="100%" stopColor="currentColor" stopOpacity="0.55" /></linearGradient>
+                                <linearGradient id={rmsId} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="1" /><stop offset="50%" stopColor="currentColor" stopOpacity="0.85" /><stop offset="100%" stopColor="currentColor" stopOpacity="1" /></linearGradient>
+                                <filter id={glowId} x="-5%" y="-20%" width="110%" height="140%"><feGaussianBlur stdDeviation="0.6" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
                               </defs>
                               <g className={baseFill}>
                                 <path d={peakPath} fill={`url(#${gradId})`} />
@@ -1906,9 +1872,9 @@ export default function Studio() {
           <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="text-primary font-medium shrink-0 hover:underline outline-none cursor-pointer whitespace-nowrap">
-                <span className="inline">{audioSettings.sampleRate} / {audioSettings.bitDepth}</span>
-                <span className="hidden sm:inline"> • Opus Codec Active</span>
+              <button title="Change Audio Quality Settings" className="text-primary font-medium shrink-0 hover:underline outline-none cursor-pointer whitespace-nowrap">
+                <span className="inline">Quality: {audioSettings.sampleRate} / {audioSettings.bitDepth}</span>
+                <span className="hidden sm:inline"> • Opus Codec</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48 bg-card border-border">

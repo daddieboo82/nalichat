@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ArrowRight } from "lucide-react";
 
-const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/onboarding"];
+const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/onboarding", "/studio"];
 
 // Shows a tiny glowing arrow hint nudging the user to "Ask Nali"
 // after a period of inactivity (user seems stuck / idle).
@@ -59,7 +59,7 @@ export default function AskNaliHint() {
           initial={{ opacity: 0, x: 20, scale: 0.8 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: 20, scale: 0.8 }}
-          className="fixed bottom-44 md:bottom-24 right-4 z-[999998] flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full bg-card/90 backdrop-blur-md border border-primary/40 shadow-[0_0_20px_rgba(139,92,246,0.4)]"
+          className="fixed bottom-32 md:bottom-20 right-4 z-[999998] flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full bg-card/90 backdrop-blur-md border border-primary/40 shadow-[0_0_20px_rgba(139,92,246,0.4)]"
         >
           <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping" style={{ animationDuration: "2s" }} />
           <Sparkles className="relative w-3.5 h-3.5 text-primary" />

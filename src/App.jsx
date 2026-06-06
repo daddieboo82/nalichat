@@ -104,7 +104,7 @@ const AuthenticatedApp = () => {
   // Admins bypass onboarding & paywall gates entirely.
   const isAdminUser = user?.role === 'admin';
 
-  if (isAuthenticated && user && !isAdminUser && !user.onboarding_completed && location.pathname !== '/onboarding' && location.pathname !== '/login' && location.pathname !== '/register') {
+  if (isAuthenticated && user && !user.onboarding_completed && location.pathname.toLowerCase() !== '/onboarding' && location.pathname !== '/login' && location.pathname !== '/register') {
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -125,6 +125,7 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />}><Onboarding /></ProtectedRoute>} />
+      <Route path="/Onboarding" element={<Navigate to="/onboarding" replace />} />
       <Route element={<AppLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/explore" element={<Explore />} />

@@ -22,7 +22,7 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (user) {
-      if (user.role === 'admin' || user.onboarding_completed) {
+      if (user.onboarding_completed) {
         window.location.href = "/";
       } else {
         setForm(f => ({

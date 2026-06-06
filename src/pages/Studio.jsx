@@ -1270,7 +1270,7 @@ export default function Studio() {
           )}
         </AnimatePresence>
         {/* Track Headers (Left Sidebar) */}
-        <div className="w-40 sm:w-64 border-r border-border/50 bg-card/60 flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)]">
+        <div className="w-44 sm:w-72 border-r border-border/50 bg-card/60 flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)]">
           <DragDropContext onDragEnd={handleReorderTracks}>
             <Droppable droppableId="studio-track-headers">
               {(dropProvided) => (

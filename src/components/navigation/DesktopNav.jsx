@@ -69,12 +69,15 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
               title={label}
               onClick={() => sounds.nav()}
               className={cn(
-                "px-2.5 xl:px-3 py-2 rounded-xl flex items-center gap-1.5 transition-all whitespace-nowrap text-sm font-semibold group shrink-0",
+                "relative px-2.5 xl:px-3 py-2 rounded-xl flex items-center gap-1.5 transition-all whitespace-nowrap text-sm font-semibold group shrink-0",
                 isActive(path)
                   ? "bg-primary/15 text-primary shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
               )}
             >
+              {isActive(path) && (
+                <div className="absolute top-0 inset-x-2 h-0.5 bg-primary rounded-b-full shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
+              )}
               <Icon className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", isActive(path) && "text-primary")} />
               <span className="hidden xl:inline">{label}</span>
             </Link>
@@ -83,10 +86,13 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
             <DropdownMenuTrigger asChild>
               <button
                 className={cn(
-                  "px-2.5 xl:px-3 py-2 rounded-xl flex items-center gap-1.5 transition-all whitespace-nowrap text-sm font-semibold group shrink-0 text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                  "relative px-2.5 xl:px-3 py-2 rounded-xl flex items-center gap-1.5 transition-all whitespace-nowrap text-sm font-semibold group shrink-0 text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                   MORE_NAV_ITEMS.some(item => isActive(item.path)) && "bg-primary/15 text-primary shadow-sm"
                 )}
               >
+                {MORE_NAV_ITEMS.some(item => isActive(item.path)) && (
+                  <div className="absolute top-0 inset-x-2 h-0.5 bg-primary rounded-b-full shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
+                )}
                 <MoreHorizontal className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", MORE_NAV_ITEMS.some(item => isActive(item.path)) && "text-primary")} />
                 <span className="hidden xl:inline">More</span>
               </button>

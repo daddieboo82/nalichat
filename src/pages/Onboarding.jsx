@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +13,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const { checkUserAuth } = useAuth();
   const [user, setUser] = useState(null);
   const [form, setForm] = useState({ 
     display_name: "", 
@@ -70,6 +72,8 @@ export default function Onboarding() {
     setLoading(true);
     try {
       await base44.auth.updateMe(form);
+      // Refresh the cached auth user so App.jsx doesn't redirect back to onboarding
+      await checkUserAuth();
       sounds.success();
       toast.success("Welcome to NaliChat!");
       navigate("/");

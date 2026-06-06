@@ -48,7 +48,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
         </Link>
 
         {/* Main Navigation */}
-        <div className="flex items-center justify-center flex-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] gap-2 lg:gap-4 px-2">
+        <div className="flex items-center justify-center flex-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] gap-1 lg:gap-1.5 px-2">
           {NAV_ITEMS.map(({ icon: Icon, label, path }) => (
             <Link
               key={path}
@@ -56,14 +56,14 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
               title={label}
               onClick={() => sounds.nav()}
               className={cn(
-                "px-3 py-2 rounded-xl flex items-center gap-2 transition-all whitespace-nowrap text-sm font-semibold group",
+                "px-2.5 lg:px-3 py-2 rounded-xl flex items-center gap-1.5 transition-all whitespace-nowrap text-sm font-semibold group",
                 isActive(path)
                   ? "bg-primary/15 text-primary shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
               )}
             >
               <Icon className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", isActive(path) && "text-primary")} />
-              <span className="hidden xl:inline">{label}</span>
+              <span className="hidden lg:inline">{label}</span>
             </Link>
           ))}
         </div>

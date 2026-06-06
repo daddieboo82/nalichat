@@ -29,8 +29,6 @@ export default function ImmersivePlayer({ item, onClose }) {
           <img src={backdrop} alt={item.title} className="absolute inset-0 w-full h-full object-cover opacity-40" />
           <a
             href={item.media_url}
-            target="_blank"
-            rel="noopener noreferrer"
             className="relative z-10 flex items-center gap-3 bg-white text-black font-bold px-7 py-4 rounded-full hover:scale-105 transition-transform shadow-2xl"
           >
             <ExternalLink className="w-5 h-5" /> Launch {item.title}

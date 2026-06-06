@@ -1,0 +1,58 @@
+{
+  "name": "DailyMovie",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Movie title"
+    },
+    "year": {
+      "type": "string",
+      "description": "Release year"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short synopsis"
+    },
+    "genre": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "description": "Rating out of 10"
+    },
+    "runtime": {
+      "type": "string",
+      "description": "Runtime label, e.g. '1h 42m'"
+    },
+    "stream_url": {
+      "type": "string",
+      "description": "Direct MP4 stream URL from the Internet Archive"
+    },
+    "archive_id": {
+      "type": "string",
+      "description": "Internet Archive identifier"
+    },
+    "poster_url": {
+      "type": "string",
+      "description": "Poster / thumbnail image URL"
+    },
+    "backdrop_url": {
+      "type": "string",
+      "description": "Wide cinematic backdrop image URL"
+    },
+    "pick_date": {
+      "type": "string",
+      "description": "YYYY-MM-DD date this movie was picked for"
+    },
+    "slot": {
+      "type": "number",
+      "description": "Slot 1, 2 or 3 in today's picks"
+    }
+  },
+  "required": [
+    "title",
+    "stream_url",
+    "pick_date"
+  ]
+}

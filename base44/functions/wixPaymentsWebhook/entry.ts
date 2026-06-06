@@ -8,12 +8,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
 
-    const body = await req.text();
-    if (!body || body.trim().length === 0) {
+    const bodyText = await req.text();
+    const body = bodyText.replace(/^"|"$/g, '').trim();
+    if (!body || body.length === 0) {
       return Response.json({ error: 'Empty request body' }, { status: 400 });
     }
 
-    const WEBHOOK_PUBLIC_KEY = Deno.env.get('WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY');
+    const WEBHOOK_PUBLIC_KEY = Deno.env.get('WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY')?.replace(/\\n/g, '\n');
     if (!WEBHOOK_PUBLIC_KEY) {
       console.error('Missing WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY');
       return Response.json({ error: 'Server misconfigured' }, { status: 500 });

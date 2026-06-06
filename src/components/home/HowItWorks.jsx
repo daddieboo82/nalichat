@@ -21,7 +21,7 @@ const steps = [
     title: "Create Your Profile",
     description: "Sign up, set your artist name, genres, and bio. Build your contacts and start connecting with creators worldwide.",
     color: "text-primary",
-    bg: "bg-primary/10",
+    bg: "bg-primary/20",
   },
   {
     number: "02",
@@ -29,7 +29,7 @@ const steps = [
     title: "Start a Project",
     description: "Spin up a new music project, organize it into tracks and folders, set milestones, and invite collaborators with roles.",
     color: "text-teal-400",
-    bg: "bg-teal-400/10",
+    bg: "bg-teal-400/20",
   },
   {
     number: "03",
@@ -37,7 +37,7 @@ const steps = [
     title: "Upload & Auto-Tag",
     description: "Drop in your stems and recordings. AI automatically suggests BPM, genre, and key so everything stays organized.",
     color: "text-fuchsia-400",
-    bg: "bg-fuchsia-400/10",
+    bg: "bg-fuchsia-400/20",
   },
   {
     number: "04",
@@ -45,7 +45,7 @@ const steps = [
     title: "Produce with AI",
     description: "Separate stems from any mix, generate fresh samples and ideas, and craft your sound right inside the built-in DAW.",
     color: "text-indigo-400",
-    bg: "bg-indigo-400/10",
+    bg: "bg-indigo-400/20",
   },
   {
     number: "05",
@@ -53,7 +53,7 @@ const steps = [
     title: "Jam Live Together",
     description: "Launch a multiplayer Jam Room with live audio and video to co-edit tracks with your collaborators in real time.",
     color: "text-pink-400",
-    bg: "bg-pink-400/10",
+    bg: "bg-pink-400/20",
   },
   {
     number: "06",
@@ -61,7 +61,7 @@ const steps = [
     title: "Master Your Track",
     description: "Run AI Mastering to polish your mix to industry-standard loudness and clarity — no expensive engineer required.",
     color: "text-orange-400",
-    bg: "bg-orange-400/10",
+    bg: "bg-orange-400/20",
   },
   {
     number: "07",
@@ -69,7 +69,7 @@ const steps = [
     title: "Release & Grow",
     description: "Drop your finished tracks and art posts to Explore, build playlists, climb the leaderboard, and grow your following.",
     color: "text-accent",
-    bg: "bg-accent/10",
+    bg: "bg-accent/20",
   },
   {
     number: "08",
@@ -77,7 +77,7 @@ const steps = [
     title: "Sell Your Stems",
     description: "List your stems on the marketplace and securely sell licenses directly to other artists and producers.",
     color: "text-blue-400",
-    bg: "bg-blue-400/10",
+    bg: "bg-blue-400/20",
   },
 ];
 

@@ -78,6 +78,8 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
 
         {/* Right Section */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* Separator between labeled nav and icon actions */}
+          <div className="border-l border-border/30 h-6 mr-1" />
           {/* Communication */}
           <Link
             to="/"

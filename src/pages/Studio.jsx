@@ -126,8 +126,8 @@ export default function Studio() {
       console.error("Failed to load project autosave", e);
     }
     return [
-      { id: 1, name: "Vocals Lead", color: "bg-primary", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
-      { id: 2, name: "Beat / Instrumental", color: "bg-accent", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+      { id: 1, name: "Vocals Lead", color: "bg-green-500", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+      { id: 2, name: "Beat / Instrumental", color: "bg-green-500", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
     ];
   });
 
@@ -741,7 +741,7 @@ export default function Studio() {
     }
 
     const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
-    const colors = ["bg-primary", "bg-pink-500", "bg-accent", "bg-yellow-500", "bg-purple-500", "bg-green-500"];
+    const colors = ["bg-green-500"];
     setTracksWithHistory([...tracks, {
       id: newId,
       name: `New Track ${newId}`,
@@ -778,8 +778,8 @@ export default function Studio() {
       const { vocals, instrumental } = await separateStems(track.audioUrl);
       let nextId = Math.max(...tracks.map(t => t.id)) + 1;
       setTracksWithHistory(prev => [...prev,
-        { ...track, id: nextId, name: `${track.name} (Vocals/Highs)`, color: "bg-pink-500", audioUrl: vocals.url, waveform: vocals.waveform, duration: vocals.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined },
-        { ...track, id: nextId + 1, name: `${track.name} (Instrumental/Lows)`, color: "bg-accent", audioUrl: instrumental.url, waveform: instrumental.waveform, duration: instrumental.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined }
+        { ...track, id: nextId, name: `${track.name} (Vocals/Highs)`, color: "bg-green-500", audioUrl: vocals.url, waveform: vocals.waveform, duration: vocals.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined },
+        { ...track, id: nextId + 1, name: `${track.name} (Instrumental/Lows)`, color: "bg-green-500", audioUrl: instrumental.url, waveform: instrumental.waveform, duration: instrumental.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined }
       ]);
       toast.success("Stems separated!");
     } catch (e) {
@@ -800,7 +800,7 @@ export default function Studio() {
     try {
       const { url, waveform, duration } = await generateMelody({ seconds: 8, bpm: 120 });
       const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
-      const colors = ["bg-primary", "bg-pink-500", "bg-accent", "bg-yellow-500", "bg-purple-500", "bg-green-500"];
+      const colors = ["bg-green-500"];
       setTracksWithHistory(prev => [...prev, {
         id: newId,
         name: "Generated Melody",
@@ -878,7 +878,7 @@ export default function Studio() {
       }
       
       const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
-      const colors = ["bg-primary", "bg-pink-500", "bg-accent", "bg-yellow-500", "bg-purple-500", "bg-green-500"];
+      const colors = ["bg-green-500"];
       const fileUrl = URL.createObjectURL(file);
 
       toast.info(`Importing ${file.name}...`);
@@ -1864,7 +1864,7 @@ export default function Studio() {
                           let botLine = `M 0,${50 + Math.max(0.02, wf[0])*48} `;
                           for (let i = 1; i <= wLen; i++) botLine += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*48} `;
 
-                          const baseFill = waveformFills[track.color] || "fill-primary";
+                          const baseFill = "fill-green-500";
 
                           return (
                             <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">

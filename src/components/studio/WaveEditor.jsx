@@ -1112,7 +1112,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       let botLine = `M 0,${50 + Math.max(0.02, wf[0])*46*g} `;
                       for (let i = 1; i <= wLen; i++) botLine += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*46*g} `;
 
-                      const baseFill = waveformFills[track?.color] || "fill-primary";
+                      const baseFill = "fill-green-500";
 
                       return (
                         <svg className="w-full h-full pt-5 pb-0 pointer-events-none" preserveAspectRatio="none" viewBox="0 0 1000 100">

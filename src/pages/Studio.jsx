@@ -89,6 +89,7 @@ export default function Studio() {
 
   // Session musical settings shown in the transport (BPM, time signature, key)
   const [bpm, setBpm] = useState(120);
+  const [bpmInput, setBpmInput] = useState('120');
   const [timeSignature, setTimeSignature] = useState('4/4');
   const [songKey, setSongKey] = useState('C Maj');
   
@@ -974,13 +975,13 @@ export default function Studio() {
 
         {/* Transport Controls */}
         <div className="flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0">
-          <Button variant="ghost" size="icon" className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="icon" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground">
             <Rewind className="w-5 h-5" />
           </Button>
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={stop}
+            onClick={(e) => { stop(); e.currentTarget.blur(); }}
             className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"
           >
             <Square className="w-5 h-5 fill-current" />
@@ -1002,7 +1003,7 @@ export default function Studio() {
             {isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}
             <Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} />
           </Button>
-          <Button variant="ghost" size="icon" className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="icon" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground">
             <FastForward className="w-5 h-5" />
           </Button>
         </div>
@@ -1146,8 +1147,10 @@ export default function Studio() {
               type="number"
               min={20}
               max={300}
-              value={bpm}
-              onChange={(e) => setBpm(Math.max(20, Math.min(300, Number(e.target.value) || 0)))}
+              value={bpmInput}
+              onChange={(e) => setBpmInput(e.target.value)}
+              onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
               className="w-8 bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </label>

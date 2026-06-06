@@ -126,8 +126,8 @@ export default function Studio() {
       console.error("Failed to load project autosave", e);
     }
     return [
-      { id: 1, name: "Vocals Lead", color: "bg-green-500", volume: 80, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
-      { id: 2, name: "Beat / Instrumental", color: "bg-green-500", volume: 90, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+      { id: 1, name: "Vocals Lead", color: "bg-green-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+      { id: 2, name: "Beat / Instrumental", color: "bg-green-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
     ];
   });
 
@@ -968,10 +968,7 @@ export default function Studio() {
             <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             <span className="hidden xs:inline sm:inline">NaliStudio</span>
             <span className="hidden sm:inline text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest ml-2">Pro</span>
-            <span
-              className="hidden lg:inline text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-green-500/30 cursor-help"
-              title="Engine v2 — NaliStudio's latest audio engine: faster real-time mixing, higher-quality stem separation, and lower-latency recording."
-            >Engine v2</span>
+            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><span className="hidden lg:inline text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-green-500/30 cursor-help">Engine v2</span></TooltipTrigger><TooltipContent side="bottom" className="max-w-[240px] text-xs">Engine v2 — NaliStudio's latest audio engine: faster real-time mixing, higher-quality stem separation, and lower-latency recording.</TooltipContent></Tooltip></TooltipProvider>
           </div>
         </div>
 
@@ -1038,11 +1035,9 @@ export default function Studio() {
 
           {/* Hardware Config */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
-            <Button variant="ghost" size="icon" title="Hardware Preferences" onClick={() => setShowPreferencesDialog(true)} className="w-8 h-8 rounded-lg hover:bg-secondary transition-colors text-muted-foreground"><Settings2 className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="icon" title="Audio Interface" onClick={() => toast.info(hardware.interface ? "Audio Interface connected" : "No Audio Interface detected")} className={cn("w-8 h-8 rounded-lg hover:bg-secondary transition-colors", hardware.interface ? "text-green-400" : "text-muted-foreground/50")}><Cpu className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="icon" title="Microphone Input" onClick={() => toast.info(hardware.mic ? "Microphone connected" : "No Microphone detected")} className={cn("w-8 h-8 rounded-lg hover:bg-secondary transition-colors", hardware.mic ? "text-green-400" : "text-muted-foreground/50")}><Mic className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="icon" title="Headphones Output" onClick={() => toast.info(hardware.output ? "Audio Output connected" : "No Audio Output detected")} className={cn("w-8 h-8 rounded-lg hover:bg-secondary transition-colors", hardware.output ? "text-green-400" : "text-muted-foreground/50")}><Headphones className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="icon" title="MIDI Controller" onClick={() => toast.info(hardware.midi ? "MIDI Controller connected" : "No MIDI Controller detected")} className={cn("w-8 h-8 rounded-lg hover:bg-secondary transition-colors", hardware.midi ? "text-green-400" : "text-muted-foreground/50")}><Keyboard className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="sm" title="Hardware Preferences" onClick={() => setShowPreferencesDialog(true)} className="gap-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground">
+              <Settings2 className="w-4 h-4" /> Hardware
+            </Button>
           </div>
 
           <div className="font-mono text-sm sm:text-xl text-primary font-bold bg-[#0a0a0c] px-2 sm:px-4 py-1.5 rounded-lg border border-border w-24 sm:w-36 text-center shadow-inner tracking-tight sm:tracking-widest relative group shrink-0">
@@ -1357,13 +1352,13 @@ export default function Studio() {
                 <div className="flex items-center gap-2 mt-2">
                   <button 
                     onClick={() => toggleMute(track.id)}
-                    className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all", track.muted ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-secondary/80")}
+                    className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.muted ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground")}
                   >
                     M
                   </button>
                   <button 
                     onClick={() => toggleSolo(track.id)}
-                    className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all", track.solo ? "bg-yellow-500 text-white" : "bg-secondary text-muted-foreground hover:bg-secondary/80")}
+                    className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.solo ? "bg-yellow-500 text-white border-yellow-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground")}
                   >
                     S
                   </button>

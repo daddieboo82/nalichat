@@ -152,45 +152,41 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
 
           {/* System */}
           <div className="border-l border-border/30 pl-2 ml-1 flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={onHelpClick}
-              title="Help"
-              className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
-            >
-              <HelpCircle className="w-5 h-5" />
-            </button>
             <NotificationBell direction="up" />
-            <Link
-              to="/pricing"
-              title="Upgrade / Plans"
-              className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-primary bg-primary/10 hover:bg-primary/20 transition-all active:scale-95"
-            >
-              <Gem className="w-5 h-5" />
-            </Link>
-            <Link
-              to="/settings"
-              title="Settings"
-              className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
-            >
-              <Settings className="w-5 h-5" />
-            </Link>
-            {isAuthenticated ? (
-              <button
-                onClick={handleLogout}
-                title="Log out"
-                className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-            ) : (
-              <button
-                onClick={() => navigate("/login")}
-                title="Log in"
-                className="h-9 px-4 shrink-0 rounded-full flex items-center gap-2 text-sm font-bold bg-primary/15 text-primary hover:bg-primary/25 transition-all active:scale-95"
-              >
-                <LogIn className="w-4 h-4" /> Log in
-              </button>
-            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  title="Account & Settings"
+                  className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-card/95 backdrop-blur-xl border-border/50">
+                <DropdownMenuItem onClick={onHelpClick} className="cursor-pointer">
+                  <HelpCircle className="w-4 h-4 mr-2" /> Help
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/pricing" className="cursor-pointer">
+                    <Gem className="w-4 h-4 mr-2 text-primary" /> Upgrade / Plans
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="cursor-pointer">
+                    <Settings className="w-4 h-4 mr-2" /> Settings
+                  </Link>
+                </DropdownMenuItem>
+                {isAuthenticated ? (
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
+                    <LogOut className="w-4 h-4 mr-2" /> Log out
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={() => navigate("/login")} className="cursor-pointer">
+                    <LogIn className="w-4 h-4 mr-2" /> Log in
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <button
               onClick={() => window.dispatchEvent(new Event('open-ai-assistant'))}
               title="NALI.ai Assistant"

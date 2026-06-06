@@ -9,7 +9,6 @@ import {
   Image, Cloud, UserCircle, Video, Layers, ShoppingCart
 } from "lucide-react";
 import { motion } from "framer-motion";
-import DailyRecommendation from "@/components/home/DailyRecommendation";
 import QuickStartGuide from "@/components/home/QuickStartGuide";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
@@ -159,9 +158,6 @@ export default function Home() {
 
   return (
     <div className="h-full overflow-auto bg-background">
-
-      {/* ── Daily Recommendation ── */}
-      <DailyRecommendation />
 
       {/* ── Hero ── */}
       <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden px-6 py-24">

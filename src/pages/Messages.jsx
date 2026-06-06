@@ -107,8 +107,21 @@ export default function Messages() {
         if (event.type === "create" && event.data?.sender_id !== currentUser.id) {
           sounds.notification();
         }
+        // Apply the change directly to the cache for instant, lag-free updates
+        // instead of refetching all messages from the server.
         if (event.data?.conversation_id === selectedConvId) {
-          queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
+          queryClient.setQueryData(["messages", selectedConvId], (old = []) => {
+            if (event.type === "delete") {
+              return old.filter(m => m.id !== event.id);
+            }
+            if (event.type === "update") {
+              return old.map(m => (m.id === event.id ? { ...m, ...event.data } : m));
+            }
+            // create: drop any optimistic temp from this sender, then append if new
+            const withoutTemp = old.filter(m => !(m._optimistic && m.sender_id === event.data.sender_id));
+            if (withoutTemp.some(m => m.id === event.id)) return withoutTemp;
+            return [...withoutTemp, event.data];
+          });
         }
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
       }
@@ -170,9 +183,14 @@ export default function Messages() {
     onError: (_err, _msgData, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(["messages", selectedConvId], ctx.previous);
     },
-    onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
-      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    onSuccess: (msg) => {
+      // Swap the optimistic temp for the real saved message instantly (no refetch).
+      queryClient.setQueryData(["messages", selectedConvId], (old = []) => {
+        const withoutTemp = old.filter(m => !m._optimistic);
+        if (withoutTemp.some(m => m.id === msg.id)) return withoutTemp;
+        return [...withoutTemp, msg];
+      });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
 

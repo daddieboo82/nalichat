@@ -1105,14 +1105,14 @@ export default function Studio() {
               const track = tracks.find(t => t.id === selectedTrackIds[0]);
               if (track) setEditingTrack(track);
             } else {
-              toast.error("Please select exactly one track to add plugins");
+              toast.error("Please select exactly one track to open the Wave Editor");
             }
           }} 
           variant="secondary" 
           size="sm" 
           className="gap-2 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 shrink-0"
         >
-          <SlidersHorizontal className="w-4 h-4" /> Add Plugins
+          <SlidersHorizontal className="w-4 h-4" /> Wave Editor
         </Button>
         <Button 
           onClick={handleSeparateStems}
@@ -1327,7 +1327,7 @@ export default function Studio() {
                   </div>
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setActivity(`Editing ${track.name}`); setEditingTrack(track); }} className="w-6 h-6 text-muted-foreground hover:text-accent" title="Add Plugins"><SlidersHorizontal className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setActivity(`Editing ${track.name}`); setEditingTrack(track); }} className="w-6 h-6 text-muted-foreground hover:text-accent" title="Wave Editor"><SlidersHorizontal className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("hidden sm:flex w-6 h-6 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")} title="Elastic Audio"><Activity className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("hidden sm:flex w-6 h-6 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")} title="Show Automation"><TrendingUp className="w-3.5 h-3.5" /></Button>
                     <DropdownMenu>
@@ -1475,6 +1475,7 @@ export default function Studio() {
                 <div 
                   key={track.id} 
                   onClick={(e) => handleTrackClick(e, track.id)}
+                  onDoubleClick={() => setEditingTrack(track)}
                   className={cn(
                     "border-b border-border/20 relative group transition-all", 
                     track.showAutomation ? "h-44" : "h-28",
@@ -1524,7 +1525,7 @@ export default function Studio() {
                     <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none z-10">
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60 italic">
                         <Mic className="w-3.5 h-3.5 shrink-0" />
-                        <span>Empty — arm &amp; record, import a file, or generate audio to fill this track</span>
+                        <span>Empty — double-click anywhere to open Wave Editor, or record to fill this track</span>
                       </div>
                     </div>
                   )}

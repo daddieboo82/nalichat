@@ -64,8 +64,9 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
     }
   }, [masterVolume, track.volume]);
 
-  const toggleMute = () => canEdit && onUpdate({ muted: !track.muted });
-  const toggleSolo = () => canEdit && onUpdate({ solo: !track.solo });
+  // Mute and Solo are mutually exclusive — enabling one clears the other.
+  const toggleMute = () => canEdit && onUpdate({ muted: !track.muted, ...(!track.muted ? { solo: false } : {}) });
+  const toggleSolo = () => canEdit && onUpdate({ solo: !track.solo, ...(!track.solo ? { muted: false } : {}) });
 
   return (
     <div className={cn(
@@ -83,7 +84,7 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
 
       <div className="flex items-center gap-2 mb-2">
         <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", trackTypeColors[track.type] || "bg-muted")} />
-        <span className="font-medium text-xs flex-1 truncate">{track.name}</span>
+        <span className="font-medium text-xs flex-1 truncate" title={track.name}>{track.name}</span>
         <span className="text-[9px] text-muted-foreground uppercase">{track.type}</span>
       </div>
 

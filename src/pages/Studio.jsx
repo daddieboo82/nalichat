@@ -28,7 +28,7 @@ import BounceDialog from '@/components/studio/BounceDialog';
 import { sounds } from '@/hooks/use-sound';
 import { useSubscription } from '@/hooks/useSubscription';
 import UpgradeModal from '@/components/billing/UpgradeModal';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3 } from '@/lib/audioProcessing';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import LivePresenceBar from '@/components/studio/LivePresenceBar';
@@ -53,6 +53,7 @@ const waveformFills = {
 };
 
 export default function Studio() {
+  const navigate = useNavigate();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const currentTimeRef = useRef(0);
@@ -84,6 +85,11 @@ export default function Studio() {
   const [editMode, setEditMode] = useState('slip'); // slip, grid, shuffle
   const [activeTool, setActiveTool] = useState('smart'); // smart, trim, grab, fade
   const [gridSize, setGridSize] = useState(1);
+
+  // Session musical settings shown in the transport (BPM, time signature, key)
+  const [bpm, setBpm] = useState(120);
+  const [timeSignature, setTimeSignature] = useState('4/4');
+  const [songKey, setSongKey] = useState('C Maj');
   
   const [bounceOpen, setBounceOpen] = useState(false);
   const [bounceRedirect, setBounceRedirect] = useState(null);
@@ -573,12 +579,14 @@ export default function Studio() {
 
   const toggleMute = (trackId) => {
     sounds.click();
-    setTracksWithHistory(tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t));
+    // Mute and Solo are mutually exclusive — enabling mute clears solo.
+    setTracksWithHistory(tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted, solo: !t.muted ? false : t.solo } : t));
   };
 
   const toggleSolo = (trackId) => {
     sounds.click();
-    setTracksWithHistory(tracks.map(t => t.id === trackId ? { ...t, solo: !t.solo } : t));
+    // Mute and Solo are mutually exclusive — enabling solo clears mute.
+    setTracksWithHistory(tracks.map(t => t.id === trackId ? { ...t, solo: !t.solo, muted: !t.solo ? false : t.muted } : t));
   };
 
   const toggleArm = (trackId) => {
@@ -956,7 +964,10 @@ export default function Studio() {
             <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             <span className="hidden xs:inline sm:inline">NaliStudio</span>
             <span className="hidden sm:inline text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest ml-2">Pro</span>
-            <span className="hidden lg:inline text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-green-500/30">Engine v2</span>
+            <span
+              className="hidden lg:inline text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-green-500/30 cursor-help"
+              title="Engine v2 — NaliStudio's latest audio engine: faster real-time mixing, higher-quality stem separation, and lower-latency recording."
+            >Engine v2</span>
           </div>
         </div>
 
@@ -1002,12 +1013,10 @@ export default function Studio() {
 
           {/* Quick Record */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
-             <Link to="/record">
-               <Button variant="outline" size="sm" className="gap-2 rounded-xl border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-400">
-                 <Radio className="w-4 h-4 animate-pulse" />
-                 Quick Record
-               </Button>
-             </Link>
+             <Button onClick={() => navigate('/record')} variant="outline" size="sm" className="gap-2 rounded-xl border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-400">
+               <Radio className="w-4 h-4 animate-pulse" />
+               Quick Record
+             </Button>
           </div>
 
           {/* Jam Room */}
@@ -1035,6 +1044,47 @@ export default function Studio() {
           <div className="font-mono text-sm sm:text-xl text-primary font-bold bg-[#0a0a0c] px-2 sm:px-4 py-1.5 rounded-lg border border-border w-24 sm:w-36 text-center shadow-inner tracking-tight sm:tracking-widest relative group shrink-0">
             <span ref={timeDisplayRef}>{formatTime(currentTimeRef.current)}</span>
             {isRecording && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
+          </div>
+
+          {/* BPM / Time Signature / Key display */}
+          <div className="hidden md:flex items-stretch gap-px bg-[#0a0a0c] rounded-lg border border-border shadow-inner overflow-hidden shrink-0">
+            <label className="flex flex-col items-center justify-center px-2.5 py-1 hover:bg-secondary/40 transition-colors cursor-text" title="Tempo (beats per minute)">
+              <span className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none">BPM</span>
+              <input
+                type="number"
+                min={20}
+                max={300}
+                value={bpm}
+                onChange={(e) => setBpm(Math.max(20, Math.min(300, Number(e.target.value) || 0)))}
+                className="w-9 bg-transparent text-center font-mono text-sm font-bold text-foreground outline-none border-none p-0 leading-tight [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </label>
+            <div className="flex flex-col items-center justify-center px-2.5 py-1 border-l border-border/60" title="Time signature">
+              <span className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none">Sig</span>
+              <select
+                value={timeSignature}
+                onChange={(e) => setTimeSignature(e.target.value)}
+                className="bg-transparent text-center font-mono text-sm font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none"
+              >
+                <option value="4/4">4/4</option>
+                <option value="3/4">3/4</option>
+                <option value="6/8">6/8</option>
+                <option value="5/4">5/4</option>
+                <option value="7/8">7/8</option>
+              </select>
+            </div>
+            <div className="flex flex-col items-center justify-center px-2.5 py-1 border-l border-border/60" title="Project key">
+              <span className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none">Key</span>
+              <select
+                value={songKey}
+                onChange={(e) => setSongKey(e.target.value)}
+                className="bg-transparent text-center font-mono text-sm font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none"
+              >
+                {["C Maj","G Maj","D Maj","A Maj","E Maj","F Maj","Bb Maj","A min","E min","B min","D min","G min","C min"].map(k => (
+                  <option key={k} value={k}>{k}</option>
+                ))}
+              </select>
+            </div>
           </div>
           
           <div className="hidden md:flex items-center gap-2">
@@ -1129,9 +1179,24 @@ export default function Studio() {
 
         {/* Edit Modes */}
         <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
-          <Button variant="ghost" size="sm" onClick={() => setEditMode('shuffle')} className={cn("px-2 py-1 h-7 text-xs rounded-md", editMode === 'shuffle' && "bg-primary/20 text-primary")}>Shuffle</Button>
-          <Button variant="ghost" size="sm" onClick={() => setEditMode('slip')} className={cn("px-2 py-1 h-7 text-xs rounded-md", editMode === 'slip' && "bg-primary/20 text-primary")}>Slip</Button>
-          <Button variant="ghost" size="sm" onClick={() => setEditMode('grid')} className={cn("px-2 py-1 h-7 text-xs rounded-md", editMode === 'grid' && "bg-primary/20 text-primary")}>Grid</Button>
+          {['shuffle', 'slip', 'grid'].map((mode) => (
+            <Button
+              key={mode}
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditMode(mode)}
+              aria-pressed={editMode === mode}
+              title={`${mode.charAt(0).toUpperCase() + mode.slice(1)} edit mode`}
+              className={cn(
+                "px-2.5 py-1 h-7 text-xs rounded-md capitalize transition-all",
+                editMode === mode
+                  ? "bg-primary text-primary-foreground font-semibold shadow-sm ring-1 ring-primary/50 hover:bg-primary"
+                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+              )}
+            >
+              {mode}
+            </Button>
+          ))}
         </div>
 
         {/* Tools */}
@@ -1232,7 +1297,7 @@ export default function Studio() {
                   <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-2 font-medium text-sm truncate">
                       <div className={cn("w-2 h-2 rounded-full shrink-0", track.color)} />
-                      <span className="truncate">{track.name}</span>
+                      <span className="truncate" title={track.name}>{track.name}</span>
                     </div>
                     <select 
                       className="bg-transparent border-none text-[9px] text-muted-foreground focus:ring-0 cursor-pointer hover:text-foreground p-0 m-0 mt-0.5 outline-none w-max"

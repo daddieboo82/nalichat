@@ -13,7 +13,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { checkUserAuth } = useAuth();
+  const { checkUserAuth, user: authUser } = useAuth();
   const [user, setUser] = useState(null);
   const [form, setForm] = useState({ 
     display_name: "", 
@@ -28,8 +28,12 @@ export default function Onboarding() {
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      if (u.onboarding_completed) {
+    base44.auth.me().then(async u => {
+      // Admins (and anyone already onboarded) skip setup. Refresh the cached auth
+      // user first so the App.jsx gate sees the same value and doesn't bounce us
+      // back here in an endless redirect loop (which showed as a blank screen).
+      if (u.role === 'admin' || u.onboarding_completed) {
+        await checkUserAuth();
         setRedirecting(true);
         navigate("/", { replace: true });
         return;
@@ -39,7 +43,8 @@ export default function Onboarding() {
         ...f,
         display_name: u.display_name || u.full_name || "",
         bio: u.bio || "",
-        role: u.role || "artist",
+        // Never seed the profile role picker with an account role like "admin"/"user".
+        role: ["artist", "producer", "engineer", "ar"].includes(u.role) ? u.role : "artist",
         location: u.location || "",
         avatar_url: u.avatar_url || ""
       }));
@@ -47,7 +52,7 @@ export default function Onboarding() {
       setRedirecting(true);
       navigate("/login", { replace: true });
     });
-  }, [navigate]);
+  }, [navigate, checkUserAuth]);
 
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];

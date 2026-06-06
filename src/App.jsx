@@ -100,11 +100,14 @@ const AuthenticatedApp = () => {
     }
   }
 
-  if (isAuthenticated && user && !user.onboarding_completed && location.pathname !== '/onboarding' && location.pathname !== '/login' && location.pathname !== '/register') {
+  // Admins bypass onboarding & paywall gates entirely.
+  const isAdminUser = user?.role === 'admin';
+
+  if (isAuthenticated && user && !isAdminUser && !user.onboarding_completed && location.pathname !== '/onboarding' && location.pathname !== '/login' && location.pathname !== '/register') {
     return <Navigate to="/onboarding" replace />;
   }
 
-  if (isAuthenticated && user && user.onboarding_completed && !hasAccess && location.pathname !== '/pricing' && location.pathname !== '/login' && location.pathname !== '/register' && location.pathname !== '/settings' && location.pathname !== '/profile' && !location.pathname.startsWith('/thank-you') && !location.pathname.startsWith('/ThankYou')) {
+  if (isAuthenticated && user && !isAdminUser && user.onboarding_completed && !hasAccess && location.pathname !== '/pricing' && location.pathname !== '/login' && location.pathname !== '/register' && location.pathname !== '/settings' && location.pathname !== '/profile' && !location.pathname.startsWith('/thank-you') && !location.pathname.startsWith('/ThankYou')) {
     return <Navigate to="/pricing" replace />;
   }
 

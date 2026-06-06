@@ -71,7 +71,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
            (u.location || "").toLowerCase().includes(q);
   });
 
-  if (loadingContacts || loadingUsers) {
+  if (loadingContacts || loadingUsers || !currentUserId) {
     return <div className="flex-1 flex justify-center items-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
   }
 
@@ -95,7 +95,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
           />
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar pr-4">
+        <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar pr-4 after:content-[''] after:w-4 after:shrink-0">
           {["all", "artist", "producer", "engineer", "ar"].map(r => (
             <button
               key={r}

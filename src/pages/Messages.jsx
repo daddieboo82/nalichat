@@ -76,7 +76,7 @@ export default function Messages() {
 
   const myConversations = conversations.filter(c => c.participant_ids?.includes(currentUser?.id));
 
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
     queryKey: ["messages", selectedConvId],
     queryFn: async () => {
       const msgs = await base44.entities.Message.filter({ conversation_id: selectedConvId }, "-created_date", 5000);
@@ -203,6 +203,14 @@ export default function Messages() {
         _optimistic: true,
       };
       queryClient.setQueryData(["messages", selectedConvId], (old = []) => [...old, tempMsg]);
+      queryClient.setQueryData(["conversations"], (old = []) => {
+        const updated = old.map(c => 
+          c.id === selectedConvId 
+            ? { ...c, last_message_text: msgData.text || `Sent a ${msgData.type}`, last_message_at: tempMsg.created_date } 
+            : c
+        );
+        return updated.sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0));
+      });
       return { previous };
     },
     onError: (_err, _msgData, ctx) => {
@@ -407,6 +415,7 @@ export default function Messages() {
             <ChatView
               conversation={selectedConv}
               messages={messages}
+              isLoading={isLoadingMessages}
               currentUser={currentUser}
               users={users}
               isBlocked={isBlocked}

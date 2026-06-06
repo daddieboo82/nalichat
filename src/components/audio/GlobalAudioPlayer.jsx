@@ -10,6 +10,8 @@ export default function GlobalAudioPlayer() {
   const player = useAudioPlayer();
   if (!player || !player.currentTrack) return null;
   const { currentTrack, isPlaying, currentTime, duration, volume, setVolume, togglePlay, seek, closePlayer } = player;
+  
+  const displayDuration = duration || currentTrack?.duration || 0;
 
   const formatTime = (seconds) => {
     if (!seconds || isNaN(seconds)) return "0:00";
@@ -30,11 +32,11 @@ export default function GlobalAudioPlayer() {
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-white/10 group cursor-pointer hover:h-2 transition-all" onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           const percent = (e.clientX - rect.left) / rect.width;
-          seek(percent * duration);
+          seek(percent * displayDuration);
         }}>
           <div 
             className="absolute top-0 left-0 h-full bg-white transition-all"
-            style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+            style={{ width: `${(currentTime / (displayDuration || 1)) * 100}%` }}
           >
              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
           </div>
@@ -74,12 +76,12 @@ export default function GlobalAudioPlayer() {
               <span className="text-[10px] text-white/50 w-8 text-right font-mono">{formatTime(currentTime)}</span>
               <Slider 
                 value={[currentTime]} 
-                max={duration || 100} 
+                max={displayDuration || 100} 
                 step={0.1} 
                 onValueChange={(v) => seek(v[0])}
                 className="flex-1 [&_[role=slider]]:w-3 [&_[role=slider]]:h-3 [&_[role=slider]]:bg-white [&_[role=slider]]:border-white/50 [&_.bg-primary]:bg-white [&_.bg-primary\\/20]:bg-white/20" 
               />
-              <span className="text-[10px] text-white/50 w-8 font-mono">{formatTime(duration)}</span>
+              <span className="text-[10px] text-white/50 w-8 font-mono">{formatTime(displayDuration)}</span>
             </div>
           </div>
 

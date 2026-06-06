@@ -17,7 +17,7 @@ import React from "react";
 
 const ADMIN_EMAILS = ["bossglop43@gmail.com"];
 
-export default React.memo(function ChatView({ conversation, messages, currentUser, users, onSendMessage, onEditMessage, onReact, onBack, onStartDM, isBlocked, moderationBanner }) {
+export default React.memo(function ChatView({ conversation, messages, isLoading, currentUser, users, onSendMessage, onEditMessage, onReact, onBack, onStartDM, isBlocked, moderationBanner }) {
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -143,7 +143,17 @@ export default React.memo(function ChatView({ conversation, messages, currentUse
 
       {/* Messages Area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 pt-24 pb-32 space-y-0.5 custom-scrollbar">
-        {groups.map((item, i) =>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
+            <MessageSquare className="w-12 h-12 opacity-20" />
+            <p>No messages yet. Say hi!</p>
+          </div>
+        ) : (
+          groups.map((item, i) =>
           item.type === "date" ? (
             <div key={item.key} className="flex justify-center my-6 sticky top-24 z-10 pointer-events-none">
               <span className="text-[10px] text-muted-foreground font-semibold px-3 py-1 rounded-full bg-background/60 backdrop-blur-md border border-border/30 shadow-sm uppercase tracking-wider">
@@ -187,7 +197,7 @@ export default React.memo(function ChatView({ conversation, messages, currentUse
               }}
             />
           )
-        )}
+        ))}
       </div>
 
       {/* Typing indicator */}

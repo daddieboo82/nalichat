@@ -1865,7 +1865,7 @@ export default function Studio() {
                           let botLine = `M 0,${50 + Math.max(0.02, wf[0])*48} `;
                           for (let i = 1; i <= wLen; i++) botLine += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*48} `;
 
-                          const baseFill = "fill-green-500";
+                          const baseFill = "text-[#1ED760] fill-[#1ED760]";
 
                           return (
                             <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">

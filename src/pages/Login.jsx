@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,8 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { checkUserAuth } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,8 +26,12 @@ export default function Login() {
       await base44.auth.loginViaEmailPassword(email, password);
       // Skip the intro splash after login so the user lands straight in the app
       try { sessionStorage.setItem('nali_splash_shown', '1'); } catch {}
+      // Refresh auth state in-place and navigate client-side instead of doing a
+      // full-page reload (window.location.href), which caused a multi-second
+      // blank white screen while the entire app re-booted.
+      await checkUserAuth();
       toast.success("Logged in successfully! Welcome back.");
-      window.location.href = "/";
+      navigate("/", { replace: true });
     } catch (err) {
       const msg = err.message || "Invalid email or password";
       setError(msg);

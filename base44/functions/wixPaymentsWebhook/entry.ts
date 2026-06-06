@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import jwt from 'npm:jsonwebtoken';
 
 Deno.serve(async (req) => {
   try {
@@ -7,27 +8,35 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
 
-    // Security: Verify request came from Wix (basic check)
-    const authorization = req.headers.get('authorization');
-    if (!authorization) {
-      console.warn('Webhook received without authorization header');
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await req.text();
     if (!body || body.trim().length === 0) {
       return Response.json({ error: 'Empty request body' }, { status: 400 });
     }
 
+    const WEBHOOK_PUBLIC_KEY = Deno.env.get('WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY');
+    if (!WEBHOOK_PUBLIC_KEY) {
+      console.error('Missing WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY');
+      return Response.json({ error: 'Server misconfigured' }, { status: 500 });
+    }
+
     const base44 = createClientFromRequest(req);
 
-    // Parse the webhook payload
-    let event;
+    let rawPayload;
     try {
-      event = JSON.parse(body);
+      rawPayload = jwt.verify(body, WEBHOOK_PUBLIC_KEY, { algorithms: ["RS256"] });
+    } catch (err) {
+      console.error('JWT verification failed', err);
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    let event;
+    let eventData;
+    try {
+      event = JSON.parse(rawPayload.data);
+      eventData = JSON.parse(event.data);
     } catch {
       console.error('Failed to parse webhook body');
-      return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+      return Response.json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
 
     console.log('Wix webhook received:', event.eventType || 'unknown');
@@ -35,7 +44,8 @@ Deno.serve(async (req) => {
     // Handle order approved (subscription activated)
     if (event.eventType === 'wix.ecom.v1.order_approved') {
       try {
-        const checkoutId = event.data?.order?.checkoutId;
+        const order = eventData.actionEvent.body.order;
+        const checkoutId = order?.checkoutId;
         if (!checkoutId) {
           console.warn('No checkoutId in order_approved event');
           return Response.json({ success: true });
@@ -52,20 +62,18 @@ Deno.serve(async (req) => {
         }
 
         const sub = subs[0];
-        const subscriptionId = event.data?.order?.lineItems?.[0]?.subscriptionInfo?.id;
-
-        // For recurring subscriptions, we expect an ID. 
-        // For one-time trials, we don't.
-        if (sub.plan !== 'trial' && !subscriptionId) {
-          console.warn('No subscriptionInfo.id in order');
-          return Response.json({ success: true });
+        let subscriptionId = null;
+        for (const lineItem of order.lineItems || []) {
+          if (lineItem.subscriptionInfo) {
+            subscriptionId = lineItem.subscriptionInfo.id;
+            break;
+          }
         }
 
-        // Validate user exists before updating
-        const user = await base44.asServiceRole.entities.User.get(sub.user_id).catch(() => null);
-        if (!user) {
-          console.error('Subscription user not found:', sub.user_id);
-          return Response.json({ success: true });
+        // For recurring subscriptions, we expect an ID. 
+        if (sub.plan !== 'trial' && !subscriptionId) {
+          console.warn('No subscriptionInfo.id in order');
+          // It's possible it was a one-time product without subscription, but we'll activate it anyway
         }
 
         // Update subscription to active
@@ -85,7 +93,8 @@ Deno.serve(async (req) => {
     // Handle subscription canceled
     if (event.eventType === 'wix.ecom.subscription_contracts.v1.subscription_contract_canceled') {
       try {
-        const subscriptionId = event.data?.subscriptionContract?.id;
+        const subscriptionContract = eventData.actionEvent.body.subscriptionContract;
+        const subscriptionId = subscriptionContract?.id;
         if (!subscriptionId) {
           console.warn('No subscription ID in cancel event');
           return Response.json({ success: true });
@@ -112,7 +121,8 @@ Deno.serve(async (req) => {
     // Handle subscription expired
     if (event.eventType === 'wix.ecom.subscription_contracts.v1.subscription_contract_expired') {
       try {
-        const subscriptionId = event.data?.subscriptionContract?.id;
+        const subscriptionContract = eventData.actionEvent.body.subscriptionContract;
+        const subscriptionId = subscriptionContract?.id;
         if (!subscriptionId) {
           console.warn('No subscription ID in expire event');
           return Response.json({ success: true });

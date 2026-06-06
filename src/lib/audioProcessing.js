@@ -107,6 +107,43 @@ export async function separateStems(url) {
   };
 }
 
+// Mix multiple studio tracks down to a single WAV Blob (offline render).
+// Respects each track's startTime, volume, mute/solo state.
+export async function renderMixToWav(tracks) {
+  const audioTracks = (tracks || []).filter(t => t.audioUrl);
+  if (audioTracks.length === 0) return null;
+
+  const hasSolo = audioTracks.some(t => t.solo);
+  const active = audioTracks.filter(t => (hasSolo ? t.solo : !t.muted));
+  if (active.length === 0) return null;
+
+  // Decode all buffers
+  const decoded = await Promise.all(active.map(async (t) => ({
+    track: t,
+    buffer: await fetchAudioBuffer(t.audioUrl),
+  })));
+
+  const sampleRate = 44100;
+  const totalSeconds = Math.max(
+    ...decoded.map(d => (d.track.startTime || 0) + d.buffer.duration)
+  );
+  const length = Math.ceil(totalSeconds * sampleRate);
+  const offline = new OfflineAudioContext(2, length, sampleRate);
+
+  decoded.forEach(({ track, buffer }) => {
+    const src = offline.createBufferSource();
+    src.buffer = buffer;
+    const gain = offline.createGain();
+    gain.gain.value = (track.volume ?? 75) / 100;
+    src.connect(gain);
+    gain.connect(offline.destination);
+    src.start(track.startTime || 0);
+  });
+
+  const rendered = await offline.startRendering();
+  return audioBufferToWav(rendered);
+}
+
 // Real audio synthesis: generate a chord progression melody as actual audio.
 export async function generateMelody({ seconds = 8, bpm = 120 } = {}) {
   const sampleRate = 44100;

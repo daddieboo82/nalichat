@@ -28,7 +28,7 @@ import { sounds } from '@/hooks/use-sound';
 import { useSubscription } from '@/hooks/useSubscription';
 import UpgradeModal from '@/components/billing/UpgradeModal';
 import { Link } from 'react-router-dom';
-import { separateStems, generateMelody } from '@/lib/audioProcessing';
+import { separateStems, generateMelody, renderMixToWav } from '@/lib/audioProcessing';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import LivePresenceBar from '@/components/studio/LivePresenceBar';
 
@@ -899,6 +899,39 @@ export default function Studio() {
     }
   };
 
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadMix = async () => {
+    if (!tracks.some(t => t.audioUrl)) {
+      toast.error("No audio to export. Record or import a track first.");
+      return;
+    }
+    setIsDownloading(true);
+    toast.info("Rendering your mix...");
+    try {
+      const blob = await renderMixToWav(tracks);
+      if (!blob) {
+        toast.error("Nothing to export (all tracks muted or empty).");
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `NaliStudio Mix ${new Date().toISOString().slice(0, 10)}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      sounds.success();
+      toast.success("Mix downloaded to your device!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to export mix.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   // handleExport removed in favor of BounceDialog
 
   if (!isLoadingSub && !hasAccess) {
@@ -1021,6 +1054,10 @@ export default function Studio() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={handleDownloadMix} disabled={isDownloading} className="cursor-pointer py-2">
+                  {isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />} Download Mix (WAV)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { setBounceRedirect('explore'); setBounceOpen(true); }} className="cursor-pointer py-2">
                   <Download className="w-4 h-4 mr-2" /> Export & Publish
                 </DropdownMenuItem>

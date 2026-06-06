@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Image as ImageIcon, Music, Loader2, Save, Wand2, Upload, Download, Folder, ListMusic, Smartphone, ChevronDown } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Music, Loader2, Save, Wand2, Upload, Download, Folder, ListMusic, Smartphone, ChevronDown, PenTool } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
+import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import {
   DropdownMenu,
@@ -38,6 +39,66 @@ export default function CoverArt() {
   const [showFilesDialog, setShowFilesDialog] = useState(false);
   const [showPlaylistDialog, setShowPlaylistDialog] = useState(false);
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
+
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editOptions, setEditOptions] = useState({
+    brightness: 100,
+    contrast: 100,
+    saturation: 100,
+    text: "",
+    textColor: "#ffffff",
+    textPosition: "center",
+  });
+  const [isApplyingEdits, setIsApplyingEdits] = useState(false);
+
+  const applyEdits = async () => {
+    setIsApplyingEdits(true);
+    try {
+      const imageUrl = generatedImage || selectedPost?.image_url;
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = imageUrl;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+
+      ctx.filter = `brightness(${editOptions.brightness}%) contrast(${editOptions.contrast}%) saturate(${editOptions.saturation}%)`;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.filter = "none";
+
+      if (editOptions.text) {
+        ctx.fillStyle = editOptions.textColor;
+        ctx.font = `bold ${canvas.height / 10}px sans-serif`;
+        ctx.textAlign = "center";
+        
+        let y;
+        if (editOptions.textPosition === "top") y = canvas.height * 0.15;
+        else if (editOptions.textPosition === "bottom") y = canvas.height * 0.85;
+        else y = canvas.height * 0.5;
+
+        ctx.fillText(editOptions.text, canvas.width / 2, y);
+      }
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+      const file = new File([blob], "edited-cover.jpg", { type: "image/jpeg" });
+      
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setGeneratedImage(file_url);
+      setShowEditDialog(false);
+      toast.success("Edits applied! Click 'Save to Track' to save changes.");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to apply edits.");
+    } finally {
+      setIsApplyingEdits(false);
+    }
+  };
 
   const { data: sharedFiles = [], isLoading: isLoadingFiles } = useQuery({
     queryKey: ["mySharedFiles", currentUser?.id],
@@ -212,6 +273,7 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      toast.success("Image exported successfully!");
     } catch (error) {
       console.error(error);
       toast.error("Failed to download image");
@@ -433,6 +495,98 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
           </DialogContent>
         </Dialog>
 
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="max-w-md bg-card border-border">
+            <DialogHeader>
+              <DialogTitle>Manual Cover Editing</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="aspect-square bg-black/50 rounded-lg overflow-hidden relative">
+                {(generatedImage || selectedPost?.image_url) && (
+                  <img 
+                    src={generatedImage || selectedPost?.image_url} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover"
+                    style={{ filter: `brightness(${editOptions.brightness}%) contrast(${editOptions.contrast}%) saturate(${editOptions.saturation}%)` }}
+                  />
+                )}
+                {editOptions.text && (
+                  <div 
+                    className="absolute left-0 right-0 text-center font-bold"
+                    style={{ 
+                      color: editOptions.textColor, 
+                      fontSize: '32px',
+                      top: editOptions.textPosition === 'top' ? '15%' : editOptions.textPosition === 'bottom' ? '85%' : '50%',
+                      transform: 'translateY(-50%)'
+                    }}
+                  >
+                    {editOptions.text}
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                <div>
+                  <label className="text-xs font-medium mb-1 block text-muted-foreground">Brightness ({editOptions.brightness}%)</label>
+                  <input type="range" min="0" max="200" value={editOptions.brightness} onChange={e => setEditOptions({...editOptions, brightness: e.target.value})} className="w-full accent-primary" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block text-muted-foreground">Contrast ({editOptions.contrast}%)</label>
+                  <input type="range" min="0" max="200" value={editOptions.contrast} onChange={e => setEditOptions({...editOptions, contrast: e.target.value})} className="w-full accent-primary" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block text-muted-foreground">Saturation ({editOptions.saturation}%)</label>
+                  <input type="range" min="0" max="200" value={editOptions.saturation} onChange={e => setEditOptions({...editOptions, saturation: e.target.value})} className="w-full accent-primary" />
+                </div>
+                
+                <div className="pt-2 border-t border-border">
+                  <label className="text-xs font-medium mb-1 block text-muted-foreground">Overlay Text</label>
+                  <Input 
+                    placeholder="Enter text..." 
+                    value={editOptions.text} 
+                    onChange={e => setEditOptions({...editOptions, text: e.target.value})} 
+                  />
+                </div>
+                
+                {editOptions.text && (
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="text-xs font-medium mb-1 block text-muted-foreground">Text Color</label>
+                      <input 
+                        type="color" 
+                        value={editOptions.textColor} 
+                        onChange={e => setEditOptions({...editOptions, textColor: e.target.value})}
+                        className="w-full h-8 rounded cursor-pointer bg-transparent border-0 p-0" 
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs font-medium mb-1 block text-muted-foreground">Position</label>
+                      <select 
+                        value={editOptions.textPosition} 
+                        onChange={e => setEditOptions({...editOptions, textPosition: e.target.value})}
+                        className="w-full h-8 rounded border border-input bg-card px-2 text-sm text-foreground"
+                      >
+                        <option value="top">Top</option>
+                        <option value="center">Center</option>
+                        <option value="bottom">Bottom</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <Button 
+                className="w-full" 
+                onClick={applyEdits}
+                disabled={isApplyingEdits}
+              >
+                {isApplyingEdits ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <PenTool className="w-4 h-4 mr-2" />}
+                Apply Changes
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Right: Generation Area */}
         <div className="w-full md:w-2/3 flex flex-col items-center justify-center border border-border bg-card/50 rounded-xl p-4 pb-28 sm:p-8 sm:pb-28 md:pb-8 relative overflow-y-auto custom-scrollbar">
           <div className="flex flex-col items-center w-full max-w-md">
@@ -500,6 +654,17 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                 </Button>
 
                 {selectedPost?.image_url && (
+                  <>
+                  <Button 
+                    variant="outline"
+                    size="lg" 
+                    className="flex-1 min-w-[100px] h-14 gap-2 bg-transparent"
+                    onClick={() => setShowEditDialog(true)}
+                    disabled={generateArtMutation.isPending || isUploading}
+                  >
+                    <PenTool className="w-5 h-5" />
+                    Edit
+                  </Button>
                   <Button 
                     variant="outline"
                     size="lg" 
@@ -510,6 +675,7 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                     <Download className="w-5 h-5" />
                     Export
                   </Button>
+                  </>
                 )}
               </div>
             ) : (
@@ -523,6 +689,16 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                 >
                   <Wand2 className="w-4 h-4" />
                   Retry
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="lg" 
+                  className="flex-1 min-w-[100px] h-12 gap-2 bg-transparent"
+                  onClick={() => setShowEditDialog(true)}
+                  disabled={generateArtMutation.isPending || saveArtMutation.isPending || isUploading}
+                >
+                  <PenTool className="w-4 h-4" />
+                  Edit
                 </Button>
                 <Button 
                   variant="outline"

@@ -89,7 +89,8 @@ export default function Onboarding() {
       toast.success("Welcome to NaliChat!");
       navigate("/");
     } catch (error) {
-      toast.error("Failed to complete onboarding");
+      console.error(error);
+      toast.error(error.message || "Failed to complete onboarding");
     } finally {
       setLoading(false);
     }

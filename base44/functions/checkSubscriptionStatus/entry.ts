@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
 
     if (isAdmin) {
       return Response.json({
-        plan: 'pro',
+        plan: 'pro_filesharing',
         status: 'active',
         trialActive: false,
         hasAccess: true,

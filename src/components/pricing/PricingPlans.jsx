@@ -39,9 +39,15 @@ const plans = [
   },
 ];
 
+import { useSubscription } from "@/hooks/useSubscription";
+
 export default function PricingPlans() {
   const [loadingPlanId, setLoadingPlanId] = useState(null);
   const { user } = useAuth();
+  const { subscription } = useSubscription();
+  
+  const currentPlan = subscription?.plan;
+  const isSubscribed = subscription?.status === 'active';
   
   const handleSubscribe = async (plan) => {
     if (!user) {
@@ -123,14 +129,18 @@ export default function PricingPlans() {
 
               <Button
                 onClick={() => handleSubscribe(plan)}
-                disabled={loadingPlanId !== null}
+                disabled={loadingPlanId !== null || (isSubscribed && currentPlan !== 'trial' && currentPlan !== 'free' && currentPlan === plan.id)}
                 className={`w-full rounded-xl mb-8 ${
                   plan.popular
                     ? "bg-primary hover:bg-primary/90"
                     : "bg-secondary hover:bg-secondary/80"
                 }`}
               >
-                {loadingPlanId === plan.id ? "Processing..." : plan.cta}
+                {loadingPlanId === plan.id 
+                  ? "Processing..." 
+                  : (isSubscribed && currentPlan !== 'trial' && currentPlan !== 'free'
+                      ? (currentPlan === plan.id ? "Current Plan" : "Switch Plan") 
+                      : plan.cta)}
               </Button>
 
               <div className="space-y-3">

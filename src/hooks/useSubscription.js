@@ -32,7 +32,7 @@ export function useSubscription() {
   const hasAccess = isAdmin || subscription?.hasAccess;
 
   return {
-    subscription: isAdmin ? { ...subscription, plan: 'pro', status: 'active', hasAccess: true } : subscription,
+    subscription: isAdmin ? { ...subscription, plan: 'pro_filesharing', status: 'active', hasAccess: true } : subscription,
     isPro,
     isProFilesharing,
     isTrialActive,

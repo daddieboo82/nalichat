@@ -1094,55 +1094,36 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       const rmsId = `wf-rms-${seg.id}`;
                       const glowId = `wf-glow-${seg.id}`;
 
-                      // Peak (full amplitude) closed path
+                      // Peak closed path
                       let peakPath = `M 0,50 `;
-                      for (let i = 0; i <= wLen; i++) peakPath += `L ${(i/wLen)*1000},${50 - Math.max(0.02, wf[i])*46*g} `;
-                      for (let i = wLen; i >= 0; i--) peakPath += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*46*g} `;
+                      for (let i = 0; i <= wLen; i++) peakPath += `L ${(i/wLen)*1000},${50 - Math.max(0.01, wf[i])*46*g} `;
+                      for (let i = wLen; i >= 0; i--) peakPath += `L ${(i/wLen)*1000},${50 + Math.max(0.01, wf[i])*46*g} `;
                       peakPath += 'Z';
-
-                      // RMS (inner body ~62% of peak) closed path
-                      let rmsPath = `M 0,50 `;
-                      for (let i = 0; i <= wLen; i++) rmsPath += `L ${(i/wLen)*1000},${50 - Math.max(0.015, wf[i])*46*g*0.62} `;
-                      for (let i = wLen; i >= 0; i--) rmsPath += `L ${(i/wLen)*1000},${50 + Math.max(0.015, wf[i])*46*g*0.62} `;
-                      rmsPath += 'Z';
-
-                      // Top peak outline
-                      let topLine = `M 0,${50 - Math.max(0.02, wf[0])*46*g} `;
-                      for (let i = 1; i <= wLen; i++) topLine += `L ${(i/wLen)*1000},${50 - Math.max(0.02, wf[i])*46*g} `;
-                      let botLine = `M 0,${50 + Math.max(0.02, wf[0])*46*g} `;
-                      for (let i = 1; i <= wLen; i++) botLine += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*46*g} `;
 
                       const baseFill = "text-[#1ED760] fill-[#1ED760]";
 
                       return (
-                        <svg className="w-full h-full pt-5 pb-0 pointer-events-none" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                        <svg className="w-full h-full pt-5 pb-0 pointer-events-none drop-shadow-sm" preserveAspectRatio="none" viewBox="0 0 1000 100">
                           <defs>
                             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="currentColor" stopOpacity="0.55" />
-                              <stop offset="50%" stopColor="currentColor" stopOpacity="0.28" />
-                              <stop offset="100%" stopColor="currentColor" stopOpacity="0.55" />
-                            </linearGradient>
-                            <linearGradient id={rmsId} x1="0" y1="0" x2="0" y2="1">
                               <stop offset="0%" stopColor="currentColor" stopOpacity="1" />
-                              <stop offset="50%" stopColor="currentColor" stopOpacity="0.85" />
+                              <stop offset="25%" stopColor="currentColor" stopOpacity="0.8" />
+                              <stop offset="50%" stopColor="currentColor" stopOpacity="0.6" />
+                              <stop offset="75%" stopColor="currentColor" stopOpacity="0.8" />
                               <stop offset="100%" stopColor="currentColor" stopOpacity="1" />
                             </linearGradient>
-                            <filter id={glowId} x="-5%" y="-20%" width="110%" height="140%">
-                              <feGaussianBlur stdDeviation="0.6" result="b" />
-                              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-                            </filter>
                           </defs>
                           <g className={baseFill}>
-                            {/* Peak envelope (translucent gradient) */}
-                            <path d={peakPath} fill={`url(#${gradId})`} />
-                            {/* RMS body (solid, bright) */}
-                            <path d={rmsPath} fill={`url(#${rmsId})`} filter={`url(#${glowId})`} />
-                            {/* Peak outlines for crisp transient edges */}
-                            <path d={topLine} fill="none" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.95" vectorEffect="non-scaling-stroke" />
-                            <path d={botLine} fill="none" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.95" vectorEffect="non-scaling-stroke" />
+                            <path 
+                              d={peakPath} 
+                              fill={`url(#${gradId})`} 
+                              stroke="currentColor" 
+                              strokeWidth="1.2" 
+                              strokeLinejoin="round" 
+                              vectorEffect="non-scaling-stroke" 
+                            />
                           </g>
-                          {/* Zero-crossing center line */}
-                          <line x1="0" y1="50" x2="1000" y2="50" stroke="#ffffff" strokeOpacity="0.08" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+                          <line x1="0" y1="50" x2="1000" y2="50" stroke="#000000" strokeOpacity="0.4" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
                         </svg>
                       );
                     })()}

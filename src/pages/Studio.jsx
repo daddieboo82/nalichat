@@ -36,7 +36,7 @@ import LivePresenceBar from '@/components/studio/LivePresenceBar';
 import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
 import MixerPanel from '@/components/studio/MixerPanel';
 
-const generateWaveform = (len = 2000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.02, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
+const generateWaveform = (len = 4000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.01, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
 export default function Studio() {
   const navigate = useNavigate();
@@ -1851,36 +1851,34 @@ export default function Studio() {
                           const glowId = `studio-wf-glow-${track.id}`;
 
                           let peakPath = `M 0,50 `;
-                          for (let i = 0; i <= wLen; i++) peakPath += `L ${(i/wLen)*1000},${50 - Math.max(0.02, wf[i])*48} `;
-                          for (let i = wLen; i >= 0; i--) peakPath += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*48} `;
+                          for (let i = 0; i <= wLen; i++) peakPath += `L ${(i/wLen)*1000},${50 - Math.max(0.01, wf[i])*48} `;
+                          for (let i = wLen; i >= 0; i--) peakPath += `L ${(i/wLen)*1000},${50 + Math.max(0.01, wf[i])*48} `;
                           peakPath += 'Z';
-
-                          let rmsPath = `M 0,50 `;
-                          for (let i = 0; i <= wLen; i++) rmsPath += `L ${(i/wLen)*1000},${50 - Math.max(0.015, wf[i])*48*0.62} `;
-                          for (let i = wLen; i >= 0; i--) rmsPath += `L ${(i/wLen)*1000},${50 + Math.max(0.015, wf[i])*48*0.62} `;
-                          rmsPath += 'Z';
-
-                          let topLine = `M 0,${50 - Math.max(0.02, wf[0])*48} `;
-                          for (let i = 1; i <= wLen; i++) topLine += `L ${(i/wLen)*1000},${50 - Math.max(0.02, wf[i])*48} `;
-                          let botLine = `M 0,${50 + Math.max(0.02, wf[0])*48} `;
-                          for (let i = 1; i <= wLen; i++) botLine += `L ${(i/wLen)*1000},${50 + Math.max(0.02, wf[i])*48} `;
 
                           const baseFill = "text-[#1ED760] fill-[#1ED760]";
 
                           return (
-                            <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                            <svg className="w-full h-full drop-shadow-sm" preserveAspectRatio="none" viewBox="0 0 1000 100">
                               <defs>
-                                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.55" /><stop offset="50%" stopColor="currentColor" stopOpacity="0.28" /><stop offset="100%" stopColor="currentColor" stopOpacity="0.55" /></linearGradient>
-                                <linearGradient id={rmsId} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="1" /><stop offset="50%" stopColor="currentColor" stopOpacity="0.85" /><stop offset="100%" stopColor="currentColor" stopOpacity="1" /></linearGradient>
-                                <filter id={glowId} x="-5%" y="-20%" width="110%" height="140%"><feGaussianBlur stdDeviation="0.6" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+                                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="currentColor" stopOpacity="1" />
+                                  <stop offset="25%" stopColor="currentColor" stopOpacity="0.8" />
+                                  <stop offset="50%" stopColor="currentColor" stopOpacity="0.6" />
+                                  <stop offset="75%" stopColor="currentColor" stopOpacity="0.8" />
+                                  <stop offset="100%" stopColor="currentColor" stopOpacity="1" />
+                                </linearGradient>
                               </defs>
                               <g className={baseFill}>
-                                <path d={peakPath} fill={`url(#${gradId})`} />
-                                <path d={rmsPath} fill={`url(#${rmsId})`} filter={`url(#${glowId})`} />
-                                <path d={topLine} fill="none" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.95" vectorEffect="non-scaling-stroke" />
-                                <path d={botLine} fill="none" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.95" vectorEffect="non-scaling-stroke" />
+                                <path 
+                                  d={peakPath} 
+                                  fill={`url(#${gradId})`} 
+                                  stroke="currentColor" 
+                                  strokeWidth="1.2" 
+                                  strokeLinejoin="round" 
+                                  vectorEffect="non-scaling-stroke" 
+                                />
                               </g>
-                              <line x1="0" y1="50" x2="1000" y2="50" stroke="#ffffff" strokeOpacity="0.08" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+                              <line x1="0" y1="50" x2="1000" y2="50" stroke="#000000" strokeOpacity="0.4" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
                             </svg>
                           );
                         })()}

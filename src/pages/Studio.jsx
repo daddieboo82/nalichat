@@ -36,24 +36,7 @@ import LivePresenceBar from '@/components/studio/LivePresenceBar';
 import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
 import MixerPanel from '@/components/studio/MixerPanel';
 
-// Fake waveform generator - High-resolution for precision editing
-const generateWaveform = (length = 2000) => {
-  return Array.from({ length }, (_, i) => {
-    const envelope = Math.sin(i * Math.PI / length) * 0.8 + 0.2;
-    const noise = Math.random() * 0.8 + 0.1;
-    const bursts = Math.sin(i * 0.1) * Math.cos(i * 0.05);
-    return Math.min(1, Math.max(0.02, Math.abs(bursts * noise * envelope) * 2));
-  });
-};
-
-const waveformFills = {
-  "bg-primary": "fill-primary",
-  "bg-pink-500": "fill-pink-500",
-  "bg-accent": "fill-accent",
-  "bg-yellow-500": "fill-yellow-500",
-  "bg-purple-500": "fill-purple-500",
-  "bg-green-500": "fill-green-500"
-};
+const generateWaveform = (len = 2000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.02, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
 export default function Studio() {
   const navigate = useNavigate();
@@ -585,12 +568,36 @@ export default function Studio() {
       } else if (e.code === 'Enter') {
         e.preventDefault();
         stop();
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        if (selectedTrackIds.length > 0) {
+          e.preventDefault();
+          deleteSelectedTracks();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
+        e.preventDefault();
+        duplicateSelectedTracks();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'e' || e.key === 'E')) {
+        e.preventDefault();
+        splitSelectedTracks();
+      } else if (e.key === 'l' || e.key === 'L') {
+        e.preventDefault();
+        selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked'));
+      } else if (e.key === 't' || e.key === 'T') {
+        setActiveTool('trim');
+      } else if (e.key === 'c' || e.key === 'C') {
+        setActiveTool('cut');
+      } else if (e.key === 'g' || e.key === 'G') {
+        setActiveTool('grab');
+      } else if (e.key === 'f' || e.key === 'F') {
+        setActiveTool('fade');
+      } else if (e.key === 's' || e.key === 'S') {
+        setActiveTool('smart');
       }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, isRecording, togglePlay, toggleRecord]);
+  }, [isPlaying, isRecording, togglePlay, toggleRecord, selectedTrackIds, tracks, activeTool]);
 
   const toggleMute = (trackId) => {
     sounds.click();
@@ -1077,9 +1084,9 @@ export default function Studio() {
       </div>
 
       {/* Toolbar 2 (Tools) */}
-      <div className="h-12 border-b border-border/40 bg-card/40 flex items-center px-4 gap-4 shrink-0 overflow-x-auto custom-scrollbar">
-        <Button onClick={addTrack} variant="secondary" size="sm" className="gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
-          <Plus className="w-4 h-4" /> Add Track
+      <div className="h-12 border-b border-border/40 bg-card/40 flex items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 overflow-x-auto custom-scrollbar">
+        <Button onClick={addTrack} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
+          <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
         </Button>
         <Button 
           onClick={() => {
@@ -1092,30 +1099,30 @@ export default function Studio() {
           }} 
           variant="secondary" 
           size="sm" 
-          className="gap-2 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 shrink-0"
+          className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 shrink-0"
         >
-          <SlidersHorizontal className="w-4 h-4" /> Wave Editor
+          <SlidersHorizontal className="w-4 h-4" /> <span className="hidden md:inline">Wave Editor</span>
         </Button>
         <Button 
           onClick={handleSeparateStems}
           disabled={isProcessing}
           variant="secondary" 
           size="sm" 
-          className="gap-2 h-8 rounded-lg bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 shrink-0 disabled:opacity-50"
+          className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 shrink-0 disabled:opacity-50"
         >
-          {isProcessing === 'separate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} Split Stems
+          {isProcessing === 'separate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} <span className="hidden md:inline">Split Stems</span>
         </Button>
         <Button
           onClick={handleGenerateMelody}
           disabled={isProcessing}
           variant="secondary" 
           size="sm" 
-          className="gap-2 h-8 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 shrink-0 disabled:opacity-50"
+          className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 shrink-0 disabled:opacity-50"
         >
-          {isProcessing === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} Generate Melody
+          {isProcessing === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} <span className="hidden lg:inline">Generate Melody</span>
         </Button>
 
-        <div className="h-5 w-px bg-border/50 mx-1 shrink-0" />
+        <div className="h-5 w-px bg-border/50 mx-0.5 shrink-0" />
         
         {/* Undo / Redo */}
         <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
@@ -1193,27 +1200,31 @@ export default function Studio() {
 
         {/* Tools */}
         <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
-          <Button variant="ghost" size="icon" onClick={() => setActiveTool('trim')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'trim' && "bg-primary/20 text-primary")} title="Trim Tool"><MoveHorizontal className="w-3.5 h-3.5" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => setActiveTool('cut')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'cut' && "bg-primary/20 text-primary")} title="Cut Tool"><Scissors className="w-3.5 h-3.5" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => setActiveTool('grab')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'grab' && "bg-primary/20 text-primary")} title="Grabber Tool"><MousePointer2 className="w-3.5 h-3.5" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => setActiveTool('fade')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'fade' && "bg-primary/20 text-primary")} title="Fade Tool"><Crosshair className="w-3.5 h-3.5" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => setActiveTool('smart')} className={cn("w-7 h-7 rounded text-muted-foreground border border-transparent hover:text-foreground", activeTool === 'smart' && "border-primary text-primary bg-primary/10")} title="Smart Tool">
-             <div className="flex flex-col gap-0.5 items-center">
-               <div className="flex gap-[1px]"><MoveHorizontal className="w-2.5 h-2.5"/><MousePointer2 className="w-2.5 h-2.5"/></div>
-             </div>
-          </Button>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => setActiveTool('trim')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'trim' && "bg-primary/20 text-primary")}><MoveHorizontal className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Trim Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">T</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => setActiveTool('cut')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'cut' && "bg-primary/20 text-primary")}><Scissors className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Cut Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">C</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => setActiveTool('grab')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'grab' && "bg-primary/20 text-primary")}><MousePointer2 className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Grabber Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">G</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => setActiveTool('fade')} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", activeTool === 'fade' && "bg-primary/20 text-primary")}><Crosshair className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Fade Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">F</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => setActiveTool('smart')} className={cn("w-7 h-7 rounded text-muted-foreground border border-transparent hover:text-foreground", activeTool === 'smart' && "border-primary text-primary bg-primary/10")}>
+               <div className="flex flex-col gap-0.5 items-center">
+                 <div className="flex gap-[1px]"><MoveHorizontal className="w-2.5 h-2.5"/><MousePointer2 className="w-2.5 h-2.5"/></div>
+               </div>
+            </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Smart Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">S</kbd></TooltipContent></Tooltip>
+          </TooltipProvider>
         </div>
 
         <div className="h-5 w-px bg-border/50 mx-1 shrink-0" />
 
         <div className="flex items-center gap-1 shrink-0">
-          <Button variant="ghost" size="icon" onClick={() => {
-            const allLocked = selectedTrackIds.every(id => tracks.find(t => t.id === id)?.locked);
-            selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked'));
-          }} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50" title="Lock/Unlock Clip">{tracks.find(t => t.id === selectedTrackIds[0])?.locked ? <Unlock className="w-4 h-4"/> : <Link2 className="w-4 h-4"/>}</Button>
-          <Button variant="ghost" size="icon" onClick={splitSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50" title="Separate Clip"><Scissors className="w-4 h-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={duplicateSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50" title="Duplicate Clip"><Copy className="w-4 h-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-red-400 disabled:opacity-50" title="Delete"><Trash2 className="w-4 h-4" /></Button>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => {
+              const allLocked = selectedTrackIds.every(id => tracks.find(t => t.id === id)?.locked);
+              selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked'));
+            }} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50">{tracks.find(t => t.id === selectedTrackIds[0])?.locked ? <Unlock className="w-4 h-4"/> : <Link2 className="w-4 h-4"/>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Lock/Unlock Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">L</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={splitSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50"><Scissors className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Separate Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+E</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={duplicateSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50"><Copy className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Duplicate Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+D</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-red-400 disabled:opacity-50"><Trash2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Delete <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Del</kbd></TooltipContent></Tooltip>
+          </TooltipProvider>
         </div>
         
         <div className="flex-1" />
@@ -1906,22 +1917,8 @@ export default function Studio() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48 bg-card border-border">
               <div className="px-2 py-1.5 text-[10px] uppercase font-bold text-muted-foreground">Audio Quality</div>
-              {[
-                { sr: "44.1 kHz", bd: "16-bit" },
-                { sr: "44.1 kHz", bd: "24-bit" },
-                { sr: "48 kHz", bd: "24-bit" },
-                { sr: "88.2 kHz", bd: "24-bit" },
-                { sr: "96 kHz", bd: "24-bit" },
-                { sr: "96 kHz", bd: "32-bit float" },
-                { sr: "192 kHz", bd: "32-bit float" }
-              ].map((setting, i) => (
-                <DropdownMenuItem 
-                  key={i}
-                  onClick={() => setAudioSettings({ sampleRate: setting.sr, bitDepth: setting.bd })}
-                  className="cursor-pointer text-xs"
-                >
-                  {setting.sr} / {setting.bd}
-                </DropdownMenuItem>
+              {[{ sr: "44.1 kHz", bd: "16-bit" },{ sr: "44.1 kHz", bd: "24-bit" },{ sr: "48 kHz", bd: "24-bit" },{ sr: "88.2 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "32-bit float" },{ sr: "192 kHz", bd: "32-bit float" }].map((s, i) => (
+                <DropdownMenuItem key={i} onClick={() => setAudioSettings({ sampleRate: s.sr, bitDepth: s.bd })} className="cursor-pointer text-xs">{s.sr} / {s.bd}</DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>

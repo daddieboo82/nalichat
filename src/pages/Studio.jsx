@@ -33,6 +33,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3 } from '@/lib/audioProcessing';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import LivePresenceBar from '@/components/studio/LivePresenceBar';
+import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
 
 // Fake waveform generator - High-resolution for precision editing
 const generateWaveform = (length = 2000) => {
@@ -92,6 +93,7 @@ export default function Studio() {
   const [bpmInput, setBpmInput] = useState('120');
   const [timeSignature, setTimeSignature] = useState('4/4');
   const [songKey, setSongKey] = useState('C Maj');
+  const [audioSettings, setAudioSettings] = useState({ sampleRate: "44.1 kHz", bitDepth: "24-bit" });
   
   const [bounceOpen, setBounceOpen] = useState(false);
   const [bounceRedirect, setBounceRedirect] = useState(null);
@@ -1907,7 +1909,33 @@ export default function Studio() {
       <div className="h-10 border-t border-border/50 bg-card/80 flex items-center justify-between px-3 sm:px-4 text-xs text-muted-foreground shrink-0 overflow-hidden">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
-          <span className="hidden md:inline text-primary font-medium truncate">44.1 kHz / 24-bit • Opus Codec Active</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="hidden md:inline text-primary font-medium truncate hover:underline outline-none cursor-pointer">
+                {audioSettings.sampleRate} / {audioSettings.bitDepth} • Opus Codec Active
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48 bg-card border-border">
+              <div className="px-2 py-1.5 text-[10px] uppercase font-bold text-muted-foreground">Audio Quality</div>
+              {[
+                { sr: "44.1 kHz", bd: "16-bit" },
+                { sr: "44.1 kHz", bd: "24-bit" },
+                { sr: "48 kHz", bd: "24-bit" },
+                { sr: "88.2 kHz", bd: "24-bit" },
+                { sr: "96 kHz", bd: "24-bit" },
+                { sr: "96 kHz", bd: "32-bit float" },
+                { sr: "192 kHz", bd: "32-bit float" }
+              ].map((setting, i) => (
+                <DropdownMenuItem 
+                  key={i}
+                  onClick={() => setAudioSettings(setting)}
+                  className="cursor-pointer text-xs"
+                >
+                  {setting.sr} / {setting.bd}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="flex items-center gap-4">
           <span className="hidden sm:flex items-center gap-1.5">
@@ -1926,45 +1954,11 @@ export default function Studio() {
         onSave={saveTrackEffects}
       />
 
-      <Dialog open={showPreferencesDialog} onOpenChange={setShowPreferencesDialog}>
-        <DialogContent className="max-w-md bg-card border-border text-foreground z-[200]">
-          <DialogHeader>
-            <DialogTitle>Hardware Preferences</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4 text-sm">
-            <div className="flex flex-col gap-1.5">
-              <span className="font-medium">Audio Input Device</span>
-              <select className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-xs text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
-                <option>System Default</option>
-                {hardware.interface && <option>USB Audio Interface</option>}
-                {hardware.mic && <option>Built-in Microphone</option>}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <span className="font-medium">Audio Output Device</span>
-              <select className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-xs text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
-                <option>System Default</option>
-                {hardware.output && <option>Headphones / External</option>}
-              </select>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-medium">Sample Rate</span>
-              <span className="text-muted-foreground text-xs">44.1 kHz</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-medium">Buffer Size</span>
-              <span className="text-muted-foreground text-xs">256 samples</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-medium">MIDI Devices</span>
-              <span className={cn("text-xs font-semibold", hardware.midi ? "text-green-500" : "text-muted-foreground")}>{hardware.midi ? "Connected" : "None detected"}</span>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setShowPreferencesDialog(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <HardwarePreferencesDialog 
+        open={showPreferencesDialog} 
+        onOpenChange={setShowPreferencesDialog} 
+        hardware={hardware} 
+      />
 
       <Dialog open={!!renamingTrack} onOpenChange={(open) => !open && setRenamingTrack(null)}>
         <DialogContent>

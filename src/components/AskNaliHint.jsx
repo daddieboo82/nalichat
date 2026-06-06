@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ArrowRight } from "lucide-react";
+
+const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/onboarding"];
 
 // Shows a tiny glowing arrow hint nudging the user to "Ask Nali"
 // after a period of inactivity (user seems stuck / idle).
@@ -9,8 +12,15 @@ const IDLE_MS = 20000; // 20s of no interaction
 export default function AskNaliHint() {
   const [show, setShow] = useState(false);
   const timerRef = useRef(null);
+  const location = useLocation();
+  const onAuthPage = AUTH_ROUTES.includes(location.pathname);
 
   useEffect(() => {
+    if (onAuthPage) {
+      setShow(false);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      return;
+    }
     const dismissedForever = sessionStorage.getItem("nali_hint_dismissed");
 
     const reset = () => {
@@ -33,7 +43,7 @@ export default function AskNaliHint() {
         window.removeEventListener(e, reset)
       );
     };
-  }, []);
+  }, [onAuthPage]);
 
   const askNali = () => {
     setShow(false);

@@ -9,8 +9,6 @@ import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";
 
-const ADMIN_EMAILS = ["bossglop43@gmail.com"];
-
 const NAV_ITEMS = [
   { icon: MessageSquare, label: "Messages", path: "/messages" },
   { icon: Compass, label: "Explore", path: "/explore" },

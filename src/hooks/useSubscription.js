@@ -2,8 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 
-const ADMIN_EMAILS = ['bossglop43@gmail.com'];
-
 export function useSubscription() {
   const { user, isAuthenticated } = useAuth();
   const { data: subscription = { plan: 'free', status: 'active' }, isLoading: queryLoading, refetch } = useQuery({
@@ -25,7 +23,7 @@ export function useSubscription() {
   // forever — never treat that as loading or the app will hang on a blank screen.
   const isLoading = isAuthenticated ? queryLoading : false;
 
-  const isAdmin = user?.role === 'admin' || ADMIN_EMAILS.includes(user?.email);
+  const isAdmin = user?.role === 'admin';
   const isPro = isAdmin || ((subscription?.plan === 'pro' || subscription?.plan === 'pro_filesharing') && subscription?.status === 'active');
   const isProFilesharing = isAdmin || (subscription?.plan === 'pro_filesharing' && subscription?.status === 'active');
   const isTrialActive = subscription?.trialActive;

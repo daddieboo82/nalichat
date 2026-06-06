@@ -9,8 +9,6 @@ import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-const ADMIN_EMAILS = ["bossglop43@gmail.com"];
-
 const SUBPAGE_PREFIXES = ["/playlist/", "/record", "/settings", "/analytics"];
 
 const TITLES = {

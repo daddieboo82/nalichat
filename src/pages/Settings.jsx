@@ -16,8 +16,6 @@ import { useSubscription } from "@/hooks/useSubscription";
 
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];
 
-const ADMIN_EMAILS = ["bossglop43@gmail.com"];
-
 export default function Settings() {
   const [user, setUser] = useState(null);
   const [form, setForm] = useState({ display_name: "", bio: "", role: "artist", location: "", genres: [], avatar_url: "" });

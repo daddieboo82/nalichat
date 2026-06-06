@@ -5,8 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import SoundToggle from "@/components/layout/SoundToggle";
-import { Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, HelpCircle, UserPlus, Send, Mic, Radio, ShoppingCart, Wand2, AudioLines } from "lucide-react";
+import { Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, LogIn, HelpCircle, UserPlus, Send, Mic, Radio, ShoppingCart, Wand2, AudioLines } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
+import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";
 
 const ADMIN_EMAILS = ["bossglop43@gmail.com"];
@@ -25,6 +26,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
   const location = useLocation();
   const [user, setUser] = useState(null);
   const { items, setIsOpen } = useCart();
+  const { isAuthenticated, navigateToLogin } = useAuth();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -124,13 +126,23 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
             >
               <Settings className="w-5 h-5" />
             </Link>
-            <button
-              onClick={() => base44.auth.logout()}
-              title="Log out"
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
+            {isAuthenticated ? (
+              <button
+                onClick={() => base44.auth.logout()}
+                title="Log out"
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            ) : (
+              <button
+                onClick={navigateToLogin}
+                title="Log in"
+                className="h-9 px-4 rounded-full flex items-center gap-2 text-sm font-bold bg-primary/15 text-primary hover:bg-primary/25 transition-all active:scale-95"
+              >
+                <LogIn className="w-4 h-4" /> Log in
+              </button>
+            )}
             <button
               onClick={() => window.dispatchEvent(new Event('open-ai-assistant'))}
               title="NALI.ai Assistant"

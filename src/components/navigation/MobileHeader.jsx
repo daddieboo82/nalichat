@@ -1,11 +1,12 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, Music, ShoppingCart, AudioLines } from "lucide-react";
+import { ChevronLeft, Music, ShoppingCart, AudioLines, LogIn } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useCart } from "@/lib/CartContext";
+import { useAuth } from "@/lib/AuthContext";
 
 const ADMIN_EMAILS = ["bossglop43@gmail.com"];
 
@@ -32,6 +33,7 @@ export default function MobileHeader() {
   const location = useLocation();
   const [user, setUser] = useState(null);
   const { items, setIsOpen } = useCart();
+  const { isAuthenticated, navigateToLogin } = useAuth();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -89,6 +91,14 @@ export default function MobileHeader() {
             )}
           </button>
           <NotificationBell />
+          {!isAuthenticated && (
+            <button
+              onClick={navigateToLogin}
+              className="h-7 px-3 rounded-full flex items-center gap-1 text-[11px] font-bold bg-primary/15 text-primary active:scale-95 transition-all"
+            >
+              <LogIn className="w-3.5 h-3.5" /> Log in
+            </button>
+          )}
           <button
             onClick={() => window.dispatchEvent(new Event('open-ai-assistant'))}
             className="relative p-1.5 ml-1 rounded-lg flex items-center justify-center text-white bg-gradient-to-r from-primary to-accent shadow-lg shadow-primary/20 transition-all active:scale-95"

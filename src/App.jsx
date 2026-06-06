@@ -152,7 +152,7 @@ const AuthenticatedApp = () => {
       <Route path="*" element={<PageNotFound />} />
       </Routes>
       </Suspense>
-      <AskNaliHint />
+      {!['/login', '/register', '/onboarding', '/forgot-password', '/reset-password'].includes(location.pathname) && <AskNaliHint />}
     </>
   );
 };

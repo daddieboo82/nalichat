@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
+import { toast } from "sonner";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -20,10 +21,14 @@ export default function Login() {
     setLoading(true);
     try {
       await base44.auth.loginViaEmailPassword(email, password);
+      // Skip the intro splash after login so the user lands straight in the app
+      try { sessionStorage.setItem('nali_splash_shown', '1'); } catch {}
+      toast.success("Logged in successfully! Welcome back.");
       window.location.href = "/";
     } catch (err) {
-      setError(err.message || "Invalid email or password");
-    } finally {
+      const msg = err.message || "Invalid email or password";
+      setError(msg);
+      toast.error(msg);
       setLoading(false);
     }
   };

@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Knob } from '@/components/ui/knob';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -307,6 +308,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
     const initialParams = {};
     effect.params.forEach(p => initialParams[p.name] = (p.min + p.max) / 2);
     setActiveEffects([...activeEffects, { ...effect, paramValues: initialParams }]);
+    toast.success(`${effect.name} added to rack`);
   };
 
   const updateEffectParam = (effectId, paramName, val) => {
@@ -456,7 +458,10 @@ export default function WaveEditor({ track, onClose, onSave }) {
         setActiveTool('split');
       } else if (e.code === 'Digit4') {
         setActiveTool('range');
-      } else if (e.code === 'KeyS') {
+      } else if ((e.metaKey || e.ctrlKey) && e.code === 'KeyS') {
+        e.preventDefault();
+        handleSave();
+      } else if (e.code === 'KeyS' && !e.metaKey && !e.ctrlKey) {
         setSegments(prev => {
           const segIndex = prev.findIndex(s => playhead > s.startOffset && playhead < (s.startOffset + s.duration));
           if (segIndex !== -1) {
@@ -505,8 +510,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">File</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans">
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => toast.info('New File not implemented yet')}>New <DropdownMenuShortcut className="text-current opacity-70">Ctrl+N</DropdownMenuShortcut></DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => toast.info('Open File not implemented yet')}>Open... <DropdownMenuShortcut className="text-current opacity-70">Ctrl+O</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => toast.info('New File not implemented yet')}>New</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => toast.info('Open File not implemented yet')}>Open...</DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={handleSave}>Save <DropdownMenuShortcut className="text-current opacity-70">Ctrl+S</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => toast.info('Save As not implemented yet')}>Save As...</DropdownMenuItem>
@@ -730,30 +735,32 @@ export default function WaveEditor({ track, onClose, onSave }) {
             
             {/* Playback Controls */}
             <div className="h-12 bg-card/40 border-b border-border/40 flex items-center px-4 gap-4 shadow-sm shrink-0 justify-between">
-              <div className="flex gap-1 bg-secondary/30 p-1.5 rounded-xl border border-border/50 shadow-inner items-center">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(0)}>
-                  <SkipBack className="w-4 h-4 fill-current" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(Math.max(0, playhead - 5))}>
-                  <Rewind className="w-4 h-4 fill-current" />
-                </Button>
-                <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-lg", isPlaying ? "text-primary bg-primary/20 shadow-inner" : "text-muted-foreground hover:text-foreground hover:bg-secondary")} onClick={() => setIsPlaying(!isPlaying)}>
-                  <Play className="w-4 h-4 fill-current" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setIsPlaying(false)}>
-                  <Square className={cn("w-4 h-4", isPlaying ? "fill-current" : "")} />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(Math.min(track?.duration || 40, playhead + 5))}>
-                  <FastForward className="w-4 h-4 fill-current" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(track?.duration || 40)}>
-                  <SkipForward className="w-4 h-4 fill-current" />
-                </Button>
-                <div className="w-px h-6 bg-border/50 mx-1" />
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg">
-                  <Circle className="w-4 h-4 fill-current" />
-                </Button>
-              </div>
+              <TooltipProvider delayDuration={200}>
+                <div className="flex gap-1 bg-secondary/30 p-1.5 rounded-xl border border-border/50 shadow-inner items-center">
+                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(0)}>
+                    <SkipBack className="w-4 h-4 fill-current" />
+                  </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Return to Zero</TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(Math.max(0, playhead - 5))}>
+                    <Rewind className="w-4 h-4 fill-current" />
+                  </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Rewind</TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-lg", isPlaying ? "text-primary bg-primary/20 shadow-inner" : "text-muted-foreground hover:text-foreground hover:bg-secondary")} onClick={() => setIsPlaying(!isPlaying)}>
+                    <Play className="w-4 h-4 fill-current" />
+                  </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{isPlaying ? "Pause" : "Play"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space</kbd></TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setIsPlaying(false)}>
+                    <Square className={cn("w-4 h-4", isPlaying ? "fill-current" : "")} />
+                  </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Stop</TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(Math.min(track?.duration || 40, playhead + 5))}>
+                    <FastForward className="w-4 h-4 fill-current" />
+                  </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Fast Forward</TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(track?.duration || 40)}>
+                    <SkipForward className="w-4 h-4 fill-current" />
+                  </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Go to End</TooltipContent></Tooltip>
+                  <div className="w-px h-6 bg-border/50 mx-1" />
+                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg">
+                    <Circle className="w-4 h-4 fill-current" />
+                  </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Record</TooltipContent></Tooltip>
+                </div>
+              </TooltipProvider>
 
               <div className="flex items-center gap-3 text-muted-foreground">
                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-foreground hover:bg-secondary/50 rounded-lg" onClick={() => setZoom(z => Math.max(0.5, z / 1.5))}>
@@ -864,7 +871,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     }}
                   >
                     {/* Header bar of segment */}
-                    <div className="absolute top-0 left-0 right-0 h-5 bg-card/60 border-b border-border/30 backdrop-blur flex items-center px-2 z-20 pointer-events-none">
+                    <div className="absolute top-0 left-0 right-0 h-5 bg-card/60 border-b border-border/30 backdrop-blur flex items-center px-2 pl-4 z-20 pointer-events-none">
                       <span className="text-[10px] text-muted-foreground font-sans truncate font-semibold">{track.name} - Event {idx+1}</span>
                     </div>
 
@@ -1288,15 +1295,6 @@ export default function WaveEditor({ track, onClose, onSave }) {
                             <span className="text-xs font-bold text-white/90">{eff.name}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <button 
-                              onClick={() => {
-                                onSave(track.id, { ...track, segments, effects: activeEffects });
-                                toast.success(`${eff.name} added to chain`);
-                              }} 
-                              className="text-[10px] font-semibold bg-primary/20 text-primary hover:bg-primary/30 px-2 py-1 rounded transition-colors"
-                            >
-                              Add to Chain
-                            </button>
                             <button 
                               onClick={() => toggleCollapseEffect(eff.id)} 
                               className="text-white/40 hover:text-white transition-colors p-1 hover:bg-white/5 rounded"

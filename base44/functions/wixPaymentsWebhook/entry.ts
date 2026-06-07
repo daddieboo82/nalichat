@@ -32,15 +32,15 @@ Deno.serve(async (req) => {
     let isTest = false;
 
     try {
-      let parsedParams = JSON.parse(bodyText);
-      if (parsedParams && parsedParams.data && parsedParams.data.isTestBypass) {
-        parsedParams = parsedParams.data;
+      let parsed = JSON.parse(bodyText);
+      let params = parsed;
+      if (parsed && parsed.data) {
+        params = typeof parsed.data === 'string' ? JSON.parse(parsed.data) : parsed.data;
       }
-      
-      if (parsedParams && parsedParams.isTestBypass) {
+      if (params && params.isTestBypass) {
         isTest = true;
-        event = parsedParams.payload;
-        eventData = JSON.parse(event.data);
+        event = params.payload;
+        eventData = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
       }
     } catch (e) {
       // Not a test payload, proceed with normal JWT verification

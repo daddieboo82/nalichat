@@ -102,7 +102,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           
           {/* Audio Upload (Required) */}
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block">Audio File *</label>
+            <label htmlFor="audio-upload" className="text-xs text-muted-foreground mb-2 block">Audio File *</label>
             <div
               onClick={() => audioRef.current?.click()}
               className={cn("border-2 border-dashed rounded-xl overflow-hidden cursor-pointer transition-colors flex items-center justify-center h-20", audioFile ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/50")}
@@ -121,12 +121,12 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
                 )}
               </div>
             </div>
-            <input ref={audioRef} type="file" accept="audio/*" className="hidden" onChange={handleAudio} />
+            <input id="audio-upload" ref={audioRef} type="file" accept="audio/*" className="hidden" onChange={handleAudio} />
           </div>
 
           {/* Cover Art upload */}
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block">Cover Art</label>
+            <label htmlFor="cover-upload" className="text-xs text-muted-foreground mb-2 block">Cover Art</label>
             <div
               onClick={() => imageRef.current?.click()}
               className={cn("border-2 border-dashed border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-center", preview ? "h-48" : "h-24")}
@@ -140,16 +140,20 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
                 </div>
               )}
             </div>
-            <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
+            <input id="cover-upload" ref={imageRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
           </div>
 
+          <label htmlFor="track-title" className="sr-only">Track title</label>
           <input
+            id="track-title"
             value={form.title}
             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
             placeholder="Track title *"
             className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
           />
+          <label htmlFor="track-description" className="sr-only">Track description</label>
           <textarea
+            id="track-description"
             value={form.description}
             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             placeholder="Track description, production notes, credits..."

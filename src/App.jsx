@@ -42,6 +42,7 @@ const Privacy = lazy(() => import('@/pages/Privacy'));
 const Studio = lazy(() => import('@/pages/Studio'));
 const Record = lazy(() => import('@/pages/Record'));
 const CoverArt = lazy(() => import('@/pages/CoverArt'));
+const WebhookTest = lazy(() => import('@/pages/WebhookTest'));
 import AiAssistant from '@/components/AiAssistant';
 import AskNaliHint from '@/components/AskNaliHint';
 import { base44 } from '@/api/base44Client';
@@ -147,6 +148,7 @@ const AuthenticatedApp = () => {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/ThankYou" element={<ThankYou />} />
           <Route path="/cover-art" element={<CoverArt />} />
+          <Route path="/webhook-test" element={<WebhookTest />} />
         </Route>
       </Route>
       <Route path="/privacy" element={<Privacy />} />

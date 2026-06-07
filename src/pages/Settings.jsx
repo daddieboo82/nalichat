@@ -237,6 +237,25 @@ export default function Settings() {
           <DeviceSelector compact={true} />
         </div>
 
+        {user && (
+          <div className="mt-12 pt-8 border-t border-border">
+            <h2 className="text-xl font-heading font-bold mb-6 text-orange-500">Developer Testing</h2>
+            <div className="bg-orange-500/10 rounded-2xl p-6 border border-orange-500/30">
+              <h3 className="font-heading font-semibold text-lg text-orange-500 mb-2">Backend Infrastructure Testing</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Use these tools to manually trigger backend webhooks and simulate server-side events for automated testing.
+              </p>
+              <div className="flex gap-4">
+                <Link to="/webhook-test">
+                  <Button variant="outline" className="border-orange-500/50 text-orange-500 hover:bg-orange-500/20">
+                    Open Webhook Testing Interface
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         <DeleteAccountDialog />
       </div>
     </div>

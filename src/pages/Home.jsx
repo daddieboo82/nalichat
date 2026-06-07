@@ -218,7 +218,7 @@ export default function Home() {
 
           <h1 className="font-heading font-black text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] mb-6 tracking-tight leading-[1.05] drop-shadow-xl text-gradient-animate">
             Real-Time<br className="hidden md:block" /> 
-            <span className="drop-shadow-2xl">Messaging</span>
+            <span>Messaging</span>
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl text-foreground/90 font-medium mb-10 md:mb-12 leading-relaxed max-w-3xl mx-auto">
             Connect instantly with artists globally. Share high-res audio, drop voice notes, and collaborate seamlessly in unlimited chats.

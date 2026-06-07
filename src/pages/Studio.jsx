@@ -80,6 +80,7 @@ export default function Studio() {
   // Session musical settings shown in the transport (BPM, time signature, key)
   const [bpm, setBpm] = useState(120);
   const [bpmInput, setBpmInput] = useState('120');
+  const [isEditingBpm, setIsEditingBpm] = useState(false);
   const [timeSignature, setTimeSignature] = useState('4/4');
   const [songKey, setSongKey] = useState('C Maj');
   const [audioSettings, setAudioSettings] = useState({ sampleRate: "44.1 kHz", bitDepth: "24-bit" });
@@ -1072,25 +1073,13 @@ export default function Studio() {
               <Save className="w-4 h-4" /> Save
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary">
-                  <Download className="w-4 h-4" /> Export
-                </Button>
-              </DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild><Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary"><Download className="w-4 h-4" /> Export</Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={() => handleDownloadMix('wav')} disabled={isDownloading} className="cursor-pointer py-2">
-                  {isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />} Download Mix (WAV)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDownloadMix('mp3')} disabled={isDownloading} className="cursor-pointer py-2">
-                  {isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />} Download Mix (MP3)
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownloadMix('wav')} disabled={isDownloading} className="cursor-pointer py-2">{isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />} Download Mix (WAV)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownloadMix('mp3')} disabled={isDownloading} className="cursor-pointer py-2">{isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />} Download Mix (MP3)</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => { setBounceRedirect('explore'); setBounceOpen(true); }} className="cursor-pointer py-2">
-                  <Download className="w-4 h-4 mr-2" /> Export & Publish
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setBounceRedirect('cover-art'); setBounceOpen(true); }} className="cursor-pointer py-2">
-                  <ImageIcon className="w-4 h-4 mr-2" /> Export to Cover Creator
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setBounceRedirect('explore'); setBounceOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Export & Publish</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setBounceRedirect('cover-art'); setBounceOpen(true); }} className="cursor-pointer py-2"><ImageIcon className="w-4 h-4 mr-2" /> Export to Cover Creator</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -1157,42 +1146,73 @@ export default function Studio() {
 
         {/* BPM / Time Signature / Key display */}
         <div className="flex items-stretch gap-px bg-background/50 rounded-lg border border-border/50 shadow-inner overflow-hidden shrink-0">
-          <label className="flex flex-col items-center justify-center px-3 py-0.5 hover:bg-secondary/40 transition-colors cursor-text" title="Tempo (beats per minute)">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">BPM</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={bpmInput}
-              onChange={(e) => setBpmInput(e.target.value.replace(/[^0-9]/g, ''))}
-              onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-              className="w-10 bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight"
-            />
-          </label>
+          <div 
+            className="flex flex-col items-center justify-center px-3 py-0.5 hover:bg-secondary/40 transition-colors cursor-ns-resize" 
+            title="Tempo (beats per minute)"
+            onDoubleClick={() => setIsEditingBpm(true)}
+            onPointerDown={(e) => {
+              if (isEditingBpm) return;
+              e.preventDefault();
+              const target = e.currentTarget;
+              target.setPointerCapture(e.pointerId);
+              const startY = e.clientY;
+              const startBpm = bpm;
+              let moved = false;
+              
+              const handleMove = (moveEv) => {
+                const deltaY = startY - moveEv.clientY;
+                if (Math.abs(deltaY) > 2) moved = true;
+                const newBpm = Math.max(20, Math.min(300, Math.round(startBpm + deltaY * 0.5)));
+                setBpm(newBpm);
+                setBpmInput(String(newBpm));
+              };
+              
+              const handleUp = (upEv) => {
+                target.releasePointerCapture(upEv.pointerId);
+                target.removeEventListener('pointermove', handleMove);
+                target.removeEventListener('pointerup', handleUp);
+                if (!moved) {
+                   setIsEditingBpm(true);
+                }
+              };
+              
+              target.addEventListener('pointermove', handleMove);
+              target.addEventListener('pointerup', handleUp);
+            }}
+          >
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5 pointer-events-none">BPM</span>
+            {isEditingBpm ? (
+              <input
+                autoFocus
+                type="text"
+                inputMode="numeric"
+                value={bpmInput}
+                onChange={(e) => setBpmInput(e.target.value.replace(/[^0-9]/g, ''))}
+                onBlur={() => { 
+                  const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); 
+                  setBpm(c); 
+                  setBpmInput(String(c)); 
+                  setIsEditingBpm(false);
+                }}
+                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                className="w-10 bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight"
+              />
+            ) : (
+              <span className="w-10 text-center font-mono text-xs font-bold text-foreground leading-tight select-none pointer-events-none">
+                {bpm}
+              </span>
+            )}
+          </div>
           <div className="flex flex-col items-center justify-center px-3 py-0.5 border-l border-border/60" title="Time signature">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Sig</span>
-            <select
-              value={timeSignature}
-              onChange={(e) => setTimeSignature(e.target.value)}
-              className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none"
-            >
-              <option value="4/4">4/4</option>
-              <option value="3/4">3/4</option>
-              <option value="6/8">6/8</option>
-              <option value="5/4">5/4</option>
-              <option value="7/8">7/8</option>
+            <select value={timeSignature} onChange={(e) => setTimeSignature(e.target.value)} className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none">
+              <option value="4/4">4/4</option><option value="3/4">3/4</option><option value="6/8">6/8</option><option value="5/4">5/4</option><option value="7/8">7/8</option>
             </select>
           </div>
           <div className="flex flex-col items-center justify-center px-3 py-0.5 border-l border-border/60" title="Project key">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Key</span>
-            <select
-              value={songKey}
-              onChange={(e) => setSongKey(e.target.value)}
-              className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none"
-            >
-              {["C Maj","G Maj","D Maj","A Maj","E Maj","F Maj","Bb Maj","A min","E min","B min","D min","G min","C min"].map(k => (
-                <option key={k} value={k}>{k}</option>
-              ))}
+            <select value={songKey} onChange={(e) => setSongKey(e.target.value)} className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none">
+              {["C Maj","G Maj","D Maj","A Maj","E Maj","F Maj","Bb Maj","A min","E min","B min","D min","G min","C min"].map(k => (<option key={k} value={k}>{k}</option>))}
             </select>
           </div>
         </div>
@@ -1901,9 +1921,7 @@ export default function Studio() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48 bg-card border-border">
               <div className="px-2 py-1.5 text-[10px] uppercase font-bold text-muted-foreground">Audio Quality</div>
-              {[{ sr: "44.1 kHz", bd: "16-bit" },{ sr: "44.1 kHz", bd: "24-bit" },{ sr: "48 kHz", bd: "24-bit" },{ sr: "88.2 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "32-bit float" },{ sr: "192 kHz", bd: "32-bit float" }].map((s, i) => (
-                <DropdownMenuItem key={i} onClick={() => setAudioSettings({ sampleRate: s.sr, bitDepth: s.bd })} className="cursor-pointer text-xs">{s.sr} / {s.bd}</DropdownMenuItem>
-              ))}
+              {[{ sr: "44.1 kHz", bd: "16-bit" },{ sr: "44.1 kHz", bd: "24-bit" },{ sr: "48 kHz", bd: "24-bit" },{ sr: "88.2 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "32-bit float" },{ sr: "192 kHz", bd: "32-bit float" }].map((s, i) => (<DropdownMenuItem key={i} onClick={() => setAudioSettings({ sampleRate: s.sr, bitDepth: s.bd })} className="cursor-pointer text-xs">{s.sr} / {s.bd}</DropdownMenuItem>))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -960,8 +960,7 @@ export default function Studio() {
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       {/* Top Toolbar */}
-      <div className="min-h-[4rem] py-2 border-b border-border/50 bg-card/80 backdrop-blur flex flex-nowrap overflow-x-auto custom-scrollbar items-center justify-between gap-2 px-2 sm:px-4 shrink-0 relative pr-12 sm:pr-16">
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card/80 to-transparent pointer-events-none z-10" />
+      <div className="min-h-[4rem] py-2 border-b border-border/50 bg-card/80 backdrop-blur flex flex-nowrap overflow-x-auto custom-scrollbar items-center justify-between gap-2 pl-2 sm:pl-4 shrink-0 relative after:content-[''] after:w-12 sm:after:w-16 after:shrink-0">
         <div className="flex items-center gap-4 shrink-0">
           <div className="font-heading font-black text-base sm:text-xl tracking-tight flex items-center gap-2">
             <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
@@ -981,7 +980,7 @@ export default function Studio() {
         </div>
 
         {/* Right Tools - Hardware & Export */}
-        <div className="flex items-center gap-2 shrink-0 pr-12 sm:pr-16">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Live Collaborators */}
           <LivePresenceBar peers={livePeers} />
 
@@ -1056,7 +1055,7 @@ export default function Studio() {
       </div>
 
       {/* Toolbar 2 (Tools) */}
-      <div className="min-h-[3rem] py-1 border-b border-border/40 bg-card/40 flex flex-nowrap overflow-x-auto custom-scrollbar items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 relative">
+      <div className="min-h-[3rem] py-1 border-b border-border/40 bg-card/40 flex flex-nowrap overflow-x-auto custom-scrollbar items-center pl-2 sm:pl-4 gap-2 sm:gap-4 shrink-0 relative after:content-[''] after:w-12 sm:after:w-16 after:shrink-0">
         <Button onClick={addTrack} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
           <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
         </Button>
@@ -1186,7 +1185,7 @@ export default function Studio() {
         </div>
         
         <div className="flex-1" />
-        <div className="flex items-center gap-3 ml-auto text-sm text-muted-foreground shrink-0 pl-4 pr-12 sm:pr-16">
+        <div className="flex items-center gap-3 ml-auto text-sm text-muted-foreground shrink-0 pl-4">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={() => { const maxD = Math.max(...tracks.map(t => (t.startTime||0)+(t.duration||40))); if (maxD>0) setZoom(Math.max(0.5, 40/maxD)); }} className="h-7 px-2 text-xs rounded text-muted-foreground hover:text-foreground hover:bg-secondary"><Maximize2 className="w-3.5 h-3.5 mr-1.5" /> <span className="hidden lg:inline">Fit</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Zoom to fit all tracks</TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div className="flex items-center gap-1 cursor-help ml-2"><span className="hidden lg:inline">Zoom</span></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Adjust horizontal zoom (Ctrl+Scroll)</TooltipContent></Tooltip>

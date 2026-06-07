@@ -13,8 +13,8 @@ export default function GlobalAudioPlayer() {
   
   const displayDuration = duration || currentTrack?.duration || 0;
 
-  const formatTime = (seconds) => {
-    if (!seconds || isNaN(seconds)) return "0:00";
+  const formatTime = (seconds, isDuration = false) => {
+    if (!seconds || isNaN(seconds)) return isDuration ? "--:--" : "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
@@ -81,7 +81,7 @@ export default function GlobalAudioPlayer() {
                 onValueChange={(v) => seek(v[0])}
                 className="flex-1 [&_[role=slider]]:w-3 [&_[role=slider]]:h-3 [&_[role=slider]]:bg-white [&_[role=slider]]:border-white/50 [&_.bg-primary]:bg-white [&_.bg-primary\\/20]:bg-white/20" 
               />
-              <span className="text-[10px] text-white/50 w-8 font-mono">{formatTime(displayDuration)}</span>
+              <span className="text-[10px] text-white/50 w-8 font-mono">{formatTime(displayDuration, true)}</span>
             </div>
           </div>
 

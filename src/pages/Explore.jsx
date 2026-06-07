@@ -76,12 +76,14 @@ export default function Explore() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["artposts"] }),
   });
 
-  const filtered = React.useMemo(() => posts.filter(p =>
-    !search || String(p.title || '').toLowerCase().includes(search.toLowerCase()) ||
-    String(p.creator_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    String(p.genre || '').toLowerCase().includes(search.toLowerCase()) ||
-    (Array.isArray(p.tags) ? p.tags.some(t => String(t || '').toLowerCase().includes(search.toLowerCase())) : false)
-  ), [posts, search]);
+  const filtered = React.useMemo(() => posts.filter(p => {
+    const matchesSearch = !search || String(p.title || '').toLowerCase().includes(search.toLowerCase()) ||
+      String(p.creator_name || '').toLowerCase().includes(search.toLowerCase()) ||
+      String(p.genre || '').toLowerCase().includes(search.toLowerCase()) ||
+      (Array.isArray(p.tags) ? p.tags.some(t => String(t || '').toLowerCase().includes(search.toLowerCase())) : false);
+    const matchesFilter = filter === "all" || p.medium === filter;
+    return matchesSearch && matchesFilter;
+  }), [posts, search, filter]);
 
   const featured = React.useMemo(() => filtered.filter(p => p?.featured || (p?.likes || 0) > 5), [filtered]);
   const recent = filtered;
@@ -174,7 +176,7 @@ export default function Explore() {
         {/* All posts masonry grid */}
         <div>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            {search ? `Results for "${search}"` : "Recent"}
+            {search ? `Results for "${search}"${filter !== "all" ? ` in ${filter}` : ""}` : (filter !== "all" ? `${filter}s` : "Recent")}
           </h2>
           {recent.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">

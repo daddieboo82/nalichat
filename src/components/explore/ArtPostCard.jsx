@@ -39,10 +39,10 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
           }
         }}
       >
-        {post.image_url && (
+        {(post.image_url || post.file_url) && (
           <div className="relative overflow-hidden">
             <img
-              src={post.image_url}
+              src={post.image_url || "https://images.unsplash.com/photo-1614149162883-504ce4d13909?q=80&w=600&auto=format&fit=crop"}
               alt={post.title}
               className="w-full object-cover transition-transform duration-500 group-hover:scale-105 bg-secondary"
               style={{ maxHeight: large ? 280 : 220 }}

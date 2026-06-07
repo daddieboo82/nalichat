@@ -129,13 +129,6 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
           >
             <Plus className="w-5 h-5" />
           </Link>
-          <button
-            onClick={onInviteClick}
-            title="Invite Collaborators"
-            className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
-          >
-            <UserPlus className="w-5 h-5" />
-          </button>
 
           <button
             onClick={() => setIsOpen(true)}
@@ -159,10 +152,22 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
                   title="Account & Settings"
                   className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
                 >
-                  <Settings className="w-5 h-5" />
+                  {user ? (
+                    <Avatar className="w-7 h-7">
+                      <AvatarImage src={user.avatar_url} />
+                      <AvatarFallback className="bg-primary/20 text-primary text-[10px]">
+                        {user.full_name?.[0] || <Settings className="w-5 h-5" />}
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <Settings className="w-5 h-5" />
+                  )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 bg-card/95 backdrop-blur-xl border-border/50">
+                <DropdownMenuItem onClick={onInviteClick} className="cursor-pointer">
+                  <UserPlus className="w-4 h-4 mr-2" /> Invite Friends
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={onHelpClick} className="cursor-pointer">
                   <HelpCircle className="w-4 h-4 mr-2" /> Help
                 </DropdownMenuItem>

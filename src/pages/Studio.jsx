@@ -80,6 +80,7 @@ export default function Studio() {
   const [audioSettings, setAudioSettings] = useState({ sampleRate: "44.1 kHz", bitDepth: "24-bit", bufferSize: "256" });
   
   const [bounceOpen, setBounceOpen] = useState(false);
+  const [projectName, setProjectName] = useState("Untitled Project"); const [pendingTimeSignature, setPendingTimeSignature] = useState(null); const [pendingSongKey, setPendingSongKey] = useState(null);
   const [bounceRedirect, setBounceRedirect] = useState(null);
   const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
@@ -925,6 +926,7 @@ export default function Studio() {
             <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             <span className="text-gradient-animate hidden xs:inline sm:inline">NaliStudio</span>
           </div>
+          <div className="hidden sm:flex items-center gap-2 px-3 border-l border-border/50 text-sm"><input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} className="bg-transparent border-none focus:outline-none focus:ring-0 text-foreground font-medium w-48 truncate placeholder:text-muted-foreground" placeholder="Project Name..." /></div>
         </div>
 
         {/* Transport Controls */}
@@ -934,6 +936,7 @@ export default function Studio() {
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Stop" aria-label="Stop" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Square className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop</TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Play/Pause (Space)" aria-label="Play/Pause (Space)" aria-keyshortcuts="Space" onClick={(e) => { togglePlay(); e.currentTarget.blur(); }} className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>{isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{isPlaying ? "Pause" : "Play"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Record (R)" aria-label="Record (R)" aria-keyshortcuts="R" onClick={toggleRecord} className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}>{isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}<Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Record <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">R</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Toggle Loop Region" aria-label="Loop" onClick={(e) => { setLoopActive(!loopActive); e.currentTarget.blur(); }} className={cn("w-10 h-10 rounded-lg transition-all", loopActive ? "bg-blue-500/20 text-blue-500" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}><Repeat className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Toggle Loop</TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Fast-forward" aria-label="Fast-forward" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><FastForward className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Fast-forward</TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
@@ -1054,8 +1057,8 @@ export default function Studio() {
         {/* Undo / Redo Group */}
         <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={undo} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5 relative", historyIndex <= 0 && "opacity-50")}><Undo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Undo</span>{historyIndex > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{historyIndex <= 0 ? "Nothing to Undo" : "Undo"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Z</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={redo} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5 relative", historyIndex >= historyRef.current.length - 1 && "opacity-50")}><Redo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Redo</span>{(historyRef.current.length-1-historyIndex) > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyRef.current.length-1-historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{historyIndex >= historyRef.current.length - 1 ? "Nothing to Redo" : "Redo"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={undo} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5 relative"><Undo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Undo</span>{historyIndex > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Undo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Z</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={redo} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5 relative"><Redo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Redo</span>{(historyRef.current.length-1-historyIndex) > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyRef.current.length-1-historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Redo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 
@@ -1079,7 +1082,7 @@ export default function Studio() {
                 <Tooltip><TooltipTrigger asChild>
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5 cursor-help">Sig</span>
                 </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Time Signature</TooltipContent></Tooltip>
-                <Select value={timeSignature} onValueChange={setTimeSignature}>
+                <Select value={timeSignature} onValueChange={(val) => setPendingTimeSignature(val)}>
                   <SelectTrigger className="h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-xs font-bold text-foreground w-12 text-center flex justify-center [&>svg]:hidden">
                     <SelectValue />
                   </SelectTrigger>
@@ -1101,7 +1104,7 @@ export default function Studio() {
                 <Tooltip><TooltipTrigger asChild>
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5 cursor-help">Key</span>
                 </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Project Key</TooltipContent></Tooltip>
-                <Select value={songKey} onValueChange={setSongKey}>
+                <Select value={songKey} onValueChange={(val) => setPendingSongKey(val)}>
                   <SelectTrigger className="h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-xs font-bold text-foreground w-[4.5rem] text-center flex justify-center [&>svg]:hidden">
                     <SelectValue />
                   </SelectTrigger>
@@ -1382,6 +1385,7 @@ export default function Studio() {
         <div className="flex-1 relative overflow-auto custom-scrollbar flex flex-col bg-[#0f0f13]">
           {/* Timeline Header */}
           <div className="h-8 border-b border-border/30 bg-card/40 sticky top-0 z-20 flex items-end px-0 overflow-hidden timeline-ruler">
+            {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[2px] bg-red-500/50 z-10 pointer-events-none" style={{ left: `${projectEnd * 20 * zoom}px` }}><div className="absolute top-0 -translate-x-1/2 bg-red-500/80 text-white text-[8px] px-1 rounded-b shadow-md font-bold">END</div></div>; })()}
             <div className="h-full relative cursor-pointer select-none" style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px` }}
               onPointerDown={(e) => {
                 const target = e.currentTarget;
@@ -1394,8 +1398,8 @@ export default function Studio() {
             >
               {loopActive && (
                 <div className="absolute bottom-0 h-full bg-blue-500/10 border-x-2 border-blue-500 pointer-events-none z-10" style={{ left: 0, width: `${(60/bpm) * parseInt(timeSignature.split('/')[0]||4) * 4 * 20 * zoom}px` }}>
-                  <div className="absolute top-0 left-0 bg-blue-500 text-white text-[8px] px-1 rounded-br font-bold shadow-md">LOOP A</div>
-                  <div className="absolute top-0 right-0 bg-blue-500 text-white text-[8px] px-1 rounded-bl font-bold shadow-md">LOOP B</div>
+                  <div className="absolute top-0 left-0 bg-blue-500 text-white text-[8px] px-1 rounded-br font-bold shadow-md">LOOP START</div>
+                  <div className="absolute top-0 right-0 bg-blue-500 text-white text-[8px] px-1 rounded-bl font-bold shadow-md">LOOP END</div>
                 </div>
               )}
               {Array.from({ length: Math.max(1000, Math.ceil(2000/(60/bpm))) }).slice(0, 2000).map((_, i) => {
@@ -1450,6 +1454,7 @@ export default function Studio() {
             }}
           >
             {loopActive && <div className="absolute top-0 bottom-0 bg-blue-500/10 border-x border-blue-500/50 pointer-events-none z-10" style={{ left: 0, width: `${(60/bpm) * parseInt(timeSignature.split('/')[0]||4) * 4 * 20 * zoom}px` }} />}
+            {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[1px] bg-red-500/30 border-r border-red-500/10 pointer-events-none z-0" style={{ left: `${projectEnd * 20 * zoom}px` }} />; })()}
             {/* Waveform Rows */}
             <div className="flex flex-col">
               {tracks.map((track) => (
@@ -1950,6 +1955,8 @@ export default function Studio() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={!!pendingTimeSignature} onOpenChange={(open) => !open && setPendingTimeSignature(null)}><DialogContent><DialogHeader><DialogTitle>Change Time Signature</DialogTitle></DialogHeader><p className="text-sm text-muted-foreground">Are you sure you want to change the time signature to {pendingTimeSignature}? This will affect the grid and metronome.</p><DialogFooter><Button variant="outline" onClick={() => setPendingTimeSignature(null)}>Cancel</Button><Button onClick={() => { setTimeSignature(pendingTimeSignature); setPendingTimeSignature(null); toast.success("Time signature updated"); }}>Confirm</Button></DialogFooter></DialogContent></Dialog>
+      <Dialog open={!!pendingSongKey} onOpenChange={(open) => !open && setPendingSongKey(null)}><DialogContent><DialogHeader><DialogTitle>Change Project Key</DialogTitle></DialogHeader><p className="text-sm text-muted-foreground">Are you sure you want to change the project key to {pendingSongKey}? Auto-tune and pitch tools will adapt to this key.</p><DialogFooter><Button variant="outline" onClick={() => setPendingSongKey(null)}>Cancel</Button><Button onClick={() => { setSongKey(pendingSongKey); setPendingSongKey(null); toast.success("Project key updated"); }}>Confirm</Button></DialogFooter></DialogContent></Dialog>
     </div>
   );
 }

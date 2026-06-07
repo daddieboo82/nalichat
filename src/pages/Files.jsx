@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen, FolderArchive, X, CheckSquare, Plus, ChevronRight, Play, Pause, Share2 } from "lucide-react";
+import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen, FolderArchive, X, CheckSquare, Plus, ChevronRight, Play, Pause, Share2, Tag } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -121,6 +121,8 @@ export default function Files() {
   const [showMoveFolder, setShowMoveFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderProject, setNewFolderProject] = useState("none");
+  const [fileToEdit, setFileToEdit] = useState(null);
+  const [editFormData, setEditFormData] = useState({ name: "", tags: "", description: "" });
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -226,6 +228,26 @@ export default function Files() {
       queryClient.invalidateQueries({ queryKey: ["shared-files"] });
     },
   });
+
+  const updateFileMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.SharedFile.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shared-files"] });
+      toast({ title: "File updated", description: "File details have been saved." });
+      setFileToEdit(null);
+    },
+  });
+
+  const handleEditClick = (e, file) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFileToEdit(file);
+    setEditFormData({
+      name: file.name || "",
+      description: file.description || "",
+      tags: (file.tags || []).join(", "),
+    });
+  };
 
   const createFolderMutation = useMutation({
     mutationFn: (name) => base44.entities.Folder.create({

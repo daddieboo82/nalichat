@@ -6,6 +6,7 @@ import { Sparkles, Loader2, AlertCircle, CheckCircle2, Wand2, ChevronDown, Rotat
 import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
 import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { base44 } from "@/api/base44Client";
 import { renderMasteredMix } from "@/lib/autoMaster";
 
@@ -35,6 +36,9 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
   const setOpen = isControlled ? onOpenChange : setInternalOpen;
 
   const [bounceTitle, setBounceTitle] = useState(`${projectTitle || "Untitled"}`);
+  const [bounceGenre, setBounceGenre] = useState(project?.genre || "");
+  const [bounceMedium, setBounceMedium] = useState("original");
+  const [bounceTags, setBounceTags] = useState("");
   const [bouncing, setBouncing] = useState(false);
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
@@ -92,8 +96,9 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
           ? `AI-mastered, industry-ready song produced from ${validTracks.length} stacked stems.`
           : `Song produced from ${validTracks.length} stacked stems.`,
         file_url,
-        medium: "production",
-        genre: project?.genre,
+        medium: bounceMedium,
+        genre: bounceGenre,
+        tags: bounceTags.split(',').map(t => t.trim()).filter(Boolean),
         bpm: project?.bpm,
         creator_id: me.id,
         creator_name: me.display_name || me.full_name,
@@ -159,6 +164,37 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
 
           {!bouncing && !done && (
             <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  placeholder="Genre (e.g. Hip Hop, Pop)"
+                  value={bounceGenre}
+                  onChange={(e) => setBounceGenre(e.target.value)}
+                  disabled={bouncing}
+                  className="rounded-xl"
+                />
+                <Select value={bounceMedium} onValueChange={setBounceMedium} disabled={bouncing}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Medium" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="original">Original</SelectItem>
+                    <SelectItem value="remix">Remix</SelectItem>
+                    <SelectItem value="cover">Cover</SelectItem>
+                    <SelectItem value="beat">Beat</SelectItem>
+                    <SelectItem value="production">Production</SelectItem>
+                    <SelectItem value="mixing">Mixing</SelectItem>
+                    <SelectItem value="mastering">Mastering</SelectItem>
+                    <SelectItem value="collab">Collab</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Input
+                placeholder="Tags (comma separated)"
+                value={bounceTags}
+                onChange={(e) => setBounceTags(e.target.value)}
+                disabled={bouncing}
+                className="rounded-xl"
+              />
               <div className="flex items-start gap-3 p-3 rounded-xl bg-secondary/40 border border-border">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
                   <Wand2 className="w-4 h-4 text-white" />

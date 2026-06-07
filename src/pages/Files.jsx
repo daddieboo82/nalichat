@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen, FolderArchive, X, CheckSquare, Plus, ChevronRight, Play, Pause, Share2, Tag } from "lucide-react";
+import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen, FolderArchive, X, CheckSquare, Plus, ChevronRight, Play, Pause, Share2, Tag, Edit } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -518,6 +518,13 @@ export default function Files() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{file.name}</p>
+                          {(file.tags && file.tags.length > 0) && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {file.tags.map((t, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0 h-4">{t}</Badge>
+                              ))}
+                            </div>
+                          )}
                           <div className="flex items-center gap-2 mt-1 mb-2">
                             <span className="text-[10px] text-muted-foreground">
                               {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "—"}
@@ -553,9 +560,14 @@ export default function Files() {
                           <FileShareButton file={file} />
                           <FileDownloadButton file={file} />
                           {file.uploader_id === currentUser?.id && (
-                            <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg text-destructive" onClick={() => deleteMutation.mutate(file.id)}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
+                            <>
+                              <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg" onClick={(e) => handleEditClick(e, file)}>
+                                <Edit className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg text-destructive" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -589,6 +601,13 @@ export default function Files() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{file.name}</p>
+                      {(file.tags && file.tags.length > 0) && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {file.tags.map((t, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0 h-4">{t}</Badge>
+                          ))}
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 mt-1 mb-2">
                         <span className="text-[10px] text-muted-foreground">
                           {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "—"}
@@ -624,9 +643,14 @@ export default function Files() {
                       <FileShareButton file={file} />
                       <FileDownloadButton file={file} />
                       {file.uploader_id === currentUser?.id && (
-                        <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg text-destructive" onClick={() => deleteMutation.mutate(file.id)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        <>
+                          <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg" onClick={(e) => handleEditClick(e, file)}>
+                            <Edit className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg text-destructive" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -680,6 +704,65 @@ export default function Files() {
                 disabled={!newFolderName.trim()}
               >
                 Create
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!fileToEdit} onOpenChange={(open) => !open && setFileToEdit(null)}>
+        <DialogContent className="bg-card border-border max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Edit File Details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Name</label>
+              <Input
+                placeholder="File name"
+                value={editFormData.name}
+                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                className="rounded-lg bg-secondary/50 border-0"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Description</label>
+              <Input
+                placeholder="Description"
+                value={editFormData.description}
+                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                className="rounded-lg bg-secondary/50 border-0"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Tags (comma separated)</label>
+              <Input
+                placeholder="tag1, tag2"
+                value={editFormData.tags}
+                onChange={(e) => setEditFormData({ ...editFormData, tags: e.target.value })}
+                className="rounded-lg bg-secondary/50 border-0"
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" className="flex-1 rounded-lg" onClick={() => setFileToEdit(null)}>
+                Cancel
+              </Button>
+              <Button 
+                className="flex-1 rounded-lg bg-primary hover:bg-primary/90"
+                onClick={() => {
+                  updateFileMutation.mutate({
+                    id: fileToEdit.id,
+                    data: {
+                      name: editFormData.name,
+                      description: editFormData.description,
+                      tags: editFormData.tags.split(',').map(t => t.trim()).filter(Boolean)
+                    }
+                  });
+                }}
+                disabled={!editFormData.name.trim() || updateFileMutation.isPending}
+              >
+                {updateFileMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Save
               </Button>
             </div>
           </div>

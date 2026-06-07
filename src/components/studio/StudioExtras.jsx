@@ -33,6 +33,8 @@ export default function StudioExtras({
               Supports: MP3, WAV, FLAC, OGG, AAC, M4A, WebM
             </p>
             <Input 
+              id="file-upload-input"
+              data-testid="file-upload-input"
               type="file" 
               accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif"
               onChange={handleFileChange} 

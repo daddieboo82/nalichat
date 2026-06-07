@@ -103,11 +103,11 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           {/* Audio Upload (Required) */}
           <div>
             <span className="text-xs text-muted-foreground mb-2 block">Audio File *</span>
-            <label
-              htmlFor="audio-upload"
-              className={cn("border-2 border-dashed rounded-xl overflow-hidden cursor-pointer transition-colors flex items-center justify-center h-20", audioFile ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/50")}
+            <div
+              className={cn("relative border-2 border-dashed rounded-xl overflow-hidden cursor-pointer transition-colors flex items-center justify-center h-20", audioFile ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/50")}
             >
-              <div className="text-center text-muted-foreground">
+              <input id="audio-upload" ref={audioRef} type="file" accept="audio/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleAudio} />
+              <div className="text-center text-muted-foreground pointer-events-none relative z-0">
                 {audioFile ? (
                   <>
                     <Music className="w-6 h-6 mx-auto mb-1 text-primary" />
@@ -120,27 +120,27 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
                   </>
                 )}
               </div>
-            </label>
-            <input id="audio-upload" ref={audioRef} type="file" accept="audio/*" className="sr-only" onChange={handleAudio} />
+            </div>
           </div>
 
           {/* Cover Art upload */}
           <div>
             <span className="text-xs text-muted-foreground mb-2 block">Cover Art</span>
-            <label
-              htmlFor="cover-upload"
-              className={cn("border-2 border-dashed border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-center", preview ? "h-48" : "h-24")}
+            <div
+              className={cn("relative border-2 border-dashed border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-center", preview ? "h-48" : "h-24")}
             >
-              {preview ? (
-                <img src={preview} className="w-full h-full object-cover" alt="preview" />
-              ) : (
-                <div className="text-center text-muted-foreground">
-                  <ImageIcon className="w-6 h-6 mx-auto mb-1 opacity-40" />
-                  <p className="text-sm">Click to upload cover art</p>
-                </div>
-              )}
-            </label>
-            <input id="cover-upload" ref={imageRef} type="file" accept="image/*" className="sr-only" onChange={handleImage} />
+              <input id="cover-upload" ref={imageRef} type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleImage} />
+              <div className="pointer-events-none relative z-0 w-full h-full flex items-center justify-center">
+                {preview ? (
+                  <img src={preview} className="w-full h-full object-cover" alt="preview" />
+                ) : (
+                  <div className="text-center text-muted-foreground">
+                    <ImageIcon className="w-6 h-6 mx-auto mb-1 opacity-40" />
+                    <p className="text-sm">Click to upload cover art</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           <label htmlFor="track-title" className="sr-only">Track title</label>

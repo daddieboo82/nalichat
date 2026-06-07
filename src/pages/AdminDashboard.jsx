@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, DollarSign, Users, Activity, Loader2, UserPlus, ShieldAlert } from "lucide-react";
+import { BarChart3, DollarSign, Users, Activity, Loader2, UserPlus, ShieldAlert, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
 export default function AdminDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [adminEmail, setAdminEmail] = useState("");
   const [isMakingAdmin, setIsMakingAdmin] = useState(false);
+  const [adminProRecognition, setAdminProRecognition] = useState(true);
 
   useEffect(() => {
     base44.auth.me()
@@ -113,6 +115,26 @@ export default function AdminDashboard() {
       )}
 
       <div className="bg-card border border-border rounded-xl p-6 mb-8">
+        <h2 className="text-xl font-bold mb-4 border-b border-border pb-2 flex items-center gap-2">
+          <Settings className="w-5 h-5 text-primary" />
+          Global Access Settings
+        </h2>
+        <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-secondary/20 mb-8">
+          <div>
+            <h3 className="font-bold">Admin Pro Recognition</h3>
+            <p className="text-sm text-muted-foreground">Automatically recognize all admin users as having a Pro plan, regardless of their actual subscription status.</p>
+          </div>
+          <Switch 
+            checked={adminProRecognition} 
+            onCheckedChange={(val) => {
+              setAdminProRecognition(val);
+              toast.success(val ? "Admin users will now automatically receive Pro plan access." : "Admin Pro recognition disabled.");
+            }} 
+          />
+        </div>
+      </div>
+
+      <div className="bg-card border border-border rounded-xl p-6 mb-8 mt-8">
         <h2 className="text-xl font-bold mb-4 border-b border-border pb-2 flex items-center gap-2">
           <Users className="w-5 h-5 text-primary" />
           User Management

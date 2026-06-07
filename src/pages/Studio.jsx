@@ -35,6 +35,8 @@ import { useStudioPresence } from '@/hooks/useStudioPresence';
 import LivePresenceBar from '@/components/studio/LivePresenceBar';
 import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
 import MixerPanel from '@/components/studio/MixerPanel';
+import KeyboardShortcutsDialog from '@/components/studio/KeyboardShortcutsDialog';
+import TrackWaveformSVG from '@/components/studio/TrackWaveformSVG';
 
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
@@ -85,6 +87,7 @@ export default function Studio() {
   const [bounceOpen, setBounceOpen] = useState(false);
   const [bounceRedirect, setBounceRedirect] = useState(null);
   const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
+  const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
   
   const [hardware, setHardware] = useState({
     mic: false,
@@ -1007,7 +1010,7 @@ export default function Studio() {
         <div className="flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><Rewind className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Return to Zero <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Home</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><Square className="w-5 h-5 fill-current" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Enter</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><Square className={cn("w-5 h-5", (isPlaying || isRecording) ? "fill-current" : "")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Enter</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={togglePlay} className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>{isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{isPlaying ? "Pause" : "Play"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={toggleRecord} className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}>{isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}<Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Record <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">R</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><FastForward className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Fast-forward</TooltipContent></Tooltip>
@@ -1850,42 +1853,7 @@ export default function Studio() {
                       )}
 
                       <div className={cn("absolute inset-x-0 overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-1 top-5")}>
-                        {(() => {
-                          const wf = track.waveform;
-                          const wLen = wf.length - 1 || 1;
-                          const gradId = `studio-wf-grad-${track.id}`;
-                          const rmsId = `studio-wf-rms-${track.id}`;
-                          const glowId = `studio-wf-glow-${track.id}`;
-
-                          let peakPath = `M 0,50 `;
-                          for (let i = 0; i <= wLen; i++) peakPath += `L ${(i/wLen)*10000},${50 - Math.max(0.001, wf[i])*49} `;
-                          for (let i = wLen; i >= 0; i--) peakPath += `L ${(i/wLen)*10000},${50 + Math.max(0.001, wf[i])*49} `;
-                          peakPath += 'Z';
-
-                          const baseFill = "text-[#1ED760] fill-[#1ED760]";
-
-                          return (
-                            <svg className="w-full h-full" style={{ filter: 'drop-shadow(0px 0px 4px rgba(30,215,96,0.35))' }} preserveAspectRatio="none" viewBox="0 0 10000 100">
-                              <defs>
-                                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="currentColor" stopOpacity="0.9" />
-                                  <stop offset="35%" stopColor="currentColor" stopOpacity="0.7" />
-                                  <stop offset="50%" stopColor="currentColor" stopOpacity="0.3" />
-                                  <stop offset="65%" stopColor="currentColor" stopOpacity="0.7" />
-                                  <stop offset="100%" stopColor="currentColor" stopOpacity="0.9" />
-                                </linearGradient>
-                              </defs>
-                              <g className={baseFill}>
-                                <path 
-                                  d={peakPath} 
-                                  fill={`url(#${gradId})`} 
-                                  shapeRendering="geometricPrecision"
-                                />
-                              </g>
-                              <line x1="0" y1="50" x2="10000" y2="50" stroke="#000000" strokeOpacity="0.5" strokeWidth="2" vectorEffect="non-scaling-stroke" shapeRendering="geometricPrecision" />
-                            </svg>
-                          );
-                        })()}
+                        <TrackWaveformSVG track={track} />
                       </div>
                     </div>
                   )}
@@ -1964,6 +1932,8 @@ export default function Studio() {
         hardware={hardware} 
       />
 
+      <KeyboardShortcutsDialog open={showShortcutsDialog} onOpenChange={setShowShortcutsDialog} />
+
       <Dialog open={!!renamingTrack} onOpenChange={(open) => !open && setRenamingTrack(null)}>
         <DialogContent>
           <DialogHeader>
@@ -1972,12 +1942,17 @@ export default function Studio() {
           <Input 
             value={newTrackName} 
             onChange={(e) => setNewTrackName(e.target.value)} 
+            onFocus={(e) => e.target.select()}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 if (newTrackName.trim()) {
                   setTracksWithHistory(prev => prev.map(t => t.id === renamingTrack.id ? { ...t, name: newTrackName.trim() } : t));
                 }
                 setRenamingTrack(null);
+              }
+              if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+                e.preventDefault();
+                e.target.select();
               }
             }}
             autoFocus

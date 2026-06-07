@@ -8,7 +8,7 @@ import {
   Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
   Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle,
   Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2,
-  Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2
+  Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
@@ -21,6 +21,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -1067,7 +1068,9 @@ export default function Studio() {
 
       {/* Toolbar 2 (Tools) */}
       <div className="h-12 border-b border-border/40 bg-card/40 flex items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 overflow-x-auto custom-scrollbar relative pr-8">
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card/80 to-transparent pointer-events-none z-10" />
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card/80 to-transparent pointer-events-none z-10 flex items-center justify-end pr-1">
+          <ChevronRight className="w-4 h-4 text-muted-foreground opacity-70" />
+        </div>
         <Button onClick={addTrack} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
           <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
         </Button>
@@ -1105,18 +1108,28 @@ export default function Studio() {
                 <Tooltip><TooltipTrigger asChild>
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5 cursor-help">Sig</span>
                 </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Time Signature</TooltipContent></Tooltip>
-                <select value={timeSignature} onChange={(e) => setTimeSignature(e.target.value)} className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none">
-                  <option value="4/4">4/4</option><option value="3/4">3/4</option><option value="6/8">6/8</option><option value="5/4">5/4</option><option value="7/8">7/8</option>
-                </select>
+                <Select value={timeSignature} onValueChange={setTimeSignature}>
+                  <SelectTrigger className="h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-xs font-bold text-foreground w-12 text-center flex justify-center [&>svg]:hidden">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["4/4","3/4","6/8","5/4","7/8"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex flex-col items-center justify-center px-3 py-0.5 border-l border-border/60">
                 <Tooltip><TooltipTrigger asChild>
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5 cursor-help">Key</span>
                 </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Project Key</TooltipContent></Tooltip>
-                <select value={songKey} onChange={(e) => setSongKey(e.target.value)} className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none">
-                  {["C Maj","G Maj","D Maj","A Maj","E Maj","F Maj","Bb Maj","A min","E min","B min","D min","G min","C min"].map(k => (<option key={k} value={k}>{k}</option>))}
-                </select>
+                <Select value={songKey} onValueChange={setSongKey}>
+                  <SelectTrigger className="h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-xs font-bold text-foreground w-[4.5rem] text-center flex justify-center [&>svg]:hidden">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["C Maj","G Maj","D Maj","A Maj","E Maj","F Maj","Bb Maj","A min","E min","B min","D min","G min","C min"].map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
           </TooltipProvider>
         </div>
@@ -1159,7 +1172,7 @@ export default function Studio() {
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Lock/Unlock Clip (L)" onClick={() => {
               const allLocked = selectedTrackIds.every(id => tracks.find(t => t.id === id)?.locked);
               selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked'));
-            }} disabled={selectedTrackIds.length === 0} className="h-7 px-2 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 gap-1.5"><>{tracks.find(t => t.id === selectedTrackIds[0])?.locked ? <Unlock className="w-3.5 h-3.5"/> : <Link2 className="w-3.5 h-3.5"/>}<span className="text-xs">Lock</span></></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Lock/Unlock Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">L</kbd></TooltipContent></Tooltip>
+            }} disabled={selectedTrackIds.length === 0} className="h-7 px-2 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 gap-1.5">{tracks.find(t => t.id === selectedTrackIds[0])?.locked ? <Unlock className="w-3.5 h-3.5"/> : <Link2 className="w-3.5 h-3.5"/>}<span className="text-xs">Lock</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Lock/Unlock Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">L</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Separate Clip (Ctrl+E)" onClick={splitSelectedTracks} disabled={selectedTrackIds.length === 0} className="h-7 px-2 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 gap-1.5"><Scissors className="w-3.5 h-3.5" /><span className="text-xs">Split</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Separate Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+E</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Duplicate Clip (Ctrl+D)" onClick={duplicateSelectedTracks} disabled={selectedTrackIds.length === 0} className="h-7 px-2 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 gap-1.5"><Copy className="w-3.5 h-3.5" /><span className="text-xs">Copy</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Duplicate Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+D</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Delete Clip (Del)" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="h-7 px-2 rounded-md text-muted-foreground hover:text-red-400 disabled:opacity-50 gap-1.5"><Trash2 className="w-3.5 h-3.5" /><span className="text-xs">Del</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Delete <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Del</kbd></TooltipContent></Tooltip>
@@ -1245,24 +1258,26 @@ export default function Studio() {
                         </Tooltip>
                       </TooltipProvider>
                     </div>
-                    <select 
-                      className="bg-transparent border-none text-[9px] text-muted-foreground focus:ring-0 cursor-pointer hover:text-foreground p-0 m-0 mt-0.5 outline-none w-max"
-                      title="Track Input Routing"
-                      onClick={(e) => e.stopPropagation()}
-                      defaultValue={(track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic"}
-                    >
-                      <option>In: Default Mic</option>
-                      <option>In: Audio Interface</option>
-                      <option>In: MIDI Keyboard</option>
-                      <option>In: None</option>
-                    </select>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Select defaultValue={(track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic"}>
+                        <SelectTrigger className="h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] text-muted-foreground hover:text-foreground w-max flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="In: Default Mic">In: Default Mic</SelectItem>
+                          <SelectItem value="In: Audio Interface">In: Audio Interface</SelectItem>
+                          <SelectItem value="In: MIDI Keyboard">In: MIDI Keyboard</SelectItem>
+                          <SelectItem value="In: None">In: None</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
                     <TooltipProvider delayDuration={200}>
-                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setActivity(`Editing ${track.name}`); setEditingTrack(track); }} className="w-6 h-6 text-muted-foreground hover:text-accent"><SlidersHorizontal className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Wave Editor</TooltipContent></Tooltip>
-                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("hidden sm:flex w-6 h-6 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")}><Activity className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Elastic Audio</TooltipContent></Tooltip>
-                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("hidden sm:flex w-6 h-6 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")}><TrendingUp className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Show Automation</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setActivity(`Editing ${track.name}`); setEditingTrack(track); }} className="h-6 px-1.5 gap-1 text-muted-foreground hover:text-accent"><SlidersHorizontal className="w-3 h-3" /><span className="text-[9px]">Edit</span></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Wave Editor</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("hidden lg:flex h-6 px-1.5 gap-1 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")}><Activity className="w-3 h-3" /><span className="text-[9px]">Warp</span></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Elastic Audio</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("hidden xl:flex h-6 px-1.5 gap-1 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")}><TrendingUp className="w-3 h-3" /><span className="text-[9px]">Auto</span></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Show Automation</TooltipContent></Tooltip>
                     </TooltipProvider>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -1836,7 +1851,7 @@ export default function Studio() {
           <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button title="Change Audio Quality Settings" className="text-primary font-medium shrink-0 hover:underline outline-none cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis">
+              <button title="Change Audio Quality Settings" className="text-primary font-medium shrink-0 hover:underline outline-none cursor-pointer whitespace-nowrap">
                 <span className="hidden lg:inline">Quality: </span>
                 <span className="inline">{audioSettings.sampleRate} / {audioSettings.bitDepth}</span>
                 <span className="hidden xl:inline"> • Opus Codec</span>

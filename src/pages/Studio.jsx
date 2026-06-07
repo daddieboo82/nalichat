@@ -1958,17 +1958,13 @@ export default function Studio() {
           <Input 
             value={newTrackName} 
             onChange={(e) => setNewTrackName(e.target.value)} 
-            onFocus={(e) => e.target.select()}
+            onFocus={(e) => setTimeout(() => e.target.select(), 0)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 if (newTrackName.trim()) {
                   setTracksWithHistory(prev => prev.map(t => t.id === renamingTrack.id ? { ...t, name: newTrackName.trim() } : t));
                 }
                 setRenamingTrack(null);
-              }
-              if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
-                e.preventDefault();
-                e.target.select();
               }
             }}
             autoFocus

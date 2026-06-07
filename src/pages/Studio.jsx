@@ -1091,7 +1091,7 @@ export default function Studio() {
             <Button onClick={() => setShowQuickMemo(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-primary/50 text-primary hover:bg-primary/10 transition-colors">
                <Mic className="w-4 h-4" /> Quick Memo
             </Button>
-            <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={() => setShowImportDialog(true)}>
+            <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleImportClick}>
               <Upload className="w-4 h-4" /> Import
             </Button>
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleSave}>

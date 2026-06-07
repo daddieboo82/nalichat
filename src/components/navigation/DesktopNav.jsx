@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
-import { Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, LogIn, HelpCircle, UserPlus, Send, Mic, Radio, ShoppingCart, Wand2, AudioLines, Plus, Gem, ShieldCheck } from "lucide-react";
+import { Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users, Settings, LogOut, LogIn, HelpCircle, UserPlus, Send, Mic, Radio, ShoppingCart, Wand2, AudioLines, Plus, Gem } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";
@@ -25,7 +25,7 @@ const MORE_NAV_ITEMS = [
   { icon: Wand2, label: "AI Cover", path: "/cover-art" },
   { icon: FileText, label: "Files", path: "/files" },
   { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
-  { icon: ShieldCheck, label: "Admin Panel", path: "/business" },
+  { icon: BarChart3, label: "Business", path: "/business" },
 ];
 
 export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick }) {
@@ -98,7 +98,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-48 bg-card/95 backdrop-blur-xl border-border/50">
-              {MORE_NAV_ITEMS.filter(item => item.path !== '/business' || user?.role === 'admin').map(({ icon: Icon, label, path }) => (
+              {MORE_NAV_ITEMS.map(({ icon: Icon, label, path }) => (
                 <DropdownMenuItem key={path} asChild>
                   <Link
                     to={path}

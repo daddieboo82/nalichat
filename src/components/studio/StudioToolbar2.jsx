@@ -13,8 +13,7 @@ import { sounds } from '@/hooks/use-sound';
 export default function StudioToolbar2({
   addTrack, selectedTrackIds, tracks, setEditingTrack, handleSeparateStems, isProcessing, handleGenerateMelody, undo, redo, historyIndex, historyLength,
   bpm, setBpm, bpmInput, setBpmInput, timeSignature, setPendingTimeSignature, songKey, setPendingSongKey, editMode, setEditMode,
-  activeTool, setActiveTool, toggleTrackProperty, splitSelectedTracks, duplicateSelectedTracks, deleteSelectedTracks, zoom, setZoom,
-  setTimeSignature, setSongKey
+  activeTool, setActiveTool, toggleTrackProperty, splitSelectedTracks, duplicateSelectedTracks, deleteSelectedTracks, zoom, setZoom
 }) {
   const isMobile = useIsMobile();
 
@@ -51,10 +50,7 @@ export default function StudioToolbar2({
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground leading-none mb-1 flex items-center gap-1 pointer-events-none"><Edit2 className="w-2.5 h-2.5" /> BPM</span>
                 <div className="flex items-center gap-1 relative">
                   <button type="button" onClick={() => { const c = Math.max(20, bpm - 1); setBpm(c); setBpmInput(String(c)); sounds.click(); }} className="w-4 h-4 shrink-0 flex items-center justify-center bg-secondary/50 hover:bg-secondary rounded border border-border text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer">-</button>
-                  <form onSubmit={(e) => { e.preventDefault(); document.getElementById('bpm-input')?.blur(); }} className="flex m-0 p-0">
-                    <input id="bpm-input" data-testid="bpm-input" type="text" inputMode="numeric" value={bpmInput} onChange={(e) => { const val = e.target.value.replace(/[^0-9]/g, ''); setBpmInput(val); const num = Number(val); if(num >= 20 && num <= 300) setBpm(num); }} onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} className={cn("w-10 shrink-0 bg-secondary/50 border rounded px-1 text-center font-mono text-xs font-bold text-foreground focus:outline-none focus:ring-1 py-0.5 leading-tight transition-all cursor-text", (Number(bpmInput)<20||Number(bpmInput)>300)?"border-red-500 text-red-500 focus:ring-red-500":"border-border focus:ring-primary focus:border-primary")} />
-                    <button type="submit" aria-label="Confirm BPM" className="sr-only">Confirm</button>
-                  </form>
+                  <input type="text" inputMode="numeric" value={bpmInput} onChange={(e) => { const val = e.target.value.replace(/[^0-9]/g, ''); setBpmInput(val); const num = Number(val); if(num >= 20 && num <= 300) setBpm(num); }} onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} className={cn("w-10 shrink-0 bg-secondary/50 border rounded px-1 text-center font-mono text-xs font-bold text-foreground focus:outline-none focus:ring-1 py-0.5 leading-tight transition-all cursor-text", (Number(bpmInput)<20||Number(bpmInput)>300)?"border-red-500 text-red-500 focus:ring-red-500":"border-border focus:ring-primary focus:border-primary")} />
                   <button type="button" onClick={() => { const c = Math.min(300, bpm + 1); setBpm(c); setBpmInput(String(c)); sounds.click(); }} className="w-4 h-4 shrink-0 flex items-center justify-center bg-secondary/50 hover:bg-secondary rounded border border-border text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer">+</button>
                 </div>
               </div>
@@ -64,7 +60,7 @@ export default function StudioToolbar2({
                 <Tooltip><TooltipTrigger asChild>
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5 cursor-help">Sig</span>
                 </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Time Signature</TooltipContent></Tooltip>
-                <Select value={timeSignature} onValueChange={(val) => { if (setTimeSignature) { setTimeSignature(val); toast.success("Time signature updated"); } else { setPendingTimeSignature(val); } }}>
+                <Select value={timeSignature} onValueChange={(val) => setPendingTimeSignature(val)}>
                   <SelectTrigger className="h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-xs font-bold text-foreground w-12 text-center flex justify-center [&>svg]:hidden">
                     <SelectValue />
                   </SelectTrigger>
@@ -86,7 +82,7 @@ export default function StudioToolbar2({
                 <Tooltip><TooltipTrigger asChild>
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5 cursor-help">Key</span>
                 </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Project Key</TooltipContent></Tooltip>
-                <Select value={songKey} onValueChange={(val) => { if (setSongKey) { setSongKey(val); toast.success("Project key updated"); } else { setPendingSongKey(val); } }}>
+                <Select value={songKey} onValueChange={(val) => setPendingSongKey(val)}>
                   <SelectTrigger className="h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-xs font-bold text-foreground w-[4.5rem] text-center flex justify-center [&>svg]:hidden">
                     <SelectValue />
                   </SelectTrigger>

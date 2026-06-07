@@ -38,6 +38,7 @@ export default function Studio() {
   const recordingIndicatorRefs = useRef({});
   const [zoom, setZoom] = useState(1);
   const playheadRef = useRef(null);
+  const headerPlayheadRef = useRef(null);
 
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -203,13 +204,9 @@ export default function Studio() {
       currentTimeRef.current = newTime;
       
       // Update DOM directly for maximum 60fps performance without React reconciliation
-      if (timeDisplayRef.current) {
-        timeDisplayRef.current.textContent = formatTime(newTime);
-      }
-      
-      if (playheadRef.current) {
-        playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
-      }
+      if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
+      if (playheadRef.current) playheadRef.current.style.transform = `translateX(${newTime * 20 * zoom}px)`;
+      if (headerPlayheadRef.current) headerPlayheadRef.current.style.transform = `translateX(${newTime * 20 * zoom}px)`;
       
       if (isRecording && recordingStartTime !== null) {
         Object.values(recordingIndicatorRefs.current).forEach(el => {
@@ -230,10 +227,9 @@ export default function Studio() {
   const updateCurrentTime = (newTime) => {
     currentTimeRef.current = newTime;
     if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
-    if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
-    Object.values(audioElementsRef.current).forEach(audio => {
-      audio.currentTime = newTime;
-    });
+    if (playheadRef.current) playheadRef.current.style.transform = `translateX(${newTime * 20 * zoom}px)`;
+    if (headerPlayheadRef.current) headerPlayheadRef.current.style.transform = `translateX(${newTime * 20 * zoom}px)`;
+    Object.values(audioElementsRef.current).forEach(audio => { audio.currentTime = newTime; });
   };
 
   const togglePlay = () => {
@@ -1394,36 +1390,25 @@ export default function Studio() {
         <div className="flex-1 relative overflow-auto custom-scrollbar flex flex-col bg-[#0f0f13]">
           {/* Timeline Header */}
           <div className="h-8 border-b border-border/30 bg-card/40 sticky top-0 z-20 flex items-end px-0 overflow-hidden">
-            {/* Timeline markers */}
             <div className="h-full relative cursor-pointer select-none" style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px` }}
               onPointerDown={(e) => {
                 const target = e.currentTarget;
-                const updatePosition = (clientX) => {
-                  const rect = target.getBoundingClientRect();
-                  const x = clientX - rect.left;
-                  updateCurrentTime(Math.max(0, x / (20 * zoom)));
-                };
+                const updatePosition = (cX) => updateCurrentTime(Math.max(0, (cX - target.getBoundingClientRect().left) / (20 * zoom)));
                 updatePosition(e.clientX);
-                
                 const handleMove = (moveEvent) => updatePosition(moveEvent.clientX);
-                const handleUp = () => {
-                  window.removeEventListener('pointermove', handleMove);
-                  window.removeEventListener('pointerup', handleUp);
-                };
-                window.addEventListener('pointermove', handleMove);
-                window.addEventListener('pointerup', handleUp);
+                const handleUp = () => { window.removeEventListener('pointermove', handleMove); window.removeEventListener('pointerup', handleUp); };
+                window.addEventListener('pointermove', handleMove); window.addEventListener('pointerup', handleUp);
               }}
             >
-              {Array.from({ length: 1000 }).map((_, i) => {
-                const seconds = i;
-                const position = seconds * 20 * zoom;
-                const isMajor = seconds % 5 === 0;
-                return (
-                  <div key={i} className={cn("absolute bottom-0 text-[10px] text-muted-foreground/50 border-l border-border/40 pl-1", isMajor ? "h-3 -ml-[1px]" : "h-1.5 -ml-[1px]")} style={{ left: `${position}px` }}>
-                    {isMajor && `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`}
-                  </div>
-                );
+              {Array.from({ length: Math.max(1000, Math.ceil(2000/(60/bpm))) }).slice(0,2000).map((_, i) => {
+                const b = parseInt(timeSignature.split('/')[0])||4, pos = i*(60/bpm)*20*zoom;
+                const bar = Math.floor(i/b)+1, beat = (i%b)+1, isBar = beat===1, show = zoom>1.5;
+                if (!isBar && !show) return null;
+                return <div key={i} className={cn("absolute bottom-0 text-[10px] text-muted-foreground/50 border-l border-border/40 pl-1", isBar ? "h-3 -ml-[1px] font-medium" : "h-1.5 -ml-[1px]")} style={{ left: `${pos}px` }}>{isBar ? bar : (show && zoom>3 ? `${bar}.${beat}` : '')}</div>;
               })}
+              <div ref={headerPlayheadRef} className="absolute top-0 bottom-0 w-[2px] -ml-[1px] bg-primary z-50 pointer-events-none" style={{ left: 0, transform: `translateX(${currentTimeRef.current * 20 * zoom}px)` }}>
+                <div className="absolute top-0 -translate-x-1/2 w-3 h-3 bg-primary rounded-b-sm flex items-center justify-center shadow-md" />
+              </div>
             </div>
           </div>
 
@@ -1451,14 +1436,8 @@ export default function Studio() {
             }}
           >
             {/* Playhead */}
-            <div 
-              ref={playheadRef}
-              className="absolute top-0 bottom-0 w-[2px] -ml-[1px] bg-primary z-30 pointer-events-none group shadow-[0_0_10px_rgba(var(--primary),0.8)]"
-              style={{ left: `${currentTimeRef.current * 20 * zoom}px` }}
-            >
-              <div className="absolute top-0 -translate-x-1/2 w-4 h-4 bg-primary rounded-b flex items-center justify-center cursor-ew-resize pointer-events-auto hover:bg-primary/90 shadow-md">
-                <div className="w-0.5 h-2 bg-background/80 rounded-full" />
-              </div>
+            <div ref={playheadRef} className="absolute top-0 bottom-0 w-[2px] -ml-[1px] bg-primary z-50 pointer-events-none group shadow-[0_0_10px_rgba(var(--primary),0.8)]" style={{ left: 0, transform: `translateX(${currentTimeRef.current * 20 * zoom}px)` }}>
+              <div className="absolute top-0 -translate-x-1/2 w-4 h-4 bg-primary rounded-b flex items-center justify-center cursor-ew-resize pointer-events-auto hover:bg-primary/90 shadow-md"><div className="w-0.5 h-2 bg-background/80 rounded-full" /></div>
             </div>
 
             {/* Waveform Rows */}

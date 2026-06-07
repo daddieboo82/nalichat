@@ -524,6 +524,7 @@ export default function Studio() {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
       else if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
       else if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+      else if (e.code === 'Enter') { e.preventDefault(); stop(); }
       else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); toggleRecord(); }
       else if (e.key === 'Backspace' || e.key === 'Delete') { if (selectedTrackIds.length > 0) { e.preventDefault(); deleteSelectedTracks(); } }
       else if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); duplicateSelectedTracks(); }
@@ -933,11 +934,11 @@ export default function Studio() {
         <div className="flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Return to Zero (Home)" aria-label="Return to Zero (Home)" aria-keyshortcuts="Home" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Rewind className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Return to Zero <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Home</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Stop" aria-label="Stop" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Square className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Stop" aria-label="Stop" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Square className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Enter</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Play/Pause (Space)" aria-label="Play/Pause (Space)" aria-keyshortcuts="Space" onClick={(e) => { togglePlay(); e.currentTarget.blur(); }} className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>{isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{isPlaying ? "Pause" : "Play"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Record (R)" aria-label="Record (R)" aria-keyshortcuts="R" onClick={toggleRecord} className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}>{isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}<Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Record <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">R</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Toggle Loop Region" aria-label="Loop" onClick={(e) => { setLoopActive(!loopActive); e.currentTarget.blur(); }} className={cn("w-10 h-10 rounded-lg transition-all", loopActive ? "bg-blue-500/20 text-blue-500" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}><Repeat className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Toggle Loop</TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Fast-forward" aria-label="Fast-forward" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><FastForward className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Fast-forward</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Fast-forward" aria-label="Fast-forward" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><FastForward className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Fast-forward <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">→</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 
@@ -948,7 +949,7 @@ export default function Studio() {
 
           {/* Jam Room */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
-             <Button variant={jamRoomActive ? "default" : "outline"} size="sm" onClick={() => setJamRoomActive(!jamRoomActive)} className={cn("gap-2 rounded-xl border-border/50 transition-colors", jamRoomActive && "bg-primary hover:bg-primary/90 text-primary-foreground border-transparent")}>
+             <Button variant={jamRoomActive ? "default" : "ghost"} size="sm" onClick={() => setJamRoomActive(!jamRoomActive)} className={cn("gap-2 rounded-xl transition-colors", jamRoomActive ? "bg-primary hover:bg-primary/90 text-primary-foreground border-transparent" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>
                <Users className="w-4 h-4" />
                {jamRoomActive ? "Jam Room Active" : "Start Jam Room"}
              </Button>
@@ -1110,7 +1111,7 @@ export default function Studio() {
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     {[
-                      "C Maj", "Db Maj", "D Maj", "Eb Maj", "E Maj", "F Maj", "Gb Maj", "G Maj", "Ab Maj", "A Maj", "Bb Maj", "B Maj", "C min", "Db min", "D min", "Eb min", "E min", "F min", "Gb min", "G min", "Ab min", "A min", "Bb min", "B min", "C Dorian", "Db Dorian", "D Dorian", "Eb Dorian", "E Dorian", "F Dorian", "Gb Dorian", "G Dorian", "Ab Dorian", "A Dorian", "Bb Dorian", "B Dorian", "C Phrygian", "Db Phrygian", "D Phrygian", "Eb Phrygian", "E Phrygian", "F Phrygian", "Gb Phrygian", "G Phrygian", "Ab Phrygian", "A Phrygian", "Bb Phrygian", "B Phrygian", "C Lydian", "Db Lydian", "D Lydian", "Eb Lydian", "E Lydian", "F Lydian", "Gb Lydian", "G Lydian", "Ab Lydian", "A Lydian", "Bb Lydian", "B Lydian", "C Mixolydian", "Db Mixolydian", "D Mixolydian", "Eb Mixolydian", "E Mixolydian", "F Mixolydian", "Gb Mixolydian", "G Mixolydian", "Ab Mixolydian", "A Mixolydian", "Bb Mixolydian", "B Mixolydian"
+                      "C Maj", "C min", "Db Maj", "Db min", "D Maj", "D min", "Eb Maj", "Eb min", "E Maj", "E min", "F Maj", "F min", "Gb Maj", "Gb min", "G Maj", "G min", "Ab Maj", "Ab min", "A Maj", "A min", "Bb Maj", "Bb min", "B Maj", "B min", "C Dorian", "Db Dorian", "D Dorian", "Eb Dorian", "E Dorian", "F Dorian", "Gb Dorian", "G Dorian", "Ab Dorian", "A Dorian", "Bb Dorian", "B Dorian", "C Phrygian", "Db Phrygian", "D Phrygian", "Eb Phrygian", "E Phrygian", "F Phrygian", "Gb Phrygian", "G Phrygian", "Ab Phrygian", "A Phrygian", "Bb Phrygian", "B Phrygian", "C Lydian", "Db Lydian", "D Lydian", "Eb Lydian", "E Lydian", "F Lydian", "Gb Lydian", "G Lydian", "Ab Lydian", "A Lydian", "Bb Lydian", "B Lydian", "C Mixolydian", "Db Mixolydian", "D Mixolydian", "Eb Mixolydian", "E Mixolydian", "F Mixolydian", "Gb Mixolydian", "G Mixolydian", "Ab Mixolydian", "A Mixolydian", "Bb Mixolydian", "B Mixolydian"
                     ].map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -1310,7 +1311,7 @@ export default function Studio() {
                       >
                         M
                       </button>
-                    </TooltipTrigger><TooltipContent side="top" className="text-xs">Mute Track</TooltipContent></Tooltip>
+                    </TooltipTrigger><TooltipContent side="top" className="text-xs flex items-center gap-1">Mute Track <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+M</kbd></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild>
                       <button 
                         onClick={() => toggleSolo(track.id)}
@@ -1318,7 +1319,7 @@ export default function Studio() {
                       >
                         S
                       </button>
-                    </TooltipTrigger><TooltipContent side="top" className="text-xs">Solo Track</TooltipContent></Tooltip>
+                    </TooltipTrigger><TooltipContent side="top" className="text-xs flex items-center gap-1">Solo Track <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+S</kbd></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild>
                       <button 
                         onClick={() => {

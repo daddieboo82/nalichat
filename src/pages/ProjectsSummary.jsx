@@ -39,6 +39,7 @@ export default function ProjectsSummary() {
       setNewProjectTitle("");
       setNewProjectDescription("");
       toast.success("Project created successfully!");
+      navigate(`/studio?room=${project.id}`);
     } catch (e) {
       toast.error("Failed to create project");
     } finally {

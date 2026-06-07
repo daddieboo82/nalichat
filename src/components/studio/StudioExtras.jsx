@@ -9,7 +9,7 @@ import Record from '@/pages/Record';
 export default function StudioExtras({ 
   showQuickMemo, setShowQuickMemo, 
   showImportDialog, setShowImportDialog, handleFileChange,
-  showMilestones, setShowMilestones 
+  showMilestones, setShowMilestones, projectId
 }) {
   return (
     <>
@@ -53,7 +53,7 @@ export default function StudioExtras({
       <Dialog open={showMilestones} onOpenChange={setShowMilestones}>
         <DialogContent className="max-w-xl h-[600px] p-0 border-border bg-background flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto">
-            <MilestonesPanel projectId="local_studio" canEdit={true} />
+            <MilestonesPanel projectId={projectId || "local_studio"} canEdit={true} />
           </div>
         </DialogContent>
       </Dialog>

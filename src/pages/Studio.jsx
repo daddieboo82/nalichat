@@ -18,7 +18,7 @@ import { sounds } from '@/hooks/use-sound';
 import { useSubscription } from '@/hooks/useSubscription';
 
 import UpgradeModal from '@/components/billing/UpgradeModal';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3 } from '@/lib/audioProcessing';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import LivePresenceBar from '@/components/studio/LivePresenceBar';
@@ -36,6 +36,8 @@ const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => M
 
 export default function Studio() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const roomId = searchParams.get('room');
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const currentTimeRef = useRef(0);
@@ -123,6 +125,20 @@ export default function Studio() {
       }
     } catch (e) {}
   }, []);
+
+  useEffect(() => {
+    if (roomId) {
+      base44.entities.Project.get(roomId).then(project => {
+        if (project) {
+          setProjectName(project.title);
+          if (project.bpm) setBpm(project.bpm);
+          if (project.key) setSongKey(project.key);
+          setShowWelcome(false);
+          setJamRoomActive(true);
+        }
+      }).catch(err => console.error("Failed to load project:", err));
+    }
+  }, [roomId]);
 
   const handleStartBlank = () => { setTracks([]); setShowWelcome(false); };
 
@@ -831,9 +847,16 @@ export default function Studio() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
       localStorage.setItem('nalistudio_project_autosave', JSON.stringify(tracks));
+      if (roomId) {
+        await base44.entities.Project.update(roomId, {
+          title: projectName,
+          bpm: bpm,
+          key: songKey
+        });
+      }
       toast.success("Project saved successfully!");
     } catch (e) {
       toast.error("Failed to save project.");
@@ -880,7 +903,7 @@ export default function Studio() {
   };
 
   const handleFileChange = async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files[0];
     if (file) {
       if (tracks.length >= maxTracks) {
         toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
@@ -1839,6 +1862,7 @@ export default function Studio() {
           setShowImportDialog(false);
         }}
         showMilestones={showMilestones} setShowMilestones={setShowMilestones}
+        projectId={roomId || "local_studio"}
       />
 
       <StudioDialogs

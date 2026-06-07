@@ -765,8 +765,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-lg", isPlaying ? "text-primary bg-primary/20 shadow-inner" : "text-muted-foreground hover:text-foreground hover:bg-secondary")} onClick={() => setIsPlaying(!isPlaying)}>
                     <Play className="w-4 h-4 fill-current" />
                   </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{isPlaying ? "Pause" : "Play"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space</kbd></TooltipContent></Tooltip>
-                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => { setIsPlaying(false); setPlayhead(0); }}>
-                    <Square className={cn("w-4 h-4", isPlaying ? "fill-current" : "")} />
+                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={(e) => { setIsPlaying(false); setPlayhead(0); e.currentTarget.blur(); }}>
+                    <Square className="w-4 h-4" />
                   </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space / Enter</kbd></TooltipContent></Tooltip>
                   <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" onClick={() => setPlayhead(Math.min(track?.duration || 40, playhead + 5))}>
                     <FastForward className="w-4 h-4 fill-current" />

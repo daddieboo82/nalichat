@@ -635,33 +635,33 @@ export default function WaveEditor({ track, onClose, onSave }) {
             <TooltipProvider delayDuration={200}>
               <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
                 <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
-                    <FileText className="w-4 h-4" />
+                  <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
+                    <FileText className="w-4 h-4" /> <span className="text-xs">New</span>
                   </Button>
-                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">New</TooltipContent></Tooltip>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">New File</TooltipContent></Tooltip>
                 <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
-                    <FolderOpen className="w-4 h-4" />
+                  <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
+                    <FolderOpen className="w-4 h-4" /> <span className="text-xs">Open</span>
                   </Button>
-                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Open</TooltipContent></Tooltip>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Open File</TooltipContent></Tooltip>
                 <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleSave} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
-                    <Save className="w-4 h-4" />
+                  <Button variant="ghost" size="sm" onClick={handleSave} className="h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
+                    <Save className="w-4 h-4" /> <span className="text-xs">Save</span>
                   </Button>
-                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Save</TooltipContent></Tooltip>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Save Edits</TooltipContent></Tooltip>
               </div>
 
               <div className="w-px h-5 bg-border/50 mx-1 border-none" />
 
               <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
                 <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIdx <= 0} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 disabled:opacity-30 rounded-md">
-                    <Undo2 className="w-4 h-4" />
+                  <Button variant="ghost" size="sm" onClick={handleUndo} disabled={historyIdx <= 0} className="h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 disabled:opacity-30 rounded-md">
+                    <Undo2 className="w-4 h-4" /> <span className="text-xs">Undo</span>
                   </Button>
                 </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Undo</TooltipContent></Tooltip>
                 <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIdx >= history.length - 1} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 disabled:opacity-30 rounded-md">
-                    <Redo2 className="w-4 h-4" />
+                  <Button variant="ghost" size="sm" onClick={handleRedo} disabled={historyIdx >= history.length - 1} className="h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 disabled:opacity-30 rounded-md">
+                    <Redo2 className="w-4 h-4" /> <span className="text-xs">Redo</span>
                   </Button>
                 </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Redo</TooltipContent></Tooltip>
               </div>
@@ -670,18 +670,18 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
               <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
                 <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('select')} className={cn("h-7 w-7 rounded-md", activeTool === 'select' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
-                    <MousePointer2 className="w-4 h-4" />
+                  <Button variant="ghost" size="sm" onClick={() => setActiveTool('select')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'select' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                    <MousePointer2 className="w-4 h-4" /> <span className="text-xs">Select</span>
                   </Button>
                 </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Edit Tool</TooltipContent></Tooltip>
                 <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('range')} className={cn("h-7 w-7 rounded-md", activeTool === 'range' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
-                    <SquareDashedBottom className="w-4 h-4" />
+                  <Button variant="ghost" size="sm" onClick={() => setActiveTool('range')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'range' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                    <SquareDashedBottom className="w-4 h-4" /> <span className="text-xs">Range</span>
                   </Button>
                 </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Time Zoom/Selection Tool</TooltipContent></Tooltip>
                 <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('move')} className={cn("h-7 w-7 rounded-md", activeTool === 'move' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
-                    <MoveHorizontal className="w-4 h-4" />
+                  <Button variant="ghost" size="sm" onClick={() => setActiveTool('move')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'move' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                    <MoveHorizontal className="w-4 h-4" /> <span className="text-xs">Move</span>
                   </Button>
                 </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Event Tool</TooltipContent></Tooltip>
               </div>

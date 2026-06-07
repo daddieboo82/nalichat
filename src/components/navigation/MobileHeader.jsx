@@ -39,7 +39,7 @@ export default function MobileHeader() {
   }, []);
 
   const path = location.pathname;
-  const isSubPage = SUBPAGE_PREFIXES.some((p) => path.startsWith(p) && p !== "/");
+  const isSubPage = SUBPAGE_PREFIXES.some((p) => path.startsWith(p) && p !== "/") || location.search.length > 0 || (window.history.length > 2 && window.history.state?.idx > 0);
   const title = TITLES[path] || Object.entries(TITLES).find(([k]) => k !== "/" && path.startsWith(k))?.[1] || "NaliChat";
 
   return (

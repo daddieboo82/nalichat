@@ -13,6 +13,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
+import PullToRefresh from "@/components/layout/PullToRefresh";
 
 export default function Playlists() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -61,6 +62,10 @@ export default function Playlists() {
     createPlaylistMutation.mutate(formData);
   };
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["playlists"] });
+  };
+
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -81,6 +86,7 @@ export default function Playlists() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
+        <PullToRefresh onRefresh={handleRefresh}>
         {playlists.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
             <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
@@ -128,6 +134,7 @@ export default function Playlists() {
             ))}
           </div>
         )}
+        </PullToRefresh>
       </div>
 
       {/* Create Dialog */}

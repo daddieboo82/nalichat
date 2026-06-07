@@ -1,6 +1,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { cn } from "@/lib/utils";
 import { RefreshCw } from "lucide-react";
 
@@ -14,76 +15,111 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
         <div className="space-y-4 py-4 text-sm max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
           <div className="flex flex-col gap-1.5">
             <span className="font-medium">Driver Type</span>
-            <select className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
-              <option className="text-foreground bg-popover">ASIO (Recommended)</option>
-              <option className="text-foreground bg-popover">CoreAudio</option>
-              <option className="text-foreground bg-popover">WASAPI</option>
-              <option className="text-foreground bg-popover">MME/DirectX</option>
-            </select>
+            <Select defaultValue="ASIO (Recommended)">
+              <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                <SelectValue placeholder="Driver Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ASIO (Recommended)">ASIO (Recommended)</SelectItem>
+                <SelectItem value="CoreAudio">CoreAudio</SelectItem>
+                <SelectItem value="WASAPI">WASAPI</SelectItem>
+                <SelectItem value="MME/DirectX">MME/DirectX</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <span className="font-medium">Audio Input</span>
-            <select className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
-              <option className="text-foreground bg-popover">System Default</option>
-              {hardware.interface && <option className="text-foreground bg-popover">USB Audio Interface</option>}
-              {hardware.mic && <option className="text-foreground bg-popover">Built-in Microphone</option>}
-            </select>
+            <Select defaultValue="System Default">
+              <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                <SelectValue placeholder="Audio Input" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="System Default">System Default</SelectItem>
+                {hardware.interface && <SelectItem value="USB Audio Interface">USB Audio Interface</SelectItem>}
+                {hardware.mic && <SelectItem value="Built-in Microphone">Built-in Microphone</SelectItem>}
+              </SelectContent>
+            </Select>
           </div>
             <div className="flex flex-col gap-1.5">
               <span className="font-medium">Audio Output</span>
-              <select className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
-                <option className="text-foreground bg-popover">System Default</option>
-                {hardware.output && <option className="text-foreground bg-popover">Headphones / External</option>}
-              </select>
+              <Select defaultValue="System Default">
+                <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                  <SelectValue placeholder="Audio Output" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="System Default">System Default</SelectItem>
+                  {hardware.output && <SelectItem value="Headphones / External">Headphones / External</SelectItem>}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <span className="font-medium">Clock Source</span>
-              <select className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
-                <option className="text-foreground bg-popover">Internal</option>
-                <option className="text-foreground bg-popover">S/PDIF</option>
-                <option className="text-foreground bg-popover">ADAT</option>
-                <option className="text-foreground bg-popover">Word Clock</option>
-              </select>
+              <Select defaultValue="Internal">
+                <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                  <SelectValue placeholder="Clock Source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Internal">Internal</SelectItem>
+                  <SelectItem value="S/PDIF">S/PDIF</SelectItem>
+                  <SelectItem value="ADAT">ADAT</SelectItem>
+                  <SelectItem value="Word Clock">Word Clock</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <span className="font-medium">Direct Monitoring</span>
-              <select className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
-                <option className="text-foreground bg-popover">Off</option>
-                <option className="text-foreground bg-popover">On (Hardware)</option>
-              </select>
+              <Select defaultValue="Off">
+                <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                  <SelectValue placeholder="Direct Monitoring" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Off">Off</SelectItem>
+                  <SelectItem value="On (Hardware)">On (Hardware)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
             <span className="font-medium">Sample Rate</span>
-            <select 
+            <Select 
               value={audioSettings?.sampleRate || "44.1 kHz"}
-              onChange={(e) => setAudioSettings && setAudioSettings(prev => ({...prev, sampleRate: e.target.value}))}
-              className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
-              <option value="44.1 kHz" className="text-foreground bg-popover">44.1 kHz</option>
-              <option value="48 kHz" className="text-foreground bg-popover">48 kHz</option>
-              <option value="88.2 kHz" className="text-foreground bg-popover">88.2 kHz</option>
-              <option value="96 kHz" className="text-foreground bg-popover">96 kHz</option>
-              <option value="192 kHz" className="text-foreground bg-popover">192 kHz</option>
-            </select>
+              onValueChange={(val) => setAudioSettings && setAudioSettings(prev => ({...prev, sampleRate: val}))}
+            >
+              <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                <SelectValue placeholder="Sample Rate" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="44.1 kHz">44.1 kHz</SelectItem>
+                <SelectItem value="48 kHz">48 kHz</SelectItem>
+                <SelectItem value="88.2 kHz">88.2 kHz</SelectItem>
+                <SelectItem value="96 kHz">96 kHz</SelectItem>
+                <SelectItem value="192 kHz">192 kHz</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
             <div className="flex flex-col gap-1.5">
               <span className="font-medium">Buffer Size</span>
-            <select 
+            <Select 
               value={audioSettings?.bufferSize || "256"}
-              onChange={(e) => setAudioSettings && setAudioSettings(prev => ({...prev, bufferSize: e.target.value}))}
-              className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
-              <option value="128" className="text-foreground bg-popover">128 samples</option>
-              <option value="256" className="text-foreground bg-popover">256 samples</option>
-              <option value="512" className="text-foreground bg-popover">512 samples</option>
-              <option value="1024" className="text-foreground bg-popover">1024 samples</option>
-              <option value="2048" className="text-foreground bg-popover">2048 samples</option>
-            </select>
+              onValueChange={(val) => setAudioSettings && setAudioSettings(prev => ({...prev, bufferSize: val}))}
+            >
+              <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                <SelectValue placeholder="Buffer Size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="128">128 samples</SelectItem>
+                <SelectItem value="256">256 samples</SelectItem>
+                <SelectItem value="512">512 samples</SelectItem>
+                <SelectItem value="1024">1024 samples</SelectItem>
+                <SelectItem value="2048">2048 samples</SelectItem>
+              </SelectContent>
+            </Select>
             </div>
           </div>
           <div className="flex items-center justify-between pt-2 border-t border-border">

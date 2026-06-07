@@ -6,12 +6,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import MediaViewerModal from "@/components/explore/MediaViewerModal";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import PullToRefresh from "@/components/layout/PullToRefresh";
+import { useQueryClient } from "@tanstack/react-query";
 
 const USER_TABS = ["xp", "likes", "posts", "achievements"];
 const CONTENT_TABS = ["songs", "pics", "videos"];
 
 export default function Leaderboard() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [currentUser, setCurrentUser] = useState(null);
   const [mode, setMode] = useState("users");
   const [userTab, setUserTab] = useState("xp");
@@ -101,8 +104,16 @@ export default function Leaderboard() {
     <Medal className="w-5 h-5 text-amber-600" />,
   ];
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["leaderboard-users"] });
+    await queryClient.invalidateQueries({ queryKey: ["leaderboard-posts"] });
+    await queryClient.invalidateQueries({ queryKey: ["all-achievements"] });
+    await queryClient.invalidateQueries({ queryKey: ["leaderboard-files"] });
+  };
+
   return (
     <div className="h-full overflow-y-auto bg-background">
+      <PullToRefresh onRefresh={handleRefresh}>
       {/* Header */}
       <div className="bg-gradient-to-br from-yellow-500/10 via-background to-primary/10 px-4 sm:px-8 pt-8 pb-6">
         <div className="max-w-2xl mx-auto text-center">
@@ -311,6 +322,7 @@ export default function Leaderboard() {
         open={isViewerOpen}
         onOpenChange={setIsViewerOpen}
       />
+      </PullToRefresh>
     </div>
   );
 }

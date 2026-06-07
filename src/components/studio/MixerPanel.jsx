@@ -25,14 +25,14 @@ export default function MixerPanel({
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 320, opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          className="border-t border-border/50 bg-card/90 backdrop-blur shrink-0 flex overflow-x-auto custom-scrollbar relative"
+          className="border-t border-border/50 bg-card/90 backdrop-blur shrink-0 flex overflow-x-auto custom-scrollbar relative w-full"
         >
           <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
             <span className="text-xs font-bold text-muted-foreground mr-2">MIXER & FX</span>
             <Button variant="ghost" size="icon" onClick={onClose} className="w-6 h-6 rounded-full"><Square className="w-3 h-3" /></Button>
           </div>
           
-          <div className="flex p-4 gap-3 pt-8 pb-4 h-full items-end">
+          <div className="flex sm:flex-nowrap p-4 gap-3 pt-8 pb-4 h-full items-end w-max min-w-full">
             {tracks.map(track => {
               const vuLevel = !track.muted && track.waveform && track.waveform.length > 0 ? (track.volume / 100) * 80 + Math.random()*20 : 0;
               return (

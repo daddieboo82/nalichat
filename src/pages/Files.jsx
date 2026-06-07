@@ -17,6 +17,7 @@ import { resumableDownload } from "@/lib/resumableUpload";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import LargeFileTransfer from "@/components/files/LargeFileTransfer";
 import { sounds } from "@/hooks/use-sound";
+import PullToRefresh from "@/components/layout/PullToRefresh";
 
 const typeIcons = {
   audio: Music,
@@ -291,6 +292,12 @@ export default function Files() {
     e.target.value = "";
   };
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["shared-files"] });
+    await queryClient.invalidateQueries({ queryKey: ["projects"] });
+    await queryClient.invalidateQueries({ queryKey: ["folders"] });
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-6 pb-0">
@@ -412,6 +419,7 @@ export default function Files() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pb-6">
+        <PullToRefresh onRefresh={handleRefresh}>
         {typeFilter === "transfer" ? (
           <LargeFileTransfer currentUser={currentUser} />
         ) : isLoading ? (
@@ -605,6 +613,7 @@ export default function Files() {
             })}
           </div>
         )}
+        </PullToRefresh>
       </div>
 
       <Dialog open={showNewFolder} onOpenChange={setShowNewFolder}>

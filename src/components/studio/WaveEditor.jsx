@@ -256,8 +256,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
           const splitRatio = (clickTime - seg.startOffset) / seg.duration;
           const splitSourceTime = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * splitRatio;
           
-          const newSeg1 = { ...seg, id: `seg_${Date.now()}_1`, sourceEnd: splitSourceTime, duration: seg.duration * splitRatio, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * splitRatio)) };
-          const newSeg2 = { ...seg, id: `seg_${Date.now()}_2`, startOffset: clickTime, sourceStart: splitSourceTime, duration: seg.duration * (1 - splitRatio), waveform: seg.waveform.slice(Math.floor(seg.waveform.length * splitRatio)) };
+          const newSeg1 = { ...seg, id: `seg_${Date.now()}_1`, sourceEnd: splitSourceTime, duration: seg.duration * splitRatio, waveform: seg.waveform };
+          const newSeg2 = { ...seg, id: `seg_${Date.now()}_2`, startOffset: clickTime, sourceStart: splitSourceTime, duration: seg.duration * (1 - splitRatio), waveform: seg.waveform };
 
           const newSegs = [...segments];
           newSegs.splice(segIndex, 1, newSeg1, newSeg2);
@@ -338,16 +338,16 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 const ratio2 = (end - seg.startOffset) / seg.duration;
                 const sEnd1 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio1;
                 const sStart2 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio2;
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd1, duration: start - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio1)) });
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart2, duration: segEnd - end, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio2)) });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd1, duration: start - seg.startOffset, waveform: seg.waveform });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart2, duration: segEnd - end, waveform: seg.waveform });
             } else if (seg.startOffset < start && segEnd <= end) {
                 const ratio = (start - seg.startOffset) / seg.duration;
                 const sEnd = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
-                newSegs.push({ ...seg, sourceEnd: sEnd, duration: start - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio)) });
+                newSegs.push({ ...seg, sourceEnd: sEnd, duration: start - seg.startOffset, waveform: seg.waveform });
             } else if (seg.startOffset >= start && segEnd > end) {
                 const ratio = (end - seg.startOffset) / seg.duration;
                 const sStart = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
-                newSegs.push({ ...seg, startOffset: end, sourceStart: sStart, duration: segEnd - end, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio)) });
+                newSegs.push({ ...seg, startOffset: end, sourceStart: sStart, duration: segEnd - end, waveform: seg.waveform });
             }
         });
         saveHistory(newSegs);
@@ -370,19 +370,19 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 const ratio2 = (end - seg.startOffset) / seg.duration;
                 const sEnd1 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio1;
                 const sStart2 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio2;
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd1, duration: start - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio1)) });
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_mid_${seg.id}`, startOffset: start, sourceStart: sEnd1, sourceEnd: sStart2, duration: end - start, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio1), Math.floor(seg.waveform.length * ratio2)) });
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart2, duration: segEnd - end, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio2)) });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd1, duration: start - seg.startOffset, waveform: seg.waveform });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_mid_${seg.id}`, startOffset: start, sourceStart: sEnd1, sourceEnd: sStart2, duration: end - start, waveform: seg.waveform });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart2, duration: segEnd - end, waveform: seg.waveform });
             } else if (seg.startOffset < start && segEnd <= end) {
                 const ratio = (start - seg.startOffset) / seg.duration;
                 const sEnd = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd, duration: start - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio)) });
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: start, sourceStart: sEnd, duration: segEnd - start, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio)) });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd, duration: start - seg.startOffset, waveform: seg.waveform });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: start, sourceStart: sEnd, duration: segEnd - start, waveform: seg.waveform });
             } else if (seg.startOffset >= start && segEnd > end) {
                 const ratio = (end - seg.startOffset) / seg.duration;
                 const sStart = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sStart, duration: end - seg.startOffset, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * ratio)) });
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart, duration: segEnd - end, waveform: seg.waveform.slice(Math.floor(seg.waveform.length * ratio)) });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sStart, duration: end - seg.startOffset, waveform: seg.waveform });
+                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart, duration: segEnd - end, waveform: seg.waveform });
             }
         });
         saveHistory(newSegs);
@@ -469,8 +469,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
             const splitRatio = (playhead - seg.startOffset) / seg.duration;
             const splitSourceTime = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * splitRatio;
             
-            const newSeg1 = { ...seg, id: `seg_${Date.now()}_1`, sourceEnd: splitSourceTime, duration: seg.duration * splitRatio, waveform: seg.waveform.slice(0, Math.floor(seg.waveform.length * splitRatio)) };
-            const newSeg2 = { ...seg, id: `seg_${Date.now()}_2`, startOffset: playhead, sourceStart: splitSourceTime, duration: seg.duration * (1 - splitRatio), waveform: seg.waveform.slice(Math.floor(seg.waveform.length * splitRatio)) };
+            const newSeg1 = { ...seg, id: `seg_${Date.now()}_1`, sourceEnd: splitSourceTime, duration: seg.duration * splitRatio, waveform: seg.waveform };
+            const newSeg2 = { ...seg, id: `seg_${Date.now()}_2`, startOffset: playhead, sourceStart: splitSourceTime, duration: seg.duration * (1 - splitRatio), waveform: seg.waveform };
             
             const newSegs = [...prev];
             newSegs.splice(segIndex, 1, newSeg1, newSeg2);
@@ -911,11 +911,17 @@ export default function WaveEditor({ track, onClose, onSave }) {
                           const handleMove = (moveEv) => {
                               const clickX = moveEv.clientX - rect.left + containerRef.current.scrollLeft;
                               let newStart = (clickX / totalWidth) * (track?.duration || 40);
-                              newStart = getSnappedTime(Math.max(0, Math.min(newStart, initialSeg.startOffset + initialSeg.duration - 0.1)));
+                              
+                              const fullRatio = initialSeg.sourceEnd - initialSeg.sourceStart;
+                              const maxLeftTime = initialSeg.startOffset - (initialSeg.sourceStart * initialSeg.duration / fullRatio);
+                              
+                              newStart = Math.max(maxLeftTime, Math.max(0, Math.min(newStart, initialSeg.startOffset + initialSeg.duration - 0.01)));
+                              newStart = getSnappedTime(newStart);
+                              newStart = Math.max(maxLeftTime, Math.max(0, Math.min(newStart, initialSeg.startOffset + initialSeg.duration - 0.01)));
                               
                               const timeDiff = newStart - initialSeg.startOffset;
                               const ratio = timeDiff / initialSeg.duration;
-                              const newSourceStart = initialSeg.sourceStart + (initialSeg.sourceEnd - initialSeg.sourceStart) * ratio;
+                              const newSourceStart = initialSeg.sourceStart + fullRatio * ratio;
                               
                               setSegments(prev => prev.map(s => {
                                   if (s.id === initialSeg.id) {
@@ -924,7 +930,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                                           startOffset: newStart,
                                           sourceStart: newSourceStart,
                                           duration: initialSeg.duration - timeDiff,
-                                          waveform: initialSeg.waveform.slice(Math.max(0, Math.floor(initialSeg.waveform.length * ratio))),
+                                          waveform: initialSeg.waveform,
                                           fadeIn: s.fadeIn ? Math.max(0, s.fadeIn - timeDiff) : 0
                                       };
                                   }
@@ -956,11 +962,17 @@ export default function WaveEditor({ track, onClose, onSave }) {
                           const handleMove = (moveEv) => {
                               const clickX = moveEv.clientX - rect.left + containerRef.current.scrollLeft;
                               let newEnd = (clickX / totalWidth) * (track?.duration || 40);
-                              newEnd = getSnappedTime(Math.max(initialSeg.startOffset + 0.1, Math.min(newEnd, track?.duration || 40)));
+                              
+                              const fullRatio = initialSeg.sourceEnd - initialSeg.sourceStart;
+                              const maxRightTime = initialSeg.startOffset + initialSeg.duration + ((1 - initialSeg.sourceEnd) * initialSeg.duration / fullRatio);
+
+                              newEnd = Math.min(maxRightTime, Math.max(initialSeg.startOffset + 0.01, Math.min(newEnd, track?.duration || 40)));
+                              newEnd = getSnappedTime(newEnd);
+                              newEnd = Math.min(maxRightTime, Math.max(initialSeg.startOffset + 0.01, Math.min(newEnd, track?.duration || 40)));
                               
                               const newDuration = newEnd - initialSeg.startOffset;
                               const ratio = newDuration / initialSeg.duration;
-                              const newSourceEnd = initialSeg.sourceStart + (initialSeg.sourceEnd - initialSeg.sourceStart) * ratio;
+                              const newSourceEnd = initialSeg.sourceStart + fullRatio * ratio;
                               
                               setSegments(prev => prev.map(s => {
                                   if (s.id === initialSeg.id) {
@@ -968,7 +980,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                                           ...s,
                                           sourceEnd: newSourceEnd,
                                           duration: newDuration,
-                                          waveform: initialSeg.waveform.slice(0, Math.max(1, Math.floor(initialSeg.waveform.length * ratio))),
+                                          waveform: initialSeg.waveform,
                                           fadeOut: s.fadeOut ? Math.max(0, s.fadeOut - (initialSeg.duration - newDuration)) : 0
                                       };
                                   }
@@ -1194,26 +1206,35 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
                       const baseFill = "text-[#1ED760] fill-[#1ED760]";
 
+                      const srcStart = seg.sourceStart || 0;
+                      const srcEnd = seg.sourceEnd ?? 1;
+                      const ratio = srcEnd - srcStart || 1;
+
                       return (
-                        <svg className="w-full h-full pt-5 pb-0 pointer-events-none" style={{ filter: 'drop-shadow(0px 0px 5px rgba(30,215,96,0.4))' }} preserveAspectRatio="none" viewBox="0 0 10000 100">
-                          <defs>
-                            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="currentColor" stopOpacity="0.95" />
-                              <stop offset="35%" stopColor="currentColor" stopOpacity="0.75" />
-                              <stop offset="50%" stopColor="currentColor" stopOpacity="0.3" />
-                              <stop offset="65%" stopColor="currentColor" stopOpacity="0.75" />
-                              <stop offset="100%" stopColor="currentColor" stopOpacity="0.95" />
-                            </linearGradient>
-                          </defs>
-                          <g className={baseFill}>
-                            <path 
-                              d={peakPath} 
-                              fill={`url(#${gradId})`} 
-                              shapeRendering="geometricPrecision"
-                            />
-                          </g>
-                          <line x1="0" y1="50" x2="10000" y2="50" stroke="#000000" strokeOpacity="0.5" strokeWidth="2" vectorEffect="non-scaling-stroke" shapeRendering="geometricPrecision" />
-                        </svg>
+                        <div className="absolute inset-y-0 pointer-events-none" style={{
+                           left: `-${(srcStart / ratio) * 100}%`,
+                           width: `${(1 / ratio) * 100}%`
+                        }}>
+                          <svg className="w-full h-full pt-5 pb-0 pointer-events-none" style={{ filter: 'drop-shadow(0px 0px 5px rgba(30,215,96,0.4))' }} preserveAspectRatio="none" viewBox="0 0 10000 100">
+                            <defs>
+                              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="currentColor" stopOpacity="0.95" />
+                                <stop offset="35%" stopColor="currentColor" stopOpacity="0.75" />
+                                <stop offset="50%" stopColor="currentColor" stopOpacity="0.3" />
+                                <stop offset="65%" stopColor="currentColor" stopOpacity="0.75" />
+                                <stop offset="100%" stopColor="currentColor" stopOpacity="0.95" />
+                              </linearGradient>
+                            </defs>
+                            <g className={baseFill}>
+                              <path 
+                                d={peakPath} 
+                                fill={`url(#${gradId})`} 
+                                shapeRendering="geometricPrecision"
+                              />
+                            </g>
+                            <line x1="0" y1="50" x2="10000" y2="50" stroke="#000000" strokeOpacity="0.5" strokeWidth="2" vectorEffect="non-scaling-stroke" shapeRendering="geometricPrecision" />
+                          </svg>
+                        </div>
                       );
                     })()}
                   </motion.div>

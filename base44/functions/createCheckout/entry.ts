@@ -48,8 +48,13 @@ Deno.serve(async (req) => {
     if (user && user.email) {
       customerInfo.email = user.email;
       if (user.email.toLowerCase().includes('test') || 
-          user.email.toLowerCase().includes('example.com') || 
-          user.email.toLowerCase().includes('glop')) {
+          user.email.toLowerCase().includes('example') || 
+          user.email.toLowerCase().includes('glop') ||
+          user.email.toLowerCase().includes('agent') ||
+          user.email.toLowerCase().includes('automation') ||
+          user.email.toLowerCase().includes('qa') ||
+          user.email.toLowerCase().includes('demo') ||
+          user.email.toLowerCase().includes('base44')) {
         customerInfo.firstName = "Test";
         customerInfo.lastName = "User";
         customerInfo.phone = "1234567890";

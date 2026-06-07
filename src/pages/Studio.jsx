@@ -997,7 +997,7 @@ export default function Studio() {
 
           {/* Jam Room */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
-             <Button variant={jamRoomActive ? "default" : "outline"} size="sm" onClick={() => setJamRoomActive(!jamRoomActive)} className={cn("gap-2 rounded-xl border-border/50", jamRoomActive && "bg-green-500 hover:bg-green-600 text-white border-transparent")}>
+             <Button variant={jamRoomActive ? "default" : "outline"} size="sm" onClick={() => setJamRoomActive(!jamRoomActive)} className={cn("gap-2 rounded-xl border-border/50 transition-colors", jamRoomActive && "bg-primary hover:bg-primary/90 text-primary-foreground border-transparent")}>
                <Users className="w-4 h-4" />
                {jamRoomActive ? "Jam Room Active" : "Start Jam Room"}
              </Button>
@@ -1006,7 +1006,7 @@ export default function Studio() {
                  <Tooltip>
                    <TooltipTrigger asChild>
                      <Button variant="ghost" size="icon" title={jamVideoActive ? "Turn Video Off" : "Turn Video On"} onClick={() => setJamVideoActive(!jamVideoActive)} className="w-8 h-8 rounded-lg hover:bg-secondary">
-                       {jamVideoActive ? <Video className="w-4 h-4 text-green-400" /> : <VideoOff className="w-4 h-4 text-muted-foreground" />}
+                       {jamVideoActive ? <Video className="w-4 h-4 text-primary" /> : <VideoOff className="w-4 h-4 text-muted-foreground" />}
                      </Button>
                    </TooltipTrigger>
                    <TooltipContent side="bottom" className="text-xs">{jamVideoActive ? "Turn Video Off" : "Turn Video On"}</TooltipContent>
@@ -1017,7 +1017,7 @@ export default function Studio() {
 
           {/* Shortcuts & Hardware Config */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
-            <Button variant="outline" size="sm" onClick={() => setShowShortcutsDialog(true)} className="gap-2 rounded-lg border-primary/50 text-primary hover:bg-primary/10 transition-colors">
+            <Button variant="ghost" size="sm" onClick={() => setShowShortcutsDialog(true)} className={cn("gap-2 rounded-lg transition-colors", showShortcutsDialog ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}>
               <Keyboard className="w-4 h-4" /> Shortcuts
             </Button>
             <Button variant="ghost" size="sm" title="Hardware Preferences" onClick={() => { stop(); setShowPreferencesDialog(true); }} className="gap-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground">
@@ -1066,17 +1066,14 @@ export default function Studio() {
       </div>
 
       {/* Toolbar 2 (Tools) */}
-      <div className="h-12 border-b border-border/40 bg-card/40 flex items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 overflow-x-auto custom-scrollbar relative pr-12 sm:pr-16">
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card/80 to-transparent pointer-events-none z-10 flex items-center justify-end pr-1">
-          <ChevronRight className="w-4 h-4 text-muted-foreground opacity-70" />
-        </div>
+      <div className="min-h-[3rem] py-1 border-b border-border/40 bg-card/40 flex flex-wrap items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 relative">
         <Button onClick={addTrack} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
           <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
         </Button>
         <TooltipProvider delayDuration={200}>
-          <Tooltip><TooltipTrigger asChild><Button aria-label="Open Wave Editor" onClick={() => { if(selectedTrackIds.length===1) { const track = tracks.find(t => t.id === selectedTrackIds[0]); if(track) setEditingTrack(track); } else toast.error("Please select exactly one track"); }} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 shrink-0"><SlidersHorizontal className="w-4 h-4" /> <span className="hidden md:inline">Wave Editor</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Open Wave Editor (Select 1 track)</TooltipContent></Tooltip>
-          <Tooltip><TooltipTrigger asChild><Button aria-label="Split Stems" onClick={handleSeparateStems} disabled={isProcessing} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 shrink-0 disabled:opacity-50">{isProcessing === 'separate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} <span className="hidden md:inline">Split Stems</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Separate Vocals & Instrumental</TooltipContent></Tooltip>
-          <Tooltip><TooltipTrigger asChild><Button aria-label="Generate Melody" onClick={handleGenerateMelody} disabled={isProcessing} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 shrink-0 disabled:opacity-50">{isProcessing === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} <span className="hidden lg:inline">Generate Melody</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Generate AI Melody</TooltipContent></Tooltip>
+          <Tooltip><TooltipTrigger asChild><Button aria-label="Open Wave Editor" onClick={() => { if(selectedTrackIds.length===1) { const track = tracks.find(t => t.id === selectedTrackIds[0]); if(track) setEditingTrack(track); } else toast.error("Please select exactly one track"); }} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0"><SlidersHorizontal className="w-4 h-4" /> <span className="hidden md:inline">Wave Editor</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Open Wave Editor (Select 1 track)</TooltipContent></Tooltip>
+          <Tooltip><TooltipTrigger asChild><Button aria-label="Split Stems" onClick={handleSeparateStems} disabled={isProcessing} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0 disabled:opacity-50">{isProcessing === 'separate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} <span className="hidden md:inline">Split Stems</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Separate Vocals & Instrumental</TooltipContent></Tooltip>
+          <Tooltip><TooltipTrigger asChild><Button aria-label="Generate Melody" onClick={handleGenerateMelody} disabled={isProcessing} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0 disabled:opacity-50">{isProcessing === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} <span className="hidden lg:inline">Generate Melody</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Generate AI Melody</TooltipContent></Tooltip>
         </TooltipProvider>
 
         <div className="h-5 w-px bg-border/50 mx-0.5 shrink-0" />
@@ -1227,10 +1224,10 @@ export default function Studio() {
             >
               <div className="w-56 bg-card/90 backdrop-blur border border-border rounded-xl shadow-xl overflow-hidden p-4 flex flex-col items-center text-center">
                 <div className="relative mb-2">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-green-400" />
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-primary" />
                   </div>
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,1)]" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-primary rounded-full animate-pulse shadow-[0_0_8px_rgba(var(--primary),1)]" />
                 </div>
                 <p className="text-xs font-semibold text-foreground">Jam Room is live</p>
                 <p className="text-[10px] text-muted-foreground mt-1">Share the room link from Messages to invite collaborators. They'll appear here when they join.</p>
@@ -1301,8 +1298,8 @@ export default function Studio() {
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
                     <TooltipProvider delayDuration={200}>
-                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setActivity(`Editing ${track.name}`); setEditingTrack(track); }} className="h-6 px-1.5 gap-1 text-muted-foreground hover:text-accent"><SlidersHorizontal className="w-3 h-3" /><span className="text-[9px]">Edit</span></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Wave Editor</TooltipContent></Tooltip>
-                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("hidden lg:flex h-6 px-1.5 gap-1 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")}><Activity className="w-3 h-3" /><span className="text-[9px]">Warp</span></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Elastic Audio</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setActivity(`Editing ${track.name}`); setEditingTrack(track); }} className="h-6 px-1.5 gap-1 text-muted-foreground hover:text-primary"><SlidersHorizontal className="w-3 h-3" /><span className="text-[9px]">Edit</span></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Wave Editor</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("hidden lg:flex h-6 px-1.5 gap-1 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-primary")}><Activity className="w-3 h-3" /><span className="text-[9px]">Warp</span></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Elastic Audio</TooltipContent></Tooltip>
                       <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("hidden xl:flex h-6 px-1.5 gap-1 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")}><TrendingUp className="w-3 h-3" /><span className="text-[9px]">Auto</span></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Show Automation</TooltipContent></Tooltip>
                     </TooltipProvider>
                     <DropdownMenu>
@@ -1907,7 +1904,7 @@ export default function Studio() {
         </div>
         <div className="flex items-center gap-4 shrink-0">
           <span className="flex items-center gap-1.5">
-            <Circle className={cn("w-2.5 h-2.5", isRecording ? "fill-red-500 text-red-500 animate-pulse" : isPlaying ? "fill-green-500 text-green-500" : "fill-foreground text-foreground")} />
+            <Circle className={cn("w-2.5 h-2.5", isRecording ? "fill-red-500 text-red-500 animate-pulse" : isPlaying ? "fill-primary text-primary" : "fill-foreground text-foreground")} />
             {isRecording ? "Recording" : isPlaying ? "Playing" : "Idle"}
           </span>
         </div>

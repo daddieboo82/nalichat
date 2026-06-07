@@ -102,9 +102,9 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           
           {/* Audio Upload (Required) */}
           <div>
-            <label htmlFor="audio-upload" className="text-xs text-muted-foreground mb-2 block">Audio File *</label>
-            <div
-              onClick={() => audioRef.current?.click()}
+            <span className="text-xs text-muted-foreground mb-2 block">Audio File *</span>
+            <label
+              htmlFor="audio-upload"
               className={cn("border-2 border-dashed rounded-xl overflow-hidden cursor-pointer transition-colors flex items-center justify-center h-20", audioFile ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/50")}
             >
               <div className="text-center text-muted-foreground">
@@ -120,15 +120,15 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
                   </>
                 )}
               </div>
-            </div>
+            </label>
             <input id="audio-upload" ref={audioRef} type="file" accept="audio/*" className="hidden" onChange={handleAudio} />
           </div>
 
           {/* Cover Art upload */}
           <div>
-            <label htmlFor="cover-upload" className="text-xs text-muted-foreground mb-2 block">Cover Art</label>
-            <div
-              onClick={() => imageRef.current?.click()}
+            <span className="text-xs text-muted-foreground mb-2 block">Cover Art</span>
+            <label
+              htmlFor="cover-upload"
               className={cn("border-2 border-dashed border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-center", preview ? "h-48" : "h-24")}
             >
               {preview ? (
@@ -139,7 +139,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
                   <p className="text-sm">Click to upload cover art</p>
                 </div>
               )}
-            </div>
+            </label>
             <input id="cover-upload" ref={imageRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
           </div>
 

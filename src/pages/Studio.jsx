@@ -8,7 +8,7 @@ import {
   Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
   Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle,
   Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2,
-  Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical
+  Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
@@ -594,7 +594,7 @@ export default function Studio() {
         setActiveTool('grab');
       } else if (e.key === 'f' || e.key === 'F') {
         setActiveTool('fade');
-      } else if (e.key === 's' || e.key === 'S') {
+      } else if (e.key === '5') {
         setActiveTool('smart');
       } else if (e.key === 'Home') {
         e.preventDefault();
@@ -1146,62 +1146,13 @@ export default function Studio() {
 
         {/* BPM / Time Signature / Key display */}
         <div className="flex items-stretch gap-px bg-background/50 rounded-lg border border-border/50 shadow-inner overflow-hidden shrink-0">
-          <div 
-            className="flex flex-col items-center justify-center px-3 py-0.5 hover:bg-secondary/40 transition-colors cursor-ns-resize" 
-            title="Tempo (beats per minute)"
-            onDoubleClick={() => setIsEditingBpm(true)}
-            onPointerDown={(e) => {
-              if (isEditingBpm) return;
-              e.preventDefault();
-              const target = e.currentTarget;
-              target.setPointerCapture(e.pointerId);
-              const startY = e.clientY;
-              const startBpm = bpm;
-              let moved = false;
-              
-              const handleMove = (moveEv) => {
-                const deltaY = startY - moveEv.clientY;
-                if (Math.abs(deltaY) > 2) moved = true;
-                const newBpm = Math.max(20, Math.min(300, Math.round(startBpm + deltaY * 0.5)));
-                setBpm(newBpm);
-                setBpmInput(String(newBpm));
-              };
-              
-              const handleUp = (upEv) => {
-                target.releasePointerCapture(upEv.pointerId);
-                target.removeEventListener('pointermove', handleMove);
-                target.removeEventListener('pointerup', handleUp);
-                if (!moved) {
-                   setIsEditingBpm(true);
-                }
-              };
-              
-              target.addEventListener('pointermove', handleMove);
-              target.addEventListener('pointerup', handleUp);
-            }}
-          >
+          <div className="flex flex-col items-center justify-center px-3 py-0.5 hover:bg-secondary/40 transition-colors" title="Tempo (beats per minute)">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5 pointer-events-none">BPM</span>
-            {isEditingBpm ? (
-              <input
-                autoFocus
-                type="text"
-                inputMode="numeric"
-                value={bpmInput}
-                onChange={(e) => setBpmInput(e.target.value.replace(/[^0-9]/g, ''))}
-                onBlur={() => { 
-                  const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); 
-                  setBpm(c); 
-                  setBpmInput(String(c)); 
-                  setIsEditingBpm(false);
-                }}
-                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                className="w-10 bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight"
-              />
-            ) : (
-              <span className="w-10 text-center font-mono text-xs font-bold text-foreground leading-tight select-none pointer-events-none">
-                {bpm}
-              </span>
-            )}
+            <input type="text" inputMode="numeric" value={bpmInput}
+              onChange={(e) => setBpmInput(e.target.value.replace(/[^0-9]/g, ''))}
+              onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+              className="w-10 bg-transparent text-center font-mono text-xs font-bold text-foreground border-b border-transparent hover:border-border focus:border-primary outline-none p-0 leading-tight transition-colors cursor-text" />
           </div>
           <div className="flex flex-col items-center justify-center px-3 py-0.5 border-l border-border/60" title="Time signature">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Sig</span>
@@ -1252,7 +1203,7 @@ export default function Studio() {
                <div className="flex flex-col gap-0.5 items-center">
                  <div className="flex gap-[1px]"><MoveHorizontal className="w-2.5 h-2.5"/><MousePointer2 className="w-2.5 h-2.5"/></div>
                </div>
-            </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Smart Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">S</kbd></TooltipContent></Tooltip>
+            </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Smart Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">5</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 
@@ -1921,7 +1872,7 @@ export default function Studio() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48 bg-card border-border">
               <div className="px-2 py-1.5 text-[10px] uppercase font-bold text-muted-foreground">Audio Quality</div>
-              {[{ sr: "44.1 kHz", bd: "16-bit" },{ sr: "44.1 kHz", bd: "24-bit" },{ sr: "48 kHz", bd: "24-bit" },{ sr: "88.2 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "32-bit float" },{ sr: "192 kHz", bd: "32-bit float" }].map((s, i) => (<DropdownMenuItem key={i} onClick={() => setAudioSettings({ sampleRate: s.sr, bitDepth: s.bd })} className="cursor-pointer text-xs">{s.sr} / {s.bd}</DropdownMenuItem>))}
+              {[{ sr: "44.1 kHz", bd: "16-bit" },{ sr: "44.1 kHz", bd: "24-bit" },{ sr: "48 kHz", bd: "24-bit" },{ sr: "88.2 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "32-bit float" },{ sr: "192 kHz", bd: "32-bit float" }].map((s, i) => (<DropdownMenuItem key={i} onClick={() => setAudioSettings({ sampleRate: s.sr, bitDepth: s.bd })} className="cursor-pointer text-xs flex items-center justify-between"><span>{s.sr} / {s.bd}</span>{audioSettings.sampleRate === s.sr && audioSettings.bitDepth === s.bd && <Check className="w-3 h-3 text-primary" />}</DropdownMenuItem>))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

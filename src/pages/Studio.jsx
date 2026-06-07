@@ -773,7 +773,7 @@ export default function Studio() {
 
     const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
     const colors = ["bg-green-500"];
-    setTracksWithHistory([...tracks, {
+    const newTrack = {
       id: newId,
       name: `New Track ${newId}`,
       color: colors[newId % colors.length],
@@ -785,7 +785,10 @@ export default function Studio() {
       waveform: [],
       startTime: 0,
       duration: 0
-    }]);
+    };
+    setTracksWithHistory([...tracks, newTrack]);
+    setRenamingTrack(newTrack);
+    setNewTrackName(newTrack.name);
     toast.success("Track added");
   };
 

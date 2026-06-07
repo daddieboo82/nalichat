@@ -71,7 +71,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
   return (
     <div className="flex flex-col h-full relative">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+      <div className="flex items-center justify-between pl-4 pr-12 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <Flag className="w-4 h-4 text-primary" />
           <span className="font-heading font-bold text-sm">Milestones</span>
@@ -134,7 +134,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
       {/* Add form overlay */}
       {showAdd && (
         <div className="absolute inset-0 z-20 flex flex-col bg-background/95 backdrop-blur-sm p-5">
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-5 pr-8">
             <h4 className="font-heading font-bold text-lg">Add Milestone</h4>
             <Button type="button" size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={(e) => {
               e.preventDefault();

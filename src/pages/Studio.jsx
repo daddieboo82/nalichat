@@ -993,7 +993,7 @@ export default function Studio() {
             <span className="text-gradient-animate hidden xs:inline sm:inline">NaliStudio</span>
           </div>
           <div className="hidden sm:flex items-center gap-2 px-3 border-l border-border/50 text-sm group">
-            <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} className="bg-transparent border-none focus:outline-none focus:ring-0 text-foreground font-medium w-48 truncate placeholder:text-muted-foreground group-hover:bg-secondary/50 rounded px-1 transition-colors" placeholder="Project Name..." />
+            <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} onFocus={(e) => e.target.select()} className="bg-transparent border-none focus:outline-none focus:ring-0 text-foreground font-medium w-48 truncate placeholder:text-muted-foreground group-hover:bg-secondary/50 rounded px-1 transition-colors" placeholder="Project Name..." />
             <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
         </div>

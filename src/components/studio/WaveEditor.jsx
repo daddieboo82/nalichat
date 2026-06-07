@@ -632,55 +632,74 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
           {/* Standard Toolbar */}
           <div className="flex items-center px-4 py-2 bg-card/40 border-b border-border/40 gap-2 shrink-0 shadow-md">
-            <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md" title="New">
-                <FileText className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md" title="Open">
-                <FolderOpen className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={handleSave} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md" title="Save">
-                <Save className="w-4 h-4" />
-              </Button>
-            </div>
+            <TooltipProvider delayDuration={200}>
+              <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
+                    <FileText className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">New</TooltipContent></Tooltip>
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
+                    <FolderOpen className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Open</TooltipContent></Tooltip>
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={handleSave} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
+                    <Save className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Save</TooltipContent></Tooltip>
+              </div>
 
-            <div className="w-px h-5 bg-border/50 mx-1 border-none" />
+              <div className="w-px h-5 bg-border/50 mx-1 border-none" />
 
-            <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
-              <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIdx <= 0} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 disabled:opacity-30 rounded-md" title="Undo">
-                <Undo2 className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIdx >= history.length - 1} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 disabled:opacity-30 rounded-md" title="Redo">
-                <Redo2 className="w-4 h-4" />
-              </Button>
-            </div>
+              <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIdx <= 0} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 disabled:opacity-30 rounded-md">
+                    <Undo2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Undo</TooltipContent></Tooltip>
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIdx >= history.length - 1} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary/80 disabled:opacity-30 rounded-md">
+                    <Redo2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Redo</TooltipContent></Tooltip>
+              </div>
 
-            <div className="w-px h-5 bg-border/50 mx-1 border-none" />
+              <div className="w-px h-5 bg-border/50 mx-1 border-none" />
 
-            <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
-              <Button variant="ghost" size="icon" onClick={() => setActiveTool('select')} className={cn("h-7 w-7 rounded-md", activeTool === 'select' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")} title="Edit Tool">
-                <MousePointer2 className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => setActiveTool('range')} className={cn("h-7 w-7 rounded-md", activeTool === 'range' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")} title="Time Zoom/Selection Tool">
-                <SquareDashedBottom className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => setActiveTool('move')} className={cn("h-7 w-7 rounded-md", activeTool === 'move' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")} title="Event Tool">
-                <MoveHorizontal className="w-4 h-4" />
-              </Button>
-            </div>
+              <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('select')} className={cn("h-7 w-7 rounded-md", activeTool === 'select' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                    <MousePointer2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Edit Tool</TooltipContent></Tooltip>
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('range')} className={cn("h-7 w-7 rounded-md", activeTool === 'range' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                    <SquareDashedBottom className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Time Zoom/Selection Tool</TooltipContent></Tooltip>
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => setActiveTool('move')} className={cn("h-7 w-7 rounded-md", activeTool === 'move' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                    <MoveHorizontal className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Event Tool</TooltipContent></Tooltip>
+              </div>
 
-            <div className="w-px h-5 bg-border/50 mx-1 border-none" />
+              <div className="w-px h-5 bg-border/50 mx-1 border-none" />
 
-            <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setSnapToGrid(!snapToGrid)} 
-                className={cn("h-7 px-2 text-xs", snapToGrid ? "bg-primary/20 text-primary rounded-md" : "text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md")}
-                title="Snap to Events/Grid"
-              >
-                <Magnet className="w-3.5 h-3.5 mr-1" />
-                Snap
-            </Button>
+              <Tooltip><TooltipTrigger asChild>
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setSnapToGrid(!snapToGrid)} 
+                    className={cn("h-7 px-2 text-xs", snapToGrid ? "bg-primary/20 text-primary rounded-md" : "text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md")}
+                  >
+                    <Magnet className="w-3.5 h-3.5 mr-1" />
+                    Snap
+                </Button>
+              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Snap to Events/Grid</TooltipContent></Tooltip>
+            </TooltipProvider>
             
             <div className="w-px h-5 bg-border/50 mx-1 border-none" />
 

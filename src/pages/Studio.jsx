@@ -532,7 +532,6 @@ export default function Studio() {
   };
 
   const stop = () => {
-    const wasPlayingOrRecording = isPlaying || isRecording;
     setIsPlaying(false);
     if (isRecording) {
       setIsRecording(false);
@@ -545,12 +544,10 @@ export default function Studio() {
       audio.pause();
     });
 
-    if (!wasPlayingOrRecording) {
-      updateCurrentTime(0);
-      Object.values(audioElementsRef.current).forEach(audio => {
-        audio.currentTime = 0;
-      });
-    }
+    updateCurrentTime(0);
+    Object.values(audioElementsRef.current).forEach(audio => {
+      audio.currentTime = 0;
+    });
   };
 
   // Keyboard shortcuts for Power Users
@@ -1025,7 +1022,7 @@ export default function Studio() {
           {/* Quick Record */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
              <Button onClick={() => navigate('/record')} variant="outline" size="sm" className="gap-2 rounded-xl border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-400">
-               <Radio className="w-4 h-4 animate-pulse" />
+               <Radio className="w-4 h-4" />
                Quick Record
              </Button>
           </div>
@@ -1043,8 +1040,11 @@ export default function Studio() {
              )}
           </div>
 
-          {/* Hardware Config */}
+          {/* Shortcuts & Hardware Config */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
+            <Button variant="ghost" size="sm" onClick={() => setShowShortcutsDialog(true)} className="gap-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground">
+              <Keyboard className="w-4 h-4" /> Shortcuts
+            </Button>
             <Button variant="ghost" size="sm" title="Hardware Preferences" onClick={() => setShowPreferencesDialog(true)} className="gap-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground">
               <Settings2 className="w-4 h-4" /> Hardware
             </Button>
@@ -1150,8 +1150,8 @@ export default function Studio() {
 
         {/* BPM / Time Signature / Key display */}
         <div className="flex items-stretch gap-px bg-background/50 rounded-lg border border-border/50 shadow-inner overflow-hidden shrink-0">
-          <label className="flex flex-col items-center justify-center px-2 py-0.5 hover:bg-secondary/40 transition-colors cursor-text" title="Tempo (beats per minute)">
-            <span className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none">BPM</span>
+          <label className="flex flex-col items-center justify-center px-3 py-0.5 hover:bg-secondary/40 transition-colors cursor-text" title="Tempo (beats per minute)">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">BPM</span>
             <input
               type="text"
               inputMode="numeric"
@@ -1162,8 +1162,8 @@ export default function Studio() {
               className="w-10 bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight"
             />
           </label>
-          <div className="flex flex-col items-center justify-center px-2 py-0.5 border-l border-border/60" title="Time signature">
-            <span className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none">Sig</span>
+          <div className="flex flex-col items-center justify-center px-3 py-0.5 border-l border-border/60" title="Time signature">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Sig</span>
             <select
               value={timeSignature}
               onChange={(e) => setTimeSignature(e.target.value)}
@@ -1176,8 +1176,8 @@ export default function Studio() {
               <option value="7/8">7/8</option>
             </select>
           </div>
-          <div className="flex flex-col items-center justify-center px-2 py-0.5 border-l border-border/60" title="Project key">
-            <span className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none">Key</span>
+          <div className="flex flex-col items-center justify-center px-3 py-0.5 border-l border-border/60" title="Project key">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Key</span>
             <select
               value={songKey}
               onChange={(e) => setSongKey(e.target.value)}

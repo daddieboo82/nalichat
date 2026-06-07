@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Volume2, VolumeX, Trash2, Settings2, Layers, History, MessageSquare, Send } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -186,25 +187,35 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
 
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">
-          <button
-            onClick={toggleMute}
-            className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[11px]",
-              track.muted ? "bg-destructive/20 text-destructive" : "bg-secondary hover:bg-secondary/80"
-            )}
-            title="Mute"
-          >
-            {track.muted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
-          </button>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleMute}
+                  className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[11px]",
+                    track.muted ? "bg-destructive/20 text-destructive" : "bg-secondary hover:bg-secondary/80"
+                  )}
+                >
+                  {track.muted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">Mute</TooltipContent>
+            </Tooltip>
 
-          <button
-            onClick={toggleSolo}
-            className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[11px] font-bold",
-              track.solo ? "bg-accent/20 text-accent" : "bg-secondary hover:bg-secondary/80"
-            )}
-            title="Solo"
-          >
-            S
-          </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleSolo}
+                  className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[11px] font-bold",
+                    track.solo ? "bg-accent/20 text-accent" : "bg-secondary hover:bg-secondary/80"
+                  )}
+                >
+                  S
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">Solo</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           <div className="flex-1">
             <Slider
@@ -218,45 +229,63 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
           </div>
           <span className="text-[9px] text-muted-foreground w-6 text-right">{track.volume || 75}%</span>
 
-          <button
-            onClick={() => setShowPan(!showPan)}
-            className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
-              showPan ? "bg-primary/20 text-primary" : "bg-secondary hover:bg-secondary/80"
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setShowPan(!showPan)}
+                  className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
+                    showPan ? "bg-primary/20 text-primary" : "bg-secondary hover:bg-secondary/80"
+                  )}
+                >
+                  <Settings2 className="w-3 h-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">Pan</TooltipContent>
+            </Tooltip>
+
+            {onToggleQueue && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onToggleQueue}
+                    className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
+                      inQueue ? "bg-primary/20 text-primary" : "bg-secondary hover:bg-secondary/80"
+                    )}
+                  >
+                    <Layers className="w-3 h-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">{inQueue ? "Remove from queue" : "Add to queue"}</TooltipContent>
+              </Tooltip>
             )}
-            title="Pan"
-          >
-            <Settings2 className="w-3 h-3" />
-          </button>
 
-          {onToggleQueue && (
-            <button
-              onClick={onToggleQueue}
-              className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
-                inQueue ? "bg-primary/20 text-primary" : "bg-secondary hover:bg-secondary/80"
-              )}
-              title={inQueue ? "Remove from queue" : "Add to queue"}
-            >
-              <Layers className="w-3 h-3" />
-            </button>
-          )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setShowVersionHistory(true)}
+                  className="w-7 h-7 rounded-lg bg-secondary hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-colors"
+                >
+                  <History className="w-3 h-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">Version history</TooltipContent>
+            </Tooltip>
 
-          <button
-            onClick={() => setShowVersionHistory(true)}
-            className="w-7 h-7 rounded-lg bg-secondary hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-colors"
-            title="Version history"
-          >
-            <History className="w-3 h-3" />
-          </button>
-
-          {canEdit && (
-            <button
-              onClick={onDelete}
-              className="w-7 h-7 rounded-lg bg-secondary hover:bg-destructive/20 hover:text-destructive flex items-center justify-center transition-colors"
-              title="Delete"
-            >
-              <Trash2 className="w-3 h-3" />
-            </button>
-          )}
+            {canEdit && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onDelete}
+                    className="w-7 h-7 rounded-lg bg-secondary hover:bg-destructive/20 hover:text-destructive flex items-center justify-center transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">Delete</TooltipContent>
+              </Tooltip>
+            )}
+          </TooltipProvider>
         </div>
 
         {/* Pan Control */}

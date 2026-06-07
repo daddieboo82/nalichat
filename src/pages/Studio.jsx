@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight, Repeat } from 'lucide-react';
+import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight, Repeat, RefreshCw } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -524,7 +524,7 @@ export default function Studio() {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
       else if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
       else if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
-      else if (e.code === 'Enter') { e.preventDefault(); stop(); }
+      else if (e.code === 'Numpad0') { e.preventDefault(); stop(); }
       else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); toggleRecord(); }
       else if (e.key === 'Backspace' || e.key === 'Delete') { if (selectedTrackIds.length > 0) { e.preventDefault(); deleteSelectedTracks(); } }
       else if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); duplicateSelectedTracks(); }
@@ -542,6 +542,18 @@ export default function Studio() {
       else if (e.key === 'f' || e.key === 'F') setActiveTool('fade');
       else if (e.key === 'e' || e.key === 'E') setActiveTool('smart');
       else if (e.key === 'Home') { e.preventDefault(); updateCurrentTime(0); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
+        e.preventDefault();
+        if(selectedTrackIds.length===1) {
+          const track = tracks.find(t => t.id === selectedTrackIds[0]);
+          if(track) setEditingTrack(track);
+        } else {
+          toast.error("Please select exactly one track for Wave Editor");
+        }
+      }
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); setLoopActive(!loopActive); }
+      else if (e.shiftKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); handleSeparateStems(); }
+      else if (e.shiftKey && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); handleGenerateMelody(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); updateCurrentTime(Math.max(0, currentTimeRef.current - 5)); }
     };
@@ -934,10 +946,10 @@ export default function Studio() {
         <div className="flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Return to Zero (Home)" aria-label="Return to Zero (Home)" aria-keyshortcuts="Home" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Rewind className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Return to Zero <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Home</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Stop" aria-label="Stop" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Square className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Enter</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Stop" aria-label="Stop" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Square className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Numpad 0</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Play/Pause (Space)" aria-label="Play/Pause (Space)" aria-keyshortcuts="Space" onClick={(e) => { togglePlay(); e.currentTarget.blur(); }} className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>{isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{isPlaying ? "Pause" : "Play"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Record (R)" aria-label="Record (R)" aria-keyshortcuts="R" onClick={toggleRecord} className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}>{isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}<Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Record <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">R</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Toggle Loop Region" aria-label="Loop" onClick={(e) => { setLoopActive(!loopActive); e.currentTarget.blur(); }} className={cn("w-10 h-10 rounded-lg transition-all", loopActive ? "bg-blue-500/20 text-blue-500" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}><Repeat className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Toggle Loop</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Toggle Loop Region" aria-label="Loop" onClick={(e) => { setLoopActive(!loopActive); e.currentTarget.blur(); }} className={cn("w-10 h-10 rounded-lg transition-all", loopActive ? "bg-blue-500/20 text-blue-500" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}><RefreshCw className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Toggle Loop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+L</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Fast-forward" aria-label="Fast-forward" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><FastForward className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Fast-forward <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">→</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
@@ -975,14 +987,25 @@ export default function Studio() {
                   <Activity className="w-4 h-4" /> Quality
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48 bg-card border-border">
-                <div className="px-2 py-1.5 text-[10px] uppercase font-bold text-muted-foreground">Audio Quality</div>
-                {[{ sr: "44.1 kHz", bd: "16-bit" },{ sr: "44.1 kHz", bd: "24-bit" },{ sr: "48 kHz", bd: "24-bit" },{ sr: "88.2 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "32-bit float" },{ sr: "192 kHz", bd: "32-bit float" }].map((s, i) => {
+              <DropdownMenuContent align="start" className="w-[280px] bg-card border-border">
+                <div className="px-2 py-1.5 text-[10px] uppercase font-bold text-muted-foreground">Audio Quality Settings</div>
+                {[
+                  { sr: "44.1 kHz", bd: "16-bit", desc: "Standard CD Quality (Low CPU)" },
+                  { sr: "44.1 kHz", bd: "24-bit", desc: "Studio Standard (Moderate CPU)" },
+                  { sr: "48 kHz", bd: "24-bit", desc: "Video Standard (Moderate CPU)" },
+                  { sr: "88.2 kHz", bd: "24-bit", desc: "High Res (High CPU)" },
+                  { sr: "96 kHz", bd: "24-bit", desc: "High Res / Video (High CPU)" },
+                  { sr: "96 kHz", bd: "32-bit float", desc: "Pro High Res (Very High CPU/Storage)" },
+                  { sr: "192 kHz", bd: "32-bit float", desc: "Audiophile (Extreme CPU/Storage)" }
+                ].map((s, i) => {
                   const isActive = audioSettings.sampleRate === s.sr && audioSettings.bitDepth === s.bd;
                   return (
-                    <DropdownMenuItem key={i} onClick={() => setAudioSettings({ ...audioSettings, sampleRate: s.sr, bitDepth: s.bd })} className={cn("cursor-pointer text-xs flex items-center justify-between", isActive && "bg-primary/10 text-primary focus:bg-primary/20")}>
-                      <span className={cn(isActive && "font-semibold")}>{s.sr} / {s.bd}</span>
-                      {isActive && <Check className="w-3 h-3 text-primary" />}
+                    <DropdownMenuItem key={i} onClick={() => setAudioSettings({ ...audioSettings, sampleRate: s.sr, bitDepth: s.bd })} className={cn("cursor-pointer flex-col items-start gap-1 py-1.5", isActive && "bg-primary/10 focus:bg-primary/20")}>
+                      <div className="flex items-center justify-between w-full text-xs">
+                        <span className={cn(isActive ? "font-bold text-primary" : "font-medium")}>{s.sr} / {s.bd}</span>
+                        {isActive && <Check className="w-3 h-3 text-primary" />}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{s.desc}</span>
                     </DropdownMenuItem>
                   );
                 })}
@@ -1047,9 +1070,9 @@ export default function Studio() {
                 <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
               </Button>
             </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Add Track <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+N</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button aria-label="Open Wave Editor" onClick={() => { if(selectedTrackIds.length===1) { const track = tracks.find(t => t.id === selectedTrackIds[0]); if(track) setEditingTrack(track); } else toast.error("Please select exactly one track"); }} variant="ghost" size="sm" className={cn("gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0", selectedTrackIds.length !== 1 && "opacity-50")}><SlidersHorizontal className="w-4 h-4" /> <span className="hidden md:inline">Wave Editor</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Open Wave Editor (Select 1 track)</TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button aria-label="Split Stems" onClick={handleSeparateStems} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'separate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} <span className="hidden md:inline">Split Stems</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Separate Vocals & Instrumental</TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button aria-label="Generate Melody" onClick={handleGenerateMelody} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} <span className="hidden lg:inline">Generate Melody</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Generate AI Melody</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button aria-label="Open Wave Editor" onClick={() => { if(selectedTrackIds.length===1) { const track = tracks.find(t => t.id === selectedTrackIds[0]); if(track) setEditingTrack(track); } else toast.error("Please select exactly one track"); }} variant="ghost" size="sm" className={cn("gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0", selectedTrackIds.length !== 1 && "opacity-50")}><SlidersHorizontal className="w-4 h-4" /> <span className="hidden md:inline">Wave Editor</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Open Wave Editor (Select 1 track) <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+W</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button aria-label="Split Stems" onClick={handleSeparateStems} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'separate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} <span className="hidden md:inline">Split Stems</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Separate Vocals & Instrumental <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+E</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button aria-label="Generate Melody" onClick={handleGenerateMelody} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} <span className="hidden lg:inline">Generate Melody</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Generate AI Melody <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+G</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
         

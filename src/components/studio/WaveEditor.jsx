@@ -1317,9 +1317,30 @@ export default function WaveEditor({ track, onClose, onSave }) {
                                 label={p.name}
                                 min={p.min}
                                 max={p.max}
-                                value={eff.paramValues[p.name]}
+                                value={eff.paramValues[p.name] !== undefined ? eff.paramValues[p.name] : (p.min + p.max) / 2}
                                 onChange={(v) => updateEffectParam(eff.id, p.name, v)}
-                                formatValue={p.name === 'Freq' ? (v) => (v >= 1000 ? `${(v/1000).toFixed(1)} kHz` : `${Math.round(v)} Hz`) : undefined}
+                                formatValue={(v) => {
+                                  const n = p.name.toLowerCase();
+                                  if (n.includes('freq') || n.includes('hz') || ((n === 'low' || n === 'mid' || n === 'high' || n === 'crossover') && p.max > 1000)) {
+                                    return v >= 1000 ? `${(v/1000).toFixed(1)} kHz` : `${Math.round(v)} Hz`;
+                                  }
+                                  if (n.includes('time') || n.includes('attack') || n.includes('release') || n.includes('delay') || (n === 'decay' && p.max > 10)) {
+                                    return `${Math.round(v)} ms`;
+                                  }
+                                  if (n === 'decay' && p.max <= 10) {
+                                    return `${v.toFixed(1)} s`;
+                                  }
+                                  if (n.includes('ratio')) {
+                                    return `${Math.round(v)}:1`;
+                                  }
+                                  if (n.includes('thresh') || n.includes('gain') || n.includes('makeup') || n.includes('output') || n.includes('input') || n.includes('ceiling') || n === 'low' || n === 'mid' || n === 'high' || n === 'lf' || n === 'lmf' || n === 'hmf' || n === 'hf') {
+                                    return `${v > 0 ? '+' : ''}${v.toFixed(1)} dB`;
+                                  }
+                                  if (n.includes('mix') || n.includes('depth') || n.includes('feedback') || n.includes('amount') || n.includes('drive')) {
+                                    return `${Math.round(v)}%`;
+                                  }
+                                  return `${Math.round(v)}`;
+                                }}
                               />
                             ))}
                           </div>

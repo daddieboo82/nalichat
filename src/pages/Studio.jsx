@@ -797,7 +797,7 @@ export default function Studio() {
       return;
     }
     setIsProcessing('separate');
-    const toastId = toast.loading("Separating stems by frequency (this may take a moment)...");
+    const toastId = toast.loading("Analyzing and separating audio stems...");
     try {
       const { vocals, instrumental } = await separateStems(track.audioUrl);
       let nextId = Math.max(...tracks.map(t => t.id)) + 1;
@@ -807,8 +807,15 @@ export default function Studio() {
       ]);
       toast.success("Stems separated successfully!", { id: toastId });
     } catch (e) {
-      console.error(e);
-      toast.error(`Failed to separate stems: ${e.message || 'Audio decoding error'}. Ensure the track format is supported (WAV/MP3) and not corrupted.`, { id: toastId, duration: 6000 });
+      console.error("Stem separation error:", e);
+      toast.error(
+        <div className="flex flex-col gap-1.5">
+          <span className="font-semibold text-red-500">Stem Separation Failed</span>
+          <span className="text-xs opacity-90">We couldn't process this track. Ensure it's a valid WAV or MP3 file and try again.</span>
+          {e.message && <span className="text-[10px] bg-black/20 p-1.5 rounded font-mono mt-1 overflow-x-auto text-red-400">{e.message}</span>}
+        </div>, 
+        { id: toastId, duration: 8000 }
+      );
     } finally {
       setIsProcessing(null);
     }
@@ -988,11 +995,11 @@ export default function Studio() {
       {/* Top Toolbar */}
       <div className="h-16 border-b border-border/50 bg-card/80 backdrop-blur flex items-center justify-between gap-2 px-2 sm:px-4 shrink-0 overflow-x-auto custom-scrollbar">
         <div className="flex items-center gap-4 shrink-0">
-          <div className="font-heading font-black text-base sm:text-xl text-gradient-animate tracking-tight flex items-center gap-2">
+          <div className="font-heading font-black text-base sm:text-xl tracking-tight flex items-center gap-2">
             <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-            <span className="hidden xs:inline sm:inline">NaliStudio</span>
-            <span className="hidden sm:inline text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest ml-2">Pro</span>
-            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><span className="hidden lg:inline text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-primary/30 cursor-help">Engine v2</span></TooltipTrigger><TooltipContent side="bottom" className="max-w-[240px] text-xs">Engine v2 — NaliStudio's latest audio engine: faster real-time mixing, higher-quality stem separation, and lower-latency recording.</TooltipContent></Tooltip></TooltipProvider>
+            <span className="text-gradient-animate hidden xs:inline sm:inline">NaliStudio</span>
+            <span className="hidden sm:inline text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest ml-2 border border-primary/20 shadow-sm">Pro</span>
+            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><span className="hidden lg:inline text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-primary/20 shadow-sm cursor-help transition-colors hover:bg-primary/30">Engine v2</span></TooltipTrigger><TooltipContent side="bottom" className="max-w-[240px] text-xs">Engine v2 — NaliStudio's latest audio engine: faster real-time mixing, higher-quality stem separation, and lower-latency recording.</TooltipContent></Tooltip></TooltipProvider>
           </div>
         </div>
 

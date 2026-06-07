@@ -106,8 +106,8 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
             <div className="flex flex-col gap-1.5">
               <span className="font-medium">Buffer Size</span>
             <Select 
-              value={audioSettings?.bufferSize || "256"}
-              onValueChange={(val) => setAudioSettings && setAudioSettings(prev => ({...prev, bufferSize: val}))}
+              value={String(audioSettings?.bufferSize || "256")}
+              onValueChange={(val) => setAudioSettings && setAudioSettings(prev => ({...prev, bufferSize: parseInt(val, 10)}))}
             >
               <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                 <SelectValue placeholder="Buffer Size" />

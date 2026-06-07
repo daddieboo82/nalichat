@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 export default function WebhookTest() {
   const [loading, setLoading] = useState(false);
+  const [loadingId, setLoadingId] = useState(null);
   const [result, setResult] = useState(null);
   const [subscriptions, setSubscriptions] = useState([]);
   const [fetchingSubs, setFetchingSubs] = useState(true);
@@ -113,7 +114,7 @@ export default function WebhookTest() {
   };
 
   const simulateSubscriptionCanceled = async (subscriptionId) => {
-    setLoading(true);
+    setLoadingId(subscriptionId);
     setResult(null);
     try {
       const payload = {
@@ -147,12 +148,12 @@ export default function WebhookTest() {
       setResult({ success: false, message: error.message || "Network error" });
       toast.error("Error triggering webhook");
     } finally {
-      setLoading(false);
+      setLoadingId(null);
     }
   };
 
   const simulateOrderApproved = async (checkoutId) => {
-    setLoading(true);
+    setLoadingId(checkoutId);
     setResult(null);
     try {
       const payload = {
@@ -191,7 +192,7 @@ export default function WebhookTest() {
       setResult({ success: false, message: error.message || "Network error" });
       toast.error("Error triggering webhook");
     } finally {
-      setLoading(false);
+      setLoadingId(null);
     }
   };
 
@@ -263,21 +264,21 @@ export default function WebhookTest() {
                     {sub.status === 'pending' && sub.checkout_id && (
                       <Button 
                         onClick={() => simulateOrderApproved(sub.checkout_id)} 
-                        disabled={loading}
+                        disabled={loadingId === sub.checkout_id}
                         className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
                       >
-                        {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        {loadingId === sub.checkout_id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                         Approve Order
                       </Button>
                     )}
                     {sub.status === 'active' && sub.subscription_id && (
                       <Button 
                         onClick={() => simulateSubscriptionCanceled(sub.subscription_id)} 
-                        disabled={loading}
+                        disabled={loadingId === sub.subscription_id}
                         variant="destructive"
                         className="shrink-0"
                       >
-                        {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        {loadingId === sub.subscription_id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                         Cancel Subscription
                       </Button>
                     )}

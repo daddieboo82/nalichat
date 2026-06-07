@@ -89,15 +89,14 @@ Deno.serve(async (req) => {
         const WIX_API_KEY = Deno.env.get('WIX_PAYMENTS_API_KEY');
         const WIX_SITE_ID = Deno.env.get('WIX_PAYMENTS_SITE_ID');
 
-        // Cancel any previous active subscriptions to avoid double billing
+        // Cancel any previous active or pending subscriptions to avoid double billing and inconsistencies
         const oldSubs = await base44.asServiceRole.entities.Subscription.filter({
-          user_id: sub.user_id,
-          status: 'active'
+          user_id: sub.user_id
         });
 
         for (const oldSub of oldSubs) {
-          if (oldSub.id !== sub.id) {
-            if (oldSub.subscription_id && WIX_API_KEY && WIX_SITE_ID) {
+          if (oldSub.id !== sub.id && (oldSub.status === 'active' || oldSub.status === 'pending')) {
+            if (oldSub.status === 'active' && oldSub.subscription_id && WIX_API_KEY && WIX_SITE_ID) {
               try {
                 const cancelRes = await fetch(`https://www.wixapis.com/payments/base44/v1/subscriptions/${oldSub.subscription_id}/cancel`, {
                   method: 'POST',

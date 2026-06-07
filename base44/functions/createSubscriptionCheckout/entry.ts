@@ -72,6 +72,14 @@ Deno.serve(async (req) => {
       trialEndDate.setDate(trialEndDate.getDate() + 30);
       
       try {
+        // Cancel old subscriptions to avoid PENDING inconsistencies
+        const oldSubs = await base44.asServiceRole.entities.Subscription.filter({ user_id: user.id });
+        for (const old of oldSubs) {
+          if (old.status === 'active' || old.status === 'pending') {
+            await base44.asServiceRole.entities.Subscription.update(old.id, { status: 'canceled' });
+          }
+        }
+
         await base44.asServiceRole.entities.Subscription.create({
           user_id: user.id,
           plan: planType,

@@ -12,7 +12,7 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
         <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Play / Pause</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Space</span></div>
-            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Stop / Return to Zero</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Enter</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Stop</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Enter</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Record</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">R</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Undo</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+Z</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Redo</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+Y</span></div>
@@ -20,15 +20,15 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Duplicate Clip</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+D</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Delete Clip</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Del</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Lock/Unlock</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">L</span></div>
-            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Solo Selected</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">S</span></div>
-            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Mute Selected</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">M</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Solo Selected</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+S</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Mute Selected</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+M</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Return to Zero</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Home</span></div>
             <div className="col-span-2 mt-2 font-semibold">Tools</div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Trim Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">T</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Cut Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">C</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Grabber Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">G</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Fade Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">F</span></div>
-            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Smart Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">5</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Smart Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">E</span></div>
           </div>
         </div>
         <div className="flex justify-end pt-4 border-t border-border">

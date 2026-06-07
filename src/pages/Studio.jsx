@@ -968,7 +968,8 @@ export default function Studio() {
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       {/* Top Toolbar */}
-      <div className="h-16 border-b border-border/50 bg-card/80 backdrop-blur flex items-center justify-between gap-2 px-2 sm:px-4 shrink-0 overflow-x-auto custom-scrollbar">
+      <div className="h-16 border-b border-border/50 bg-card/80 backdrop-blur flex items-center justify-between gap-2 px-2 sm:px-4 shrink-0 overflow-x-auto custom-scrollbar relative pr-8">
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card/80 to-transparent pointer-events-none z-10" />
         <div className="flex items-center gap-4 shrink-0">
           <div className="font-heading font-black text-base sm:text-xl tracking-tight flex items-center gap-2">
             <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
@@ -1155,13 +1156,13 @@ export default function Studio() {
 
         <div className="flex items-center gap-1 shrink-0">
           <TooltipProvider delayDuration={200}>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Lock/Unlock Clip (L)" onClick={() => {
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Lock/Unlock Clip (L)" onClick={() => {
               const allLocked = selectedTrackIds.every(id => tracks.find(t => t.id === id)?.locked);
               selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked'));
-            }} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50">{tracks.find(t => t.id === selectedTrackIds[0])?.locked ? <Unlock className="w-4 h-4"/> : <Link2 className="w-4 h-4"/>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Lock/Unlock Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">L</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Separate Clip (Ctrl+E)" onClick={splitSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50"><Scissors className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Separate Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+E</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Duplicate Clip (Ctrl+D)" onClick={duplicateSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50"><Copy className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Duplicate Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+D</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Delete Clip (Del)" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="w-8 h-8 rounded-md text-muted-foreground hover:text-red-400 disabled:opacity-50"><Trash2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Delete <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Del</kbd></TooltipContent></Tooltip>
+            }} disabled={selectedTrackIds.length === 0} className="h-7 px-2 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 gap-1.5"><>{tracks.find(t => t.id === selectedTrackIds[0])?.locked ? <Unlock className="w-3.5 h-3.5"/> : <Link2 className="w-3.5 h-3.5"/>}<span className="text-xs">Lock</span></></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Lock/Unlock Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">L</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Separate Clip (Ctrl+E)" onClick={splitSelectedTracks} disabled={selectedTrackIds.length === 0} className="h-7 px-2 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 gap-1.5"><Scissors className="w-3.5 h-3.5" /><span className="text-xs">Split</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Separate Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+E</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Duplicate Clip (Ctrl+D)" onClick={duplicateSelectedTracks} disabled={selectedTrackIds.length === 0} className="h-7 px-2 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 gap-1.5"><Copy className="w-3.5 h-3.5" /><span className="text-xs">Copy</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Duplicate Clip <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+D</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Delete Clip (Del)" onClick={deleteSelectedTracks} disabled={selectedTrackIds.length === 0} className="h-7 px-2 rounded-md text-muted-foreground hover:text-red-400 disabled:opacity-50 gap-1.5"><Trash2 className="w-3.5 h-3.5" /><span className="text-xs">Del</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Delete <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Del</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
         
@@ -1835,9 +1836,10 @@ export default function Studio() {
           <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button title="Change Audio Quality Settings" className="text-primary font-medium shrink-0 hover:underline outline-none cursor-pointer whitespace-nowrap">
-                <span className="inline">Quality: {audioSettings.sampleRate} / {audioSettings.bitDepth}</span>
-                <span className="hidden sm:inline"> • Opus Codec</span>
+              <button title="Change Audio Quality Settings" className="text-primary font-medium shrink-0 hover:underline outline-none cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis">
+                <span className="hidden lg:inline">Quality: </span>
+                <span className="inline">{audioSettings.sampleRate} / {audioSettings.bitDepth}</span>
+                <span className="hidden xl:inline"> • Opus Codec</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48 bg-card border-border">
@@ -1854,7 +1856,7 @@ export default function Studio() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 shrink-0">
           <span className="flex items-center gap-1.5">
             <Circle className={cn("w-2.5 h-2.5", isRecording ? "fill-red-500 text-red-500 animate-pulse" : isPlaying ? "fill-green-500 text-green-500" : "fill-foreground text-foreground")} />
             {isRecording ? "Recording" : isPlaying ? "Playing" : "Idle"}

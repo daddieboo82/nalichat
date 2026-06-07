@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { Bell, MessageCircle, FileText, Users } from "lucide-react";
+import { Bell, MessageCircle, FileText, Users, CheckCircle2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -12,6 +12,8 @@ const typeIcon = {
   comment: MessageCircle,
   file: FileText,
   session_invite: Users,
+  milestone: CheckCircle2,
+  message: MessageCircle,
 };
 
 export default function NotificationBell({ direction = "down" }) {

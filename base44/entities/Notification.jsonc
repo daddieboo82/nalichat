@@ -11,7 +11,9 @@
       "enum": [
         "comment",
         "file",
-        "session_invite"
+        "session_invite",
+        "milestone",
+        "message"
       ],
       "description": "Type of notification"
     },

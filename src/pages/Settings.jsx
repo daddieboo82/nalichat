@@ -297,6 +297,22 @@ export default function Settings() {
                     Make Me Admin
                   </Button>
                 )}
+                <Button 
+                  variant="outline" 
+                  className="border-orange-500/50 text-orange-500 hover:bg-orange-500/20"
+                  onClick={async () => {
+                    try {
+                      const subs = await base44.entities.Subscription.filter({ user_id: user.id });
+                      await Promise.all(subs.map(sub => base44.entities.Subscription.delete(sub.id)));
+                      toast.success("Subscriptions cleared. Please refresh the page.");
+                      setTimeout(() => window.location.reload(), 1500);
+                    } catch (e) {
+                      toast.error("Failed to clear subscriptions.");
+                    }
+                  }}
+                >
+                  Clear My Subscriptions
+                </Button>
               </div>
             </div>
           </div>

@@ -12,9 +12,11 @@ export default function UpgradeModal({ open, onOpenChange, triggerReason = "proj
     setLoading(true);
     setError("");
     try {
-      const response = await base44.functions.invoke("createSubscriptionCheckout", {});
+      const response = await base44.functions.invoke("createSubscriptionCheckout", {
+        postFlowUrl: window.location.href
+      });
       if (response.data?.checkoutUrl) {
-        window.location.href = response.data.checkoutUrl;
+        window.top.location.href = response.data.checkoutUrl;
       } else {
         const errorMsg = response.data?.error || response.data?.details || "Failed to start checkout";
         setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));

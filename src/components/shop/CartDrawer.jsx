@@ -23,7 +23,7 @@ export default function CartDrawer() {
         items: checkoutItems,
         callbackUrls: {
           thankYouPageUrl: window.location.origin + "/ThankYou",
-          postFlowUrl: window.location.origin + "/"
+          postFlowUrl: window.location.href
         }
       });
 

@@ -157,7 +157,7 @@ export default function Home() {
     <div className="h-full overflow-auto bg-background">
 
       {/* ── Hero ── */}
-      <section className="relative flex flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-16">
+      <section className="relative flex flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-32 min-h-[100dvh] md:min-h-[700px]">
         {/* Animated blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-primary/30 rounded-full blur-[100px] animate-float-blob" />

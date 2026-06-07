@@ -1329,31 +1329,39 @@ export default function Studio() {
                 </div>
                 
                 <div className="flex items-center gap-2 mt-2">
-                  <button 
-                    onClick={() => toggleMute(track.id)}
-                    className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.muted ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground")}
-                  >
-                    M
-                  </button>
-                  <button 
-                    onClick={() => toggleSolo(track.id)}
-                    className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.solo ? "bg-yellow-500 text-white border-yellow-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground")}
-                  >
-                    S
-                  </button>
-                  <button 
-                    onClick={() => {
-                       const input = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic");
-                       if (input === 'In: None') {
-                          toast.error("Cannot arm a track with no input selected");
-                          return;
-                       }
-                       toggleArm(track.id);
-                    }}
-                    className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center", track.armed ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-red-500/20 hover:text-red-400", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic")) === 'In: None') && "opacity-30 cursor-not-allowed")}
-                  >
-                    <Circle className="w-3 h-3 fill-current" />
-                  </button>
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip><TooltipTrigger asChild>
+                      <button 
+                        onClick={() => toggleMute(track.id)}
+                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.muted ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground")}
+                      >
+                        M
+                      </button>
+                    </TooltipTrigger><TooltipContent side="top" className="text-xs">Mute Track</TooltipContent></Tooltip>
+                    <Tooltip><TooltipTrigger asChild>
+                      <button 
+                        onClick={() => toggleSolo(track.id)}
+                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.solo ? "bg-yellow-500 text-white border-yellow-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground")}
+                      >
+                        S
+                      </button>
+                    </TooltipTrigger><TooltipContent side="top" className="text-xs">Solo Track</TooltipContent></Tooltip>
+                    <Tooltip><TooltipTrigger asChild>
+                      <button 
+                        onClick={() => {
+                           const input = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic");
+                           if (input === 'In: None') {
+                              toast.error("Cannot arm a track with no input selected");
+                              return;
+                           }
+                           toggleArm(track.id);
+                        }}
+                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center", track.armed ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-red-500/20 hover:text-red-400", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic")) === 'In: None') && "opacity-30 cursor-not-allowed")}
+                      >
+                        <Circle className="w-3 h-3 fill-current" />
+                      </button>
+                    </TooltipTrigger><TooltipContent side="top" className="text-xs">Arm for Recording</TooltipContent></Tooltip>
+                  </TooltipProvider>
                 </div>
 
                 <div className="flex items-center gap-3 mt-3">

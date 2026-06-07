@@ -54,6 +54,8 @@ export default function Studio() {
   const [editingTrack, setEditingTrack] = useState(null);
   const [renamingTrack, setRenamingTrack] = useState(null);
   const [newTrackName, setNewTrackName] = useState("");
+  const [creatingTrack, setCreatingTrack] = useState(false);
+  const [newTrackType, setNewTrackType] = useState('audio');
   const [selectedTrackIds, setSelectedTrackIds] = useState([]);
 
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
@@ -734,26 +736,16 @@ export default function Studio() {
       toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
       return;
     }
-
     const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
-    const colors = ["bg-green-500"];
-    const newTrack = {
-      id: newId,
-      name: `New Track ${newId}`,
-      color: colors[newId % colors.length],
-      volume: 75,
-      pan: 50,
-      muted: false,
-      solo: false,
-      armed: false,
-      waveform: [],
-      startTime: 0,
-      duration: 0,
-      isNew: true
-    };
-    setTracksWithHistory([...tracks, newTrack]);
-    setRenamingTrack(newTrack);
-    setNewTrackName(newTrack.name);
+    setNewTrackName(`New Track ${newId}`);
+    setNewTrackType('audio');
+    setCreatingTrack(true);
+  };
+  const handleCreateTrackConfirm = () => {
+    if (!newTrackName.trim()) return;
+    const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    setTracksWithHistory([...tracks, { id: newId, name: newTrackName.trim(), type: newTrackType, color: ["bg-green-500", "bg-blue-500", "bg-purple-500", "bg-yellow-500", "bg-pink-500"][newId % 5], volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0 }]);
+    setCreatingTrack(false);
     toast.success("Track added");
   };
 
@@ -1954,33 +1946,38 @@ export default function Studio() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={creatingTrack} onOpenChange={setCreatingTrack}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Create Track</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2"><label className="text-sm font-medium">Track Name</label>
+              <Input value={newTrackName} onChange={(e) => setNewTrackName(e.target.value)} onFocus={(e) => setTimeout(() => e.target.select(), 0)} onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTrackConfirm(); }} autoFocus />
+            </div>
+            <div className="space-y-2"><label className="text-sm font-medium">Track Type</label>
+              <Select value={newTrackType} onValueChange={setNewTrackType}>
+                <SelectTrigger><SelectValue placeholder="Select track type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="audio">Audio Track</SelectItem>
+                  <SelectItem value="midi">MIDI Track</SelectItem>
+                  <SelectItem value="instrument">Software Instrument</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreatingTrack(false)}>Cancel</Button>
+            <Button onClick={handleCreateTrackConfirm}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!renamingTrack} onOpenChange={(open) => !open && setRenamingTrack(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{renamingTrack?.isNew ? "Create Track" : "Rename Track"}</DialogTitle>
-          </DialogHeader>
-          <Input 
-            value={newTrackName} 
-            onChange={(e) => setNewTrackName(e.target.value)} 
-            onFocus={(e) => setTimeout(() => e.target.select(), 0)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                if (newTrackName.trim()) {
-                  setTracksWithHistory(prev => prev.map(t => t.id === renamingTrack.id ? { ...t, name: newTrackName.trim() } : t));
-                }
-                setRenamingTrack(null);
-              }
-            }}
-            autoFocus
-          />
+          <DialogHeader><DialogTitle>Rename Track</DialogTitle></DialogHeader>
+          <Input value={newTrackName} onChange={(e) => setNewTrackName(e.target.value)} onFocus={(e) => setTimeout(() => e.target.select(), 0)} onKeyDown={(e) => { if (e.key === 'Enter') { if (newTrackName.trim()) { setTracksWithHistory(prev => prev.map(t => t.id === renamingTrack.id ? { ...t, name: newTrackName.trim() } : t)); } setRenamingTrack(null); } }} autoFocus />
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenamingTrack(null)}>Cancel</Button>
-            <Button onClick={() => {
-              if (newTrackName.trim()) {
-                setTracksWithHistory(prev => prev.map(t => t.id === renamingTrack.id ? { ...t, name: newTrackName.trim() } : t));
-              }
-              setRenamingTrack(null);
-            }}>Save</Button>
+            <Button onClick={() => { if (newTrackName.trim()) { setTracksWithHistory(prev => prev.map(t => t.id === renamingTrack.id ? { ...t, name: newTrackName.trim() } : t)); } setRenamingTrack(null); }}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

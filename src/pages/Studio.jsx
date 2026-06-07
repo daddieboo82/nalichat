@@ -1032,7 +1032,7 @@ export default function Studio() {
           {/* Quick Record */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
              <Button onClick={() => navigate('/record')} variant="outline" size="sm" className="gap-2 rounded-xl border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-400">
-               <Radio className="w-4 h-4" />
+               <Mic className="w-4 h-4" />
                Quick Record
              </Button>
           </div>
@@ -1062,7 +1062,7 @@ export default function Studio() {
             <Button variant="ghost" size="sm" onClick={() => setShowShortcutsDialog(true)} className="gap-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground">
               <Keyboard className="w-4 h-4" /> Shortcuts
             </Button>
-            <Button variant="ghost" size="sm" title="Hardware Preferences" onClick={() => setShowPreferencesDialog(true)} className="gap-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground">
+            <Button variant="ghost" size="sm" title="Hardware Preferences" onClick={() => { stop(); setShowPreferencesDialog(true); }} className="gap-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground">
               <Settings2 className="w-4 h-4" /> Hardware
             </Button>
           </div>

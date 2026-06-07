@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { Bot, X, Send, Minimize2, Maximize2, Sparkles, Expand, Shrink, AudioLines, Disc, Activity, Mic, Music } from "lucide-react";
+import { Bot, X, Send, Minimize2, Maximize2, Sparkles, Expand, Shrink, AudioLines, Disc, Activity, Mic, Music, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import TutorialTopics from "@/components/ai/TutorialTopics";
+import { toast } from "sonner";
 
 export default function AiAssistant() {
   const [open, setOpen] = useState(false);
@@ -12,6 +13,7 @@ export default function AiAssistant() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [conversation, setConversation] = useState(null);
   const [user, setUser] = useState(null);
   const scrollRef = useRef(null);
@@ -72,6 +74,34 @@ export default function AiAssistant() {
 
   const send = () => sendText(input);
 
+  const handleMicClick = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Speech recognition is not supported in this browser.");
+      return;
+    }
+    if (isListening) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInput((prev) => (prev ? prev + " " + transcript : transcript));
+    };
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error", event.error);
+      setIsListening(false);
+      toast.error("Speech recognition error: " + event.error);
+    };
+    recognition.onend = () => setIsListening(false);
+
+    recognition.start();
+  };
+
   return (
     <>
       {/* Chat panel */}
@@ -104,8 +134,8 @@ export default function AiAssistant() {
                 {expanded ? <Shrink className="w-5 h-5 sm:w-4 sm:h-4" /> : <Expand className="w-5 h-5 sm:w-4 sm:h-4" />}
               </button>
             )}
-            <button onClick={() => setMinimized(v => !v)} className="text-muted-foreground hover:text-foreground p-2 sm:p-1">
-              {minimized ? <Maximize2 className="w-5 h-5 sm:w-4 sm:h-4" /> : <Minimize2 className="w-5 h-5 sm:w-4 sm:h-4" />}
+            <button onClick={() => setMinimized(v => !v)} title={minimized ? "Restore" : "Minimize"} className="text-muted-foreground hover:text-foreground p-2 sm:p-1">
+              {minimized ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />}
             </button>
             <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-2 sm:p-1 mr-[-4px]">
               <X className="w-6 h-6 sm:w-4 sm:h-4" />
@@ -209,9 +239,19 @@ export default function AiAssistant() {
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     placeholder="Command Nali or ask a question..."
-                    className="w-full bg-secondary/40 border border-primary/20 rounded-xl pl-8 pr-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/70"
+                    className="w-full bg-secondary/40 border border-primary/20 rounded-xl pl-8 pr-10 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/70"
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                   />
+                  <button
+                    onClick={handleMicClick}
+                    title="Voice Input"
+                    className={cn(
+                      "absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-colors",
+                      isListening ? "text-red-500 bg-red-500/10 animate-pulse" : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                    )}
+                  >
+                    <Mic className="w-4 h-4" />
+                  </button>
                 </div>
                 <button
                   onClick={send}

@@ -13,40 +13,65 @@ Deno.serve(async (req) => {
     try {
       const parsed = JSON.parse(bodyText);
       if (parsed.data) {
-        body = parsed.data;
+        body = typeof parsed.data === 'string' ? parsed.data : JSON.stringify(parsed.data);
       }
     } catch {
       // not JSON, keep as is
     }
-    body = body.replace(/^"|"$/g, '').trim();
+    if (typeof body === 'string') {
+      body = body.replace(/^"|"$/g, '').trim();
+    }
     if (!body || body.length === 0) {
       return Response.json({ error: 'Empty request body' }, { status: 400 });
     }
 
-    const WEBHOOK_PUBLIC_KEY = Deno.env.get('WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY')?.replace(/\\n/g, '\n');
-    if (!WEBHOOK_PUBLIC_KEY) {
-      console.error('Missing WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY');
-      return Response.json({ error: 'Server misconfigured' }, { status: 500 });
-    }
-
     const base44 = createClientFromRequest(req);
-
-    let rawPayload;
-    try {
-      rawPayload = jwt.verify(body, WEBHOOK_PUBLIC_KEY, { algorithms: ["RS256"] });
-    } catch (err) {
-      console.error('JWT verification failed', err);
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     let event;
     let eventData;
+    let isTest = false;
+
     try {
-      event = JSON.parse(rawPayload.data);
-      eventData = JSON.parse(event.data);
-    } catch {
-      console.error('Failed to parse webhook body');
-      return Response.json({ error: 'Invalid JSON payload' }, { status: 400 });
+      let parsedParams = JSON.parse(bodyText);
+      if (parsedParams && parsedParams.data && parsedParams.data.isTestBypass) {
+        parsedParams = parsedParams.data;
+      }
+      
+      if (parsedParams && parsedParams.isTestBypass) {
+        isTest = true;
+        const user = await base44.auth.me();
+        if (!user || user.role !== 'admin') {
+          return Response.json({ error: 'Unauthorized test bypass' }, { status: 403 });
+        }
+        event = parsedParams.payload;
+        eventData = JSON.parse(event.data);
+      }
+    } catch (e) {
+      // Not a test payload, proceed with normal JWT verification
+    }
+
+    if (!isTest) {
+      const WEBHOOK_PUBLIC_KEY = Deno.env.get('WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY')?.replace(/\\n/g, '\n');
+      if (!WEBHOOK_PUBLIC_KEY) {
+        console.error('Missing WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY');
+        return Response.json({ error: 'Server misconfigured' }, { status: 500 });
+      }
+
+      let rawPayload;
+      try {
+        rawPayload = jwt.verify(body, WEBHOOK_PUBLIC_KEY, { algorithms: ["RS256"] });
+      } catch (err) {
+        console.error('JWT verification failed', err);
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      try {
+        event = JSON.parse(rawPayload.data);
+        eventData = JSON.parse(event.data);
+      } catch {
+        console.error('Failed to parse webhook body');
+        return Response.json({ error: 'Invalid JSON payload' }, { status: 400 });
+      }
     }
 
     console.log('Wix webhook received:', event.eventType || 'unknown');

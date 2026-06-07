@@ -26,7 +26,7 @@ const MORE_NAV_ITEMS = [
   { icon: FileText, label: "Files", path: "/files" },
   { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
   { icon: Users, label: "Collaborations", path: "/projects-summary" },
-  { icon: BarChart3, label: "Business", path: "/business" },
+  { icon: BarChart3, label: "Admin", path: "/admin" },
 ];
 
 export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick }) {

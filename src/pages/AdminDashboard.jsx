@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, DollarSign, Users, Activity, Loader2 } from "lucide-react";
+import { BarChart3, DollarSign, Users, Activity, Loader2, UserPlus, ShieldAlert } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function AdminDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [isMakingAdmin, setIsMakingAdmin] = useState(false);
 
   useEffect(() => {
     base44.auth.me()
@@ -54,6 +59,24 @@ export default function AdminDashboard() {
   // MRR Calculation
   const mrr = (proSubs.length * 24.95) + (proFilesharingSubs.length * 49.95);
 
+  const handleMakeAdmin = async () => {
+    if (!adminEmail) return;
+    setIsMakingAdmin(true);
+    try {
+      const res = await base44.functions.invoke("makeAdmin", { email: adminEmail });
+      if (res.data?.success) {
+        toast.success(`${adminEmail} is now an admin!`);
+        setAdminEmail("");
+      } else {
+        toast.error(res.data?.error || "Failed to make admin");
+      }
+    } catch (e) {
+      toast.error("Error calling makeAdmin");
+    } finally {
+      setIsMakingAdmin(false);
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto w-full">
       <div className="max-w-6xl mx-auto p-4 sm:p-8 flex flex-col min-h-max pb-32 md:pb-12">
@@ -65,6 +88,37 @@ export default function AdminDashboard() {
         <p className="text-muted-foreground mt-2">
           Revenue reporting and subscription metrics for NaliChat.
         </p>
+      </div>
+
+      {currentUser.role !== 'admin' && (
+        <div className="mb-8 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-3 text-yellow-600">
+          <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-bold">Not an Admin</h3>
+            <p className="text-sm opacity-90">You are currently viewing this dashboard as a regular user. Some administrative actions may be restricted.</p>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-card border border-border rounded-xl p-6 mb-8">
+        <h2 className="text-xl font-bold mb-4 border-b border-border pb-2 flex items-center gap-2">
+          <Users className="w-5 h-5 text-primary" />
+          User Management
+        </h2>
+        <div className="max-w-md">
+          <p className="text-sm text-muted-foreground mb-4">Grant admin privileges to a user by their email address.</p>
+          <div className="flex gap-2">
+            <Input 
+              placeholder="user@example.com" 
+              value={adminEmail}
+              onChange={(e) => setAdminEmail(e.target.value)}
+            />
+            <Button onClick={handleMakeAdmin} disabled={isMakingAdmin || !adminEmail}>
+              {isMakingAdmin ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
+              Make Admin
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

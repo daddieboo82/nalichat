@@ -153,8 +153,8 @@ const AuthenticatedApp = () => {
           <Route path="/webhook-test" element={<WebhookTest />} />
           <Route path="/WebhookTest" element={<Navigate to="/webhook-test" replace />} />
           <Route path="/projects-summary" element={<ProjectsSummary />} />
-          <Route path="/business" element={<AdminDashboard />} />
-          <Route path="/admin" element={<Navigate to="/business" replace />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/business" element={<Navigate to="/admin" replace />} />
         </Route>
       </Route>
       <Route path="/privacy" element={<Privacy />} />

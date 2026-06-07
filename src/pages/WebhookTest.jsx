@@ -103,8 +103,13 @@ export default function WebhookTest() {
       setLoading(true);
       await base44.entities.Subscription.delete(id);
       toast.success("Subscription removed");
-      await fetchSubscriptions();
-      queryClient.invalidateQueries({ queryKey: ['subscription'] });
+      
+      setSubscriptions(prev => prev.filter(s => s.id !== id));
+      
+      setTimeout(() => {
+        fetchSubscriptions();
+        queryClient.invalidateQueries({ queryKey: ['subscription'] });
+      }, 1000);
     } catch (e) {
       console.error(e);
       toast.error("Failed to remove subscription");
@@ -138,8 +143,17 @@ export default function WebhookTest() {
       if (res.data?.success) {
         setResult({ success: true, message: "Cancel webhook successfully processed and acknowledged." });
         toast.success("Cancel webhook processed successfully");
-        await fetchSubscriptions();
-        queryClient.invalidateQueries({ queryKey: ['subscription'] });
+        
+        setSubscriptions(prev => prev.map(s => 
+          (s.subscription_id === subscriptionId || s.id === subscriptionId) 
+            ? { ...s, status: 'canceled' } 
+            : s
+        ));
+
+        setTimeout(() => {
+          fetchSubscriptions();
+          queryClient.invalidateQueries({ queryKey: ['subscription'] });
+        }, 1000);
       } else {
         setResult({ success: false, message: res.data?.error || "Webhook failed to process." });
         toast.error("Webhook processing failed");
@@ -182,8 +196,17 @@ export default function WebhookTest() {
       if (res.data?.success) {
         setResult({ success: true, message: "Webhook successfully processed and acknowledged." });
         toast.success("Webhook processed successfully");
-        await fetchSubscriptions();
-        queryClient.invalidateQueries({ queryKey: ['subscription'] });
+        
+        setSubscriptions(prev => prev.map(s => 
+          (s.checkout_id === checkoutId || s.id === checkoutId)
+            ? { ...s, status: 'active' }
+            : s
+        ));
+
+        setTimeout(() => {
+          fetchSubscriptions();
+          queryClient.invalidateQueries({ queryKey: ['subscription'] });
+        }, 1000);
       } else {
         setResult({ success: false, message: res.data?.error || "Webhook failed to process." });
         toast.error("Webhook processing failed");

@@ -987,7 +987,7 @@ export default function Studio() {
 
   if (!isLoadingSub && !hasAccess) {
     return (
-      <div className="flex-1 flex flex-col h-[calc(100vh-4rem)] items-center justify-center p-8 bg-background">
+      <div className="flex-1 flex flex-col h-screen items-center justify-center p-8 bg-background">
         <h2 className="text-2xl font-bold font-heading mb-4">NaliStudio Pro Required</h2>
         <p className="text-muted-foreground mb-6 max-w-md text-center">
           Your free trial has ended. Upgrade to Pro to continue using the Studio and access premium features.
@@ -1001,15 +1001,15 @@ export default function Studio() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-background text-foreground overflow-hidden">
+    <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       {/* Top Toolbar */}
       <div className="h-16 border-b border-border/50 bg-card/80 backdrop-blur flex items-center justify-between gap-2 px-2 sm:px-4 shrink-0 overflow-x-auto custom-scrollbar">
         <div className="flex items-center gap-4 shrink-0">
           <div className="font-heading font-black text-base sm:text-xl tracking-tight flex items-center gap-2">
             <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             <span className="text-gradient-animate hidden xs:inline sm:inline">NaliStudio</span>
-            <span className="hidden sm:inline text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest ml-2 border border-primary/20 shadow-sm">Pro</span>
-            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><span title="Engine v2 - High performance audio engine" className="hidden lg:inline text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-primary/20 shadow-sm cursor-help transition-colors hover:bg-primary/30">Engine v2</span></TooltipTrigger><TooltipContent side="bottom" className="max-w-[240px] text-xs">Engine v2 — NaliStudio's latest audio engine: faster real-time mixing, higher-quality stem separation, and lower-latency recording.</TooltipContent></Tooltip></TooltipProvider>
+            <span className="hidden sm:inline text-xs bg-secondary text-foreground px-2 py-0.5 rounded-full uppercase tracking-widest ml-2 border border-border/50 shadow-sm">Pro</span>
+            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><span title="Engine v2 - High performance audio engine" className="hidden lg:inline text-xs bg-secondary text-foreground px-2 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-border/50 shadow-sm cursor-help transition-colors hover:bg-secondary/80">Engine v2</span></TooltipTrigger><TooltipContent side="bottom" className="max-w-[240px] text-xs">Engine v2 — NaliStudio's latest audio engine: faster real-time mixing, higher-quality stem separation, and lower-latency recording.</TooltipContent></Tooltip></TooltipProvider>
           </div>
         </div>
 
@@ -1067,8 +1067,8 @@ export default function Studio() {
 
           <div className="hidden md:flex items-center gap-2 pl-2">
             <input type="file" ref={fileInputRef} className="hidden" accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} />
-            <Button onClick={() => navigate('/record')} variant="outline" size="sm" className="gap-2 rounded-xl border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-400">
-               <Mic className="w-4 h-4" /> Quick Record
+            <Button onClick={() => navigate('/record')} variant="outline" size="sm" className="gap-2 rounded-xl border-primary/50 text-primary hover:bg-primary/10 transition-colors">
+               <Mic className="w-4 h-4" /> Quick Memo
             </Button>
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleImportClick}>
               <Upload className="w-4 h-4" /> Import
@@ -1100,7 +1100,8 @@ export default function Studio() {
       </div>
 
       {/* Toolbar 2 (Tools) */}
-      <div className="h-12 border-b border-border/40 bg-card/40 flex items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 overflow-x-auto custom-scrollbar">
+      <div className="h-12 border-b border-border/40 bg-card/40 flex items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 overflow-x-auto custom-scrollbar relative pr-8">
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card/80 to-transparent pointer-events-none z-10" />
         <Button onClick={addTrack} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
           <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
         </Button>
@@ -1162,23 +1163,23 @@ export default function Studio() {
               </div>
             </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Tempo (beats per minute)</TooltipContent></Tooltip>
             
-            <Tooltip><TooltipTrigger asChild>
               <div className="flex flex-col items-center justify-center px-3 py-0.5 border-l border-border/60">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Sig</span>
+                <Tooltip><TooltipTrigger asChild>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5 cursor-help">Sig</span>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Time Signature</TooltipContent></Tooltip>
                 <select value={timeSignature} onChange={(e) => setTimeSignature(e.target.value)} className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none">
                   <option value="4/4">4/4</option><option value="3/4">3/4</option><option value="6/8">6/8</option><option value="5/4">5/4</option><option value="7/8">7/8</option>
                 </select>
               </div>
-            </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Time Signature</TooltipContent></Tooltip>
 
-            <Tooltip><TooltipTrigger asChild>
               <div className="flex flex-col items-center justify-center px-3 py-0.5 border-l border-border/60">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Key</span>
+                <Tooltip><TooltipTrigger asChild>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5 cursor-help">Key</span>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Project Key</TooltipContent></Tooltip>
                 <select value={songKey} onChange={(e) => setSongKey(e.target.value)} className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none">
                   {["C Maj","G Maj","D Maj","A Maj","E Maj","F Maj","Bb Maj","A min","E min","B min","D min","G min","C min"].map(k => (<option key={k} value={k}>{k}</option>))}
                 </select>
               </div>
-            </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Project Key</TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 
@@ -1230,6 +1231,7 @@ export default function Studio() {
         <div className="flex items-center gap-3 ml-auto text-sm text-muted-foreground shrink-0 pl-4">
           <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><div className="flex items-center gap-1 cursor-help"><Maximize2 className="w-4 h-4" /> <span className="hidden lg:inline">Zoom</span></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Adjust horizontal zoom (Ctrl+Scroll)</TooltipContent></Tooltip></TooltipProvider>
           <Slider value={[zoom]} min={0.5} max={10} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-24" />
+          <span className="w-10 text-right font-mono text-[10px]">{Math.round(zoom * 100)}%</span>
         </div>
       </div>
 
@@ -1357,8 +1359,15 @@ export default function Studio() {
                     S
                   </button>
                   <button 
-                    onClick={() => toggleArm(track.id)}
-                    className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center", track.armed ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-red-500/20 hover:text-red-400")}
+                    onClick={() => {
+                       const input = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic");
+                       if (input === 'In: None') {
+                          toast.error("Cannot arm a track with no input selected");
+                          return;
+                       }
+                       toggleArm(track.id);
+                    }}
+                    className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center", track.armed ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-red-500/20 hover:text-red-400", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic")) === 'In: None') && "opacity-30 cursor-not-allowed")}
                   >
                     <Circle className="w-3 h-3 fill-current" />
                   </button>
@@ -1905,11 +1914,8 @@ export default function Studio() {
           </DropdownMenu>
         </div>
         <div className="flex items-center gap-4">
-          <span className="hidden sm:flex items-center gap-1.5">
-            <Volume2 className="w-3.5 h-3.5" /> {tracks.filter(t => t.audioUrl).length} with audio
-          </span>
           <span className="flex items-center gap-1.5">
-            <Circle className={cn("w-2.5 h-2.5", isRecording ? "fill-red-500 text-red-500 animate-pulse" : isPlaying ? "fill-green-500 text-green-500" : "fill-muted-foreground/40 text-muted-foreground/40")} />
+            <Circle className={cn("w-2.5 h-2.5", isRecording ? "fill-red-500 text-red-500 animate-pulse" : isPlaying ? "fill-green-500 text-green-500" : "fill-foreground text-foreground")} />
             {isRecording ? "Recording" : isPlaying ? "Playing" : "Idle"}
           </span>
         </div>

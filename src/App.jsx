@@ -133,12 +133,12 @@ const AuthenticatedApp = () => {
         <Route path="/PricingPlans" element={<PricingPlans />} />
       </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+        <Route path="/studio" element={<Studio />} />
         <Route element={<AppLayout />}>
           <Route path="/messages" element={<Messages />} />
           <Route path="/files" element={<Files />} />
 
           <Route path="/settings" element={<Settings />} />
-          <Route path="/studio" element={<Studio />} />
           <Route path="/record" element={<Record />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />

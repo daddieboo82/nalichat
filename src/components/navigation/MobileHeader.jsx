@@ -39,8 +39,20 @@ export default function MobileHeader() {
   }, []);
 
   const path = location.pathname;
-  const isSubPage = SUBPAGE_PREFIXES.some((p) => path.startsWith(p) && p !== "/") || location.search.length > 0 || (window.history.length > 2 && window.history.state?.idx > 0);
+  
+  const rootTabs = ["/", "/explore", "/messages", "/profile", "/files", "/leaderboard", "/playlists", "/settings", "/record", "/studio", "/cover-art", "/network", "/analytics", "/pricing"];
+  const isRootTab = rootTabs.includes(path) && !location.search;
+  const isSubPage = location.state?.from || !isRootTab || location.search.length > 0;
+  
   const title = TITLES[path] || Object.entries(TITLES).find(([k]) => k !== "/" && path.startsWith(k))?.[1] || "NaliChat";
+
+  const handleBack = () => {
+    if (location.state?.from) {
+      navigate(location.state.from);
+    } else {
+      navigate(-1);
+    }
+  };
 
   return (
     <header
@@ -52,7 +64,7 @@ export default function MobileHeader() {
         <div className="flex items-center gap-1 min-w-0">
           {isSubPage ? (
             <button
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               className="p-1.5 -ml-1 rounded-lg text-foreground hover:bg-primary/10 active:bg-primary/20 transition-colors select-none"
               aria-label="Back"
             >

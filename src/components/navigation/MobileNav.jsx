@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { Home, Compass, MessageSquare, User, Settings, Mic, Wand2, Radio, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -19,15 +20,35 @@ export default function MobileNav() {
 
   const isActive = (tabPath) => tabPath === "/" ? path === "/" : path.startsWith(tabPath);
 
+  const [tabPaths, setTabPaths] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem('mobile_nav_tabs') || '{}'); } catch { return {}; }
+  });
+
+  useEffect(() => {
+    const newPaths = { ...tabPaths };
+    const p = path;
+    if (p.startsWith('/explore')) newPaths['/explore'] = p + location.search;
+    else if (p.startsWith('/messages')) newPaths['/messages'] = p + location.search;
+    else if (p.startsWith('/profile')) newPaths['/profile'] = p + location.search;
+    else if (p === '/' || p.startsWith('/playlist')) newPaths['/'] = p + location.search;
+
+    setTabPaths(newPaths);
+    try { sessionStorage.setItem('mobile_nav_tabs', JSON.stringify(newPaths)); } catch {}
+  }, [path, location.search]);
+
   const handleTap = (tabPath) => {
     const active = isActive(tabPath);
     sounds.click();
     if (active) {
       const scroller = document.querySelector("main");
       scroller?.scrollTo?.({ top: 0, behavior: "smooth" });
+      if (path !== tabPath) {
+        navigate(tabPath);
+      }
       return;
     }
-    navigate(tabPath);
+    const targetPath = tabPaths[tabPath] || tabPath;
+    navigate(targetPath);
   };
 
   return (

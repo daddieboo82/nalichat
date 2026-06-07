@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Knob } from '@/components/ui/knob';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -91,6 +93,7 @@ const EFFECTS = [
 ];
 
 export default function WaveEditor({ track, onClose, onSave }) {
+  const isMobile = useIsMobile();
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeEffects, setActiveEffects] = useState([]);
   const [zoom, setZoom] = useState(1);
@@ -631,123 +634,180 @@ export default function WaveEditor({ track, onClose, onSave }) {
           </div>
 
           {/* Standard Toolbar */}
-          <div className="flex items-center px-4 py-2 bg-card/40 border-b border-border/40 gap-2 shrink-0 shadow-md">
-            <TooltipProvider delayDuration={200}>
-              <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
-                <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
-                    <FileText className="w-4 h-4" /> <span className="text-xs">New</span>
+          {isMobile ? (
+            <div className="flex items-center justify-between px-4 py-2 bg-card/40 border-b border-border/40 shrink-0 shadow-md">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 h-8 rounded-lg">
+                    <Settings2 className="w-4 h-4" /> Editor Tools
                   </Button>
-                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">New File</TooltipContent></Tooltip>
-                <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
-                    <FolderOpen className="w-4 h-4" /> <span className="text-xs">Open</span>
-                  </Button>
-                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Open File</TooltipContent></Tooltip>
-                <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" onClick={handleSave} className="h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
-                    <Save className="w-4 h-4" /> <span className="text-xs">Save</span>
-                  </Button>
-                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Save Edits</TooltipContent></Tooltip>
-              </div>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[75vh] bg-card border-border overflow-y-auto custom-scrollbar p-6">
+                  <SheetHeader className="mb-4 text-left">
+                    <SheetTitle>Editor Tools</SheetTitle>
+                  </SheetHeader>
+                  <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-bold text-muted-foreground uppercase">File Actions</span>
+                      <div className="flex gap-2">
+                        <Button variant="secondary" size="sm" className="flex-1 gap-2"><FileText className="w-4 h-4" /> New</Button>
+                        <Button variant="secondary" size="sm" className="flex-1 gap-2"><FolderOpen className="w-4 h-4" /> Open</Button>
+                        <Button variant="secondary" size="sm" onClick={handleSave} className="flex-1 gap-2 text-primary"><Save className="w-4 h-4" /> Save</Button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-bold text-muted-foreground uppercase">History</span>
+                      <div className="flex gap-2">
+                        <Button variant="secondary" size="sm" onClick={handleUndo} disabled={historyIdx <= 0} className="flex-1 gap-2"><Undo2 className="w-4 h-4" /> Undo</Button>
+                        <Button variant="secondary" size="sm" onClick={handleRedo} disabled={historyIdx >= history.length - 1} className="flex-1 gap-2"><Redo2 className="w-4 h-4" /> Redo</Button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-bold text-muted-foreground uppercase">Cursor Tools</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button variant={activeTool === 'select' ? "default" : "secondary"} size="sm" onClick={() => setActiveTool('select')} className="gap-2"><MousePointer2 className="w-4 h-4" /> Select</Button>
+                        <Button variant={activeTool === 'range' ? "default" : "secondary"} size="sm" onClick={() => setActiveTool('range')} className="gap-2"><SquareDashedBottom className="w-4 h-4" /> Range</Button>
+                        <Button variant={activeTool === 'move' ? "default" : "secondary"} size="sm" onClick={() => setActiveTool('move')} className="gap-2"><MoveHorizontal className="w-4 h-4" /> Move</Button>
+                        <Button variant={snapToGrid ? "default" : "secondary"} size="sm" onClick={() => setSnapToGrid(!snapToGrid)} className="gap-2"><Magnet className="w-4 h-4" /> Snap</Button>
+                      </div>
+                    </div>
 
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-bold text-muted-foreground uppercase">Envelopes</span>
+                      <div className="flex gap-2">
+                        <Button variant={activeEnvelope === 'volume' ? "default" : "secondary"} size="sm" onClick={() => setActiveEnvelope(activeEnvelope === 'volume' ? null : 'volume')} className="flex-1">Vol Env</Button>
+                        <Button variant={activeEnvelope === 'pan' ? "default" : "secondary"} size="sm" onClick={() => setActiveEnvelope(activeEnvelope === 'pan' ? null : 'pan')} className="flex-1">Pan Env</Button>
+                      </div>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              <Button variant="ghost" size="sm" onClick={handleClose} className="h-8 rounded-lg text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20">
+                <X className="w-4 h-4 mr-1" /> Close
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center px-4 py-2 bg-card/40 border-b border-border/40 gap-2 shrink-0 shadow-md">
+              <TooltipProvider delayDuration={200}>
+                <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
+                  <Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
+                      <FileText className="w-4 h-4" /> <span className="text-xs">New</span>
+                    </Button>
+                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">New File</TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
+                      <FolderOpen className="w-4 h-4" /> <span className="text-xs">Open</span>
+                    </Button>
+                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Open File</TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" onClick={handleSave} className="h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md">
+                      <Save className="w-4 h-4" /> <span className="text-xs">Save</span>
+                    </Button>
+                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Save Edits</TooltipContent></Tooltip>
+                </div>
+
+                <div className="w-px h-5 bg-border/50 mx-1 border-none" />
+
+                <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
+                  <Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" onClick={handleUndo} className={cn("h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md", historyIdx <= 0 && "opacity-50")}>
+                      <Undo2 className="w-4 h-4" /> <span className="text-xs">Undo</span>
+                    </Button>
+                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Undo</TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" onClick={handleRedo} className={cn("h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md", historyIdx >= history.length - 1 && "opacity-50")}>
+                      <Redo2 className="w-4 h-4" /> <span className="text-xs">Redo</span>
+                    </Button>
+                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Redo</TooltipContent></Tooltip>
+                </div>
+
+                <div className="w-px h-5 bg-border/50 mx-1 border-none" />
+
+                <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
+                  <Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" onClick={() => setActiveTool('select')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'select' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                      <MousePointer2 className="w-4 h-4" /> <span className="text-xs">Select</span>
+                    </Button>
+                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Edit Tool</TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" onClick={() => setActiveTool('range')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'range' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                      <SquareDashedBottom className="w-4 h-4" /> <span className="text-xs">Range</span>
+                    </Button>
+                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Time Zoom/Selection Tool</TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" onClick={() => setActiveTool('move')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'move' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                      <MoveHorizontal className="w-4 h-4" /> <span className="text-xs">Move</span>
+                    </Button>
+                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Event Tool</TooltipContent></Tooltip>
+                </div>
+
+                <div className="w-px h-5 bg-border/50 mx-1 border-none" />
+
+                <Tooltip><TooltipTrigger asChild>
+                  <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setSnapToGrid(!snapToGrid)} 
+                      className={cn("h-7 px-2 text-xs", snapToGrid ? "bg-primary/20 text-primary rounded-md" : "text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md")}
+                    >
+                      <Magnet className="w-3.5 h-3.5 mr-1" />
+                      Snap
+                  </Button>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Snap to Events/Grid</TooltipContent></Tooltip>
+              </TooltipProvider>
+              
               <div className="w-px h-5 bg-border/50 mx-1 border-none" />
 
               <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
-                <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" onClick={handleUndo} className={cn("h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md", historyIdx <= 0 && "opacity-50")}>
-                    <Undo2 className="w-4 h-4" /> <span className="text-xs">Undo</span>
-                  </Button>
-                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Undo</TooltipContent></Tooltip>
-                <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" onClick={handleRedo} className={cn("h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md", historyIdx >= history.length - 1 && "opacity-50")}>
-                    <Redo2 className="w-4 h-4" /> <span className="text-xs">Redo</span>
-                  </Button>
-                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Redo</TooltipContent></Tooltip>
+                <Button variant="ghost" size="sm" onClick={() => setActiveEnvelope(activeEnvelope === 'volume' ? null : 'volume')} className={cn("h-7 px-2 text-xs rounded-md", activeEnvelope === 'volume' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary/80")}>Vol Env</Button>
+                <Button variant="ghost" size="sm" onClick={() => setActiveEnvelope(activeEnvelope === 'pan' ? null : 'pan')} className={cn("h-7 px-2 text-xs rounded-md", activeEnvelope === 'pan' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary/80")}>Pan Env</Button>
               </div>
 
-              <div className="w-px h-5 bg-border/50 mx-1 border-none" />
+              <div className="flex-1" />
 
-              <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
-                <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" onClick={() => setActiveTool('select')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'select' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
-                    <MousePointer2 className="w-4 h-4" /> <span className="text-xs">Select</span>
-                  </Button>
-                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Edit Tool</TooltipContent></Tooltip>
-                <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" onClick={() => setActiveTool('range')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'range' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
-                    <SquareDashedBottom className="w-4 h-4" /> <span className="text-xs">Range</span>
-                  </Button>
-                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Time Zoom/Selection Tool</TooltipContent></Tooltip>
-                <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" onClick={() => setActiveTool('move')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'move' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
-                    <MoveHorizontal className="w-4 h-4" /> <span className="text-xs">Move</span>
-                  </Button>
-                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Event Tool</TooltipContent></Tooltip>
-              </div>
-
-              <div className="w-px h-5 bg-border/50 mx-1 border-none" />
-
-              <Tooltip><TooltipTrigger asChild>
-                <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setSnapToGrid(!snapToGrid)} 
-                    className={cn("h-7 px-2 text-xs", snapToGrid ? "bg-primary/20 text-primary rounded-md" : "text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md")}
-                  >
-                    <Magnet className="w-3.5 h-3.5 mr-1" />
-                    Snap
-                </Button>
-              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Snap to Events/Grid</TooltipContent></Tooltip>
-            </TooltipProvider>
-            
-            <div className="w-px h-5 bg-border/50 mx-1 border-none" />
-
-            <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
-              <Button variant="ghost" size="sm" onClick={() => setActiveEnvelope(activeEnvelope === 'volume' ? null : 'volume')} className={cn("h-7 px-2 text-xs rounded-md", activeEnvelope === 'volume' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary/80")}>Vol Env</Button>
-              <Button variant="ghost" size="sm" onClick={() => setActiveEnvelope(activeEnvelope === 'pan' ? null : 'pan')} className={cn("h-7 px-2 text-xs rounded-md", activeEnvelope === 'pan' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary/80")}>Pan Env</Button>
-            </div>
-
-            <div className="flex-1" />
-
-            <div className="flex flex-col bg-secondary/30 px-3 py-1 rounded-lg shadow-inner border border-border/50">
-              <span className="text-[8px] text-muted-foreground font-sans font-bold leading-none mb-1 uppercase">Selection</span>
-              <div className="flex gap-4">
-                <div className="flex flex-col">
-                  <span className="text-[7px] text-muted-foreground/70 leading-none mb-0.5">Start</span>
-                  <span className="text-[10px] text-foreground font-mono leading-none">
-                    {selectionRange ? selectionRange.start.toFixed(4) : "0.0000"}
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[7px] text-muted-foreground/70 leading-none mb-0.5">End</span>
-                  <span className="text-[10px] text-foreground font-mono leading-none">
-                    {selectionRange ? selectionRange.end.toFixed(4) : "0.0000"}
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[7px] text-muted-foreground/70 leading-none mb-0.5">Length</span>
-                  <span className="text-[10px] text-foreground font-mono leading-none">
-                    {selectionRange ? Math.abs(selectionRange.end - selectionRange.start).toFixed(4) : "0.0000"}
-                  </span>
+              <div className="flex flex-col bg-secondary/30 px-3 py-1 rounded-lg shadow-inner border border-border/50">
+                <span className="text-[8px] text-muted-foreground font-sans font-bold leading-none mb-1 uppercase">Selection</span>
+                <div className="flex gap-4">
+                  <div className="flex flex-col">
+                    <span className="text-[7px] text-muted-foreground/70 leading-none mb-0.5">Start</span>
+                    <span className="text-[10px] text-foreground font-mono leading-none">
+                      {selectionRange ? selectionRange.start.toFixed(4) : "0.0000"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[7px] text-muted-foreground/70 leading-none mb-0.5">End</span>
+                    <span className="text-[10px] text-foreground font-mono leading-none">
+                      {selectionRange ? selectionRange.end.toFixed(4) : "0.0000"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[7px] text-muted-foreground/70 leading-none mb-0.5">Length</span>
+                    <span className="text-[10px] text-foreground font-mono leading-none">
+                      {selectionRange ? Math.abs(selectionRange.end - selectionRange.start).toFixed(4) : "0.0000"}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Time Display */}
-            <div className="bg-[#0a0a0c] border border-border/50 px-4 py-1.5 rounded-lg shadow-inner flex flex-col justify-center min-w-[140px]">
-              <span className="text-[10px] text-primary/70 font-mono leading-none mb-0.5">POSITION</span>
-              <span className="text-primary font-mono text-xl leading-none tracking-widest font-bold">
-                {String(Math.floor(playhead / 60)).padStart(2, '0')}:
-                {String(Math.floor(playhead % 60)).padStart(2, '0')}.
-                {String(Math.floor((playhead % 1) * 10000)).padStart(4, '0')}
-              </span>
-            </div>
+              {/* Time Display */}
+              <div className="bg-[#0a0a0c] border border-border/50 px-4 py-1.5 rounded-lg shadow-inner flex flex-col justify-center min-w-[140px]">
+                <span className="text-[10px] text-primary/70 font-mono leading-none mb-0.5">POSITION</span>
+                <span className="text-primary font-mono text-xl leading-none tracking-widest font-bold">
+                  {String(Math.floor(playhead / 60)).padStart(2, '0')}:
+                  {String(Math.floor(playhead % 60)).padStart(2, '0')}.
+                  {String(Math.floor((playhead % 1) * 10000)).padStart(4, '0')}
+                </span>
+              </div>
 
-            <Button variant="ghost" size="sm" onClick={handleClose} className="ml-2 h-8 rounded-lg text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20">
-              <X className="w-4 h-4 mr-1" /> Close
-            </Button>
-          </div>
+              <Button variant="ghost" size="sm" onClick={handleClose} className="ml-2 h-8 rounded-lg text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20">
+                <X className="w-4 h-4 mr-1" /> Close
+              </Button>
+            </div>
+          )}
 
           {/* Main Editor Area */}
           <div className="flex-1 flex flex-col overflow-hidden bg-[#0a0a0c]">

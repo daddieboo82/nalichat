@@ -6,7 +6,8 @@ import {
   X, Play, Pause, Scissors, Copy, Trash2, 
   Activity, Radio, Waves, Settings2, SlidersHorizontal,
   VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair, Loader2, Undo2, Redo2, Maximize2, SplitSquareHorizontal, Magnet, SquareDashedBottom,
-  FileText, FolderOpen, SkipBack, Rewind, Square, FastForward, SkipForward, Circle, ZoomIn, ZoomOut, ChevronDown
+  FileText, FolderOpen, SkipBack, Rewind, Square, FastForward, SkipForward, Circle, ZoomIn, ZoomOut, ChevronDown,
+  Sparkles, Speaker, Mic, Disc, Ear, Cpu, AudioLines, Gauge, AudioWaveform, Zap, Music
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -37,11 +38,55 @@ const waveformFills = {
 };
 
 const EFFECTS = [
-  { id: 'eq', name: 'EQ Eight', icon: SlidersHorizontal, params: [{name: 'Low', min: -15, max: 15}, {name: 'Mid', min: -15, max: 15}, {name: 'High', min: -15, max: 15}, {name: 'Freq', min: 20, max: 20000}] },
-  { id: 'reverb', name: 'Valhalla Reverb', icon: Waves, params: [{name: 'Decay', min: 0, max: 10}, {name: 'Size', min: 0, max: 100}, {name: 'Mix', min: 0, max: 100}] },
-  { id: 'delay', name: 'Echo', icon: Activity, params: [{name: 'Time', min: 1, max: 2000}, {name: 'Feedback', min: 0, max: 100}, {name: 'Mix', min: 0, max: 100}] },
-  { id: 'compressor', name: 'Glue Compressor', icon: Radio, params: [{name: 'Thresh', min: -60, max: 0}, {name: 'Ratio', min: 1, max: 20}, {name: 'Attack', min: 0, max: 100}, {name: 'Release', min: 0, max: 100}] },
-  { id: 'distortion', name: 'Saturator', icon: Wand2, params: [{name: 'Drive', min: 0, max: 100}, {name: 'Tone', min: 0, max: 100}, {name: 'Mix', min: 0, max: 100}] },
+  // EQs
+  { id: 'eq_eight', name: 'Pro EQ Eight', icon: SlidersHorizontal, params: [{name: 'Low', min: -15, max: 15}, {name: 'Mid', min: -15, max: 15}, {name: 'High', min: -15, max: 15}, {name: 'Freq', min: 20, max: 20000}] },
+  { id: 'eq_analog_73', name: 'Analog EQ 73', icon: SlidersHorizontal, params: [{name: 'Low Shelf', min: -15, max: 15}, {name: 'Presence', min: -15, max: 15}, {name: 'High Shelf', min: -15, max: 15}, {name: 'Drive', min: 0, max: 100}] },
+  { id: 'eq_console_g', name: 'British Console EQ', icon: SlidersHorizontal, params: [{name: 'LF', min: -15, max: 15}, {name: 'LMF', min: -15, max: 15}, {name: 'HMF', min: -15, max: 15}, {name: 'HF', min: -15, max: 15}] },
+  { id: 'eq_american_5a', name: 'American EQ 5A', icon: SlidersHorizontal, params: [{name: '50Hz', min: -12, max: 12}, {name: '1.5kHz', min: -12, max: 12}, {name: '10kHz', min: -12, max: 12}] },
+  
+  // Compressors & Dynamics
+  { id: 'comp_opto_2a', name: 'Opto Comp 2A', icon: Radio, params: [{name: 'Peak Reduction', min: 0, max: 100}, {name: 'Gain', min: 0, max: 100}] },
+  { id: 'comp_fet_76', name: 'FET Comp 76', icon: Radio, params: [{name: 'Input', min: 0, max: 100}, {name: 'Output', min: 0, max: 100}, {name: 'Attack', min: 1, max: 7}, {name: 'Release', min: 1, max: 7}] },
+  { id: 'comp_tube_670', name: 'Tube Comp 670', icon: Radio, params: [{name: 'Threshold', min: 0, max: 10}, {name: 'Time Const', min: 1, max: 6}, {name: 'Input Gain', min: -20, max: 20}] },
+  { id: 'comp_bus_g', name: 'Console Bus Comp', icon: Radio, params: [{name: 'Thresh', min: -20, max: 20}, {name: 'Makeup', min: -5, max: 15}, {name: 'Ratio', min: 2, max: 10}, {name: 'Release', min: 100, max: 1200}] },
+  { id: 'comp_multiband_x6', name: 'Multiband Dynamics X6', icon: AudioWaveform, params: [{name: 'Low Thresh', min: -60, max: 0}, {name: 'Mid Thresh', min: -60, max: 0}, {name: 'High Thresh', min: -60, max: 0}, {name: 'Crossover', min: 100, max: 5000}] },
+  { id: 'gate_c1', name: 'Noise Gate C1', icon: Activity, params: [{name: 'Threshold', min: -80, max: 0}, {name: 'Floor', min: -80, max: 0}, {name: 'Attack', min: 0.1, max: 100}, {name: 'Release', min: 10, max: 1000}] },
+  { id: 'transient_shaper', name: 'Transient Shaper', icon: Zap, params: [{name: 'Attack', min: -100, max: 100}, {name: 'Sustain', min: -100, max: 100}, {name: 'Output', min: -24, max: 24}] },
+
+  // Vocal Specific
+  { id: 'vocal_leveler', name: 'Vocal Auto-Leveler', icon: Mic, params: [{name: 'Target', min: -24, max: 0}, {name: 'Sensitivity', min: 0, max: 100}, {name: 'Speed', min: 0, max: 100}] },
+  { id: 'vocal_deesser', name: 'Sibilance Control', icon: Mic, params: [{name: 'Freq', min: 2000, max: 12000}, {name: 'Threshold', min: -60, max: 0}, {name: 'Range', min: -24, max: 0}] },
+  { id: 'vocal_tune_rt', name: 'Auto-Pitch Realtime', icon: Music, params: [{name: 'Speed', min: 0, max: 100}, {name: 'Note Trans', min: 0, max: 100}, {name: 'Formant', min: 0, max: 100}] },
+  { id: 'vocal_doubler', name: 'Vocal Doubler', icon: Ear, params: [{name: 'Voices', min: 1, max: 4}, {name: 'Detune', min: 0, max: 50}, {name: 'Delay', min: 0, max: 100}, {name: 'Mix', min: 0, max: 100}] },
+  { id: 'vocal_smooth', name: 'Vocal Smooth Vox', icon: Mic, params: [{name: 'Comp', min: 0, max: 100}, {name: 'Gate', min: -80, max: 0}, {name: 'Gain', min: -18, max: 18}] },
+
+  // Reverbs
+  { id: 'verb_lush_plate', name: 'Lush Plate Reverb', icon: Waves, params: [{name: 'Decay', min: 0.5, max: 10}, {name: 'Pre-Delay', min: 0, max: 200}, {name: 'Damping', min: 0, max: 100}, {name: 'Mix', min: 0, max: 100}] },
+  { id: 'verb_true_room', name: 'True Room Reverb', icon: Waves, params: [{name: 'Size', min: 1, max: 100}, {name: 'Distance', min: 1, max: 100}, {name: 'Decay', min: 0.1, max: 5}, {name: 'Mix', min: 0, max: 100}] },
+  { id: 'verb_convolution', name: 'Convolution Space', icon: Waves, params: [{name: 'Impulse', min: 1, max: 50}, {name: 'Size', min: 50, max: 150}, {name: 'Mix', min: 0, max: 100}] },
+
+  // Delays
+  { id: 'delay_hybrid', name: 'Hybrid Delay', icon: Activity, params: [{name: 'Time', min: 1, max: 2000}, {name: 'Feedback', min: 0, max: 100}, {name: 'Mod Depth', min: 0, max: 100}, {name: 'Mix', min: 0, max: 100}] },
+  { id: 'delay_slapback', name: 'Vintage Slapback', icon: Activity, params: [{name: 'Time', min: 40, max: 150}, {name: 'Tape Age', min: 0, max: 100}, {name: 'Mix', min: 0, max: 100}] },
+  { id: 'delay_pingpong', name: 'Ping Pong Echo', icon: Activity, params: [{name: 'Time L', min: 1, max: 2000}, {name: 'Time R', min: 1, max: 2000}, {name: 'Feedback', min: 0, max: 100}, {name: 'Mix', min: 0, max: 100}] },
+
+  // Saturation & Tape
+  { id: 'tape_machine', name: 'Analog Tape Machine', icon: Disc, params: [{name: 'Drive', min: 0, max: 10}, {name: 'Wow/Flutter', min: 0, max: 100}, {name: 'Noise', min: -80, max: -20}, {name: 'Bias', min: 0, max: 100}] },
+  { id: 'tube_saturator', name: 'Studio Tube Saturation', icon: Wand2, params: [{name: 'Drive', min: 0, max: 100}, {name: 'Tone', min: 0, max: 100}, {name: 'Character', min: 1, max: 3}, {name: 'Mix', min: 0, max: 100}] },
+  { id: 'lofi_bitcrusher', name: 'Lo-Fi Bitcrusher', icon: Cpu, params: [{name: 'Bits', min: 2, max: 24}, {name: 'Sample Rate', min: 100, max: 44100}, {name: 'Drive', min: 0, max: 100}] },
+
+  // Modulation & Pitch
+  { id: 'mod_enigma', name: 'Enigmatic Modulator', icon: AudioLines, params: [{name: 'Depth', min: 0, max: 100}, {name: 'Rate', min: 0.1, max: 20}, {name: 'Feedback', min: 0, max: 100}, {name: 'Mix', min: 0, max: 100}] },
+  { id: 'mod_metaflanger', name: 'Meta Phase/Flange', icon: AudioLines, params: [{name: 'Rate', min: 0.1, max: 20}, {name: 'Depth', min: 0, max: 100}, {name: 'Feedback', min: -100, max: 100}, {name: 'Mix', min: 0, max: 100}] },
+  { id: 'mod_mondo', name: 'Mondo Chorus', icon: AudioLines, params: [{name: 'AM Depth', min: 0, max: 100}, {name: 'FM Depth', min: 0, max: 100}, {name: 'Rate', min: 0.1, max: 20}, {name: 'Mix', min: 0, max: 100}] },
+
+  // Enhancement & Spatial
+  { id: 'enhancer_harmonic', name: 'Harmonic Exciter', icon: Sparkles, params: [{name: 'Lows', min: 0, max: 100}, {name: 'Mids', min: 0, max: 100}, {name: 'Highs', min: 0, max: 100}, {name: 'Punch', min: 0, max: 100}] },
+  { id: 'enhancer_sub', name: 'Sub Bass Generator', icon: Speaker, params: [{name: 'Freq', min: 20, max: 120}, {name: 'Intensity', min: 0, max: 100}, {name: 'Harmonics', min: 0, max: 100}] },
+  { id: 'stereo_widener', name: 'Stereo Widener', icon: Ear, params: [{name: 'Width', min: 0, max: 300}, {name: 'Asymmetry', min: -100, max: 100}, {name: 'Rotation', min: -100, max: 100}] },
+
+  // Mastering
+  { id: 'master_apex_limiter', name: 'Apex Peak Limiter', icon: Gauge, params: [{name: 'Threshold', min: -30, max: 0}, {name: 'Out Ceiling', min: -30, max: 0}, {name: 'Release', min: 0.1, max: 1000}, {name: 'Dither', min: 0, max: 1}] },
 ];
 
 export default function WaveEditor({ track, onClose, onSave }) {
@@ -518,7 +563,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Effects</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans">
+                <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans max-h-[70vh] overflow-y-auto custom-scrollbar">
                   {EFFECTS.map(eff => (
                     <DropdownMenuItem key={eff.id} className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => addEffect(eff)}>
                       {eff.name}...

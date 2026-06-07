@@ -205,8 +205,8 @@ export default function Studio() {
       
       // Update DOM directly for maximum 60fps performance without React reconciliation
       if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
-      if (playheadRef.current) playheadRef.current.style.transform = `translateX(${newTime * 20 * zoom}px)`;
-      if (headerPlayheadRef.current) headerPlayheadRef.current.style.transform = `translateX(${newTime * 20 * zoom}px)`;
+      if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
+      if (headerPlayheadRef.current) headerPlayheadRef.current.style.left = `${newTime * 20 * zoom}px`;
       
       if (isRecording && recordingStartTime !== null) {
         Object.values(recordingIndicatorRefs.current).forEach(el => {
@@ -227,8 +227,8 @@ export default function Studio() {
   const updateCurrentTime = (newTime) => {
     currentTimeRef.current = newTime;
     if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
-    if (playheadRef.current) playheadRef.current.style.transform = `translateX(${newTime * 20 * zoom}px)`;
-    if (headerPlayheadRef.current) headerPlayheadRef.current.style.transform = `translateX(${newTime * 20 * zoom}px)`;
+    if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
+    if (headerPlayheadRef.current) headerPlayheadRef.current.style.left = `${newTime * 20 * zoom}px`;
     Object.values(audioElementsRef.current).forEach(audio => { audio.currentTime = newTime; });
   };
 
@@ -1389,7 +1389,7 @@ export default function Studio() {
         {/* Timeline & Waveforms (Right Area) */}
         <div className="flex-1 relative overflow-auto custom-scrollbar flex flex-col bg-[#0f0f13]">
           {/* Timeline Header */}
-          <div className="h-8 border-b border-border/30 bg-card/40 sticky top-0 z-20 flex items-end px-0 overflow-hidden">
+          <div className="h-8 border-b border-border/30 bg-card/40 sticky top-0 z-20 flex items-end px-0 overflow-hidden timeline-ruler">
             <div className="h-full relative cursor-pointer select-none" style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px` }}
               onPointerDown={(e) => {
                 const target = e.currentTarget;
@@ -1400,13 +1400,29 @@ export default function Studio() {
                 window.addEventListener('pointermove', handleMove); window.addEventListener('pointerup', handleUp);
               }}
             >
-              {Array.from({ length: Math.max(1000, Math.ceil(2000/(60/bpm))) }).slice(0,2000).map((_, i) => {
-                const b = parseInt(timeSignature.split('/')[0])||4, pos = i*(60/bpm)*20*zoom;
-                const bar = Math.floor(i/b)+1, beat = (i%b)+1, isBar = beat===1, show = zoom>1.5;
-                if (!isBar && !show) return null;
-                return <div key={i} className={cn("absolute bottom-0 text-[10px] text-muted-foreground/50 border-l border-border/40 pl-1", isBar ? "h-3 -ml-[1px] font-medium" : "h-1.5 -ml-[1px]")} style={{ left: `${pos}px` }}>{isBar ? bar : (show && zoom>3 ? `${bar}.${beat}` : '')}</div>;
+              {Array.from({ length: Math.max(1000, Math.ceil(2000/(60/bpm))) }).slice(0, 2000).map((_, i) => {
+                const beatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
+                const secondsPerBeat = 60 / bpm;
+                const position = i * secondsPerBeat * 20 * zoom;
+                const barNumber = Math.floor(i / beatsPerBar) + 1;
+                const beatNumber = (i % beatsPerBar) + 1;
+                const isBar = beatNumber === 1;
+                const showBeats = zoom > 1.5;
+                
+                if (!isBar && !showBeats) return null;
+
+                return (
+                  <div 
+                    key={i} 
+                    className={cn("absolute bottom-0 text-[10px] text-muted-foreground border-l border-border/60 pl-1", isBar ? "h-4 font-semibold" : "h-2")} 
+                    style={{ left: `${position}px` }}
+                  >
+                    {isBar ? barNumber : (showBeats && zoom > 3 ? `${barNumber}.${beatNumber}` : '')}
+                  </div>
+                );
               })}
-              <div ref={headerPlayheadRef} className="absolute top-0 bottom-0 w-[2px] -ml-[1px] bg-primary z-50 pointer-events-none" style={{ left: 0, transform: `translateX(${currentTimeRef.current * 20 * zoom}px)` }}>
+              
+              <div ref={headerPlayheadRef} className="absolute top-0 bottom-0 w-[2px] -ml-[1px] bg-primary z-50 pointer-events-none" style={{ left: `${currentTimeRef.current * 20 * zoom}px` }}>
                 <div className="absolute top-0 -translate-x-1/2 w-3 h-3 bg-primary rounded-b-sm flex items-center justify-center shadow-md" />
               </div>
             </div>
@@ -1435,11 +1451,6 @@ export default function Studio() {
               window.addEventListener('pointerup', handleUp);
             }}
           >
-            {/* Playhead */}
-            <div ref={playheadRef} className="absolute top-0 bottom-0 w-[2px] -ml-[1px] bg-primary z-50 pointer-events-none group shadow-[0_0_10px_rgba(var(--primary),0.8)]" style={{ left: 0, transform: `translateX(${currentTimeRef.current * 20 * zoom}px)` }}>
-              <div className="absolute top-0 -translate-x-1/2 w-4 h-4 bg-primary rounded-b flex items-center justify-center cursor-ew-resize pointer-events-auto hover:bg-primary/90 shadow-md"><div className="w-0.5 h-2 bg-background/80 rounded-full" /></div>
-            </div>
-
             {/* Waveform Rows */}
             <div className="flex flex-col">
               {tracks.map((track) => (
@@ -1819,6 +1830,11 @@ export default function Studio() {
                   )}
                 </div>
               ))}
+            </div>
+
+            {/* Playhead */}
+            <div ref={playheadRef} className="absolute top-0 bottom-0 w-[2px] -ml-[1px] bg-primary z-50 pointer-events-none group shadow-[0_0_10px_rgba(var(--primary),0.8)]" style={{ left: `${currentTimeRef.current * 20 * zoom}px` }}>
+              <div className="absolute top-0 -translate-x-1/2 w-4 h-4 bg-primary rounded-b flex items-center justify-center cursor-ew-resize pointer-events-auto hover:bg-primary/90 shadow-md"><div className="w-0.5 h-2 bg-background/80 rounded-full" /></div>
             </div>
             </div>
           </div>

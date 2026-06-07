@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import {
   Select as BaseSelect,
   SelectGroup,
-  SelectValue,
+  SelectValue as BaseSelectValue,
   SelectTrigger as BaseSelectTrigger,
   SelectContent as BaseSelectContent,
   SelectLabel,
@@ -71,6 +71,22 @@ function Select({ value, defaultValue, onValueChange, children, ...props }) {
     </ResponsiveSelectContext.Provider>
   )
 }
+
+const SelectValue = React.forwardRef(({ className, children, placeholder, ...props }, ref) => {
+  const ctx = React.useContext(ResponsiveSelectContext)
+
+  if (!ctx.isMobile) {
+    return <BaseSelectValue ref={ref} className={className} placeholder={placeholder} {...props}>{children}</BaseSelectValue>
+  }
+
+  return (
+    <span ref={ref} className={cn("truncate", className)} {...props}>
+      {ctx.value !== undefined ? String(ctx.value) : placeholder}
+      {children}
+    </span>
+  )
+})
+SelectValue.displayName = "ResponsiveSelectValue"
 
 const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) => {
   const ctx = React.useContext(ResponsiveSelectContext)

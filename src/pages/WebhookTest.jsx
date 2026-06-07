@@ -32,6 +32,45 @@ export default function WebhookTest() {
     fetchSubscriptions();
   }, []);
 
+  const simulateSubscriptionCanceled = async (subscriptionId) => {
+    setLoading(true);
+    setResult(null);
+    try {
+      const payload = {
+        eventType: "wix.ecom.subscription_contracts.v1.subscription_contract_canceled",
+        data: JSON.stringify({
+          actionEvent: {
+            body: {
+              subscriptionContract: {
+                id: subscriptionId
+              }
+            }
+          }
+        })
+      };
+
+      const res = await base44.functions.invoke("wixPaymentsWebhook", {
+        isTestBypass: true,
+        payload: payload
+      });
+
+      if (res.data?.success) {
+        setResult({ success: true, message: "Cancel webhook successfully processed and acknowledged." });
+        toast.success("Cancel webhook processed successfully");
+        await fetchSubscriptions();
+        queryClient.invalidateQueries({ queryKey: ['subscription'] });
+      } else {
+        setResult({ success: false, message: res.data?.error || "Webhook failed to process." });
+        toast.error("Webhook processing failed");
+      }
+    } catch (error) {
+      setResult({ success: false, message: error.message || "Network error" });
+      toast.error("Error triggering webhook");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const simulateOrderApproved = async (checkoutId) => {
     setLoading(true);
     setResult(null);
@@ -91,9 +130,9 @@ export default function WebhookTest() {
       <div className="grid gap-6">
         <Card className="border-primary/20">
           <CardHeader>
-            <CardTitle>wix.ecom.v1.order_approved</CardTitle>
+            <CardTitle>Webhook Simulation</CardTitle>
             <CardDescription>
-              Simulate a successful subscription payment to activate a pending subscription.
+              Simulate webhook events for your subscriptions (e.g. approve pending orders or cancel active subscriptions).
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -135,7 +174,18 @@ export default function WebhookTest() {
                         className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
                       >
                         {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                        Trigger Webhook
+                        Approve Order
+                      </Button>
+                    )}
+                    {sub.status === 'active' && sub.subscription_id && (
+                      <Button 
+                        onClick={() => simulateSubscriptionCanceled(sub.subscription_id)} 
+                        disabled={loading}
+                        variant="destructive"
+                        className="shrink-0"
+                      >
+                        {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        Cancel Subscription
                       </Button>
                     )}
                   </div>

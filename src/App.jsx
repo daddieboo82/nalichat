@@ -109,7 +109,7 @@ const AuthenticatedApp = () => {
     return <Navigate to="/onboarding" replace />;
   }
 
-  if (isAuthenticated && user && !isAdminUser && user.onboarding_completed && !hasAccess && location.pathname !== '/pricing' && location.pathname !== '/login' && location.pathname !== '/register' && location.pathname !== '/settings' && location.pathname !== '/profile' && location.pathname.toLowerCase() !== '/onboarding' && !location.pathname.startsWith('/thank-you') && !location.pathname.startsWith('/ThankYou')) {
+  if (isAuthenticated && user && !isAdminUser && user.onboarding_completed && !hasAccess && location.pathname !== '/pricing' && location.pathname !== '/login' && location.pathname !== '/register' && location.pathname !== '/settings' && location.pathname !== '/profile' && location.pathname.toLowerCase() !== '/onboarding' && location.pathname.toLowerCase() !== '/webhook-test' && location.pathname.toLowerCase() !== '/webhooktest' && !location.pathname.toLowerCase().startsWith('/thank-you') && !location.pathname.toLowerCase().startsWith('/thankyou')) {
     return <Navigate to="/pricing" replace />;
   }
 
@@ -149,6 +149,7 @@ const AuthenticatedApp = () => {
           <Route path="/ThankYou" element={<ThankYou />} />
           <Route path="/cover-art" element={<CoverArt />} />
           <Route path="/webhook-test" element={<WebhookTest />} />
+          <Route path="/WebhookTest" element={<Navigate to="/webhook-test" replace />} />
         </Route>
       </Route>
       <Route path="/privacy" element={<Privacy />} />

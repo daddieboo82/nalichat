@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Webhook, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, Webhook, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -50,6 +50,21 @@ export default function WebhookTest() {
     } catch (e) {
       console.error(e);
       toast.error("Failed to create mock subscription");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeSubscription = async (id) => {
+    try {
+      setLoading(true);
+      await base44.entities.Subscription.delete(id);
+      toast.success("Subscription removed");
+      await fetchSubscriptions();
+      queryClient.invalidateQueries({ queryKey: ['subscription'] });
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to remove subscription");
     } finally {
       setLoading(false);
     }
@@ -216,6 +231,16 @@ export default function WebhookTest() {
                         Cancel Subscription
                       </Button>
                     )}
+                    <Button
+                      onClick={() => removeSubscription(sub.id)}
+                      disabled={loading}
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-red-500 shrink-0"
+                      title="Remove Entry"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 ))}
               </div>

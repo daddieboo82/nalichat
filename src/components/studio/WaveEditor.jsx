@@ -7,7 +7,7 @@ import {
   Activity, Radio, Waves, Settings2, SlidersHorizontal,
   VolumeX, Volume2, Save, Wand2, Plus, MousePointer2, MoveHorizontal, Crosshair, Loader2, Undo2, Redo2, Maximize2, SplitSquareHorizontal, Magnet, SquareDashedBottom,
   FileText, FolderOpen, SkipBack, Rewind, Square, FastForward, SkipForward, Circle, ZoomIn, ZoomOut, ChevronDown,
-  Sparkles, Speaker, Mic, Disc, Ear, Cpu, AudioLines, Gauge, AudioWaveform, Zap, Music
+  Sparkles, Speaker, Mic, Disc, Ear, Cpu, AudioLines, Gauge, AudioWaveform, Zap, Music, Search
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -107,6 +107,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
   const [collapsedEffects, setCollapsedEffects] = useState({});
+  const [effectSearch, setEffectSearch] = useState('');
 
   const toggleCollapseEffect = (id) => {
     setCollapsedEffects(prev => ({ ...prev, [id]: !prev[id] }));
@@ -564,11 +565,27 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Effects</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans max-h-[70vh] overflow-y-auto custom-scrollbar">
-                  {EFFECTS.map(eff => (
+                  <div className="px-2 py-1.5 border-b border-border mb-1 sticky top-0 bg-popover z-10">
+                    <div className="relative">
+                      <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <input 
+                        type="text" 
+                        placeholder="Search effects..." 
+                        value={effectSearch}
+                        onChange={(e) => setEffectSearch(e.target.value)}
+                        className="w-full bg-secondary/50 border border-border rounded-sm py-1 pl-6 pr-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        onKeyDown={(e) => e.stopPropagation()} 
+                      />
+                    </div>
+                  </div>
+                  {EFFECTS.filter(eff => eff.name.toLowerCase().includes(effectSearch.toLowerCase()) || eff.id.toLowerCase().includes(effectSearch.toLowerCase())).map(eff => (
                     <DropdownMenuItem key={eff.id} className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => addEffect(eff)}>
                       {eff.name}...
                     </DropdownMenuItem>
                   ))}
+                  {EFFECTS.filter(eff => eff.name.toLowerCase().includes(effectSearch.toLowerCase()) || eff.id.toLowerCase().includes(effectSearch.toLowerCase())).length === 0 && (
+                    <div className="px-2 py-2 text-xs text-muted-foreground text-center">No effects found</div>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -1220,8 +1237,20 @@ export default function WaveEditor({ track, onClose, onSave }) {
               {/* Rack Header/Browser */}
               <div className="w-56 bg-[#151516] border-r border-white/5 flex flex-col text-sm">
                 <div className="p-3 border-b border-white/5 font-semibold text-white/90 bg-[#1c1c1e] text-xs uppercase tracking-wider">Audio Effects</div>
+                <div className="px-2 py-2 border-b border-white/5 bg-[#1c1c1e]/50">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-white/40" />
+                    <input 
+                      type="text" 
+                      placeholder="Search effects..." 
+                      value={effectSearch}
+                      onChange={(e) => setEffectSearch(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-md py-1.5 pl-8 pr-3 text-xs text-white/90 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                    />
+                  </div>
+                </div>
                 <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                  {EFFECTS.map(eff => (
+                  {EFFECTS.filter(eff => eff.name.toLowerCase().includes(effectSearch.toLowerCase()) || eff.id.toLowerCase().includes(effectSearch.toLowerCase())).map(eff => (
                     <button
                       key={eff.id}
                       onClick={() => addEffect(eff)}

@@ -868,7 +868,9 @@ export default function Studio() {
   };
 
   const handleImportClick = () => {
-    setShowImportDialog(true);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
   const decodeWaveform = async (file) => {
@@ -1113,7 +1115,7 @@ export default function Studio() {
                <Mic className="w-4 h-4" /> Quick Memo
             </Button>
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleImportClick}>
-              <Upload className="w-4 h-4" /> Import
+              <Upload className="w-4 h-4" /> Upload Files
             </Button>
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleSave}>
               <Save className="w-4 h-4" /> Save
@@ -1154,8 +1156,8 @@ export default function Studio() {
         addTrack={addTrack} selectedTrackIds={selectedTrackIds} tracks={tracks} setEditingTrack={setEditingTrack}
         handleSeparateStems={handleSeparateStems} isProcessing={isProcessing} handleGenerateMelody={handleGenerateMelody}
         undo={undo} redo={redo} historyIndex={historyIndex} historyLength={historyRef.current.length}
-        bpm={bpm} setBpm={setBpm} bpmInput={bpmInput} setBpmInput={setBpmInput} timeSignature={timeSignature}
-        setPendingTimeSignature={setPendingTimeSignature} songKey={songKey} setPendingSongKey={setPendingSongKey}
+        bpm={bpm} setBpm={setBpm} bpmInput={bpmInput} setBpmInput={setBpmInput} timeSignature={timeSignature} setTimeSignature={setTimeSignature}
+        songKey={songKey} setSongKey={setSongKey}
         editMode={editMode} setEditMode={setEditMode} activeTool={activeTool} setActiveTool={setActiveTool}
         toggleTrackProperty={toggleTrackProperty} splitSelectedTracks={splitSelectedTracks} duplicateSelectedTracks={duplicateSelectedTracks}
         deleteSelectedTracks={deleteSelectedTracks} zoom={zoom} setZoom={setZoom}

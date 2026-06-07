@@ -250,9 +250,19 @@ export default function Studio() {
             audio = new Audio(track.audioUrl);
             audioElementsRef.current[track.id] = audio;
           }
-          audio.currentTime = currentTimeRef.current;
-          audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100));
-          audio.play().catch(e => console.error("Audio playback error:", e));
+          
+          // Calculate if playhead is within track bounds
+          const trackStart = track.startTime || 0;
+          const trackEnd = trackStart + (track.duration || 40);
+          const clipStartOffset = track.clipStart || 0;
+          
+          if (currentTimeRef.current >= trackStart && currentTimeRef.current < trackEnd) {
+            audio.currentTime = clipStartOffset + (currentTimeRef.current - trackStart);
+            audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100));
+            audio.play().catch(e => console.error("Audio playback error:", e));
+          } else {
+            audio.pause();
+          }
         }
       });
     } else {
@@ -667,11 +677,7 @@ export default function Studio() {
         const curr = currentTimeRef.current;
         
         if (curr > clipStart && curr < clipEnd) {
-          const splitRatio = (curr - clipStart) / clipDuration;
-          const splitIndex = Math.floor(t.waveform.length * splitRatio);
-          
-          const waveformPart1 = t.waveform.slice(0, splitIndex);
-          const waveformPart2 = t.waveform.slice(splitIndex);
+          const splitDuration = curr - clipStart;
           
           splitCount++;
           
@@ -679,15 +685,17 @@ export default function Studio() {
             ...t,
             id: nextId++,
             name: `${t.name} (Cut)`,
-            waveform: waveformPart2,
             startTime: curr,
-            duration: clipEnd - curr
+            duration: clipDuration - splitDuration,
+            fullDuration: t.fullDuration || t.duration,
+            clipStart: (t.clipStart || 0) + splitDuration
           });
           
           return {
             ...t,
-            waveform: waveformPart1,
-            duration: curr - clipStart
+            duration: splitDuration,
+            fullDuration: t.fullDuration || t.duration,
+            clipStart: t.clipStart || 0
           };
         }
       }
@@ -1577,12 +1585,11 @@ export default function Studio() {
                            const splitTime = track.startTime + splitDuration;
                            
                            let nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
-                           const splitIndex = Math.floor(track.waveform.length * clickRatio);
-                           
                            const trackPart1 = {
                              ...track,
                              duration: splitDuration,
-                             waveform: track.waveform.slice(0, splitIndex)
+                             fullDuration: track.fullDuration || track.duration,
+                             clipStart: track.clipStart || 0
                            };
                            
                            const trackPart2 = {
@@ -1591,7 +1598,8 @@ export default function Studio() {
                              name: `${track.name} (Cut)`,
                              startTime: splitTime,
                              duration: track.duration - splitDuration,
-                             waveform: track.waveform.slice(splitIndex)
+                             fullDuration: track.fullDuration || track.duration,
+                             clipStart: (track.clipStart || 0) + splitDuration
                            };
                            
                            setTracksWithHistory(prev => {
@@ -1662,7 +1670,7 @@ export default function Studio() {
                           const startX = e.clientX;
                           const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
                           const initialDuration = track.duration !== undefined ? track.duration : 40;
-                          const initialWaveform = [...track.waveform];
+                          const initialClipStart = track.clipStart || 0;
                           
                           target.setPointerCapture(e.pointerId);
                           
@@ -1671,16 +1679,16 @@ export default function Studio() {
                             const deltaTime = deltaX / (20 * zoom);
                             
                             if (deltaTime < initialDuration - 1) { 
-                               const trimAmount = Math.max(0, deltaTime); 
-                               const splitRatio = trimAmount / initialDuration;
-                               const splitIndex = Math.floor(initialWaveform.length * splitRatio);
+                               // Don't allow left trim to go before the actual start of the audio file
+                               const maxLeftTrim = -initialClipStart;
+                               const trimAmount = Math.max(maxLeftTrim, deltaTime);
                                
                                setTracks(prev => prev.map(t => 
                                 t.id === track.id ? { 
                                   ...t, 
                                   startTime: initialStartTime + trimAmount,
                                   duration: initialDuration - trimAmount,
-                                  waveform: initialWaveform.slice(splitIndex)
+                                  clipStart: initialClipStart + trimAmount
                                 } : t
                               ));
                             }
@@ -1712,7 +1720,8 @@ export default function Studio() {
                           const target = e.currentTarget;
                           const startX = e.clientX;
                           const initialDuration = track.duration !== undefined ? track.duration : 40;
-                          const initialWaveform = [...track.waveform];
+                          const initialClipStart = track.clipStart || 0;
+                          const fullDuration = track.fullDuration || track.duration || 40;
                           
                           target.setPointerCapture(e.pointerId);
                           
@@ -1721,15 +1730,14 @@ export default function Studio() {
                             const deltaTime = deltaX / (20 * zoom);
                             
                             if (-deltaTime < initialDuration - 1) {
-                               const trimAmount = Math.max(0, -deltaTime); 
-                               const keepRatio = (initialDuration - trimAmount) / initialDuration;
-                               const keepIndex = Math.floor(initialWaveform.length * keepRatio);
+                               // Allow dragging right to restore the audio, up to its full duration
+                               const maxRightTrim = fullDuration - (initialClipStart + initialDuration);
+                               const trimAmount = Math.max(-maxRightTrim, -deltaTime); 
                                
                                setTracks(prev => prev.map(t => 
                                 t.id === track.id ? { 
                                   ...t, 
-                                  duration: initialDuration - trimAmount,
-                                  waveform: initialWaveform.slice(0, keepIndex)
+                                  duration: initialDuration - trimAmount
                                 } : t
                               ));
                             }
@@ -1802,14 +1810,9 @@ export default function Studio() {
                         </div>
                       )}
 
-                      <div 
-                        className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none"
-                        style={{ width: `${(track.fadeOut || 0) * 100}%` }}
-                      />
+                      <div className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" style={{ width: `${(track.fadeOut || 0) * 100}%` }} />
                       {(activeTool === 'fade' || activeTool === 'smart') && (
-                        <div className={cn("absolute w-6 hover:bg-white/10 flex justify-center group z-20 pointer-events-auto",
-                            activeTool === 'smart' ? "top-0 bottom-[50%] items-start cursor-crosshair" : "top-0 bottom-0 items-center cursor-ew-resize"
-                          )}
+                        <div className={cn("absolute w-6 hover:bg-white/10 flex justify-center group z-20 pointer-events-auto", activeTool === 'smart' ? "top-0 bottom-[50%] items-start cursor-crosshair" : "top-0 bottom-0 items-center cursor-ew-resize")}
                           style={{ right: `calc(${(track.fadeOut || 0) * 100}% - 12px)` }}
                           onPointerDown={(e) => {
                             e.stopPropagation();
@@ -1817,39 +1820,33 @@ export default function Studio() {
                             const container = target.parentElement;
                             const rect = container.getBoundingClientRect();
                             target.setPointerCapture(e.pointerId);
-                            
                             const handleMove = (moveEvent) => {
                               const currentX = Math.max(0, Math.min(1 - (track.fadeIn || 0), 1 - ((moveEvent.clientX - rect.left) / rect.width)));
                               target.style.right = `calc(${currentX * 100}% - 12px)`;
-                              if (target.previousElementSibling) {
-                                target.previousElementSibling.style.width = `${currentX * 100}%`;
-                              }
+                              if (target.previousElementSibling) target.previousElementSibling.style.width = `${currentX * 100}%`;
                               target.dataset.newFade = currentX;
                             };
-                            
                             const handleUp = (upEvent) => {
                               target.releasePointerCapture(upEvent.pointerId);
                               target.removeEventListener('pointermove', handleMove);
                               target.removeEventListener('pointerup', handleUp);
-                              const newFadeStr = target.dataset.newFade;
-                              if (newFadeStr !== undefined) {
-                                setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, fadeOut: parseFloat(newFadeStr) } : t));
+                              if (target.dataset.newFade !== undefined) {
+                                setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, fadeOut: parseFloat(target.dataset.newFade) } : t));
                                 delete target.dataset.newFade;
                               }
                             };
-                            
                             target.addEventListener('pointermove', handleMove);
                             target.addEventListener('pointerup', handleUp);
                           }}
                         >
-                          <div className={cn("bg-white/50 group-hover:bg-white transition-colors shadow-sm",
-                            activeTool === 'smart' ? "w-2 h-2 mt-1 rounded-sm border border-black/50" : "w-1 h-6 rounded-full"
-                          )} />
+                          <div className={cn("bg-white/50 group-hover:bg-white transition-colors shadow-sm", activeTool === 'smart' ? "w-2 h-2 mt-1 rounded-sm border border-black/50" : "w-1 h-6 rounded-full")} />
                         </div>
                       )}
 
-                      <div className={cn("absolute inset-x-0 overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-1 top-5")}>
-                        <TrackWaveformSVG track={track} />
+                      <div className={cn("absolute inset-y-0 overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-1 top-5")} style={{ left: 0, right: 0 }}>
+                        <div style={{ position: 'absolute', left: `${-(track.clipStart || 0) * 20 * zoom}px`, width: `${(track.fullDuration || track.duration || 40) * 20 * zoom}px`, height: '100%' }}>
+                          <TrackWaveformSVG track={track} />
+                        </div>
                       </div>
                     </div>
                   )}

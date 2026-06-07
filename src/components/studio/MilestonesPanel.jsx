@@ -80,7 +80,11 @@ export default function MilestonesPanel({ projectId, canEdit }) {
           )}
         </div>
         {canEdit && (
-          <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg hover:bg-primary/20 hover:text-primary" onClick={() => setShowAdd(true)}>
+          <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-lg hover:bg-primary/20 hover:text-primary" onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowAdd(true);
+          }}>
             <Plus className="w-4 h-4" />
           </Button>
         )}
@@ -132,7 +136,11 @@ export default function MilestonesPanel({ projectId, canEdit }) {
         <div className="absolute inset-0 z-20 flex flex-col bg-background/95 backdrop-blur-sm p-5">
           <div className="flex items-center justify-between mb-5">
             <h4 className="font-heading font-bold text-lg">Add Milestone</h4>
-            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={() => setShowAdd(false)}>
+            <Button type="button" size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowAdd(false);
+            }}>
               <X className="w-4 h-4" />
             </Button>
           </div>

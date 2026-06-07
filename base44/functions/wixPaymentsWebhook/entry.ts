@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
           subscription_id: subscriptionId,
         });
 
-        if (subs.length === 0) {
+        if (subs.length === 0 && /^[0-9a-fA-F]{24}$/.test(subscriptionId)) {
           // Fallback to internal ID for automated testing environments
           subs = await base44.asServiceRole.entities.Subscription.filter({
             id: subscriptionId,

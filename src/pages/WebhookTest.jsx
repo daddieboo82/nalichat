@@ -271,14 +271,14 @@ export default function WebhookTest() {
                         Approve Order
                       </Button>
                     )}
-                    {sub.status === 'active' && sub.subscription_id && (
+                    {sub.status === 'active' && (
                       <Button 
-                        onClick={() => simulateSubscriptionCanceled(sub.subscription_id)} 
-                        disabled={loadingId === sub.subscription_id}
+                        onClick={() => simulateSubscriptionCanceled(sub.subscription_id || sub.id)} 
+                        disabled={loadingId === (sub.subscription_id || sub.id)}
                         variant="destructive"
                         className="shrink-0"
                       >
-                        {loadingId === sub.subscription_id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        {loadingId === (sub.subscription_id || sub.id) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                         Cancel Subscription
                       </Button>
                     )}

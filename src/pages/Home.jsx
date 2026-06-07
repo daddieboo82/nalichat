@@ -184,9 +184,9 @@ export default function Home() {
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-              className="relative z-10 w-24 h-24 rounded-3xl bg-gradient-to-br from-primary via-pink-500 to-accent flex items-center justify-center glow-primary shadow-2xl border border-white/20"
+              className="relative z-10 w-24 h-24 rounded-3xl flex items-center justify-center glow-primary shadow-2xl border border-white/20 overflow-hidden"
             >
-              <MessageSquare className="w-12 h-12 text-white" />
+              <img src="https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png" alt="NaliChat Logo" className="w-full h-full object-cover" />
             </motion.div>
           </div>
 

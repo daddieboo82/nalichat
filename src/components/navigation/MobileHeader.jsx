@@ -88,6 +88,7 @@ export default function MobileHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+          <img src="https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png" alt="NaliChat Logo" className="w-8 h-8 object-cover rounded-lg mr-1" />
           <h1 className="font-heading font-bold text-base truncate">{title}</h1>
         </div>
 

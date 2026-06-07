@@ -13,7 +13,8 @@ import { sounds } from '@/hooks/use-sound';
 export default function StudioToolbar2({
   addTrack, selectedTrackIds, tracks, setEditingTrack, handleSeparateStems, isProcessing, handleGenerateMelody, undo, redo, historyIndex, historyLength,
   bpm, setBpm, bpmInput, setBpmInput, timeSignature, setPendingTimeSignature, songKey, setPendingSongKey, editMode, setEditMode,
-  activeTool, setActiveTool, toggleTrackProperty, splitSelectedTracks, duplicateSelectedTracks, deleteSelectedTracks, zoom, setZoom
+  activeTool, setActiveTool, toggleTrackProperty, splitSelectedTracks, duplicateSelectedTracks, deleteSelectedTracks, zoom, setZoom,
+  setTimeSignature, setSongKey
 }) {
   const isMobile = useIsMobile();
 

@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
         customerInfo.billingAddress = {
           addressLine1: "123 Test St",
           city: "New York",
-          subdivision: "NY",
+          subdivision: "US-NY",
           postalCode: "10001",
           country: "US",
           firstName: "Test",

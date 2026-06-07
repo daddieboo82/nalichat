@@ -32,6 +32,29 @@ export default function WebhookTest() {
     fetchSubscriptions();
   }, []);
 
+  const createMockActiveSubscription = async () => {
+    setLoading(true);
+    try {
+      const user = await base44.auth.me();
+      if (user) {
+        await base44.entities.Subscription.create({
+          user_id: user.id,
+          plan: "pro",
+          status: "active",
+          subscription_id: "mock-sub-" + Date.now(),
+        });
+        await fetchSubscriptions();
+        toast.success("Created mock active subscription");
+        queryClient.invalidateQueries({ queryKey: ['subscription'] });
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to create mock subscription");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const simulateSubscriptionCanceled = async (subscriptionId) => {
     setLoading(true);
     setResult(null);
@@ -129,11 +152,16 @@ export default function WebhookTest() {
 
       <div className="grid gap-6">
         <Card className="border-primary/20">
-          <CardHeader>
-            <CardTitle>Webhook Simulation</CardTitle>
-            <CardDescription>
-              Simulate webhook events for your subscriptions (e.g. approve pending orders or cancel active subscriptions).
-            </CardDescription>
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle>Webhook Simulation</CardTitle>
+              <CardDescription>
+                Simulate webhook events for your subscriptions (e.g. approve pending orders or cancel active subscriptions).
+              </CardDescription>
+            </div>
+            <Button onClick={createMockActiveSubscription} disabled={loading} variant="outline" className="shrink-0">
+              Add Mock Active Sub
+            </Button>
           </CardHeader>
           <CardContent>
             {fetchingSubs ? (

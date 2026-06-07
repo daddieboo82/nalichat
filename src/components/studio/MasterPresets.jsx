@@ -41,6 +41,7 @@ export default function MasterPresets({ onSelect }) {
       <div className="grid grid-cols-2 gap-2">
         {MASTER_PRESETS.map((preset) => (
           <button
+            type="button"
             key={preset.id}
             onClick={() => onSelect(preset.settings)}
             className="group relative p-3 rounded-lg border border-border/50 bg-secondary/30 hover:border-accent/50 hover:bg-accent/10 transition-all text-left"

@@ -29,7 +29,7 @@ export default function MixerPanel({
         >
           <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
             <span className="text-xs font-bold text-muted-foreground mr-2">MIXER & FX</span>
-            <Button variant="ghost" size="icon" onClick={onClose} className="w-6 h-6 rounded-full"><Square className="w-3 h-3" /></Button>
+            <Button type="button" variant="ghost" size="icon" onClick={onClose} className="w-6 h-6 rounded-full"><Square className="w-3 h-3" /></Button>
           </div>
           
           <div className="flex sm:flex-nowrap p-4 gap-3 pt-8 pb-4 h-full items-end w-max min-w-full">
@@ -77,11 +77,11 @@ export default function MixerPanel({
                 <div className="text-[10px] font-mono text-center font-semibold mb-2">{track.volume.toFixed(1)} dB</div>
                 
                 <div className="flex gap-1 w-full mb-2">
-                  <Button size="icon" variant="outline" className={cn("w-full h-7 text-[10px] font-bold border-border/50", track.muted && "bg-red-500 text-white border-red-500")} onClick={() => toggleMute(track.id)}>M</Button>
-                  <Button size="icon" variant="outline" className={cn("w-full h-7 text-[10px] font-bold border-border/50", track.solo && "bg-yellow-500 text-white border-yellow-500")} onClick={() => toggleSolo(track.id)}>S</Button>
+                  <Button type="button" size="icon" variant="outline" className={cn("w-full h-7 text-[10px] font-bold border-border/50", track.muted && "bg-red-500 text-white border-red-500")} onClick={() => toggleMute(track.id)}>M</Button>
+                  <Button type="button" size="icon" variant="outline" className={cn("w-full h-7 text-[10px] font-bold border-border/50", track.solo && "bg-yellow-500 text-white border-yellow-500")} onClick={() => toggleSolo(track.id)}>S</Button>
                 </div>
                 
-                <Button variant="outline" className="w-full h-7 text-[10px] gap-1.5 border-border/50 hover:bg-secondary" onClick={() => onOpenFX ? onOpenFX(track.id) : toast.info(`FX Chain coming soon`)}>
+                <Button type="button" variant="outline" className="w-full h-7 text-[10px] gap-1.5 border-border/50 hover:bg-secondary" onClick={() => onOpenFX ? onOpenFX(track.id) : toast.info(`FX Chain coming soon`)}>
                   <Settings2 className="w-3.5 h-3.5 text-muted-foreground" /> FX
                 </Button>
               </div>
@@ -117,10 +117,10 @@ export default function MixerPanel({
               <div className="text-[10px] font-mono text-center font-bold text-primary/90 mb-2">{masterVolume.toFixed(1)} dB</div>
               
               <div className="flex gap-1 w-full mb-2 opacity-0 pointer-events-none">
-                <Button size="icon" className="w-full h-7">M</Button>
+                <Button type="button" size="icon" className="w-full h-7">M</Button>
               </div>
               
-              <Button variant="outline" className="w-full h-7 text-[10px] gap-1.5 border-primary/20 hover:bg-primary/10 text-primary/80" onClick={() => toast.info(`Master FX Chain coming soon`)}>
+              <Button type="button" variant="outline" className="w-full h-7 text-[10px] gap-1.5 border-primary/20 hover:bg-primary/10 text-primary/80" onClick={() => toast.info(`Master FX Chain coming soon`)}>
                 <Activity className="w-3.5 h-3.5" /> MASTER FX
               </Button>
             </div>

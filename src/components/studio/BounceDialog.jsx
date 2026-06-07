@@ -172,6 +172,7 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
 
               {autoMaster && (
                 <button
+                  type="button"
                   onClick={() => setShowManualParams(!showManualParams)}
                   className="w-full flex items-center justify-between p-2.5 rounded-lg bg-secondary/30 border border-border/50 hover:border-primary/50 transition-colors text-sm text-muted-foreground hover:text-foreground"
                 >
@@ -223,6 +224,8 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
 
                   {savedParams && (
                     <button
+                      type="button"
+                      type="button"
                       onClick={() => {
                         setParams(savedParams);
                         setShowManualParams(false);
@@ -278,6 +281,7 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
 
           {!done && (
             <Button
+              type="button"
               onClick={handleBounce}
               disabled={!bounceTitle.trim() || bouncing}
               className="w-full rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white"

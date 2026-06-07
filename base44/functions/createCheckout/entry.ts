@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
     const formattedItems = items.map(item => ({
       ...item,
-      price: String(item.price)
+      price: Number(item.price).toFixed(2)
     }));
 
     let customerInfo = {};
@@ -57,8 +57,14 @@ Deno.serve(async (req) => {
           user.email.toLowerCase().includes('base44')) {
         customerInfo.firstName = "Test";
         customerInfo.lastName = "User";
-        // Remove invalid phone number and billingAddress that breaks Wix Payments form
-        // customerInfo.phone = "1234567890";
+        customerInfo.phone = "+12125551234";
+        customerInfo.billingAddress = {
+          addressLine1: "123 Test St",
+          city: "New York",
+          subdivision: "US-NY",
+          postalCode: "10001",
+          country: "US"
+        };
       }
     }
 

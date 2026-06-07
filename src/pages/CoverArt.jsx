@@ -346,7 +346,7 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-8 flex flex-col min-h-full pb-24 md:pb-8">
+    <div className="max-w-6xl mx-auto p-4 sm:p-8 flex flex-col min-h-[calc(100vh-6rem)] pb-32 md:pb-12">
       <div className="mb-8">
         <h1 className="text-3xl font-heading font-black flex items-center gap-3">
           <Sparkles className="w-8 h-8 text-primary" />
@@ -671,8 +671,8 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
         </Dialog>
 
         {/* Right: Generation Area */}
-        <div className="w-full md:w-2/3 flex flex-col items-center justify-center border border-border bg-card/50 rounded-xl p-4 pb-28 sm:p-8 sm:pb-28 md:pb-8 relative overflow-y-auto custom-scrollbar">
-          <div className="flex flex-col items-center w-full max-w-md">
+        <div className="w-full md:w-2/3 flex flex-col items-center border border-border bg-card/50 rounded-xl p-4 pb-32 sm:p-8 sm:pb-32 md:pb-12 relative overflow-y-auto custom-scrollbar min-h-[500px]">
+          <div className="flex flex-col items-center w-full max-w-md my-auto">
             <div className="w-full aspect-square bg-black/50 rounded-2xl border-2 border-border overflow-hidden relative shadow-2xl flex items-center justify-center mb-6">
               {generatedImage ? (
                 <img src={generatedImage} alt="Generated cover" className="w-full h-full object-cover" />

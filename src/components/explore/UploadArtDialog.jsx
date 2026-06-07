@@ -121,7 +121,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
                 )}
               </div>
             </label>
-            <input id="audio-upload" ref={audioRef} type="file" accept="audio/*" className="hidden" onChange={handleAudio} />
+            <input id="audio-upload" ref={audioRef} type="file" accept="audio/*" className="sr-only" onChange={handleAudio} />
           </div>
 
           {/* Cover Art upload */}
@@ -140,7 +140,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
                 </div>
               )}
             </label>
-            <input id="cover-upload" ref={imageRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
+            <input id="cover-upload" ref={imageRef} type="file" accept="image/*" className="sr-only" onChange={handleImage} />
           </div>
 
           <label htmlFor="track-title" className="sr-only">Track title</label>

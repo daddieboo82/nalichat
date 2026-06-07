@@ -24,6 +24,9 @@ import ResetPassword from '@/pages/ResetPassword';
 import AppLayout from '@/components/layout/AppLayout';
 import Home from '@/pages/Home';
 import { useSubscription } from '@/hooks/useSubscription';
+import AiAssistant from '@/components/AiAssistant';
+import AskNaliHint from '@/components/AskNaliHint';
+import { base44 } from '@/api/base44Client';
 
 // Lazily-loaded routes — each downloads on demand so initial load & tab-switching are fastest.
 const Messages = lazy(() => import('@/pages/Messages'));
@@ -44,9 +47,6 @@ const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const Record = lazy(() => import('@/pages/Record'));
 const CoverArt = lazy(() => import('@/pages/CoverArt'));
 const WebhookTest = lazy(() => import('@/pages/WebhookTest'));
-import AiAssistant from '@/components/AiAssistant';
-import AskNaliHint from '@/components/AskNaliHint';
-import { base44 } from '@/api/base44Client';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();

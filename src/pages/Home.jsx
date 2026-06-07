@@ -331,9 +331,9 @@ export default function Home() {
                   items: ["Creator Profiles", "Earn Achievements", "Display Portfolio", "Level Up Status"]
                 }
               ].map((block) => (
-                <div key={block.title} className="border border-border/50 rounded-2xl p-6 bg-card/50 hover:border-primary/30 transition-colors min-w-0 break-words">
+                <div key={block.title} className="h-full flex flex-col border border-border/50 rounded-2xl p-6 bg-card/50 transition-colors min-w-0 break-words">
                   <h3 className="font-heading font-bold text-xl mb-4">{block.title}</h3>
-                  <ul className="space-y-2">
+                  <ul className="space-y-2 flex-1">
                     {block.items.map((item) => (
                       <li key={item} className="flex items-center gap-3 text-foreground/90">
                         <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />

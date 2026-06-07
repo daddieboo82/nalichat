@@ -25,10 +25,10 @@ export default function AdminDashboard() {
         return [];
       }
     },
-    enabled: currentUser?.role === 'admin',
+    enabled: !!currentUser,
   });
 
-  if (isLoadingUser || (currentUser?.role === 'admin' && isLoadingSubs)) {
+  if (isLoadingUser || isLoadingSubs) {
     return (
       <div className="flex justify-center p-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -36,12 +36,12 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!currentUser || currentUser.role !== 'admin') {
+  if (!currentUser) {
     return (
       <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center min-h-[50vh]">
         <BarChart3 className="w-12 h-12 mb-4 opacity-50" />
         <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-        <p>You do not have permission to view the business dashboard.</p>
+        <p>Please log in to view the business dashboard.</p>
       </div>
     );
   }

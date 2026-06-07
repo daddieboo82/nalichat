@@ -25,7 +25,7 @@ const MORE_NAV_ITEMS = [
   { icon: Wand2, label: "AI Cover", path: "/cover-art" },
   { icon: FileText, label: "Files", path: "/files" },
   { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
-  { icon: BarChart3, label: "Business", path: "/business", adminOnly: true },
+  { icon: BarChart3, label: "Business", path: "/business" },
 ];
 
 export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick }) {
@@ -87,18 +87,18 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
               <button
                 className={cn(
                   "relative px-2.5 xl:px-3 py-2 rounded-xl flex items-center gap-1.5 transition-all whitespace-nowrap text-sm font-semibold group shrink-0 text-muted-foreground hover:text-foreground hover:bg-secondary/50",
-                  MORE_NAV_ITEMS.filter(item => item.adminOnly ? user?.role === 'admin' : true).some(item => isActive(item.path)) && "bg-primary/15 text-primary shadow-sm"
+                  MORE_NAV_ITEMS.some(item => isActive(item.path)) && "bg-primary/15 text-primary shadow-sm"
                 )}
               >
-                {MORE_NAV_ITEMS.filter(item => item.adminOnly ? user?.role === 'admin' : true).some(item => isActive(item.path)) && (
+                {MORE_NAV_ITEMS.some(item => isActive(item.path)) && (
                   <div className="absolute top-0 inset-x-2 h-0.5 bg-primary rounded-b-full shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
                 )}
-                <Menu className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", MORE_NAV_ITEMS.filter(item => item.adminOnly ? user?.role === 'admin' : true).some(item => isActive(item.path)) && "text-primary")} />
+                <Menu className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", MORE_NAV_ITEMS.some(item => isActive(item.path)) && "text-primary")} />
                 <span className="hidden xl:inline">More</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-48 bg-card/95 backdrop-blur-xl border-border/50">
-              {MORE_NAV_ITEMS.filter(item => item.adminOnly ? user?.role === 'admin' : true).map(({ icon: Icon, label, path }) => (
+              {MORE_NAV_ITEMS.map(({ icon: Icon, label, path }) => (
                 <DropdownMenuItem key={path} asChild>
                   <Link
                     to={path}

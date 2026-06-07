@@ -84,9 +84,7 @@ export default function MobileHeader() {
                 <DropdownMenuItem onClick={() => navigate('/files')}><FileText className="w-4 h-4 mr-2" /> Files</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/leaderboard')}><Trophy className="w-4 h-4 mr-2" /> Leaderboard</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/pricing')} className="text-primary font-medium"><Gem className="w-4 h-4 mr-2" /> Upgrade / Plans</DropdownMenuItem>
-                {user?.role === 'admin' && (
-                  <DropdownMenuItem onClick={() => navigate('/business')}><BarChart3 className="w-4 h-4 mr-2" /> Business</DropdownMenuItem>
-                )}
+                <DropdownMenuItem onClick={() => navigate('/business')}><BarChart3 className="w-4 h-4 mr-2" /> Business</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/settings')}><Settings className="w-4 h-4 mr-2" /> Settings</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -170,15 +170,29 @@ export default function Settings() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">
-          <h2 className="text-xl font-heading font-bold mb-6">Interactive Tutorial</h2>
-          <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
-            <div>
-              <h3 className="font-heading font-semibold text-lg text-foreground">Replay Onboarding Wizard</h3>
-              <p className="text-sm text-muted-foreground mt-1">Take an interactive tour to learn how to use NaliChat's studio and collaboration tools.</p>
+          <h2 className="text-xl font-heading font-bold mb-6">Onboarding & Tutorial</h2>
+          <div className="flex flex-col gap-4">
+            <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
+              <div>
+                <h3 className="font-heading font-semibold text-lg text-foreground">Interactive Tutorial</h3>
+                <p className="text-sm text-muted-foreground mt-1">Take an interactive tour to learn how to use NaliChat's studio and collaboration tools.</p>
+              </div>
+              <Button onClick={() => setShowWizard(true)} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-0 font-semibold">
+                Start Tutorial
+              </Button>
             </div>
-            <Button onClick={() => setShowWizard(true)} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-0 font-semibold">
-              Start Tutorial
-            </Button>
+
+            <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
+              <div>
+                <h3 className="font-heading font-semibold text-lg text-foreground">Profile Setup & Onboarding</h3>
+                <p className="text-sm text-muted-foreground mt-1">Revisit the initial onboarding process to set up your profile and complete the tutorial.</p>
+              </div>
+              <Link to="/onboarding">
+                <Button variant="outline" className="w-full sm:w-auto border-primary/50 text-primary hover:bg-primary/10 font-semibold">
+                  Restart Onboarding
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 

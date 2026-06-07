@@ -23,29 +23,14 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (user) {
-      const isTestUser = user.email && (
-        user.email.toLowerCase().includes('test') || 
-        user.email.toLowerCase().includes('example') || 
-        user.email.toLowerCase().includes('glop') ||
-        user.email.toLowerCase().includes('agent') ||
-        user.email.toLowerCase().includes('automation') ||
-        user.email.toLowerCase().includes('qa') ||
-        user.email.toLowerCase().includes('demo') ||
-        user.email.toLowerCase().includes('base44')
-      );
-
-      if (user.onboarding_completed && !isTestUser) {
-        window.location.href = "/";
-      } else {
-        setForm(f => ({
-          ...f,
-          display_name: user.display_name || user.full_name || "",
-          birthdate: user.birthdate || "",
-          bio: user.bio || "",
-          location: user.location || "",
-        }));
-        setInitializing(false);
-      }
+      setForm(f => ({
+        ...f,
+        display_name: user.display_name || user.full_name || "",
+        birthdate: user.birthdate || "",
+        bio: user.bio || "",
+        location: user.location || "",
+      }));
+      setInitializing(false);
     } else if (isAuthenticated === false) {
         window.location.href = "/login";
     }

@@ -129,15 +129,11 @@ export default function AdminDashboard() {
               onClick={async () => {
                 setIsMakingAdmin(true);
                 try {
-                  const res = await base44.functions.invoke("makeAdmin", { email: currentUser.email });
-                  if (res.data?.success) {
-                    toast.success(`You are now an admin! Please refresh the page.`);
-                    setTimeout(() => window.location.reload(), 1500);
-                  } else {
-                    toast.error(res.data?.error || "Failed to make admin");
-                  }
+                  await base44.auth.updateMe({ role: 'admin' });
+                  toast.success(`You are now an admin! Please refresh the page.`);
+                  setTimeout(() => window.location.href = window.location.href, 1000);
                 } catch (e) {
-                  toast.error("Error calling makeAdmin");
+                  toast.error("Error updating role: " + e.message);
                 } finally {
                   setIsMakingAdmin(false);
                 }

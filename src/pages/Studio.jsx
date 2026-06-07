@@ -26,6 +26,8 @@ import MixerPanel from '@/components/studio/MixerPanel';
 import KeyboardShortcutsDialog from '@/components/studio/KeyboardShortcutsDialog';
 import TrackWaveformSVG from '@/components/studio/TrackWaveformSVG';
 import Record from '@/pages/Record';
+import StudioWelcome from '@/components/studio/StudioWelcome';
+import StudioDialogs from '@/components/studio/StudioDialogs';
 
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
@@ -102,21 +104,40 @@ export default function Studio() {
   // Real-time collaborator presence
   const { peers: livePeers, setActivity } = useStudioPresence('studio-main');
   
-  const [tracks, setTracks] = useState(() => {
+  const [tracks, setTracks] = useState([]);
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [hasAutosave, setHasAutosave] = useState(false);
+
+  useEffect(() => {
     try {
       const saved = localStorage.getItem('nalistudio_project_autosave');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.length > 0) return parsed;
+        if (parsed && parsed.length > 0) setHasAutosave(true);
       }
-    } catch (e) {
-      console.error("Failed to load project autosave", e);
-    }
-    return [
+    } catch (e) {}
+  }, []);
+
+  const handleStartBlank = () => { setTracks([]); setShowWelcome(false); };
+
+  const handleLoadAutosave = () => {
+    try {
+      const saved = localStorage.getItem('nalistudio_project_autosave');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.length > 0) { setTracks(parsed); setShowWelcome(false); return; }
+      }
+    } catch (e) {}
+    toast.error("No autosave found");
+  };
+
+  const handleLoadDemo = () => {
+    setTracks([
       { id: 1, name: "Vocals Lead", color: "bg-purple-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(8000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
       { id: 2, name: "Beat / Instrumental", color: "bg-blue-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(8000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
-    ];
-  });
+    ]);
+    setShowWelcome(false);
+  };
 
   // Autosave tracks (Debounced to prevent lag during rapid edits)
   useEffect(() => {
@@ -142,12 +163,12 @@ export default function Studio() {
   }, [tracks]);
 
   useEffect(() => {
-    if (historyRef.current.length === 0) {
+    if (!showWelcome && historyRef.current.length === 0) {
       historyRef.current = [tracks];
       historyIndexRef.current = 0;
       setHistoryIndex(0);
     }
-  }, []);
+  }, [showWelcome, tracks]);
 
   const pushToHistory = (newTracks) => {
     let newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
@@ -937,6 +958,8 @@ export default function Studio() {
       </div>
     );
   }
+
+  if (showWelcome) return <StudioWelcome hasAutosave={hasAutosave} handleStartBlank={handleStartBlank} handleLoadAutosave={handleLoadAutosave} handleLoadDemo={handleLoadDemo} navigate={navigate} />;
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
@@ -1950,44 +1973,16 @@ export default function Studio() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={creatingTrack} onOpenChange={setCreatingTrack}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Create Track</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2"><label className="text-sm font-medium">Track Name</label>
-              <Input value={newTrackName} onChange={(e) => setNewTrackName(e.target.value)} onFocus={(e) => setTimeout(() => e.target.select(), 0)} onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTrackConfirm(); }} autoFocus />
-            </div>
-            <div className="space-y-2"><label className="text-sm font-medium">Track Type</label>
-              <Select value={newTrackType} onValueChange={setNewTrackType}>
-                <SelectTrigger><SelectValue placeholder="Select track type" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="audio">Audio Track</SelectItem>
-                  <SelectItem value="midi">MIDI Track</SelectItem>
-                  <SelectItem value="instrument">Software Instrument</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {(newTrackType === 'midi' || newTrackType === 'instrument') && (<><div className="space-y-2"><label className="text-sm font-medium">Instrument / Plugin</label><Select defaultValue="default"><SelectTrigger><SelectValue placeholder="Select instrument" /></SelectTrigger><SelectContent><SelectItem value="default">Default Synth</SelectItem><SelectItem value="piano">Grand Piano</SelectItem><SelectItem value="drums">Drum Machine</SelectItem><SelectItem value="bass">Sub Bass</SelectItem><SelectItem value="external">External MIDI</SelectItem></SelectContent></Select></div><div className="space-y-2"><label className="text-sm font-medium">MIDI Channel</label><Select defaultValue="1"><SelectTrigger><SelectValue placeholder="Select channel" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem><SelectItem value="1">Channel 1</SelectItem><SelectItem value="2">Channel 2</SelectItem><SelectItem value="3">Channel 3</SelectItem><SelectItem value="4">Channel 4</SelectItem></SelectContent></Select></div></>)}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreatingTrack(false)}>Cancel</Button>
-            <Button onClick={handleCreateTrackConfirm}>Create</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!renamingTrack} onOpenChange={(open) => !open && setRenamingTrack(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Rename Track</DialogTitle></DialogHeader>
-          <Input value={newTrackName} onChange={(e) => setNewTrackName(e.target.value)} onFocus={(e) => setTimeout(() => e.target.select(), 0)} onKeyDown={(e) => { if (e.key === 'Enter') { if (newTrackName.trim()) { setTracksWithHistory(prev => prev.map(t => t.id === renamingTrack.id ? { ...t, name: newTrackName.trim() } : t)); } setRenamingTrack(null); } }} autoFocus />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenamingTrack(null)}>Cancel</Button>
-            <Button onClick={() => { if (newTrackName.trim()) { setTracksWithHistory(prev => prev.map(t => t.id === renamingTrack.id ? { ...t, name: newTrackName.trim() } : t)); } setRenamingTrack(null); }}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={!!pendingTimeSignature} onOpenChange={(open) => !open && setPendingTimeSignature(null)}><DialogContent><DialogHeader><DialogTitle>Change Time Signature</DialogTitle></DialogHeader><p className="text-sm text-muted-foreground">Are you sure you want to change the time signature to {pendingTimeSignature}? This will affect the grid and metronome.</p><DialogFooter><Button variant="outline" onClick={() => setPendingTimeSignature(null)}>Cancel</Button><Button onClick={() => { setTimeSignature(pendingTimeSignature); setPendingTimeSignature(null); toast.success("Time signature updated"); }}>Confirm</Button></DialogFooter></DialogContent></Dialog>
-      <Dialog open={!!pendingSongKey} onOpenChange={(open) => !open && setPendingSongKey(null)}><DialogContent><DialogHeader><DialogTitle>Change Project Key</DialogTitle></DialogHeader><p className="text-sm text-muted-foreground">Are you sure you want to change the project key to {pendingSongKey}? Auto-tune and pitch tools will adapt to this key.</p><DialogFooter><Button variant="outline" onClick={() => setPendingSongKey(null)}>Cancel</Button><Button onClick={() => { setSongKey(pendingSongKey); setPendingSongKey(null); toast.success("Project key updated"); }}>Confirm</Button></DialogFooter></DialogContent></Dialog>
+      <StudioDialogs
+        creatingTrack={creatingTrack} setCreatingTrack={setCreatingTrack}
+        newTrackName={newTrackName} setNewTrackName={setNewTrackName}
+        newTrackType={newTrackType} setNewTrackType={setNewTrackType}
+        handleCreateTrackConfirm={handleCreateTrackConfirm}
+        renamingTrack={renamingTrack} setRenamingTrack={setRenamingTrack}
+        setTracksWithHistory={setTracksWithHistory}
+        pendingTimeSignature={pendingTimeSignature} setPendingTimeSignature={setPendingTimeSignature} setTimeSignature={setTimeSignature}
+        pendingSongKey={pendingSongKey} setPendingSongKey={setPendingSongKey} setSongKey={setSongKey}
+      />
     </div>
   );
 }

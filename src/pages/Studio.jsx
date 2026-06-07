@@ -845,9 +845,7 @@ export default function Studio() {
   };
 
   const handleImportClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
+    setShowImportDialog(true);
   };
 
   const decodeWaveform = async (file) => {

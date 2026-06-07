@@ -946,7 +946,7 @@ export default function Studio() {
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                <Button variant="ghost" size="icon" onClick={() => { handleSave(); navigate('/'); }} className="h-8 w-8 text-muted-foreground hover:text-foreground">
                   <ChevronLeft className="w-5 h-5" />
                 </Button>
               </TooltipTrigger>

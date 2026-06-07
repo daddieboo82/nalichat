@@ -1079,9 +1079,9 @@ export default function Studio() {
               <div className="flex flex-col items-center justify-center px-3 py-1 hover:bg-secondary/40 transition-colors">
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground leading-none mb-1 flex items-center gap-1 pointer-events-none"><Edit2 className="w-2.5 h-2.5" /> BPM</span>
                 <div className="flex items-center gap-1 relative">
-                  <button onClick={() => { const c = Math.max(20, bpm - 1); setBpm(c); setBpmInput(String(c)); sounds.click(); }} className="w-4 h-4 flex items-center justify-center bg-secondary/50 hover:bg-secondary rounded border border-border text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer">-</button>
-                  <input type="text" inputMode="numeric" value={bpmInput} onChange={(e) => { const val = e.target.value.replace(/[^0-9]/g, ''); setBpmInput(val); const num = Number(val); if(num >= 20 && num <= 300) setBpm(num); }} onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} className={cn("w-10 bg-secondary/50 border rounded px-1 text-center font-mono text-xs font-bold text-foreground focus:outline-none focus:ring-1 py-0.5 leading-tight transition-all cursor-text", (Number(bpmInput)<20||Number(bpmInput)>300)?"border-red-500 text-red-500 focus:ring-red-500":"border-border focus:ring-primary focus:border-primary")} />
-                  <button onClick={() => { const c = Math.min(300, bpm + 1); setBpm(c); setBpmInput(String(c)); sounds.click(); }} className="w-4 h-4 flex items-center justify-center bg-secondary/50 hover:bg-secondary rounded border border-border text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer">+</button>
+                  <button onClick={() => { const c = Math.max(20, bpm - 1); setBpm(c); setBpmInput(String(c)); sounds.click(); }} className="w-4 h-4 shrink-0 flex items-center justify-center bg-secondary/50 hover:bg-secondary rounded border border-border text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer">-</button>
+                  <input type="text" inputMode="numeric" value={bpmInput} onChange={(e) => { const val = e.target.value.replace(/[^0-9]/g, ''); setBpmInput(val); const num = Number(val); if(num >= 20 && num <= 300) setBpm(num); }} onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} className={cn("w-10 shrink-0 bg-secondary/50 border rounded px-1 text-center font-mono text-xs font-bold text-foreground focus:outline-none focus:ring-1 py-0.5 leading-tight transition-all cursor-text", (Number(bpmInput)<20||Number(bpmInput)>300)?"border-red-500 text-red-500 focus:ring-red-500":"border-border focus:ring-primary focus:border-primary")} />
+                  <button onClick={() => { const c = Math.min(300, bpm + 1); setBpm(c); setBpmInput(String(c)); sounds.click(); }} className="w-4 h-4 shrink-0 flex items-center justify-center bg-secondary/50 hover:bg-secondary rounded border border-border text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer">+</button>
                 </div>
               </div>
             </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Tempo (beats per minute)</TooltipContent></Tooltip>
@@ -1249,7 +1249,9 @@ export default function Studio() {
                     </span>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2 font-medium text-sm">
-                      <div className={cn("w-2 h-2 rounded-full shrink-0", track.muted ? "bg-muted-foreground" : track.color)} />
+                      <div className={cn("w-5 h-5 rounded-md shrink-0 flex items-center justify-center text-[10px] font-bold shadow-sm", track.muted ? "bg-muted-foreground/30 text-muted-foreground" : `${track.color} text-white`)}>
+                        {index + 1}
+                      </div>
                       <TooltipProvider delayDuration={200}>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -1261,17 +1263,17 @@ export default function Studio() {
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
                       <Select 
-                        value={track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic")}
+                        value={track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Playback Only" : "In: Default Mic")}
                         onValueChange={(val) => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, inputType: val } : t))}
                       >
-                        <SelectTrigger className={cn("h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] w-max flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none transition-colors", (track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic")) !== "In: None" ? "text-primary hover:text-primary/80 font-bold" : "text-muted-foreground hover:text-foreground")}>
+                        <SelectTrigger className={cn("h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] w-max flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none transition-colors", (track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Playback Only" : "In: Default Mic")) !== "Playback Only" ? "text-primary hover:text-primary/80 font-bold" : "text-muted-foreground hover:text-foreground")}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="In: Default Mic">In: Default Mic</SelectItem>
                           <SelectItem value="In: Audio Interface">In: Audio Interface</SelectItem>
                           <SelectItem value="In: MIDI Keyboard">In: MIDI Keyboard</SelectItem>
-                          <SelectItem value="In: None">In: None</SelectItem>
+                          <SelectItem value="Playback Only">Playback Only</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1327,14 +1329,14 @@ export default function Studio() {
                     <Tooltip><TooltipTrigger asChild>
                       <button 
                         onClick={() => {
-                           const input = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic");
-                           if (input === 'In: None') {
-                              toast.error("Cannot arm a track with no input selected");
+                           const input = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Playback Only" : "In: Default Mic");
+                           if (input === 'Playback Only') {
+                              toast.error("Cannot arm a track set to Playback Only");
                               return;
                            }
                            toggleArm(track.id);
                         }}
-                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center", track.armed ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-red-500/20 hover:text-red-400", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic")) === 'In: None') && "opacity-30 cursor-not-allowed")}
+                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center", track.armed ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-red-500/20 hover:text-red-400", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Playback Only" : "In: Default Mic")) === 'Playback Only') && "opacity-30 cursor-not-allowed")}
                       >
                         <Circle className="w-3 h-3 fill-current" />
                       </button>

@@ -750,7 +750,8 @@ export default function Studio() {
       armed: false,
       waveform: [],
       startTime: 0,
-      duration: 0
+      duration: 0,
+      isNew: true
     };
     setTracksWithHistory([...tracks, newTrack]);
     setRenamingTrack(newTrack);
@@ -969,7 +970,7 @@ export default function Studio() {
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       {/* Top Toolbar */}
-      <div className="h-16 border-b border-border/50 bg-card/80 backdrop-blur flex items-center justify-between gap-2 px-2 sm:px-4 shrink-0 overflow-x-auto custom-scrollbar relative pr-8">
+      <div className="h-16 border-b border-border/50 bg-card/80 backdrop-blur flex items-center justify-between gap-2 px-2 sm:px-4 shrink-0 overflow-x-auto custom-scrollbar relative pr-12 sm:pr-16">
         <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card/80 to-transparent pointer-events-none z-10" />
         <div className="flex items-center gap-4 shrink-0">
           <div className="font-heading font-black text-base sm:text-xl tracking-tight flex items-center gap-2">
@@ -990,7 +991,7 @@ export default function Studio() {
         </div>
 
         {/* Right Tools - Hardware & Export */}
-        <div className="flex items-center gap-2 shrink-0 pr-6 sm:pr-8">
+        <div className="flex items-center gap-2 shrink-0 pr-12 sm:pr-16">
           {/* Live Collaborators */}
           <LivePresenceBar peers={livePeers} />
 
@@ -1065,7 +1066,7 @@ export default function Studio() {
       </div>
 
       {/* Toolbar 2 (Tools) */}
-      <div className="h-12 border-b border-border/40 bg-card/40 flex items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 overflow-x-auto custom-scrollbar relative pr-8">
+      <div className="h-12 border-b border-border/40 bg-card/40 flex items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 overflow-x-auto custom-scrollbar relative pr-12 sm:pr-16">
         <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card/80 to-transparent pointer-events-none z-10 flex items-center justify-end pr-1">
           <ChevronRight className="w-4 h-4 text-muted-foreground opacity-70" />
         </div>
@@ -1111,7 +1112,15 @@ export default function Studio() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {["4/4", "3/4", "2/4", "2/2", "6/8", "9/8", "12/8", "5/4", "7/8"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    <SelectItem value="4/4">4/4</SelectItem>
+                    <SelectItem value="3/4">3/4</SelectItem>
+                    <SelectItem value="2/4">2/4</SelectItem>
+                    <SelectItem value="2/2">2/2</SelectItem>
+                    <SelectItem value="6/8">6/8</SelectItem>
+                    <SelectItem value="9/8">9/8</SelectItem>
+                    <SelectItem value="12/8">12/8</SelectItem>
+                    <SelectItem value="5/4">5/4</SelectItem>
+                    <SelectItem value="7/8">7/8</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1125,7 +1134,14 @@ export default function Studio() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
-                    {["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"].flatMap(k => [`${k} Maj`, `${k} min`, `${k} Dorian`, `${k} Phrygian`, `${k} Lydian`, `${k} Mixolydian`]).map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                    {[
+                      "C Maj", "Db Maj", "D Maj", "Eb Maj", "E Maj", "F Maj", "Gb Maj", "G Maj", "Ab Maj", "A Maj", "Bb Maj", "B Maj",
+                      "C min", "Db min", "D min", "Eb min", "E min", "F min", "Gb min", "G min", "Ab min", "A min", "Bb min", "B min",
+                      "C Dorian", "Db Dorian", "D Dorian", "Eb Dorian", "E Dorian", "F Dorian", "Gb Dorian", "G Dorian", "Ab Dorian", "A Dorian", "Bb Dorian", "B Dorian",
+                      "C Phrygian", "Db Phrygian", "D Phrygian", "Eb Phrygian", "E Phrygian", "F Phrygian", "Gb Phrygian", "G Phrygian", "Ab Phrygian", "A Phrygian", "Bb Phrygian", "B Phrygian",
+                      "C Lydian", "Db Lydian", "D Lydian", "Eb Lydian", "E Lydian", "F Lydian", "Gb Lydian", "G Lydian", "Ab Lydian", "A Lydian", "Bb Lydian", "B Lydian",
+                      "C Mixolydian", "Db Mixolydian", "D Mixolydian", "Eb Mixolydian", "E Mixolydian", "F Mixolydian", "Gb Mixolydian", "G Mixolydian", "Ab Mixolydian", "A Mixolydian", "Bb Mixolydian", "B Mixolydian"
+                    ].map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -1137,13 +1153,23 @@ export default function Studio() {
         {/* Edit Modes */}
         <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
           <TooltipProvider delayDuration={200}>
-            {['shuffle', 'slip', 'grid'].map((mode) => (
-              <Tooltip key={mode}><TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label={`${mode} mode`} onClick={() => setEditMode(mode)} aria-pressed={editMode === mode} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", editMode === mode && "bg-primary/20 text-primary")}>
-                    {mode === 'shuffle' && <Shuffle className="w-3.5 h-3.5" />}{mode === 'slip' && <MoveHorizontal className="w-3.5 h-3.5" />}{mode === 'grid' && <Grid className="w-3.5 h-3.5" />}
-                  </Button>
-                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">{`${mode.charAt(0).toUpperCase() + mode.slice(1)} Mode`}</TooltipContent></Tooltip>
-            ))}
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Shuffle" onClick={() => setEditMode('shuffle')} aria-pressed={editMode === 'shuffle'} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", editMode === 'shuffle' && "bg-primary/20 text-primary")}>
+                <Shuffle className="w-3.5 h-3.5" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Shuffle Mode</TooltipContent></Tooltip>
+            
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Loop" onClick={() => setEditMode('slip')} aria-pressed={editMode === 'slip'} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", editMode === 'slip' && "bg-primary/20 text-primary")}>
+                <MoveHorizontal className="w-3.5 h-3.5" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Loop Mode</TooltipContent></Tooltip>
+
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Grid" onClick={() => setEditMode('grid')} aria-pressed={editMode === 'grid'} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", editMode === 'grid' && "bg-primary/20 text-primary")}>
+                <Grid className="w-3.5 h-3.5" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Grid Mode</TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 
@@ -1178,7 +1204,7 @@ export default function Studio() {
         </div>
         
         <div className="flex-1" />
-        <div className="flex items-center gap-3 ml-auto text-sm text-muted-foreground shrink-0 pl-4 pr-6 sm:pr-8">
+        <div className="flex items-center gap-3 ml-auto text-sm text-muted-foreground shrink-0 pl-4 pr-12 sm:pr-16">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={() => { const maxD = Math.max(...tracks.map(t => (t.startTime||0)+(t.duration||40))); if (maxD>0) setZoom(Math.max(0.5, 40/maxD)); }} className="h-7 px-2 text-xs rounded text-muted-foreground hover:text-foreground hover:bg-secondary"><Maximize2 className="w-3.5 h-3.5 mr-1.5" /> <span className="hidden lg:inline">Fit</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Zoom to fit all tracks</TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div className="flex items-center gap-1 cursor-help ml-2"><span className="hidden lg:inline">Zoom</span></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Adjust horizontal zoom (Ctrl+Scroll)</TooltipContent></Tooltip>
@@ -1213,7 +1239,7 @@ export default function Studio() {
           )}
         </AnimatePresence>
         {/* Track Headers (Left Sidebar) */}
-        <div className="w-56 sm:w-80 border-r border-border/50 bg-card/60 flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)]">
+        <div className="w-72 md:w-96 border-r border-border/50 bg-card/60 flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)]">
           <DragDropContext onDragEnd={handleReorderTracks}>
             <Droppable droppableId="studio-track-headers">
               {(dropProvided) => (
@@ -1235,7 +1261,7 @@ export default function Studio() {
                           )}
                         >
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center min-w-0 mr-2">
+                  <div className="flex items-center mr-2">
                     <span
                       {...dragProvided.dragHandleProps}
                       onClick={(e) => e.stopPropagation()}
@@ -1244,13 +1270,13 @@ export default function Studio() {
                     >
                       <GripVertical className="w-3.5 h-3.5" />
                     </span>
-                  <div className="flex flex-col min-w-0">
-                    <div className="flex items-center gap-2 font-medium text-sm min-w-0">
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2 font-medium text-sm">
                       <div className={cn("w-2 h-2 rounded-full shrink-0", track.color)} />
                       <TooltipProvider delayDuration={200}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="whitespace-normal break-words text-xs font-semibold cursor-help block w-full" title={track.name}>{track.name}</span>
+                            <span className="whitespace-pre-wrap break-words text-xs font-semibold cursor-help" title={track.name}>{track.name}</span>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[240px] break-words">{track.name}</TooltipContent>
                         </Tooltip>
@@ -1286,7 +1312,7 @@ export default function Studio() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenuItem onSelect={() => {
-                          setRenamingTrack(track);
+                          setRenamingTrack({ ...track, isNew: false });
                           setNewTrackName(track.name);
                         }}>
                           <PenTool className="w-4 h-4 mr-2" /> Rename
@@ -1923,7 +1949,7 @@ export default function Studio() {
       <Dialog open={!!renamingTrack} onOpenChange={(open) => !open && setRenamingTrack(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{renamingTrack?.name?.startsWith("New Track") ? "Name Track" : "Rename Track"}</DialogTitle>
+            <DialogTitle>{renamingTrack?.isNew ? "Create Track" : "Rename Track"}</DialogTitle>
           </DialogHeader>
           <Input 
             value={newTrackName} 

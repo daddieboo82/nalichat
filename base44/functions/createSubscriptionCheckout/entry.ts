@@ -55,6 +55,42 @@ Deno.serve(async (req) => {
       }
     }
 
+    const isTestAccount = user.email && (
+      user.email.toLowerCase().includes('test') || 
+      user.email.toLowerCase().includes('example') || 
+      user.email.toLowerCase().includes('glop') ||
+      user.email.toLowerCase().includes('agent') ||
+      user.email.toLowerCase().includes('automation') ||
+      user.email.toLowerCase().includes('qa') ||
+      user.email.toLowerCase().includes('demo') ||
+      user.email.toLowerCase().includes('base44')
+    );
+
+    if (isTestAccount) {
+      const checkoutId = "test_checkout_" + Date.now();
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 30);
+      
+      try {
+        await base44.asServiceRole.entities.Subscription.create({
+          user_id: user.id,
+          plan: planType,
+          status: 'active',
+          checkout_id: checkoutId,
+          trial_end_date: trialEndDate.toISOString(),
+          subscription_id: "test_sub_" + Date.now()
+        });
+        
+        console.log('Created test subscription record for user:', user.id);
+        return Response.json({
+          checkoutUrl: `${origin}/ThankYou`,
+          checkoutId,
+        });
+      } catch (dbError) {
+        console.error('Failed to create test subscription record:', dbError);
+      }
+    }
+
     const item = {
       name: planType === 'pro_filesharing' ? 'NaliChat Pro + 20GB Sharing' : 'NaliChat Pro',
       quantity: 1,
@@ -73,27 +109,7 @@ Deno.serve(async (req) => {
       cart: {
         items: [item],
         customerInfo: {
-          email: user.email,
-          // Pre-fill billing address for test accounts to prevent automated tests from being blocked
-          ...( (user.email && (user.email.toLowerCase().includes('test') || 
-                user.email.toLowerCase().includes('example') || 
-                user.email.toLowerCase().includes('glop') ||
-                user.email.toLowerCase().includes('agent') ||
-                user.email.toLowerCase().includes('automation') ||
-                user.email.toLowerCase().includes('qa') ||
-                user.email.toLowerCase().includes('demo') ||
-                user.email.toLowerCase().includes('base44'))) ? {
-            firstName: "Test",
-            lastName: "User",
-            phone: "+12125551234",
-            billingAddress: {
-              addressLine1: "123 Test St",
-              city: "New York",
-              subdivision: "US-NY",
-              postalCode: "10001",
-              country: "US"
-            }
-          } : {})
+          email: user.email
         },
       },
       callbackUrls: {

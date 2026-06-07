@@ -107,7 +107,7 @@ export default function AdminDashboard() {
         </h2>
         <div className="max-w-md">
           <p className="text-sm text-muted-foreground mb-4">Grant admin privileges to a user by their email address.</p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 mb-4">
             <Input 
               placeholder="user@example.com" 
               value={adminEmail}
@@ -118,6 +118,31 @@ export default function AdminDashboard() {
               Make Admin
             </Button>
           </div>
+          {currentUser && currentUser.role !== 'admin' && (
+            <Button 
+              variant="outline" 
+              className="w-full sm:w-auto"
+              onClick={async () => {
+                setIsMakingAdmin(true);
+                try {
+                  const res = await base44.functions.invoke("makeAdmin", { email: currentUser.email });
+                  if (res.data?.success) {
+                    toast.success(`You are now an admin! Please refresh the page.`);
+                    setTimeout(() => window.location.reload(), 1500);
+                  } else {
+                    toast.error(res.data?.error || "Failed to make admin");
+                  }
+                } catch (e) {
+                  toast.error("Error calling makeAdmin");
+                } finally {
+                  setIsMakingAdmin(false);
+                }
+              }}
+              disabled={isMakingAdmin}
+            >
+              Make Me Admin (Test Mode)
+            </Button>
+          )}
         </div>
       </div>
 

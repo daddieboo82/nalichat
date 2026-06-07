@@ -1155,50 +1155,51 @@ export default function Studio() {
 
         {/* BPM / Time Signature / Key display */}
         <div className="flex items-stretch gap-px bg-background/50 rounded-lg border border-border/50 shadow-inner overflow-hidden shrink-0">
-          <div className="flex flex-col items-center justify-center px-3 py-1 hover:bg-secondary/40 transition-colors" title="Tempo (beats per minute)">
-            <span className="text-[9px] uppercase tracking-wider text-muted-foreground leading-none mb-1 flex items-center gap-1 pointer-events-none"><Edit2 className="w-2.5 h-2.5" /> BPM</span>
-            <input type="text" inputMode="numeric" value={bpmInput}
-              onChange={(e) => setBpmInput(e.target.value.replace(/[^0-9]/g, ''))}
-              onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-              className="w-14 bg-secondary/50 border border-border rounded px-1 text-center font-mono text-xs font-bold text-foreground focus:ring-1 focus:ring-primary focus:border-primary outline-none py-0.5 leading-tight transition-all cursor-text" />
-          </div>
-          <div className="flex flex-col items-center justify-center px-3 py-0.5 border-l border-border/60" title="Time signature">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Sig</span>
-            <select value={timeSignature} onChange={(e) => setTimeSignature(e.target.value)} className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none">
-              <option value="4/4">4/4</option><option value="3/4">3/4</option><option value="6/8">6/8</option><option value="5/4">5/4</option><option value="7/8">7/8</option>
-            </select>
-          </div>
-          <div className="flex flex-col items-center justify-center px-3 py-0.5 border-l border-border/60" title="Project key">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Key</span>
-            <select value={songKey} onChange={(e) => setSongKey(e.target.value)} className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none">
-              {["C Maj","G Maj","D Maj","A Maj","E Maj","F Maj","Bb Maj","A min","E min","B min","D min","G min","C min"].map(k => (<option key={k} value={k}>{k}</option>))}
-            </select>
-          </div>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip><TooltipTrigger asChild>
+              <div className="flex flex-col items-center justify-center px-3 py-1 hover:bg-secondary/40 transition-colors">
+                <span className="text-[9px] uppercase tracking-wider text-muted-foreground leading-none mb-1 flex items-center gap-1 pointer-events-none"><Edit2 className="w-2.5 h-2.5" /> BPM</span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => { const c = Math.max(20, bpm - 1); setBpm(c); setBpmInput(String(c)); sounds.click(); }} className="w-4 h-4 flex items-center justify-center bg-secondary/50 hover:bg-secondary rounded border border-border text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer">-</button>
+                  <input type="text" inputMode="numeric" value={bpmInput} onChange={(e) => setBpmInput(e.target.value.replace(/[^0-9]/g, ''))} onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} className="w-10 bg-secondary/50 border border-border rounded px-1 text-center font-mono text-xs font-bold text-foreground focus:ring-1 focus:ring-primary focus:border-primary outline-none py-0.5 leading-tight transition-all cursor-text" />
+                  <button onClick={() => { const c = Math.min(300, bpm + 1); setBpm(c); setBpmInput(String(c)); sounds.click(); }} className="w-4 h-4 flex items-center justify-center bg-secondary/50 hover:bg-secondary rounded border border-border text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer">+</button>
+                </div>
+              </div>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Tempo (beats per minute)</TooltipContent></Tooltip>
+            
+            <Tooltip><TooltipTrigger asChild>
+              <div className="flex flex-col items-center justify-center px-3 py-0.5 border-l border-border/60">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Sig</span>
+                <select value={timeSignature} onChange={(e) => setTimeSignature(e.target.value)} className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none">
+                  <option value="4/4">4/4</option><option value="3/4">3/4</option><option value="6/8">6/8</option><option value="5/4">5/4</option><option value="7/8">7/8</option>
+                </select>
+              </div>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Time Signature</TooltipContent></Tooltip>
+
+            <Tooltip><TooltipTrigger asChild>
+              <div className="flex flex-col items-center justify-center px-3 py-0.5 border-l border-border/60">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Key</span>
+                <select value={songKey} onChange={(e) => setSongKey(e.target.value)} className="bg-transparent text-center font-mono text-xs font-bold text-foreground outline-none border-none p-0 leading-tight cursor-pointer appearance-none">
+                  {["C Maj","G Maj","D Maj","A Maj","E Maj","F Maj","Bb Maj","A min","E min","B min","D min","G min","C min"].map(k => (<option key={k} value={k}>{k}</option>))}
+                </select>
+              </div>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Project Key</TooltipContent></Tooltip>
+          </TooltipProvider>
         </div>
 
         <div className="h-5 w-px bg-border/50 mx-1 shrink-0" />
 
         {/* Edit Modes */}
         <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
-          {['shuffle', 'slip', 'grid'].map((mode) => (
-            <Button
-              key={mode}
-              variant="ghost"
-              size="sm"
-              onClick={() => setEditMode(mode)}
-              aria-pressed={editMode === mode}
-              title={`${mode.charAt(0).toUpperCase() + mode.slice(1)} edit mode`}
-              className={cn(
-                "px-2.5 py-1 h-7 text-xs rounded-md capitalize transition-all",
-                editMode === mode
-                  ? "bg-primary text-primary-foreground font-semibold shadow-sm ring-1 ring-primary/50 hover:bg-primary"
-                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-              )}
-            >
-              {mode}
-            </Button>
-          ))}
+          <TooltipProvider delayDuration={200}>
+            {['shuffle', 'slip', 'grid'].map((mode) => (
+              <Tooltip key={mode}><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => setEditMode(mode)} aria-pressed={editMode === mode} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", editMode === mode && "bg-primary/20 text-primary")}>
+                    {mode === 'shuffle' && <Shuffle className="w-3.5 h-3.5" />}{mode === 'slip' && <MoveHorizontal className="w-3.5 h-3.5" />}{mode === 'grid' && <Grid className="w-3.5 h-3.5" />}
+                  </Button>
+                </TooltipTrigger><TooltipContent side="bottom" className="text-xs">{`${mode.charAt(0).toUpperCase() + mode.slice(1)} Mode`}</TooltipContent></Tooltip>
+            ))}
+          </TooltipProvider>
         </div>
 
         {/* Tools */}
@@ -1232,15 +1233,8 @@ export default function Studio() {
         
         <div className="flex-1" />
         <div className="flex items-center gap-3 ml-auto text-sm text-muted-foreground shrink-0 pl-4">
-          <Maximize2 className="w-4 h-4" /> Zoom
-          <Slider 
-            value={[zoom]} 
-            min={0.5} 
-            max={10} 
-            step={0.1}
-            onValueChange={(v) => setZoom(v[0])}
-            className="w-24"
-          />
+          <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><div className="flex items-center gap-1 cursor-help"><Maximize2 className="w-4 h-4" /> <span className="hidden lg:inline">Zoom</span></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Adjust horizontal zoom (Ctrl+Scroll)</TooltipContent></Tooltip></TooltipProvider>
+          <Slider value={[zoom]} min={0.5} max={10} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-24" />
         </div>
       </div>
 

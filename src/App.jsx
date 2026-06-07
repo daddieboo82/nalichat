@@ -40,6 +40,7 @@ const Onboarding = lazy(() => import('@/pages/Onboarding'));
 const PricingPlans = lazy(() => import('@/components/pricing/PricingPlans'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
 const Studio = lazy(() => import('@/pages/Studio'));
+const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const Record = lazy(() => import('@/pages/Record'));
 const CoverArt = lazy(() => import('@/pages/CoverArt'));
 const WebhookTest = lazy(() => import('@/pages/WebhookTest'));
@@ -150,6 +151,8 @@ const AuthenticatedApp = () => {
           <Route path="/cover-art" element={<CoverArt />} />
           <Route path="/webhook-test" element={<WebhookTest />} />
           <Route path="/WebhookTest" element={<Navigate to="/webhook-test" replace />} />
+          <Route path="/business" element={<AdminDashboard />} />
+          <Route path="/admin" element={<Navigate to="/business" replace />} />
         </Route>
       </Route>
       <Route path="/privacy" element={<Privacy />} />

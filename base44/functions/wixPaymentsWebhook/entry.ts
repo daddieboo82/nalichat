@@ -159,22 +159,36 @@ Deno.serve(async (req) => {
     // Handle subscription canceled
     if (event.eventType === 'wix.ecom.subscription_contracts.v1.subscription_contract_canceled') {
       try {
-        const subscriptionContract = eventData.actionEvent.body.subscriptionContract;
+        const subscriptionContract = eventData?.actionEvent?.body?.subscriptionContract || eventData?.subscriptionContract || eventData;
         const subscriptionId = subscriptionContract?.id;
         if (!subscriptionId) {
           console.warn('No subscription ID in cancel event');
           return Response.json({ success: true });
         }
 
-        const subs = await base44.asServiceRole.entities.Subscription.filter({
+        let subs = await base44.asServiceRole.entities.Subscription.filter({
           subscription_id: subscriptionId,
         });
+
+        // Fallback to match by database ID if subscription_id isn't found
+        if (subs.length === 0) {
+          try {
+            const subById = await base44.asServiceRole.entities.Subscription.get(subscriptionId);
+            if (subById) {
+              subs = [subById];
+            }
+          } catch (e) {
+            // Ignore format errors
+          }
+        }
 
         if (subs.length > 0) {
           await base44.asServiceRole.entities.Subscription.update(subs[0].id, {
             status: 'canceled',
           });
           console.log('Subscription canceled:', subscriptionId);
+        } else {
+          console.warn('Subscription not found for cancel event:', subscriptionId);
         }
 
         return Response.json({ success: true });
@@ -187,22 +201,36 @@ Deno.serve(async (req) => {
     // Handle subscription expired
     if (event.eventType === 'wix.ecom.subscription_contracts.v1.subscription_contract_expired') {
       try {
-        const subscriptionContract = eventData.actionEvent.body.subscriptionContract;
+        const subscriptionContract = eventData?.actionEvent?.body?.subscriptionContract || eventData?.subscriptionContract || eventData;
         const subscriptionId = subscriptionContract?.id;
         if (!subscriptionId) {
           console.warn('No subscription ID in expire event');
           return Response.json({ success: true });
         }
 
-        const subs = await base44.asServiceRole.entities.Subscription.filter({
+        let subs = await base44.asServiceRole.entities.Subscription.filter({
           subscription_id: subscriptionId,
         });
+
+        // Fallback to match by database ID if subscription_id isn't found
+        if (subs.length === 0) {
+          try {
+            const subById = await base44.asServiceRole.entities.Subscription.get(subscriptionId);
+            if (subById) {
+              subs = [subById];
+            }
+          } catch (e) {
+            // Ignore format errors
+          }
+        }
 
         if (subs.length > 0) {
           await base44.asServiceRole.entities.Subscription.update(subs[0].id, {
             status: 'ended',
           });
           console.log('Subscription ended:', subscriptionId);
+        } else {
+          console.warn('Subscription not found for expire event:', subscriptionId);
         }
 
         return Response.json({ success: true });

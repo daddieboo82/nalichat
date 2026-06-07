@@ -28,6 +28,7 @@ import TrackWaveformSVG from '@/components/studio/TrackWaveformSVG';
 import Record from '@/pages/Record';
 import StudioWelcome from '@/components/studio/StudioWelcome';
 import StudioDialogs from '@/components/studio/StudioDialogs';
+import JamRoomOverlay from '@/components/studio/JamRoomOverlay';
 
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
@@ -96,6 +97,7 @@ export default function Studio() {
   });
   const [jamRoomActive, setJamRoomActive] = useState(false);
   const [jamVideoActive, setJamVideoActive] = useState(false);
+  const [defaultRole, setDefaultRole] = useState("editor");
   const [isProcessing, setIsProcessing] = useState(null); // 'separate' | 'generate' | null
 
   const { hasAccess, isPro, isLoading: isLoadingSub } = useSubscription();
@@ -1257,27 +1259,7 @@ export default function Studio() {
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden bg-[#0a0a0c] relative">
         {/* Jam Room Floating Overlay */}
-        <AnimatePresence>
-          {jamRoomActive && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="absolute bottom-4 right-4 z-50 flex flex-col items-end gap-2"
-            >
-              <div className="w-56 bg-card/90 backdrop-blur border border-border rounded-xl shadow-xl overflow-hidden p-4 flex flex-col items-center text-center">
-                <div className="relative mb-2">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-primary rounded-full animate-pulse shadow-[0_0_8px_rgba(var(--primary),1)]" />
-                </div>
-                <p className="text-xs font-semibold text-foreground">Jam Room is live</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Share the room link from Messages to invite collaborators. They'll appear here when they join.</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} />
         {/* Track Headers (Left Sidebar) */}
         <div className="w-72 md:w-96 border-r border-border/50 bg-card/60 flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)]">
           <DragDropContext onDragEnd={handleReorderTracks}>

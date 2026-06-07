@@ -52,7 +52,8 @@
       "allowed_operations": [
         "create",
         "read",
-        "delete"
+        "delete",
+        "update"
       ]
     },
     {
@@ -69,25 +70,33 @@
       "allowed_operations": [
         "create",
         "read",
-        "delete"
+        "delete",
+        "update"
       ]
     },
     {
       "entity_name": "Notification",
       "allowed_operations": [
-        "read"
+        "read",
+        "create",
+        "update",
+        "delete"
       ]
     },
     {
       "entity_name": "Achievement",
       "allowed_operations": [
-        "read"
+        "read",
+        "create",
+        "update",
+        "delete"
       ]
     },
     {
       "entity_name": "User",
       "allowed_operations": [
-        "read"
+        "read",
+        "update"
       ]
     },
     {
@@ -121,7 +130,9 @@
       "entity_name": "Subscription",
       "allowed_operations": [
         "read",
-        "update"
+        "update",
+        "create",
+        "delete"
       ]
     },
     {
@@ -164,6 +175,52 @@
     {
       "function_name": "naliHealthCheck",
       "description": "Scan the app for data issues and enhancement opportunities, then report findings"
+    },
+    {
+      "entity_name": "Violation",
+      "allowed_operations": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ]
+    },
+    {
+      "entity_name": "StudioPresence",
+      "allowed_operations": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ]
+    },
+    {
+      "function_name": "checkSubscriptionStatus",
+      "description": "Check the status of a user's subscription."
+    },
+    {
+      "function_name": "createCheckout",
+      "description": "Create a checkout session for purchasing tracks."
+    },
+    {
+      "function_name": "createSubscriptionCheckout",
+      "description": "Create a checkout session for a subscription plan."
+    },
+    {
+      "function_name": "makeAdmin",
+      "description": "Grant a user admin privileges."
+    },
+    {
+      "function_name": "moderateContent",
+      "description": "Run AI moderation on provided content."
+    },
+    {
+      "function_name": "sendSmsInvite",
+      "description": "Send an SMS invite to a phone number."
+    },
+    {
+      "function_name": "updateUserPresence",
+      "description": "Update the presence status of a user."
     }
   ],
   "context_files": [],

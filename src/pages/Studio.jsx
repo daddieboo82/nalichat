@@ -1034,9 +1034,16 @@ export default function Studio() {
                {jamRoomActive ? "Jam Room Active" : "Start Jam Room"}
              </Button>
              {jamRoomActive && (
-               <Button variant="ghost" size="icon" onClick={() => setJamVideoActive(!jamVideoActive)} className="w-8 h-8 rounded-lg hover:bg-secondary">
-                 {jamVideoActive ? <Video className="w-4 h-4 text-green-400" /> : <VideoOff className="w-4 h-4 text-muted-foreground" />}
-               </Button>
+               <TooltipProvider delayDuration={200}>
+                 <Tooltip>
+                   <TooltipTrigger asChild>
+                     <Button variant="ghost" size="icon" onClick={() => setJamVideoActive(!jamVideoActive)} className="w-8 h-8 rounded-lg hover:bg-secondary">
+                       {jamVideoActive ? <Video className="w-4 h-4 text-green-400" /> : <VideoOff className="w-4 h-4 text-muted-foreground" />}
+                     </Button>
+                   </TooltipTrigger>
+                   <TooltipContent side="bottom" className="text-xs">{jamVideoActive ? "Turn Video Off" : "Turn Video On"}</TooltipContent>
+                 </Tooltip>
+               </TooltipProvider>
              )}
           </div>
 
@@ -1339,12 +1346,14 @@ export default function Studio() {
                   </div>
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setActivity(`Editing ${track.name}`); setEditingTrack(track); }} className="w-6 h-6 text-muted-foreground hover:text-accent" title="Wave Editor"><SlidersHorizontal className="w-3.5 h-3.5" /></Button>
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("hidden sm:flex w-6 h-6 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")} title="Elastic Audio"><Activity className="w-3.5 h-3.5" /></Button>
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("hidden sm:flex w-6 h-6 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")} title="Show Automation"><TrendingUp className="w-3.5 h-3.5" /></Button>
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setActivity(`Editing ${track.name}`); setEditingTrack(track); }} className="w-6 h-6 text-muted-foreground hover:text-accent"><SlidersHorizontal className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Wave Editor</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("hidden sm:flex w-6 h-6 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-blue-400")}><Activity className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Elastic Audio</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("hidden sm:flex w-6 h-6 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")}><TrendingUp className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Show Automation</TooltipContent></Tooltip>
+                    </TooltipProvider>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="w-6 h-6 text-muted-foreground hover:text-foreground" title="Track Options"><Settings2 className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="w-6 h-6 text-muted-foreground hover:text-foreground"><Settings2 className="w-3.5 h-3.5" /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenuItem onSelect={() => {

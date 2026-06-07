@@ -514,7 +514,7 @@ export default function Studio() {
     setIsPlaying(false);
     if (isRecording) { setIsRecording(false); stopRecordingProcess(); } else { sounds.recStop(); }
     Object.values(audioElementsRef.current).forEach(a => { a.pause(); a.currentTime = 0; });
-    updateCurrentTime(0);
+    setTimeout(() => updateCurrentTime(0), 10);
   };
 
   // Keyboard shortcuts for Power Users
@@ -939,7 +939,10 @@ export default function Studio() {
             <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             <span className="text-gradient-animate hidden xs:inline sm:inline">NaliStudio</span>
           </div>
-          <div className="hidden sm:flex items-center gap-2 px-3 border-l border-border/50 text-sm"><input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} className="bg-transparent border-none focus:outline-none focus:ring-0 text-foreground font-medium w-48 truncate placeholder:text-muted-foreground" placeholder="Project Name..." /></div>
+          <div className="hidden sm:flex items-center gap-2 px-3 border-l border-border/50 text-sm group">
+            <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} className="bg-transparent border-none focus:outline-none focus:ring-0 text-foreground font-medium w-48 truncate placeholder:text-muted-foreground group-hover:bg-secondary/50 rounded px-1 transition-colors" placeholder="Project Name..." />
+            <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
         </div>
 
         {/* Transport Controls */}
@@ -1070,7 +1073,7 @@ export default function Studio() {
                 <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
               </Button>
             </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Add Track <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+N</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button aria-label="Open Wave Editor" onClick={() => { if(selectedTrackIds.length===1) { const track = tracks.find(t => t.id === selectedTrackIds[0]); if(track) setEditingTrack(track); } else toast.error("Please select exactly one track"); }} variant="ghost" size="sm" className={cn("gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0", selectedTrackIds.length !== 1 && "opacity-50")}><SlidersHorizontal className="w-4 h-4" /> <span className="hidden md:inline">Wave Editor</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Open Wave Editor (Select 1 track) <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+W</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><span className="inline-block"><Button disabled={selectedTrackIds.length !== 1} aria-label="Open Wave Editor" onClick={() => { if(selectedTrackIds.length===1) { const track = tracks.find(t => t.id === selectedTrackIds[0]); if(track) setEditingTrack(track); } else toast.error("Please select exactly one track"); }} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0"><SlidersHorizontal className="w-4 h-4" /> <span className="hidden md:inline">Wave Editor</span></Button></span></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Open Wave Editor (Select 1 track) <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+W</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button aria-label="Split Stems" onClick={handleSeparateStems} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'separate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} <span className="hidden md:inline">Split Stems</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Separate Vocals & Instrumental <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+E</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button aria-label="Generate Melody" onClick={handleGenerateMelody} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} <span className="hidden lg:inline">Generate Melody</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Generate AI Melody <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+G</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
@@ -1280,17 +1283,17 @@ export default function Studio() {
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
                       <Select 
-                        value={track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input" : "In: Default Mic")}
+                        value={track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Internal Audio" : "In: Default Mic")}
                         onValueChange={(val) => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, inputType: val } : t))}
                       >
-                        <SelectTrigger className={cn("h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] w-max min-w-[120px] max-w-[160px] truncate flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none transition-colors", (track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input" : "In: Default Mic")) !== "No Input" ? "text-primary hover:text-primary/80 font-bold" : "text-muted-foreground hover:text-foreground")}>
+                        <SelectTrigger className={cn("h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] w-max min-w-[120px] max-w-[160px] truncate flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none transition-colors", (track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Internal Audio" : "In: Default Mic")) !== "Internal Audio" ? "text-primary hover:text-primary/80 font-bold" : "text-muted-foreground hover:text-foreground")}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="In: Default Mic">In: Default Mic</SelectItem>
                           <SelectItem value="In: Audio Interface">In: Audio Interface</SelectItem>
                           <SelectItem value="In: MIDI Keyboard">In: MIDI Keyboard</SelectItem>
-                          <SelectItem value="No Input">No Input</SelectItem>
+                          <SelectItem value="Internal Audio">Internal Audio</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1346,14 +1349,14 @@ export default function Studio() {
                     <Tooltip><TooltipTrigger asChild>
                       <button 
                         onClick={() => {
-                           const input = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input" : "In: Default Mic");
-                           if (input === 'No Input') {
-                              toast.error("Cannot arm a track set to No Input");
+                           const input = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Internal Audio" : "In: Default Mic");
+                           if (input === 'Internal Audio') {
+                              toast.error("Cannot arm a track set to Internal Audio");
                               return;
                            }
                            toggleArm(track.id);
                         }}
-                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center border focus:outline-none", track.armed ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input" : "In: Default Mic")) === 'No Input') && "opacity-30 cursor-not-allowed")}
+                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center border focus:outline-none", track.armed ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Internal Audio" : "In: Default Mic")) === 'Internal Audio') && "opacity-30 cursor-not-allowed")}
                       >
                         <Circle className="w-3 h-3 fill-current" />
                       </button>
@@ -1912,6 +1915,8 @@ export default function Studio() {
         updateVolume={updateVolume} 
         toggleMute={toggleMute} 
         toggleSolo={toggleSolo} 
+        onOpenFX={(trackId) => { const track = tracks.find(t => t.id === trackId); if (track) setEditingTrack(track); }}
+        updateTrack={(trackId, data) => setTracks(prev => prev.map(t => t.id === trackId ? { ...t, ...data } : t))}
       />
 
       <HardwarePreferencesDialog 

@@ -40,10 +40,11 @@ export default function Studio() {
   const playheadRef = useRef(null);
 
   const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-    const ms = Math.floor((seconds % 1) * 100);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+    const frames = Math.floor((seconds % 1) * 30);
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}:${frames.toString().padStart(2, '0')}`;
   };
   const mediaStreamRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -514,8 +515,7 @@ export default function Studio() {
   const stop = () => {
     setIsPlaying(false);
     if (isRecording) { setIsRecording(false); stopRecordingProcess(); } else { sounds.recStop(); }
-    Object.values(audioElementsRef.current).forEach(a => { a.pause(); a.currentTime = 0; });
-    updateCurrentTime(0);
+    Object.values(audioElementsRef.current).forEach(a => { a.pause(); });
   };
 
   // Keyboard shortcuts for Power Users
@@ -1015,7 +1015,7 @@ export default function Studio() {
             </Button>
           </div>
 
-          <div className="font-mono text-sm sm:text-xl text-primary font-bold bg-[#0a0a0c] px-2 sm:px-4 py-1.5 rounded-lg border border-border w-24 sm:w-36 text-center shadow-inner tracking-tight sm:tracking-normal relative group shrink-0">
+          <div className="font-mono text-sm sm:text-xl text-primary font-bold bg-[#0a0a0c] px-2 sm:px-4 py-1.5 rounded-lg border border-border w-32 sm:w-44 text-center shadow-inner tracking-tight sm:tracking-normal relative group shrink-0">
             <span ref={timeDisplayRef}>{formatTime(currentTimeRef.current)}</span>
             {isRecording && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
           </div>
@@ -1142,10 +1142,10 @@ export default function Studio() {
             </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Shuffle Mode</TooltipContent></Tooltip>
             
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" aria-label="Loop" onClick={() => setEditMode('slip')} aria-pressed={editMode === 'slip'} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'slip' && "bg-primary/20 text-primary")}>
-                <MoveHorizontal className="w-3.5 h-3.5" /><span className="text-xs">Loop</span>
+              <Button variant="ghost" size="sm" aria-label="Slip" onClick={() => setEditMode('slip')} aria-pressed={editMode === 'slip'} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'slip' && "bg-primary/20 text-primary")}>
+                <MoveHorizontal className="w-3.5 h-3.5" /><span className="text-xs">Slip</span>
               </Button>
-            </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Loop Mode</TooltipContent></Tooltip>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Slip Mode</TooltipContent></Tooltip>
 
             <Tooltip><TooltipTrigger asChild>
               <Button variant="ghost" size="sm" aria-label="Grid" onClick={() => setEditMode('grid')} aria-pressed={editMode === 'grid'} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'grid' && "bg-primary/20 text-primary")}>
@@ -1160,7 +1160,7 @@ export default function Studio() {
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Trim Tool (T)" onClick={() => setActiveTool('trim')} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'trim' && "bg-primary/20 text-primary")}><MoveHorizontal className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Trim</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Trim Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">T</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Cut Tool (C)" onClick={() => setActiveTool('cut')} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'cut' && "bg-primary/20 text-primary")}><Scissors className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Cut</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Cut Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">C</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Grabber Tool (G)" onClick={() => setActiveTool('grab')} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'grab' && "bg-primary/20 text-primary")}><MousePointer2 className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Grab</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Grabber Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">G</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Grabber Tool (G)" onClick={() => setActiveTool('grab')} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'grab' && "bg-primary/20 text-primary")}><MousePointer2 className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Grabber</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Grabber Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">G</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Fade Tool (F)" onClick={() => setActiveTool('fade')} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'fade' && "bg-primary/20 text-primary")}><Crosshair className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Fade</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Fade Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">F</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Smart Tool (E)" onClick={() => setActiveTool('smart')} className={cn("h-7 px-2 rounded text-muted-foreground border border-transparent hover:text-foreground gap-1.5", activeTool === 'smart' && "border-primary text-primary bg-primary/10")}>
                <div className="flex flex-col gap-0.5 items-center">

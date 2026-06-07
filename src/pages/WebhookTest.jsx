@@ -55,6 +55,48 @@ export default function WebhookTest() {
     }
   };
 
+  const createMockPendingSubscription = async () => {
+    setLoading(true);
+    try {
+      const user = await base44.auth.me();
+      if (user) {
+        await base44.entities.Subscription.create({
+          user_id: user.id,
+          plan: "pro",
+          status: "pending",
+          checkout_id: "mock-checkout-" + Date.now(),
+        });
+        await fetchSubscriptions();
+        toast.success("Created mock pending subscription");
+        queryClient.invalidateQueries({ queryKey: ['subscription'] });
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to create mock pending subscription");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearAllSubscriptions = async () => {
+    setLoading(true);
+    try {
+      const user = await base44.auth.me();
+      if (user) {
+        const subs = await base44.entities.Subscription.filter({ user_id: user.id });
+        await Promise.all(subs.map(sub => base44.entities.Subscription.delete(sub.id)));
+        await fetchSubscriptions();
+        toast.success("Cleared all subscriptions");
+        queryClient.invalidateQueries({ queryKey: ['subscription'] });
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to clear subscriptions");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const removeSubscription = async (id) => {
     try {
       setLoading(true);
@@ -174,9 +216,17 @@ export default function WebhookTest() {
                 Simulate webhook events for your subscriptions (e.g. approve pending orders or cancel active subscriptions).
               </CardDescription>
             </div>
-            <Button onClick={createMockActiveSubscription} disabled={loading} variant="outline" className="shrink-0">
-              Add Mock Active Sub
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={createMockActiveSubscription} disabled={loading} variant="outline" size="sm" className="shrink-0">
+                Add Mock Active Sub
+              </Button>
+              <Button onClick={createMockPendingSubscription} disabled={loading} variant="outline" size="sm" className="shrink-0">
+                Add Mock Pending Sub
+              </Button>
+              <Button onClick={clearAllSubscriptions} disabled={loading} variant="destructive" size="sm" className="shrink-0">
+                Clear All
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {fetchingSubs ? (

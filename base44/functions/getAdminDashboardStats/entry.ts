@@ -11,8 +11,9 @@ Deno.serve(async (req) => {
 
     // Fetch all subscriptions using service role
     const subscriptions = await base44.asServiceRole.entities.Subscription.filter({});
+    const users = await base44.asServiceRole.entities.User.filter({});
 
-    return Response.json({ subscriptions });
+    return Response.json({ subscriptions, users });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

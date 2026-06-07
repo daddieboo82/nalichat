@@ -19,19 +19,22 @@ export default function AdminDashboard() {
       .finally(() => setIsLoadingUser(false));
   }, []);
 
-  const { data: subscriptions = [], isLoading: isLoadingSubs } = useQuery({
-    queryKey: ["allSubscriptions"],
+  const { data: stats = { subscriptions: [], users: [] }, isLoading: isLoadingSubs } = useQuery({
+    queryKey: ["allStats"],
     queryFn: async () => {
       try {
         const res = await base44.functions.invoke('getAdminDashboardStats', {});
-        return res.data?.subscriptions || [];
+        return res.data || { subscriptions: [], users: [] };
       } catch (e) {
         console.error(e);
-        return [];
+        return { subscriptions: [], users: [] };
       }
     },
     enabled: !!currentUser,
   });
+
+  const subscriptions = stats.subscriptions || [];
+  const users = stats.users || [];
 
   if (isLoadingUser || isLoadingSubs) {
     return (
@@ -216,6 +219,84 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      <div className="bg-card border border-border rounded-xl p-6 mt-8">
+        <h2 className="text-xl font-bold mb-4 border-b border-border pb-2 flex items-center gap-2">
+          <Users className="w-5 h-5 text-primary" />
+          All Users & Access Status
+        </h2>
+        {users.length === 0 ? (
+          <p className="text-muted-foreground">No users found.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground uppercase bg-secondary/50">
+                <tr>
+                  <th className="px-4 py-3">User ID</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">Role</th>
+                  <th className="px-4 py-3">Access Status</th>
+                  <th className="px-4 py-3">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.slice().reverse().map((u) => {
+                  const now = new Date();
+                  const createdDate = new Date(u.created_date);
+                  const diffDays = (now - createdDate) / (1000 * 60 * 60 * 24);
+                  const hasTrialFree = diffDays <= 7;
+                  
+                  const userSubs = subscriptions.filter(s => s.user_id === u.id && (s.status === 'active' || s.status === 'trial'))
+                    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+                  const activeSub = userSubs[0];
+                  
+                  let planDisplay = "FREE";
+                  let planClass = "bg-secondary text-secondary-foreground";
+                  
+                  if (u.role === 'admin') {
+                    planDisplay = "PRO (ADMIN)";
+                    planClass = "bg-primary/20 text-primary";
+                  } else if (activeSub) {
+                    if (activeSub.plan === 'pro_filesharing') {
+                      planDisplay = "PRO FILESHARING";
+                      planClass = "bg-primary/20 text-primary";
+                    } else if (activeSub.plan === 'pro') {
+                      planDisplay = "PRO ACTIVE";
+                      planClass = "bg-accent/20 text-accent";
+                    } else if (activeSub.plan === 'trial') {
+                      const trialEnds = new Date(activeSub.trial_end_date);
+                      if (trialEnds > now) {
+                        planDisplay = "TRIAL ACTIVE";
+                        planClass = "bg-yellow-500/20 text-yellow-500";
+                      }
+                    }
+                  } else if (hasTrialFree) {
+                    planDisplay = "FREE TRIAL - FREE ACCESS";
+                    planClass = "bg-accent/20 text-accent";
+                  }
+
+                  return (
+                    <tr key={u.id} className="border-b border-border/50 hover:bg-secondary/20">
+                      <td className="px-4 py-3 font-mono text-xs" title={u.id}>{u.id.slice(0, 8)}...</td>
+                      <td className="px-4 py-3">{u.email}</td>
+                      <td className="px-4 py-3 capitalize">{u.role || 'user'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${planClass}`}>
+                          {planDisplay}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {new Date(u.created_date).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
     </div>
     </div>
   );

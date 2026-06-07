@@ -19,7 +19,7 @@ const trackTypeColors = {
   master: "bg-foreground",
 };
 
-export default function TrackStrip({ track, onUpdate, onDelete, audioRef: externalRef, isPlaying, duration, masterVolume, inQueue, onToggleQueue, canEdit = true, currentUser }) {
+export default function TrackStrip({ track, onUpdate, onDelete, audioRef: externalRef, isPlaying, duration, masterVolume, inQueue, onToggleQueue, canEdit = true, currentUser, isSoloedAway }) {
   const [showPan, setShowPan] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [activeCommentTime, setActiveCommentTime] = useState(null);
@@ -83,7 +83,7 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
       )}
 
       <div className="flex items-center gap-2 mb-2">
-        <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", trackTypeColors[track.type] || "bg-muted")} />
+        <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", (track.muted || isSoloedAway) ? "bg-muted-foreground/50" : (trackTypeColors[track.type] || "bg-muted"))} />
         <span className="font-medium text-xs flex-1 truncate" title={track.name}>{track.name}</span>
         <span className="text-[9px] text-muted-foreground uppercase">{track.type}</span>
       </div>

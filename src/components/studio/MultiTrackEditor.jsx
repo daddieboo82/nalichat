@@ -257,6 +257,7 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
                     isPlaying={isPlaying}
                     currentTime={currentTime}
                     duration={duration}
+                    isSoloedAway={tracks.some(t => t.solo) && !track.solo}
                     onUpdate={(data) => canEdit && onTrackUpdate(track.id, data)}
                     onDelete={() => canEdit && onTrackDelete(track.id)}
                     audioRef={(ref) => {

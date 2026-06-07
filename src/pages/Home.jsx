@@ -310,32 +310,44 @@ export default function Home() {
               {[
                 {
                   title: "🎧 Produce in the Studio",
-                  items: ["Full DAW Interface", "Live Video Jam Rooms", "AI Stem Separation", "AI Stem Generation", "AI Mastering", "AI BPM/Genre/Key Tagging"]
+                  items: ["Full DAW Interface", "Live Video Jam Rooms", "AI Stem Separation", "AI Stem Generation", "AI Mastering", "AI BPM/Genre/Key Tagging"],
+                  link: "/studio",
+                  linkLabel: "Open Studio"
                 },
                 {
                   title: "📁 Projects & Organization",
-                  items: ["Create & manage projects", "Organize tracks & stems", "Set milestones & statuses", "Folders for files"]
+                  items: ["Create & manage projects", "Organize tracks & stems", "Set milestones & statuses", "Folders for files"],
+                  link: "/projects-summary",
+                  linkLabel: "Manage Projects"
                 },
                 {
                   title: "💬 Connect & Collaborate",
-                  items: ["Direct & group messaging", "Real-time Co-editing", "Find collaborators", "Secure file sharing", "Contacts & notifications"]
+                  items: ["Direct & group messaging", "Real-time Co-editing", "Find collaborators", "Secure file sharing", "Contacts & notifications"],
+                  link: "/messages",
+                  linkLabel: "Open Messages"
                 },
                 {
                   title: "🎨 Create & Share",
-                  items: ["Art posts with album art", "AI Cover Art Generation", "Cloud File Storage", "Custom Playlists"]
+                  items: ["Art posts with album art", "AI Cover Art Generation", "Cloud File Storage", "Custom Playlists"],
+                  link: "/explore",
+                  linkLabel: "Explore"
                 },
                 {
                   title: "📈 Build Your Presence",
-                  items: ["Release your tracks", "Stems Marketplace licensing", "Climb the leaderboard", "Grow your following"]
+                  items: ["Release your tracks", "Stems Marketplace licensing", "Climb the leaderboard", "Grow your following"],
+                  link: "/leaderboard",
+                  linkLabel: "View Leaderboard"
                 },
                 {
                   title: "👤 Showcase Talent",
-                  items: ["Creator Profiles", "Earn Achievements", "Display Portfolio", "Level Up Status"]
+                  items: ["Creator Profiles", "Earn Achievements", "Display Portfolio", "Level Up Status"],
+                  link: "/profile",
+                  linkLabel: "View Profile"
                 }
               ].map((block) => (
-                <div key={block.title} className="h-full flex flex-col border border-border/50 rounded-2xl p-6 bg-card/50 transition-colors min-w-0 break-words">
+                <div key={block.title} className="h-full flex flex-col border border-border/50 rounded-2xl p-6 bg-card/50 transition-colors min-w-0 break-words group hover:border-primary/40">
                   <h3 className="font-heading font-bold text-xl mb-4">{block.title}</h3>
-                  <ul className="space-y-2 flex-1">
+                  <ul className="space-y-2 flex-1 mb-6">
                     {block.items.map((item) => (
                       <li key={item} className="flex items-center gap-3 text-foreground/90">
                         <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
@@ -343,6 +355,11 @@ export default function Home() {
                       </li>
                     ))}
                   </ul>
+                  {block.link && (
+                    <Link to={block.link} className="inline-flex items-center gap-2 text-primary font-medium group-hover:underline mt-auto">
+                      {block.linkLabel} <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  )}
                 </div>
               ))}
             </div>

@@ -14,15 +14,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
+import { useSearchParams } from 'react-router-dom';
+
 export default function ProjectsSummary() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ projects: [], milestones: [], sharedFiles: [] });
-  const [showNewProject, setShowNewProject] = useState(false);
+  const [showNewProject, setShowNewProject] = useState(searchParams.get('new') === 'true');
   const [newProjectTitle, setNewProjectTitle] = useState("");
   const [newProjectDescription, setNewProjectDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('new') === 'true') {
+      setShowNewProject(true);
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleCreateProject = async () => {
     if (!newProjectTitle.trim()) return toast.error("Project title is required");

@@ -8,7 +8,7 @@ import { sounds } from "@/hooks/use-sound";
 const TABS = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Compass, label: "Explore", path: "/explore" },
-  { icon: Plus, label: "Release", path: "/explore?upload=true", isAction: true },
+  { icon: Plus, label: "New Project", path: "/projects-summary?new=true", isAction: true },
   { icon: MessageSquare, label: "Messages", path: "/messages" },
   { icon: User, label: "Profile", path: "/profile" },
 ];

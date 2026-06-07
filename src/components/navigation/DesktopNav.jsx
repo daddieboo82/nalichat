@@ -124,8 +124,8 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
           <div className="border-l border-border/30 h-6 mr-1" />
           {/* Communication */}
           <Link
-            to="/explore?upload=true"
-            title="Release Track"
+            to="/projects-summary?new=true"
+            title="New Project"
             className="w-10 h-10 rounded-xl flex items-center justify-center text-white bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/20 transition-all active:scale-95 mr-1 shrink-0"
           >
             <Plus className="w-5 h-5" />

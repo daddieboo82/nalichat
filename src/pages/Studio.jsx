@@ -1126,8 +1126,8 @@ export default function Studio() {
                   <SelectTrigger className="h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-xs font-bold text-foreground w-[4.5rem] text-center flex justify-center [&>svg]:hidden">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    {["C Maj","G Maj","D Maj","A Maj","E Maj","F Maj","Bb Maj","A min","E min","B min","D min","G min","C min"].map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                  <SelectContent className="max-h-[300px]">
+                    {["C Maj", "Db Maj", "D Maj", "Eb Maj", "E Maj", "F Maj", "F# Maj", "G Maj", "Ab Maj", "A Maj", "Bb Maj", "B Maj", "C min", "C# min", "D min", "Eb min", "E min", "F min", "F# min", "G min", "G# min", "A min", "Bb min", "B min"].map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

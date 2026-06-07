@@ -274,12 +274,29 @@ export default function Settings() {
               <p className="text-sm text-muted-foreground mb-4">
                 Use these tools to manually trigger backend webhooks and simulate server-side events for automated testing.
               </p>
-              <div className="flex gap-4">
+              <div className="flex gap-4 flex-wrap">
                 <Link to="/webhook-test">
                   <Button variant="outline" className="border-orange-500/50 text-orange-500 hover:bg-orange-500/20">
                     Open Webhook Testing Interface
                   </Button>
                 </Link>
+                {user.role !== 'admin' && (
+                  <Button 
+                    variant="outline" 
+                    className="border-orange-500/50 text-orange-500 hover:bg-orange-500/20"
+                    onClick={async () => {
+                      try {
+                        await base44.functions.invoke('makeAdmin', { email: user.email });
+                        toast.success("You are now an admin. Please refresh the page.");
+                        setTimeout(() => window.location.reload(), 1500);
+                      } catch (e) {
+                        toast.error("Failed to upgrade to admin.");
+                      }
+                    }}
+                  >
+                    Make Me Admin
+                  </Button>
+                )}
               </div>
             </div>
           </div>

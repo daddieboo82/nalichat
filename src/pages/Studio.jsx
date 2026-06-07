@@ -975,8 +975,6 @@ export default function Studio() {
           <div className="font-heading font-black text-base sm:text-xl tracking-tight flex items-center gap-2">
             <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             <span className="text-gradient-animate hidden xs:inline sm:inline">NaliStudio</span>
-            <span className="hidden sm:inline text-xs bg-secondary text-foreground px-2 py-0.5 rounded-full uppercase tracking-widest ml-2 border border-border/50 shadow-sm">Pro</span>
-            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><span title="Engine v2 - High performance audio engine" className="hidden lg:inline text-xs bg-secondary text-foreground px-2 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-border/50 shadow-sm cursor-help transition-colors hover:bg-secondary/80">Engine v2</span></TooltipTrigger><TooltipContent side="bottom" className="max-w-[240px] text-xs">Engine v2 — NaliStudio's latest audio engine: faster real-time mixing, higher-quality stem separation, and lower-latency recording.</TooltipContent></Tooltip></TooltipProvider>
           </div>
         </div>
 
@@ -984,7 +982,7 @@ export default function Studio() {
         <div className="flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Return to Zero (Home)" aria-label="Return to Zero (Home)" aria-keyshortcuts="Home" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><Rewind className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Return to Zero <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Home</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Stop (Enter)" aria-label="Stop (Enter)" aria-keyshortcuts="Enter" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground focus:outline-none focus:ring-0 active:bg-transparent"><Square className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Enter</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Stop (Enter)" aria-label="Stop (Enter)" aria-keyshortcuts="Enter" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground focus:outline-none focus:ring-0 active:bg-transparent"><Square className="w-5 h-5 fill-current" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Enter</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Play/Pause (Space)" aria-label="Play/Pause (Space)" aria-keyshortcuts="Space" onClick={togglePlay} className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>{isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{isPlaying ? "Pause" : "Play"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Record (R)" aria-label="Record (R)" aria-keyshortcuts="R" onClick={toggleRecord} className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}>{isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}<Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Record <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">R</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Fast-forward" aria-label="Fast-forward" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><FastForward className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Fast-forward</TooltipContent></Tooltip>
@@ -1252,15 +1250,18 @@ export default function Studio() {
                       <TooltipProvider delayDuration={200}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="line-clamp-2 text-xs font-semibold cursor-help break-words whitespace-normal" title={track.name}>{track.name}</span>
+                            <span className="truncate text-xs font-semibold cursor-help block w-full" title={track.name}>{track.name}</span>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[240px] break-words">{track.name}</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
-                      <Select defaultValue={(track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic"}>
-                        <SelectTrigger className="h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] text-muted-foreground hover:text-foreground w-max flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none">
+                      <Select 
+                        value={track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic")}
+                        onValueChange={(val) => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, inputType: val } : t))}
+                      >
+                        <SelectTrigger className={cn("h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] w-max flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none transition-colors", (track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "In: None" : "In: Default Mic")) !== "In: None" ? "text-primary hover:text-primary/80 font-bold" : "text-muted-foreground hover:text-foreground")}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

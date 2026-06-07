@@ -25,7 +25,7 @@ import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDi
 import MixerPanel from '@/components/studio/MixerPanel';
 import KeyboardShortcutsDialog from '@/components/studio/KeyboardShortcutsDialog';
 import TrackWaveformSVG from '@/components/studio/TrackWaveformSVG';
-import Record from '@/pages/Record';
+import StudioExtras from '@/components/studio/StudioExtras';
 import StudioWelcome from '@/components/studio/StudioWelcome';
 import StudioDialogs from '@/components/studio/StudioDialogs';
 import JamRoomOverlay from '@/components/studio/JamRoomOverlay';
@@ -1949,11 +1949,15 @@ export default function Studio() {
 
       <KeyboardShortcutsDialog open={showShortcutsDialog} onOpenChange={setShowShortcutsDialog} />
 
-      <Dialog open={showQuickMemo} onOpenChange={setShowQuickMemo}>
-        <DialogContent className="max-w-4xl bg-background border-border overflow-y-auto h-[650px] p-0">
-          <Record />
-        </DialogContent>
-      </Dialog>
+      <StudioExtras 
+        showQuickMemo={showQuickMemo} setShowQuickMemo={setShowQuickMemo}
+        showImportDialog={showImportDialog} setShowImportDialog={setShowImportDialog}
+        handleFileChange={(e) => {
+          handleFileChange(e);
+          setShowImportDialog(false);
+        }}
+        showMilestones={showMilestones} setShowMilestones={setShowMilestones}
+      />
 
       <StudioDialogs
         creatingTrack={creatingTrack} setCreatingTrack={setCreatingTrack}

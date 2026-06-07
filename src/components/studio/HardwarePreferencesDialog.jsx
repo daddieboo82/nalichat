@@ -15,7 +15,10 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
         <div className="space-y-4 py-4 text-sm max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
           <div className="flex flex-col gap-1.5">
             <span className="font-medium">Driver Type</span>
-            <Select defaultValue="ASIO (Recommended)">
+            <Select 
+              value={audioSettings?.driverType || "ASIO (Recommended)"}
+              onValueChange={(val) => setAudioSettings?.(prev => ({...prev, driverType: val}))}
+            >
               <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                 <SelectValue placeholder="Driver Type" />
               </SelectTrigger>
@@ -30,7 +33,10 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <span className="font-medium">Audio Input</span>
-            <Select defaultValue="System Default">
+            <Select 
+              value={audioSettings?.audioInput || "System Default"}
+              onValueChange={(val) => setAudioSettings?.(prev => ({...prev, audioInput: val}))}
+            >
               <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                 <SelectValue placeholder="Audio Input" />
               </SelectTrigger>
@@ -43,7 +49,10 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
           </div>
             <div className="flex flex-col gap-1.5">
               <span className="font-medium">Audio Output</span>
-              <Select defaultValue="System Default">
+              <Select 
+                value={audioSettings?.audioOutput || "System Default"}
+                onValueChange={(val) => setAudioSettings?.(prev => ({...prev, audioOutput: val}))}
+              >
                 <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                   <SelectValue placeholder="Audio Output" />
                 </SelectTrigger>
@@ -58,7 +67,10 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <span className="font-medium">Clock Source</span>
-              <Select defaultValue="Internal">
+              <Select 
+                value={audioSettings?.clockSource || "Internal"}
+                onValueChange={(val) => setAudioSettings?.(prev => ({...prev, clockSource: val}))}
+              >
                 <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                   <SelectValue placeholder="Clock Source" />
                 </SelectTrigger>
@@ -72,13 +84,54 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
             </div>
             <div className="flex flex-col gap-1.5">
               <span className="font-medium">Direct Monitoring</span>
-              <Select defaultValue="Off">
+              <Select 
+                value={audioSettings?.directMonitoring || "Off"}
+                onValueChange={(val) => setAudioSettings?.(prev => ({...prev, directMonitoring: val}))}
+              >
                 <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                   <SelectValue placeholder="Direct Monitoring" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Off">Off</SelectItem>
                   <SelectItem value="On (Hardware)">On (Hardware)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <span className="font-medium">Noise Cancellation</span>
+              <Select 
+                value={audioSettings?.noiseCancellation || "Off"}
+                onValueChange={(val) => setAudioSettings?.(prev => ({...prev, noiseCancellation: val}))}
+              >
+                <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                  <SelectValue placeholder="Noise Cancellation" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Off">Off</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Adaptive">Adaptive (AI)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="font-medium">Channel Config</span>
+              <Select 
+                value={audioSettings?.channelConfig || "Stereo (2.0)"}
+                onValueChange={(val) => setAudioSettings?.(prev => ({...prev, channelConfig: val}))}
+              >
+                <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                  <SelectValue placeholder="Channel Config" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Mono (1.0)">Mono (1.0)</SelectItem>
+                  <SelectItem value="Stereo (2.0)">Stereo (2.0)</SelectItem>
+                  <SelectItem value="Surround (5.1)">Surround (5.1)</SelectItem>
+                  <SelectItem value="Surround (7.1)">Surround (7.1)</SelectItem>
+                  <SelectItem value="Atmos (7.1.4)">Atmos (7.1.4)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -107,7 +160,7 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
               <span className="font-medium">Buffer Size</span>
             <Select 
               value={String(audioSettings?.bufferSize || "256")}
-              onValueChange={(val) => setAudioSettings && setAudioSettings(prev => ({...prev, bufferSize: parseInt(val, 10)}))}
+              onValueChange={(val) => setAudioSettings && setAudioSettings(prev => ({...prev, bufferSize: val}))}
             >
               <SelectTrigger className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary">
                 <SelectValue placeholder="Buffer Size" />

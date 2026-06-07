@@ -86,6 +86,42 @@ Deno.serve(async (req) => {
           // It's possible it was a one-time product without subscription, but we'll activate it anyway
         }
 
+        const WIX_API_KEY = Deno.env.get('WIX_PAYMENTS_API_KEY');
+        const WIX_SITE_ID = Deno.env.get('WIX_PAYMENTS_SITE_ID');
+
+        // Cancel any previous active subscriptions to avoid double billing
+        const oldSubs = await base44.asServiceRole.entities.Subscription.filter({
+          user_id: sub.user_id,
+          status: 'active'
+        });
+
+        for (const oldSub of oldSubs) {
+          if (oldSub.id !== sub.id) {
+            if (oldSub.subscription_id && WIX_API_KEY && WIX_SITE_ID) {
+              try {
+                const cancelRes = await fetch(`https://www.wixapis.com/payments/base44/v1/subscriptions/${oldSub.subscription_id}/cancel`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': WIX_API_KEY,
+                    'wix-site-id': WIX_SITE_ID,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    subscription_id: oldSub.subscription_id,
+                    immediate: true
+                  })
+                });
+                if (!cancelRes.ok) {
+                  console.error('Failed to cancel old subscription in Wix:', await cancelRes.text());
+                }
+              } catch (e) {
+                console.error('Error calling Wix cancel API:', e);
+              }
+            }
+            await base44.asServiceRole.entities.Subscription.update(oldSub.id, { status: 'canceled' });
+          }
+        }
+
         // Update subscription to active
         await base44.asServiceRole.entities.Subscription.update(sub.id, {
           status: 'active',

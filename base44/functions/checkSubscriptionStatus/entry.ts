@@ -54,6 +54,8 @@ Deno.serve(async (req) => {
     if (sub.plan === 'trial') hasAccess = trialActive;
     if (hasTrialFree) hasAccess = true;
 
+    const pendingSubs = subs.filter(s => s.status === 'pending');
+
     return Response.json({
       id: sub.id,
       plan: sub.plan,
@@ -61,6 +63,7 @@ Deno.serve(async (req) => {
       trialActive: !!trialActive,
       trialEndsAt: trialEndDate?.toISOString(),
       hasAccess,
+      hasPending: pendingSubs.length > 0,
     });
   } catch (error) {
     console.error('Check subscription error:', error);

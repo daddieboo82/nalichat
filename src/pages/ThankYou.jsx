@@ -19,8 +19,20 @@ export default function ThankYou() {
   useEffect(() => {
     const processThankYou = async () => {
       try {
-        // Refetch subscription status to pick up webhook changes
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for webhook
+        // Poll for subscription status to pick up webhook changes
+        let attempts = 0;
+        let isProcessed = false;
+        
+        while (attempts < 10 && !isProcessed) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          const response = await base44.functions.invoke('checkSubscriptionStatus', {});
+          if (response.data && response.data.status === 'active' && !response.data.hasPending) {
+             // Once there are no more pending subscriptions, we know the webhook processed the upgrade
+             isProcessed = true;
+          }
+          attempts++;
+        }
+        
         await queryClient.invalidateQueries({ queryKey: ['subscription'] });
         clearCart();
         setProcessing(false);

@@ -1054,8 +1054,8 @@ export default function Studio() {
         {/* Undo / Redo Group */}
         <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={undo} disabled={historyIndex<=0} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5 relative"><Undo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Undo</span>{historyIndex > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{historyIndex <= 0 ? "Nothing to Undo" : "Undo"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Z</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={redo} disabled={historyIndex>=historyRef.current.length-1} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5 relative"><Redo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Redo</span>{(historyRef.current.length-1-historyIndex) > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyRef.current.length-1-historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{historyIndex >= historyRef.current.length - 1 ? "Nothing to Redo" : "Redo"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={undo} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5 relative", historyIndex <= 0 && "opacity-50")}><Undo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Undo</span>{historyIndex > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{historyIndex <= 0 ? "Nothing to Undo" : "Undo"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Z</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={redo} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5 relative", historyIndex >= historyRef.current.length - 1 && "opacity-50")}><Redo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Redo</span>{(historyRef.current.length-1-historyIndex) > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyRef.current.length-1-historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{historyIndex >= historyRef.current.length - 1 ? "Nothing to Redo" : "Redo"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 
@@ -1253,17 +1253,17 @@ export default function Studio() {
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
                       <Select 
-                        value={track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")}
+                        value={track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input" : "In: Default Mic")}
                         onValueChange={(val) => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, inputType: val } : t))}
                       >
-                        <SelectTrigger className={cn("h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] w-max min-w-[120px] max-w-[160px] truncate flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none transition-colors", (track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")) !== "No Input (Playback)" ? "text-primary hover:text-primary/80 font-bold" : "text-muted-foreground hover:text-foreground")}>
+                        <SelectTrigger className={cn("h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] w-max min-w-[120px] max-w-[160px] truncate flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none transition-colors", (track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input" : "In: Default Mic")) !== "No Input" ? "text-primary hover:text-primary/80 font-bold" : "text-muted-foreground hover:text-foreground")}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="In: Default Mic">In: Default Mic</SelectItem>
                           <SelectItem value="In: Audio Interface">In: Audio Interface</SelectItem>
                           <SelectItem value="In: MIDI Keyboard">In: MIDI Keyboard</SelectItem>
-                          <SelectItem value="No Input (Playback)">No Input (Playback)</SelectItem>
+                          <SelectItem value="No Input">No Input</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1319,14 +1319,14 @@ export default function Studio() {
                     <Tooltip><TooltipTrigger asChild>
                       <button 
                         onClick={() => {
-                           const input = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic");
-                           if (input === 'No Input (Playback)') {
-                              toast.error("Cannot arm a track set to No Input (Playback)");
+                           const input = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input" : "In: Default Mic");
+                           if (input === 'No Input') {
+                              toast.error("Cannot arm a track set to No Input");
                               return;
                            }
                            toggleArm(track.id);
                         }}
-                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center border focus:outline-none", track.armed ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")) === 'No Input (Playback)') && "opacity-30 cursor-not-allowed")}
+                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center border focus:outline-none", track.armed ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input" : "In: Default Mic")) === 'No Input') && "opacity-30 cursor-not-allowed")}
                       >
                         <Circle className="w-3 h-3 fill-current" />
                       </button>
@@ -1863,7 +1863,7 @@ export default function Studio() {
         <div className="flex items-center gap-4 shrink-0">
           <span className="flex items-center gap-1.5">
             <Circle className={cn("w-2.5 h-2.5", isRecording ? "fill-red-500 text-red-500 animate-pulse" : isPlaying ? "fill-primary text-primary" : "fill-foreground text-foreground")} />
-            {isRecording ? "Recording" : isPlaying ? "Playing" : "Idle"}
+            {isRecording ? "Recording" : isPlaying ? "Playing" : "Stopped"}
           </span>
         </div>
       </div>

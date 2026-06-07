@@ -525,8 +525,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">Edit</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="z-[110] bg-popover text-popover-foreground border-border shadow-md rounded-md w-48 font-sans">
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={handleUndo} disabled={historyIdx <= 0}>Undo <DropdownMenuShortcut className="text-current opacity-70">Ctrl+Z</DropdownMenuShortcut></DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={handleRedo} disabled={historyIdx >= history.length - 1}>Redo <DropdownMenuShortcut className="text-current opacity-70">Ctrl+Y</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className={cn("text-xs focus:bg-primary focus:text-white rounded-sm cursor-default", historyIdx <= 0 && "opacity-50")} onSelect={handleUndo}>Undo <DropdownMenuShortcut className="text-current opacity-70">Ctrl+Z</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className={cn("text-xs focus:bg-primary focus:text-white rounded-sm cursor-default", historyIdx >= history.length - 1 && "opacity-50")} onSelect={handleRedo}>Redo <DropdownMenuShortcut className="text-current opacity-70">Ctrl+Y</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" disabled={!selectionRange && !selectedSegmentId} onSelect={() => { if(selectionRange) handleRangeDelete(); else { setSegments(prev => { const newSegs = prev.filter(s => s.id !== selectedSegmentId); saveHistory(newSegs); setSelectedSegmentId(null); return newSegs; }); }}}>Delete <DropdownMenuShortcut className="text-current opacity-70">Del</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => handleRangeSplit()} disabled={!selectionRange}>Split</DropdownMenuItem>
@@ -655,12 +655,12 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
               <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
                 <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" onClick={handleUndo} disabled={historyIdx <= 0} className="h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 disabled:opacity-30 rounded-md">
+                  <Button variant="ghost" size="sm" onClick={handleUndo} className={cn("h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md", historyIdx <= 0 && "opacity-50")}>
                     <Undo2 className="w-4 h-4" /> <span className="text-xs">Undo</span>
                   </Button>
                 </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Undo</TooltipContent></Tooltip>
                 <Tooltip><TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" onClick={handleRedo} disabled={historyIdx >= history.length - 1} className="h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 disabled:opacity-30 rounded-md">
+                  <Button variant="ghost" size="sm" onClick={handleRedo} className={cn("h-7 px-2 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md", historyIdx >= history.length - 1 && "opacity-50")}>
                     <Redo2 className="w-4 h-4" /> <span className="text-xs">Redo</span>
                   </Button>
                 </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Redo</TooltipContent></Tooltip>

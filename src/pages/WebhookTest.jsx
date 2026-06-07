@@ -46,7 +46,7 @@ export default function WebhookTest() {
         });
         await fetchSubscriptions();
         toast.success("Created mock active subscription");
-        queryClient.invalidateQueries({ queryKey: ['subscription'] });
+        queryClient.removeQueries({ queryKey: ['subscription'] });
       }
     } catch (e) {
       console.error(e);
@@ -69,7 +69,7 @@ export default function WebhookTest() {
         });
         await fetchSubscriptions();
         toast.success("Created mock pending subscription");
-        queryClient.invalidateQueries({ queryKey: ['subscription'] });
+        queryClient.removeQueries({ queryKey: ['subscription'] });
       }
     } catch (e) {
       console.error(e);
@@ -88,7 +88,7 @@ export default function WebhookTest() {
         await Promise.all(subs.map(sub => base44.entities.Subscription.delete(sub.id)));
         await fetchSubscriptions();
         toast.success("Cleared all subscriptions");
-        queryClient.invalidateQueries({ queryKey: ['subscription'] });
+        queryClient.removeQueries({ queryKey: ['subscription'] });
       }
     } catch (e) {
       console.error(e);
@@ -108,7 +108,7 @@ export default function WebhookTest() {
       
       setTimeout(() => {
         fetchSubscriptions();
-        queryClient.invalidateQueries({ queryKey: ['subscription'] });
+        queryClient.removeQueries({ queryKey: ['subscription'] });
       }, 1000);
     } catch (e) {
       console.error(e);
@@ -152,7 +152,7 @@ export default function WebhookTest() {
 
         setTimeout(() => {
           fetchSubscriptions();
-          queryClient.invalidateQueries({ queryKey: ['subscription'] });
+          queryClient.removeQueries({ queryKey: ['subscription'] });
         }, 1000);
       } else {
         setResult({ success: false, message: res.data?.error || "Webhook failed to process." });
@@ -205,7 +205,7 @@ export default function WebhookTest() {
 
         setTimeout(() => {
           fetchSubscriptions();
-          queryClient.invalidateQueries({ queryKey: ['subscription'] });
+          queryClient.removeQueries({ queryKey: ['subscription'] });
         }, 1000);
       } else {
         setResult({ success: false, message: res.data?.error || "Webhook failed to process." });

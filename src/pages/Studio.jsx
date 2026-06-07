@@ -578,6 +578,12 @@ export default function Studio() {
       } else if (e.key === 'Home') {
         e.preventDefault();
         updateCurrentTime(0);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        updateCurrentTime(Math.min(100, currentTimeRef.current + 5));
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        updateCurrentTime(Math.max(0, currentTimeRef.current - 5));
       }
     };
     
@@ -957,7 +963,7 @@ export default function Studio() {
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       {/* Top Toolbar */}
-      <div className="min-h-[4rem] py-2 border-b border-border/50 bg-card/80 backdrop-blur flex flex-nowrap overflow-x-auto custom-scrollbar items-center justify-between gap-2 pl-2 sm:pl-4 shrink-0 relative after:content-[''] after:w-12 sm:after:w-16 after:shrink-0">
+      <div className="min-h-[4rem] py-2 border-b border-border/50 bg-card/80 backdrop-blur flex flex-wrap items-center justify-between gap-2 pl-2 sm:pl-4 shrink-0 relative">
         <div className="flex items-center gap-4 shrink-0">
           <div className="font-heading font-black text-base sm:text-xl tracking-tight flex items-center gap-2">
             <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
@@ -1001,9 +1007,28 @@ export default function Studio() {
              )}
           </div>
 
-          {/* Shortcuts & Hardware Config */}
+          {/* Quality, Shortcuts & Hardware Config */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
-            <Button variant="ghost" size="sm" onClick={() => setShowShortcutsDialog(true)} className={cn("gap-2 rounded-lg transition-colors", showShortcutsDialog ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+                  <Activity className="w-4 h-4" /> Quality
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48 bg-card border-border">
+                <div className="px-2 py-1.5 text-[10px] uppercase font-bold text-muted-foreground">Audio Quality</div>
+                {[{ sr: "44.1 kHz", bd: "16-bit" },{ sr: "44.1 kHz", bd: "24-bit" },{ sr: "48 kHz", bd: "24-bit" },{ sr: "88.2 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "32-bit float" },{ sr: "192 kHz", bd: "32-bit float" }].map((s, i) => {
+                  const isActive = audioSettings.sampleRate === s.sr && audioSettings.bitDepth === s.bd;
+                  return (
+                    <DropdownMenuItem key={i} onClick={() => setAudioSettings({ ...audioSettings, sampleRate: s.sr, bitDepth: s.bd })} className={cn("cursor-pointer text-xs flex items-center justify-between", isActive && "bg-primary/10 text-primary focus:bg-primary/20")}>
+                      <span className={cn(isActive && "font-semibold")}>{s.sr} / {s.bd}</span>
+                      {isActive && <Check className="w-3 h-3 text-primary" />}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="ghost" size="sm" onClick={() => setShowShortcutsDialog(true)} className={cn("gap-2 rounded-lg transition-colors", showShortcutsDialog ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}>
               <Keyboard className="w-4 h-4" /> Shortcuts
             </Button>
             <Button variant="ghost" size="sm" title="Hardware Preferences" onClick={() => { stop(); setShowPreferencesDialog(true); }} className="gap-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground">
@@ -1067,8 +1092,8 @@ export default function Studio() {
         {/* Undo / Redo */}
         <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
           <TooltipProvider delayDuration={200}>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={undo} disabled={historyIndex<=0} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5 relative"><Undo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Undo</span>{historyIndex > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Undo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Z</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={redo} disabled={historyIndex>=historyRef.current.length-1} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5 relative"><Redo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Redo</span>{(historyRef.current.length-1-historyIndex) > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyRef.current.length-1-historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Redo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={undo} disabled={historyIndex<=0} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5 relative"><Undo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Undo</span>{historyIndex > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{historyIndex <= 0 ? "Nothing to Undo" : "Undo"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Z</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={redo} disabled={historyIndex>=historyRef.current.length-1} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5 relative"><Redo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Redo</span>{(historyRef.current.length-1-historyIndex) > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyRef.current.length-1-historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{historyIndex >= historyRef.current.length - 1 ? "Nothing to Redo" : "Redo"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 
@@ -1263,17 +1288,17 @@ export default function Studio() {
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
                       <Select 
-                        value={track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Playback Only" : "In: Default Mic")}
+                        value={track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")}
                         onValueChange={(val) => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, inputType: val } : t))}
                       >
-                        <SelectTrigger className={cn("h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] w-max flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none transition-colors", (track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Playback Only" : "In: Default Mic")) !== "Playback Only" ? "text-primary hover:text-primary/80 font-bold" : "text-muted-foreground hover:text-foreground")}>
+                        <SelectTrigger className={cn("h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] w-max flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none transition-colors", (track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")) !== "No Input (Playback)" ? "text-primary hover:text-primary/80 font-bold" : "text-muted-foreground hover:text-foreground")}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="In: Default Mic">In: Default Mic</SelectItem>
                           <SelectItem value="In: Audio Interface">In: Audio Interface</SelectItem>
                           <SelectItem value="In: MIDI Keyboard">In: MIDI Keyboard</SelectItem>
-                          <SelectItem value="Playback Only">Playback Only</SelectItem>
+                          <SelectItem value="No Input (Playback)">No Input (Playback)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1329,14 +1354,14 @@ export default function Studio() {
                     <Tooltip><TooltipTrigger asChild>
                       <button 
                         onClick={() => {
-                           const input = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Playback Only" : "In: Default Mic");
-                           if (input === 'Playback Only') {
-                              toast.error("Cannot arm a track set to Playback Only");
+                           const input = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic");
+                           if (input === 'No Input (Playback)') {
+                              toast.error("Cannot arm a track set to No Input (Playback)");
                               return;
                            }
                            toggleArm(track.id);
                         }}
-                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center", track.armed ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-red-500/20 hover:text-red-400", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Playback Only" : "In: Default Mic")) === 'Playback Only') && "opacity-30 cursor-not-allowed")}
+                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center", track.armed ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-red-500/20 hover:text-red-400", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")) === 'No Input (Playback)') && "opacity-30 cursor-not-allowed")}
                       >
                         <Circle className="w-3 h-3 fill-current" />
                       </button>
@@ -1862,27 +1887,6 @@ export default function Studio() {
             <span className="w-7 text-right font-mono text-[10px]">{masterVolume}%</span>
           </div>
           <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button title="Change Audio Quality Settings" className="text-primary font-medium shrink-0 hover:underline outline-none cursor-pointer whitespace-nowrap">
-                <span className="hidden lg:inline">Quality: </span>
-                <span className="inline">{audioSettings.sampleRate} / {audioSettings.bitDepth}</span>
-                <span className="hidden xl:inline"> • Opus Codec</span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48 bg-card border-border">
-              <div className="px-2 py-1.5 text-[10px] uppercase font-bold text-muted-foreground">Audio Quality</div>
-              {[{ sr: "44.1 kHz", bd: "16-bit" },{ sr: "44.1 kHz", bd: "24-bit" },{ sr: "48 kHz", bd: "24-bit" },{ sr: "88.2 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "32-bit float" },{ sr: "192 kHz", bd: "32-bit float" }].map((s, i) => {
-                const isActive = audioSettings.sampleRate === s.sr && audioSettings.bitDepth === s.bd;
-                return (
-                  <DropdownMenuItem key={i} onClick={() => setAudioSettings({ ...audioSettings, sampleRate: s.sr, bitDepth: s.bd })} className={cn("cursor-pointer text-xs flex items-center justify-between", isActive && "bg-primary/10 text-primary focus:bg-primary/20")}>
-                    <span className={cn(isActive && "font-semibold")}>{s.sr} / {s.bd}</span>
-                    {isActive && <Check className="w-3 h-3 text-primary" />}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
         <div className="flex items-center gap-4 shrink-0">
           <span className="flex items-center gap-1.5">

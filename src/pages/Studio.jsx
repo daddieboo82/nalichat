@@ -16,8 +16,7 @@ import WaveEditor from '@/components/studio/WaveEditor';
 import BounceDialog from '@/components/studio/BounceDialog';
 import { sounds } from '@/hooks/use-sound';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+
 import UpgradeModal from '@/components/billing/UpgradeModal';
 import { Link, useNavigate } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3 } from '@/lib/audioProcessing';
@@ -107,7 +106,6 @@ export default function Studio() {
 
   const { hasAccess, isPro, isLoading: isLoadingSub } = useSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const isMobile = useIsMobile();
 
   // Real-time collaborator presence
   const { peers: livePeers, setActivity } = useStudioPresence('studio-main');

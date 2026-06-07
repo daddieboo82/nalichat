@@ -561,7 +561,7 @@ export default function Studio() {
 
   const toggleArm = (trackId) => {
     sounds.click();
-    setTracksWithHistory(tracks.map(t => t.id === trackId ? { ...t, armed: !t.armed } : t));
+    setTracks(prev => prev.map(t => t.id === trackId ? { ...t, armed: !t.armed } : t));
   };
 
   const updateVolume = (trackId, val) => {
@@ -1037,10 +1037,12 @@ export default function Studio() {
         
         {/* Track Actions Group */}
         <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
-          <Button onClick={addTrack} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
-            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
-          </Button>
           <TooltipProvider delayDuration={200}>
+            <Tooltip><TooltipTrigger asChild>
+              <Button onClick={addTrack} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
+                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
+              </Button>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Add Track <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+N</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button aria-label="Open Wave Editor" onClick={() => { if(selectedTrackIds.length===1) { const track = tracks.find(t => t.id === selectedTrackIds[0]); if(track) setEditingTrack(track); } else toast.error("Please select exactly one track"); }} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0"><SlidersHorizontal className="w-4 h-4" /> <span className="hidden md:inline">Wave Editor</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Open Wave Editor (Select 1 track)</TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button aria-label="Split Stems" onClick={handleSeparateStems} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'separate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} <span className="hidden md:inline">Split Stems</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Separate Vocals & Instrumental</TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button aria-label="Generate Melody" onClick={handleGenerateMelody} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} <span className="hidden lg:inline">Generate Melody</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Generate AI Melody</TooltipContent></Tooltip>
@@ -1122,19 +1124,19 @@ export default function Studio() {
               <Button variant="ghost" size="sm" aria-label="Shuffle" onClick={() => setEditMode('shuffle')} aria-pressed={editMode === 'shuffle'} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'shuffle' && "bg-primary/20 text-primary")}>
                 <Shuffle className="w-3.5 h-3.5" /><span className="text-xs">Shuffle</span>
               </Button>
-            </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Shuffle Mode</TooltipContent></Tooltip>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Shuffle Mode <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+1</kbd></TooltipContent></Tooltip>
             
             <Tooltip><TooltipTrigger asChild>
               <Button variant="ghost" size="sm" aria-label="Slip" onClick={() => setEditMode('slip')} aria-pressed={editMode === 'slip'} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'slip' && "bg-primary/20 text-primary")}>
                 <MoveHorizontal className="w-3.5 h-3.5" /><span className="text-xs">Slip</span>
               </Button>
-            </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Slip Mode</TooltipContent></Tooltip>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Slip Mode <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+2</kbd></TooltipContent></Tooltip>
 
             <Tooltip><TooltipTrigger asChild>
               <Button variant="ghost" size="sm" aria-label="Grid" onClick={() => setEditMode('grid')} aria-pressed={editMode === 'grid'} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'grid' && "bg-primary/20 text-primary")}>
                 <Grid className="w-3.5 h-3.5" /><span className="text-xs">Grid</span>
               </Button>
-            </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Grid Mode</TooltipContent></Tooltip>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Grid Mode <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+3</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 
@@ -1324,7 +1326,7 @@ export default function Studio() {
                            }
                            toggleArm(track.id);
                         }}
-                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center", track.armed ? "bg-red-500 text-white" : "bg-secondary text-muted-foreground hover:bg-red-500/20 hover:text-red-400", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")) === 'No Input (Playback)') && "opacity-30 cursor-not-allowed")}
+                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center border focus:outline-none", track.armed ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")) === 'No Input (Playback)') && "opacity-30 cursor-not-allowed")}
                       >
                         <Circle className="w-3 h-3 fill-current" />
                       </button>

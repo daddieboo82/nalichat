@@ -3,17 +3,48 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FolderOpen, FileText, CheckCircle2, Circle, Users, Calendar, Link2, Copy } from 'lucide-react';
+import { Loader2, FolderOpen, FileText, CheckCircle2, Circle, Users, Calendar, Link2, Copy, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 export default function ProjectsSummary() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ projects: [], milestones: [], sharedFiles: [] });
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [newProjectTitle, setNewProjectTitle] = useState("");
+  const [newProjectDescription, setNewProjectDescription] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleCreateProject = async () => {
+    if (!newProjectTitle.trim()) return toast.error("Project title is required");
+    setIsCreating(true);
+    try {
+      const project = await base44.entities.Project.create({
+        title: newProjectTitle.trim(),
+        description: newProjectDescription.trim(),
+        owner_id: user.id,
+        status: "draft"
+      });
+      setData(prev => ({ ...prev, projects: [project, ...prev.projects] }));
+      setShowNewProject(false);
+      setNewProjectTitle("");
+      setNewProjectDescription("");
+      toast.success("Project created successfully!");
+    } catch (e) {
+      toast.error("Failed to create project");
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -51,9 +82,14 @@ export default function ProjectsSummary() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto h-full overflow-y-auto custom-scrollbar">
-      <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-2">Collaboration Summary</h1>
-        <p className="text-muted-foreground">Overview of your active projects, milestones, and shared files.</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-heading font-bold mb-2">Collaboration Summary</h1>
+          <p className="text-muted-foreground">Overview of your active projects, milestones, and shared files.</p>
+        </div>
+        <Button onClick={() => setShowNewProject(true)} className="gap-2 shrink-0">
+          <Plus className="w-4 h-4" /> New Project
+        </Button>
       </div>
 
       {data.projects.length === 0 ? (
@@ -75,10 +111,13 @@ export default function ProjectsSummary() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.1 }}
               >
-                <Card className="bg-card/60 backdrop-blur-sm border-border/50 shadow-sm overflow-hidden">
+                <Card 
+                  className="bg-card/60 backdrop-blur-sm border-border/50 shadow-sm overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group"
+                  onClick={() => navigate(`/studio?room=${project.id}`)}
+                >
                   <CardHeader className="bg-secondary/30 border-b border-border/50 pb-4">
                     <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div>
+                      <div className="group-hover:text-primary transition-colors">
                         <CardTitle className="text-xl flex items-center gap-2">
                           <FolderOpen className="w-5 h-5 text-primary" />
                           {project.title}
@@ -95,13 +134,14 @@ export default function ProjectsSummary() {
                           <Users className="w-3 h-3 mr-1" />
                           {project.collaborator_ids?.length || 0} Collaborator{(project.collaborator_ids?.length !== 1) ? 's' : ''}
                         </Badge>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-6 text-xs gap-1.5 ml-2 border-primary/50 text-primary hover:bg-primary/10 transition-colors">
-                              <Link2 className="w-3 h-3" /> Invite
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent align="end" className="w-72">
+                        <div onClick={e => e.stopPropagation()}>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-6 text-xs gap-1.5 ml-2 border-primary/50 text-primary hover:bg-primary/10 transition-colors">
+                                <Link2 className="w-3 h-3" /> Invite
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="end" className="w-72">
                             <div className="space-y-3">
                               <div>
                                 <h4 className="font-semibold text-sm">Invite to Project</h4>
@@ -127,6 +167,7 @@ export default function ProjectsSummary() {
                             </div>
                           </PopoverContent>
                         </Popover>
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
@@ -193,6 +234,7 @@ export default function ProjectsSummary() {
                                   target="_blank" 
                                   rel="noopener noreferrer"
                                   className="text-xs font-medium text-primary hover:underline shrink-0"
+                                  onClick={e => e.stopPropagation()}
                                 >
                                   View
                                 </a>
@@ -215,6 +257,46 @@ export default function ProjectsSummary() {
           })}
         </div>
       )}
+
+      <Dialog open={showNewProject} onOpenChange={setShowNewProject}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="title">Project Title</Label>
+              <Input
+                id="title"
+                value={newProjectTitle}
+                onChange={(e) => setNewProjectTitle(e.target.value)}
+                placeholder="e.g. Summer Hit Track"
+                disabled={isCreating}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description (optional)</Label>
+              <Textarea
+                id="description"
+                value={newProjectDescription}
+                onChange={(e) => setNewProjectDescription(e.target.value)}
+                placeholder="Brief description of the project"
+                disabled={isCreating}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewProject(false)} disabled={isCreating}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateProject} disabled={isCreating || !newProjectTitle.trim()}>
+              {isCreating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Create Project
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

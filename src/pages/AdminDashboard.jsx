@@ -95,7 +95,7 @@ export default function AdminDashboard() {
           <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
           <div>
             <h3 className="font-bold">Not an Admin</h3>
-            <p className="text-sm opacity-90">You are currently viewing this dashboard as a regular user. Some administrative actions may be restricted.</p>
+            <p className="text-sm opacity-90">You are currently viewing this dashboard as a regular user. For automated testing, use the "Make Me Admin (Automated Testing)" button below to promote your account.</p>
           </div>
         </div>
       )}
@@ -122,6 +122,7 @@ export default function AdminDashboard() {
             <Button 
               variant="outline" 
               className="w-full sm:w-auto"
+              title="Promote to Admin (Automated Testing)"
               onClick={async () => {
                 setIsMakingAdmin(true);
                 try {
@@ -140,7 +141,7 @@ export default function AdminDashboard() {
               }}
               disabled={isMakingAdmin}
             >
-              Make Me Admin (Test Mode)
+              Make Me Admin (Automated Testing)
             </Button>
           )}
         </div>

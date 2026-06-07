@@ -163,7 +163,7 @@ export default function Studio() {
   const setTracksWithHistory = (updater) => {
     setTracks(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      pushToHistory(next);
+      setTimeout(() => pushToHistory(next), 0);
       return next;
     });
   };
@@ -592,13 +592,13 @@ export default function Studio() {
   const toggleMute = (trackId) => {
     sounds.click();
     // Mute and Solo are mutually exclusive — enabling mute clears solo.
-    setTracksWithHistory(tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted, solo: !t.muted ? false : t.solo } : t));
+    setTracks(prev => prev.map(t => t.id === trackId ? { ...t, muted: !t.muted, solo: !t.muted ? false : t.solo } : t));
   };
 
   const toggleSolo = (trackId) => {
     sounds.click();
     // Mute and Solo are mutually exclusive — enabling solo clears mute.
-    setTracksWithHistory(tracks.map(t => t.id === trackId ? { ...t, solo: !t.solo, muted: !t.solo ? false : t.muted } : t));
+    setTracks(prev => prev.map(t => t.id === trackId ? { ...t, solo: !t.solo, muted: !t.solo ? false : t.muted } : t));
   };
 
   const toggleArm = (trackId) => {
@@ -1958,6 +1958,7 @@ export default function Studio() {
                 </SelectContent>
               </Select>
             </div>
+            {(newTrackType === 'midi' || newTrackType === 'instrument') && (<><div className="space-y-2"><label className="text-sm font-medium">Instrument / Plugin</label><Select defaultValue="default"><SelectTrigger><SelectValue placeholder="Select instrument" /></SelectTrigger><SelectContent><SelectItem value="default">Default Synth</SelectItem><SelectItem value="piano">Grand Piano</SelectItem><SelectItem value="drums">Drum Machine</SelectItem><SelectItem value="bass">Sub Bass</SelectItem><SelectItem value="external">External MIDI</SelectItem></SelectContent></Select></div><div className="space-y-2"><label className="text-sm font-medium">MIDI Channel</label><Select defaultValue="1"><SelectTrigger><SelectValue placeholder="Select channel" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem><SelectItem value="1">Channel 1</SelectItem><SelectItem value="2">Channel 2</SelectItem><SelectItem value="3">Channel 3</SelectItem><SelectItem value="4">Channel 4</SelectItem></SelectContent></Select></div></>)}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreatingTrack(false)}>Cancel</Button>

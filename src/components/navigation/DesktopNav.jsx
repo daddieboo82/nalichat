@@ -20,6 +20,7 @@ const MAIN_NAV_ITEMS = [
 ];
 
 const MORE_NAV_ITEMS = [
+  { icon: Gem, label: "Pricing", path: "/pricing" },
   { icon: Music, label: "Playlists", path: "/playlists" },
   { icon: Wand2, label: "AI Cover", path: "/cover-art" },
   { icon: FileText, label: "Files", path: "/files" },

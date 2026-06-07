@@ -1245,6 +1245,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                                 max={p.max}
                                 value={eff.paramValues[p.name]}
                                 onChange={(v) => updateEffectParam(eff.id, p.name, v)}
+                                formatValue={p.name === 'Freq' ? (v) => (v >= 1000 ? `${(v/1000).toFixed(1)} kHz` : `${Math.round(v)} Hz`) : undefined}
                               />
                             ))}
                           </div>

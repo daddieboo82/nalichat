@@ -797,7 +797,7 @@ export default function Studio() {
       return;
     }
     setIsProcessing('separate');
-    toast.info("Separating stems by frequency...");
+    const toastId = toast.loading("Separating stems by frequency (this may take a moment)...");
     try {
       const { vocals, instrumental } = await separateStems(track.audioUrl);
       let nextId = Math.max(...tracks.map(t => t.id)) + 1;
@@ -805,10 +805,10 @@ export default function Studio() {
         { ...track, id: nextId, name: `${track.name} (Vocals/Highs)`, color: "bg-green-500", audioUrl: vocals.url, waveform: vocals.waveform, duration: vocals.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined },
         { ...track, id: nextId + 1, name: `${track.name} (Instrumental/Lows)`, color: "bg-green-500", audioUrl: instrumental.url, waveform: instrumental.waveform, duration: instrumental.duration, startTime: track.startTime || 0, segments: undefined, effects: undefined }
       ]);
-      toast.success("Stems separated!");
+      toast.success("Stems separated successfully!", { id: toastId });
     } catch (e) {
       console.error(e);
-      toast.error("Failed to separate stems.");
+      toast.error(`Failed to separate stems: ${e.message || 'Audio decoding error'}. Ensure the track format is supported (WAV/MP3) and not corrupted.`, { id: toastId, duration: 6000 });
     } finally {
       setIsProcessing(null);
     }
@@ -992,7 +992,7 @@ export default function Studio() {
             <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             <span className="hidden xs:inline sm:inline">NaliStudio</span>
             <span className="hidden sm:inline text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest ml-2">Pro</span>
-            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><span className="hidden lg:inline text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-green-500/30 cursor-help">Engine v2</span></TooltipTrigger><TooltipContent side="bottom" className="max-w-[240px] text-xs">Engine v2 — NaliStudio's latest audio engine: faster real-time mixing, higher-quality stem separation, and lower-latency recording.</TooltipContent></Tooltip></TooltipProvider>
+            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><span className="hidden lg:inline text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-wider ml-1 border border-primary/30 cursor-help">Engine v2</span></TooltipTrigger><TooltipContent side="bottom" className="max-w-[240px] text-xs">Engine v2 — NaliStudio's latest audio engine: faster real-time mixing, higher-quality stem separation, and lower-latency recording.</TooltipContent></Tooltip></TooltipProvider>
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
-export function Knob({ value, min = 0, max = 100, onChange, label, unit = "" }) {
+export function Knob({ value, min = 0, max = 100, onChange, label, unit = "", formatValue }) {
   const [isDragging, setIsDragging] = useState(false);
   const startY = useRef(0);
   const startVal = useRef(0);
@@ -52,7 +52,7 @@ export function Knob({ value, min = 0, max = 100, onChange, label, unit = "" }) 
       </div>
       <div className="text-center">
         <div className="text-[9px] md:text-[10px] font-bold text-white/50 uppercase tracking-widest">{label}</div>
-        <div className="text-[10px] md:text-xs font-mono text-white/80">{Math.round(value)}{unit}</div>
+        <div className="text-[10px] md:text-xs font-mono text-white/80">{formatValue ? formatValue(value) : `${Math.round(value)}${unit}`}</div>
       </div>
     </div>
   );

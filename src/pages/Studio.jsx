@@ -83,7 +83,7 @@ export default function Studio() {
   const [isEditingBpm, setIsEditingBpm] = useState(false);
   const [timeSignature, setTimeSignature] = useState('4/4');
   const [songKey, setSongKey] = useState('C Maj');
-  const [audioSettings, setAudioSettings] = useState({ sampleRate: "44.1 kHz", bitDepth: "24-bit" });
+  const [audioSettings, setAudioSettings] = useState({ sampleRate: "44.1 kHz", bitDepth: "24-bit", bufferSize: "256" });
   
   const [bounceOpen, setBounceOpen] = useState(false);
   const [bounceRedirect, setBounceRedirect] = useState(null);
@@ -586,6 +586,12 @@ export default function Studio() {
       } else if (e.key === 'l' || e.key === 'L') {
         e.preventDefault();
         selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked'));
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        selectedTrackIds.forEach(id => toggleSolo(id));
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        selectedTrackIds.forEach(id => toggleMute(id));
       } else if (e.key === 't' || e.key === 'T') {
         setActiveTool('trim');
       } else if (e.key === 'c' || e.key === 'C') {
@@ -1146,13 +1152,13 @@ export default function Studio() {
 
         {/* BPM / Time Signature / Key display */}
         <div className="flex items-stretch gap-px bg-background/50 rounded-lg border border-border/50 shadow-inner overflow-hidden shrink-0">
-          <div className="flex flex-col items-center justify-center px-3 py-0.5 hover:bg-secondary/40 transition-colors" title="Tempo (beats per minute)">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5 pointer-events-none">BPM</span>
+          <div className="flex flex-col items-center justify-center px-3 py-1 hover:bg-secondary/40 transition-colors" title="Tempo (beats per minute)">
+            <span className="text-[9px] uppercase tracking-wider text-muted-foreground leading-none mb-1 flex items-center gap-1 pointer-events-none"><Edit2 className="w-2.5 h-2.5" /> BPM</span>
             <input type="text" inputMode="numeric" value={bpmInput}
               onChange={(e) => setBpmInput(e.target.value.replace(/[^0-9]/g, ''))}
               onBlur={() => { const c = Math.max(20, Math.min(300, Number(bpmInput) || 120)); setBpm(c); setBpmInput(String(c)); }}
               onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-              className="w-10 bg-transparent text-center font-mono text-xs font-bold text-foreground border-b border-transparent hover:border-border focus:border-primary outline-none p-0 leading-tight transition-colors cursor-text" />
+              className="w-14 bg-secondary/50 border border-border rounded px-1 text-center font-mono text-xs font-bold text-foreground focus:ring-1 focus:ring-primary focus:border-primary outline-none py-0.5 leading-tight transition-all cursor-text" />
           </div>
           <div className="flex flex-col items-center justify-center px-3 py-0.5 border-l border-border/60" title="Time signature">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Sig</span>
@@ -1872,7 +1878,15 @@ export default function Studio() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48 bg-card border-border">
               <div className="px-2 py-1.5 text-[10px] uppercase font-bold text-muted-foreground">Audio Quality</div>
-              {[{ sr: "44.1 kHz", bd: "16-bit" },{ sr: "44.1 kHz", bd: "24-bit" },{ sr: "48 kHz", bd: "24-bit" },{ sr: "88.2 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "32-bit float" },{ sr: "192 kHz", bd: "32-bit float" }].map((s, i) => (<DropdownMenuItem key={i} onClick={() => setAudioSettings({ sampleRate: s.sr, bitDepth: s.bd })} className="cursor-pointer text-xs flex items-center justify-between"><span>{s.sr} / {s.bd}</span>{audioSettings.sampleRate === s.sr && audioSettings.bitDepth === s.bd && <Check className="w-3 h-3 text-primary" />}</DropdownMenuItem>))}
+              {[{ sr: "44.1 kHz", bd: "16-bit" },{ sr: "44.1 kHz", bd: "24-bit" },{ sr: "48 kHz", bd: "24-bit" },{ sr: "88.2 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "24-bit" },{ sr: "96 kHz", bd: "32-bit float" },{ sr: "192 kHz", bd: "32-bit float" }].map((s, i) => {
+                const isActive = audioSettings.sampleRate === s.sr && audioSettings.bitDepth === s.bd;
+                return (
+                  <DropdownMenuItem key={i} onClick={() => setAudioSettings({ ...audioSettings, sampleRate: s.sr, bitDepth: s.bd })} className={cn("cursor-pointer text-xs flex items-center justify-between", isActive && "bg-primary/10 text-primary focus:bg-primary/20")}>
+                    <span className={cn(isActive && "font-semibold")}>{s.sr} / {s.bd}</span>
+                    {isActive && <Check className="w-3 h-3 text-primary" />}
+                  </DropdownMenuItem>
+                );
+              })}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -1908,6 +1922,21 @@ export default function Studio() {
         open={showPreferencesDialog} 
         onOpenChange={setShowPreferencesDialog} 
         hardware={hardware} 
+        audioSettings={audioSettings}
+        setAudioSettings={setAudioSettings}
+        onRefreshMidi={async () => {
+          setHardware(prev => ({...prev, refreshingMidi: true}));
+          try {
+            if (navigator.requestMIDIAccess) {
+              const access = await navigator.requestMIDIAccess({ sysex: false });
+              setHardware(prev => ({...prev, midi: access.inputs.size > 0, refreshingMidi: false}));
+            } else {
+              setHardware(prev => ({...prev, refreshingMidi: false}));
+            }
+          } catch (e) {
+            setHardware(prev => ({...prev, refreshingMidi: false}));
+          }
+        }}
       />
 
       <KeyboardShortcutsDialog open={showShortcutsDialog} onOpenChange={setShowShortcutsDialog} />

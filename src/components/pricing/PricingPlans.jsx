@@ -7,6 +7,21 @@ import { useAuth } from "@/lib/AuthContext";
 
 const plans = [
   {
+    id: "free",
+    name: "Free Trial",
+    price: "0.00",
+    period: "for 7 days",
+    description: "Experience all Pro features for free during your first 7 days.",
+    features: [
+      "7 Days of Pro Access",
+      "Unlimited Studio Tracks",
+      "No Credit Card Required",
+      "Collaboration Tools",
+    ],
+    cta: "Start Creating",
+    popular: false,
+  },
+  {
     id: "pro",
     name: "Pro",
     price: "24.95",
@@ -52,6 +67,10 @@ export default function PricingPlans() {
   const handleSubscribe = async (plan) => {
     if (!user) {
       base44.auth.redirectToLogin(window.location.pathname);
+      return;
+    }
+    if (plan.id === 'free') {
+      window.location.href = "/studio";
       return;
     }
     setLoadingPlanId(plan.id);
@@ -142,7 +161,7 @@ export default function PricingPlans() {
                   ? "Processing..." 
                   : (isSubscribed && currentPlan !== 'trial' && currentPlan !== 'free'
                       ? (currentPlan === plan.id ? "Current Plan" : "Switch Plan") 
-                      : plan.cta)}
+                      : (currentPlan === 'trial' && plan.id === 'free' ? "Active Trial" : plan.cta))}
               </Button>
 
               <div className="space-y-3">

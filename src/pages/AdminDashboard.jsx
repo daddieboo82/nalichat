@@ -59,6 +59,15 @@ export default function AdminDashboard() {
   const proSubs = activeSubs.filter(sub => sub.plan === 'pro');
   const proFilesharingSubs = activeSubs.filter(sub => sub.plan === 'pro_filesharing');
 
+  const now = new Date();
+  const trialUsers = users.filter(u => {
+    const createdDate = new Date(u.created_date);
+    const diffDays = (now - createdDate) / (1000 * 60 * 60 * 24);
+    const hasTrialFree = diffDays <= 7;
+    const userSubs = subscriptions.filter(s => s.user_id === u.id && s.status === 'active');
+    return hasTrialFree && userSubs.length === 0 && u.role !== 'admin';
+  });
+
   // MRR Calculation
   const mrr = (proSubs.length * 24.95) + (proFilesharingSubs.length * 49.95);
 
@@ -146,7 +155,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center justify-center text-center">
           <DollarSign className="w-10 h-10 text-green-500 mb-4" />
           <h3 className="text-lg font-bold text-muted-foreground">Monthly Recurring Revenue</h3>
@@ -161,10 +170,16 @@ export default function AdminDashboard() {
 
         <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center justify-center text-center">
           <Activity className="w-10 h-10 text-accent mb-4" />
-          <h3 className="text-lg font-bold text-muted-foreground">Pro / Pro+ Filesharing</h3>
+          <h3 className="text-lg font-bold text-muted-foreground">Pro / Pro+ Sharing</h3>
           <p className="text-4xl font-black mt-2">
             {proSubs.length} <span className="text-xl text-muted-foreground">/</span> {proFilesharingSubs.length}
           </p>
+        </div>
+
+        <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center justify-center text-center">
+          <Activity className="w-10 h-10 text-yellow-500 mb-4" />
+          <h3 className="text-lg font-bold text-muted-foreground">Active Free Trials</h3>
+          <p className="text-4xl font-black mt-2 text-yellow-500">{trialUsers.length}</p>
         </div>
       </div>
 

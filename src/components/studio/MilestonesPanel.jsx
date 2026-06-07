@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Plus, CheckCircle2, Circle, Calendar, Flag, Trash2, AlertTriangle, Clock
+  Plus, CheckCircle2, Circle, Calendar, Flag, Trash2, AlertTriangle, Clock, X
 } from "lucide-react";
 import { format, isPast, isToday, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -69,7 +69,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
   const progress = milestones.length > 0 ? Math.round((done.length / milestones.length) * 100) : 0;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
@@ -127,39 +127,42 @@ export default function MilestonesPanel({ projectId, canEdit }) {
         )}
       </div>
 
-      {/* Add dialog */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="font-heading">Add Milestone</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
+      {/* Add form overlay */}
+      {showAdd && (
+        <div className="absolute inset-0 z-20 flex flex-col bg-background/95 backdrop-blur-sm p-5">
+          <div className="flex items-center justify-between mb-5">
+            <h4 className="font-heading font-bold text-lg">Add Milestone</h4>
+            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={() => setShowAdd(false)}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-2">
             <Input
               placeholder="Milestone title..."
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-              className="bg-secondary/50 border-0 rounded-xl"
+              className="bg-secondary/50 border-0 rounded-xl h-11"
             />
             <Input
               placeholder="Description (optional)..."
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="bg-secondary/50 border-0 rounded-xl"
+              className="bg-secondary/50 border-0 rounded-xl h-11"
             />
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               <div className="flex-1">
-                <label className="text-xs text-muted-foreground mb-1 block">Due Date</label>
+                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Due Date</label>
                 <Input
                   type="date"
                   value={form.due_date}
                   onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
-                  className="bg-secondary/50 border-0 rounded-xl"
+                  className="bg-secondary/50 border-0 rounded-xl h-11"
                 />
               </div>
               <div className="flex-1">
-                <label className="text-xs text-muted-foreground mb-1 block">Priority</label>
+                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Priority</label>
                 <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
-                  <SelectTrigger className="bg-secondary/50 border-0 rounded-xl">
+                  <SelectTrigger className="bg-secondary/50 border-0 rounded-xl h-11">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -171,15 +174,15 @@ export default function MilestonesPanel({ projectId, canEdit }) {
               </div>
             </div>
             <Button
-              className="w-full rounded-xl bg-primary hover:bg-primary/90"
+              className="w-full rounded-xl bg-primary hover:bg-primary/90 h-11 mt-4"
               disabled={!form.title.trim() || addMilestone.isPending}
               onClick={() => addMilestone.mutate()}
             >
-              Add Milestone
+              Save Milestone
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

@@ -773,6 +773,13 @@ export default function Studio() {
     }
     setIsProcessing('separate');
     const toastId = toast.loading("Analyzing and separating audio stems...");
+    
+    if (track.audioUrl.includes('actions.google.com')) {
+      toast.error("Demo tracks are not suitable for stem separation. Please import your own audio files.", { id: toastId });
+      setIsProcessing(null);
+      return;
+    }
+
     try {
       const { vocals, instrumental } = await separateStems(track.audioUrl);
       let nextId = Math.max(...tracks.map(t => t.id)) + 1;

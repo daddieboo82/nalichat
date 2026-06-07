@@ -3,8 +3,12 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FolderOpen, FileText, CheckCircle2, Circle, Users, Calendar } from 'lucide-react';
+import { Loader2, FolderOpen, FileText, CheckCircle2, Circle, Users, Calendar, Link2, Copy } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 export default function ProjectsSummary() {
   const { user } = useAuth();
@@ -91,6 +95,38 @@ export default function ProjectsSummary() {
                           <Users className="w-3 h-3 mr-1" />
                           {project.collaborator_ids?.length || 0} Collaborator{(project.collaborator_ids?.length !== 1) ? 's' : ''}
                         </Badge>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-6 text-xs gap-1.5 ml-2 border-primary/50 text-primary hover:bg-primary/10 transition-colors">
+                              <Link2 className="w-3 h-3" /> Invite
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent align="end" className="w-72">
+                            <div className="space-y-3">
+                              <div>
+                                <h4 className="font-semibold text-sm">Invite to Project</h4>
+                                <p className="text-xs text-muted-foreground">Share this link to collaborate in the studio.</p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Input 
+                                  readOnly 
+                                  value={`${window.location.origin}/studio?room=${project.id}`} 
+                                  className="h-8 text-xs bg-secondary/50 font-mono"
+                                />
+                                <Button 
+                                  size="sm" 
+                                  className="h-8 px-3 shrink-0 bg-primary hover:bg-primary/90 text-white"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}/studio?room=${project.id}`);
+                                    toast.success('Invite link copied to clipboard!');
+                                  }}
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </CardHeader>

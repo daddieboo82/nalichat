@@ -960,7 +960,7 @@ export default function Studio() {
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       {/* Top Toolbar */}
-      <div className="min-h-[4rem] py-2 border-b border-border/50 bg-card/80 backdrop-blur flex flex-wrap items-center justify-between gap-2 px-2 sm:px-4 shrink-0 relative pr-12 sm:pr-16">
+      <div className="min-h-[4rem] py-2 border-b border-border/50 bg-card/80 backdrop-blur flex flex-nowrap overflow-x-auto custom-scrollbar items-center justify-between gap-2 px-2 sm:px-4 shrink-0 relative pr-12 sm:pr-16">
         <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card/80 to-transparent pointer-events-none z-10" />
         <div className="flex items-center gap-4 shrink-0">
           <div className="font-heading font-black text-base sm:text-xl tracking-tight flex items-center gap-2">
@@ -1056,7 +1056,7 @@ export default function Studio() {
       </div>
 
       {/* Toolbar 2 (Tools) */}
-      <div className="min-h-[3rem] py-1 border-b border-border/40 bg-card/40 flex flex-wrap items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 relative">
+      <div className="min-h-[3rem] py-1 border-b border-border/40 bg-card/40 flex flex-nowrap overflow-x-auto custom-scrollbar items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 relative">
         <Button onClick={addTrack} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
           <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
         </Button>
@@ -1071,8 +1071,8 @@ export default function Studio() {
         {/* Undo / Redo */}
         <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
           <TooltipProvider delayDuration={200}>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Undo (Ctrl+Z)" onClick={undo} disabled={historyIndex <= 0} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5"><Undo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Undo</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Undo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Z</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Redo (Ctrl+Y)" onClick={redo} disabled={historyIndex >= historyRef.current.length - 1} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5"><Redo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Redo</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Redo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={undo} disabled={historyIndex<=0} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5 relative"><Undo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Undo</span>{historyIndex > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Undo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Z</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={redo} disabled={historyIndex>=historyRef.current.length-1} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5 relative"><Redo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Redo</span>{(historyRef.current.length-1-historyIndex) > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyRef.current.length-1-historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Redo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 
@@ -1122,12 +1122,7 @@ export default function Studio() {
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     {[
-                      "C Maj", "Db Maj", "D Maj", "Eb Maj", "E Maj", "F Maj", "Gb Maj", "G Maj", "Ab Maj", "A Maj", "Bb Maj", "B Maj",
-                      "C min", "Db min", "D min", "Eb min", "E min", "F min", "Gb min", "G min", "Ab min", "A min", "Bb min", "B min",
-                      "C Dorian", "Db Dorian", "D Dorian", "Eb Dorian", "E Dorian", "F Dorian", "Gb Dorian", "G Dorian", "Ab Dorian", "A Dorian", "Bb Dorian", "B Dorian",
-                      "C Phrygian", "Db Phrygian", "D Phrygian", "Eb Phrygian", "E Phrygian", "F Phrygian", "Gb Phrygian", "G Phrygian", "Ab Phrygian", "A Phrygian", "Bb Phrygian", "B Phrygian",
-                      "C Lydian", "Db Lydian", "D Lydian", "Eb Lydian", "E Lydian", "F Lydian", "Gb Lydian", "G Lydian", "Ab Lydian", "A Lydian", "Bb Lydian", "B Lydian",
-                      "C Mixolydian", "Db Mixolydian", "D Mixolydian", "Eb Mixolydian", "E Mixolydian", "F Mixolydian", "Gb Mixolydian", "G Mixolydian", "Ab Mixolydian", "A Mixolydian", "Bb Mixolydian", "B Mixolydian"
+                      "C Maj", "Db Maj", "D Maj", "Eb Maj", "E Maj", "F Maj", "Gb Maj", "G Maj", "Ab Maj", "A Maj", "Bb Maj", "B Maj", "C min", "Db min", "D min", "Eb min", "E min", "F min", "Gb min", "G min", "Ab min", "A min", "Bb min", "B min", "C Dorian", "Db Dorian", "D Dorian", "Eb Dorian", "E Dorian", "F Dorian", "Gb Dorian", "G Dorian", "Ab Dorian", "A Dorian", "Bb Dorian", "B Dorian", "C Phrygian", "Db Phrygian", "D Phrygian", "Eb Phrygian", "E Phrygian", "F Phrygian", "Gb Phrygian", "G Phrygian", "Ab Phrygian", "A Phrygian", "Bb Phrygian", "B Phrygian", "C Lydian", "Db Lydian", "D Lydian", "Eb Lydian", "E Lydian", "F Lydian", "Gb Lydian", "G Lydian", "Ab Lydian", "A Lydian", "Bb Lydian", "B Lydian", "C Mixolydian", "Db Mixolydian", "D Mixolydian", "Eb Mixolydian", "E Mixolydian", "F Mixolydian", "Gb Mixolydian", "G Mixolydian", "Ab Mixolydian", "A Mixolydian", "Bb Mixolydian", "B Mixolydian"
                     ].map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -1172,7 +1167,7 @@ export default function Studio() {
                  <div className="flex gap-[1px]"><MoveHorizontal className="w-2 h-2"/><MousePointer2 className="w-2 h-2"/></div>
                </div>
                <span className="text-xs hidden lg:inline">Smart</span>
-            </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Smart Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">E</kbd></TooltipContent></Tooltip>
+            </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex flex-col gap-1"><span>Smart Tool (Top: Edit, Bottom: Grab)</span><div className="flex items-center gap-1"><kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">E</kbd></div></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 

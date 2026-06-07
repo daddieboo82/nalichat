@@ -1,14 +1,14 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
 export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-card border-border text-foreground z-[200]">
-        <DialogHeader>
-          <DialogTitle>Keyboard Shortcuts</DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
+      <SheetContent side="right" className="w-[300px] sm:w-[400px] bg-card border-border text-foreground z-[200] shadow-2xl p-4 data-[state=closed]:duration-200 data-[state=open]:duration-300">
+        <SheetHeader className="mb-4">
+          <SheetTitle>Keyboard Shortcuts</SheetTitle>
+        </SheetHeader>
         <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Play / Pause</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Space</span></div>
@@ -37,7 +37,7 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
         <div className="flex justify-end pt-4 border-t border-border">
           <Button onClick={() => onOpenChange(false)}>Close</Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { Sparkles, ArrowDown } from "lucide-react";
 
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/onboarding", "/studio"];
 
@@ -66,10 +66,10 @@ export default function AskNaliHint() {
           <span className="relative text-xs font-bold text-foreground whitespace-nowrap">Stuck? Ask Nali</span>
           <motion.span
             className="relative text-primary"
-            animate={{ x: [0, 4, 0] }}
+            animate={{ y: [0, 4, 0] }}
             transition={{ repeat: Infinity, duration: 1.2 }}
           >
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowDown className="w-3.5 h-3.5" />
           </motion.span>
         </motion.button>
       )}

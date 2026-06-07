@@ -28,7 +28,7 @@ export default function CartDrawer() {
       });
 
       if (res.data && res.data.checkoutUrl) {
-        window.location.href = res.data.checkoutUrl;
+        window.top.location.href = res.data.checkoutUrl;
       } else {
         toast.error("Checkout failed. Please try again.");
       }

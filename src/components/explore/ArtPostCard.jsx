@@ -150,14 +150,16 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
             {Number(post.price) > 0 && (
               <button
                 onClick={(e) => {
+                   e.preventDefault();
                    e.stopPropagation();
                    sounds.click();
-                   if (cart && cart.addItem) {
-                     cart.addItem({
+                   if (cart && cart.addToCart) {
+                     cart.addToCart({
                        id: post.id,
                        title: post.title,
                        price: Number(post.price),
                        image_url: post.image_url,
+                       creator_name: post.creator_name,
                        type: 'stem_license'
                      });
                      toast.success("License added to cart");

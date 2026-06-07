@@ -515,7 +515,8 @@ export default function Studio() {
   const stop = () => {
     setIsPlaying(false);
     if (isRecording) { setIsRecording(false); stopRecordingProcess(); } else { sounds.recStop(); }
-    Object.values(audioElementsRef.current).forEach(a => { a.pause(); });
+    Object.values(audioElementsRef.current).forEach(a => { a.pause(); a.currentTime = 0; });
+    updateCurrentTime(0);
   };
 
   // Keyboard shortcuts for Power Users
@@ -1055,7 +1056,7 @@ export default function Studio() {
       </div>
 
       {/* Toolbar 2 (Tools) */}
-      <div className="min-h-[3rem] py-1 border-b border-border/40 bg-card/40 flex flex-nowrap overflow-x-auto custom-scrollbar items-center pl-2 sm:pl-4 gap-2 sm:gap-4 shrink-0 relative after:content-[''] after:w-12 sm:after:w-16 after:shrink-0">
+      <div className="min-h-[3rem] py-1 border-b border-border/40 bg-card/40 flex flex-wrap items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 relative">
         <Button onClick={addTrack} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
           <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
         </Button>

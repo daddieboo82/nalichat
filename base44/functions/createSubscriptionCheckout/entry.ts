@@ -85,7 +85,16 @@ Deno.serve(async (req) => {
                 user.email.toLowerCase().includes('base44'))) ? {
             firstName: "Test",
             lastName: "User",
-            phone: "1234567890"
+            phone: "1234567890",
+            billingAddress: {
+              addressLine1: "123 Test St",
+              city: "New York",
+              subdivision: "US-NY",
+              postalCode: "10001",
+              country: "US",
+              firstName: "Test",
+              lastName: "User"
+            }
           } : {})
         },
       },

@@ -58,6 +58,15 @@ Deno.serve(async (req) => {
         customerInfo.firstName = "Test";
         customerInfo.lastName = "User";
         customerInfo.phone = "1234567890";
+        customerInfo.billingAddress = {
+          addressLine1: "123 Test St",
+          city: "New York",
+          subdivision: "US-NY",
+          postalCode: "10001",
+          country: "US",
+          firstName: "Test",
+          lastName: "User"
+        };
       }
     }
 

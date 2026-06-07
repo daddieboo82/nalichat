@@ -225,7 +225,7 @@ export default function Settings() {
                     ) : isPro ? (
                       <Badge className="bg-primary/20 text-primary hover:bg-primary/20">Pro Active</Badge>
                     ) : isTrialActive || subscription?.hasAccess ? (
-                      <Badge className="bg-accent/20 text-accent hover:bg-accent/20">Free Trial</Badge>
+                      <Badge className="bg-accent/20 text-accent hover:bg-accent/20">Free Trial - Full Access</Badge>
                     ) : (
                       <Badge variant="outline">Free Plan</Badge>
                     )}
@@ -235,7 +235,7 @@ export default function Settings() {
                     
                     {subscription?.hasAccess && !isPro && (
                       <p className="text-accent font-medium">
-                        You are currently in your 7-day free trial period.
+                        You are currently in your 7-day free trial period with <strong className="font-bold text-primary">free access</strong> to all Pro features.
                       </p>
                     )}
                     

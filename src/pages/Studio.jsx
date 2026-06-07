@@ -1084,8 +1084,8 @@ export default function Studio() {
         {/* Undo / Redo */}
         <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
           <TooltipProvider delayDuration={200}>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Undo (Ctrl+Z)" onClick={undo} disabled={historyIndex <= 0} className="w-7 h-7 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"><Undo className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Undo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Z</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Redo (Ctrl+Y)" onClick={redo} disabled={historyIndex >= historyRef.current.length - 1} className="w-7 h-7 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"><Redo className="w-3.5 h-3.5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Redo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Undo (Ctrl+Z)" onClick={undo} disabled={historyIndex <= 0} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5"><Undo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Undo</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Undo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Z</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Redo (Ctrl+Y)" onClick={redo} disabled={historyIndex >= historyRef.current.length - 1} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5"><Redo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Redo</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Redo <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 
@@ -1154,20 +1154,20 @@ export default function Studio() {
         <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Shuffle" onClick={() => setEditMode('shuffle')} aria-pressed={editMode === 'shuffle'} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", editMode === 'shuffle' && "bg-primary/20 text-primary")}>
-                <Shuffle className="w-3.5 h-3.5" />
+              <Button variant="ghost" size="sm" aria-label="Shuffle" onClick={() => setEditMode('shuffle')} aria-pressed={editMode === 'shuffle'} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'shuffle' && "bg-primary/20 text-primary")}>
+                <Shuffle className="w-3.5 h-3.5" /><span className="text-xs">Shuffle</span>
               </Button>
             </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Shuffle Mode</TooltipContent></Tooltip>
             
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Loop" onClick={() => setEditMode('slip')} aria-pressed={editMode === 'slip'} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", editMode === 'slip' && "bg-primary/20 text-primary")}>
-                <MoveHorizontal className="w-3.5 h-3.5" />
+              <Button variant="ghost" size="sm" aria-label="Loop" onClick={() => setEditMode('slip')} aria-pressed={editMode === 'slip'} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'slip' && "bg-primary/20 text-primary")}>
+                <MoveHorizontal className="w-3.5 h-3.5" /><span className="text-xs">Loop</span>
               </Button>
             </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Loop Mode</TooltipContent></Tooltip>
 
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Grid" onClick={() => setEditMode('grid')} aria-pressed={editMode === 'grid'} className={cn("w-7 h-7 rounded text-muted-foreground hover:text-foreground", editMode === 'grid' && "bg-primary/20 text-primary")}>
-                <Grid className="w-3.5 h-3.5" />
+              <Button variant="ghost" size="sm" aria-label="Grid" onClick={() => setEditMode('grid')} aria-pressed={editMode === 'grid'} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'grid' && "bg-primary/20 text-primary")}>
+                <Grid className="w-3.5 h-3.5" /><span className="text-xs">Grid</span>
               </Button>
             </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Grid Mode</TooltipContent></Tooltip>
           </TooltipProvider>
@@ -1256,7 +1256,6 @@ export default function Studio() {
                             "border-b border-border/40 p-3 flex flex-col justify-between transition-none cursor-pointer border-l-4 relative group/header",
                             track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40",
                             selectedTrackIds.includes(track.id) ? "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]" : "border-l-transparent",
-                            tracks.some(t => t.solo) && !track.solo && "opacity-40 grayscale",
                             dragSnapshot.isDragging && "shadow-xl ring-1 ring-primary/40 bg-secondary/60"
                           )}
                         >
@@ -1272,7 +1271,7 @@ export default function Studio() {
                     </span>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2 font-medium text-sm">
-                      <div className={cn("w-2 h-2 rounded-full shrink-0", track.color)} />
+                      <div className={cn("w-2 h-2 rounded-full shrink-0", track.muted ? "bg-muted-foreground" : track.color)} />
                       <TooltipProvider delayDuration={200}>
                         <Tooltip>
                           <TooltipTrigger asChild>

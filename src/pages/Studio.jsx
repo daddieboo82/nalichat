@@ -1249,7 +1249,7 @@ export default function Studio() {
                           ref={dragProvided.innerRef}
                           {...dragProvided.draggableProps}
                           onClick={(e) => handleTrackClick(e, track.id)}
-                          style={{ height: track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px') }}
+                          style={{ ...dragProvided.draggableProps.style, height: track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px') }}
                           className={cn(
                             "border-b border-border/40 p-3 flex flex-col justify-between transition-none cursor-pointer border-l-4 relative group/header",
                             track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40",
@@ -1615,32 +1615,26 @@ export default function Studio() {
                           const target = e.currentTarget;
                           const startX = e.clientX;
                           const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
-                          
                           target.setPointerCapture(e.pointerId);
+                          Object.assign(target.style, { zIndex: '50', opacity: '0.9', filter: 'brightness(1.2)', boxShadow: '0 0 20px hsl(var(--primary)/0.5), inset 0 0 0 2px hsl(var(--primary))' });
                           
                           const handleMove = (moveEvent) => {
                             const deltaX = moveEvent.clientX - startX;
                             const deltaTime = deltaX / (20 * zoom);
                             let newStartTime = Math.max(0, initialStartTime + deltaTime);
-                            if (editMode === 'grid') {
-                               newStartTime = Math.round(newStartTime / gridSize) * gridSize;
-                            }
-                            
+                            if (editMode === 'grid') newStartTime = Math.round(newStartTime / gridSize) * gridSize;
                             target.style.left = `${newStartTime * 20 * zoom}px`;
                             target.dataset.newStartTime = newStartTime;
                           };
                           
                           const handleUp = (upEvent) => {
+                            Object.assign(target.style, { zIndex: '', opacity: '', filter: '', boxShadow: '' });
                             target.releasePointerCapture(upEvent.pointerId);
                             target.removeEventListener('pointermove', handleMove);
                             target.removeEventListener('pointerup', handleUp);
-                            
-                            const newStartTimeStr = target.dataset.newStartTime;
-                            if (newStartTimeStr !== undefined) {
-                              const newStartTime = parseFloat(newStartTimeStr);
-                              setTracksWithHistory(prev => prev.map(t => 
-                                t.id === track.id ? { ...t, startTime: newStartTime } : t
-                              ));
+                            if (target.dataset.newStartTime !== undefined) {
+                              const newStartTime = parseFloat(target.dataset.newStartTime);
+                              setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t));
                               delete target.dataset.newStartTime;
                             }
                           };

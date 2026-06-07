@@ -57,16 +57,8 @@ Deno.serve(async (req) => {
           user.email.toLowerCase().includes('base44')) {
         customerInfo.firstName = "Test";
         customerInfo.lastName = "User";
-        customerInfo.phone = "1234567890";
-        customerInfo.billingAddress = {
-          addressLine1: "123 Test St",
-          city: "New York",
-          subdivision: "US-NY",
-          postalCode: "10001",
-          country: "US",
-          firstName: "Test",
-          lastName: "User"
-        };
+        // Remove invalid phone number and billingAddress that breaks Wix Payments form
+        // customerInfo.phone = "1234567890";
       }
     }
 

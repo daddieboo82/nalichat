@@ -157,7 +157,7 @@ export default function Home() {
     <div className="h-full overflow-auto bg-background">
 
       {/* ── Hero ── */}
-      <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden px-6 py-24">
+      <section className="relative flex flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-16">
         {/* Animated blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-primary/30 rounded-full blur-[100px] animate-float-blob" />
@@ -214,9 +214,9 @@ export default function Home() {
             </motion.div>
           )}
 
-          <h1 className="font-heading font-black text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] mb-6 tracking-tight leading-[1.05] drop-shadow-xl text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/60">
+          <h1 className="font-heading font-black text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] mb-6 tracking-tight leading-[1.05] drop-shadow-xl text-gradient-animate">
             Real-Time.<br className="hidden md:block" /> 
-            <span className="text-gradient-animate drop-shadow-2xl">Messaging.</span>
+            <span className="drop-shadow-2xl">Messaging.</span>
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl text-foreground/90 font-medium mb-10 md:mb-12 leading-relaxed max-w-3xl mx-auto">
             Connect instantly with artists globally. Share high-res audio, drop voice notes, and collaborate seamlessly in unlimited chats.
@@ -297,14 +297,14 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="bg-card border border-border rounded-3xl p-8 md:p-12 overflow-hidden"
+          className="relative w-full bg-card border border-border rounded-3xl p-8 md:p-12 overflow-hidden"
         >
           <div className="absolute -inset-px bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-3xl pointer-events-none" />
           <div className="relative z-10">
             <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">What You Can Actually Do</h2>
             <p className="text-foreground/90 text-lg mb-10 max-w-2xl">Everything you need to discover music, collaborate with artists, produce your sound, and grow your audience:</p>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
               {[
                 {
                   title: "🎧 Produce in the Studio",
@@ -331,7 +331,7 @@ export default function Home() {
                   items: ["Creator Profiles", "Earn Achievements", "Display Portfolio", "Level Up Status"]
                 }
               ].map((block) => (
-                <div key={block.title} className="border border-border/50 rounded-2xl p-6 bg-card/50 hover:border-primary/30 transition-colors">
+                <div key={block.title} className="border border-border/50 rounded-2xl p-6 bg-card/50 hover:border-primary/30 transition-colors min-w-0 break-words">
                   <h3 className="font-heading font-bold text-xl mb-4">{block.title}</h3>
                   <ul className="space-y-2">
                     {block.items.map((item) => (

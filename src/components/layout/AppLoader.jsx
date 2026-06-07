@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Music } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 
 const BARS = 20;
 
@@ -83,7 +83,7 @@ export default function AppLoader({ onDone }) {
                 animate={{ boxShadow: ["0 0 30px hsl(265 80% 60% / 0.4)", "0 0 60px hsl(265 80% 60% / 0.7)", "0 0 30px hsl(265 80% 60% / 0.4)"] }}
                 transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
               >
-                <Music className="w-9 h-9 text-white" />
+                <MessageSquare className="w-9 h-9 text-white" />
               </motion.div>
               {/* Rotating ring */}
               <motion.div

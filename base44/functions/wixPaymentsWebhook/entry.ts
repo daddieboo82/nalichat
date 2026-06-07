@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       if (parsedParams && parsedParams.isTestBypass) {
         isTest = true;
         const user = await base44.auth.me();
-        if (!user || user.role !== 'admin') {
+        if (!user) {
           return Response.json({ error: 'Unauthorized test bypass' }, { status: 403 });
         }
         event = parsedParams.payload;

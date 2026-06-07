@@ -2,22 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { 
-  Play, Square, Circle, Mic, Plus, Settings2, Volume2, 
-  Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical,
-  Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload,
-  Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle,
-  Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2,
-  Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight
-} from 'lucide-react';
+import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
@@ -38,6 +25,7 @@ import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDi
 import MixerPanel from '@/components/studio/MixerPanel';
 import KeyboardShortcutsDialog from '@/components/studio/KeyboardShortcutsDialog';
 import TrackWaveformSVG from '@/components/studio/TrackWaveformSVG';
+import Record from '@/pages/Record';
 
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
@@ -90,6 +78,7 @@ export default function Studio() {
   const [bounceRedirect, setBounceRedirect] = useState(null);
   const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
+  const [showQuickMemo, setShowQuickMemo] = useState(false);
   
   const [hardware, setHardware] = useState({
     mic: false,
@@ -545,9 +534,6 @@ export default function Studio() {
       } else if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
         toggleRecord();
-      } else if (e.code === 'Enter') {
-        e.preventDefault();
-        stop();
       } else if (e.key === 'Backspace' || e.key === 'Delete') {
         if (selectedTrackIds.length > 0) {
           e.preventDefault();
@@ -562,6 +548,18 @@ export default function Studio() {
       } else if (e.key === 'l' || e.key === 'L') {
         e.preventDefault();
         selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked'));
+      } else if (e.shiftKey && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        addTrack();
+      } else if (e.shiftKey && e.key === '1') {
+        e.preventDefault();
+        setEditMode('shuffle');
+      } else if (e.shiftKey && e.key === '2') {
+        e.preventDefault();
+        setEditMode('slip');
+      } else if (e.shiftKey && e.key === '3') {
+        e.preventDefault();
+        setEditMode('grid');
       } else if (e.shiftKey && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
         selectedTrackIds.forEach(id => toggleSolo(id));
@@ -983,7 +981,7 @@ export default function Studio() {
         <div className="flex items-center gap-1 sm:gap-2 bg-background/50 p-1 sm:p-1.5 rounded-xl border border-border/50 shadow-inner shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Return to Zero (Home)" aria-label="Return to Zero (Home)" aria-keyshortcuts="Home" onClick={(e) => { updateCurrentTime(0); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Rewind className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Return to Zero <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Home</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Stop (Enter)" aria-label="Stop (Enter)" aria-keyshortcuts="Enter" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Square className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Enter</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Stop" aria-label="Stop" onClick={(e) => { stop(); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Square className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Stop</TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Play/Pause (Space)" aria-label="Play/Pause (Space)" aria-keyshortcuts="Space" onClick={(e) => { togglePlay(); e.currentTarget.blur(); }} className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>{isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{isPlaying ? "Pause" : "Play"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Record (R)" aria-label="Record (R)" aria-keyshortcuts="R" onClick={toggleRecord} className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}>{isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}<Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Record <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">R</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Fast-forward" aria-label="Fast-forward" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><FastForward className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Fast-forward</TooltipContent></Tooltip>
@@ -1033,7 +1031,7 @@ export default function Studio() {
 
           <div className="flex flex-wrap items-center gap-2 pl-2">
             <input type="file" ref={fileInputRef} className="hidden" accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} />
-            <Button onClick={() => navigate('/record')} variant="outline" size="sm" className="gap-2 rounded-xl border-primary/50 text-primary hover:bg-primary/10 transition-colors">
+            <Button onClick={() => setShowQuickMemo(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-primary/50 text-primary hover:bg-primary/10 transition-colors">
                <Mic className="w-4 h-4" /> Quick Memo
             </Button>
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleImportClick}>
@@ -1949,6 +1947,12 @@ export default function Studio() {
       />
 
       <KeyboardShortcutsDialog open={showShortcutsDialog} onOpenChange={setShowShortcutsDialog} />
+
+      <Dialog open={showQuickMemo} onOpenChange={setShowQuickMemo}>
+        <DialogContent className="max-w-4xl bg-background border-border overflow-y-auto h-[650px] p-0">
+          <Record />
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!renamingTrack} onOpenChange={(open) => !open && setRenamingTrack(null)}>
         <DialogContent>

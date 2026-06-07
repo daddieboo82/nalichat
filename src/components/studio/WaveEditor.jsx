@@ -1096,34 +1096,31 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
                       // Peak closed path
                       let peakPath = `M 0,50 `;
-                      for (let i = 0; i <= wLen; i++) peakPath += `L ${(i/wLen)*1000},${50 - Math.max(0.01, wf[i])*46*g} `;
-                      for (let i = wLen; i >= 0; i--) peakPath += `L ${(i/wLen)*1000},${50 + Math.max(0.01, wf[i])*46*g} `;
+                      for (let i = 0; i <= wLen; i++) peakPath += `L ${(i/wLen)*10000},${50 - Math.max(0.001, wf[i])*48*g} `;
+                      for (let i = wLen; i >= 0; i--) peakPath += `L ${(i/wLen)*10000},${50 + Math.max(0.001, wf[i])*48*g} `;
                       peakPath += 'Z';
 
                       const baseFill = "text-[#1ED760] fill-[#1ED760]";
 
                       return (
-                        <svg className="w-full h-full pt-5 pb-0 pointer-events-none drop-shadow-sm" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                        <svg className="w-full h-full pt-5 pb-0 pointer-events-none" style={{ filter: 'drop-shadow(0px 0px 5px rgba(30,215,96,0.4))' }} preserveAspectRatio="none" viewBox="0 0 10000 100">
                           <defs>
                             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="currentColor" stopOpacity="1" />
-                              <stop offset="25%" stopColor="currentColor" stopOpacity="0.8" />
-                              <stop offset="50%" stopColor="currentColor" stopOpacity="0.6" />
-                              <stop offset="75%" stopColor="currentColor" stopOpacity="0.8" />
-                              <stop offset="100%" stopColor="currentColor" stopOpacity="1" />
+                              <stop offset="0%" stopColor="currentColor" stopOpacity="0.95" />
+                              <stop offset="35%" stopColor="currentColor" stopOpacity="0.75" />
+                              <stop offset="50%" stopColor="currentColor" stopOpacity="0.3" />
+                              <stop offset="65%" stopColor="currentColor" stopOpacity="0.75" />
+                              <stop offset="100%" stopColor="currentColor" stopOpacity="0.95" />
                             </linearGradient>
                           </defs>
                           <g className={baseFill}>
                             <path 
                               d={peakPath} 
                               fill={`url(#${gradId})`} 
-                              stroke="currentColor" 
-                              strokeWidth="1.2" 
-                              strokeLinejoin="round" 
-                              vectorEffect="non-scaling-stroke" 
+                              shapeRendering="geometricPrecision"
                             />
                           </g>
-                          <line x1="0" y1="50" x2="1000" y2="50" stroke="#000000" strokeOpacity="0.4" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                          <line x1="0" y1="50" x2="10000" y2="50" stroke="#000000" strokeOpacity="0.5" strokeWidth="2" vectorEffect="non-scaling-stroke" shapeRendering="geometricPrecision" />
                         </svg>
                       );
                     })()}

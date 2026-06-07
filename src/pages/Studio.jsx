@@ -36,7 +36,7 @@ import LivePresenceBar from '@/components/studio/LivePresenceBar';
 import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
 import MixerPanel from '@/components/studio/MixerPanel';
 
-const generateWaveform = (len = 4000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.01, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
+const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
 export default function Studio() {
   const navigate = useNavigate();
@@ -113,8 +113,8 @@ export default function Studio() {
       console.error("Failed to load project autosave", e);
     }
     return [
-      { id: 1, name: "Vocals Lead", color: "bg-green-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
-      { id: 2, name: "Beat / Instrumental", color: "bg-green-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(2000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+      { id: 1, name: "Vocals Lead", color: "bg-green-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(8000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+      { id: 2, name: "Beat / Instrumental", color: "bg-green-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(8000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
     ];
   });
 
@@ -387,7 +387,7 @@ export default function Studio() {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
         const audioUrl = URL.createObjectURL(blob);
         
-        let realWaveform = generateWaveform(2000);
+        let realWaveform = generateWaveform(8000);
         try {
           const arrayBuffer = await blob.arrayBuffer();
           const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -395,7 +395,7 @@ export default function Studio() {
           const channelData = audioBuffer.getChannelData(0);
           
           // Max efficiency waveform generation using Float32Array and striding
-          const numPoints = 2000;
+          const numPoints = 8000;
           const blockSize = Math.floor(channelData.length / numPoints);
           const stride = Math.max(1, Math.floor(blockSize / 64)); // Sample max 64 points per block to prevent blocking main thread
           
@@ -867,7 +867,7 @@ export default function Studio() {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
       const channelData = audioBuffer.getChannelData(0);
-      const numPoints = 2000;
+      const numPoints = 8000;
       const blockSize = Math.max(1, Math.floor(channelData.length / numPoints));
       const stride = Math.max(1, Math.floor(blockSize / 64));
       const waveform = new Float32Array(numPoints);
@@ -888,7 +888,7 @@ export default function Studio() {
       return { waveform: normalized, duration: audioBuffer.duration };
     } catch (err) {
       console.error("Failed to decode audio file", err);
-      return { waveform: generateWaveform(2000), duration: 40 };
+      return { waveform: generateWaveform(8000), duration: 40 };
     }
   };
 
@@ -1851,34 +1851,31 @@ export default function Studio() {
                           const glowId = `studio-wf-glow-${track.id}`;
 
                           let peakPath = `M 0,50 `;
-                          for (let i = 0; i <= wLen; i++) peakPath += `L ${(i/wLen)*1000},${50 - Math.max(0.01, wf[i])*48} `;
-                          for (let i = wLen; i >= 0; i--) peakPath += `L ${(i/wLen)*1000},${50 + Math.max(0.01, wf[i])*48} `;
+                          for (let i = 0; i <= wLen; i++) peakPath += `L ${(i/wLen)*10000},${50 - Math.max(0.001, wf[i])*49} `;
+                          for (let i = wLen; i >= 0; i--) peakPath += `L ${(i/wLen)*10000},${50 + Math.max(0.001, wf[i])*49} `;
                           peakPath += 'Z';
 
                           const baseFill = "text-[#1ED760] fill-[#1ED760]";
 
                           return (
-                            <svg className="w-full h-full drop-shadow-sm" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                            <svg className="w-full h-full" style={{ filter: 'drop-shadow(0px 0px 4px rgba(30,215,96,0.35))' }} preserveAspectRatio="none" viewBox="0 0 10000 100">
                               <defs>
                                 <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="currentColor" stopOpacity="1" />
-                                  <stop offset="25%" stopColor="currentColor" stopOpacity="0.8" />
-                                  <stop offset="50%" stopColor="currentColor" stopOpacity="0.6" />
-                                  <stop offset="75%" stopColor="currentColor" stopOpacity="0.8" />
-                                  <stop offset="100%" stopColor="currentColor" stopOpacity="1" />
+                                  <stop offset="0%" stopColor="currentColor" stopOpacity="0.9" />
+                                  <stop offset="35%" stopColor="currentColor" stopOpacity="0.7" />
+                                  <stop offset="50%" stopColor="currentColor" stopOpacity="0.3" />
+                                  <stop offset="65%" stopColor="currentColor" stopOpacity="0.7" />
+                                  <stop offset="100%" stopColor="currentColor" stopOpacity="0.9" />
                                 </linearGradient>
                               </defs>
                               <g className={baseFill}>
                                 <path 
                                   d={peakPath} 
                                   fill={`url(#${gradId})`} 
-                                  stroke="currentColor" 
-                                  strokeWidth="1.2" 
-                                  strokeLinejoin="round" 
-                                  vectorEffect="non-scaling-stroke" 
+                                  shapeRendering="geometricPrecision"
                                 />
                               </g>
-                              <line x1="0" y1="50" x2="1000" y2="50" stroke="#000000" strokeOpacity="0.4" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                              <line x1="0" y1="50" x2="10000" y2="50" stroke="#000000" strokeOpacity="0.5" strokeWidth="2" vectorEffect="non-scaling-stroke" shapeRendering="geometricPrecision" />
                             </svg>
                           );
                         })()}

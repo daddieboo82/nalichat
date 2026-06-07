@@ -10,6 +10,7 @@ import { Camera, Save, Loader2, X, Plus, CreditCard, BarChart3 } from "lucide-re
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import DeleteAccountDialog from "@/components/settings/DeleteAccountDialog";
+import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import DeviceSelector from "@/components/audio/DeviceSelector";
 import { sounds } from "@/hooks/use-sound";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -23,6 +24,7 @@ export default function Settings() {
   const [uploading, setUploading] = useState(false);
   const [genreInput, setGenreInput] = useState("");
   const fileRef = useRef(null);
+  const [showWizard, setShowWizard] = useState(false);
   const { subscription, isPro, isProFilesharing, isTrialActive, isLoading: subLoading } = useSubscription();
 
   useEffect(() => {
@@ -168,6 +170,19 @@ export default function Settings() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">
+          <h2 className="text-xl font-heading font-bold mb-6">Interactive Tutorial</h2>
+          <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
+            <div>
+              <h3 className="font-heading font-semibold text-lg text-foreground">Replay Onboarding Wizard</h3>
+              <p className="text-sm text-muted-foreground mt-1">Take an interactive tour to learn how to use NaliChat's studio and collaboration tools.</p>
+            </div>
+            <Button onClick={() => setShowWizard(true)} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-0 font-semibold">
+              Start Tutorial
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-12 pt-8 border-t border-border">
           <h2 className="text-xl font-heading font-bold mb-6">Creator Tools</h2>
           <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
             <div>
@@ -258,6 +273,7 @@ export default function Settings() {
 
         <DeleteAccountDialog />
       </div>
+      <InteractiveWizard open={showWizard} onOpenChange={setShowWizard} />
     </div>
   );
 }

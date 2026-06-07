@@ -12,6 +12,7 @@ import {
 import { motion } from "framer-motion";
 import QuickStartGuide from "@/components/home/QuickStartGuide";
 import HowItWorks from "@/components/home/HowItWorks";
+import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -147,6 +148,7 @@ const itemVariants = {
 
 export default function Home() {
   const { user: authUser, isAuthenticated } = useAuth();
+  const [showWizard, setShowWizard] = useState(false);
   // Only treat as logged-in when both the flag and the user record are present,
   // so the greeting disappears instantly on logout.
   const user = isAuthenticated ? authUser : null;
@@ -470,6 +472,26 @@ export default function Home() {
             })}
           </motion.div>
         </div>
+
+        {/* ── Interactive Tutorial ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-10"
+        >
+          <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h3 className="font-heading font-bold text-2xl mb-2 text-foreground">Interactive Tutorial</h3>
+              <p className="text-muted-foreground text-lg">New to NaliChat? Take our interactive onboarding wizard to get up to speed in seconds.</p>
+            </div>
+            <Button onClick={() => setShowWizard(true)} size="lg" className="shrink-0 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl h-14 px-8 text-lg font-bold shadow-lg shadow-indigo-500/20">
+              Start Onboarding Wizard
+            </Button>
+          </div>
+        </motion.div>
+
+        <InteractiveWizard open={showWizard} onOpenChange={setShowWizard} />
 
         {/* ── How it Works ── */}
         <HowItWorks />

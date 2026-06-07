@@ -261,13 +261,13 @@ export default function WebhookTest() {
                       )}
                     </div>
                     
-                    {sub.status === 'pending' && sub.checkout_id && (
+                    {sub.status === 'pending' && (sub.checkout_id || sub.id) && (
                       <Button 
-                        onClick={() => simulateOrderApproved(sub.checkout_id)} 
-                        disabled={loadingId === sub.checkout_id}
+                        onClick={() => simulateOrderApproved(sub.checkout_id || sub.id)} 
+                        disabled={loadingId === (sub.checkout_id || sub.id)}
                         className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
                       >
-                        {loadingId === sub.checkout_id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        {loadingId === (sub.checkout_id || sub.id) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                         Approve Order
                       </Button>
                     )}

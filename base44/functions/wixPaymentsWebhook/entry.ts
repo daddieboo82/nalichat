@@ -84,9 +84,18 @@ Deno.serve(async (req) => {
         }
 
         // Find the pending subscription by checkout ID
-        const subs = await base44.asServiceRole.entities.Subscription.filter({
+        let subs = await base44.asServiceRole.entities.Subscription.filter({
           checkout_id: checkoutId,
         });
+
+        if (subs.length === 0) {
+          try {
+            const subById = await base44.asServiceRole.entities.Subscription.get(checkoutId);
+            if (subById) subs = [subById];
+          } catch (e) {
+            // Ignore format/not found errors
+          }
+        }
 
         if (subs.length === 0) {
           console.warn('No pending subscription found for checkout:', checkoutId);
@@ -171,11 +180,16 @@ Deno.serve(async (req) => {
           subscription_id: subscriptionId,
         });
 
-        if (subs.length === 0 && /^[0-9a-fA-F]{24}$/.test(subscriptionId)) {
+        if (subs.length === 0) {
           // Fallback to internal ID for automated testing environments
-          subs = await base44.asServiceRole.entities.Subscription.filter({
-            id: subscriptionId,
-          });
+          try {
+            const subById = await base44.asServiceRole.entities.Subscription.get(subscriptionId);
+            if (subById) {
+              subs = [subById];
+            }
+          } catch (e) {
+            // Ignore invalid id format or not found errors
+          }
         }
 
         if (subs.length > 0) {
@@ -209,9 +223,14 @@ Deno.serve(async (req) => {
         });
 
         if (subs.length === 0) {
-          subs = await base44.asServiceRole.entities.Subscription.filter({
-            id: subscriptionId,
-          });
+          try {
+            const subById = await base44.asServiceRole.entities.Subscription.get(subscriptionId);
+            if (subById) {
+              subs = [subById];
+            }
+          } catch (e) {
+            // Ignore invalid id format or not found errors
+          }
         }
 
         if (subs.length > 0) {

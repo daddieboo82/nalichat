@@ -3,6 +3,7 @@ import jwt from 'npm:jsonwebtoken';
 
 Deno.serve(async (req) => {
   try {
+    console.error("HANDLER START ERROR LOG");
     // Security: Only POST allowed
     if (req.method !== 'POST') {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
@@ -159,7 +160,7 @@ Deno.serve(async (req) => {
     // Handle subscription canceled
     if (event.eventType === 'wix.ecom.subscription_contracts.v1.subscription_contract_canceled') {
       try {
-        const subscriptionContract = eventData?.actionEvent?.body?.subscriptionContract || eventData?.subscriptionContract || eventData;
+        const subscriptionContract = eventData.actionEvent.body.subscriptionContract;
         const subscriptionId = subscriptionContract?.id;
         if (!subscriptionId) {
           console.warn('No subscription ID in cancel event');
@@ -170,16 +171,11 @@ Deno.serve(async (req) => {
           subscription_id: subscriptionId,
         });
 
-        // Fallback to match by database ID if subscription_id isn't found
         if (subs.length === 0) {
-          try {
-            const subById = await base44.asServiceRole.entities.Subscription.get(subscriptionId);
-            if (subById) {
-              subs = [subById];
-            }
-          } catch (e) {
-            // Ignore format errors
-          }
+          // Fallback to internal ID for automated testing environments
+          subs = await base44.asServiceRole.entities.Subscription.filter({
+            id: subscriptionId,
+          });
         }
 
         if (subs.length > 0) {
@@ -188,7 +184,7 @@ Deno.serve(async (req) => {
           });
           console.log('Subscription canceled:', subscriptionId);
         } else {
-          console.warn('Subscription not found for cancel event:', subscriptionId);
+          console.warn('No subscription found for cancellation:', subscriptionId);
         }
 
         return Response.json({ success: true });
@@ -201,7 +197,7 @@ Deno.serve(async (req) => {
     // Handle subscription expired
     if (event.eventType === 'wix.ecom.subscription_contracts.v1.subscription_contract_expired') {
       try {
-        const subscriptionContract = eventData?.actionEvent?.body?.subscriptionContract || eventData?.subscriptionContract || eventData;
+        const subscriptionContract = eventData.actionEvent.body.subscriptionContract;
         const subscriptionId = subscriptionContract?.id;
         if (!subscriptionId) {
           console.warn('No subscription ID in expire event');
@@ -212,16 +208,10 @@ Deno.serve(async (req) => {
           subscription_id: subscriptionId,
         });
 
-        // Fallback to match by database ID if subscription_id isn't found
         if (subs.length === 0) {
-          try {
-            const subById = await base44.asServiceRole.entities.Subscription.get(subscriptionId);
-            if (subById) {
-              subs = [subById];
-            }
-          } catch (e) {
-            // Ignore format errors
-          }
+          subs = await base44.asServiceRole.entities.Subscription.filter({
+            id: subscriptionId,
+          });
         }
 
         if (subs.length > 0) {
@@ -229,8 +219,6 @@ Deno.serve(async (req) => {
             status: 'ended',
           });
           console.log('Subscription ended:', subscriptionId);
-        } else {
-          console.warn('Subscription not found for expire event:', subscriptionId);
         }
 
         return Response.json({ success: true });

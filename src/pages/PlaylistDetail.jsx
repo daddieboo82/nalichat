@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Play, Pause, X, Volume2, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import CustomMediaPlayer from "@/components/audio/CustomMediaPlayer";
 import { Slider } from "@/components/ui/slider";
 
@@ -181,12 +182,15 @@ export default function PlaylistDetail() {
           <p className="text-xs text-muted-foreground">{tracks.length} tracks</p>
         </div>
         {currentUser && (
-          <div>
-            <input ref={fileInputRef} type="file" accept="audio/*" className="hidden" onChange={handleUpload} />
-            <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploadMutation.isPending}>
-              {uploadMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-              Upload Track
-            </Button>
+          <div className="flex items-center gap-2">
+            {uploadMutation.isPending && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
+            <Input 
+              type="file" 
+              accept="audio/*" 
+              onChange={handleUpload} 
+              disabled={uploadMutation.isPending}
+              className="w-[200px] cursor-pointer" 
+            />
           </div>
         )}
       </div>

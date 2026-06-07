@@ -300,19 +300,16 @@ export default function Files() {
             <p className="text-sm text-muted-foreground">Share music, sessions, art & more</p>
           </div>
           {typeFilter !== "transfer" && (
-            <div className="relative inline-block">
-              <input 
+            <div className="flex items-center gap-2">
+              {uploading && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
+              <Input 
                 type="file" 
                 multiple 
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                 onChange={handleUpload} 
                 disabled={uploading} 
                 title="Upload File"
+                className="w-full sm:w-auto min-w-[200px] cursor-pointer"
               />
-              <Button className="rounded-xl bg-primary hover:bg-primary/90 pointer-events-none" disabled={uploading} tabIndex={-1}>
-                {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                Upload File
-              </Button>
             </div>
           )}
         </div>

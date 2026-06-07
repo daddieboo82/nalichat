@@ -88,6 +88,8 @@ export default function Studio() {
   const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
   const [showQuickMemo, setShowQuickMemo] = useState(false);
+  const [showMilestones, setShowMilestones] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   
   const [hardware, setHardware] = useState({
     mic: false,

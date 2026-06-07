@@ -7,6 +7,8 @@ import { sounds } from "@/hooks/use-sound";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiReactionPicker from "./EmojiReactionPicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessage, onCancelEdit, disabled, onTyping }) {
   const [text, setText] = useState("");
@@ -24,6 +26,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
   const [dragOver, setDragOver] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [showFeatures, setShowFeatures] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [sessionName, setSessionName] = useState("New Recording Session");
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -94,6 +97,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     const files = Array.from(e.target.files || []);
     for (const file of files) uploadFile(file); // parallel
     e.target.value = "";
+    setShowUploadDialog(false);
   };
 
   const handleDrop = async (e) => {
@@ -324,7 +328,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
                   type="button"
                   className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-primary/10 transition-colors text-left"
                   onClick={() => {
-                    fileInputRef.current?.click();
+                    setShowUploadDialog(true);
                     setShowFeatures(false);
                   }}
                   title="Share Music"
@@ -372,7 +376,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
         {/* Attach */}
         <button
           type="button"
-          onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
+          onClick={(e) => { e.preventDefault(); setShowUploadDialog(true); }}
           disabled={anyUploading || isRecording}
           className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shrink-0 mb-0.5 touch-manipulation"
           title="Attach File"
@@ -470,6 +474,37 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
           </motion.button>
         )}
       </div>
+
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent className="bg-card border-border shadow-2xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-lg">Upload File</DialogTitle>
+          </DialogHeader>
+          <div className="border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors border-border/50 hover:border-primary/40 bg-secondary/20"
+               onClick={() => {
+                 if (fileInputRef?.current) {
+                   fileInputRef.current.click();
+                   setShowUploadDialog(false);
+                 }
+               }}
+          >
+            <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
+              <UploadCloud className="w-7 h-7 text-primary/70" />
+            </div>
+            <p className="font-medium mb-1">Click to browse your device</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              Supports: Audio, Video, Images, Documents
+            </p>
+            <Button type="button" variant="outline" size="sm" onClick={(e) => {
+                 e.stopPropagation();
+                 if (fileInputRef?.current) {
+                   fileInputRef.current.click();
+                   setShowUploadDialog(false);
+                 }
+               }}>Select Files</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

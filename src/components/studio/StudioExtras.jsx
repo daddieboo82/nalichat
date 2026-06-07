@@ -2,12 +2,13 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import MilestonesPanel from '@/components/studio/MilestonesPanel';
 import Record from '@/pages/Record';
 
 export default function StudioExtras({ 
   showQuickMemo, setShowQuickMemo, 
-  showImportDialog, setShowImportDialog, fileInputRef,
+  showImportDialog, setShowImportDialog, handleFileChange,
   showMilestones, setShowMilestones 
 }) {
   return (
@@ -23,28 +24,20 @@ export default function StudioExtras({
           <DialogHeader>
             <DialogTitle className="font-heading text-lg">Import Audio Tracks</DialogTitle>
           </DialogHeader>
-          <div className="border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors border-border/50 hover:border-primary/40 bg-secondary/20"
-               onClick={() => {
-                 if (fileInputRef?.current) {
-                   fileInputRef.current.click();
-                   setShowImportDialog(false);
-                 }
-               }}
-          >
+          <div className="border-2 border-dashed rounded-2xl p-8 text-center transition-colors border-border/50 hover:border-primary/40 bg-secondary/20">
             <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
               <Upload className="w-7 h-7 text-primary/70" />
             </div>
-            <p className="font-medium mb-1">Click to browse your device</p>
+            <p className="font-medium mb-1">Select files from your device</p>
             <p className="text-xs text-muted-foreground mb-3">
               Supports: MP3, WAV, FLAC, OGG, AAC, M4A, WebM
             </p>
-            <Button variant="outline" size="sm" onClick={(e) => {
-                 e.stopPropagation();
-                 if (fileInputRef?.current) {
-                   fileInputRef.current.click();
-                   setShowImportDialog(false);
-                 }
-               }}>Select Files</Button>
+            <Input 
+              type="file" 
+              accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif"
+              onChange={handleFileChange} 
+              className="cursor-pointer"
+            />
           </div>
         </DialogContent>
       </Dialog>

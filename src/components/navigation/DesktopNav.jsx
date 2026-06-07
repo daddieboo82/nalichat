@@ -25,6 +25,7 @@ const MORE_NAV_ITEMS = [
   { icon: Wand2, label: "AI Cover", path: "/cover-art" },
   { icon: FileText, label: "Files", path: "/files" },
   { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
+  { icon: Users, label: "Collaborations", path: "/projects-summary" },
   { icon: BarChart3, label: "Business", path: "/business" },
 ];
 

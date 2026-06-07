@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight } from 'lucide-react';
+import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight, Repeat } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -69,6 +69,7 @@ export default function Studio() {
 
   const [masterVolume, setMasterVolume] = useState(100);
   const [showMixerPanel, setShowMixerPanel] = useState(false);
+  const [loopActive, setLoopActive] = useState(false);
 
   // Session musical settings shown in the transport (BPM, time signature, key)
   const [bpm, setBpm] = useState(120);
@@ -111,8 +112,8 @@ export default function Studio() {
       console.error("Failed to load project autosave", e);
     }
     return [
-      { id: 1, name: "Vocals Lead", color: "bg-green-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(8000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
-      { id: 2, name: "Beat / Instrumental", color: "bg-green-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(8000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+      { id: 1, name: "Vocals Lead", color: "bg-purple-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(8000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
+      { id: 2, name: "Beat / Instrumental", color: "bg-blue-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(8000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
     ];
   });
 
@@ -448,6 +449,7 @@ export default function Studio() {
     if (isPlaying) setIsPlaying(false);
 
     if (!isRecording) {
+      setLoopActive(false);
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
           audio: { 
@@ -1077,20 +1079,22 @@ export default function Studio() {
       </div>
 
       {/* Toolbar 2 (Tools) */}
-      <div className="min-h-[3rem] py-1 border-b border-border/40 bg-card/40 flex flex-wrap items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 relative">
-        <Button onClick={addTrack} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
-          <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
-        </Button>
-        <TooltipProvider delayDuration={200}>
-          <Tooltip><TooltipTrigger asChild><Button aria-label="Open Wave Editor" onClick={() => { if(selectedTrackIds.length===1) { const track = tracks.find(t => t.id === selectedTrackIds[0]); if(track) setEditingTrack(track); } else toast.error("Please select exactly one track"); }} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0"><SlidersHorizontal className="w-4 h-4" /> <span className="hidden md:inline">Wave Editor</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Open Wave Editor (Select 1 track)</TooltipContent></Tooltip>
-          <Tooltip><TooltipTrigger asChild><Button aria-label="Split Stems" onClick={handleSeparateStems} disabled={isProcessing} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0 disabled:opacity-50">{isProcessing === 'separate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} <span className="hidden md:inline">Split Stems</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Separate Vocals & Instrumental</TooltipContent></Tooltip>
-          <Tooltip><TooltipTrigger asChild><Button aria-label="Generate Melody" onClick={handleGenerateMelody} disabled={isProcessing} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0 disabled:opacity-50">{isProcessing === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} <span className="hidden lg:inline">Generate Melody</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Generate AI Melody</TooltipContent></Tooltip>
-        </TooltipProvider>
-
-        <div className="h-5 w-px bg-border/50 mx-0.5 shrink-0" />
+      <div className="min-h-[3.5rem] py-1.5 border-b border-border/40 bg-card/40 flex flex-wrap items-center px-2 sm:px-4 gap-3 sm:gap-4 shrink-0 relative">
         
-        {/* Undo / Redo */}
-        <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
+        {/* Track Actions Group */}
+        <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
+          <Button onClick={addTrack} variant="secondary" size="sm" className="gap-1.5 sm:gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
+          </Button>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip><TooltipTrigger asChild><Button aria-label="Open Wave Editor" onClick={() => { if(selectedTrackIds.length===1) { const track = tracks.find(t => t.id === selectedTrackIds[0]); if(track) setEditingTrack(track); } else toast.error("Please select exactly one track"); }} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0"><SlidersHorizontal className="w-4 h-4" /> <span className="hidden md:inline">Wave Editor</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Open Wave Editor (Select 1 track)</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button aria-label="Split Stems" onClick={handleSeparateStems} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'separate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} <span className="hidden md:inline">Split Stems</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Separate Vocals & Instrumental</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button aria-label="Generate Melody" onClick={handleGenerateMelody} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} <span className="hidden lg:inline">Generate Melody</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Generate AI Melody</TooltipContent></Tooltip>
+          </TooltipProvider>
+        </div>
+        
+        {/* Undo / Redo Group */}
+        <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={undo} disabled={historyIndex<=0} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5 relative"><Undo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Undo</span>{historyIndex > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{historyIndex <= 0 ? "Nothing to Undo" : "Undo"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Z</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={redo} disabled={historyIndex>=historyRef.current.length-1} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5 relative"><Redo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Redo</span>{(historyRef.current.length-1-historyIndex) > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyRef.current.length-1-historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{historyIndex >= historyRef.current.length - 1 ? "Nothing to Redo" : "Redo"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
@@ -1098,7 +1102,7 @@ export default function Studio() {
         </div>
 
         {/* BPM / Time Signature / Key display */}
-        <div className="flex items-stretch gap-px bg-background/50 rounded-lg border border-border/50 shadow-inner overflow-hidden shrink-0">
+        <div className="flex items-stretch gap-px bg-background/50 rounded-xl border border-border/50 shadow-inner overflow-hidden shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild>
               <div className="flex flex-col items-center justify-center px-3 py-1 hover:bg-secondary/40 transition-colors">
@@ -1151,10 +1155,8 @@ export default function Studio() {
           </TooltipProvider>
         </div>
 
-        <div className="h-5 w-px bg-border/50 mx-1 shrink-0" />
-
-        {/* Edit Modes */}
-        <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
+        {/* Edit Modes Group */}
+        <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild>
               <Button variant="ghost" size="sm" aria-label="Shuffle" onClick={() => setEditMode('shuffle')} aria-pressed={editMode === 'shuffle'} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'shuffle' && "bg-primary/20 text-primary")}>
@@ -1176,8 +1178,8 @@ export default function Studio() {
           </TooltipProvider>
         </div>
 
-        {/* Tools */}
-        <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
+        {/* Tools Group */}
+        <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Trim Tool (T)" onClick={() => setActiveTool('trim')} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'trim' && "bg-primary/20 text-primary")}><MoveHorizontal className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Trim</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Trim Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">T</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Cut Tool (C)" onClick={() => setActiveTool('cut')} className={cn("h-7 px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'cut' && "bg-primary/20 text-primary")}><Scissors className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Cut</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Cut Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">C</kbd></TooltipContent></Tooltip>
@@ -1192,9 +1194,8 @@ export default function Studio() {
           </TooltipProvider>
         </div>
 
-        <div className="h-5 w-px bg-border/50 mx-1 shrink-0" />
-
-        <div className="flex items-center gap-1 shrink-0 bg-secondary/30 p-1 rounded-lg">
+        {/* Clip Actions Group */}
+        <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" title="Lock/Unlock Clip (L)" onClick={() => {
               const allLocked = selectedTrackIds.every(id => tracks.find(t => t.id === id)?.locked);
@@ -1291,7 +1292,7 @@ export default function Studio() {
                         value={track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")}
                         onValueChange={(val) => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, inputType: val } : t))}
                       >
-                        <SelectTrigger className={cn("h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] w-max flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none transition-colors", (track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")) !== "No Input (Playback)" ? "text-primary hover:text-primary/80 font-bold" : "text-muted-foreground hover:text-foreground")}>
+                        <SelectTrigger className={cn("h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] w-[130px] flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none transition-colors", (track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")) !== "No Input (Playback)" ? "text-primary hover:text-primary/80 font-bold" : "text-muted-foreground hover:text-foreground")}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1427,6 +1428,12 @@ export default function Studio() {
                 window.addEventListener('pointermove', handleMove); window.addEventListener('pointerup', handleUp);
               }}
             >
+              {loopActive && (
+                <div className="absolute bottom-0 h-full bg-blue-500/10 border-x-2 border-blue-500 pointer-events-none z-10" style={{ left: 0, width: `${(60/bpm) * parseInt(timeSignature.split('/')[0]||4) * 4 * 20 * zoom}px` }}>
+                  <div className="absolute top-0 left-0 bg-blue-500 text-white text-[8px] px-1 rounded-br font-bold shadow-md">LOOP A</div>
+                  <div className="absolute top-0 right-0 bg-blue-500 text-white text-[8px] px-1 rounded-bl font-bold shadow-md">LOOP B</div>
+                </div>
+              )}
               {Array.from({ length: Math.max(1000, Math.ceil(2000/(60/bpm))) }).slice(0, 2000).map((_, i) => {
                 const beatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
                 const secondsPerBeat = 60 / bpm;
@@ -1494,7 +1501,7 @@ export default function Studio() {
                   )}
                 >
                   {/* Grid lines */}
-                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px)]" style={{ backgroundSize: `${100 * zoom}px 100%` }} />
+                  <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px)] opacity-30 pointer-events-none z-0" style={{ backgroundSize: `${(60 / bpm) * parseInt(timeSignature.split('/')[0] || 4) * 20 * zoom}px 100%` }} />
                   
                   {/* Automation Lane Background */}
                   {track.showAutomation && (

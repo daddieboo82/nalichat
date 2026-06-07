@@ -370,7 +370,7 @@ export default function Home() {
                   </div>
                   <h2 className="font-heading font-bold text-2xl sm:text-3xl md:text-4xl mb-3 flex items-center gap-3">
                    <MessageSquare className="w-8 h-8 text-primary shrink-0" />
-                   Real-Time Messaging
+                   Seamless Communication
                   </h2>
                   <p className="text-lg text-foreground/90 mb-6 max-w-xl">
                    Connect instantly with other artists. Share files, exchange ideas, and collaborate without friction. All conversations in one organized inbox.

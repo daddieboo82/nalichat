@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+import { Menu } from "lucide-react";
 
 const MAIN_NAV_ITEMS = [
   { icon: Home, label: "Home", path: "/" },
@@ -54,9 +54,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
         {/* Logo */}
         <Link to="/" className="group shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary via-pink-500 to-accent flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform">
-              <Music className="w-4 h-4 text-white" />
-            </div>
+            <img src="https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png" alt="NaliChat Logo" className="w-8 h-8 rounded-xl object-cover shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform" />
             <span className="font-heading font-bold text-sm text-gradient-animate hidden xl:inline">NaliChat</span>
           </div>
         </Link>
@@ -94,7 +92,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
                 {MORE_NAV_ITEMS.some(item => isActive(item.path)) && (
                   <div className="absolute top-0 inset-x-2 h-0.5 bg-primary rounded-b-full shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
                 )}
-                <MoreHorizontal className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", MORE_NAV_ITEMS.some(item => isActive(item.path)) && "text-primary")} />
+                <Menu className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", MORE_NAV_ITEMS.some(item => isActive(item.path)) && "text-primary")} />
                 <span className="hidden xl:inline">More</span>
               </button>
             </DropdownMenuTrigger>

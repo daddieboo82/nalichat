@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 export default function TrackWaveformSVG({ track }) {
   const wf = track.waveform || [];
@@ -10,10 +11,11 @@ export default function TrackWaveformSVG({ track }) {
   for (let i = wLen; i >= 0; i--) peakPath += `L ${(i/wLen)*10000},${50 + Math.max(0.001, wf[i])*49} `;
   peakPath += 'Z';
 
-  const baseFill = "text-[#1ED760] fill-[#1ED760]";
+  const colorBase = track?.color ? track.color.replace('bg-', '') : 'primary';
+  const baseFill = `text-${colorBase} fill-current`;
 
   return (
-    <svg className="w-full h-full" style={{ filter: 'drop-shadow(0px 0px 4px rgba(30,215,96,0.35))' }} preserveAspectRatio="none" viewBox="0 0 10000 100">
+    <svg className={cn("w-full h-full", baseFill)} style={{ filter: `drop-shadow(0px 0px 4px currentColor)` }} preserveAspectRatio="none" viewBox="0 0 10000 100">
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="currentColor" stopOpacity="0.9" />

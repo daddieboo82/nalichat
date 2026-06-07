@@ -814,11 +814,15 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 const rulerMultiplier = zoom > 100 ? 100 : zoom > 10 ? 10 : 2;
                 return (
                   <div className="absolute top-0 left-0 right-0 h-6 bg-card/40 border-b border-border/30 z-10 pointer-events-none" style={{ width: `${100 * zoom}%`, minWidth: '100%' }}>
-                    {Array.from({ length: Math.ceil((track?.duration || 40) * rulerMultiplier) }).map((_, i) => (
-                      <div key={i} className={cn("absolute bottom-0 border-l border-border/40", i % rulerMultiplier === 0 ? "h-full" : (rulerMultiplier >= 10 && i % (rulerMultiplier/10) === 0 ? "h-3" : "h-1.5"))} style={{ left: `${(i/((track?.duration || 40)*rulerMultiplier))*100}%` }}>
-                        {i % rulerMultiplier === 0 && <span className="absolute top-0.5 left-1 text-[9px] text-muted-foreground/50 font-sans">{i/rulerMultiplier}</span>}
-                      </div>
-                    ))}
+                    {Array.from({ length: Math.ceil((track?.duration || 40) * rulerMultiplier) }).map((_, i) => {
+                      const seconds = i / rulerMultiplier;
+                      const formattedTime = `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
+                      return (
+                        <div key={i} className={cn("absolute bottom-0 border-l border-border/40", i % rulerMultiplier === 0 ? "h-full" : (rulerMultiplier >= 10 && i % (rulerMultiplier/10) === 0 ? "h-3" : "h-1.5"))} style={{ left: `${(seconds / (track?.duration || 40)) * 100}%` }}>
+                          {i % rulerMultiplier === 0 && <span className="absolute top-0.5 left-1 text-[9px] text-muted-foreground/50 font-sans">{formattedTime}</span>}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })()}

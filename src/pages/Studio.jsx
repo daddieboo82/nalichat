@@ -449,7 +449,6 @@ export default function Studio() {
     if (isPlaying) setIsPlaying(false);
 
     if (!isRecording) {
-      setLoopActive(false);
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
           audio: { 
@@ -521,74 +520,29 @@ export default function Studio() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
-      
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey) redo();
-        else undo();
-      } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-        e.preventDefault();
-        redo();
-      } else if (e.code === 'Space') {
-        e.preventDefault();
-        togglePlay();
-      } else if (e.key === 'r' || e.key === 'R') {
-        e.preventDefault();
-        toggleRecord();
-      } else if (e.key === 'Backspace' || e.key === 'Delete') {
-        if (selectedTrackIds.length > 0) {
-          e.preventDefault();
-          deleteSelectedTracks();
-        }
-      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
-        e.preventDefault();
-        duplicateSelectedTracks();
-      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'e' || e.key === 'E')) {
-        e.preventDefault();
-        splitSelectedTracks();
-      } else if (e.key === 'l' || e.key === 'L') {
-        e.preventDefault();
-        selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked'));
-      } else if (e.shiftKey && (e.key === 'n' || e.key === 'N')) {
-        e.preventDefault();
-        addTrack();
-      } else if (e.shiftKey && e.key === '1') {
-        e.preventDefault();
-        setEditMode('shuffle');
-      } else if (e.shiftKey && e.key === '2') {
-        e.preventDefault();
-        setEditMode('slip');
-      } else if (e.shiftKey && e.key === '3') {
-        e.preventDefault();
-        setEditMode('grid');
-      } else if (e.shiftKey && (e.key === 's' || e.key === 'S')) {
-        e.preventDefault();
-        selectedTrackIds.forEach(id => toggleSolo(id));
-      } else if (e.shiftKey && (e.key === 'm' || e.key === 'M')) {
-        e.preventDefault();
-        selectedTrackIds.forEach(id => toggleMute(id));
-      } else if (e.key === 't' || e.key === 'T') {
-        setActiveTool('trim');
-      } else if (e.key === 'c' || e.key === 'C') {
-        setActiveTool('cut');
-      } else if (e.key === 'g' || e.key === 'G') {
-        setActiveTool('grab');
-      } else if (e.key === 'f' || e.key === 'F') {
-        setActiveTool('fade');
-      } else if (e.key === 'e' || e.key === 'E') {
-        setActiveTool('smart');
-      } else if (e.key === 'Home') {
-        e.preventDefault();
-        updateCurrentTime(0);
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        updateCurrentTime(Math.min(100, currentTimeRef.current + 5));
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        updateCurrentTime(Math.max(0, currentTimeRef.current - 5));
-      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
+      else if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+      else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); toggleRecord(); }
+      else if (e.key === 'Backspace' || e.key === 'Delete') { if (selectedTrackIds.length > 0) { e.preventDefault(); deleteSelectedTracks(); } }
+      else if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); duplicateSelectedTracks(); }
+      else if ((e.ctrlKey || e.metaKey) && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); splitSelectedTracks(); }
+      else if (e.key === 'l' || e.key === 'L') { e.preventDefault(); selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked')); }
+      else if (e.shiftKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); addTrack(); }
+      else if (e.shiftKey && e.key === '1') { e.preventDefault(); setEditMode('shuffle'); }
+      else if (e.shiftKey && e.key === '2') { e.preventDefault(); setEditMode('slip'); }
+      else if (e.shiftKey && e.key === '3') { e.preventDefault(); setEditMode('grid'); }
+      else if (e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); selectedTrackIds.forEach(id => toggleSolo(id)); }
+      else if (e.shiftKey && (e.key === 'm' || e.key === 'M')) { e.preventDefault(); selectedTrackIds.forEach(id => toggleMute(id)); }
+      else if (e.key === 't' || e.key === 'T') setActiveTool('trim');
+      else if (e.key === 'c' || e.key === 'C') setActiveTool('cut');
+      else if (e.key === 'g' || e.key === 'G') setActiveTool('grab');
+      else if (e.key === 'f' || e.key === 'F') setActiveTool('fade');
+      else if (e.key === 'e' || e.key === 'E') setActiveTool('smart');
+      else if (e.key === 'Home') { e.preventDefault(); updateCurrentTime(0); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); updateCurrentTime(Math.max(0, currentTimeRef.current - 5)); }
     };
-    
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPlaying, isRecording, togglePlay, toggleRecord, selectedTrackIds, tracks, activeTool]);
@@ -1093,6 +1047,8 @@ export default function Studio() {
           </TooltipProvider>
         </div>
         
+        <div className="hidden sm:block w-px h-6 bg-border/50 shrink-0" />
+        
         {/* Undo / Redo Group */}
         <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>
@@ -1100,6 +1056,8 @@ export default function Studio() {
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={redo} disabled={historyIndex>=historyRef.current.length-1} className="h-7 px-2 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 gap-1.5 relative"><Redo className="w-3.5 h-3.5" /><span className="hidden xl:inline text-xs">Redo</span>{(historyRef.current.length-1-historyIndex) > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full">{historyRef.current.length-1-historyIndex}</span>}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{historyIndex >= historyRef.current.length - 1 ? "Nothing to Redo" : "Redo"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Y</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
+
+        <div className="hidden sm:block w-px h-6 bg-border/50 shrink-0" />
 
         {/* BPM / Time Signature / Key display */}
         <div className="flex items-stretch gap-px bg-background/50 rounded-xl border border-border/50 shadow-inner overflow-hidden shrink-0">
@@ -1155,6 +1113,8 @@ export default function Studio() {
           </TooltipProvider>
         </div>
 
+        <div className="hidden md:block w-px h-6 bg-border/50 shrink-0" />
+
         {/* Edit Modes Group */}
         <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>
@@ -1193,6 +1153,8 @@ export default function Studio() {
             </Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex flex-col gap-1"><span>Smart Tool (Top: Edit, Bottom: Grab)</span><div className="flex items-center gap-1"><kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">E</kbd></div></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
+
+        <div className="hidden xl:block w-px h-6 bg-border/50 shrink-0" />
 
         {/* Clip Actions Group */}
         <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
@@ -1292,7 +1254,7 @@ export default function Studio() {
                         value={track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")}
                         onValueChange={(val) => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, inputType: val } : t))}
                       >
-                        <SelectTrigger className={cn("h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] w-[130px] flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none transition-colors", (track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")) !== "No Input (Playback)" ? "text-primary hover:text-primary/80 font-bold" : "text-muted-foreground hover:text-foreground")}>
+                        <SelectTrigger className={cn("h-4 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[9px] w-max min-w-[120px] max-w-[160px] truncate flex items-center justify-between gap-0.5 [&>svg]:w-2.5 [&>svg]:h-2.5 m-0 mt-0.5 outline-none transition-colors", (track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "No Input (Playback)" : "In: Default Mic")) !== "No Input (Playback)" ? "text-primary hover:text-primary/80 font-bold" : "text-muted-foreground hover:text-foreground")}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1485,6 +1447,7 @@ export default function Studio() {
               window.addEventListener('pointerup', handleUp);
             }}
           >
+            {loopActive && <div className="absolute top-0 bottom-0 bg-blue-500/10 border-x border-blue-500/50 pointer-events-none z-10" style={{ left: 0, width: `${(60/bpm) * parseInt(timeSignature.split('/')[0]||4) * 4 * 20 * zoom}px` }} />}
             {/* Waveform Rows */}
             <div className="flex flex-col">
               {tracks.map((track) => (

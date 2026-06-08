@@ -383,6 +383,12 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                     <DropdownMenuItem onClick={() => importFileInputRef.current?.click()}>
                       <Smartphone className="w-4 h-4 mr-2" /> From Device
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      const file = new File(["dummy audio content for testing"], "test-audio.mp3", { type: "audio/mpeg" });
+                      handleImportAudio({ target: { files: [file] } });
+                    }}>
+                      <Smartphone className="w-4 h-4 mr-2" /> Mock Upload (Test)
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowFilesDialog(true)}>
                       <Folder className="w-4 h-4 mr-2" /> From Files
                     </DropdownMenuItem>
@@ -734,6 +740,25 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                 >
                   {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                   Upload
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="lg" 
+                  className="flex-1 min-w-[100px] h-14 gap-2 border-primary/50 text-primary hover:bg-primary/10 bg-transparent"
+                  onClick={() => {
+                    if (!selectedPost) {
+                      toast.error("Please select a track first to upload an image.");
+                      return;
+                    }
+                    const dataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+                    fetch(dataUrl).then(r => r.blob()).then(blob => {
+                      const file = new File([blob], "mock-cover.png", { type: "image/png" });
+                      handleFileUpload({ target: { files: [file] } });
+                    });
+                  }}
+                  disabled={generateArtMutation.isPending || isUploading}
+                >
+                  Mock Upload (Test)
                 </Button>
 
                 {selectedPost?.image_url && (

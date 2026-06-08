@@ -198,6 +198,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
               name="title"
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              onFocus={e => e.target.select()}
               placeholder="Enter track title..."
               className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
               required

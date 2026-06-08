@@ -45,7 +45,9 @@
     "type"
   ],
   "rls": {
-    "create": {},
+    "create": {
+      "data.recipient_id": "{{user.id}}"
+    },
     "read": {
       "data.recipient_id": "{{user.id}}"
     },

@@ -217,7 +217,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
             <label className="text-xs text-muted-foreground mb-2 block">Tags</label>
             <div className="flex flex-wrap gap-2">
               {TAGS_SUGGESTIONS.map(tag => (
-                <button type="button" key={tag} onClick={() => toggleTag(tag)} className={cn("px-3 py-1 rounded-full text-xs transition-colors", form.tags.includes(tag) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+                <button type="button" id={`tag-${tag}`} aria-label={`Select tag ${tag}`} key={tag} onClick={() => toggleTag(tag)} className={cn("px-3 py-1 rounded-full text-xs transition-colors", form.tags.includes(tag) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>
                   #{tag}
                 </button>
               ))}
@@ -250,7 +250,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
             disabled={loading || !form.title || !audioFile}
             className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Publishing...</> : <><Upload className="w-4 h-4" /> Publish Track & Earn 50 XP</>}
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Publishing...</> : <><Upload className="w-4 h-4" /> Publish Track</>}
           </button>
         </div>
       </div>

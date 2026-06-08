@@ -160,12 +160,21 @@ export default function MilestonesPanel({ projectId, canEdit }) {
             />
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Due Date</label>
+                <label htmlFor="milestone-due-date" className="text-xs font-semibold text-muted-foreground mb-1.5 block">Due Date</label>
                 <Input
+                  id="milestone-due-date"
                   type="date"
+                  name="due_date"
                   value={form.due_date}
                   onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
                   className="bg-secondary/50 border-0 rounded-xl h-11"
+                  onClick={(e) => {
+                    try {
+                      e.target.showPicker();
+                    } catch (err) {
+                      // ignore for unsupported browsers
+                    }
+                  }}
                 />
               </div>
               <div className="flex-1">

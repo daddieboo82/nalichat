@@ -32,8 +32,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
     setAudioFile(f);
     setForm(prev => ({
       ...prev,
-      title: prev.title || f.name.replace(/\.[^/.]+$/, ""),
-      tags: prev.tags.length > 0 ? prev.tags : ["electronic", "ambient"]
+      title: prev.title || f.name.replace(/\.[^/.]+$/, "")
     }));
   };
 
@@ -128,7 +127,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
                   onClick={() => {
                     const file = new File(["dummy audio content for testing"], "test-audio.mp3", { type: "audio/mpeg" });
                     handleAudio({ target: { files: [file] } });
-                    setForm(f => ({ ...f, title: f.title || "Test Track", tags: f.tags.length ? f.tags : ["electronic", "ambient"] }));
+                    setForm(f => ({ ...f, title: f.title || "Test Track" }));
                   }} 
                   className="text-[10px] text-primary hover:underline"
                 >
@@ -232,8 +231,8 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
             <label id="tags-group-label" className="text-xs text-muted-foreground mb-2 block">Tags</label>
             <div role="group" aria-labelledby="tags-group-label" className="flex flex-wrap gap-2">
               {TAGS_SUGGESTIONS.map(tag => (
-                <button type="button" role="checkbox" aria-checked={form.tags.includes(tag)} id={`tag-${tag}`} aria-label={tag} key={tag} onClick={() => toggleTag(tag)} className={cn("px-3 py-1 rounded-full text-xs transition-colors", form.tags.includes(tag) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>
-                  {tag}
+                <button type="button" role="checkbox" aria-checked={form.tags.includes(tag)} id={`tag-${tag}`} aria-label={`Toggle tag ${tag}`} key={tag} onClick={() => toggleTag(tag)} className={cn("px-3 py-1 rounded-full text-xs transition-colors", form.tags.includes(tag) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+                  #{tag}
                 </button>
               ))}
             </div>

@@ -218,10 +218,10 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           </div>
 
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block">Medium</label>
-            <div className="flex flex-wrap gap-2">
+            <label id="medium-group-label" className="text-xs text-muted-foreground mb-2 block">Medium</label>
+            <div role="radiogroup" aria-labelledby="medium-group-label" className="flex flex-wrap gap-2">
               {MEDIUMS.map(m => (
-                <button type="button" role="radio" aria-checked={form.medium === m} key={m} onClick={() => setForm(f => ({ ...f, medium: m }))} className={cn("px-3 py-1 rounded-full text-xs font-semibold capitalize transition-colors", form.medium === m ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+                <button type="button" role="radio" aria-checked={form.medium === m} id={`medium-${m}`} aria-label={`Select medium ${m}`} key={m} onClick={() => setForm(f => ({ ...f, medium: m }))} className={cn("px-3 py-1 rounded-full text-xs font-semibold capitalize transition-colors", form.medium === m ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}>
                   {m}
                 </button>
               ))}
@@ -229,11 +229,11 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           </div>
 
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block">Tags</label>
-            <div className="flex flex-wrap gap-2">
+            <label id="tags-group-label" className="text-xs text-muted-foreground mb-2 block">Tags</label>
+            <div role="group" aria-labelledby="tags-group-label" className="flex flex-wrap gap-2">
               {TAGS_SUGGESTIONS.map(tag => (
-                <button type="button" role="checkbox" aria-checked={form.tags.includes(tag)} id={`tag-${tag}`} aria-label={`Select tag ${tag}`} key={tag} onClick={() => toggleTag(tag)} className={cn("px-3 py-1 rounded-full text-xs transition-colors", form.tags.includes(tag) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>
-                  #{tag}
+                <button type="button" role="checkbox" aria-checked={form.tags.includes(tag)} id={`tag-${tag}`} aria-label={tag} key={tag} onClick={() => toggleTag(tag)} className={cn("px-3 py-1 rounded-full text-xs transition-colors", form.tags.includes(tag) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+                  {tag}
                 </button>
               ))}
             </div>
@@ -262,6 +262,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
             onClick={submit}
             id="publish-track-button"
             title="Publish Track"
+            aria-label="Publish Track"
             disabled={loading || !form.title || !audioFile}
             className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >

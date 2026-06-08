@@ -32,7 +32,8 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
     setAudioFile(f);
     setForm(prev => ({
       ...prev,
-      title: prev.title || f.name.replace(/\.[^/.]+$/, "")
+      title: prev.title || f.name.replace(/\.[^/.]+$/, ""),
+      tags: prev.tags.length > 0 ? prev.tags : ["electronic", "ambient"]
     }));
   };
 
@@ -191,25 +192,30 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
             </div>
           </div>
 
-          <label htmlFor="track-title" className="sr-only">Track title</label>
-          <input
-            id="track-title"
-            name="title"
-            aria-label="Track title"
-            value={form.title}
-            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-            placeholder="Track title *"
-            className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
-          />
-          <label htmlFor="track-description" className="sr-only">Track description</label>
-          <textarea
-            id="track-description"
-            value={form.description}
-            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-            placeholder="Track description, production notes, credits..."
-            rows={3}
-            className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary/50"
-          />
+          <div>
+            <label htmlFor="track-title" className="text-xs text-muted-foreground mb-2 block">Track Title *</label>
+            <input
+              id="track-title"
+              name="title"
+              value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              placeholder="Enter track title..."
+              className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="track-description" className="text-xs text-muted-foreground mb-2 block">Track Description</label>
+            <textarea
+              id="track-description"
+              name="description"
+              value={form.description}
+              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              placeholder="Production notes, credits..."
+              rows={3}
+              className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary/50"
+            />
+          </div>
 
           <div>
             <label className="text-xs text-muted-foreground mb-2 block">Medium</label>

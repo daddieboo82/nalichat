@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Plus, CheckCircle2, Circle, Calendar, Flag, Trash2, AlertTriangle, Clock, X
+  Plus, CheckCircle2, Circle, Calendar as CalendarIcon, Flag, Trash2, AlertTriangle, Clock, X
 } from "lucide-react";
 import { format, isPast, isToday, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const priorityColors = {
   low: "bg-muted text-muted-foreground",
@@ -161,21 +163,33 @@ export default function MilestonesPanel({ projectId, canEdit }) {
             <div className="flex gap-4">
               <div className="flex-1">
                 <label htmlFor="milestone-due-date" className="text-xs font-semibold text-muted-foreground mb-1.5 block">Due Date</label>
-                <Input
-                  id="milestone-due-date"
-                  type="date"
-                  name="due_date"
-                  value={form.due_date}
-                  onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
-                  className="bg-secondary/50 border-0 rounded-xl h-11"
-                  onClick={(e) => {
-                    try {
-                      e.target.showPicker();
-                    } catch (err) {
-                      // ignore for unsupported browsers
-                    }
-                  }}
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="milestone-due-date"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-secondary/50 border-0 rounded-xl h-11",
+                        !form.due_date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {form.due_date ? format(parseISO(form.due_date), "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={form.due_date ? parseISO(form.due_date) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          setForm(f => ({ ...f, due_date: format(date, 'yyyy-MM-dd') }));
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="flex-1">
                 <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Priority</label>
@@ -234,7 +248,7 @@ function MilestoneRow({ m, canEdit, onToggle, onDelete }) {
           </Badge>
           {m.due_date && !m.completed && (
             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
+              <CalendarIcon className="w-3 h-3" />
               {format(parseISO(m.due_date), "MMM d")}
             </span>
           )}

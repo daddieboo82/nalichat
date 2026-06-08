@@ -228,8 +228,48 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           </div>
 
           <div>
-            <label id="tags-group-label" className="text-xs text-muted-foreground mb-2 block">Tags</label>
+            <label htmlFor="custom-tag-input" id="tags-group-label" className="text-xs text-muted-foreground mb-2 block">Tags</label>
+            <div className="flex gap-2 mb-3">
+              <input
+                id="custom-tag-input"
+                type="text"
+                placeholder="Type a tag and press Enter or Add..."
+                className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const val = e.target.value.trim().toLowerCase().replace(/^#/, '');
+                    if (val && !form.tags.includes(val)) {
+                      setForm(f => ({ ...f, tags: [...f.tags, val] }));
+                    }
+                    e.target.value = '';
+                  }
+                }}
+              />
+              <button
+                type="button"
+                aria-label="Add tag"
+                className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground font-semibold rounded-xl text-sm transition-colors"
+                onClick={() => {
+                  const input = document.getElementById('custom-tag-input');
+                  if (input) {
+                    const val = input.value.trim().toLowerCase().replace(/^#/, '');
+                    if (val && !form.tags.includes(val)) {
+                      setForm(f => ({ ...f, tags: [...f.tags, val] }));
+                    }
+                    input.value = '';
+                  }
+                }}
+              >
+                Add
+              </button>
+            </div>
             <div role="group" aria-labelledby="tags-group-label" className="flex flex-wrap gap-2">
+              {form.tags.filter(t => !TAGS_SUGGESTIONS.includes(t)).map(tag => (
+                <button type="button" role="checkbox" aria-checked={true} id={`tag-${tag}`} aria-label={`Remove tag ${tag}`} key={tag} onClick={() => toggleTag(tag)} className="px-3 py-1 rounded-full text-xs transition-colors bg-accent/20 text-accent border border-accent/30">
+                  #{tag}
+                </button>
+              ))}
               {TAGS_SUGGESTIONS.map(tag => (
                 <button type="button" role="checkbox" aria-checked={form.tags.includes(tag)} id={`tag-${tag}`} aria-label={`Toggle tag ${tag}`} key={tag} onClick={() => toggleTag(tag)} className={cn("px-3 py-1 rounded-full text-xs transition-colors", form.tags.includes(tag) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>
                   #{tag}

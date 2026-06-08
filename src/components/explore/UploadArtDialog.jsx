@@ -117,10 +117,12 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
                   Auto-Fill Form (Test)
                 </button>
                 <button 
+                  id="load-mock-audio-btn"
                   type="button" 
                   onClick={() => {
                     const file = new File(["dummy audio content for testing"], "test-audio.mp3", { type: "audio/mpeg" });
                     handleAudio({ target: { files: [file] } });
+                    setForm(f => ({ ...f, title: f.title || "Test Track", tags: f.tags.length ? f.tags : ["electronic", "ambient"] }));
                   }} 
                   className="text-[10px] text-primary hover:underline"
                 >

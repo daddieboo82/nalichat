@@ -14,6 +14,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
   const [audioFile, setAudioFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [customTag, setCustomTag] = useState("");
   const imageRef = useRef();
   const audioRef = useRef();
 
@@ -234,16 +235,18 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
               <input
                 id="custom-tag-input"
                 type="text"
+                value={customTag}
+                onChange={(e) => setCustomTag(e.target.value)}
                 placeholder="Type a tag and press Enter or Add..."
                 className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
-                    const val = e.target.value.trim().toLowerCase().replace(/^#/, '');
+                    const val = customTag.trim().toLowerCase().replace(/^#/, '');
                     if (val && !form.tags.includes(val)) {
                       setForm(f => ({ ...f, tags: [...f.tags, val] }));
                     }
-                    e.target.value = '';
+                    setCustomTag('');
                   }
                 }}
               />
@@ -252,14 +255,11 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
                 aria-label="Add tag"
                 className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground font-semibold rounded-xl text-sm transition-colors"
                 onClick={() => {
-                  const input = document.getElementById('custom-tag-input');
-                  if (input) {
-                    const val = input.value.trim().toLowerCase().replace(/^#/, '');
-                    if (val && !form.tags.includes(val)) {
-                      setForm(f => ({ ...f, tags: [...f.tags, val] }));
-                    }
-                    input.value = '';
+                  const val = customTag.trim().toLowerCase().replace(/^#/, '');
+                  if (val && !form.tags.includes(val)) {
+                    setForm(f => ({ ...f, tags: [...f.tags, val] }));
                   }
+                  setCustomTag('');
                 }}
               >
                 Add

@@ -118,6 +118,7 @@ export default function Files() {
   const [zipping, setZipping] = useState(false);
   const [currentFolderId, setCurrentFolderId] = useState(null);
   const [showNewFolder, setShowNewFolder] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [showMoveFolder, setShowMoveFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderProject, setNewFolderProject] = useState("none");
@@ -332,24 +333,13 @@ export default function Files() {
             <div className="flex items-center gap-2">
               {uploading && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
               <Button
-                variant="outline"
-                size="sm"
-                className="hidden md:flex text-xs"
-                onClick={() => {
-                  const file = new File(["dummy file content for testing"], "test-file.txt", { type: "text/plain" });
-                  handleUpload({ target: { files: [file] } });
-                }}
+                className="bg-primary hover:bg-primary/90 text-white shadow-sm"
+                onClick={() => setShowUploadModal(true)}
+                disabled={uploading}
               >
-                Mock Upload (Test)
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Files
               </Button>
-              <Input 
-                type="file" 
-                multiple 
-                onChange={handleUpload} 
-                disabled={uploading} 
-                title="Upload File"
-                className="w-full sm:w-auto min-w-[200px] cursor-pointer"
-              />
               <Button
                 variant="default"
                 size="sm"
@@ -681,6 +671,47 @@ export default function Files() {
         )}
         </PullToRefresh>
       </div>
+
+      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+        <DialogContent className="bg-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Upload Files</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-8 flex flex-col items-center justify-center text-center bg-secondary/20">
+              <input 
+                type="file" 
+                multiple 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                onChange={(e) => {
+                  handleUpload(e);
+                  setShowUploadModal(false);
+                }} 
+              />
+              <div className="pointer-events-none relative z-0 flex flex-col items-center justify-center">
+                <Upload className="w-10 h-10 text-muted-foreground mb-3" />
+                <p className="font-medium text-sm">Click to select files</p>
+                <p className="text-xs text-muted-foreground mt-1">Or drag and drop</p>
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <p className="text-xs text-muted-foreground">Files will be uploaded to {currentFolder ? currentFolder.name : "the root directory"}.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={() => {
+                  const file = new File(["dummy file content for testing"], "test-file.txt", { type: "text/plain" });
+                  handleUpload({ target: { files: [file] } });
+                  setShowUploadModal(false);
+                }}
+              >
+                Mock Upload (Test)
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showNewFolder} onOpenChange={setShowNewFolder}>
         <DialogContent className="bg-card border-border max-w-sm">

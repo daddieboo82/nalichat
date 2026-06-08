@@ -134,13 +134,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
           <Button
             size="sm"
             className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 font-semibold shadow-md shadow-primary/20 transition-all hover:scale-105"
-            onClick={() => {
-              if (queue.length === 0) {
-                fileInputRef.current?.click();
-              } else {
-                setOpen(true);
-              }
-            }}
+            onClick={() => setOpen(true)}
           >
             <Upload className="w-3.5 h-3.5 mr-1.5" />
             Import Tracks
@@ -184,6 +178,18 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
                 }}
               >
                 Select Files
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const file = new File(["dummy audio track"], "test-track.mp3", { type: "audio/mpeg" });
+                  handleFiles([file]);
+                }}
+              >
+                Mock Upload (Test)
               </Button>
             </div>
           ) : (

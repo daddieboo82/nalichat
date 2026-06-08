@@ -104,16 +104,29 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground block">Audio File *</span>
-              <button 
-                type="button" 
-                onClick={() => {
-                  const file = new File(["dummy audio content for testing"], "test-audio.mp3", { type: "audio/mpeg" });
-                  handleAudio({ target: { files: [file] } });
-                }} 
-                className="text-[10px] text-primary hover:underline"
-              >
-                Load Mock Audio (Automated Testing)
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    const file = new File(["dummy audio content for testing"], "test-audio.mp3", { type: "audio/mpeg" });
+                    setAudioFile(file);
+                    setForm(f => ({ ...f, title: "Test Track", description: "Automated test description for QA", tags: ["electronic", "ambient"] }));
+                  }} 
+                  className="text-[10px] bg-secondary text-primary px-2 py-1 rounded hover:bg-secondary/80"
+                >
+                  Auto-Fill Form (Test)
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    const file = new File(["dummy audio content for testing"], "test-audio.mp3", { type: "audio/mpeg" });
+                    handleAudio({ target: { files: [file] } });
+                  }} 
+                  className="text-[10px] text-primary hover:underline"
+                >
+                  Load Mock Audio
+                </button>
+              </div>
             </div>
             <div
               className={cn("relative border-2 border-dashed rounded-xl overflow-hidden cursor-pointer transition-colors flex items-center justify-center h-20", audioFile ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/50")}
@@ -232,10 +245,12 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           <button
             type="button"
             onClick={submit}
+            id="publish-track-button"
+            title="Publish Track"
             disabled={loading || !form.title || !audioFile}
             className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Releasing...</> : <><Upload className="w-4 h-4" /> Release & Earn 50 XP</>}
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Publishing...</> : <><Upload className="w-4 h-4" /> Publish Track & Earn 50 XP</>}
           </button>
         </div>
       </div>

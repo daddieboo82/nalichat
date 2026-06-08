@@ -38,6 +38,7 @@ function dueBadge(due_date, completed) {
 export default function MilestonesPanel({ projectId, canEdit }) {
   const qc = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", due_date: "", priority: "medium" });
 
   const { data: milestones = [] } = useQuery({
@@ -163,7 +164,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
             <div className="flex gap-4">
               <div className="flex-1">
                 <label htmlFor="milestone-due-date" className="text-xs font-semibold text-muted-foreground mb-1.5 block">Due Date</label>
-                <Popover>
+                <Popover open={dateOpen} onOpenChange={setDateOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       id="milestone-due-date"
@@ -184,6 +185,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
                       onSelect={(date) => {
                         if (date) {
                           setForm(f => ({ ...f, due_date: format(date, 'yyyy-MM-dd') }));
+                          setDateOpen(false);
                         }
                       }}
                       initialFocus
@@ -208,13 +210,13 @@ export default function MilestonesPanel({ projectId, canEdit }) {
             <Button
               id="save-milestone-btn"
               type="button"
-              title="Save Milestone"
-              aria-label="Save Milestone"
+              title="Add Milestone"
+              aria-label="Add Milestone"
               className="w-full rounded-xl bg-primary hover:bg-primary/90 h-11 mt-4"
               disabled={!form.title.trim() || addMilestone.isPending}
               onClick={() => addMilestone.mutate()}
             >
-              Save Milestone
+              Add Milestone
             </Button>
           </div>
         </div>

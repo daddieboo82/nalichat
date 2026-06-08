@@ -65,5 +65,13 @@
     "name",
     "file_url",
     "uploader_id"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.uploader_id": "{{user.id}}"
+    },
+    "read": null,
+    "update": null,
+    "delete": null
+  }
 }

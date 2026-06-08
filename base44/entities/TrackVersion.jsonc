@@ -44,5 +44,26 @@
     "project_id",
     "version_number",
     "file_url"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.saved_by_id": "{{user.id}}"
+    },
+    "read": null,
+    "update": {
+      "data.saved_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.saved_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }

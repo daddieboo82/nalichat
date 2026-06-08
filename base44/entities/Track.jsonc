@@ -66,5 +66,13 @@
   "required": [
     "project_id",
     "name"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.uploaded_by": "{{user.id}}"
+    },
+    "read": null,
+    "update": null,
+    "delete": null
+  }
 }

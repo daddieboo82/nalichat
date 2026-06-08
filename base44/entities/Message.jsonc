@@ -83,5 +83,27 @@
   "required": [
     "conversation_id",
     "sender_id"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.sender_id": "{{user.id}}"
+    },
+    "read": {
+      "data.conversation_id": {
+        "$in": {
+          "$field": "id",
+          "of": "Conversation",
+          "with": {
+            "data.participant_ids": "{{user.id}}"
+          }
+        }
+      }
+    },
+    "update": {
+      "data.sender_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.sender_id": "{{user.id}}"
+    }
+  }
 }

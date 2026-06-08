@@ -85,5 +85,17 @@
   "required": [
     "creator_id",
     "title"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.creator_id": "{{user.id}}"
+    },
+    "read": {},
+    "update": {
+      "data.creator_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.creator_id": "{{user.id}}"
+    }
+  }
 }

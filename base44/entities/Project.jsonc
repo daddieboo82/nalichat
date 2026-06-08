@@ -50,5 +50,33 @@
   "required": [
     "title",
     "owner_id"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.owner_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.owner_id": "{{user.id}}"
+        },
+        {
+          "data.collaborator_ids": "{{user.id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.owner_id": "{{user.id}}"
+        },
+        {
+          "data.collaborator_roles.{{user.id}}": "editor"
+        }
+      ]
+    },
+    "delete": {
+      "data.owner_id": "{{user.id}}"
+    }
+  }
 }

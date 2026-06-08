@@ -130,23 +130,24 @@ export default function LargeFileTransfer({ currentUser }) {
         ) : (
           <div className="space-y-4">
             <div 
-              className="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer bg-secondary/20"
-              onClick={() => fileInputRef.current?.click()}
+              className="relative border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-8 flex flex-col items-center justify-center text-center bg-secondary/20"
             >
-              <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-              {file ? (
-                <>
-                  <FileText className="w-10 h-10 text-primary mb-3" />
-                  <p className="font-medium text-sm truncate max-w-[250px]">{file.name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                </>
-              ) : (
-                <>
-                  <UploadCloud className="w-10 h-10 text-muted-foreground mb-3" />
-                  <p className="font-medium text-sm">Click to select a file</p>
-                  <p className="text-xs text-muted-foreground mt-1">Or drag and drop</p>
-                </>
-              )}
+              <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" ref={fileInputRef} onChange={handleFileChange} />
+              <div className="pointer-events-none relative z-0 flex flex-col items-center justify-center">
+                {file ? (
+                  <>
+                    <FileText className="w-10 h-10 text-primary mb-3" />
+                    <p className="font-medium text-sm truncate max-w-[250px]">{file.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="w-10 h-10 text-muted-foreground mb-3" />
+                    <p className="font-medium text-sm">Click to select a file</p>
+                    <p className="text-xs text-muted-foreground mt-1">Or drag and drop</p>
+                  </>
+                )}
+              </div>
             </div>
 
             <Input 

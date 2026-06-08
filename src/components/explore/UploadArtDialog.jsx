@@ -102,7 +102,19 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           
           {/* Audio Upload (Required) */}
           <div>
-            <span className="text-xs text-muted-foreground mb-2 block">Audio File *</span>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-muted-foreground block">Audio File *</span>
+              <button 
+                type="button" 
+                onClick={() => {
+                  const file = new File(["dummy audio content for testing"], "test-audio.mp3", { type: "audio/mpeg" });
+                  handleAudio({ target: { files: [file] } });
+                }} 
+                className="text-[10px] text-primary hover:underline"
+              >
+                Load Mock Audio (Automated Testing)
+              </button>
+            </div>
             <div
               className={cn("relative border-2 border-dashed rounded-xl overflow-hidden cursor-pointer transition-colors flex items-center justify-center h-20", audioFile ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/50")}
             >
@@ -125,7 +137,23 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
 
           {/* Cover Art upload */}
           <div>
-            <span className="text-xs text-muted-foreground mb-2 block">Cover Art</span>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-muted-foreground block">Cover Art</span>
+              <button 
+                type="button" 
+                onClick={() => {
+                  // A tiny 1x1 transparent PNG data URL used as mock image for testing
+                  const dataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+                  fetch(dataUrl).then(r => r.blob()).then(blob => {
+                    const file = new File([blob], "mock-cover.png", { type: "image/png" });
+                    handleImage({ target: { files: [file] } });
+                  });
+                }} 
+                className="text-[10px] text-primary hover:underline"
+              >
+                Load Mock Cover (Automated Testing)
+              </button>
+            </div>
             <div
               className={cn("relative border-2 border-dashed border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-center", preview ? "h-48" : "h-24")}
             >

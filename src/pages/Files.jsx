@@ -331,6 +331,17 @@ export default function Files() {
           {typeFilter !== "transfer" && (
             <div className="flex items-center gap-2">
               {uploading && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden md:flex text-xs"
+                onClick={() => {
+                  const file = new File(["dummy file content for testing"], "test-file.txt", { type: "text/plain" });
+                  handleUpload({ target: { files: [file] } });
+                }}
+              >
+                Mock Upload (Test)
+              </Button>
               <Input 
                 type="file" 
                 multiple 

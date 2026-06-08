@@ -30,6 +30,10 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
     const f = e.target.files[0];
     if (!f) return;
     setAudioFile(f);
+    setForm(prev => ({
+      ...prev,
+      title: prev.title || f.name.replace(/\.[^/.]+$/, "")
+    }));
   };
 
   const toggleTag = (tag) => {
@@ -107,6 +111,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
               <div className="flex gap-2">
                 <button 
                   type="button" 
+                  id="auto-fill-test-btn"
                   onClick={() => {
                     const file = new File(["dummy audio content for testing"], "test-audio.mp3", { type: "audio/mpeg" });
                     setAudioFile(file);
@@ -189,6 +194,8 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           <label htmlFor="track-title" className="sr-only">Track title</label>
           <input
             id="track-title"
+            name="title"
+            aria-label="Track title"
             value={form.title}
             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
             placeholder="Track title *"
@@ -208,7 +215,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
             <label className="text-xs text-muted-foreground mb-2 block">Medium</label>
             <div className="flex flex-wrap gap-2">
               {MEDIUMS.map(m => (
-                <button type="button" key={m} onClick={() => setForm(f => ({ ...f, medium: m }))} className={cn("px-3 py-1 rounded-full text-xs font-semibold capitalize transition-colors", form.medium === m ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+                <button type="button" role="radio" aria-checked={form.medium === m} key={m} onClick={() => setForm(f => ({ ...f, medium: m }))} className={cn("px-3 py-1 rounded-full text-xs font-semibold capitalize transition-colors", form.medium === m ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}>
                   {m}
                 </button>
               ))}
@@ -219,7 +226,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
             <label className="text-xs text-muted-foreground mb-2 block">Tags</label>
             <div className="flex flex-wrap gap-2">
               {TAGS_SUGGESTIONS.map(tag => (
-                <button type="button" id={`tag-${tag}`} aria-label={`Select tag ${tag}`} key={tag} onClick={() => toggleTag(tag)} className={cn("px-3 py-1 rounded-full text-xs transition-colors", form.tags.includes(tag) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+                <button type="button" role="checkbox" aria-checked={form.tags.includes(tag)} id={`tag-${tag}`} aria-label={`Select tag ${tag}`} key={tag} onClick={() => toggleTag(tag)} className={cn("px-3 py-1 rounded-full text-xs transition-colors", form.tags.includes(tag) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>
                   #{tag}
                 </button>
               ))}

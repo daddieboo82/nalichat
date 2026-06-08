@@ -350,6 +350,15 @@ export default function Files() {
                 title="Upload File"
                 className="w-full sm:w-auto min-w-[200px] cursor-pointer"
               />
+              <Button
+                variant="default"
+                size="sm"
+                className="bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 transition-all text-white"
+                onClick={() => window.location.href = '/explore?upload=true'}
+                title="Publish Track to Explore"
+              >
+                Publish Track
+              </Button>
             </div>
           )}
         </div>

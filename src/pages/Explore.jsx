@@ -35,12 +35,11 @@ export default function Explore() {
 
   useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
 
-  const { data: posts = [] } = useQuery({
+  const { data: posts = [], isLoading } = useQuery({
     queryKey: ["artposts", filter],
     queryFn: () => filter === "all"
       ? base44.entities.ArtPost.list("-created_date", 100)
       : base44.entities.ArtPost.filter({ medium: filter }, "-created_date", 100),
-    refetchInterval: 30000,
   });
 
   const toggleLike = useMutation({
@@ -178,7 +177,11 @@ export default function Explore() {
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             {search ? `Results for "${search}"${filter !== "all" ? ` in ${filter}` : ""}` : (filter !== "all" ? `${filter}s` : "Recent")}
           </h2>
-          {recent.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            </div>
+          ) : recent.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
               <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="font-heading font-semibold">No tracks yet</p>

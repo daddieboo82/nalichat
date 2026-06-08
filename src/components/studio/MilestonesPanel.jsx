@@ -184,6 +184,9 @@ export default function MilestonesPanel({ projectId, canEdit }) {
             </div>
             <Button
               id="save-milestone-btn"
+              type="button"
+              title="Save Milestone"
+              aria-label="Save Milestone"
               className="w-full rounded-xl bg-primary hover:bg-primary/90 h-11 mt-4"
               disabled={!form.title.trim() || addMilestone.isPending}
               onClick={() => addMilestone.mutate()}

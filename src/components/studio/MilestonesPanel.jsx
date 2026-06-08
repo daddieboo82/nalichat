@@ -80,7 +80,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
           )}
         </div>
         {canEdit && (
-          <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-lg hover:bg-primary/20 hover:text-primary" onClick={(e) => {
+          <Button id="add-milestone-btn" type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-lg hover:bg-primary/20 hover:text-primary" onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             setShowAdd(true);
@@ -146,6 +146,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
           </div>
           <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-2">
             <Input
+              id="milestone-title-input"
               placeholder="Milestone title..."
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
@@ -182,6 +183,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
               </div>
             </div>
             <Button
+              id="save-milestone-btn"
               className="w-full rounded-xl bg-primary hover:bg-primary/90 h-11 mt-4"
               disabled={!form.title.trim() || addMilestone.isPending}
               onClick={() => addMilestone.mutate()}

@@ -1106,7 +1106,7 @@ export default function Studio() {
 
           <div className="flex flex-wrap items-center gap-2 pl-2">
             <input type="file" ref={fileInputRef} className="hidden" accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} />
-            <Button onClick={() => setShowMilestones(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-border/50 hover:bg-secondary transition-colors">
+            <Button id="milestones-btn" onClick={() => setShowMilestones(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-border/50 hover:bg-secondary transition-colors">
               <ListTodo className="w-4 h-4" /> Milestones
             </Button>
             <Button onClick={() => setShowQuickMemo(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-primary/50 text-primary hover:bg-primary/10 transition-colors">

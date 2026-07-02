@@ -43,6 +43,10 @@ export default function Studio() {
   const currentTimeRef = useRef(0);
   const timeDisplayRef = useRef(null);
   const recordingIndicatorRefs = useRef({});
+  const recordingCanvasRefs = useRef({});
+  const analyserRef = useRef(null);
+  const dataArrayRef = useRef(null);
+  const liveWaveformRef = useRef([]);
   const [zoom, setZoom] = useState(1);
   const playheadRef = useRef(null);
   const headerPlayheadRef = useRef(null);
@@ -254,9 +258,45 @@ export default function Studio() {
       if (headerPlayheadRef.current) headerPlayheadRef.current.style.left = `${newTime * 20 * zoom}px`;
       
       if (isRecording && recordingStartTime !== null) {
+        const currentWidth = Math.max(0, newTime - recordingStartTime) * 20 * zoom;
         Object.values(recordingIndicatorRefs.current).forEach(el => {
-          if (el) el.style.width = `${Math.max(0, newTime - recordingStartTime) * 20 * zoom}px`;
+          if (el) el.style.width = `${currentWidth}px`;
         });
+        
+        if (analyserRef.current && dataArrayRef.current) {
+          analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
+          let sum = 0;
+          for(let i=0; i<dataArrayRef.current.length; i++) {
+             const val = (dataArrayRef.current[i] - 128) / 128;
+             sum += val * val;
+          }
+          const rms = Math.sqrt(sum / dataArrayRef.current.length);
+          liveWaveformRef.current.push(rms * 4); // Scale up for visibility
+          
+          Object.values(recordingCanvasRefs.current).forEach(canvas => {
+            if (canvas && currentWidth > 0) {
+               canvas.width = currentWidth; // Sets resolution and clears canvas
+               const ctx = canvas.getContext('2d');
+               const height = canvas.height;
+               
+               ctx.beginPath();
+               ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+               ctx.lineWidth = 2;
+               
+               const points = liveWaveformRef.current;
+               const step = currentWidth / Math.max(1, points.length);
+               
+               for (let i = 0; i < points.length; i++) {
+                 const x = i * step;
+                 const h = Math.min(1, points[i]) * height;
+                 const y = (height - h) / 2;
+                 ctx.moveTo(x, y);
+                 ctx.lineTo(x, y + h);
+               }
+               ctx.stroke();
+            }
+          });
+        }
       }
 
       animationFrameId = requestAnimationFrame(updateTime);
@@ -532,6 +572,13 @@ export default function Studio() {
         audioContextRef.current = audioCtx;
         const source = audioCtx.createMediaStreamSource(stream);
         
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        analyserRef.current = analyser;
+        dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
+        liveWaveformRef.current = [];
+
         // Monitor audio with reduced volume to prevent loud feedback
         const gainNode = audioCtx.createGain();
         gainNode.gain.value = 0.0; // Disabled by default to prevent nasty feedback loops
@@ -1447,7 +1494,7 @@ export default function Studio() {
                     <div 
                       ref={el => { recordingIndicatorRefs.current[track.id] = el; }}
                       className={cn(
-                        "absolute top-0 bottom-0 z-20 pointer-events-none transition-all",
+                        "absolute top-0 bottom-0 z-20 pointer-events-none transition-all overflow-hidden",
                         isRecording ? "border-l-2 border-red-500 bg-red-500/10" : "w-[2px] bg-red-500/50"
                       )}
                       style={{ 
@@ -1455,6 +1502,13 @@ export default function Studio() {
                         width: isRecording && recordingStartTime !== null ? `${Math.max(0, currentTimeRef.current - recordingStartTime) * 20 * zoom}px` : '2px'
                       }}
                     >
+                      {isRecording && (
+                        <canvas 
+                          ref={el => { recordingCanvasRefs.current[track.id] = el; }} 
+                          className="absolute inset-0 w-full h-full" 
+                          height={100} 
+                        />
+                      )}
                       <div className={cn(
                         "absolute top-2 left-2 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg whitespace-nowrap flex items-center gap-1",
                         isRecording ? "bg-red-500 animate-pulse" : "bg-red-500/80"

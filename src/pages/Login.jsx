@@ -26,12 +26,8 @@ export default function Login() {
       await base44.auth.loginViaEmailPassword(email, password);
       // Skip the intro splash after login so the user lands straight in the app
       try { sessionStorage.setItem('nali_splash_shown', '1'); } catch {}
-      // Refresh auth state in-place and navigate client-side instead of doing a
-      // full-page reload (window.location.href), which caused a multi-second
-      // blank white screen while the entire app re-booted.
-      await checkUserAuth();
       toast.success("Logged in successfully! Welcome back.");
-      navigate("/", { replace: true });
+      window.location.href = "/";
     } catch (err) {
       const msg = err.message || "Invalid email or password";
       setError(msg);

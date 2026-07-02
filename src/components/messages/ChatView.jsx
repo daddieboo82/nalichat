@@ -209,9 +209,9 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       )}
 
       {/* Floating Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 p-2 sm:p-4 pointer-events-none">
+      <div className="absolute bottom-0 left-0 right-0 z-20 p-2 sm:p-4 flex flex-col justify-end">
         {isBlocked ? moderationBanner : (
-        <div className="pointer-events-auto w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-visible bg-background/90 backdrop-blur-2xl border border-border/50">
+        <div className="w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-visible bg-background/90 backdrop-blur-2xl border border-border/50">
           <ChatInput
             key={conversation?.id || "chat"}
             onSend={(payload) => {

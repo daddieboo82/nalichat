@@ -42,8 +42,9 @@ export default function Register() {
     setLoading(true);
     try {
       const result = await base44.auth.verifyOtp({ email, otpCode });
-      if (result?.access_token) {
-        base44.auth.setToken(result.access_token);
+      const token = typeof result === 'string' ? result : result?.access_token;
+      if (token) {
+        base44.auth.setToken(token);
       }
       sessionStorage.setItem("is_new_user", "true");
       window.location.href = "/";

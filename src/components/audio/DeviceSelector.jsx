@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAudioDevices } from '@/hooks/useAudioDevices';
 import { Button } from '@/components/ui/button';
 import { Mic, Volume2, Music, AlertCircle, Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 
 export default function DeviceSelector({ compact = false }) {
   const { devices, selectedDevices, selectDevice, getDeviceName, loading, error } = useAudioDevices();
@@ -34,18 +35,19 @@ export default function DeviceSelector({ compact = false }) {
             <Mic className="w-4 h-4" />
             Microphone
           </label>
-          <select
-            value={selectedDevices.input}
-            onChange={(e) => selectDevice('input', e.target.value)}
-            className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border text-sm"
-          >
-            <option value="default">Default Mic</option>
-            {devices.input.map(device => (
-              <option key={device.deviceId} value={device.deviceId}>
-                {device.label || `Microphone (${device.deviceId.slice(0, 8)}...)`}
-              </option>
-            ))}
-          </select>
+          <Select value={selectedDevices.input} onValueChange={(val) => selectDevice('input', val)}>
+            <SelectTrigger className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border text-sm h-auto">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">Default Mic</SelectItem>
+              {devices.input.map(device => (
+                <SelectItem key={device.deviceId} value={device.deviceId}>
+                  {device.label || `Microphone (${device.deviceId.slice(0, 8)}...)`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Speaker/Output */}
@@ -55,18 +57,19 @@ export default function DeviceSelector({ compact = false }) {
               <Volume2 className="w-4 h-4" />
               Speaker
             </label>
-            <select
-              value={selectedDevices.output}
-              onChange={(e) => selectDevice('output', e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border text-sm"
-            >
-              <option value="default">Default Speaker</option>
-              {devices.output.map(device => (
-                <option key={device.deviceId} value={device.deviceId}>
-                  {device.label || `Speaker (${device.deviceId.slice(0, 8)}...)`}
-                </option>
-              ))}
-            </select>
+            <Select value={selectedDevices.output} onValueChange={(val) => selectDevice('output', val)}>
+              <SelectTrigger className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border text-sm h-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Default Speaker</SelectItem>
+                {devices.output.map(device => (
+                  <SelectItem key={device.deviceId} value={device.deviceId}>
+                    {device.label || `Speaker (${device.deviceId.slice(0, 8)}...)`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
 
@@ -77,18 +80,19 @@ export default function DeviceSelector({ compact = false }) {
               <Music className="w-4 h-4" />
               MIDI Input
             </label>
-            <select
-              value={selectedDevices.midi || ''}
-              onChange={(e) => selectDevice('midi', e.target.value || null)}
-              className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border text-sm"
-            >
-              <option value="">No MIDI Device</option>
-              {devices.midi.map((device, idx) => (
-                <option key={idx} value={device.id}>
-                  {device.name || `MIDI Device ${idx + 1}`}
-                </option>
-              ))}
-            </select>
+            <Select value={selectedDevices.midi || 'none'} onValueChange={(val) => selectDevice('midi', val === 'none' ? null : val)}>
+              <SelectTrigger className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border text-sm h-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No MIDI Device</SelectItem>
+                {devices.midi.map((device, idx) => (
+                  <SelectItem key={idx} value={device.id}>
+                    {device.name || `MIDI Device ${idx + 1}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>

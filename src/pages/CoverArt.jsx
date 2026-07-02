@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -604,32 +605,34 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                       </div>
                       <div className="flex-1">
                         <label className="text-xs font-medium mb-1 block text-muted-foreground">Position</label>
-                        <select 
-                          value={editOptions.textPosition} 
-                          onChange={e => setEditOptions({...editOptions, textPosition: e.target.value})}
-                          className="w-full h-8 rounded border border-input bg-card px-2 text-sm text-foreground"
-                        >
-                          <option value="top">Top</option>
-                          <option value="center">Center</option>
-                          <option value="bottom">Bottom</option>
-                        </select>
+                        <Select value={editOptions.textPosition} onValueChange={(val) => setEditOptions({...editOptions, textPosition: val})}>
+                          <SelectTrigger className="w-full h-8 rounded border border-input bg-card px-2 text-sm text-foreground">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="top">Top</SelectItem>
+                            <SelectItem value="center">Center</SelectItem>
+                            <SelectItem value="bottom">Bottom</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     <div>
                       <label className="text-xs font-medium mb-1 block text-muted-foreground">Font Family</label>
-                      <select 
-                        value={editOptions.fontFamily} 
-                        onChange={e => setEditOptions({...editOptions, fontFamily: e.target.value})}
-                        className="w-full h-8 rounded border border-input bg-card px-2 text-sm text-foreground"
-                      >
-                        <option value="sans-serif">Sans Serif</option>
-                        <option value="serif">Serif</option>
-                        <option value="monospace">Monospace</option>
-                        <option value="cursive">Cursive</option>
-                        <option value="fantasy">Fantasy</option>
-                        <option value="Inter">Inter</option>
-                        <option value="Space Grotesk">Space Grotesk</option>
-                      </select>
+                      <Select value={editOptions.fontFamily} onValueChange={(val) => setEditOptions({...editOptions, fontFamily: val})}>
+                        <SelectTrigger className="w-full h-8 rounded border border-input bg-card px-2 text-sm text-foreground">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sans-serif">Sans Serif</SelectItem>
+                          <SelectItem value="serif">Serif</SelectItem>
+                          <SelectItem value="monospace">Monospace</SelectItem>
+                          <SelectItem value="cursive">Cursive</SelectItem>
+                          <SelectItem value="fantasy">Fantasy</SelectItem>
+                          <SelectItem value="Inter">Inter</SelectItem>
+                          <SelectItem value="Space Grotesk">Space Grotesk</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </>
                 )}

@@ -73,7 +73,7 @@ export default function GlobalAudioPlayer() {
               </Button>
             </div>
             <div className="hidden md:flex items-center gap-2 w-full mt-1.5">
-              <span className="text-[10px] text-white/50 w-8 text-right font-mono">{formatTime(currentTime)}</span>
+              <span className="text-xs text-white/50 w-8 text-right font-mono">{formatTime(currentTime)}</span>
               <Slider 
                 value={[currentTime]} 
                 max={displayDuration || 100} 
@@ -81,7 +81,7 @@ export default function GlobalAudioPlayer() {
                 onValueChange={(v) => seek(v[0])}
                 className="flex-1 [&_[role=slider]]:w-3 [&_[role=slider]]:h-3 [&_[role=slider]]:bg-white [&_[role=slider]]:border-white/50 [&_.bg-primary]:bg-white [&_.bg-primary\\/20]:bg-white/20" 
               />
-              <span className="text-[10px] text-white/50 w-8 font-mono">{formatTime(displayDuration, true)}</span>
+              <span className="text-xs text-white/50 w-8 font-mono">{formatTime(displayDuration, true)}</span>
             </div>
           </div>
 

@@ -104,7 +104,7 @@ export default function MobileNav() {
                 )}
                 <Icon className="w-5 h-5" />
               </motion.div>
-              <span className="relative z-10 text-[10px] font-medium leading-tight w-full text-center truncate px-0.5">{label}</span>
+              <span className="relative z-10 text-[11px] font-medium leading-tight w-full text-center truncate px-0.5">{label}</span>
             </button>
           );
         })}

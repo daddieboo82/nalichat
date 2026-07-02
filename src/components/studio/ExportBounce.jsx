@@ -138,17 +138,18 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
               <Award className="w-4 h-4 text-accent" />
               Loudness Standard
             </label>
-            <select
-              value={loudnessStandard}
-              onChange={(e) => setLoudnessStandard(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border/50 text-sm focus:border-primary/50 outline-none cursor-pointer"
-            >
-              {Object.entries(LOUDNESS_STANDARDS).map(([key, std]) => (
-                <option key={key} value={key}>
-                  {std.platform} ({std.lufs})
-                </option>
-              ))}
-            </select>
+            <Select value={loudnessStandard} onValueChange={setLoudnessStandard}>
+              <SelectTrigger className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border/50 text-sm focus:border-primary/50 outline-none cursor-pointer h-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(LOUDNESS_STANDARDS).map(([key, std]) => (
+                  <SelectItem key={key} value={key}>
+                    {std.platform} ({std.lufs})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Technical Specs */}
@@ -157,29 +158,31 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
               <label className="text-xs font-semibold text-muted-foreground block">
                 Bit Depth
               </label>
-              <select
-                value={bitDepth}
-                onChange={(e) => setBitDepth(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border/50 text-xs focus:border-primary/50 outline-none cursor-pointer"
-              >
-                <option value="16bit">16-bit (CD)</option>
-                <option value="24bit">24-bit (Studio)</option>
-                <option value="32bit">32-bit (Pro)</option>
-              </select>
+              <Select value={bitDepth} onValueChange={setBitDepth}>
+                <SelectTrigger className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border/50 text-xs focus:border-primary/50 outline-none cursor-pointer h-auto">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="16bit">16-bit (CD)</SelectItem>
+                  <SelectItem value="24bit">24-bit (Studio)</SelectItem>
+                  <SelectItem value="32bit">32-bit (Pro)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground block">
                 Sample Rate
               </label>
-              <select
-                value={sampleRate}
-                onChange={(e) => setSampleRate(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border/50 text-xs focus:border-primary/50 outline-none cursor-pointer"
-              >
-                <option value="44.1khz">44.1 kHz (CD)</option>
-                <option value="48khz">48 kHz (Video)</option>
-                <option value="96khz">96 kHz (Mastering)</option>
-              </select>
+              <Select value={sampleRate} onValueChange={setSampleRate}>
+                <SelectTrigger className="w-full px-3 py-2 rounded-lg bg-secondary/40 border border-border/50 text-xs focus:border-primary/50 outline-none cursor-pointer h-auto">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="44.1khz">44.1 kHz (CD)</SelectItem>
+                  <SelectItem value="48khz">48 kHz (Video)</SelectItem>
+                  <SelectItem value="96khz">96 kHz (Mastering)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

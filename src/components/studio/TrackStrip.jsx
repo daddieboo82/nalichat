@@ -190,28 +190,32 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
-                  onClick={toggleMute}
-                  className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[11px]",
-                    track.muted ? "bg-destructive/20 text-destructive" : "bg-secondary hover:bg-secondary/80"
-                  )}
-                >
-                  {track.muted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
-                </button>
+                <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
+                  <button
+                    onClick={toggleMute}
+                    className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[11px]",
+                      track.muted ? "bg-destructive/20 text-destructive" : "bg-secondary hover:bg-secondary/80"
+                    )}
+                  >
+                    {track.muted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                  </button>
+                </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">Mute</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
-                  onClick={toggleSolo}
-                  className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[11px] font-bold",
-                    track.solo ? "bg-accent/20 text-accent" : "bg-secondary hover:bg-secondary/80"
-                  )}
-                >
-                  S
-                </button>
+                <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
+                  <button
+                    onClick={toggleSolo}
+                    className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[11px] font-bold",
+                      track.solo ? "bg-accent/20 text-accent" : "bg-secondary hover:bg-secondary/80"
+                    )}
+                  >
+                    S
+                  </button>
+                </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">Solo</TooltipContent>
             </Tooltip>

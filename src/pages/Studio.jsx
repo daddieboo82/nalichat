@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight, ChevronLeft, Repeat, RefreshCw, ListTodo, AudioLines } from 'lucide-react';
+import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight, ChevronLeft, Repeat, RefreshCw, ListTodo, AudioLines, Home, Compass, MessageSquare, User } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -1260,35 +1260,41 @@ export default function Studio() {
                 <div className="flex items-center gap-2 mt-2">
                   <TooltipProvider delayDuration={200}>
                     <Tooltip><TooltipTrigger asChild>
-                      <button 
-                        onClick={() => toggleMute(track.id)}
-                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.muted ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground")}
-                      >
-                        M
-                      </button>
+                      <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
+                        <button 
+                          onClick={() => toggleMute(track.id)}
+                          className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.muted ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground")}
+                        >
+                          M
+                        </button>
+                      </div>
                     </TooltipTrigger><TooltipContent side="top" className="text-xs flex items-center gap-1">Mute Track <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+M</kbd></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild>
-                      <button 
-                        onClick={() => toggleSolo(track.id)}
-                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.solo ? "bg-yellow-500 text-white border-yellow-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground")}
-                      >
-                        S
-                      </button>
+                      <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
+                        <button 
+                          onClick={() => toggleSolo(track.id)}
+                          className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all border", track.solo ? "bg-yellow-500 text-white border-yellow-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground")}
+                        >
+                          S
+                        </button>
+                      </div>
                     </TooltipTrigger><TooltipContent side="top" className="text-xs flex items-center gap-1">Solo Track <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+S</kbd></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild>
-                      <button 
-                        onClick={() => {
-                           const input = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Internal Audio" : "In: Default Mic");
-                           if (input === 'Internal Audio') {
-                              toast.error("Cannot arm a track set to Internal Audio");
-                              return;
-                           }
-                           toggleArm(track.id);
-                        }}
-                        className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center border focus:outline-none", track.armed ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Internal Audio" : "In: Default Mic")) === 'Internal Audio') && "opacity-30 cursor-not-allowed")}
-                      >
-                        <Circle className="w-3 h-3 fill-current" />
-                      </button>
+                      <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
+                        <button 
+                          onClick={() => {
+                             const input = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Internal Audio" : "In: Default Mic");
+                             if (input === 'Internal Audio') {
+                                toast.error("Cannot arm a track set to Internal Audio");
+                                return;
+                             }
+                             toggleArm(track.id);
+                          }}
+                          className={cn("px-2 py-0.5 rounded text-xs font-bold transition-all flex items-center justify-center border focus:outline-none", track.armed ? "bg-red-500 text-white border-red-500" : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80 hover:text-foreground", ((track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Internal Audio" : "In: Default Mic")) === 'Internal Audio') && "opacity-30 cursor-not-allowed")}
+                        >
+                          <Circle className="w-3 h-3 fill-current" />
+                        </button>
+                      </div>
                     </TooltipTrigger><TooltipContent side="top" className="text-xs">Arm for Recording</TooltipContent></Tooltip>
                   </TooltipProvider>
                 </div>
@@ -1875,6 +1881,29 @@ export default function Studio() {
         pendingTimeSignature={pendingTimeSignature} setPendingTimeSignature={setPendingTimeSignature} setTimeSignature={setTimeSignature}
         pendingSongKey={pendingSongKey} setPendingSongKey={setPendingSongKey} setSongKey={setSongKey}
       />
+
+      {/* Mobile Navigation Strip */}
+      <div 
+        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden flex items-stretch justify-around border-t border-border bg-card/90 backdrop-blur-md"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <Link to="/" className="flex-1 flex flex-col items-center justify-center py-2 text-muted-foreground hover:text-primary transition-colors min-h-[44px]">
+          <Home className="w-5 h-5 mb-0.5" />
+          <span className="text-[11px] font-medium leading-tight">Home</span>
+        </Link>
+        <Link to="/explore" className="flex-1 flex flex-col items-center justify-center py-2 text-muted-foreground hover:text-primary transition-colors min-h-[44px]">
+          <Compass className="w-5 h-5 mb-0.5" />
+          <span className="text-[11px] font-medium leading-tight">Explore</span>
+        </Link>
+        <Link to="/messages" className="flex-1 flex flex-col items-center justify-center py-2 text-muted-foreground hover:text-primary transition-colors min-h-[44px]">
+          <MessageSquare className="w-5 h-5 mb-0.5" />
+          <span className="text-[11px] font-medium leading-tight">Messages</span>
+        </Link>
+        <Link to="/profile" className="flex-1 flex flex-col items-center justify-center py-2 text-muted-foreground hover:text-primary transition-colors min-h-[44px]">
+          <User className="w-5 h-5 mb-0.5" />
+          <span className="text-[11px] font-medium leading-tight">Profile</span>
+        </Link>
+      </div>
     </div>
   );
 }

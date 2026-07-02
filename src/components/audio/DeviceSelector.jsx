@@ -41,11 +41,14 @@ export default function DeviceSelector({ compact = false }) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="default">Default Mic</SelectItem>
-              {devices.input.map(device => (
-                <SelectItem key={device.deviceId} value={device.deviceId}>
-                  {device.label || `Microphone (${device.deviceId.slice(0, 8)}...)`}
-                </SelectItem>
-              ))}
+              {devices.input.map((device, idx) => {
+                const deviceId = device.deviceId || `unnamed-input-${idx}`;
+                return (
+                  <SelectItem key={deviceId} value={deviceId}>
+                    {device.label || `Microphone (${deviceId.slice(0, 8)}...)`}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -63,11 +66,14 @@ export default function DeviceSelector({ compact = false }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="default">Default Speaker</SelectItem>
-                {devices.output.map(device => (
-                  <SelectItem key={device.deviceId} value={device.deviceId}>
-                    {device.label || `Speaker (${device.deviceId.slice(0, 8)}...)`}
-                  </SelectItem>
-                ))}
+                {devices.output.map((device, idx) => {
+                  const deviceId = device.deviceId || `unnamed-output-${idx}`;
+                  return (
+                    <SelectItem key={deviceId} value={deviceId}>
+                      {device.label || `Speaker (${deviceId.slice(0, 8)}...)`}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -86,11 +92,14 @@ export default function DeviceSelector({ compact = false }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No MIDI Device</SelectItem>
-                {devices.midi.map((device, idx) => (
-                  <SelectItem key={idx} value={device.id}>
-                    {device.name || `MIDI Device ${idx + 1}`}
-                  </SelectItem>
-                ))}
+                {devices.midi.map((device, idx) => {
+                  const deviceId = device.id || `unnamed-midi-${idx}`;
+                  return (
+                    <SelectItem key={idx} value={deviceId}>
+                      {device.name || `MIDI Device ${idx + 1}`}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -126,17 +135,20 @@ export default function DeviceSelector({ compact = false }) {
             {devices.input.length === 0 ? (
               <p className="text-xs text-muted-foreground">No input devices found</p>
             ) : (
-              devices.input.map(device => (
-                <Button
-                  key={device.deviceId}
-                  variant={selectedDevices.input === device.deviceId ? 'default' : 'ghost'}
-                  className="w-full justify-start text-left h-auto py-2"
-                  onClick={() => selectDevice('input', device.deviceId)}
-                >
-                  <Mic className="w-3 h-3 mr-2" />
-                  <span className="text-xs">{device.label || `Device ${device.deviceId.slice(0, 8)}`}</span>
-                </Button>
-              ))
+              devices.input.map((device, idx) => {
+                const deviceId = device.deviceId || `unnamed-input-${idx}`;
+                return (
+                  <Button
+                    key={deviceId}
+                    variant={selectedDevices.input === device.deviceId ? 'default' : 'ghost'}
+                    className="w-full justify-start text-left h-auto py-2"
+                    onClick={() => selectDevice('input', device.deviceId)}
+                  >
+                    <Mic className="w-3 h-3 mr-2" />
+                    <span className="text-xs">{device.label || `Device ${deviceId.slice(0, 8)}`}</span>
+                  </Button>
+                );
+              })
             )}
           </div>
         )}
@@ -162,17 +174,20 @@ export default function DeviceSelector({ compact = false }) {
           </button>
           {expandedSection === 'output' && (
             <div className="mt-3 space-y-2 pt-3 border-t border-border/50">
-              {devices.output.map(device => (
-                <Button
-                  key={device.deviceId}
-                  variant={selectedDevices.output === device.deviceId ? 'default' : 'ghost'}
-                  className="w-full justify-start text-left h-auto py-2"
-                  onClick={() => selectDevice('output', device.deviceId)}
-                >
-                  <Volume2 className="w-3 h-3 mr-2" />
-                  <span className="text-xs">{device.label || `Device ${device.deviceId.slice(0, 8)}`}</span>
-                </Button>
-              ))}
+              {devices.output.map((device, idx) => {
+                const deviceId = device.deviceId || `unnamed-output-${idx}`;
+                return (
+                  <Button
+                    key={deviceId}
+                    variant={selectedDevices.output === device.deviceId ? 'default' : 'ghost'}
+                    className="w-full justify-start text-left h-auto py-2"
+                    onClick={() => selectDevice('output', device.deviceId)}
+                  >
+                    <Volume2 className="w-3 h-3 mr-2" />
+                    <span className="text-xs">{device.label || `Device ${deviceId.slice(0, 8)}`}</span>
+                  </Button>
+                );
+              })}
             </div>
           )}
         </div>

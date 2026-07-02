@@ -296,6 +296,8 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
             <p className="text-[10px] text-muted-foreground mt-1">Leave at 0 or empty for free downloads</p>
           </div>
 
+        </div>
+        <div className="p-5 border-t border-border shrink-0">
           <button
             type="button"
             onClick={submit}

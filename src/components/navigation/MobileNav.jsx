@@ -78,7 +78,7 @@ export default function MobileNav() {
               key={tabPath}
               onClick={() => handleTap(tabPath)}
               className={cn(
-                "relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2 select-none transition-colors active:bg-primary/10",
+                "relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2 select-none transition-colors active:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 active ? "text-primary" : "text-muted-foreground"
               )}
             >

@@ -1936,27 +1936,17 @@ export default function Studio() {
         pendingSongKey={pendingSongKey} setPendingSongKey={setPendingSongKey} setSongKey={setSongKey}
       />
 
-      {/* Mobile Navigation Strip */}
+      {/* Mobile bottom bar - Studio only */}
       <div 
-        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden flex items-stretch justify-around border-t border-border bg-card/90 backdrop-blur-md"
+        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden flex items-center justify-center border-t border-border bg-card/90 backdrop-blur-md py-2"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <Link to="/" className="flex-1 flex flex-col items-center justify-center py-2 text-muted-foreground hover:text-primary transition-colors min-h-[44px]">
-          <Home className="w-5 h-5 mb-0.5" />
-          <span className="text-[11px] font-medium leading-tight">Home</span>
-        </Link>
-        <Link to="/explore" className="flex-1 flex flex-col items-center justify-center py-2 text-muted-foreground hover:text-primary transition-colors min-h-[44px]">
-          <Compass className="w-5 h-5 mb-0.5" />
-          <span className="text-[11px] font-medium leading-tight">Explore</span>
-        </Link>
-        <Link to="/messages" className="flex-1 flex flex-col items-center justify-center py-2 text-muted-foreground hover:text-primary transition-colors min-h-[44px]">
-          <MessageSquare className="w-5 h-5 mb-0.5" />
-          <span className="text-[11px] font-medium leading-tight">Messages</span>
-        </Link>
-        <Link to="/profile" className="flex-1 flex flex-col items-center justify-center py-2 text-muted-foreground hover:text-primary transition-colors min-h-[44px]">
-          <User className="w-5 h-5 mb-0.5" />
-          <span className="text-[11px] font-medium leading-tight">Profile</span>
-        </Link>
+        <button
+          onClick={() => { handleSave(); navigate('/'); }}
+          className="flex items-center gap-2 px-6 py-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground text-sm font-medium transition-colors min-h-[44px]"
+        >
+          <ChevronLeft className="w-4 h-4" /> Exit Studio
+        </button>
       </div>
     </div>
   );

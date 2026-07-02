@@ -97,7 +97,7 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
                       onStartDM(u);
                       onClose();
                     }}
-                    className="w-8 h-8 rounded-full bg-secondary hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-colors shrink-0"
+                    className="w-11 h-11 rounded-full bg-secondary hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-colors shrink-0"
                     title="Message privately"
                     aria-label="Message privately"
                   >

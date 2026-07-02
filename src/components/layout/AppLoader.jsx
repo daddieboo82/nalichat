@@ -12,9 +12,11 @@ export default function AppLoader({ onDone }) {
 
   // play startup sound
   useEffect(() => {
-    const audio = new Audio("https://actions.google.com/sounds/v1/science_fiction/power_up.ogg");
-    audio.volume = 0.5;
-    audio.play().catch((e) => console.warn("Autoplay blocked:", e));
+    try {
+      const audio = new Audio("https://actions.google.com/sounds/v1/science_fiction/power_up.ogg");
+      audio.volume = 0.3;
+      audio.play().catch(() => {}); // Silently ignore autoplay block (iOS policy)
+    } catch (e) {}
   }, []);
 
   // animate equalizer bars — throttled to ~12fps so the splash doesn't hog

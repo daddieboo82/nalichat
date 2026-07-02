@@ -49,8 +49,10 @@ export default function MobileHeader() {
   const handleBack = () => {
     if (location.state?.from) {
       navigate(location.state.from);
-    } else {
+    } else if (window.history.length > 1) {
       navigate(-1);
+    } else {
+      navigate('/');
     }
   };
 

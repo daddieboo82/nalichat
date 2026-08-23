@@ -23,7 +23,6 @@ import ResetPassword from '@/pages/ResetPassword';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Home from '@/pages/Home';
-import { useSubscription } from '@/hooks/useSubscription';
 import AiAssistant from '@/components/AiAssistant';
 import AskNaliHint from '@/components/AskNaliHint';
 import { base44 } from '@/api/base44Client';
@@ -56,7 +55,6 @@ const AuthenticatedApp = () => {
   const isInitialMount = useRef(true);
 
   const { user } = useAuth();
-  const { hasAccess, isLoading: subLoading } = useSubscription();
 
   useEffect(() => {
     isInitialMount.current = false;
@@ -82,7 +80,7 @@ const AuthenticatedApp = () => {
     };
   }, [isAuthenticated]);
 
-  if (isLoadingPublicSettings || isLoadingAuth || (isAuthenticated && subLoading)) {
+  if (isLoadingPublicSettings || isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -104,16 +102,15 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // Admins bypass onboarding & paywall gates entirely.
+  // Admins bypass onboarding gate entirely.
   const isAdminUser = user?.role === 'admin';
 
   if (isAuthenticated && user && !user.onboarding_completed && location.pathname.toLowerCase() !== '/onboarding' && location.pathname !== '/login' && location.pathname !== '/register') {
     return <Navigate to="/onboarding" replace />;
   }
 
-  if (isAuthenticated && user && !isAdminUser && user.onboarding_completed && !hasAccess && location.pathname !== '/pricing' && location.pathname !== '/login' && location.pathname !== '/register' && location.pathname !== '/settings' && location.pathname !== '/profile' && location.pathname.toLowerCase() !== '/onboarding' && location.pathname.toLowerCase() !== '/webhook-test' && location.pathname.toLowerCase() !== '/webhooktest' && !location.pathname.toLowerCase().startsWith('/thank-you') && !location.pathname.toLowerCase().startsWith('/thankyou')) {
-    return <Navigate to="/pricing" replace />;
-  }
+  // The app is completely free — no paywall. All users have full access.
+  // Monetization is through per-item sales (tracks, files) via the cart/checkout flow.
 
   return (
     <>

@@ -33,8 +33,15 @@ export default function CartDrawer() {
         toast.error("Checkout failed. Please try again.");
       }
     } catch (error) {
-      console.error(error);
-      toast.error("An error occurred during checkout.");
+      console.error("Checkout error:", error);
+      const status = error?.response?.status || error?.status;
+      if (status === 402) {
+        toast.error("Checkout is temporarily unavailable. Please try again later or contact support.", { duration: 6000 });
+      } else if (status === 400) {
+        toast.error("Invalid checkout details. Please review your cart and try again.", { duration: 6000 });
+      } else {
+        toast.error("An error occurred during checkout. Please try again.", { duration: 6000 });
+      }
     } finally {
       setIsCheckingOut(false);
     }

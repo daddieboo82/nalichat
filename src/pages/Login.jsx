@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,14 +8,13 @@ import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "sonner";
+import { safeReturnTo } from "@/lib/authReturnTo";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const { checkUserAuth } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,7 +25,7 @@ export default function Login() {
       // Skip the intro splash after login so the user lands straight in the app
       try { sessionStorage.setItem('nali_splash_shown', '1'); } catch {}
       toast.success("Logged in successfully! Welcome back.");
-      window.location.href = "/";
+      window.location.href = safeReturnTo();
     } catch (err) {
       const msg = err.message || "Invalid email or password";
       setError(msg);
@@ -37,9 +35,7 @@ export default function Login() {
   };
 
   const handleGoogle = () => {
-    // Note: We don't set is_new_user here because it's login, but it's possible 
-    // it's their first time through Google. We'll leave the default redirect path.
-    base44.auth.loginWithProvider("google", "/");
+    base44.auth.loginWithProvider("google", safeReturnTo());
   };
 
   return (

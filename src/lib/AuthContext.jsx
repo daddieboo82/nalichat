@@ -129,7 +129,7 @@ export const AuthProvider = ({ children }) => {
 
   const navigateToLogin = () => {
     // Navigate to the custom login page if available
-    window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+    window.location.href = '/login?returnTo=' + encodeURIComponent(window.location.pathname);
   };
 
   return (

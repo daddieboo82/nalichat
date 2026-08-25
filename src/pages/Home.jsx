@@ -250,7 +250,7 @@ export default function Home() {
                 <Link to="/register" className="w-full sm:w-auto">
                   <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7">
                     <MessageSquare className="w-5 h-5 mr-2" />
-                    Start Free Trial
+                    Get Started Free
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
@@ -267,7 +267,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mt-5 text-sm text-muted-foreground">
-             ✅ Unlimited Messages · 🚀 High-Res Sharing · 💳 No credit card to start
+             ✅ Unlimited Messages · 🚀 High-Res Sharing · 💯 Always Free
             </p>
           )}
         </motion.div>
@@ -641,7 +641,7 @@ export default function Home() {
                     <Link to="/register" className="w-full sm:w-auto">
                       <Button size="lg" className="w-full sm:w-auto rounded-xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30">
                         <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
-                        Start Free Trial
+                        Get Started Free
                         <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2 md:ml-3" />
                       </Button>
                     </Link>
@@ -656,7 +656,7 @@ export default function Home() {
               </div>
               {!user && (
                 <p className="mt-8 text-sm font-bold text-muted-foreground tracking-wide uppercase">
-                  ✨ Completely free messaging · No credit card required ✨
+                  ✨ Completely free messaging · No credit card required · No trials ✨
                 </p>
               )}
             </div>

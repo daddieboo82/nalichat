@@ -173,7 +173,7 @@ export default function Leaderboard() {
             {[sorted[1], sorted[0], sorted[2]].map((user, i) => {
               const realRank = i === 0 ? 2 : i === 1 ? 1 : 3;
               return (
-                <div key={user.id} className={cn("flex flex-col items-center gap-2", realRank === 1 ? "mb-0" : "mb-2")}>
+                <div key={user.id} className="flex flex-col items-center gap-2">
                   <div className={cn("relative", realRank === 1 && "-mt-4")}>
                     <Avatar className={cn("border-4", realRank === 1 ? "w-16 h-16 border-yellow-400" : realRank === 2 ? "w-12 h-12 border-slate-400" : "w-12 h-12 border-amber-600")}>
                       <AvatarImage src={user.avatar_url} />

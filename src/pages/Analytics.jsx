@@ -85,7 +85,7 @@ export default function Analytics() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
               >
-                <Card className="p-5 bg-card border-border hover:border-primary/30 transition-colors">
+                <Card className="p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70 transition-all duration-300">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
@@ -102,7 +102,7 @@ export default function Analytics() {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top Tracks */}
-          <Card className="p-5 bg-card border-border">
+          <Card className="p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06]">
             <h2 className="font-heading font-semibold mb-4">Top Tracks by Views</h2>
             {trackData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
@@ -120,7 +120,7 @@ export default function Analytics() {
           </Card>
 
           {/* Growth Trend */}
-          <Card className="p-5 bg-card border-border">
+          <Card className="p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06]">
             <h2 className="font-heading font-semibold mb-4">Cumulative Growth</h2>
             {growthData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
@@ -142,7 +142,7 @@ export default function Analytics() {
 
         {/* Detailed Track List */}
         {userPosts.length > 0 && (
-          <Card className="p-5 bg-card border-border">
+          <Card className="p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06]">
             <h2 className="font-heading font-semibold mb-4">Track Performance</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

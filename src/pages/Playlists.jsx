@@ -102,7 +102,7 @@ export default function Playlists() {
               <Link
                 key={playlist.id}
                 to={`/playlist/${playlist.id}`}
-                className="group bg-card border border-border rounded-xl p-4 hover:border-primary transition-colors cursor-pointer"
+                className="group bg-card/50 backdrop-blur-xl border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] hover:bg-card/70 transition-all duration-300 cursor-pointer"
               >
                 <div className="aspect-square bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg flex items-center justify-center mb-4 group-hover:from-primary/30 group-hover:to-accent/30 transition-colors">
                   <Music className="w-8 h-8 text-primary/60" />

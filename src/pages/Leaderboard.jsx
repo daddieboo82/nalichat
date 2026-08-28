@@ -200,8 +200,8 @@ export default function Leaderboard() {
               key={user.id}
               onClick={() => navigate(`/profile?id=${user.id}`)}
               className={cn(
-                "flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer",
-                user.id === currentUser?.id ? "border-primary/40 bg-primary/5" : "border-border bg-card/60 hover:bg-card"
+                "flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 cursor-pointer",
+                user.id === currentUser?.id ? "border-primary/40 bg-primary/5" : "border-white/[0.06] bg-card/50 backdrop-blur-xl hover:bg-card/70 hover:border-white/[0.12]"
               )}
             >
               <div className="w-7 text-center shrink-0">
@@ -263,7 +263,7 @@ export default function Leaderboard() {
                   <div 
                     key={item.id} 
                     onClick={() => handleItemClick(item)}
-                    className="flex items-center gap-4 p-3 rounded-xl border border-border bg-card/60 hover:bg-card transition-colors cursor-pointer"
+                    className="flex items-center gap-4 p-3 rounded-xl border border-white/[0.06] bg-card/50 backdrop-blur-xl hover:bg-card/70 hover:border-white/[0.12] transition-all duration-300 cursor-pointer"
                   >
                     <div className="w-8 text-center shrink-0 flex flex-col items-center">
                       {i < 3 ? RANK_ICONS[i] : <span className="text-sm text-muted-foreground font-bold">#{i + 1}</span>}

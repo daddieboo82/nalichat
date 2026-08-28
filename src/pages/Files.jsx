@@ -484,7 +484,7 @@ export default function Files() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className="bg-card rounded-xl border border-border hover:border-primary/30 p-4 cursor-pointer transition-all group"
+                    className="bg-card/50 backdrop-blur-xl rounded-xl border border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70 p-4 cursor-pointer transition-all duration-300 group"
                     onClick={() => setCurrentFolderId(folder.id)}
                   >
                     <div className="flex items-start gap-3">
@@ -515,7 +515,7 @@ export default function Files() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.03 }}
-                      className={`bg-card rounded-xl border p-4 transition-all group ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-border hover:border-primary/30"}`}
+                      className={`bg-card/50 backdrop-blur-xl rounded-xl border p-4 transition-all duration-300 group ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70"}`}
                     >
                       <div className="flex items-start gap-3">
                         <Checkbox
@@ -598,7 +598,7 @@ export default function Files() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className={`bg-card rounded-xl border p-4 transition-all group ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-border hover:border-primary/30"}`}
+                  className={`bg-card/50 backdrop-blur-xl rounded-xl border p-4 transition-all duration-300 group ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70"}`}
                 >
                   <div className="flex items-start gap-3">
                     <Checkbox

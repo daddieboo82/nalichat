@@ -28,7 +28,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
         tabIndex={0}
         title={`View ${post.title || 'media'}`}
         aria-label={`View ${post.title || 'media'}`}
-        className={cn("break-inside-avoid mb-4 bg-card rounded-2xl overflow-hidden border border-border group hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 cursor-pointer", large && "")} 
+        className={cn("break-inside-avoid mb-4 bg-card/50 backdrop-blur-xl rounded-2xl overflow-hidden border border-white/[0.06] group hover:border-white/[0.12] hover:bg-card/70 transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 cursor-pointer", large && "")} 
         onClick={() => {
           setShowMedia(true);
         }}

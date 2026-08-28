@@ -179,7 +179,7 @@ export default function Profile() {
         </div>
 
         {/* XP Bar */}
-        <div className="mb-4 bg-card rounded-xl p-4 border border-border">
+        <div className="mb-4 bg-card/50 backdrop-blur-xl rounded-xl p-4 border border-white/[0.06]">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-yellow-400" />
@@ -199,7 +199,7 @@ export default function Profile() {
             { label: "Plays", value: totalLikes, icon: Heart },
             { label: "Awards", value: achievements.length, icon: Award },
           ].map(({ label, value, icon: Icon }) => (
-            <div key={label} className="bg-card rounded-xl border border-border p-3 text-center">
+            <div key={label} className="bg-card/50 backdrop-blur-xl rounded-xl border border-white/[0.06] p-3 text-center">
               <Icon className="w-4 h-4 text-primary mx-auto mb-1" />
               <p className="font-bold text-lg font-heading">{value}</p>
               <p className="text-xs text-muted-foreground">{label}</p>
@@ -209,7 +209,7 @@ export default function Profile() {
 
         {/* Edit form */}
         {editing && (
-          <div className="bg-card rounded-xl border border-border p-5 mb-6 space-y-4">
+          <div className="bg-card/50 backdrop-blur-xl rounded-xl border border-white/[0.06] p-5 mb-6 space-y-4">
             <h3 className="font-heading font-semibold">Edit Profile</h3>
             <input value={form.display_name || form.full_name || ""} onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))} placeholder="Display name" className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50" />
             <textarea value={form.bio || ""} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell your story..." rows={3} className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary/50" />

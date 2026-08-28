@@ -1107,7 +1107,7 @@ export default function Studio() {
 
           {/* Quality, Shortcuts & Hardware Config */}
           <div className="hidden lg:flex items-center gap-1 mr-2 border-r border-border/50 pr-3">
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
                   <Activity className="w-4 h-4" /> Quality
@@ -1165,7 +1165,7 @@ export default function Studio() {
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleSave}>
               <Save className="w-4 h-4" /> Save
             </Button>
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild><Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary"><Download className="w-4 h-4" /> Export</Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onClick={() => handleDownloadMix('wav')} disabled={isDownloading} className="cursor-pointer py-2">{isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />} Download Mix (WAV)</DropdownMenuItem>

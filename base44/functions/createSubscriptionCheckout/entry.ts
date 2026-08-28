@@ -7,7 +7,7 @@ Deno.serve(async (req) => {
     // The app is completely free — no paid subscriptions.
     // Redirect users to the ThankYou page (which clears the cart) without charging.
     const url = new URL(req.url);
-    const appUrl = req.headers.get('X-Base44-App-Url') || Deno.env.get('WIX_CHECKOUT_APP_URL') || `${url.protocol}//${url.host}`;
+    const appUrl = req.headers.get('X-Base44-App-Url') || `${url.protocol}//${url.host}`;
 
     return Response.json({
       freeAccess: true,

@@ -153,8 +153,12 @@ export default function StudioToolbar2({
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={() => { const maxD = Math.max(...tracks.map(t => (t.startTime||0)+(t.duration||40))); if (maxD>0) setZoom(Math.max(0.5, 40/maxD)); }} className="h-7 px-2 text-xs rounded text-muted-foreground hover:text-foreground hover:bg-secondary"><Maximize2 className="w-3.5 h-3.5 mr-1.5" /> <span className="hidden lg:inline">Fit</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Zoom to fit all tracks</TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div className="flex items-center gap-1 cursor-help ml-2"><span className="hidden lg:inline">Zoom</span></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Adjust horizontal zoom (Ctrl+Scroll)</TooltipContent></Tooltip>
           </TooltipProvider>
-          <Slider value={[zoom]} min={0.5} max={10} step={0.1} onValueChange={(v) => setZoom(v[0])} className="w-24" />
-          <span className="w-10 text-right font-mono text-[10px]">{Math.round(zoom * 100)}%</span>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.max(0.5, z / 1.5))} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-secondary rounded text-xs">−</Button>
+            <Slider value={[zoom]} min={0.5} max={200} step={0.5} onValueChange={(v) => setZoom(v[0])} className="w-28" />
+            <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.min(200, z * 1.5))} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-secondary rounded text-xs">+</Button>
+          </div>
+          <span className="w-12 text-right font-mono text-[10px] text-primary/80">{zoom >= 50 ? `${(1/(20*zoom)*1000).toFixed(1)}ms/px` : `${Math.round(zoom * 100)}%`}</span>
         </div>
     </>
   );

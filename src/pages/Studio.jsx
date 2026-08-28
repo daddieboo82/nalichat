@@ -60,6 +60,28 @@ export default function Studio() {
     const frames = Math.floor((seconds % 1) * 30);
     return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}:${frames.toString().padStart(2, '0')}`;
   };
+
+  // Millisecond-precision time for surgical editing tooltips
+  const formatTimePrecise = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    const ms = Math.floor((seconds % 1) * 1000);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
+  };
+
+  // Floating tooltip for precision editing — DOM-direct to avoid re-renders during drag
+  const editTooltipRef = useRef(null);
+  const showEditTooltip = (x, y, time) => {
+    const el = editTooltipRef.current;
+    if (!el) return;
+    el.style.opacity = '1';
+    el.style.left = `${x + 12}px`;
+    el.style.top = `${y - 34}px`;
+    el.textContent = formatTimePrecise(time);
+  };
+  const hideEditTooltip = () => {
+    if (editTooltipRef.current) editTooltipRef.current.style.opacity = '0';
+  };
   const mediaStreamRef = useRef(null);
   const audioContextRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -284,15 +306,36 @@ export default function Studio() {
                // Draw only the latest sample at its time-based x position — O(1) per frame, no canvas clearing
                const points = liveWaveformRef.current;
                const idx = points.length - 1;
-               const x = realElapsed * 20 * zoom; // x position in canvas coordinates
-               const h = Math.min(1, Math.max(0.001, points[idx])) * height;
-               const y = (height - h) / 2;
-               
-               ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-               ctx.lineWidth = 2;
+               // Match canvas internal resolution to recording pixel width for crisp 1:1 rendering
+               const targetW = Math.max(1, Math.ceil(currentWidth));
+               if (canvas.width !== targetW) canvas.width = targetW;
+               ctx.clearRect(0, 0, canvas.width, height);
+
+               const pts = liveWaveformRef.current;
+               if (pts.length < 2) return;
+
+               const centerY = height / 2;
+               const maxAmp = height * 0.42;
+               // Map each collected RMS sample across the full recording width
+               const pixelsPerPoint = canvas.width / pts.length;
+
+               ctx.strokeStyle = 'rgba(239, 68, 68, 0.9)';
+               ctx.lineWidth = 1;
                ctx.beginPath();
-               ctx.moveTo(x, y);
-               ctx.lineTo(x, y + h);
+               for (let i = 0; i < pts.length; i++) {
+                 const px = i * pixelsPerPoint;
+                 const amp = Math.min(1, Math.max(0.002, pts[i])) * maxAmp;
+                 ctx.moveTo(px, centerY - amp);
+                 ctx.lineTo(px, centerY + amp);
+               }
+               ctx.stroke();
+
+               // Center reference line for zero-crossing precision
+               ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+               ctx.lineWidth = 1;
+               ctx.beginPath();
+               ctx.moveTo(0, centerY);
+               ctx.lineTo(canvas.width, centerY);
                ctx.stroke();
             }
           });
@@ -658,8 +701,10 @@ export default function Studio() {
       else if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); setLoopActive(!loopActive); }
       else if (e.shiftKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); handleSeparateStems(); }
       else if (e.shiftKey && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); handleGenerateMelody(); }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); updateCurrentTime(Math.max(0, currentTimeRef.current - 5)); }
+      else if (e.key === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.min(100, currentTimeRef.current + step)); }
+      else if (e.key === 'ArrowLeft' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.max(0, currentTimeRef.current - step)); }
+      else if (e.key === 'ArrowRight' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = 1 / (20 * zoom); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) + nudge) } : t)); }
+      else if (e.key === 'ArrowLeft' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = 1 / (20 * zoom); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) - nudge) } : t)); }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -1389,10 +1434,10 @@ export default function Studio() {
             <div className="h-full relative cursor-pointer select-none" style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px` }}
               onPointerDown={(e) => {
                 const target = e.currentTarget;
-                const updatePosition = (cX) => updateCurrentTime(Math.max(0, (cX - target.getBoundingClientRect().left) / (20 * zoom)));
-                updatePosition(e.clientX);
-                const handleMove = (moveEvent) => updatePosition(moveEvent.clientX);
-                const handleUp = () => { window.removeEventListener('pointermove', handleMove); window.removeEventListener('pointerup', handleUp); };
+                const updatePosition = (cX, cY) => { const t = Math.max(0, (cX - target.getBoundingClientRect().left) / (20 * zoom)); updateCurrentTime(t); showEditTooltip(cX, cY, t); };
+                updatePosition(e.clientX, e.clientY);
+                const handleMove = (moveEvent) => updatePosition(moveEvent.clientX, moveEvent.clientY);
+                const handleUp = () => { window.removeEventListener('pointermove', handleMove); window.removeEventListener('pointerup', handleUp); hideEditTooltip(); };
                 window.addEventListener('pointermove', handleMove); window.addEventListener('pointerup', handleUp);
               }}
             >
@@ -1497,8 +1542,8 @@ export default function Studio() {
                         <canvas 
                           ref={el => { recordingCanvasRefs.current[track.id] = el; }} 
                           className="absolute top-0 bottom-0 left-0 h-full" 
-                          width={8000}
-                          height={100} 
+                          width={20000}
+                          height={200} 
                         />
                       )}
                       <div className={cn(
@@ -1606,6 +1651,7 @@ export default function Studio() {
                             if (editMode === 'grid') newStartTime = Math.round(newStartTime / gridSize) * gridSize;
                             target.style.left = `${newStartTime * 20 * zoom}px`;
                             target.dataset.newStartTime = newStartTime;
+                            showEditTooltip(moveEvent.clientX, moveEvent.clientY, newStartTime);
                           };
                           
                           const handleUp = (upEvent) => {
@@ -1613,6 +1659,7 @@ export default function Studio() {
                             target.releasePointerCapture(upEvent.pointerId);
                             target.removeEventListener('pointermove', handleMove);
                             target.removeEventListener('pointerup', handleUp);
+                            hideEditTooltip();
                             if (target.dataset.newStartTime !== undefined) {
                               const newStartTime = parseFloat(target.dataset.newStartTime);
                               setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, startTime: newStartTime } : t));
@@ -1662,26 +1709,28 @@ export default function Studio() {
                                   startTime: initialStartTime + trimAmount,
                                   duration: initialDuration - trimAmount,
                                   clipStart: initialClipStart + trimAmount
-                                } : t
-                              ));
-                            }
-                          };
-                          
-                          const handleUp = (upEvent) => {
-                            target.releasePointerCapture(upEvent.pointerId);
-                            target.removeEventListener('pointermove', handleMove);
-                            target.removeEventListener('pointerup', handleUp);
-                            pushToHistory(tracksRef.current);
-                          };
-                          
-                          target.addEventListener('pointermove', handleMove);
-                          target.addEventListener('pointerup', handleUp);
-                        }}
-                      >
-                        <div className="w-[2px] h-4 bg-white/50 group-hover/handle:bg-white rounded-full" />
-                      </div>
+                                  } : t
+                                  ));
+                                  showEditTooltip(moveEvent.clientX, moveEvent.clientY, initialStartTime + trimAmount);
+                                  }
+                                  };
 
-                      {/* Right Trim Handle */}
+                                  const handleUp = (upEvent) => {
+                                  target.releasePointerCapture(upEvent.pointerId);
+                                  target.removeEventListener('pointermove', handleMove);
+                                  target.removeEventListener('pointerup', handleUp);
+                                  pushToHistory(tracksRef.current);
+                                  hideEditTooltip();
+                                  };
+
+                                  target.addEventListener('pointermove', handleMove);
+                                  target.addEventListener('pointerup', handleUp);
+                                            }}
+                                          >
+                                            <div className="w-[2px] h-4 bg-white/50 group-hover/handle:bg-white rounded-full" />
+                                          </div>
+
+                                          {/* Right Trim Handle */}
                       <div 
                         className={cn("absolute right-0 w-3 z-20 group/handle flex justify-center items-center bg-black/20", 
                           (activeTool === 'trim' || activeTool === 'smart') ? "cursor-col-resize hover:bg-white/40" : "pointer-events-none opacity-0",
@@ -1711,17 +1760,19 @@ export default function Studio() {
                                 t.id === track.id ? { 
                                   ...t, 
                                   duration: initialDuration - trimAmount
-                                } : t
-                              ));
-                            }
-                          };
-                          
-                          const handleUp = (upEvent) => {
-                            target.releasePointerCapture(upEvent.pointerId);
-                            target.removeEventListener('pointermove', handleMove);
-                            target.removeEventListener('pointerup', handleUp);
-                            pushToHistory(tracksRef.current);
-                          };
+                                  } : t
+                                  ));
+                                  showEditTooltip(moveEvent.clientX, moveEvent.clientY, (track.startTime || 0) + (initialDuration - trimAmount));
+                                  }
+                                  };
+
+                                  const handleUp = (upEvent) => {
+                                  target.releasePointerCapture(upEvent.pointerId);
+                                  target.removeEventListener('pointermove', handleMove);
+                                  target.removeEventListener('pointerup', handleUp);
+                                  pushToHistory(tracksRef.current);
+                                  hideEditTooltip();
+                                  };
                           
                           target.addEventListener('pointermove', handleMove);
                           target.addEventListener('pointerup', handleUp);
@@ -1934,6 +1985,13 @@ export default function Studio() {
         format={exportFormat}
         tracks={tracks}
         projectName={projectName}
+      />
+
+      {/* Precision editing tooltip — DOM-direct, no re-renders */}
+      <div
+        ref={editTooltipRef}
+        className="fixed z-[200] pointer-events-none bg-primary text-primary-foreground text-xs font-mono px-2 py-1 rounded-md shadow-lg opacity-0 transition-opacity duration-150"
+        style={{ top: 0, left: 0 }}
       />
 
       {/* Mobile bottom bar - Studio only */}

@@ -71,7 +71,12 @@
           "data.owner_id": "{{user.id}}"
         },
         {
-          "data.collaborator_roles.{{user.id}}": "editor"
+          "data.collaborator_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
         }
       ]
     },

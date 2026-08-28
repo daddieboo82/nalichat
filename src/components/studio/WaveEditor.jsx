@@ -395,6 +395,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
   };
 
   const handleSave = () => {
+    if (!track) return;
     try {
       localStorage.removeItem('nalistudio_waveeditor_autosave');
     } catch (e) {}
@@ -403,6 +404,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
   };
 
   const handleClose = () => {
+    if (!track) { onClose(); return; }
     try {
       localStorage.removeItem('nalistudio_waveeditor_autosave');
     } catch (e) {}

@@ -13,6 +13,7 @@ import { motion } from "framer-motion";
 import QuickStartGuide from "@/components/home/QuickStartGuide";
 import HowItWorks from "@/components/home/HowItWorks";
 import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
+import ImmersiveOnboarding from "@/components/onboarding/ImmersiveOnboarding";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -154,6 +155,9 @@ export default function Home() {
 
   return (
     <div className="h-full overflow-auto bg-background">
+
+      {/* ── Immersive onboarding for first-time visitors ── */}
+      {!user && <ImmersiveOnboarding />}
 
       {/* ── Hero ── */}
       <section className="relative flex flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-32 min-h-[100dvh] md:min-h-[700px]">

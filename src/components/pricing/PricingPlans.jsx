@@ -1,181 +1,76 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
-import { useAuth } from "@/lib/AuthContext";
+import { useNavigate } from "react-router-dom";
 
-const plans = [
-  {
-    id: "free",
-    name: "Free Trial",
-    price: "0.00",
-    period: "for 7 days",
-    description: "Experience all Pro features for free during your first 7 days.",
-    features: [
-      "7 Days of Pro Access",
-      "Unlimited Studio Tracks",
-      "No Credit Card Required",
-      "Collaboration Tools",
-    ],
-    cta: "Start Creating",
-    popular: false,
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "24.95",
-    period: "/month",
-    description: "Full access to all app features",
-    features: [
-      "Unlimited Studio Tracks",
-      "Unlimited File Sharing",
-      "Advanced Analytics & Insights",
-      "Audience Management Tools",
-      "Priority Support",
-      "Collaboration Tools",
-    ],
-    cta: "Subscribe Now",
-    popular: true,
-  },
-  {
-    id: "pro_filesharing",
-    name: "Pro + 20GB Sharing",
-    price: "49.95",
-    period: "/month",
-    description: "Pro features plus 20GB of file sharing space",
-    features: [
-      "All Pro Features",
-      "20GB Dedicated File Sharing Space",
-      "High Priority Support",
-    ],
-    cta: "Subscribe Now",
-    popular: false,
-  },
+const features = [
+  "Unlimited Studio Tracks",
+  "Unlimited File Sharing",
+  "Advanced Analytics & Insights",
+  "Audience Management Tools",
+  "Collaboration Tools",
+  "AI Mastering & Cover Art",
+  "Priority Support",
 ];
 
-import { useSubscription } from "@/hooks/useSubscription";
-
 export default function PricingPlans() {
-  const [loadingPlanId, setLoadingPlanId] = useState(null);
-  const { user } = useAuth();
-  const { subscription, isLoading } = useSubscription();
-  
-  const currentPlan = subscription?.plan;
-  const isSubscribed = subscription?.status === 'active';
-  
-  const handleSubscribe = async (plan) => {
-    if (!user) {
-      base44.auth.redirectToLogin(window.location.pathname);
-      return;
-    }
-    if (plan.id === 'free') {
-      window.location.href = "/studio";
-      return;
-    }
-    setLoadingPlanId(plan.id);
-    try {
-      const response = await base44.functions.invoke("createSubscriptionCheckout", {
-        plan: plan.id,
-      });
-
-      if (response.data.checkoutUrl) {
-        window.location.href = response.data.checkoutUrl;
-      } else if (response.data.trialStarted) {
-        window.location.href = "/";
-      } else if (response.data.error) {
-        alert(response.data.error);
-      }
-    } catch (error) {
-      console.error("Checkout error:", error);
-      alert("Failed to start checkout. Please try again.");
-    } finally {
-      setLoadingPlanId(null);
-    }
-  };
+  const navigate = useNavigate();
 
   return (
     <div className="h-full overflow-y-auto bg-background">
-      <section className="py-16 px-6 max-w-7xl mx-auto">
+      <section className="py-16 px-6 max-w-3xl mx-auto">
         <div className="text-center mb-12">
-        <h2 className="font-heading font-black text-4xl mb-4">
-          Choose Your Plan
-        </h2>
-        <p className="text-lg text-muted-foreground">
-          Start with a 7-day free trial. Select a plan below to unlock the full studio,
-          unlimited tracks, file sharing, and more.
-        </p>
-      </div>
+          <h2 className="font-heading font-black text-4xl mb-4">
+            Everything is Free
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            All features are unlocked for everyone. NaliChat is 100% free — we monetize through per-item sales, not subscriptions.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-8">
-        {plans.map((plan, idx) => (
-          <motion.div
-            key={plan.name}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: idx * 0.1 }}
-            viewport={{ once: true }}
-            className={`relative rounded-2xl border transition-all ${
-              plan.popular
-                ? "border-primary/60 bg-primary/5 shadow-xl shadow-primary/20 scale-105"
-                : "border-border bg-card hover:border-primary/30"
-            }`}
-          >
-            {plan.popular && (
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                <span className="bg-primary text-white text-xs font-bold px-4 py-1 rounded-full">
-                  MOST POPULAR
-                </span>
-              </div>
-            )}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          viewport={{ once: true }}
+          className="relative rounded-2xl border border-primary/60 bg-primary/5 shadow-xl shadow-primary/20"
+        >
+          <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+            <span className="bg-primary text-white text-xs font-bold px-4 py-1 rounded-full">
+              100% FREE
+            </span>
+          </div>
 
-            <div className="p-8">
-              <h3 className="font-heading font-bold text-2xl mb-2">
-                {plan.name}
-              </h3>
-              <p className="text-muted-foreground text-sm mb-6">
-                {plan.description}
-              </p>
+          <div className="p-8">
+            <h3 className="font-heading font-bold text-2xl mb-2">
+              NaliChat Free
+            </h3>
+            <p className="text-muted-foreground text-sm mb-6">
+              Full access to every feature — no credit card, no trial, no limits.
+            </p>
 
-              <div className="mb-6">
-                <span className="font-heading font-black text-4xl">
-                  ${plan.price}
-                </span>
-                {plan.period && (
-                  <span className="text-muted-foreground ml-2">{plan.period}</span>
-                )}
-              </div>
-
-              <Button
-                onClick={() => handleSubscribe(plan)}
-                disabled={isLoading || loadingPlanId !== null || (isSubscribed && currentPlan !== 'trial' && currentPlan !== 'free' && currentPlan === plan.id)}
-                className={`w-full rounded-xl mb-8 ${
-                  plan.popular
-                    ? "bg-primary hover:bg-primary/90"
-                    : "bg-secondary hover:bg-secondary/80"
-                }`}
-              >
-                {isLoading 
-                  ? "Loading..."
-                  : loadingPlanId === plan.id 
-                  ? "Processing..." 
-                  : (isSubscribed && currentPlan !== 'trial' && currentPlan !== 'free'
-                      ? (currentPlan === plan.id ? "Current Plan" : "Switch Plan") 
-                      : (currentPlan === 'trial' && plan.id === 'free' ? "Active Trial" : plan.cta))}
-              </Button>
-
-              <div className="space-y-3">
-                {plan.features.map((feature) => (
-                  <div key={feature} className="flex items-start gap-3">
-                    <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">{feature}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="mb-6">
+              <span className="font-heading font-black text-4xl">$0</span>
+              <span className="text-muted-foreground ml-2">forever</span>
             </div>
-          </motion.div>
-        ))}
-      </div>
+
+            <Button
+              onClick={() => navigate("/studio")}
+              className="w-full rounded-xl mb-8 bg-primary hover:bg-primary/90"
+            >
+              Start Creating
+            </Button>
+
+            <div className="space-y-3">
+              {features.map((feature) => (
+                <div key={feature} className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
       </section>
     </div>
   );

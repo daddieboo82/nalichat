@@ -27,9 +27,22 @@ export default function AiAssistant() {
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
   useEffect(() => {
-    const handleOpen = () => openChat();
+    const handleOpen = (e) => openChat(e.detail?.greeting);
+    const handleSendMessage = async (e) => {
+      const text = e.detail?.message;
+      if (!text) return;
+      setOpen(true);
+      setMinimized(false);
+      let conv = conversation;
+      if (!conv) conv = await initConversation();
+      await base44.agents.addMessage(conv, { role: "user", content: text });
+    };
     window.addEventListener('open-ai-assistant', handleOpen);
-    return () => window.removeEventListener('open-ai-assistant', handleOpen);
+    window.addEventListener('nali-send-message', handleSendMessage);
+    return () => {
+      window.removeEventListener('open-ai-assistant', handleOpen);
+      window.removeEventListener('nali-send-message', handleSendMessage);
+    };
   }, [conversation]);
 
   useEffect(() => {
@@ -97,15 +110,15 @@ export default function AiAssistant() {
     return conv;
   };
 
-  const openChat = async () => {
+  const openChat = async (greeting) => {
     setOpen(true);
     setMinimized(false);
     if (!conversation) {
       const conv = await initConversation();
-      // Send greeting
+      // Send greeting — custom greeting lets onboarding prime Nali with context
       await base44.agents.addMessage(conv, {
         role: "user",
-        content: "Hi! What can you help me with on RecordStudio?"
+        content: greeting || "Hi! What can you help me with on RecordStudio?"
       });
     }
     setTimeout(() => inputRef.current?.focus(), 100);

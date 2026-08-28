@@ -15,6 +15,9 @@ export default function StudioExtras({
     <>
       <Dialog open={showQuickMemo} onOpenChange={setShowQuickMemo}>
         <DialogContent className="max-w-4xl bg-background border-border overflow-y-auto h-[650px] p-0">
+          <DialogHeader className="px-4 py-3 border-b border-border">
+            <DialogTitle className="font-heading text-lg">Quick Memo</DialogTitle>
+          </DialogHeader>
           <Record />
         </DialogContent>
       </Dialog>
@@ -52,6 +55,9 @@ export default function StudioExtras({
 
       <Dialog open={showMilestones} onOpenChange={setShowMilestones}>
         <DialogContent className="max-w-xl h-[600px] p-0 border-border bg-background flex flex-col overflow-hidden">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Milestones</DialogTitle>
+          </DialogHeader>
           <div className="flex-1 overflow-y-auto">
             <MilestonesPanel projectId={projectId || "local_studio"} canEdit={true} />
           </div>

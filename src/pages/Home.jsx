@@ -15,7 +15,6 @@ import HowItWorks from "@/components/home/HowItWorks";
 import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
-import { useSubscription } from "@/hooks/useSubscription";
 
 const features = [
   {
@@ -152,8 +151,6 @@ export default function Home() {
   // Only treat as logged-in when both the flag and the user record are present,
   // so the greeting disappears instantly on logout.
   const user = isAuthenticated ? authUser : null;
-  // Pro and admin users already have full access — don't show pricing/upgrade CTAs.
-  const { isPro } = useSubscription();
 
   return (
     <div className="h-full overflow-auto bg-background">
@@ -236,14 +233,6 @@ export default function Home() {
                   </Button>
                 </Link>
 
-                {!isPro && (
-                  <Link to="/pricing" className="w-full sm:w-auto">
-                    <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-xl text-base px-7 border-primary text-primary hover:bg-primary/10">
-                      <Star className="w-5 h-5 mr-2" />
-                      Upgrade to Pro
-                    </Button>
-                  </Link>
-                )}
               </>
             ) : (
               <>
@@ -252,12 +241,6 @@ export default function Home() {
                     <MessageSquare className="w-5 h-5 mr-2" />
                     Get Started Free
                     <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
-                <Link to="/pricing" className="w-full sm:w-auto">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-xl text-base px-7 border-primary text-primary hover:bg-primary/10">
-                    <Star className="w-5 h-5 mr-2" />
-                    Upgrade to Pro
                   </Button>
                 </Link>
               </>
@@ -450,14 +433,6 @@ export default function Home() {
               <h2 className="font-heading font-black text-3xl sm:text-4xl md:text-5xl mb-4 text-gradient-animate drop-shadow-lg inline-block">Everything You Need</h2>
               <p className="text-foreground/70 text-xl font-medium">One explosive platform. Every tool a music creator could want.</p>
             </div>
-            {!isPro && (
-              <Link to="/pricing">
-                <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white shadow-lg shadow-primary/20">
-                  <Star className="w-5 h-5 mr-2" />
-                  Upgrade to Pro
-                </Button>
-              </Link>
-            )}
           </div>
 
           <motion.div
@@ -627,14 +602,6 @@ export default function Home() {
                         </Button>
                       </Link>
 
-                      {!isPro && (
-                        <Link to="/pricing" className="w-full sm:w-auto">
-                          <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold border-primary text-primary hover:bg-primary/10 transition-all hover:scale-105 backdrop-blur-md">
-                            <Star className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
-                            Upgrade to Pro
-                          </Button>
-                        </Link>
-                      )}
                     </>
                   ) : (
                   <>
@@ -643,12 +610,6 @@ export default function Home() {
                         <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
                         Get Started Free
                         <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2 md:ml-3" />
-                      </Button>
-                    </Link>
-                    <Link to="/pricing" className="w-full sm:w-auto">
-                      <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold border-primary text-primary hover:bg-primary/10 transition-all hover:scale-105 backdrop-blur-md">
-                        <Star className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
-                        Upgrade to Pro
                       </Button>
                     </Link>
                   </>

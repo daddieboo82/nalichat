@@ -6,13 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Eye, Heart, Music } from "lucide-react";
 import { motion } from "framer-motion";
-import { useSubscription } from '@/hooks/useSubscription';
-import UpgradeModal from '@/components/billing/UpgradeModal';
-
 export default function Analytics() {
   const [currentUser, setCurrentUser] = useState(null);
-  const { hasAccess, isLoading: isLoadingSub } = useSubscription();
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -68,26 +63,6 @@ export default function Analytics() {
     { label: "Tracks Uploaded", value: userPosts.length, icon: Music, color: "text-primary" },
     { label: "Avg Likes/Track", value: avgLikesPerTrack, icon: TrendingUp, color: "text-accent" },
   ];
-
-  if (isLoadingSub) {
-    return <div className="p-12 text-center text-muted-foreground">Loading analytics...</div>;
-  }
-
-  if (!hasAccess) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center p-8 bg-background text-center">
-        <TrendingUp className="w-12 h-12 text-primary mb-4" />
-        <h2 className="text-2xl font-bold font-heading mb-4">Analytics Locked</h2>
-        <p className="text-muted-foreground mb-6 max-w-md">
-          Your free trial has ended. Upgrade to Pro to unlock advanced analytics and track your audience engagement.
-        </p>
-        <Button onClick={() => setShowUpgradeModal(true)} size="lg" className="bg-gradient-to-r from-primary to-pink-500 text-white shadow-lg">
-           Upgrade to Pro
-        </Button>
-        <UpgradeModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} triggerReason="analytics" />
-      </div>
-    );
-  }
 
   return (
     <div className="h-full flex flex-col bg-background overflow-y-auto">

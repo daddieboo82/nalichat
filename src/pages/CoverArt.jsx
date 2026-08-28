@@ -20,8 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useSubscription } from '@/hooks/useSubscription';
-import UpgradeModal from '@/components/billing/UpgradeModal';
+
 
 export default function CoverArt() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -32,8 +31,7 @@ export default function CoverArt() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
-  const { hasAccess, isLoading: isLoadingSub } = useSubscription();
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
 
   const importFileInputRef = useRef(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -327,24 +325,8 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
     }
   };
 
-  if (isLoadingUser || isLoadingSub) return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (isLoadingUser) return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   if (!currentUser) return <div className="p-8 text-center">Please log in to use the Cover Art Creator.</div>;
-
-  if (!hasAccess) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
-        <Sparkles className="w-12 h-12 text-primary mb-4" />
-        <h2 className="text-2xl font-bold font-heading mb-4">Cover Art Creator Locked</h2>
-        <p className="text-muted-foreground mb-6 max-w-md">
-          Your free trial has ended. Upgrade to Pro to continue using the AI Cover Art Creator.
-        </p>
-        <Button onClick={() => setShowUpgradeModal(true)} size="lg" className="bg-gradient-to-r from-primary to-pink-500 text-white shadow-lg">
-           Upgrade to Pro
-        </Button>
-        <UpgradeModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} triggerReason="coverart" />
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-8 flex flex-col min-h-[calc(100vh-6rem)] pb-32 md:pb-12">

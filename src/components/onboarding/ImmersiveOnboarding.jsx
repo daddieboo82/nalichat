@@ -7,6 +7,7 @@ import {
   X, ChevronRight, MessageSquare, Wand2, Radio,
   Headphones, Star, Zap
 } from "lucide-react";
+import { sounds } from "@/hooks/use-sound";
 
 const STORAGE_KEY = "nali_onboarding_seen";
 
@@ -103,11 +104,13 @@ export default function ImmersiveOnboarding() {
   }, []);
 
   const handleDismiss = () => {
+    sounds.click();
     try { sessionStorage.setItem(STORAGE_KEY, "1"); } catch {}
     setVisible(false);
   };
 
   const handleNext = () => {
+    sounds.click();
     if (step < steps.length - 1) {
       setDirection(1);
       setStep(step + 1);
@@ -115,6 +118,7 @@ export default function ImmersiveOnboarding() {
   };
 
   const handlePrev = () => {
+    sounds.click();
     if (step > 0) {
       setDirection(-1);
       setStep(step - 1);
@@ -122,11 +126,13 @@ export default function ImmersiveOnboarding() {
   };
 
   const handleRegister = () => {
+    sounds.success();
     try { sessionStorage.setItem(STORAGE_KEY, "1"); } catch {}
     navigate("/register");
   };
 
   const handleLogin = () => {
+    sounds.click();
     try { sessionStorage.setItem(STORAGE_KEY, "1"); } catch {}
     navigate("/login");
   };

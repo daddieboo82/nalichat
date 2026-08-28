@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { registerServiceWorker, requestPushPermission, showPushNotification, getPermissionStatus } from "@/lib/pushNotifications";
+import { sounds } from "@/hooks/use-sound";
 
 const typeIcon = {
   comment: MessageCircle,
@@ -48,6 +49,7 @@ export default function NotificationBell({ direction = "down" }) {
       if (!me) return;
       if (event.data?.recipient_id !== me.id) return;
       if (event.type === "create") {
+        sounds.notification();
         toast({ title: event.data.actor_name || "New activity", description: event.data.message });
         showPushNotification({
           title: event.data.actor_name || "NaliChat",

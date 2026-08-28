@@ -10,13 +10,9 @@ export default function AppLoader({ onDone }) {
   const [bars, setBars] = useState(new Array(BARS).fill(0));
   const startRef = useRef(Date.now());
 
-  // play startup sound
+  // play premium startup chime (programmatic — no network dependency, no autoplay block)
   useEffect(() => {
-    try {
-      const audio = new Audio("https://actions.google.com/sounds/v1/science_fiction/power_up.ogg");
-      audio.volume = 0.3;
-      audio.play().catch(() => {}); // Silently ignore autoplay block (iOS policy)
-    } catch (e) {}
+    import("@/hooks/use-sound").then(({ sounds }) => sounds.startup()).catch(() => {});
   }, []);
 
   // animate equalizer bars — throttled to ~12fps so the splash doesn't hog

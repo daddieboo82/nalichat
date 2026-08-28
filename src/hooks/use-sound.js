@@ -92,41 +92,67 @@ function playTone({ frequency = 440, type = "sine", duration = 0.12, volume = 0.
 }
 
 export const sounds = {
-  click: () => playTone({ frequency: 600, type: "sine", duration: 0.07, volume: 0.12 }),
-  hover: () => playTone({ frequency: 900, type: "sine", duration: 0.04, volume: 0.05 }),
+  // Soft, satisfying tick — a quick sine pop with a subtle higher harmonic for clarity
+  click: () => {
+    playTone({ frequency: 520, type: "sine", duration: 0.05, volume: 0.10, attack: 0.002, decay: 0.04 });
+    playTone({ frequency: 1040, type: "sine", duration: 0.04, volume: 0.04, attack: 0.002, decay: 0.03, delay: 0.005 });
+  },
+  // Lighter tick for hovers — barely perceptible
+  hover: () => playTone({ frequency: 880, type: "sine", duration: 0.03, volume: 0.03, attack: 0.002, decay: 0.02 }),
+  // Bright ascending arpeggio — a triumphant success chime
   success: () => {
-    playTone({ frequency: 660, type: "sine", duration: 0.09, volume: 0.14, delay: 0 });
-    playTone({ frequency: 880, type: "sine", duration: 0.1, volume: 0.12, delay: 0.08 });
-    playTone({ frequency: 1100, type: "sine", duration: 0.14, volume: 0.11, delay: 0.16 });
+    playTone({ frequency: 523, type: "sine", duration: 0.08, volume: 0.12, delay: 0 });
+    playTone({ frequency: 659, type: "sine", duration: 0.08, volume: 0.12, delay: 0.07 });
+    playTone({ frequency: 784, type: "sine", duration: 0.10, volume: 0.12, delay: 0.14 });
+    playTone({ frequency: 1047, type: "sine", duration: 0.16, volume: 0.11, delay: 0.21 });
   },
+  // Gentle two-note bell — warm and inviting, like a soft marimba
   notification: () => {
-    playTone({ frequency: 520, type: "sine", duration: 0.08, volume: 0.14, delay: 0 });
-    playTone({ frequency: 780, type: "sine", duration: 0.1, volume: 0.11, delay: 0.06 });
+    playTone({ frequency: 587, type: "sine", duration: 0.12, volume: 0.13, attack: 0.004, decay: 0.10, delay: 0 });
+    playTone({ frequency: 880, type: "sine", duration: 0.18, volume: 0.11, attack: 0.004, decay: 0.16, delay: 0.09 });
+    playTone({ frequency: 1175, type: "sine", duration: 0.14, volume: 0.06, attack: 0.004, decay: 0.12, delay: 0.09 });
   },
+  // Sparkly ascending triad — a delightful "like"
   like: () => {
-    playTone({ frequency: 700, type: "sine", duration: 0.07, volume: 0.13, delay: 0 });
-    playTone({ frequency: 1050, type: "sine", duration: 0.1, volume: 0.10, delay: 0.055 });
-    playTone({ frequency: 1400, type: "sine", duration: 0.08, volume: 0.07, delay: 0.11 });
+    playTone({ frequency: 784, type: "sine", duration: 0.06, volume: 0.11, delay: 0 });
+    playTone({ frequency: 1175, type: "sine", duration: 0.08, volume: 0.09, delay: 0.04 });
+    playTone({ frequency: 1568, type: "sine", duration: 0.10, volume: 0.07, delay: 0.08 });
   },
+  // Rising sweep — files uploading
   upload: () => {
-    playTone({ frequency: 440, type: "sine", duration: 0.07, volume: 0.11, delay: 0 });
-    playTone({ frequency: 660, type: "sine", duration: 0.1, volume: 0.09, delay: 0.06 });
-    playTone({ frequency: 880, type: "sine", duration: 0.12, volume: 0.08, delay: 0.12 });
+    playTone({ frequency: 392, type: "sine", duration: 0.07, volume: 0.10, delay: 0 });
+    playTone({ frequency: 523, type: "sine", duration: 0.08, volume: 0.09, delay: 0.05 });
+    playTone({ frequency: 659, type: "sine", duration: 0.10, volume: 0.08, delay: 0.10 });
+    playTone({ frequency: 784, type: "sine", duration: 0.12, volume: 0.07, delay: 0.15 });
   },
+  // Deep countdown-style start
   recStart: () => {
-    playTone({ frequency: 220, type: "sine", duration: 0.15, volume: 0.18, delay: 0 });
-    playTone({ frequency: 330, type: "sine", duration: 0.2, volume: 0.14, delay: 0.1 });
+    playTone({ frequency: 196, type: "sine", duration: 0.15, volume: 0.16, delay: 0 });
+    playTone({ frequency: 294, type: "sine", duration: 0.20, volume: 0.13, delay: 0.10 });
   },
+  // Descending resolve — recording stopped
   recStop: () => {
-    playTone({ frequency: 440, type: "sine", duration: 0.12, volume: 0.15, delay: 0 });
-    playTone({ frequency: 330, type: "sine", duration: 0.16, volume: 0.12, delay: 0.09 });
-    playTone({ frequency: 220, type: "sine", duration: 0.2, volume: 0.10, delay: 0.18 });
+    playTone({ frequency: 392, type: "sine", duration: 0.10, volume: 0.13, delay: 0 });
+    playTone({ frequency: 294, type: "sine", duration: 0.14, volume: 0.11, delay: 0.07 });
+    playTone({ frequency: 196, type: "sine", duration: 0.18, volume: 0.09, delay: 0.14 });
   },
+  // Low buzz — something went wrong
   error: () => {
-    playTone({ frequency: 300, type: "sawtooth", duration: 0.1, volume: 0.14, delay: 0 });
-    playTone({ frequency: 220, type: "sawtooth", duration: 0.18, volume: 0.12, delay: 0.08 });
+    playTone({ frequency: 311, type: "sawtooth", duration: 0.09, volume: 0.12, delay: 0 });
+    playTone({ frequency: 233, type: "sawtooth", duration: 0.16, volume: 0.10, delay: 0.07 });
   },
-  nav: () => playTone({ frequency: 480, type: "sine", duration: 0.1, volume: 0.09, attack: 0.02, decay: 0.1 }),
+  // Soft navigation whoosh
+  nav: () => playTone({ frequency: 440, type: "sine", duration: 0.08, volume: 0.08, attack: 0.02, decay: 0.08 }),
+  // Premium startup chime — a warm, welcoming ascending arpeggio for the splash screen
+  startup: () => {
+    playTone({ frequency: 261, type: "sine", duration: 0.18, volume: 0.14, attack: 0.01, decay: 0.14, delay: 0 });
+    playTone({ frequency: 392, type: "sine", duration: 0.18, volume: 0.13, attack: 0.01, decay: 0.14, delay: 0.10 });
+    playTone({ frequency: 523, type: "sine", duration: 0.20, volume: 0.13, attack: 0.01, decay: 0.16, delay: 0.20 });
+    playTone({ frequency: 659, type: "sine", duration: 0.22, volume: 0.12, attack: 0.01, decay: 0.18, delay: 0.30 });
+    playTone({ frequency: 784, type: "sine", duration: 0.30, volume: 0.11, attack: 0.01, decay: 0.26, delay: 0.40 });
+    // Sparkle on top
+    playTone({ frequency: 1568, type: "sine", duration: 0.20, volume: 0.05, attack: 0.01, decay: 0.16, delay: 0.45 });
+  },
 };
 
 /**

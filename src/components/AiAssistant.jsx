@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { Bot, X, Send, Minimize2, Maximize2, Sparkles, Expand, Shrink, AudioLines, Disc, Activity, Mic, Music, ChevronUp, ChevronDown } from "lucide-react";
+import { Bot, X, Send, Minimize2, Maximize2, Sparkles, Expand, Shrink, AudioLines, Disc, Activity, Mic, Music, ChevronUp, ChevronDown, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import TutorialTopics from "@/components/ai/TutorialTopics";
@@ -16,9 +16,13 @@ export default function AiAssistant() {
   const [isListening, setIsListening] = useState(false);
   const [conversation, setConversation] = useState(null);
   const [user, setUser] = useState(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const unsubRef = useRef(null);
+  const spokenIdsRef = useRef(new Set());
+  const currentAudioRef = useRef(null);
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
@@ -34,6 +38,51 @@ export default function AiAssistant() {
 
   // Clean up the conversation subscription on unmount
   useEffect(() => () => { unsubRef.current?.(); }, []);
+
+  // Speak Nali's replies aloud when voice is enabled
+  const speakText = async (text) => {
+    // Strip markdown for cleaner speech
+    const clean = text.replace(/[#*_`>~|-]/g, "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").trim();
+    if (!clean) return;
+    try {
+      if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; }
+      setIsSpeaking(true);
+      const res = await base44.integrations.Core.GenerateSpeech({ text: clean, voice: "honey" });
+      const audio = new Audio(res.url);
+      currentAudioRef.current = audio;
+      audio.onended = () => { setIsSpeaking(false); currentAudioRef.current = null; };
+      audio.onerror = () => { setIsSpeaking(false); currentAudioRef.current = null; };
+      await audio.play();
+    } catch (e) {
+      console.error("Nali voice error", e);
+      setIsSpeaking(false);
+    }
+  };
+
+  // Watch for new assistant messages and speak them
+  useEffect(() => {
+    if (!voiceEnabled || messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    if (last.role === "user") return;
+    // Use content as a pseudo-id; skip if already spoken
+    const id = last.content?.substring(0, 80);
+    if (!id || spokenIdsRef.current.has(id)) return;
+    spokenIdsRef.current.add(id);
+    speakText(last.content);
+  }, [messages, voiceEnabled]);
+
+  // Stop voice when toggled off or panel closes
+  useEffect(() => {
+    if (!voiceEnabled && currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+      setIsSpeaking(false);
+    }
+  }, [voiceEnabled]);
+
+  useEffect(() => () => {
+    return () => { if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; } };
+  }, []);
 
   const initConversation = async () => {
     if (conversation) return conversation;
@@ -122,13 +171,30 @@ export default function AiAssistant() {
               <div className="flex items-center gap-2">
                 <p className="font-heading font-black text-base tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">NALI.ai</p>
                 <div className="flex gap-[3px] items-center h-4 ml-1">
-                  <div className="w-[3px] bg-primary waveform-bar rounded-full" />
-                  <div className="w-[3px] bg-primary waveform-bar rounded-full" style={{ animationDelay: "0.2s" }} />
-                  <div className="w-[3px] bg-primary waveform-bar rounded-full" style={{ animationDelay: "0.4s" }} />
+                  <div className={cn("w-[3px] bg-primary rounded-full", isSpeaking ? "waveform-bar" : "h-1")} />
+                  <div className={cn("w-[3px] bg-primary rounded-full", isSpeaking ? "waveform-bar" : "h-1")} style={{ animationDelay: "0.2s" }} />
+                  <div className={cn("w-[3px] bg-primary rounded-full", isSpeaking ? "waveform-bar" : "h-1")} style={{ animationDelay: "0.4s" }} />
                 </div>
               </div>
               {!minimized && <p className="text-[10px] text-primary/80 uppercase tracking-widest font-bold mt-0.5">Studio Co-Producer</p>}
             </div>
+            {!minimized && (
+              <button onClick={() => {
+                setVoiceEnabled(v => {
+                  const next = !v;
+                  if (next) {
+                    // Unlock audio on this user gesture so TTS can play after async API calls
+                    try {
+                      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                      ctx.resume().then(() => ctx.close()).catch(() => {});
+                    } catch {}
+                  }
+                  return next;
+                });
+              }} title={voiceEnabled ? "Voice on — tap to mute Nali" : "Enable Nali's voice"} className={cn("p-2 sm:p-1 transition-colors", voiceEnabled ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+                {voiceEnabled ? <Volume2 className="w-5 h-5 sm:w-4 sm:h-4" /> : <VolumeX className="w-5 h-5 sm:w-4 sm:h-4" />}
+              </button>
+            )}
             {!minimized && (
               <button onClick={() => setExpanded(v => !v)} className="text-muted-foreground hover:text-foreground p-2 sm:p-1" title={expanded ? "Shrink" : "Expand"}>
                 {expanded ? <Shrink className="w-5 h-5 sm:w-4 sm:h-4" /> : <Expand className="w-5 h-5 sm:w-4 sm:h-4" />}

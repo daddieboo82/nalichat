@@ -268,7 +268,7 @@ function RecordingItem({ recording, saving, onSave, onDelete, onRename }) {
   };
 
   return (
-    <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-3">
+    <div className="bg-card/50 backdrop-blur-xl rounded-xl border border-white/[0.06] p-4 flex items-center gap-3">
       <audio ref={audioRef} src={recording.url} onEnded={() => setPlaying(false)} />
       <button onClick={togglePlay} className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 hover:bg-primary/30 transition-colors">
         {playing ? <Pause className="w-4 h-4 text-primary" /> : <Play className="w-4 h-4 text-primary ml-0.5" />}

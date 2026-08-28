@@ -342,7 +342,7 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
 
       <div className="flex flex-col md:flex-row gap-8 flex-1">
         {/* Left: Track Selection */}
-        <div className="w-full md:w-1/3 flex flex-col gap-4 border border-border bg-card rounded-xl p-4 overflow-y-auto custom-scrollbar max-h-[300px] md:max-h-none">
+        <div className="w-full md:w-1/3 flex flex-col gap-4 border border-white/[0.06] bg-card/50 backdrop-blur-xl rounded-xl p-4 overflow-y-auto custom-scrollbar max-h-[300px] md:max-h-none">
           <h2 className="font-semibold uppercase text-xs tracking-wider text-muted-foreground">Your Tracks</h2>
           {isLoading ? (
             <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
@@ -398,7 +398,7 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
                   setSelectedPost(post);
                   setGeneratedImage(null);
                 }}
-                className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedPost?.id === post.id ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'}`}
+                className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedPost?.id === post.id ? 'border-primary bg-primary/10' : 'border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70'}`}
               >
                 <p className="font-semibold text-sm truncate">{post.title}</p>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{post.genre || 'No genre'} • {post.medium}</p>
@@ -662,7 +662,7 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
         </Dialog>
 
         {/* Right: Generation Area */}
-        <div className="w-full md:w-2/3 flex flex-col items-center border border-border bg-card/50 rounded-xl p-4 pb-32 sm:p-8 sm:pb-32 md:pb-12 relative overflow-y-auto custom-scrollbar min-h-[500px]">
+        <div className="w-full md:w-2/3 flex flex-col items-center border border-white/[0.06] bg-card/50 backdrop-blur-xl rounded-xl p-4 pb-32 sm:p-8 sm:pb-32 md:pb-12 relative overflow-y-auto custom-scrollbar min-h-[500px]">
           <div className="flex flex-col items-center w-full max-w-md my-auto">
             <div className="w-full aspect-square bg-black/50 rounded-2xl border-2 border-border overflow-hidden relative shadow-2xl flex items-center justify-center mb-6">
               {generatedImage ? (

@@ -84,7 +84,7 @@ export default function Settings() {
         <h1 className="text-2xl font-heading font-bold mb-8">Profile Settings</h1>
 
         {/* Avatar */}
-        <div className="flex items-center gap-6 mb-8 bg-gradient-to-r from-primary/10 to-pink-500/10 p-6 rounded-3xl border border-primary/20 shadow-lg relative overflow-hidden">
+        <div className="flex items-center gap-6 mb-8 bg-card/50 backdrop-blur-xl p-6 rounded-2xl border border-white/[0.06] shadow-lg relative overflow-hidden">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-pink-500/20 blur-3xl rounded-full pointer-events-none" />
           <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/20 blur-3xl rounded-full pointer-events-none" />
           
@@ -172,7 +172,7 @@ export default function Settings() {
         <div className="mt-12 pt-8 border-t border-border">
           <h2 className="text-xl font-heading font-bold mb-6">Onboarding & Tutorial</h2>
           <div className="flex flex-col gap-4">
-            <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
+            <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06]">
               <div>
                 <h3 className="font-heading font-semibold text-lg text-foreground">Interactive Tutorial</h3>
                 <p className="text-sm text-muted-foreground mt-1">Take an interactive tour to learn how to use NaliChat's studio and collaboration tools.</p>
@@ -182,7 +182,7 @@ export default function Settings() {
               </Button>
             </div>
 
-            <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
+            <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06]">
               <div>
                 <h3 className="font-heading font-semibold text-lg text-foreground">Profile Setup & Onboarding</h3>
                 <p className="text-sm text-muted-foreground mt-1">Revisit the initial onboarding process to set up your profile and complete the tutorial.</p>
@@ -198,7 +198,7 @@ export default function Settings() {
 
         <div className="mt-12 pt-8 border-t border-border">
           <h2 className="text-xl font-heading font-bold mb-6">Creator Tools</h2>
-          <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
+          <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06]">
             <div>
               <h3 className="font-heading font-semibold text-lg text-foreground">Analytics Dashboard</h3>
               <p className="text-sm text-muted-foreground mt-1">Track plays, reach, audience growth & listener engagement.</p>
@@ -216,7 +216,7 @@ export default function Settings() {
           <h2 className="text-xl font-heading font-bold mb-6">Subscription & Billing</h2>
           
           {!subLoading && (
-              <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50 mb-4">
+              <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06] mb-4">
                 <div>
                   <div className="flex items-center gap-3">
                     <h3 className="font-heading font-semibold text-lg text-foreground">Current Status</h3>
@@ -247,7 +247,7 @@ export default function Settings() {
               </div>
             )}
 
-            <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border/50">
+            <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06]">
               <div>
                 <h3 className="font-heading font-semibold text-lg text-foreground">{isPro ? "Manage Your Plan" : "Upgrade to Pro"}</h3>
                 <p className="text-sm text-muted-foreground mt-1">{isPro ? "View all plans, compare features, or change your subscription." : "Unlock all studio features, unlimited tracks, and advanced collaboration tools."}</p>

@@ -104,7 +104,7 @@ export default function ProjectsSummary() {
       </div>
 
       {data.projects.length === 0 ? (
-        <div className="text-center py-12 bg-secondary/20 rounded-xl border border-border/50">
+        <div className="text-center py-12 bg-card/50 backdrop-blur-xl rounded-2xl border border-white/[0.06]">
           <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">No Active Projects</h2>
           <p className="text-muted-foreground">You are not collaborating on any projects yet.</p>
@@ -123,7 +123,7 @@ export default function ProjectsSummary() {
                 transition={{ delay: idx * 0.1 }}
               >
                 <Card 
-                  className="bg-card/60 backdrop-blur-sm border-border/50 shadow-sm overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group"
+                  className="bg-card/50 backdrop-blur-xl border border-white/[0.06] shadow-sm overflow-hidden cursor-pointer hover:border-white/[0.12] hover:bg-card/70 transition-all duration-300 group"
                   onClick={() => navigate(`/studio?room=${project.id}`)}
                 >
                   <CardHeader className="bg-secondary/30 border-b border-border/50 pb-4">

@@ -48,6 +48,7 @@ export default function Studio() {
   const analyserRef = useRef(null);
   const dataArrayRef = useRef(null);
   const liveWaveformRef = useRef([]);
+  const recordingStartRealRef = useRef(null); // performance.now() at recording start for accurate sync
   const [zoom, setZoom] = useState(1);
   const playheadRef = useRef(null);
   const headerPlayheadRef = useRef(null);
@@ -258,7 +259,9 @@ export default function Studio() {
       if (headerPlayheadRef.current) headerPlayheadRef.current.style.left = `${newTime * 20 * zoom}px`;
       
       if (isRecording && recordingStartTime !== null) {
-        const currentWidth = Math.max(0, newTime - recordingStartTime) * 20 * zoom;
+        // Use real elapsed time (performance.now) for accurate sync with the actual audio recording
+        const realElapsed = recordingStartRealRef.current ? (performance.now() - recordingStartRealRef.current) / 1000 : (newTime - recordingStartTime);
+        const currentWidth = Math.max(0, realElapsed) * 20 * zoom;
         Object.values(recordingIndicatorRefs.current).forEach(el => {
           if (el) el.style.width = `${currentWidth}px`;
         });
@@ -275,24 +278,21 @@ export default function Studio() {
           
           Object.values(recordingCanvasRefs.current).forEach(canvas => {
             if (canvas && currentWidth > 0) {
-               canvas.width = currentWidth; // Sets resolution and clears canvas
                const ctx = canvas.getContext('2d');
                const height = canvas.height;
                
-               ctx.beginPath();
+               // Draw only the latest sample at its time-based x position — O(1) per frame, no canvas clearing
+               const points = liveWaveformRef.current;
+               const idx = points.length - 1;
+               const x = realElapsed * 20 * zoom; // x position in canvas coordinates
+               const h = Math.min(1, Math.max(0.001, points[idx])) * height;
+               const y = (height - h) / 2;
+               
                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
                ctx.lineWidth = 2;
-               
-               const points = liveWaveformRef.current;
-               const step = currentWidth / Math.max(1, points.length);
-               
-               for (let i = 0; i < points.length; i++) {
-                 const x = i * step;
-                 const h = Math.min(1, points[i]) * height;
-                 const y = (height - h) / 2;
-                 ctx.moveTo(x, y);
-                 ctx.lineTo(x, y + h);
-               }
+               ctx.beginPath();
+               ctx.moveTo(x, y);
+               ctx.lineTo(x, y + h);
                ctx.stroke();
             }
           });
@@ -463,10 +463,12 @@ export default function Studio() {
         const audioUrl = URL.createObjectURL(blob);
         
         let realWaveform = generateWaveform(8000);
+        let recordedDuration = null;
         try {
           const arrayBuffer = await blob.arrayBuffer();
           const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
           const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+          recordedDuration = audioBuffer.duration;
           const channelData = audioBuffer.getChannelData(0);
           
           // Max efficiency waveform generation using Float32Array and striding
@@ -503,7 +505,7 @@ export default function Studio() {
               armed: false, 
               audioUrl, 
               startTime: recordingStartTime !== null ? recordingStartTime : currentTimeRef.current,
-              duration: recordingStartTime !== null ? Math.max(1, currentTimeRef.current - recordingStartTime) : 10
+              duration: recordedDuration || (recordingStartTime !== null ? Math.max(1, currentTimeRef.current - recordingStartTime) : 10)
             };
           }
           return t;
@@ -530,6 +532,7 @@ export default function Studio() {
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
+    recordingStartRealRef.current = null;
     // Stop overdub playback when recording ends
     Object.values(audioElementsRef.current).forEach(audio => audio.pause());
     sounds.recStop();
@@ -578,6 +581,7 @@ export default function Studio() {
         analyserRef.current = analyser;
         dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
         liveWaveformRef.current = [];
+        recordingStartRealRef.current = performance.now();
 
         // Monitor audio with reduced volume to prevent loud feedback
         const gainNode = audioCtx.createGain();
@@ -1492,7 +1496,8 @@ export default function Studio() {
                       {isRecording && (
                         <canvas 
                           ref={el => { recordingCanvasRefs.current[track.id] = el; }} 
-                          className="absolute inset-0 w-full h-full" 
+                          className="absolute top-0 bottom-0 left-0 h-full" 
+                          width={8000}
                           height={100} 
                         />
                       )}

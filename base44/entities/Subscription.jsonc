@@ -11,7 +11,8 @@
       "enum": [
         "free",
         "pro",
-        "pro_filesharing"
+        "pro_filesharing",
+        "trial"
       ],
       "default": "free",
       "description": "Subscription tier"
@@ -54,7 +55,9 @@
   ],
   "rls": {
     "create": {
-      "data.user_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "$or": [

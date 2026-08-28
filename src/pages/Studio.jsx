@@ -31,6 +31,7 @@ import StudioWelcome from '@/components/studio/StudioWelcome';
 import StudioDialogs from '@/components/studio/StudioDialogs';
 import JamRoomOverlay from '@/components/studio/JamRoomOverlay';
 import StudioToolbar2 from '@/components/studio/StudioToolbar2';
+import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
 
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
@@ -991,6 +992,8 @@ export default function Studio() {
   };
 
   const [isDownloading, setIsDownloading] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState('wav');
 
   const handleDownloadMix = async (format = 'wav') => {
     if (!tracks.some(t => t.audioUrl)) {
@@ -1168,8 +1171,8 @@ export default function Studio() {
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild><Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary"><Download className="w-4 h-4" /> Export</Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={() => handleDownloadMix('wav')} disabled={isDownloading} className="cursor-pointer py-2">{isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />} Download Mix (WAV)</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDownloadMix('mp3')} disabled={isDownloading} className="cursor-pointer py-2">{isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />} Download Mix (MP3)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setExportFormat('wav'); setExportDialogOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Download Mix (WAV)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setExportFormat('mp3'); setExportDialogOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Download Mix (MP3)</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { setBounceRedirect('explore'); setBounceOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Export & Publish</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setBounceRedirect('cover-art'); setBounceOpen(true); }} className="cursor-pointer py-2"><ImageIcon className="w-4 h-4 mr-2" /> Export to Cover Creator</DropdownMenuItem>
@@ -1934,6 +1937,14 @@ export default function Studio() {
         setTracksWithHistory={setTracksWithHistory}
         pendingTimeSignature={pendingTimeSignature} setPendingTimeSignature={setPendingTimeSignature} setTimeSignature={setTimeSignature}
         pendingSongKey={pendingSongKey} setPendingSongKey={setPendingSongKey} setSongKey={setSongKey}
+      />
+
+      <ExportPurchaseDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        format={exportFormat}
+        tracks={tracks}
+        projectName={projectName}
       />
 
       {/* Mobile bottom bar - Studio only */}

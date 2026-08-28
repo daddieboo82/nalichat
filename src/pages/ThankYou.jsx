@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Music, ArrowRight, Loader2 } from "lucide-react";
+import { CheckCircle, Music, ArrowRight, Loader2, Download, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -11,6 +11,11 @@ export default function ThankYou() {
   const queryClient = useQueryClient();
   const { clearCart } = useCart();
   const [processing, setProcessing] = useState(true);
+  const [exportState, setExportState] = useState(null); // null | downloading | done | error
+  const [exportInfo, setExportInfo] = useState(null);
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const isExport = urlParams.get("export") === "download";
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -19,20 +24,120 @@ export default function ThankYou() {
   useEffect(() => {
     const processThankYou = async () => {
       try {
-        // App is free — just clear the cart and confirm.
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        await queryClient.invalidateQueries({ queryKey: ['subscription'] });
-        clearCart();
-        setProcessing(false);
+        if (isExport) {
+          // Studio export download flow — deliver the rendered file
+          setExportState("downloading");
+          const pending = localStorage.getItem("pending_studio_export");
+          if (!pending) {
+            setExportState("error");
+            setProcessing(false);
+            return;
+          }
+
+          const { fileUri, fileName } = JSON.parse(pending);
+          try {
+            const signedRes = await base44.integrations.Core.CreateFileSignedUrl({
+              file_uri: fileUri,
+              expires_in: 3600,
+            });
+            const signedUrl = signedRes.signed_url;
+
+            // Trigger the download
+            const a = document.createElement("a");
+            a.href = signedUrl;
+            a.download = fileName || "NaliStudio Mix.wav";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+
+            // Clean up the pending marker
+            localStorage.removeItem("pending_studio_export");
+            setExportInfo({ fileName });
+            setExportState("done");
+          } catch (err) {
+            console.error("Export delivery error:", err);
+            setExportState("error");
+          }
+          setProcessing(false);
+        } else {
+          // Standard cart purchase flow
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await queryClient.invalidateQueries({ queryKey: ["subscription"] });
+          clearCart();
+          setProcessing(false);
+        }
       } catch (error) {
-        console.error('Error processing thank you:', error);
+        console.error("Error processing thank you:", error);
         setProcessing(false);
       }
     };
 
     processThankYou();
-  }, [queryClient]);
+  }, [queryClient, isExport, clearCart]);
 
+  // ── Export download view ──
+  if (isExport) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-2xl"
+        >
+          <motion.div
+            animate={{ rotate: exportState === "downloading" ? 360 : 0 }}
+            transition={{ duration: exportState === "downloading" ? 2 : 0.8 }}
+            className="mb-6 inline-block"
+          >
+            {exportState === "downloading" && <Loader2 className="w-20 h-20 text-primary animate-spin" />}
+            {exportState === "done" && <CheckCircle className="w-20 h-20 text-accent" />}
+            {exportState === "error" && <AlertCircle className="w-20 h-20 text-destructive" />}
+          </motion.div>
+
+          <h1 className="font-heading font-black text-5xl mb-4">
+            {exportState === "downloading" && "Preparing Your Download…"}
+            {exportState === "done" && "Export Ready!"}
+            {exportState === "error" && "Download Unavailable"}
+          </h1>
+
+          <p className="text-xl text-muted-foreground mb-8">
+            {exportState === "downloading" && "Your payment was confirmed. Your file is being prepared for download."}
+            {exportState === "done" && `Your ${exportInfo?.fileName || "mix"} has been downloaded. Check your downloads folder!`}
+            {exportState === "error" && "We couldn't deliver your file. This may be because the session expired. Please try exporting again from the Studio."}
+          </p>
+
+          {exportState === "done" && (
+            <div className="flex gap-4 justify-center flex-wrap">
+              <Link to="/studio">
+                <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90">
+                  <Music className="w-5 h-5 mr-2" />
+                  Back to Studio
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
+              <Link to="/explore">
+                <Button size="lg" variant="outline" className="rounded-xl">
+                  Explore Tracks
+                </Button>
+              </Link>
+            </div>
+          )}
+
+          {exportState === "error" && (
+            <Link to="/studio">
+              <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90">
+                <Music className="w-5 h-5 mr-2" />
+                Back to Studio
+              </Button>
+            </Link>
+          )}
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ── Standard cart purchase view ──
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
       <motion.div
@@ -42,7 +147,7 @@ export default function ThankYou() {
         className="text-center max-w-2xl"
       >
         <motion.div
-          animate={{ rotate: 360 }}
+          animate={{ rotate: processing ? 360 : 0 }}
           transition={{ duration: processing ? 2 : 0.8 }}
           className="mb-6 inline-block"
         >
@@ -54,13 +159,13 @@ export default function ThankYou() {
         </motion.div>
 
         <h1 className="font-heading font-black text-5xl mb-4">
-          {processing ? 'Confirming Purchase...' : 'Welcome to the Community!'}
+          {processing ? "Confirming Purchase..." : "Purchase Complete!"}
         </h1>
 
         <p className="text-xl text-muted-foreground mb-8">
-          {processing 
-            ? 'Setting up your Pro subscription. This takes just a moment...'
-            : 'Your subscription is now active. You have full access to all premium features including unlimited studio projects, AI mastering, and priority messaging.'}
+          {processing
+            ? "Confirming your payment. This takes just a moment..."
+            : "Your purchase is complete. Your items are now available."}
         </p>
 
         <div className="bg-card border border-primary/30 rounded-2xl p-8 mb-8">

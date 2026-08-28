@@ -282,14 +282,14 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative w-full bg-card border border-border rounded-3xl p-8 md:p-12 overflow-hidden"
+          className="relative w-full bg-card/50 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8 md:p-12 overflow-hidden"
         >
-          <div className="absolute -inset-px bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-3xl pointer-events-none" />
+          <div className="absolute -inset-px bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-2xl pointer-events-none" />
           <div className="relative z-10">
             <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">What You Can Actually Do</h2>
             <p className="text-foreground/90 text-lg mb-10 max-w-2xl">Everything you need to discover music, collaborate with artists, produce your sound, and grow your audience:</p>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
               {[
                 {
                   title: "🎧 Produce in the Studio",
@@ -328,7 +328,7 @@ export default function Home() {
                   linkLabel: "View Profile"
                 }
               ].map((block) => (
-                <div key={block.title} className="h-full flex flex-col border border-border/50 rounded-2xl p-6 bg-card/50 transition-colors min-w-0 break-words group hover:border-primary/40">
+                <div key={block.title} className="h-full flex flex-col border border-white/[0.06] rounded-2xl p-6 bg-card/40 backdrop-blur-xl transition-all duration-300 min-w-0 break-words group hover:border-white/[0.12] hover:bg-card/60 hover:-translate-y-0.5">
                   <h3 className="font-heading font-bold text-xl mb-4">{block.title}</h3>
                   <ul className="space-y-2 flex-1 mb-6">
                     {block.items.map((item) => (
@@ -359,7 +359,7 @@ export default function Home() {
           transition={{ duration: 0.6 }}
         >
           <Link to={user ? "/messages" : "/register"}>
-            <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-card to-accent/10 border border-primary/20 p-6 sm:p-8 md:p-12 hover:border-primary/40 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/20">
+            <div className="group relative overflow-hidden rounded-2xl bg-card/50 backdrop-blur-xl border border-white/[0.06] p-6 sm:p-8 md:p-12 hover:border-white/[0.12] hover:bg-card/70 transition-all duration-300 cursor-pointer hover:-translate-y-1">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/8 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors duration-500" />
 
@@ -405,7 +405,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-500/10 via-card to-primary/15 border border-yellow-500/20 p-8 md:p-10">
+          <div className="relative overflow-hidden rounded-2xl bg-card/50 backdrop-blur-xl border border-white/[0.06] p-8 md:p-10 hover:border-white/[0.12] transition-all duration-300">
             <div className="absolute -top-20 -right-20 w-72 h-72 bg-primary/15 rounded-full blur-3xl" />
             <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-yellow-500/10 rounded-full blur-2xl" />
 
@@ -439,39 +439,37 @@ export default function Home() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+            >
             {features.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <motion.div key={feature.label} variants={itemVariants} className="h-full">
-                  <Link to={feature.path} onClick={() => sounds.click()} className="block h-full">
-                    <div className="group relative overflow-hidden rounded-3xl border border-border bg-card p-0.5 h-full transition-all duration-500 hover:-translate-y-2 hover:border-primary/40 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]">
-                      <div className="relative h-full bg-card/90 backdrop-blur-xl rounded-[22px] p-8 shimmer-hover flex flex-col justify-between">
-                        <div className="absolute -inset-10 bg-gradient-to-br from-primary/40 to-accent/40 opacity-0 group-hover:opacity-20 blur-3xl transition-opacity duration-500" />
-                        
-                        <div className="relative z-10 flex-1">
-                          {feature.badge && (
-                            <span className={`absolute top-0 right-0 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-gradient-to-r ${feature.gradient} text-white shadow-lg`}>
-                              {feature.badge}
-                            </span>
-                          )}
-                          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 shadow-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
-                            <Icon className="w-7 h-7 text-white" />
-                          </div>
-                          <h3 className="font-heading font-black text-2xl mb-2 text-foreground transition-colors duration-300">{feature.label}</h3>
-                          <p className="text-base text-foreground/90 font-medium leading-relaxed">{feature.description}</p>
-                        </div>
-                        
-                        <div className="relative z-10 flex items-center gap-2 mt-6 shrink-0 text-sm font-bold text-primary transition-colors duration-300">
-                          Explore feature <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              );
-            })}
+               const Icon = feature.icon;
+               return (
+                 <motion.div key={feature.label} variants={itemVariants} className="h-full">
+                   <Link to={feature.path} onClick={() => sounds.click()} className="block h-full">
+                     <div className="group relative rounded-2xl border border-white/[0.06] bg-card/50 backdrop-blur-xl h-full transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.12] hover:bg-card/70 hover:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] overflow-hidden">
+                       <div className={`absolute -inset-20 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-[0.08] blur-3xl transition-opacity duration-500 pointer-events-none`} />
+                       <div className="relative h-full p-6 flex flex-col justify-between">
+                         <div className="flex-1">
+                           {feature.badge && (
+                             <span className={`absolute top-5 right-5 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-gradient-to-r ${feature.gradient} text-white shadow-lg`}>
+                               {feature.badge}
+                             </span>
+                           )}
+                           <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 shadow-lg transition-transform duration-300 group-hover:scale-110`}>
+                             <Icon className="w-6 h-6 text-white" />
+                           </div>
+                           <h3 className="font-heading font-bold text-lg mb-1.5 text-foreground">{feature.label}</h3>
+                           <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                         </div>
+                         <div className="flex items-center gap-1.5 mt-4 shrink-0 text-xs font-semibold text-primary transition-all duration-300 group-hover:gap-2.5">
+                           Explore <ArrowRight className="w-3.5 h-3.5" />
+                         </div>
+                       </div>
+                     </div>
+                   </Link>
+                 </motion.div>
+               );
+             })}
           </motion.div>
         </div>
 
@@ -482,7 +480,7 @@ export default function Home() {
           transition={{ duration: 0.6 }}
           className="mb-10"
         >
-          <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="bg-card/50 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-white/[0.12] transition-all duration-300">
             <div>
               <h3 className="font-heading font-bold text-2xl mb-2 text-foreground">Interactive Tutorial</h3>
               <p className="text-muted-foreground text-lg">New to NaliChat? Take our interactive onboarding wizard to get up to speed in seconds.</p>
@@ -508,11 +506,11 @@ export default function Home() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
           >
             {testimonials.map((t) => (
               <motion.div key={t.name} variants={itemVariants}>
-                <div className="bg-card border border-border rounded-2xl p-6 h-full hover:border-primary/30 transition-colors duration-300">
+                <div className="bg-card/50 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-6 h-full hover:border-white/[0.12] hover:bg-card/70 transition-all duration-300">
                   <div className="flex items-center gap-1 mb-4">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
@@ -546,16 +544,16 @@ export default function Home() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, type: "spring" }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-8"
-        >
+          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          >
           {[
-           { value: "10K+", label: "Tracks Shared", from: "from-primary", to: "to-pink-500", hover: "hover:border-primary/50 hover:shadow-[0_0_40px_-10px_rgba(var(--primary-rgb),0.5)]" },
-           { value: "50K+", label: "Active Creators", from: "from-accent", to: "to-cyan-400", hover: "hover:border-accent/50 hover:shadow-[0_0_40px_-10px_rgba(var(--accent-rgb),0.5)]" },
-           { value: "100K+", label: "Conversations", from: "from-pink-500", to: "to-purple-500", hover: "hover:border-pink-500/50 hover:shadow-[0_0_40px_-10px_rgba(236,72,153,0.5)]" },
+            { value: "10K+", label: "Tracks Shared", from: "from-primary", to: "to-pink-500" },
+            { value: "50K+", label: "Active Creators", from: "from-accent", to: "to-cyan-400" },
+            { value: "100K+", label: "Conversations", from: "from-pink-500", to: "to-purple-500" },
           ].map((stat) => (
             <div
               key={stat.label}
-              className={`bg-card/80 backdrop-blur-xl border-2 border-border/50 rounded-3xl md:rounded-[2rem] p-8 md:p-12 text-center transition-all duration-500 ${stat.hover} hover:-translate-y-2 group overflow-hidden relative`}
+              className={`bg-card/50 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-6 md:p-8 text-center transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.12] hover:bg-card/70 group overflow-hidden relative`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.from} ${stat.to} opacity-0 group-hover:opacity-10 transition-opacity duration-500 blur-xl`} />
               <div className="relative z-10">
@@ -573,7 +571,7 @@ export default function Home() {
           transition={{ duration: 0.6, type: "spring" }}
           className="mb-24"
         >
-          <div className="relative overflow-hidden bg-gradient-to-br from-primary/30 via-card to-accent/30 border-2 border-primary/40 rounded-3xl md:rounded-[3rem] p-8 sm:p-12 md:p-16 text-center shadow-[0_0_100px_-20px_rgba(var(--primary-rgb),0.3)]">
+          <div className="relative overflow-hidden bg-card/50 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8 sm:p-12 md:p-16 text-center hover:border-white/[0.12] transition-all duration-300">
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
               <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/40 rounded-full blur-[100px] animate-pulse" />
               <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent/40 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />

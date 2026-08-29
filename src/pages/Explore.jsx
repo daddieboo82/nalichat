@@ -45,12 +45,7 @@ export default function Explore() {
   const toggleLike = useMutation({
     mutationFn: async (post) => {
       if (!currentUser) return;
-      const liked = post.liked_by?.includes(currentUser.id);
-      const liked_by = liked
-        ? post.liked_by.filter(id => id !== currentUser.id)
-        : [...(post.liked_by || []), currentUser.id];
-      const likes = Math.max(0, (post.likes || 0) + (liked ? -1 : 1));
-      return base44.entities.ArtPost.update(post.id, { liked_by, likes });
+      return base44.functions.invoke('toggleLike', { postId: post.id });
     },
     // Optimistic update so the heart + count flip instantly
     onMutate: async (post) => {

@@ -267,8 +267,9 @@ export default function WaveEditor({ track, onClose, onSave }) {
       const isRulerClick = clickY <= 24;
 
       const totalWidth = rect.width * zoom;
-      let clickTime = (clickX / totalWidth) * (track?.duration || 40);
-      clickTime = getSnappedTime(clickTime);
+      // Exact time under the pointer — selections must land precisely where clicked
+      const exactTime = Math.max(0, Math.min(track?.duration || 40, (clickX / totalWidth) * (track?.duration || 40)));
+      const clickTime = getSnappedTime(exactTime);
 
       if (isRulerClick) {
         setPlayhead(clickTime);
@@ -280,14 +281,14 @@ export default function WaveEditor({ track, onClose, onSave }) {
           // Click-to-select: first click sets start marker, second click sets end.
           // Works anywhere on the waveform, including on top of an audio clip.
           if (pendingStart === null) {
-            setPendingStart(clickTime);
+            setPendingStart(exactTime);
             setSelectionRange(null);
-            setPlayhead(clickTime);
+            setPlayhead(exactTime);
             if (segmentEl) setSelectedSegmentId(segmentEl.dataset.segmentId);
             return;
           } else {
-            const start = Math.min(pendingStart, clickTime);
-            const end = Math.max(pendingStart, clickTime);
+            const start = Math.min(pendingStart, exactTime);
+            const end = Math.max(pendingStart, exactTime);
             if (end - start > 0.001) {
               setSelectionRange({ start, end });
             }
@@ -297,8 +298,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
         }
         // Range tool: drag to select (original behavior)
         setIsDraggingRange(true);
-        setSelectionRange({ start: clickTime, end: clickTime });
-        setPlayhead(clickTime);
+        setSelectionRange({ start: exactTime, end: exactTime });
+        setPlayhead(exactTime);
         return;
       }
 
@@ -338,8 +339,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
       const rect = containerRef.current.getBoundingClientRect();
       const clickX = e.clientX - rect.left + containerRef.current.scrollLeft;
       const totalWidth = rect.width * zoom;
-      let currentTime = (clickX / totalWidth) * (track?.duration || 40);
-      currentTime = getSnappedTime(currentTime);
+      const currentTime = Math.max(0, Math.min(track?.duration || 40, (clickX / totalWidth) * (track?.duration || 40)));
       setSelectionRange(prev => prev ? { ...prev, end: currentTime } : null);
     }
   };

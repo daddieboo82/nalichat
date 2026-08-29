@@ -527,23 +527,23 @@ export default function Studio() {
           
           // Max efficiency waveform generation using Float32Array and striding
           const numPoints = 8000;
-          const blockSize = Math.floor(channelData.length / numPoints);
+          const blockSize = Math.max(1, Math.floor(channelData.length / numPoints));
           const stride = Math.max(1, Math.floor(blockSize / 64)); // Sample max 64 points per block to prevent blocking main thread
           
           const waveform = new Float32Array(numPoints);
           let maxVal = 0;
           
+          // Use peak (max) amplitude per block, not the average — an average smooths away
+          // the real transients/peaks, making the waveform look nothing like the actual recording.
           for (let i = 0; i < numPoints; i++) {
             let start = i * blockSize;
-            let sum = 0;
-            let samples = 0;
+            let peak = 0;
             for (let j = 0; j < blockSize; j += stride) {
-              sum += Math.abs(channelData[start + j]);
-              samples++;
+              const abs = Math.abs(channelData[start + j] || 0);
+              if (abs > peak) peak = abs;
             }
-            const val = sum / samples;
-            waveform[i] = val;
-            if (val > maxVal) maxVal = val;
+            waveform[i] = peak;
+            if (peak > maxVal) maxVal = peak;
           }
           
           realWaveform = maxVal > 0 ? Array.from(waveform).map(v => v / maxVal) : Array.from(waveform).map(() => 0.05);
@@ -1628,10 +1628,15 @@ export default function Studio() {
                           const startX = e.clientX;
                           const initialStartTime = track.startTime !== undefined ? track.startTime : 0;
                           target.setPointerCapture(e.pointerId);
-                          Object.assign(target.style, { zIndex: '50', opacity: '0.9', filter: 'brightness(1.2)', boxShadow: '0 0 20px hsl(var(--primary)/0.5), inset 0 0 0 2px hsl(var(--primary))' });
+                          let hasDragged = false;
                           
                           const handleMove = (moveEvent) => {
                             const deltaX = moveEvent.clientX - startX;
+                            if (!hasDragged) {
+                              if (Math.abs(deltaX) < 3) return; // Ignore tiny movement so a plain click doesn't highlight the clip
+                              hasDragged = true;
+                              Object.assign(target.style, { zIndex: '50', opacity: '0.9', filter: 'brightness(1.2)', boxShadow: '0 0 20px hsl(var(--primary)/0.5), inset 0 0 0 2px hsl(var(--primary))' });
+                            }
                             const deltaTime = deltaX / (20 * zoom);
                             let newStartTime = Math.max(0, initialStartTime + deltaTime);
                             if (editMode === 'grid') newStartTime = Math.round(newStartTime / gridSize) * gridSize;

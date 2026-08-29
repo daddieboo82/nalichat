@@ -126,24 +126,12 @@ export default function AiAssistant() {
 
   const sendText = async (text) => {
     if (!text.trim() || loading) return;
-    const trimmed = text.trim();
     setInput("");
     setLoading(true);
-    // Safety net — if the assistant's reply never arrives (a failed tool call, dropped
-    // connection, etc.) the send button would otherwise stay disabled forever.
-    const safetyTimeout = setTimeout(() => setLoading(false), 30000);
-    try {
-      let conv = conversation;
-      if (!conv) conv = await initConversation();
-      await base44.agents.addMessage(conv, { role: "user", content: trimmed });
-      // loading is cleared by the subscription when Nali's reply arrives (or by the timeout above)
-    } catch (e) {
-      console.error("Nali send error", e);
-      clearTimeout(safetyTimeout);
-      setLoading(false);
-      setInput(trimmed);
-      toast.error("Nali couldn't send that message. Please try again.");
-    }
+    let conv = conversation;
+    if (!conv) conv = await initConversation();
+    await base44.agents.addMessage(conv, { role: "user", content: text.trim() });
+    // loading is cleared by the subscription when Nali's reply arrives
   };
 
   const send = () => sendText(input);
@@ -348,6 +336,8 @@ export default function AiAssistant() {
                 <button
                   onClick={send}
                   disabled={!input.trim() || loading}
+                  title="Send message"
+                  aria-label="Send message"
                   className="w-10 h-10 bg-primary/20 text-primary border border-primary/30 rounded-xl flex items-center justify-center hover:bg-primary hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-primary/20 disabled:hover:text-primary"
                 >
                   <Send className="w-4 h-4" />

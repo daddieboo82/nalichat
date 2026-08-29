@@ -788,7 +788,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
               </Button>
             </div>
           ) : (
-            <div className="flex items-center px-4 py-2 bg-card/40 border-b border-border/40 gap-2 shrink-0 shadow-md">
+            <div className="flex flex-wrap items-center px-4 py-2 bg-card/40 border-b border-border/40 gap-2 shrink-0 shadow-md">
               <TooltipProvider delayDuration={200}>
                 <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
                   <Tooltip><TooltipTrigger asChild>

@@ -9,6 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { base44 } from "@/api/base44Client";
 import { renderMasteredMix } from "@/lib/autoMaster";
+import { toast } from "sonner";
 
 // Neutral params = straight mix with no EQ/loudness coloring (used when mastering is off)
 const FLAT_PARAMS = {
@@ -49,14 +50,21 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
   const [savedParams, setSavedParams] = useState(null);
 
   const handleBounce = async () => {
-    if (!bounceTitle.trim() || tracks.length === 0) return;
+    if (!bounceTitle.trim()) {
+      toast.error("Please enter a song name before exporting.");
+      return;
+    }
+    if (tracks.length === 0) {
+      toast.error("Add at least one track before exporting.");
+      return;
+    }
     setBouncing(true);
     setError("");
     setDone(false);
     setStep(0);
 
     try {
-      const validTracks = tracks.filter(t => t.file_url && !t.muted);
+      const validTracks = tracks.filter(t => t.audioUrl && !t.muted);
       if (validTracks.length === 0) {
         setError("Stack at least one unmuted recorded sound or vocal to bounce.");
         setBouncing(false);
@@ -84,11 +92,11 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
       // 2. Mix + apply the AI master in one render
       setStep(2);
       const wav = await renderMasteredMix(validTracks, masterParams);
-      const blob = new Blob([wav], { type: "audio/wav" });
+      const file = new File([wav], `${bounceTitle || "Untitled Track"}.wav`, { type: "audio/wav" });
 
       // 3. Upload + publish the finished, industry-ready song
       setStep(3);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: blob });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const me = await base44.auth.me();
       await base44.entities.ArtPost.create({
         title: bounceTitle,

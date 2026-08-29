@@ -4,7 +4,7 @@
 const dbToGain = (db) => Math.pow(10, (db || 0) / 20);
 
 export async function renderMasteredMix(tracks, params) {
-  const validTracks = tracks.filter(t => t.file_url && !t.muted);
+  const validTracks = tracks.filter(t => t.audioUrl && !t.muted);
   if (validTracks.length === 0) throw new Error("No unmuted tracks with audio to bounce.");
 
   const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -62,7 +62,7 @@ export async function renderMasteredMix(tracks, params) {
   // ---- Load + connect stems into the master chain ----
   for (const track of validTracks) {
     try {
-      const response = await fetch(track.file_url);
+      const response = await fetch(track.audioUrl);
       if (!response.ok) throw new Error(`Failed to load track: ${track.name}`);
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = await offline.decodeAudioData(arrayBuffer);

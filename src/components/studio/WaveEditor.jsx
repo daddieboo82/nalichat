@@ -584,8 +584,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
           className="bg-background text-foreground shadow-2xl rounded-xl w-full max-w-[1400px] h-[90vh] flex flex-col overflow-hidden ring-1 ring-border"
         >
           {/* Menu Bar - Studio Style */}
-          <div className="flex items-center px-4 py-2 bg-card/80 backdrop-blur border-b border-border/50 text-xs text-foreground/90 shadow-sm shrink-0">
-            <div className="flex gap-1">
+          <div className="flex items-center px-4 py-2 bg-card/80 backdrop-blur border-b border-border/50 text-xs text-foreground/90 shadow-sm shrink-0 overflow-x-auto custom-scrollbar">
+            <div className="flex gap-1 shrink-0">
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-6 px-2 text-xs font-normal hover:bg-white/20 data-[state=open]:bg-white/20 focus-visible:ring-0">File</Button>

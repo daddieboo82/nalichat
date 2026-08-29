@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Knob } from '@/components/ui/knob';
+import PrecisionCrosshair from '@/components/studio/PrecisionCrosshair';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -484,20 +485,25 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
   // Playhead animation
   useEffect(() => {
-    let interval;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setPlayhead(p => {
-          const next = p + 0.1;
-          if (next > (track?.duration || 40)) {
-            setIsPlaying(false);
-            return 0;
-          }
-          return next;
-        });
-      }, 100);
-    }
-    return () => clearInterval(interval);
+    // requestAnimationFrame playback clock — buttery-smooth, millisecond-accurate
+    if (!isPlaying) return;
+    let raf;
+    let last = performance.now();
+    const tick = (now) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      setPlayhead(p => {
+        const next = p + dt;
+        if (next > (track?.duration || 40)) {
+          setIsPlaying(false);
+          return 0;
+        }
+        return next;
+      });
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [isPlaying, track]);
 
   // Keyboard shortcuts
@@ -532,6 +538,19 @@ export default function WaveEditor({ track, onClose, onSave }) {
               return newSegs;
             });
         }
+      } else if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+        // Surgical nudge: 1ms default, Shift = 10ms, Alt = 100ms
+        e.preventDefault();
+        const step = (e.altKey ? 0.1 : e.shiftKey ? 0.01 : 0.001) * (e.code === 'ArrowLeft' ? -1 : 1);
+        setPlayhead(p => Math.max(0, Math.min(track?.duration || 40, Math.round((p + step) * 1000) / 1000)));
+      } else if (e.code === 'BracketLeft') {
+        // Set selection start at playhead
+        setSelectionRange(prev => ({ start: playhead, end: Math.max(playhead, prev?.end ?? playhead) }));
+        setPendingStart(null);
+      } else if (e.code === 'BracketRight') {
+        // Set selection end at playhead
+        setSelectionRange(prev => ({ start: Math.min(playhead, prev?.start ?? playhead), end: playhead }));
+        setPendingStart(null);
       } else if (e.code === 'Digit1') {
         setActiveTool('select');
       } else if (e.code === 'Digit2') {
@@ -969,8 +988,18 @@ export default function WaveEditor({ track, onClose, onSave }) {
               onWheel={(e) => {
                 if (e.ctrlKey || e.metaKey) {
                   e.preventDefault();
+                  const el = containerRef.current;
+                  const rect = el.getBoundingClientRect();
+                  const cursorX = e.clientX - rect.left;
                   const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-                  setZoom(z => Math.max(0.5, Math.min(1000, z * zoomFactor)));
+                  setZoom(z => {
+                    const nz = Math.max(0.5, Math.min(1000, z * zoomFactor));
+                    // Anchor zoom at the cursor: keep the time under the pointer fixed
+                    const contentX = el.scrollLeft + cursorX;
+                    const newContentX = contentX * (nz / z);
+                    requestAnimationFrame(() => { el.scrollLeft = newContentX - cursorX; });
+                    return nz;
+                  });
                 }
               }}
             >
@@ -994,6 +1023,9 @@ export default function WaveEditor({ track, onClose, onSave }) {
               
               {/* Center Line (Zero Crossing) */}
               <div className="absolute top-1/2 left-0 right-0 h-px bg-border/50 pointer-events-none z-0" style={{ width: `${100 * zoom}%`, minWidth: '100%' }} />
+
+              {/* Live precision crosshair — exact ms under the cursor */}
+              <PrecisionCrosshair containerRef={containerRef} duration={track?.duration || 40} zoom={zoom} />
 
               {/* Pending Start Marker (click-to-select first click) */}
               {pendingStart !== null && (
@@ -1617,6 +1649,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   <div className="flex justify-between bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Split</span><span className="font-mono bg-background px-1 rounded border border-border">S</span></div>
                   <div className="flex justify-between bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Delete</span><span className="font-mono bg-background px-1 rounded border border-border">Del</span></div>
                   <div className="flex justify-between bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Save & Close</span><span className="font-mono bg-background px-1 rounded border border-border">Ctrl+S</span></div>
+                  <div className="flex justify-between bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Nudge 1ms (⇧10ms, ⌥100ms)</span><span className="font-mono bg-background px-1 rounded border border-border">← →</span></div>
+                  <div className="flex justify-between bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Sel Start / End at playhead</span><span className="font-mono bg-background px-1 rounded border border-border">[ ]</span></div>
                 </div>
               </div>
               

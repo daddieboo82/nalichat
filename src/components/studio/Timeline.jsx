@@ -57,26 +57,58 @@ export default function Timeline({ currentTime, duration, zoom, onClick }) {
     ctx.fill();
   }, [currentTime, zoom, duration]);
 
-  const handleClick = (e) => {
+  const hoverLineRef = useRef(null);
+  const hoverLabelRef = useRef(null);
+
+  // Map a pointer event to an exact time — accounts for canvas scaling so
+  // clicks land with millisecond precision at any container width.
+  const timeFromEvent = (e) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const pixelsPerSecond = 50 * zoom;
-    const time = x / pixelsPerSecond;
-    onClick(time);
+    const scale = canvas.width / rect.width;
+    const x = (e.clientX - rect.left) * scale;
+    return Math.max(0, x / (50 * zoom));
+  };
+
+  const handleClick = (e) => {
+    if (!canvasRef.current) return;
+    onClick(timeFromEvent(e));
+  };
+
+  const handleMove = (e) => {
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const t = timeFromEvent(e);
+    if (hoverLineRef.current) {
+      hoverLineRef.current.style.left = `${e.clientX - rect.left}px`;
+      hoverLineRef.current.style.opacity = '1';
+    }
+    if (hoverLabelRef.current) {
+      const m = Math.floor(t / 60), s = Math.floor(t % 60), ms = Math.floor((t % 1) * 1000);
+      hoverLabelRef.current.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+    }
+  };
+
+  const handleLeave = () => {
+    if (hoverLineRef.current) hoverLineRef.current.style.opacity = '0';
   };
 
   return (
-    <div className="border-b border-border bg-card/50 cursor-pointer hover:bg-card/70 transition-colors">
+    <div className="relative border-b border-border bg-card/50 cursor-pointer hover:bg-card/70 transition-colors">
       <canvas
         ref={canvasRef}
         width={1200}
         height={50}
         onClick={handleClick}
+        onPointerMove={handleMove}
+        onPointerLeave={handleLeave}
         className="w-full block"
         style={{ display: 'block' }}
       />
+      {/* Live precision crosshair */}
+      <div ref={hoverLineRef} className="absolute top-0 bottom-0 w-px bg-white/40 pointer-events-none opacity-0" style={{ left: 0 }}>
+        <div ref={hoverLabelRef} className="absolute top-0.5 left-1.5 bg-black/85 text-white/90 text-[9px] font-mono px-1.5 py-0.5 rounded whitespace-nowrap border border-white/10 shadow-lg" />
+      </div>
     </div>
   );
 }

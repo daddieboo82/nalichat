@@ -168,6 +168,7 @@ export default function Messages() {
         sender_id: currentUser.id,
         sender_name: currentUser.display_name || currentUser.full_name,
         sender_avatar: currentUser.avatar_url,
+        participant_ids: selectedConv?.participant_ids || [],
       });
       await base44.entities.Conversation.update(selectedConvId, {
         last_message_text: msgData.text || `Sent a ${msgData.type}`,

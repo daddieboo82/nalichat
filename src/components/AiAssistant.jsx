@@ -126,12 +126,24 @@ export default function AiAssistant() {
 
   const sendText = async (text) => {
     if (!text.trim() || loading) return;
+    const trimmed = text.trim();
     setInput("");
     setLoading(true);
-    let conv = conversation;
-    if (!conv) conv = await initConversation();
-    await base44.agents.addMessage(conv, { role: "user", content: text.trim() });
-    // loading is cleared by the subscription when Nali's reply arrives
+    // Safety net — if the assistant's reply never arrives (a failed tool call, dropped
+    // connection, etc.) the send button would otherwise stay disabled forever.
+    const safetyTimeout = setTimeout(() => setLoading(false), 30000);
+    try {
+      let conv = conversation;
+      if (!conv) conv = await initConversation();
+      await base44.agents.addMessage(conv, { role: "user", content: trimmed });
+      // loading is cleared by the subscription when Nali's reply arrives (or by the timeout above)
+    } catch (e) {
+      console.error("Nali send error", e);
+      clearTimeout(safetyTimeout);
+      setLoading(false);
+      setInput(trimmed);
+      toast.error("Nali couldn't send that message. Please try again.");
+    }
   };
 
   const send = () => sendText(input);

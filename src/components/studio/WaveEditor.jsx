@@ -1128,9 +1128,12 @@ export default function WaveEditor({ track, onClose, onSave }) {
                               const fullRatio = initialSeg.sourceEnd - initialSeg.sourceStart;
                               const maxLeftTime = initialSeg.startOffset - (initialSeg.sourceStart * initialSeg.duration / fullRatio);
                               
-                              newStart = Math.max(maxLeftTime, Math.max(0, Math.min(newStart, initialSeg.startOffset + initialSeg.duration - 0.01)));
+                              // 1ms minimum remaining duration — surgical-precision trim floor, matching Studio
+                              const MIN_SEG_DURATION = 0.001;
+                              const round1ms = (v) => Math.round(v * 1000) / 1000;
+                              newStart = Math.max(maxLeftTime, Math.max(0, Math.min(newStart, initialSeg.startOffset + initialSeg.duration - MIN_SEG_DURATION)));
                               newStart = getSnappedTime(newStart);
-                              newStart = Math.max(maxLeftTime, Math.max(0, Math.min(newStart, initialSeg.startOffset + initialSeg.duration - 0.01)));
+                              newStart = round1ms(Math.max(maxLeftTime, Math.max(0, Math.min(newStart, initialSeg.startOffset + initialSeg.duration - MIN_SEG_DURATION))));
                               
                               const timeDiff = newStart - initialSeg.startOffset;
                               const ratio = timeDiff / initialSeg.duration;
@@ -1179,9 +1182,12 @@ export default function WaveEditor({ track, onClose, onSave }) {
                               const fullRatio = initialSeg.sourceEnd - initialSeg.sourceStart;
                               const maxRightTime = initialSeg.startOffset + initialSeg.duration + ((1 - initialSeg.sourceEnd) * initialSeg.duration / fullRatio);
 
-                              newEnd = Math.min(maxRightTime, Math.max(initialSeg.startOffset + 0.01, Math.min(newEnd, track?.duration || 40)));
+                              // 1ms minimum remaining duration — surgical-precision trim floor, matching Studio
+                              const MIN_SEG_DURATION_R = 0.001;
+                              const round1msR = (v) => Math.round(v * 1000) / 1000;
+                              newEnd = Math.min(maxRightTime, Math.max(initialSeg.startOffset + MIN_SEG_DURATION_R, Math.min(newEnd, track?.duration || 40)));
                               newEnd = getSnappedTime(newEnd);
-                              newEnd = Math.min(maxRightTime, Math.max(initialSeg.startOffset + 0.01, Math.min(newEnd, track?.duration || 40)));
+                              newEnd = round1msR(Math.min(maxRightTime, Math.max(initialSeg.startOffset + MIN_SEG_DURATION_R, Math.min(newEnd, track?.duration || 40))));
                               
                               const newDuration = newEnd - initialSeg.startOffset;
                               const ratio = newDuration / initialSeg.duration;

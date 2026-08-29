@@ -1697,11 +1697,13 @@ export default function Studio() {
                           
                           target.setPointerCapture(e.pointerId);
                           
+                          const MIN_CLIP_DURATION = 0.005; // 5ms — surgical-precision trim floor
+                          const round = (v) => Math.round(v * 1000) / 1000; // snap to 1ms to avoid float drift
                           const handleMove = (moveEvent) => {
                             const deltaX = moveEvent.clientX - startX;
-                            const deltaTime = deltaX / (20 * zoom);
+                            const deltaTime = round(deltaX / (20 * zoom));
                             
-                            if (deltaTime < initialDuration - 1) { 
+                            if (deltaTime < initialDuration - MIN_CLIP_DURATION) { 
                                // Don't allow left trim to go before the actual start of the audio file
                                const maxLeftTrim = -initialClipStart;
                                const trimAmount = Math.max(maxLeftTrim, deltaTime);
@@ -1709,9 +1711,9 @@ export default function Studio() {
                                setTracks(prev => prev.map(t => 
                                 t.id === track.id ? { 
                                   ...t, 
-                                  startTime: initialStartTime + trimAmount,
-                                  duration: initialDuration - trimAmount,
-                                  clipStart: initialClipStart + trimAmount
+                                  startTime: round(initialStartTime + trimAmount),
+                                  duration: round(initialDuration - trimAmount),
+                                  clipStart: round(initialClipStart + trimAmount)
                                   } : t
                                   ));
                                   showEditTooltip(moveEvent.clientX, moveEvent.clientY, initialStartTime + trimAmount);
@@ -1750,11 +1752,13 @@ export default function Studio() {
                           
                           target.setPointerCapture(e.pointerId);
                           
+                          const MIN_CLIP_DURATION_R = 0.005; // 5ms — surgical-precision trim floor
+                          const roundR = (v) => Math.round(v * 1000) / 1000; // snap to 1ms to avoid float drift
                           const handleMove = (moveEvent) => {
                             const deltaX = moveEvent.clientX - startX;
-                            const deltaTime = deltaX / (20 * zoom);
+                            const deltaTime = roundR(deltaX / (20 * zoom));
                             
-                            if (-deltaTime < initialDuration - 1) {
+                            if (-deltaTime < initialDuration - MIN_CLIP_DURATION_R) {
                                // Allow dragging right to restore the audio, up to its full duration
                                const maxRightTrim = fullDuration - (initialClipStart + initialDuration);
                                const trimAmount = Math.max(-maxRightTrim, -deltaTime); 
@@ -1762,7 +1766,7 @@ export default function Studio() {
                                setTracks(prev => prev.map(t => 
                                 t.id === track.id ? { 
                                   ...t, 
-                                  duration: initialDuration - trimAmount
+                                  duration: roundR(initialDuration - trimAmount)
                                   } : t
                                   ));
                                   showEditTooltip(moveEvent.clientX, moveEvent.clientY, (track.startTime || 0) + (initialDuration - trimAmount));

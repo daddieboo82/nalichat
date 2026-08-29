@@ -419,50 +419,56 @@ export default function WaveEditor({ track, onClose, onSave }) {
     });
   };
 
-  // Apply fade in/out to segments overlapping the selection range
-  const handleRangeFade = (direction) => {
-    if (!selectionRange) return;
-    const { start, end } = selectionRange;
-    setSegments(prev => {
-      let changed = false;
-      const newSegs = prev.map(seg => {
-        const segEnd = seg.startOffset + seg.duration;
-        // Only apply to segments that overlap the selection
-        if (segEnd <= start || seg.startOffset >= end) return seg;
-        changed = true;
-        if (direction === 'in') {
-          // Fade in starts at selection start, duration = selection length
-          return { ...seg, fadeIn: end - start };
-        } else {
-          return { ...seg, fadeOut: end - start };
-        }
-      });
-      if (changed) {
-        saveHistory(newSegs);
-        toast.success(`Fade ${direction} applied to selection`);
-      }
-      return newSegs;
-    });
+  // Split one segment at an absolute time — returns 1 or 2 segments
+  const splitSegAt = (seg, t) => {
+    const segEnd = seg.startOffset + seg.duration;
+    if (t <= seg.startOffset + 0.0005 || t >= segEnd - 0.0005) return [seg];
+    const ratio = (t - seg.startOffset) / seg.duration;
+    const srcMid = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
+    return [
+      { ...seg, id: `${seg.id}_a${Math.round(t * 1000)}`, sourceEnd: srcMid, duration: t - seg.startOffset, fadeOut: 0 },
+      { ...seg, id: `${seg.id}_b${Math.round(t * 1000)}`, startOffset: t, sourceStart: srcMid, duration: segEnd - t, fadeIn: 0 }
+    ];
   };
 
-  // Mute segments overlapping the selection range (set gain to 0)
-  const handleRangeMute = () => {
+  // Slice all segments at the selection boundaries, then transform only the
+  // pieces that fall INSIDE the selection — so edits are range-accurate.
+  const applyToRange = (transform, successMsg) => {
     if (!selectionRange) return;
     const { start, end } = selectionRange;
+    if (end - start <= 0.001) return;
     setSegments(prev => {
+      const sliced = prev
+        .flatMap(s => splitSegAt(s, start))
+        .flatMap(s => splitSegAt(s, end));
       let changed = false;
-      const newSegs = prev.map(seg => {
-        const segEnd = seg.startOffset + seg.duration;
-        if (segEnd <= start || seg.startOffset >= end) return seg;
+      const newSegs = sliced.map(s => {
+        const sEnd = s.startOffset + s.duration;
+        const inside = s.startOffset >= start - 0.0005 && sEnd <= end + 0.0005;
+        if (!inside) return s;
         changed = true;
-        return { ...seg, gain: 0 };
+        return transform(s);
       });
       if (changed) {
         saveHistory(newSegs);
-        toast.success("Selection muted");
+        toast.success(successMsg);
       }
-      return newSegs;
+      return changed ? newSegs : prev;
     });
+    setSelectionRange(null);
+  };
+
+  // Fade in/out applied only across the selected range
+  const handleRangeFade = (direction) => {
+    applyToRange(
+      s => direction === 'in' ? { ...s, fadeIn: s.duration } : { ...s, fadeOut: s.duration },
+      `Fade ${direction} applied to selection`
+    );
+  };
+
+  // Mute only the selected range
+  const handleRangeMute = () => {
+    applyToRange(s => ({ ...s, gain: 0 }), "Selection muted");
   };
 
   const handleSave = () => {

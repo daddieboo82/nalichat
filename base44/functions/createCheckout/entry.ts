@@ -43,16 +43,10 @@ Deno.serve(async (req) => {
       price: Number(item.price).toFixed(2)
     }));
 
-    const isTestAccount = user && user.email && (
-      user.email.toLowerCase().includes('test') || 
-      user.email.toLowerCase().includes('example') || 
-      user.email.toLowerCase().includes('glop') ||
-      user.email.toLowerCase().includes('agent') ||
-      user.email.toLowerCase().includes('automation') ||
-      user.email.toLowerCase().includes('qa') ||
-      user.email.toLowerCase().includes('demo') ||
-      user.email.toLowerCase().includes('base44')
-    );
+    // Security: only real admins can bypass payment (for internal QA), never
+    // based on the buyer-supplied email — any regular user could register an
+    // email containing "test"/"demo" and get free items otherwise.
+    const isTestAccount = !!(user && user.role === 'admin');
 
     if (isTestAccount) {
       return Response.json({

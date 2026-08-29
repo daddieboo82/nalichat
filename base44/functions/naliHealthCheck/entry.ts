@@ -8,6 +8,12 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
+    // Security: this is an admin/maintenance task — only an admin may trigger it.
+    const caller = await base44.auth.me();
+    if (!caller || caller.role !== 'admin') {
+      return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
+    }
+
     // --- Gather a lightweight snapshot of app data ---
     const [artPosts, projects, tracks, sharedFiles, subscriptions, users] = await Promise.all([
       base44.asServiceRole.entities.ArtPost.list('-created_date', 200),

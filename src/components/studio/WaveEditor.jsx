@@ -1098,7 +1098,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
                     {/* Left Trim Handle */}
                     <div 
-                      className="absolute left-0 top-0 bottom-0 w-2 hover:w-3 cursor-col-resize hover:bg-white/30 z-30 transition-all flex items-center justify-center group/triml"
+                      className="absolute left-0 top-0 bottom-0 w-2 hover:w-3 cursor-col-resize hover:bg-white/30 z-30 transition-all flex items-center justify-start group/triml"
                       title="Trim Start"
                       onPointerDown={(e) => {
                           if (activeTool !== 'trim' && activeTool !== 'smart') return;
@@ -1152,7 +1152,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
                     {/* Right Trim Handle */}
                     <div 
-                      className="absolute right-0 top-0 bottom-0 w-2 hover:w-3 cursor-col-resize hover:bg-white/30 z-30 transition-all flex items-center justify-center group/trimr"
+                      className="absolute right-0 top-0 bottom-0 w-2 hover:w-3 cursor-col-resize hover:bg-white/30 z-30 transition-all flex items-center justify-end group/trimr"
                       title="Trim End"
                       onPointerDown={(e) => {
                           if (activeTool !== 'trim' && activeTool !== 'smart') return;

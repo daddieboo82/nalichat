@@ -1682,7 +1682,7 @@ export default function Studio() {
                     >
                       {/* Left Trim Handle */}
                       <div 
-                        className={cn("absolute left-0 w-3 z-20 group/handle flex justify-center items-center bg-black/20", 
+                        className={cn("absolute left-0 w-3 z-20 group/handle flex justify-start items-center bg-black/20", 
                           (activeTool === 'trim' || activeTool === 'smart') ? "cursor-col-resize hover:bg-white/40" : "pointer-events-none opacity-0",
                           activeTool === 'smart' ? "top-[50%] bottom-0" : "top-0 bottom-0"
                         )}
@@ -1737,7 +1737,7 @@ export default function Studio() {
 
                                           {/* Right Trim Handle */}
                       <div 
-                        className={cn("absolute right-0 w-3 z-20 group/handle flex justify-center items-center bg-black/20", 
+                        className={cn("absolute right-0 w-3 z-20 group/handle flex justify-end items-center bg-black/20", 
                           (activeTool === 'trim' || activeTool === 'smart') ? "cursor-col-resize hover:bg-white/40" : "pointer-events-none opacity-0",
                           activeTool === 'smart' ? "top-[50%] bottom-0" : "top-0 bottom-0"
                         )}

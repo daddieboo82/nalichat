@@ -4,6 +4,12 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
+    // Security: only an existing admin can promote users
+    const caller = await base44.auth.me();
+    if (!caller || caller.role !== 'admin') {
+      return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
+    }
+
     const { email } = await req.json();
     if (!email) {
       return Response.json({ error: 'email is required' }, { status: 400 });

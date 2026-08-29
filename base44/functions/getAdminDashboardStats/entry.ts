@@ -9,6 +9,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden: Login required' }, { status: 403 });
     }
 
+    // Security: only admins may access platform-wide stats
+    if (user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
+    }
+
     // Fetch all subscriptions using service role
     const subscriptions = await base44.asServiceRole.entities.Subscription.filter({});
     const users = await base44.asServiceRole.entities.User.filter({});

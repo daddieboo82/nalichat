@@ -28,47 +28,29 @@ Deno.serve(async (req) => {
 
     const base44 = createClientFromRequest(req);
 
-    let event;
-    let eventData;
-    let isTest = false;
-
-    try {
-      let parsed = JSON.parse(bodyText);
-      let params = parsed;
-      if (parsed && parsed.data) {
-        params = typeof parsed.data === 'string' ? JSON.parse(parsed.data) : parsed.data;
-      }
-      if (params && params.isTestBypass) {
-        isTest = true;
-        event = params.payload;
-        eventData = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-      }
-    } catch (e) {
-      // Not a test payload, proceed with normal JWT verification
+    // Security: always verify the JWT signature — no test bypass
+    const WEBHOOK_PUBLIC_KEY = Deno.env.get('WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY')?.replace(/\\n/g, '\n');
+    if (!WEBHOOK_PUBLIC_KEY) {
+      console.error('Missing WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY');
+      return Response.json({ error: 'Server misconfigured' }, { status: 500 });
     }
 
-    if (!isTest) {
-      const WEBHOOK_PUBLIC_KEY = Deno.env.get('WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY')?.replace(/\\n/g, '\n');
-      if (!WEBHOOK_PUBLIC_KEY) {
-        console.error('Missing WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY');
-        return Response.json({ error: 'Server misconfigured' }, { status: 500 });
-      }
+    let event;
+    let eventData;
+    let rawPayload;
+    try {
+      rawPayload = jwt.verify(body, WEBHOOK_PUBLIC_KEY, { algorithms: ["RS256"] });
+    } catch (err) {
+      console.error('JWT verification failed', err);
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-      let rawPayload;
-      try {
-        rawPayload = jwt.verify(body, WEBHOOK_PUBLIC_KEY, { algorithms: ["RS256"] });
-      } catch (err) {
-        console.error('JWT verification failed', err);
-        return Response.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-
-      try {
-        event = JSON.parse(rawPayload.data);
-        eventData = JSON.parse(event.data);
-      } catch {
-        console.error('Failed to parse webhook body');
-        return Response.json({ error: 'Invalid JSON payload' }, { status: 400 });
-      }
+    try {
+      event = JSON.parse(rawPayload.data);
+      eventData = JSON.parse(event.data);
+    } catch {
+      console.error('Failed to parse webhook body');
+      return Response.json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
 
     console.log('Wix webhook received:', event.eventType || 'unknown');

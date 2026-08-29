@@ -297,6 +297,7 @@ export default function AiAssistant() {
                 <div className="px-3 pb-2 pt-0 flex gap-2 overflow-x-auto no-scrollbar border-t border-border/50 bg-background/50 shrink-0">
                   <div className="flex gap-2 min-w-max mt-2">
                     {[
+                      { text: "Explain music theory", icon: <Music className="w-3 h-3" /> },
                       { text: "Generate cover art", icon: <Disc className="w-3 h-3" /> },
                       { text: "Suggest trending tags", icon: <Activity className="w-3 h-3" /> },
                       { text: "Write my artist bio", icon: <Mic className="w-3 h-3" /> }
@@ -317,7 +318,7 @@ export default function AiAssistant() {
                     ref={inputRef}
                     value={input}
                     onChange={e => setInput(e.target.value)}
-                    placeholder="Command Nali or ask a question..."
+                    placeholder="Ask Nali anything about music..."
                     className="w-full bg-secondary/40 border border-primary/20 rounded-xl pl-8 pr-10 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/70"
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                   />

@@ -380,6 +380,7 @@ export default function Studio() {
     if (!isPlaying) {
       sounds.nav();
       setActivity("Playing the mix ▶️");
+      const playPromises = [];
       tracks.forEach(track => {
         if (track.audioUrl && (!track.muted || track.solo)) {
           let audio = audioElementsRef.current[track.id];
@@ -396,12 +397,24 @@ export default function Studio() {
           if (currentTimeRef.current >= trackStart && currentTimeRef.current < trackEnd) {
             audio.currentTime = clipStartOffset + (currentTimeRef.current - trackStart);
             audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100));
-            audio.play().catch(e => console.error("Audio playback error:", e));
+            playPromises.push(
+              audio.play().catch(e => { console.error("Audio playback error:", e); return { failed: true }; })
+            );
           } else {
             audio.pause();
           }
         }
       });
+      // Surface a visible error if playback couldn't start at all (e.g. browser blocked it) —
+      // previously this failed silently, so the transport looked like it was playing with no sound.
+      if (playPromises.length > 0) {
+        Promise.all(playPromises).then(results => {
+          if (results.every(r => r && r.failed)) {
+            toast.error("Playback was blocked by your browser. Click Play again to retry.");
+            setIsPlaying(false);
+          }
+        });
+      }
     } else {
       sounds.click();
       Object.values(audioElementsRef.current).forEach(audio => {

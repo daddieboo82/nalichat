@@ -501,15 +501,19 @@ export default function WaveEditor({ track, onClose, onSave }) {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Escape always closes the editor — even from input fields, and even if a
+      // selection is pending (no multi-step clearing needed). Sub-dialogs handle
+      // their own Escape, so skip to avoid closing the editor underneath them.
+      if (e.code === 'Escape') {
+        if (showHelpDialog || showPreferencesDialog) return;
+        e.preventDefault();
+        handleClose();
+        return;
+      }
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
       if (e.code === 'Space') {
         e.preventDefault();
         setIsPlaying(p => !p);
-      } else if (e.code === 'Escape') {
-        e.preventDefault();
-        if (pendingStart !== null) { setPendingStart(null); return; }
-        if (selectionRange) { setSelectionRange(null); return; }
-        handleClose();
       } else if ((e.metaKey || e.ctrlKey) && e.code === 'KeyZ') {
         if (e.shiftKey) handleRedo();
         else handleUndo();
@@ -560,7 +564,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [historyIdx, history, selectedSegmentId, playhead, pendingStart, selectionRange]);
+  }, [historyIdx, history, selectedSegmentId, playhead, pendingStart, selectionRange, showHelpDialog, showPreferencesDialog]);
 
   if (!track) return null;
 

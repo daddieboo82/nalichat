@@ -242,13 +242,15 @@ export default function WaveEditor({ track, onClose, onSave }) {
         return;
       }
 
-      if (activeTool === 'range' || (activeTool === 'select' && !segmentEl)) {
+      if (activeTool === 'range' || activeTool === 'select') {
         if (activeTool === 'select') {
-          // Click-to-select: first click sets start marker, second click sets end
+          // Click-to-select: first click sets start marker, second click sets end.
+          // Works anywhere on the waveform, including on top of an audio clip.
           if (pendingStart === null) {
             setPendingStart(clickTime);
             setSelectionRange(null);
             setPlayhead(clickTime);
+            if (segmentEl) setSelectedSegmentId(segmentEl.dataset.segmentId);
             return;
           } else {
             const start = Math.min(pendingStart, clickTime);
@@ -1057,7 +1059,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
               {/* Click-to-select hint */}
               {activeTool === 'select' && !selectionRange && !pendingStart && (
                 <div className="absolute top-7 left-1/2 -translate-x-1/2 z-10 bg-secondary/80 text-muted-foreground text-[10px] px-3 py-1 rounded-full border border-border/50 pointer-events-none animate-pulse">
-                  Double-click on the waveform to edit — set start & end points, then Split, Fade, Mute, or Delete
+                  Click the waveform to set the start point, then click again to set the end — then Split, Fade, Mute, or Delete
                 </div>
               )}
               {pendingStart !== null && (

@@ -38,16 +38,28 @@
   ],
   "rls": {
     "create": {
-      "data.participant_ids": "{{user.id}}"
+      "data.participant_ids": {
+        "$in": [
+          "{{user.id}}"
+        ]
+      }
     },
     "read": {
       "data.participant_ids": "{{user.id}}"
     },
     "update": {
-      "data.participant_ids": "{{user.id}}"
+      "data.participant_ids": {
+        "$in": [
+          "{{user.id}}"
+        ]
+      }
     },
     "delete": {
-      "data.participant_ids": "{{user.id}}"
+      "data.participant_ids": {
+        "$in": [
+          "{{user.id}}"
+        ]
+      }
     }
   }
 }

@@ -46,7 +46,14 @@
   ],
   "rls": {
     "create": {
-      "data.recipient_id": "{{user.id}}"
+      "$or": [
+        {
+          "data.actor_id": "{{user.id}}"
+        },
+        {
+          "data.recipient_id": "{{user.id}}"
+        }
+      ]
     },
     "read": {
       "data.recipient_id": "{{user.id}}"

@@ -41,6 +41,14 @@ export default function ExportPurchaseDialog({ open, onOpenChange, format, track
 
       // 4. Create a Wix checkout session and redirect
       setStage("redirecting");
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'conversion', {
+          send_to: 'AW-18416125487/OnfzCI7a5OkcEK-Mv81E',
+          value: price,
+          currency: 'USD',
+        });
+      }
+      try { localStorage.setItem('gads_purchase_value', String(price)); } catch {}
       const res = await base44.functions.invoke("createCheckout", {
         items: [{
           name: `Studio Export - ${format.toUpperCase()} Download`,

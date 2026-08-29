@@ -26,6 +26,13 @@ export function CartProvider({ children }) {
       return [...prev, { ...product, quantity: 1 }];
     });
     setIsOpen(true);
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'conversion', {
+        send_to: 'AW-18416125487/YZpUCNfY5OkcEK-Mv81E',
+        value: product.price || 0,
+        currency: 'USD',
+      });
+    }
   };
 
   const removeFromCart = (id) => {

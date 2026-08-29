@@ -60,6 +60,23 @@ const AuthenticatedApp = () => {
     isInitialMount.current = false;
   }, []);
 
+  // Fire Google Ads SIGNUP conversion once per freshly-created user.
+  useEffect(() => {
+    if (!user) return;
+    if (sessionStorage.getItem('is_new_user') !== 'true') return;
+    const dedupKey = `gads_signup_${user.id}`;
+    try {
+      if (localStorage.getItem(dedupKey) === '1') { sessionStorage.removeItem('is_new_user'); return; }
+    } catch {}
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'conversion', {
+        send_to: 'AW-18416125487/twIWCJHa5OkcEK-Mv81E',
+        transaction_id: user.id,
+      });
+    }
+    try { localStorage.setItem(dedupKey, '1'); sessionStorage.removeItem('is_new_user'); } catch {}
+  }, [user]);
+
   useEffect(() => {
     if (!isAuthenticated) return;
     const checkActivity = () => {
@@ -174,6 +191,39 @@ function App() {
     try { sessionStorage.setItem('nali_splash_shown', '1'); } catch {}
     setLoaded(true);
   };
+
+  // Google Ads gtag bootstrap — loads once; cross-origin relay powers the event debugger.
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.__gads_loaded) return;
+    window.__gads_loaded = true;
+    window.dataLayer = window.dataLayer || [];
+    const inIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+    window.gtag = function gtag() {
+      window.dataLayer.push(arguments);
+      if (inIframe) {
+        try {
+          const args = Array.prototype.slice.call(arguments);
+          const cmd = args[0];
+          window.parent.postMessage({
+            type: 'base44_gtag_event',
+            event: {
+              source: 'gtag',
+              timestamp: new Date().toLocaleTimeString(),
+              command: cmd,
+              params: args.slice(1),
+              type: cmd === 'event' ? (args[1] || 'event') : cmd,
+            },
+          }, '*');
+        } catch (_e) {}
+      }
+    };
+    const s = document.createElement('script');
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18416125487';
+    s.async = true;
+    document.head.appendChild(s);
+    window.gtag('js', new Date());
+    window.gtag('config', 'AW-18416125487', { send_page_view: false });
+  }, []);
 
   return (
     <ErrorBoundary>

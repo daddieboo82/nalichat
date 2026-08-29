@@ -13,6 +13,14 @@ export default function CartDrawer() {
   const handleCheckout = async () => {
     setIsCheckingOut(true);
     try {
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'conversion', {
+          send_to: 'AW-18416125487/OnfzCI7a5OkcEK-Mv81E',
+          value: total,
+          currency: 'USD',
+        });
+      }
+      try { localStorage.setItem('gads_purchase_value', String(total)); } catch {}
       const checkoutItems = items.map(item => ({
         name: item.title || item.name || "Unknown Item",
         price: item.price || 0,

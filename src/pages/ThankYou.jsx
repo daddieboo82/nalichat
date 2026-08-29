@@ -23,6 +23,20 @@ export default function ThankYou() {
 
   useEffect(() => {
     const processThankYou = async () => {
+      // Fire Google Ads PURCHASE conversion once (value stashed before checkout redirect).
+      try {
+        const pendingPurchaseValue = parseFloat(localStorage.getItem('gads_purchase_value') || '0');
+        if (pendingPurchaseValue > 0 && typeof window !== 'undefined' && window.gtag) {
+          localStorage.removeItem('gads_purchase_value');
+          window.gtag('event', 'conversion', {
+            send_to: 'AW-18416125487/4WavCNzZ5ekcEK-Mv81E',
+            value: pendingPurchaseValue,
+            currency: 'USD',
+          });
+        } else {
+          localStorage.removeItem('gads_purchase_value');
+        }
+      } catch (e) {}
       try {
         if (isExport) {
           // Studio export download flow — deliver the rendered file

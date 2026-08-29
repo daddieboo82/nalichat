@@ -1437,7 +1437,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       for (let i = wLen; i >= 0; i--) peakPath += `L ${(i/wLen)*10000},${50 + Math.max(0.001, wf[i])*48*g} `;
                       peakPath += 'Z';
 
-                      const baseFill = "text-[#1ED760] fill-[#1ED760]";
+                      const baseFill = "text-primary fill-primary";
 
                       const srcStart = seg.sourceStart || 0;
                       const srcEnd = seg.sourceEnd ?? 1;
@@ -1448,7 +1448,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                            left: `-${(srcStart / ratio) * 100}%`,
                            width: `${(1 / ratio) * 100}%`
                         }}>
-                          <svg className="w-full h-full pt-5 pb-0 pointer-events-none" style={{ filter: 'drop-shadow(0px 0px 5px rgba(30,215,96,0.4))' }} preserveAspectRatio="none" viewBox="0 0 10000 100">
+                          <svg className="w-full h-full pt-5 pb-0 pointer-events-none" style={{ filter: 'drop-shadow(0px 0px 5px hsl(var(--primary) / 0.45))' }} preserveAspectRatio="none" viewBox="0 0 10000 100">
                             <defs>
                               <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="0%" stopColor="currentColor" stopOpacity="0.95" />

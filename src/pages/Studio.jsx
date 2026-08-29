@@ -12,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
-import WaveEditor from '@/components/studio/WaveEditor';
 import BounceDialog from '@/components/studio/BounceDialog';
 import { sounds } from '@/hooks/use-sound';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -88,7 +87,6 @@ export default function Studio() {
   const audioChunksRef = useRef([]);
   const audioElementsRef = useRef({});
   const fileInputRef = useRef(null);
-  const [editingTrack, setEditingTrack] = useState(null);
   const [renamingTrack, setRenamingTrack] = useState(null);
   const [newTrackName, setNewTrackName] = useState("");
   const [creatingTrack, setCreatingTrack] = useState(false);
@@ -702,15 +700,6 @@ export default function Studio() {
       else if (e.key === 'f' || e.key === 'F') setActiveTool('fade');
       else if (e.key === 'e' || e.key === 'E') setActiveTool('smart');
       else if (e.key === 'Home') { e.preventDefault(); updateCurrentTime(0); }
-      else if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
-        e.preventDefault();
-        if(selectedTrackIds.length===1) {
-          const track = tracks.find(t => t.id === selectedTrackIds[0]);
-          if(track) setEditingTrack(track);
-        } else {
-          toast.error("Please select exactly one track for Wave Editor");
-        }
-      }
       else if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); setLoopActive(!loopActive); }
       else if (e.shiftKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); handleSeparateStems(); }
       else if (e.shiftKey && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); handleGenerateMelody(); }
@@ -970,10 +959,6 @@ export default function Studio() {
     } catch (e) {
       toast.error("Failed to save project.");
     }
-  };
-
-  const saveTrackEffects = (trackId, updatedTrack) => {
-    setTracksWithHistory(tracks.map(t => t.id === trackId ? updatedTrack : t));
   };
 
   const handleImportClick = () => {
@@ -1253,7 +1238,7 @@ export default function Studio() {
 
       {/* Toolbar 2 (Tools) */}
       <StudioToolbar2
-        addTrack={addTrack} selectedTrackIds={selectedTrackIds} tracks={tracks} setEditingTrack={setEditingTrack}
+        addTrack={addTrack} selectedTrackIds={selectedTrackIds} tracks={tracks}
         handleSeparateStems={handleSeparateStems} isProcessing={isProcessing} handleGenerateMelody={handleGenerateMelody}
         undo={undo} redo={redo} historyIndex={historyIndex} historyLength={historyRef.current.length}
         bpm={bpm} setBpm={setBpm} bpmInput={bpmInput} setBpmInput={setBpmInput} timeSignature={timeSignature} setTimeSignature={setTimeSignature}
@@ -1262,6 +1247,7 @@ export default function Studio() {
         toggleTrackProperty={toggleTrackProperty} splitSelectedTracks={splitSelectedTracks} duplicateSelectedTracks={duplicateSelectedTracks}
         deleteSelectedTracks={deleteSelectedTracks} zoom={zoom} setZoom={setZoom}
       />
+      {/* setEditingTrack prop removed — Wave Editor was merged into this inline timeline */}
 
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
@@ -1332,7 +1318,6 @@ export default function Studio() {
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
                     <TooltipProvider delayDuration={200}>
-                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setActivity(`Editing ${track.name}`); setEditingTrack(track); }} className="h-6 px-1.5 gap-1 text-muted-foreground hover:text-primary"><SlidersHorizontal className="w-3 h-3" /><span className="text-[9px]">Edit</span></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Wave Editor</TooltipContent></Tooltip>
                       <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'elasticAudio') }} className={cn("hidden lg:flex h-6 px-1.5 gap-1 text-muted-foreground hover:text-foreground", track.elasticAudio && "text-primary")}><Activity className="w-3 h-3" /><span className="text-[9px]">Warp</span></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Elastic Audio</TooltipContent></Tooltip>
                       <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); toggleTrackProperty(track.id, 'showAutomation') }} className={cn("hidden xl:flex h-6 px-1.5 gap-1 text-muted-foreground hover:text-foreground", track.showAutomation && "text-primary")}><TrendingUp className="w-3 h-3" /><span className="text-[9px]">Auto</span></Button></TooltipTrigger><TooltipContent side="top" className="text-xs">Show Automation</TooltipContent></Tooltip>
                     </TooltipProvider>
@@ -1525,7 +1510,6 @@ export default function Studio() {
                 <div 
                   key={track.id} 
                   onClick={(e) => handleTrackClick(e, track.id)}
-                  onDoubleClick={() => setEditingTrack(track)}
                   style={{ height: track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px') }}
                   className={cn(
                     "border-b border-border/20 relative group transition-none", 
@@ -1540,7 +1524,7 @@ export default function Studio() {
                   {/* Automation Lane Background */}
                   {track.showAutomation && (
                     <div className="absolute bottom-0 left-0 right-0 h-16 border-t border-white/5 bg-black/40 flex items-center justify-center">
-                       <span className="text-[10px] text-muted-foreground/50">Open the Wave Editor to draw volume & pan automation</span>
+                       <span className="text-[10px] text-muted-foreground/50">Volume & pan automation editing coming soon</span>
                     </div>
                   )}
 
@@ -1583,7 +1567,7 @@ export default function Studio() {
                     <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none z-10">
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60 italic">
                         <Mic className="w-3.5 h-3.5 shrink-0" />
-                        <span>Empty — click the Wave Editor button, double-click this row, or record to fill this track</span>
+                        <span>Empty — upload a file or record to fill this track</span>
                       </div>
                     </div>
                   )}
@@ -1591,7 +1575,6 @@ export default function Studio() {
                   {/* Audio Region (Clip) */}
                   {track.waveform && track.waveform.length > 0 && (
                     <div 
-                      onDoubleClick={() => setEditingTrack(track)}
                       onPointerMove={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
@@ -1922,12 +1905,6 @@ export default function Studio() {
         </div>
       </div>
 
-      <WaveEditor 
-        track={editingTrack} 
-        onClose={() => setEditingTrack(null)} 
-        onSave={saveTrackEffects}
-      />
-
       <MixerPanel 
         show={showMixerPanel} 
         onClose={() => setShowMixerPanel(false)} 
@@ -1937,7 +1914,6 @@ export default function Studio() {
         updateVolume={updateVolume} 
         toggleMute={toggleMute} 
         toggleSolo={toggleSolo} 
-        onOpenFX={(trackId) => { const track = tracks.find(t => t.id === trackId); if (track) setEditingTrack(track); }}
         updateTrack={(trackId, data) => setTracks(prev => prev.map(t => t.id === trackId ? { ...t, ...data } : t))}
       />
 

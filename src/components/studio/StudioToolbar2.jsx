@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { sounds } from '@/hooks/use-sound';
 
 export default function StudioToolbar2({
-  addTrack, selectedTrackIds, tracks, setEditingTrack, handleSeparateStems, isProcessing, handleGenerateMelody, undo, redo, historyIndex, historyLength,
+  addTrack, selectedTrackIds, tracks, handleSeparateStems, isProcessing, handleGenerateMelody, undo, redo, historyIndex, historyLength,
   bpm, setBpm, bpmInput, setBpmInput, timeSignature, setTimeSignature, songKey, setSongKey, editMode, setEditMode,
   activeTool, setActiveTool, toggleTrackProperty, splitSelectedTracks, duplicateSelectedTracks, deleteSelectedTracks, zoom, setZoom
 }) {
@@ -26,7 +26,6 @@ export default function StudioToolbar2({
                 <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
               </Button>
             </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Add Track <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+N</kbd></TooltipContent></Tooltip>
-            <Tooltip><TooltipTrigger asChild><span className="inline-block"><Button disabled={selectedTrackIds.length !== 1} aria-label="Open Wave Editor" onClick={() => { if(selectedTrackIds.length===1) { const track = tracks.find(t => t.id === selectedTrackIds[0]); if(track) setEditingTrack(track); } else toast.error("Please select exactly one track"); }} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0"><SlidersHorizontal className="w-4 h-4" /> <span className="hidden md:inline">Wave Editor</span></Button></span></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Open Wave Editor (Select 1 track) <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+W</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button aria-label="Split Stems" onClick={handleSeparateStems} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'separate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} <span className="hidden md:inline">Split Stems</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Separate Vocals & Instrumental <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+E</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button aria-label="Generate Melody" onClick={handleGenerateMelody} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} <span className="hidden lg:inline">Generate Melody</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Generate AI Melody <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+G</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
@@ -155,8 +154,8 @@ export default function StudioToolbar2({
           </TooltipProvider>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.max(0.5, z / 1.5))} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-secondary rounded text-xs">−</Button>
-            <Slider value={[zoom]} min={0.5} max={200} step={0.5} onValueChange={(v) => setZoom(v[0])} className="w-28" />
-            <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.min(200, z * 1.5))} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-secondary rounded text-xs">+</Button>
+            <Slider value={[zoom]} min={0.5} max={5000} step={0.5} onValueChange={(v) => setZoom(v[0])} className="w-28" />
+            <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.min(5000, z * 1.5))} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-secondary rounded text-xs">+</Button>
           </div>
           <span className="w-12 text-right font-mono text-[10px] text-primary/80">{zoom >= 50 ? `${(1/(20*zoom)*1000).toFixed(1)}ms/px` : `${Math.round(zoom * 100)}%`}</span>
         </div>

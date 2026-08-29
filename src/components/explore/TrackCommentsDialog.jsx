@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, Loader2, MessageCircle, Clock, Play, Pause } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 function formatTime(seconds) {
@@ -83,7 +84,19 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
       setCurrentTime(null);
       queryClient.invalidateQueries({ queryKey: ["track-comments", post.id] });
     },
+    onError: () => {
+      toast.error("Couldn't post your comment. Please try again.");
+    },
   });
+
+  const handleSend = () => {
+    if (!text.trim()) return;
+    if (!currentUser) {
+      toast.error("Please sign in to comment");
+      return;
+    }
+    addComment.mutate();
+  };
 
   if (!post) return null;
 
@@ -190,15 +203,15 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
             <Input
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={currentTime != null ? `Comment at ${formatTime(currentTime)}...` : "Add a comment..."}
+              placeholder={currentUser ? (currentTime != null ? `Comment at ${formatTime(currentTime)}...` : "Add a comment...") : "Sign in to comment..."}
               className="bg-secondary/50 border-0 rounded-xl"
-              onKeyDown={(e) => { if (e.key === "Enter" && text.trim()) addComment.mutate(); }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
             />
             <Button
               size="icon"
               className="rounded-xl bg-primary hover:bg-primary/90 shrink-0"
               disabled={!text.trim() || addComment.isPending}
-              onClick={() => addComment.mutate()}
+              onClick={handleSend}
             >
               {addComment.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>

@@ -180,12 +180,25 @@ export default function Studio() {
     toast.error("No autosave found");
   };
 
-  const handleLoadDemo = () => {
-    setTracks([
-      { id: 1, name: "Vocals Lead", color: "bg-purple-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(8000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
-      { id: 2, name: "Beat / Instrumental", color: "bg-blue-500", volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: generateWaveform(8000), startTime: 0, duration: 40, audioUrl: "https://actions.google.com/sounds/v1/water/rain_on_roof.ogg", locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 },
-    ]);
-    setShowWelcome(false);
+  // Demo audio is generated locally so it always plays (the old hosted sample 404'd)
+  const handleLoadDemo = async () => {
+    const toastId = toast.loading("Preparing demo session...");
+    try {
+      const [lead, beat] = await Promise.all([
+        generateMelody({ seconds: 20, bpm: 90 }),
+        generateMelody({ seconds: 20, bpm: 120 })
+      ]);
+      const base = { volume: 75, pan: 50, muted: false, solo: false, armed: false, startTime: 0, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 };
+      setTracks([
+        { ...base, id: 1, name: "Demo Lead", color: "bg-purple-500", waveform: lead.waveform, duration: lead.duration, audioUrl: lead.url },
+        { ...base, id: 2, name: "Demo Bassline", color: "bg-blue-500", waveform: beat.waveform, duration: beat.duration, audioUrl: beat.url },
+      ]);
+      setShowWelcome(false);
+      toast.success("Demo session ready", { id: toastId });
+    } catch (e) {
+      console.error("Demo session failed", e);
+      toast.error("Couldn't build the demo session", { id: toastId });
+    }
   };
 
   // Autosave tracks (Debounced to prevent lag during rapid edits)

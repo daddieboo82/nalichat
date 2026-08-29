@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Knob } from '@/components/ui/knob';
 import PrecisionCrosshair from '@/components/studio/PrecisionCrosshair';
+import { createSegmentPlayer } from '@/lib/segmentPlayback';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -121,6 +122,35 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
   const containerRef = useRef(null);
   const effectsContainerRef = useRef(null);
+  // Live mirrors so edit operations & shortcuts always act on current values
+  const segmentsRef = useRef([]);
+  const playheadRef = useRef(0);
+  const playerRef = useRef(null);
+
+  useEffect(() => { segmentsRef.current = segments; }, [segments]);
+  useEffect(() => { playheadRef.current = playhead; }, [playhead]);
+
+  // Audible preview of the edited clip
+  useEffect(() => {
+    playerRef.current = createSegmentPlayer();
+    return () => { playerRef.current?.dispose(); playerRef.current = null; };
+  }, []);
+
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player) return;
+    if (!isPlaying) { player.stop(); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const ready = await player.load(track?.audioUrl);
+        if (ready && !cancelled) await player.play(segmentsRef.current, playheadRef.current);
+      } catch (err) {
+        console.warn('Preview audio unavailable', err);
+      }
+    })();
+    return () => { cancelled = true; player.stop(); };
+  }, [isPlaying, track]);
 
   useEffect(() => {
     if (effectsContainerRef.current) {
@@ -140,9 +170,11 @@ export default function WaveEditor({ track, onClose, onSave }) {
     return type === 'panEnv' ? [{t:0, v:0.5}, {t:1, v:0.5}] : [{t:0, v:1}, {t:1, v:1}];
   };
 
+  // Snap grid stays fine enough for surgical edits — a coarse grid used to
+  // collapse short selections to zero length.
   const getSnappedTime = (time) => {
     if (!snapToGrid) return time;
-    const snapInterval = zoom > 200 ? 0.001 : zoom > 50 ? 0.01 : zoom > 10 ? 0.05 : zoom > 5 ? 0.1 : zoom > 2 ? 0.5 : 1;
+    const snapInterval = zoom > 200 ? 0.001 : zoom > 50 ? 0.005 : zoom > 10 ? 0.01 : zoom > 2 ? 0.02 : 0.05;
     return Math.round(time / snapInterval) * snapInterval;
   };
 
@@ -352,73 +384,6 @@ export default function WaveEditor({ track, onClose, onSave }) {
     setActiveEffects(activeEffects.filter(e => e.id !== id));
   };
 
-  const handleRangeDelete = () => {
-    if (!selectionRange) return;
-    const { start, end } = selectionRange;
-    setSegments(prev => {
-        let newSegs = [];
-        prev.forEach(seg => {
-            const segEnd = seg.startOffset + seg.duration;
-            if (segEnd <= start || seg.startOffset >= end) {
-                newSegs.push(seg);
-            } else if (seg.startOffset < start && segEnd > end) {
-                const ratio1 = (start - seg.startOffset) / seg.duration;
-                const ratio2 = (end - seg.startOffset) / seg.duration;
-                const sEnd1 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio1;
-                const sStart2 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio2;
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd1, duration: start - seg.startOffset, waveform: seg.waveform });
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart2, duration: segEnd - end, waveform: seg.waveform });
-            } else if (seg.startOffset < start && segEnd <= end) {
-                const ratio = (start - seg.startOffset) / seg.duration;
-                const sEnd = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
-                newSegs.push({ ...seg, sourceEnd: sEnd, duration: start - seg.startOffset, waveform: seg.waveform });
-            } else if (seg.startOffset >= start && segEnd > end) {
-                const ratio = (end - seg.startOffset) / seg.duration;
-                const sStart = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
-                newSegs.push({ ...seg, startOffset: end, sourceStart: sStart, duration: segEnd - end, waveform: seg.waveform });
-            }
-        });
-        saveHistory(newSegs);
-        setSelectionRange(null);
-        return newSegs;
-    });
-  };
-
-  const handleRangeSplit = () => {
-    if (!selectionRange) return;
-    const { start, end } = selectionRange;
-    setSegments(prev => {
-        let newSegs = [];
-        prev.forEach(seg => {
-            const segEnd = seg.startOffset + seg.duration;
-            if (segEnd <= start || seg.startOffset >= end) {
-                newSegs.push(seg);
-            } else if (seg.startOffset < start && segEnd > end) {
-                const ratio1 = (start - seg.startOffset) / seg.duration;
-                const ratio2 = (end - seg.startOffset) / seg.duration;
-                const sEnd1 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio1;
-                const sStart2 = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio2;
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd1, duration: start - seg.startOffset, waveform: seg.waveform });
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_mid_${seg.id}`, startOffset: start, sourceStart: sEnd1, sourceEnd: sStart2, duration: end - start, waveform: seg.waveform });
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart2, duration: segEnd - end, waveform: seg.waveform });
-            } else if (seg.startOffset < start && segEnd <= end) {
-                const ratio = (start - seg.startOffset) / seg.duration;
-                const sEnd = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sEnd, duration: start - seg.startOffset, waveform: seg.waveform });
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: start, sourceStart: sEnd, duration: segEnd - start, waveform: seg.waveform });
-            } else if (seg.startOffset >= start && segEnd > end) {
-                const ratio = (end - seg.startOffset) / seg.duration;
-                const sStart = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * ratio;
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_1_${seg.id}`, sourceEnd: sStart, duration: end - seg.startOffset, waveform: seg.waveform });
-                newSegs.push({ ...seg, id: `seg_${Date.now()}_2_${seg.id}`, startOffset: end, sourceStart: sStart, duration: segEnd - end, waveform: seg.waveform });
-            }
-        });
-        saveHistory(newSegs);
-        setSelectionRange(null);
-        return newSegs;
-    });
-  };
-
   // Split one segment at an absolute time — returns 1 or 2 segments
   const splitSegAt = (seg, t) => {
     const segEnd = seg.startOffset + seg.duration;
@@ -431,37 +396,61 @@ export default function WaveEditor({ track, onClose, onSave }) {
     ];
   };
 
-  // Slice all segments at the selection boundaries, then transform only the
-  // pieces that fall INSIDE the selection — so edits are range-accurate.
+  // Slice every segment at both selection boundaries so edits are range-accurate
+  const sliceAtSelection = (segs, start, end) =>
+    segs.flatMap(s => splitSegAt(s, start)).flatMap(s => splitSegAt(s, end));
+
+  const isInsideRange = (s, start, end) =>
+    s.startOffset >= start - 0.0005 && (s.startOffset + s.duration) <= end + 0.0005;
+
+  // Normalized selection bounds, or null when there is nothing usable selected
+  const getRange = () => {
+    if (!selectionRange) return null;
+    const start = Math.min(selectionRange.start, selectionRange.end);
+    const end = Math.max(selectionRange.start, selectionRange.end);
+    if (end - start <= 0.001) return null;
+    return { start, end };
+  };
+
+  const clearSelection = () => { setSelectionRange(null); setPendingStart(null); };
+
+  const handleRangeDelete = () => {
+    const range = getRange();
+    if (!range) { toast.error("Select a range on the waveform first"); return; }
+    const { start, end } = range;
+    const newSegs = sliceAtSelection(segmentsRef.current, start, end)
+      .filter(s => !isInsideRange(s, start, end) && s.duration > 0.001);
+    saveHistory(newSegs);
+    setSelectedSegmentId(null);
+    clearSelection();
+    toast.success("Selection deleted");
+  };
+
+  const handleRangeSplit = () => {
+    const range = getRange();
+    if (!range) { toast.error("Select a range on the waveform first"); return; }
+    saveHistory(sliceAtSelection(segmentsRef.current, range.start, range.end).filter(s => s.duration > 0.001));
+    clearSelection();
+    toast.success("Split at selection edges");
+  };
+
+  // Transform only the pieces that fall INSIDE the selection
   const applyToRange = (transform, successMsg) => {
-    if (!selectionRange) return;
-    const { start, end } = selectionRange;
-    if (end - start <= 0.001) return;
-    setSegments(prev => {
-      const sliced = prev
-        .flatMap(s => splitSegAt(s, start))
-        .flatMap(s => splitSegAt(s, end));
-      let changed = false;
-      const newSegs = sliced.map(s => {
-        const sEnd = s.startOffset + s.duration;
-        const inside = s.startOffset >= start - 0.0005 && sEnd <= end + 0.0005;
-        if (!inside) return s;
-        changed = true;
-        return transform(s);
-      });
-      if (changed) {
-        saveHistory(newSegs);
-        toast.success(successMsg);
-      }
-      return changed ? newSegs : prev;
-    });
-    setSelectionRange(null);
+    const range = getRange();
+    if (!range) { toast.error("Select a range on the waveform first"); return; }
+    const { start, end } = range;
+    const newSegs = sliceAtSelection(segmentsRef.current, start, end)
+      .filter(s => s.duration > 0.001)
+      .map(s => (isInsideRange(s, start, end) ? transform(s) : s));
+    saveHistory(newSegs);
+    clearSelection();
+    toast.success(successMsg);
   };
 
   // Fade in/out applied only across the selected range
   const handleRangeFade = (direction) => {
     applyToRange(
-      s => direction === 'in' ? { ...s, fadeIn: s.duration } : { ...s, fadeOut: s.duration },
+      s => (direction === 'in' ? { ...s, fadeIn: s.duration, gain: s.gain ?? 1 } : { ...s, fadeOut: s.duration, gain: s.gain ?? 1 }),
       `Fade ${direction} applied to selection`
     );
   };
@@ -535,14 +524,10 @@ export default function WaveEditor({ track, onClose, onSave }) {
         if (pendingStart !== null) { setPendingStart(null); return; }
         if (selectionRange) {
            handleRangeDelete();
-        } else {
-            setSegments(prev => {
-              if (!selectedSegmentId) return prev;
-              const newSegs = prev.filter(s => s.id !== selectedSegmentId);
-              saveHistory(newSegs);
-              setSelectedSegmentId(null);
-              return newSegs;
-            });
+        } else if (selectedSegmentId) {
+            saveHistory(segmentsRef.current.filter(s => s.id !== selectedSegmentId));
+            setSelectedSegmentId(null);
+            toast.success("Clip deleted");
         }
       } else if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
         // Surgical nudge: 1ms default, Shift = 10ms, Alt = 100ms
@@ -569,24 +554,13 @@ export default function WaveEditor({ track, onClose, onSave }) {
         e.preventDefault();
         handleSave();
       } else if (e.code === 'KeyS' && !e.metaKey && !e.ctrlKey) {
-        setSegments(prev => {
-          const segIndex = prev.findIndex(s => playhead > s.startOffset && playhead < (s.startOffset + s.duration));
-          if (segIndex !== -1) {
-            const seg = prev[segIndex];
-            const splitRatio = (playhead - seg.startOffset) / seg.duration;
-            const splitSourceTime = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * splitRatio;
-            
-            const newSeg1 = { ...seg, id: `seg_${Date.now()}_1`, sourceEnd: splitSourceTime, duration: seg.duration * splitRatio, waveform: seg.waveform };
-            const newSeg2 = { ...seg, id: `seg_${Date.now()}_2`, startOffset: playhead, sourceStart: splitSourceTime, duration: seg.duration * (1 - splitRatio), waveform: seg.waveform };
-            
-            const newSegs = [...prev];
-            newSegs.splice(segIndex, 1, newSeg1, newSeg2);
-            saveHistory(newSegs);
-            toast.success("Split at playhead");
-            return newSegs;
-          }
-          return prev;
-        });
+        const t = playheadRef.current;
+        const current = segmentsRef.current;
+        const hit = current.some(s => t > s.startOffset && t < (s.startOffset + s.duration));
+        if (hit) {
+          saveHistory(current.flatMap(s => splitSegAt(s, t)).filter(s => s.duration > 0.001));
+          toast.success("Split at playhead");
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -635,7 +609,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   <DropdownMenuItem className={cn("text-xs focus:bg-primary focus:text-white rounded-sm cursor-default", historyIdx <= 0 && "opacity-50")} onSelect={handleUndo}>Undo <DropdownMenuShortcut className="text-current opacity-70">Ctrl+Z</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuItem className={cn("text-xs focus:bg-primary focus:text-white rounded-sm cursor-default", historyIdx >= history.length - 1 && "opacity-50")} onSelect={handleRedo}>Redo <DropdownMenuShortcut className="text-current opacity-70">Ctrl+Y</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" disabled={!selectionRange && !selectedSegmentId} onSelect={() => { if(selectionRange) handleRangeDelete(); else { setSegments(prev => { const newSegs = prev.filter(s => s.id !== selectedSegmentId); saveHistory(newSegs); setSelectedSegmentId(null); return newSegs; }); }}}>Delete <DropdownMenuShortcut className="text-current opacity-70">Del</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" disabled={!selectionRange && !selectedSegmentId} onSelect={() => { if (selectionRange) handleRangeDelete(); else if (selectedSegmentId) { saveHistory(segmentsRef.current.filter(s => s.id !== selectedSegmentId)); setSelectedSegmentId(null); } }}>Delete <DropdownMenuShortcut className="text-current opacity-70">Del</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => handleRangeSplit()} disabled={!selectionRange}>Split</DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => setActiveTool('select')}>Select Tool <DropdownMenuShortcut className="text-current opacity-70">1</DropdownMenuShortcut></DropdownMenuItem>

@@ -1096,12 +1096,12 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
               {/* Click-to-select hint */}
               {activeTool === 'select' && !selectionRange && !pendingStart && (
-                <div className="absolute top-7 left-1/2 -translate-x-1/2 z-10 bg-secondary/80 text-muted-foreground text-[10px] px-3 py-1 rounded-full border border-border/50 pointer-events-none animate-pulse">
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 bg-secondary/95 text-muted-foreground text-[10px] px-3 py-1 rounded-full border border-border/50 pointer-events-none">
                   Click the waveform to set the start point, then click again to set the end — then Split, Fade, Mute, or Delete
                 </div>
               )}
               {pendingStart !== null && (
-                <div className="absolute top-7 left-1/2 -translate-x-1/2 z-10 bg-accent/20 text-accent text-[10px] px-3 py-1 rounded-full border border-accent/50 pointer-events-none font-semibold">
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 bg-accent/95 text-accent-foreground text-[10px] px-3 py-1 rounded-full border border-accent/50 pointer-events-none font-semibold">
                   Start set at {pendingStart.toFixed(3)}s — click end point to complete selection
                 </div>
               )}

@@ -1123,7 +1123,7 @@ export default function Studio() {
         </div>
 
         {/* Right Tools - Hardware & Export */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
           {/* Live Collaborators */}
           <LivePresenceBar peers={livePeers} />
 
@@ -1193,7 +1193,7 @@ export default function Studio() {
           </div>
 
 
-          <div className="flex flex-wrap items-center gap-2 pl-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 pl-2 min-w-0">
             <input type="file" ref={fileInputRef} className="hidden" accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} />
             <Button id="milestones-btn" onClick={() => setShowMilestones(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-border/50 hover:bg-secondary transition-colors">
               <ListTodo className="w-4 h-4" /> Milestones
@@ -1255,7 +1255,7 @@ export default function Studio() {
         {/* Jam Room Floating Overlay */}
         <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} />
         {/* Track Headers (Left Sidebar) */}
-        <div className="w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 rounded-l-2xl">
+        <div className="w-44 sm:w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 rounded-l-2xl">
           <DragDropContext onDragEnd={handleReorderTracks}>
             <Droppable droppableId="studio-track-headers">
               {(dropProvided) => (
@@ -1293,7 +1293,7 @@ export default function Studio() {
                       <TooltipProvider delayDuration={200}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="whitespace-pre-wrap break-words text-xs font-semibold cursor-help" title={track.name}>{track.name}</span>
+                            <span className="truncate max-w-[100px] sm:max-w-none sm:whitespace-pre-wrap sm:break-words text-xs font-semibold cursor-help" title={track.name}>{track.name}</span>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[240px] break-words">{track.name}</TooltipContent>
                         </Tooltip>

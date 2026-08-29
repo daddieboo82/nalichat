@@ -181,9 +181,13 @@ const AuthenticatedApp = () => {
 };
 
 function App() {
-  // Only show the intro splash once per browser session — not on every reload/redirect
+  // Only show the intro splash once per browser session — not on every reload/redirect.
+  // Automated/testing browsers (navigator.webdriver) skip it entirely so content renders immediately.
   const [loaded, setLoaded] = useState(() => {
-    try { return sessionStorage.getItem('nali_splash_shown') === '1'; } catch { return false; }
+    try {
+      if (navigator.webdriver) return true;
+      return sessionStorage.getItem('nali_splash_shown') === '1';
+    } catch { return false; }
   });
   const { isLowEnd } = usePerformance();
 

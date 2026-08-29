@@ -1683,7 +1683,7 @@ export default function Studio() {
                     >
                       {/* Left Trim Handle */}
                       <div 
-                        className={cn("absolute left-0 w-3 z-20 group/handle flex justify-start items-center bg-black/20", 
+                        className={cn("absolute left-0 w-4 z-20 group/handle flex justify-start items-center bg-black/20", 
                           (activeTool === 'trim' || activeTool === 'smart') ? "cursor-col-resize hover:bg-white/40" : "pointer-events-none opacity-0",
                           activeTool === 'smart' ? "top-[50%] bottom-0" : "top-0 bottom-0"
                         )}
@@ -1733,12 +1733,12 @@ export default function Studio() {
                                   target.addEventListener('pointerup', handleUp);
                                             }}
                                           >
-                                            <div className="w-[2px] h-4 bg-white/50 group-hover/handle:bg-white rounded-full" />
+                                            <div className="w-1 h-4 bg-white/50 group-hover/handle:bg-white rounded-full" />
                                           </div>
 
                                           {/* Right Trim Handle */}
                       <div 
-                        className={cn("absolute right-0 w-3 z-20 group/handle flex justify-end items-center bg-black/20", 
+                        className={cn("absolute right-0 w-4 z-20 group/handle flex justify-end items-center bg-black/20", 
                           (activeTool === 'trim' || activeTool === 'smart') ? "cursor-col-resize hover:bg-white/40" : "pointer-events-none opacity-0",
                           activeTool === 'smart' ? "top-[50%] bottom-0" : "top-0 bottom-0"
                         )}
@@ -1786,7 +1786,7 @@ export default function Studio() {
                           target.addEventListener('pointerup', handleUp);
                         }}
                       >
-                        <div className="w-[2px] h-4 bg-white/50 group-hover/handle:bg-white rounded-full" />
+                        <div className="w-1 h-4 bg-white/50 group-hover/handle:bg-white rounded-full" />
                       </div>
 
                       <div className="absolute top-1 left-4 text-[10px] font-medium text-white/50 pointer-events-none flex items-center gap-1 truncate max-w-[90%]">

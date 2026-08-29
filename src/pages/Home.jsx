@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import QuickStartGuide from "@/components/home/QuickStartGuide";
+import StudioTutorial from "@/components/home/StudioTutorial";
 import HowItWorks from "@/components/home/HowItWorks";
 import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import ImmersiveOnboarding from "@/components/onboarding/ImmersiveOnboarding";
@@ -355,6 +356,9 @@ export default function Home() {
 
         {/* ── Quick Start Guide ── */}
         <QuickStartGuide />
+
+        {/* ── Studio Video Tutorial ── */}
+        <StudioTutorial />
 
         {/* ── Messaging Hero Card ── */}
         <motion.div

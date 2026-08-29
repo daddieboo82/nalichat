@@ -78,6 +78,13 @@
     "is_edited": {
       "type": "boolean",
       "default": false
+    },
+    "participant_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "User IDs of the conversation's participants at send time, copied from the Conversation \u2014 used to scope reads"
     }
   },
   "required": [
@@ -89,15 +96,7 @@
       "data.sender_id": "{{user.id}}"
     },
     "read": {
-      "data.conversation_id": {
-        "$in": {
-          "$field": "id",
-          "of": "Conversation",
-          "with": {
-            "data.participant_ids": "{{user.id}}"
-          }
-        }
-      }
+      "data.participant_ids": "{{user.id}}"
     },
     "update": {
       "data.sender_id": "{{user.id}}"

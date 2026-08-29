@@ -1116,7 +1116,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       className="absolute left-0 top-0 bottom-0 w-2 hover:w-3 cursor-col-resize hover:bg-white/30 z-30 transition-all flex items-center justify-center group/triml"
                       title="Trim Start"
                       onPointerDown={(e) => {
-                          if (activeTool !== 'select') return;
+                          if (activeTool !== 'move') return;
                           e.stopPropagation();
                           const rect = containerRef.current.getBoundingClientRect();
                           const totalWidth = rect.width * zoom;
@@ -1167,7 +1167,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       className="absolute right-0 top-0 bottom-0 w-2 hover:w-3 cursor-col-resize hover:bg-white/30 z-30 transition-all flex items-center justify-center group/trimr"
                       title="Trim End"
                       onPointerDown={(e) => {
-                          if (activeTool !== 'select') return;
+                          if (activeTool !== 'move') return;
                           e.stopPropagation();
                           const rect = containerRef.current.getBoundingClientRect();
                           const totalWidth = rect.width * zoom;
@@ -1218,7 +1218,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                             className="absolute left-0 right-0 h-2 -mt-1 cursor-ns-resize hover:bg-white/30 z-20 group/gain flex items-center justify-center transition-colors"
                             style={{ top: `${Math.max(5, Math.min(95, (1 - (seg.gain ?? 1)) * 50 + 50))}%` }}
                             onPointerDown={(e) => {
-                                if (activeTool !== 'select') return;
+                                if (activeTool !== 'move') return;
                                 e.stopPropagation();
                                 const startY = e.clientY;
                                 const startGain = seg.gain ?? 1;
@@ -1358,7 +1358,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                         style={{ left: `${((seg.fadeIn || 0) / seg.duration) * 100}%` }}
                         title="Fade In"
                         onPointerDown={(e) => {
-                            if (activeTool !== 'select') return;
+                            if (activeTool !== 'move') return;
                             e.stopPropagation();
                             const rect = e.target.parentElement.getBoundingClientRect();
                             const handleMove = (moveEv) => {
@@ -1382,7 +1382,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                         style={{ left: `${100 - ((seg.fadeOut || 0) / seg.duration) * 100}%` }}
                         title="Fade Out"
                         onPointerDown={(e) => {
-                            if (activeTool !== 'select') return;
+                            if (activeTool !== 'move') return;
                             e.stopPropagation();
                             const rect = e.target.parentElement.getBoundingClientRect();
                             const handleMove = (moveEv) => {
@@ -1457,7 +1457,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
               {/* Playhead */}
               <div 
                 className={cn(
-                  "absolute top-0 bottom-0 z-30 cursor-ew-resize transition-colors",
+                  "absolute top-0 bottom-0 z-30 cursor-ew-resize transition-colors pointer-events-none",
                   isDraggingPlayhead ? "w-[3px] bg-white shadow-[0_0_15px_rgba(255,255,255,1)]" : "w-[2px] bg-primary shadow-[0_0_12px_rgba(var(--primary),1)]"
                 )}
                 style={{ left: `${(playhead / (track?.duration || 40)) * 100 * zoom}%` }}
@@ -1482,7 +1482,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                 }}
               >
                 <div className={cn(
-                  "absolute top-0 -translate-x-1/2 w-4 h-4 flex items-center justify-center transition-colors",
+                  "absolute top-0 -translate-x-1/2 w-4 h-4 flex items-center justify-center transition-colors pointer-events-auto cursor-ew-resize",
                   isDraggingPlayhead ? "bg-white" : "bg-primary"
                 )}>
                    <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[6px] border-l-transparent border-r-transparent border-t-black mt-1" />

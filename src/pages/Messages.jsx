@@ -283,7 +283,9 @@ export default function Messages() {
       });
       await queryClient.invalidateQueries({ queryKey: ["conversations"] });
       setSelectedConvId(conv.id);
-    } catch (err) {}
+    } catch (err) {
+      toast.error("Couldn't start the conversation. Please try again.");
+    }
   };
 
   const createGroup = async ({ name, participant_ids }) => {
@@ -296,7 +298,9 @@ export default function Messages() {
       });
       await queryClient.invalidateQueries({ queryKey: ["conversations"] });
       setSelectedConvId(conv.id);
-    } catch (err) {}
+    } catch (err) {
+      toast.error("Couldn't create the group. Please try again.");
+    }
   };
 
   const selectedConv = myConversations.find(c => c.id === selectedConvId);

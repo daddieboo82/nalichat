@@ -1116,8 +1116,6 @@ export default function WaveEditor({ track, onClose, onSave }) {
                               // 1ms minimum remaining duration — surgical-precision trim floor, matching Studio
                               const MIN_SEG_DURATION = 0.001;
                               const round1ms = (v) => Math.round(v * 1000) / 1000;
-                              newStart = Math.max(maxLeftTime, Math.max(0, Math.min(newStart, initialSeg.startOffset + initialSeg.duration - MIN_SEG_DURATION)));
-                              newStart = getSnappedTime(newStart);
                               newStart = round1ms(Math.max(maxLeftTime, Math.max(0, Math.min(newStart, initialSeg.startOffset + initialSeg.duration - MIN_SEG_DURATION))));
                               
                               const timeDiff = newStart - initialSeg.startOffset;
@@ -1170,8 +1168,6 @@ export default function WaveEditor({ track, onClose, onSave }) {
                               // 1ms minimum remaining duration — surgical-precision trim floor, matching Studio
                               const MIN_SEG_DURATION_R = 0.001;
                               const round1msR = (v) => Math.round(v * 1000) / 1000;
-                              newEnd = Math.min(maxRightTime, Math.max(initialSeg.startOffset + MIN_SEG_DURATION_R, Math.min(newEnd, track?.duration || 40)));
-                              newEnd = getSnappedTime(newEnd);
                               newEnd = round1msR(Math.min(maxRightTime, Math.max(initialSeg.startOffset + MIN_SEG_DURATION_R, Math.min(newEnd, track?.duration || 40))));
                               
                               const newDuration = newEnd - initialSeg.startOffset;

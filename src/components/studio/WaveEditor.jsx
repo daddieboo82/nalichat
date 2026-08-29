@@ -99,7 +99,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeEffects, setActiveEffects] = useState([]);
   const [zoom, setZoom] = useState(1);
-  const [activeTool, setActiveTool] = useState('select'); // select, split, move
+  const [activeTool, setActiveTool] = useState('smart'); // smart, trim, cut, grab, fade — mirrors Studio's tool set
   const [segments, setSegments] = useState([]);
   const [history, setHistory] = useState([]);
   const [historyIdx, setHistoryIdx] = useState(-1);
@@ -259,7 +259,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
   const handlePointerDown = (e) => {
     const segmentEl = e.target.closest('.audio-segment');
-    
+
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const clickX = e.clientX - rect.left + containerRef.current.scrollLeft;
@@ -267,7 +267,6 @@ export default function WaveEditor({ track, onClose, onSave }) {
       const isRulerClick = clickY <= 24;
 
       const totalWidth = rect.width * zoom;
-      // Exact time under the pointer — selections must land precisely where clicked
       const exactTime = Math.max(0, Math.min(track?.duration || 40, (clickX / totalWidth) * (track?.duration || 40)));
       const clickTime = getSnappedTime(exactTime);
 
@@ -276,61 +275,29 @@ export default function WaveEditor({ track, onClose, onSave }) {
         return;
       }
 
-      if (activeTool === 'range' || activeTool === 'select') {
-        if (activeTool === 'select') {
-          // Click-to-select: first click sets start marker, second click sets end.
-          // Works anywhere on the waveform, including on top of an audio clip.
-          if (pendingStart === null) {
-            setPendingStart(exactTime);
-            setSelectionRange(null);
-            setPlayhead(exactTime);
-            if (segmentEl) setSelectedSegmentId(segmentEl.dataset.segmentId);
-            return;
-          } else {
-            const start = Math.min(pendingStart, exactTime);
-            const end = Math.max(pendingStart, exactTime);
-            if (end - start > 0.001) {
-              setSelectionRange({ start, end });
-            }
-            setPendingStart(null);
-            return;
-          }
+      const clickedSegId = segmentEl ? segmentEl.dataset.segmentId : null;
+
+      // Cut Tool — mirrors Studio: shortens the clicked segment, removing audio after the click point
+      if (activeTool === 'cut' && segmentEl) {
+        const seg = segments.find(s => s.id === clickedSegId);
+        if (seg) {
+          const segRect = segmentEl.getBoundingClientRect();
+          const clickRatio = Math.max(0, Math.min(1, (e.clientX - segRect.left) / segRect.width));
+          const newDuration = Math.max(0.001, seg.duration * clickRatio);
+          const newSourceEnd = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * clickRatio;
+          const newSegs = segments.map(s => s.id === seg.id ? { ...s, duration: newDuration, sourceEnd: newSourceEnd, fadeOut: 0 } : s);
+          saveHistory(newSegs);
+          toast.success("Audio after the cut point removed");
         }
-        // Range tool: drag to select (original behavior)
-        setIsDraggingRange(true);
-        setSelectionRange({ start: exactTime, end: exactTime });
-        setPlayhead(exactTime);
         return;
       }
 
-      // Clicking on a segment cancels any pending selection start
-      if (pendingStart !== null) setPendingStart(null);
+      // Grab/Smart drag the whole segment via framer-motion — don't steal that gesture here
+      if (segmentEl && (activeTool === 'grab' || activeTool === 'smart')) return;
 
-      if (segmentEl && activeTool === 'move') return;
-
-      const clickedSegId = segmentEl ? segmentEl.dataset.segmentId : null;
-
-      if (activeTool === 'split') {
-        const segIndex = segments.findIndex(s => clickTime > s.startOffset && clickTime < (s.startOffset + s.duration));
-        if (segIndex !== -1) {
-          const seg = segments[segIndex];
-          const splitRatio = (clickTime - seg.startOffset) / seg.duration;
-          const splitSourceTime = seg.sourceStart + (seg.sourceEnd - seg.sourceStart) * splitRatio;
-          
-          const newSeg1 = { ...seg, id: `seg_${Date.now()}_1`, sourceEnd: splitSourceTime, duration: seg.duration * splitRatio, waveform: seg.waveform };
-          const newSeg2 = { ...seg, id: `seg_${Date.now()}_2`, startOffset: clickTime, sourceStart: splitSourceTime, duration: seg.duration * (1 - splitRatio), waveform: seg.waveform };
-
-          const newSegs = [...segments];
-          newSegs.splice(segIndex, 1, newSeg1, newSeg2);
-          saveHistory(newSegs);
-          toast.success("Segment split");
-        }
-      } else {
-        setPlayhead(clickTime);
-        if (clickedSegId) setSelectedSegmentId(clickedSegId);
-        else setSelectedSegmentId(null);
-        setSelectionRange(null);
-      }
+      setPlayhead(clickTime);
+      setSelectedSegmentId(clickedSegId || null);
+      setSelectionRange(null);
     }
   };
 
@@ -542,14 +509,16 @@ export default function WaveEditor({ track, onClose, onSave }) {
         // Set selection end at playhead
         setSelectionRange(prev => ({ start: Math.min(playhead, prev?.start ?? playhead), end: playhead }));
         setPendingStart(null);
-      } else if (e.code === 'Digit1') {
-        setActiveTool('select');
-      } else if (e.code === 'Digit2') {
-        setActiveTool('move');
-      } else if (e.code === 'Digit3') {
-        setActiveTool('split');
-      } else if (e.code === 'Digit4') {
-        setActiveTool('range');
+      } else if (e.code === 'KeyT') {
+        setActiveTool('trim');
+      } else if (e.code === 'KeyC') {
+        setActiveTool('cut');
+      } else if (e.code === 'KeyG') {
+        setActiveTool('grab');
+      } else if (e.code === 'KeyF') {
+        setActiveTool('fade');
+      } else if (e.code === 'KeyE') {
+        setActiveTool('smart');
       } else if ((e.metaKey || e.ctrlKey) && e.code === 'KeyS') {
         e.preventDefault();
         handleSave();
@@ -612,9 +581,11 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" disabled={!selectionRange && !selectedSegmentId} onSelect={() => { if (selectionRange) handleRangeDelete(); else if (selectedSegmentId) { saveHistory(segmentsRef.current.filter(s => s.id !== selectedSegmentId)); setSelectedSegmentId(null); } }}>Delete <DropdownMenuShortcut className="text-current opacity-70">Del</DropdownMenuShortcut></DropdownMenuItem>
                   <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => handleRangeSplit()} disabled={!selectionRange}>Split</DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#aaa]" />
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => setActiveTool('select')}>Select Tool <DropdownMenuShortcut className="text-current opacity-70">1</DropdownMenuShortcut></DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => setActiveTool('move')}>Event Tool <DropdownMenuShortcut className="text-current opacity-70">2</DropdownMenuShortcut></DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => setActiveTool('range')}>Range Tool <DropdownMenuShortcut className="text-current opacity-70">4</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => setActiveTool('smart')}>Smart Tool <DropdownMenuShortcut className="text-current opacity-70">E</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => setActiveTool('trim')}>Trim Tool <DropdownMenuShortcut className="text-current opacity-70">T</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => setActiveTool('cut')}>Cut Tool <DropdownMenuShortcut className="text-current opacity-70">C</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => setActiveTool('grab')}>Grabber Tool <DropdownMenuShortcut className="text-current opacity-70">G</DropdownMenuShortcut></DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs focus:bg-primary focus:text-white rounded-sm cursor-default" onSelect={() => setActiveTool('fade')}>Fade Tool <DropdownMenuShortcut className="text-current opacity-70">F</DropdownMenuShortcut></DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -743,11 +714,13 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     </div>
                     
                     <div className="flex flex-col gap-2">
-                      <span className="text-xs font-bold text-muted-foreground uppercase">Cursor Tools</span>
+                      <span className="text-xs font-bold text-muted-foreground uppercase">Editing Tools</span>
                       <div className="grid grid-cols-2 gap-2">
-                        <Button variant={activeTool === 'select' ? "default" : "secondary"} size="sm" onClick={() => setActiveTool('select')} className="gap-2"><MousePointer2 className="w-4 h-4" /> Select</Button>
-                        <Button variant={activeTool === 'range' ? "default" : "secondary"} size="sm" onClick={() => setActiveTool('range')} className="gap-2"><SquareDashedBottom className="w-4 h-4" /> Range</Button>
-                        <Button variant={activeTool === 'move' ? "default" : "secondary"} size="sm" onClick={() => setActiveTool('move')} className="gap-2"><MoveHorizontal className="w-4 h-4" /> Move</Button>
+                        <Button variant={activeTool === 'smart' ? "default" : "secondary"} size="sm" onClick={() => setActiveTool('smart')} className="gap-2"><MoveHorizontal className="w-3 h-3" /><MousePointer2 className="w-3 h-3" /> Smart</Button>
+                        <Button variant={activeTool === 'trim' ? "default" : "secondary"} size="sm" onClick={() => setActiveTool('trim')} className="gap-2"><MoveHorizontal className="w-4 h-4" /> Trim</Button>
+                        <Button variant={activeTool === 'cut' ? "default" : "secondary"} size="sm" onClick={() => setActiveTool('cut')} className="gap-2"><Scissors className="w-4 h-4" /> Cut</Button>
+                        <Button variant={activeTool === 'grab' ? "default" : "secondary"} size="sm" onClick={() => setActiveTool('grab')} className="gap-2"><MousePointer2 className="w-4 h-4" /> Grabber</Button>
+                        <Button variant={activeTool === 'fade' ? "default" : "secondary"} size="sm" onClick={() => setActiveTool('fade')} className="gap-2"><Crosshair className="w-4 h-4" /> Fade</Button>
                         <Button variant={snapToGrid ? "default" : "secondary"} size="sm" onClick={() => setSnapToGrid(!snapToGrid)} className="gap-2"><Magnet className="w-4 h-4" /> Snap</Button>
                       </div>
                     </div>
@@ -807,20 +780,31 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
                 <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg border border-transparent shadow-none">
                   <Tooltip><TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" onClick={() => setActiveTool('select')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'select' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
-                      <MousePointer2 className="w-4 h-4" /> <span className="text-xs">Select</span>
+                    <Button variant="ghost" size="sm" title="Smart Tool (E)" onClick={() => setActiveTool('smart')} className={cn("h-7 px-2 gap-1.5 rounded-md border border-transparent", activeTool === 'smart' ? "border-primary text-primary bg-primary/10" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                      <div className="flex flex-col gap-0.5 items-center"><div className="flex gap-[1px]"><MoveHorizontal className="w-2 h-2"/><MousePointer2 className="w-2 h-2"/></div></div>
+                      <span className="text-xs">Smart</span>
                     </Button>
-                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Edit Tool</TooltipContent></Tooltip>
+                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Smart Tool (Trim + Grab)</TooltipContent></Tooltip>
                   <Tooltip><TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" onClick={() => setActiveTool('range')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'range' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
-                      <SquareDashedBottom className="w-4 h-4" /> <span className="text-xs">Range</span>
+                    <Button variant="ghost" size="sm" title="Trim Tool (T)" onClick={() => setActiveTool('trim')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'trim' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                      <MoveHorizontal className="w-4 h-4" /> <span className="text-xs">Trim</span>
                     </Button>
-                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Time Zoom/Selection Tool</TooltipContent></Tooltip>
+                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Trim Tool</TooltipContent></Tooltip>
                   <Tooltip><TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" onClick={() => setActiveTool('move')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'move' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
-                      <MoveHorizontal className="w-4 h-4" /> <span className="text-xs">Move</span>
+                    <Button variant="ghost" size="sm" title="Cut Tool (C)" onClick={() => setActiveTool('cut')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'cut' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                      <Scissors className="w-4 h-4" /> <span className="text-xs">Cut</span>
                     </Button>
-                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Event Tool</TooltipContent></Tooltip>
+                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Cut Tool</TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" title="Grabber Tool (G)" onClick={() => setActiveTool('grab')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'grab' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                      <MousePointer2 className="w-4 h-4" /> <span className="text-xs">Grabber</span>
+                    </Button>
+                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Grabber Tool</TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" title="Fade Tool (F)" onClick={() => setActiveTool('fade')} className={cn("h-7 px-2 gap-1.5 rounded-md", activeTool === 'fade' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground")}>
+                      <Crosshair className="w-4 h-4" /> <span className="text-xs">Fade</span>
+                    </Button>
+                  </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Fade Tool</TooltipContent></Tooltip>
                 </div>
 
                 <div className="w-px h-5 bg-border/50 mx-1 border-none" />
@@ -1086,10 +1070,10 @@ export default function WaveEditor({ track, onClose, onSave }) {
                   <motion.div
                     key={seg.id}
                     data-segment-id={seg.id}
-                    drag={activeTool === 'move' ? 'x' : false}
+                    drag={(activeTool === 'grab' || activeTool === 'smart') ? 'x' : false}
                     dragMomentum={false}
                     onDragEnd={(e, info) => {
-                      if (activeTool !== 'move') return;
+                      if (activeTool !== 'grab' && activeTool !== 'smart') return;
                       const rect = containerRef.current.getBoundingClientRect();
                       const totalWidth = rect.width * zoom;
                       const timeShift = (info.offset.x / totalWidth) * (track?.duration || 40);
@@ -1097,8 +1081,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     }}
                     className={cn(
                       "audio-segment absolute top-0 bottom-0 border border-white/10 rounded-lg overflow-hidden flex items-center transition-all group shadow-sm bg-card/40 backdrop-blur",
-                      activeTool === 'move' ? "cursor-grab active:cursor-grabbing hover:border-white/30" : "",
-                      activeTool === 'split' ? "hover:border-red-500/50 cursor-crosshair" : "",
+                      (activeTool === 'grab' || activeTool === 'smart') ? "cursor-grab active:cursor-grabbing hover:border-white/30" : "",
+                      activeTool === 'cut' ? "hover:border-red-500/50 cursor-crosshair" : "",
                       selectedSegmentId === seg.id ? "border-primary shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)] z-10" : "z-0"
                     )}
                     style={{
@@ -1116,7 +1100,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       className="absolute left-0 top-0 bottom-0 w-2 hover:w-3 cursor-col-resize hover:bg-white/30 z-30 transition-all flex items-center justify-center group/triml"
                       title="Trim Start"
                       onPointerDown={(e) => {
-                          if (activeTool !== 'move') return;
+                          if (activeTool !== 'trim' && activeTool !== 'smart') return;
                           e.stopPropagation();
                           const rect = containerRef.current.getBoundingClientRect();
                           const totalWidth = rect.width * zoom;
@@ -1170,7 +1154,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       className="absolute right-0 top-0 bottom-0 w-2 hover:w-3 cursor-col-resize hover:bg-white/30 z-30 transition-all flex items-center justify-center group/trimr"
                       title="Trim End"
                       onPointerDown={(e) => {
-                          if (activeTool !== 'move') return;
+                          if (activeTool !== 'trim' && activeTool !== 'smart') return;
                           e.stopPropagation();
                           const rect = containerRef.current.getBoundingClientRect();
                           const totalWidth = rect.width * zoom;
@@ -1224,7 +1208,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
                             className="absolute left-0 right-0 h-2 -mt-1 cursor-ns-resize hover:bg-white/30 z-20 group/gain flex items-center justify-center transition-colors"
                             style={{ top: `${Math.max(5, Math.min(95, (1 - (seg.gain ?? 1)) * 50 + 50))}%` }}
                             onPointerDown={(e) => {
-                                if (activeTool !== 'move') return;
+                                if (activeTool !== 'grab' && activeTool !== 'smart') return;
                                 e.stopPropagation();
                                 const startY = e.clientY;
                                 const startGain = seg.gain ?? 1;
@@ -1357,6 +1341,54 @@ export default function WaveEditor({ track, onClose, onSave }) {
                         <polygon points={`100%,0 ${100 - ((seg.fadeOut)/(seg.duration))*100}%,0 100%,100%`} className="fill-[#1c1c1e]/90" />
                       )}
                     </svg>
+
+                    {/* Fade Handles (Fade Tool / Smart Tool) */}
+                    {(activeTool === 'fade' || activeTool === 'smart') && (
+                      <>
+                        <div
+                          className="absolute top-5 w-3 h-3 -ml-1.5 bg-white/80 hover:bg-white hover:scale-110 cursor-ew-resize z-40 rounded-full shadow-sm transition-transform"
+                          style={{ left: `${((seg.fadeIn || 0) / seg.duration) * 100}%` }}
+                          title="Fade In"
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                            const rect = e.currentTarget.parentElement.getBoundingClientRect();
+                            const handleMove = (moveEv) => {
+                              const clickX = Math.max(0, moveEv.clientX - rect.left);
+                              const newFadeIn = Math.max(0, Math.min((clickX / rect.width) * seg.duration, seg.duration - (seg.fadeOut || 0)));
+                              setSegments(prev => prev.map(s => s.id === seg.id ? { ...s, fadeIn: newFadeIn } : s));
+                            };
+                            const handleUp = () => {
+                              window.removeEventListener('pointermove', handleMove);
+                              window.removeEventListener('pointerup', handleUp);
+                              commitSegmentChange();
+                            };
+                            window.addEventListener('pointermove', handleMove);
+                            window.addEventListener('pointerup', handleUp);
+                          }}
+                        />
+                        <div
+                          className="absolute top-5 w-3 h-3 -mr-1.5 bg-white/80 hover:bg-white hover:scale-110 cursor-ew-resize z-40 rounded-full shadow-sm transition-transform"
+                          style={{ right: `${((seg.fadeOut || 0) / seg.duration) * 100}%` }}
+                          title="Fade Out"
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                            const rect = e.currentTarget.parentElement.getBoundingClientRect();
+                            const handleMove = (moveEv) => {
+                              const clickX = Math.max(0, rect.right - moveEv.clientX);
+                              const newFadeOut = Math.max(0, Math.min((clickX / rect.width) * seg.duration, seg.duration - (seg.fadeIn || 0)));
+                              setSegments(prev => prev.map(s => s.id === seg.id ? { ...s, fadeOut: newFadeOut } : s));
+                            };
+                            const handleUp = () => {
+                              window.removeEventListener('pointermove', handleMove);
+                              window.removeEventListener('pointerup', handleUp);
+                              commitSegmentChange();
+                            };
+                            window.addEventListener('pointermove', handleMove);
+                            window.addEventListener('pointerup', handleUp);
+                          }}
+                        />
+                      </>
+                    )}
 
                     {/* Fade Handles */}
                     <div 

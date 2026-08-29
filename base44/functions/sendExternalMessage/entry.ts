@@ -17,11 +17,24 @@ Deno.serve(async (req) => {
     const name = senderName || user.full_name || 'Someone on NaliChat';
 
     if (type === 'email') {
-      // Send via built-in email integration
+      // Prevent open email relay: only allow sending to registered app users.
+      // Strip any CRLF sequences from the recipient to prevent header injection.
+      const cleanDestination = destination.replace(/[\r\n]/g, '').trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cleanDestination)) {
+        return Response.json({ error: 'Invalid email address' }, { status: 400 });
+      }
+      const users = await base44.asServiceRole.entities.User.list();
+      const isRegistered = users.some((u) => u.email && u.email.toLowerCase() === cleanDestination.toLowerCase());
+      if (!isRegistered) {
+        return Response.json({ error: 'Recipient is not a registered NaliChat user' }, { status: 403 });
+      }
+      // Sanitize the message body to remove CRLF sequences
+      const cleanMessage = message.replace(/[\r\n]{2,}/g, '\n\n').replace(/[\r\n]/g, '\n');
       await base44.asServiceRole.integrations.Core.SendEmail({
-        to: destination,
+        to: cleanDestination,
         subject: `Message from ${name} via NaliChat`,
-        body: `${name} sent you a message on NaliChat:\n\n"${message}"\n\n---\nReply by joining NaliChat to connect directly.`,
+        body: `${name} sent you a message on NaliChat:\n\n"${cleanMessage}"\n\n---\nReply by joining NaliChat to connect directly.`,
       });
       return Response.json({ success: true, method: 'email' });
     }

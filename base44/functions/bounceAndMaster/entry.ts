@@ -3,10 +3,45 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    // Require authentication — this endpoint fetches arbitrary URLs server-side
+    const user = await base44.auth.me();
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { audioUrl, loudnessTarget, format, bitDepth, sampleRate } = await req.json();
 
     if (!audioUrl) {
       return Response.json({ error: 'Audio URL required' }, { status: 400 });
+    }
+
+    // Validate audioUrl to prevent SSRF — only allow https URLs from trusted storage hosts
+    const ALLOWED_HOSTS = [
+      'storage.googleapis.com',        // Base44 file storage
+      'base44-user-files.s3.amazonaws.com',
+      'base44-user-files.s3.us-east-1.amazonaws.com',
+      'files.base44.com',
+      'cdn.base44.com',
+    ];
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(audioUrl);
+    } catch {
+      return Response.json({ error: 'Invalid audio URL' }, { status: 400 });
+    }
+    if (parsedUrl.protocol !== 'https:') {
+      return Response.json({ error: 'Audio URL must use https' }, { status: 400 });
+    }
+    // Block internal/private IP literals and metadata endpoints
+    const hostname = parsedUrl.hostname.toLowerCase();
+    if (hostname === 'localhost' || hostname === 'metadata.google.internal' ||
+        /^(10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|127\.|0\.)/.test(hostname) ||
+        hostname.endsWith('.internal') || hostname.endsWith('.local')) {
+      return Response.json({ error: 'Audio URL host not allowed' }, { status: 400 });
+    }
+    const isAllowed = ALLOWED_HOSTS.some(h => hostname === h || hostname.endsWith('.' + h));
+    if (!isAllowed) {
+      return Response.json({ error: 'Audio URL host not allowed' }, { status: 400 });
     }
 
     // Fetch audio file

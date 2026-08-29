@@ -165,7 +165,7 @@ export default function StudioToolbar2({
 
   if (isMobile) {
     return (
-      <div className="min-h-[3.5rem] py-1.5 border-b border-border/40 bg-card/40 flex items-center justify-between px-4 gap-2 shrink-0 relative">
+      <div className="min-h-[3.5rem] py-1.5 mx-2 mt-2 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] flex items-center justify-between px-4 gap-2 shrink-0 relative z-10">
         <Button onClick={addTrack} variant="secondary" size="sm" className="gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20">
           <Plus className="w-4 h-4" /> Add Track
         </Button>
@@ -189,7 +189,7 @@ export default function StudioToolbar2({
   }
 
   return (
-    <div className="min-h-[3.5rem] py-1.5 border-b border-border/40 bg-card/40 flex flex-wrap items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 relative">
+    <div className="min-h-[3.5rem] py-1.5 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-wrap items-center px-2 sm:px-4 gap-2 sm:gap-4 shrink-0 relative z-10">
       {toolbarContent}
     </div>
   );

@@ -1079,9 +1079,15 @@ export default function Studio() {
   if (showWelcome) return <StudioWelcome hasAutosave={hasAutosave} handleStartBlank={handleStartBlank} handleLoadAutosave={handleLoadAutosave} handleLoadDemo={handleLoadDemo} navigate={navigate} />;
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#0D0B14] text-foreground overflow-hidden relative">
+      {/* Ambient stage glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+        <div className="absolute -top-40 left-1/4 w-[36rem] h-[36rem] rounded-full bg-primary/15 blur-3xl" />
+        <div className="absolute -bottom-40 right-1/4 w-[32rem] h-[32rem] rounded-full bg-accent/10 blur-3xl" />
+      </div>
+
       {/* Top Toolbar */}
-      <div className="min-h-[4rem] py-2 border-b border-border/50 bg-card/80 backdrop-blur flex flex-wrap items-center justify-between gap-2 pl-2 sm:pl-4 shrink-0 relative">
+      <div className="min-h-[4rem] py-2 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-wrap items-center justify-between gap-2 pl-2 sm:pl-4 pr-2 shrink-0 relative z-10">
         <div className="flex items-center gap-4 shrink-0">
           <TooltipProvider delayDuration={200}>
             <Tooltip>
@@ -1245,11 +1251,11 @@ export default function Studio() {
       />
 
       {/* Main Workspace */}
-      <div className="flex-1 flex overflow-hidden bg-[#0a0a0c] relative">
+      <div className="flex-1 flex overflow-hidden bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
         {/* Jam Room Floating Overlay */}
         <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} />
         {/* Track Headers (Left Sidebar) */}
-        <div className="w-72 md:w-96 border-r border-border/50 bg-card/60 flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)]">
+        <div className="w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 rounded-l-2xl">
           <DragDropContext onDragEnd={handleReorderTracks}>
             <Droppable droppableId="studio-track-headers">
               {(dropProvided) => (
@@ -1427,9 +1433,9 @@ export default function Studio() {
         </div>
 
         {/* Timeline & Waveforms (Right Area) */}
-        <div className="flex-1 relative overflow-auto custom-scrollbar flex flex-col bg-[#0f0f13]">
+        <div className="flex-1 relative overflow-auto custom-scrollbar flex flex-col bg-gradient-to-b from-[#12101C]/80 to-[#0B0912]/90 rounded-r-2xl">
           {/* Timeline Header */}
-          <div className="h-8 border-b border-border/30 bg-card/40 sticky top-0 z-20 flex items-end px-0 overflow-hidden timeline-ruler">
+          <div className="h-8 border-b border-white/10 bg-white/[0.04] backdrop-blur-md sticky top-0 z-20 flex items-end px-0 overflow-hidden timeline-ruler">
             {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[2px] bg-red-500/50 z-10 pointer-events-none" style={{ left: `${projectEnd * 20 * zoom}px` }}><div className="absolute top-0 -translate-x-1/2 bg-red-500/80 text-white text-[8px] px-1 rounded-b shadow-md font-bold">END</div></div>; })()}
             <div className="h-full relative cursor-pointer select-none" style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px` }}
               onPointerDown={(e) => {
@@ -1888,7 +1894,7 @@ export default function Studio() {
       </div>
 
       {/* Bottom Mixer / Status Bar */}
-      <div className="min-h-[2.5rem] py-1 border-t border-border/50 bg-card/80 flex flex-wrap items-center justify-between px-3 sm:px-4 text-xs text-muted-foreground shrink-0 overflow-hidden gap-2">
+      <div className="min-h-[2.5rem] py-1.5 mx-2 sm:mx-3 mb-2 sm:mb-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-wrap items-center justify-between px-3 sm:px-4 text-xs text-muted-foreground shrink-0 overflow-hidden gap-2 relative z-10">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <Button variant="ghost" size="sm" onClick={() => setShowMixerPanel(!showMixerPanel)} className={cn("h-6 text-xs gap-1.5", showMixerPanel && "bg-secondary text-foreground")}>
             <SlidersHorizontal className="w-3 h-3" /> Mixer

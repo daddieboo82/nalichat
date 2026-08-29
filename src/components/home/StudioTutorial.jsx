@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Play, Pause, Volume2, VolumeX, Scissors, SlidersHorizontal, Layers, Wand2, ArrowRight, Clock } from "lucide-react";
 
-const TUTORIAL_VIDEO = "https://media.base44.com/videos/public/6a1f5ee134147461560c2b37/7ec84bf34_Studio_Tutorial.mp4";
+const TUTORIAL_VIDEO = "https://media.base44.com/videos/public/6a1f5ee134147461560c2b37/29cc1ea41_App_Tutorial.mp4";
 
 const chapters = [
   { time: "0:00", title: "Studio Overview", icon: Layers },

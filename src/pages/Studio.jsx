@@ -1697,7 +1697,7 @@ export default function Studio() {
                           
                           target.setPointerCapture(e.pointerId);
                           
-                          const MIN_CLIP_DURATION = 0.005; // 5ms — surgical-precision trim floor
+                          const MIN_CLIP_DURATION = 0.001; // 1ms — surgical-precision trim floor
                           const round = (v) => Math.round(v * 1000) / 1000; // snap to 1ms to avoid float drift
                           const handleMove = (moveEvent) => {
                             const deltaX = moveEvent.clientX - startX;
@@ -1752,7 +1752,7 @@ export default function Studio() {
                           
                           target.setPointerCapture(e.pointerId);
                           
-                          const MIN_CLIP_DURATION_R = 0.005; // 5ms — surgical-precision trim floor
+                          const MIN_CLIP_DURATION_R = 0.001; // 1ms — surgical-precision trim floor
                           const roundR = (v) => Math.round(v * 1000) / 1000; // snap to 1ms to avoid float drift
                           const handleMove = (moveEvent) => {
                             const deltaX = moveEvent.clientX - startX;

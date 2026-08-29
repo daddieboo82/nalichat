@@ -40,6 +40,15 @@ Deno.serve(async (req) => {
     }
 
     if (type === 'sms') {
+      // Prevent open SMS relay: only allow sending to a registered app user's phone,
+      // mirroring the email path's "registered user" restriction.
+      const cleanPhone = destination.replace(/[\r\n]/g, '').trim();
+      const smsUsers = await base44.asServiceRole.entities.User.list();
+      const isRegisteredPhone = smsUsers.some((u) => u.phone && u.phone.trim() === cleanPhone);
+      if (!isRegisteredPhone) {
+        return Response.json({ error: 'Recipient is not a registered NaliChat user' }, { status: 403 });
+      }
+
       // SMS via Twilio
       const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
       const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
@@ -52,10 +61,11 @@ Deno.serve(async (req) => {
         }, { status: 503 });
       }
 
-      const body = `${name} sent you a message via NaliChat:\n\n"${message}"\n\nJoin NaliChat to reply directly.`;
+      const cleanMessage = message.replace(/[\r\n]{2,}/g, '\n\n').replace(/[\r\n]/g, '\n');
+      const body = `${name} sent you a message via NaliChat:\n\n"${cleanMessage}"\n\nJoin NaliChat to reply directly.`;
 
       const formData = new URLSearchParams();
-      formData.append('To', destination);
+      formData.append('To', cleanPhone);
       formData.append('From', fromNumber);
       formData.append('Body', body);
 

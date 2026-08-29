@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Knob } from '@/components/ui/knob';
 import PrecisionCrosshair from '@/components/studio/PrecisionCrosshair';
+import SegmentWaveformSVG from '@/components/studio/SegmentWaveformSVG';
 import { createSegmentPlayer } from '@/lib/segmentPlayback';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -1390,104 +1391,8 @@ export default function WaveEditor({ track, onClose, onSave }) {
                       </>
                     )}
 
-                    {/* Fade Handles */}
-                    <div 
-                        className="absolute top-0 w-4 h-4 bg-white/80 hover:bg-white hover:scale-110 cursor-ew-resize z-40 rounded-br-lg shadow-sm transition-transform flex items-center justify-center group/fadein"
-                        style={{ left: `${((seg.fadeIn || 0) / seg.duration) * 100}%` }}
-                        title="Fade In"
-                        onPointerDown={(e) => {
-                            if (activeTool !== 'move') return;
-                            e.stopPropagation();
-                            const rect = e.target.parentElement.getBoundingClientRect();
-                            const handleMove = (moveEv) => {
-                                const clickX = Math.max(0, moveEv.clientX - rect.left);
-                                const newFadeIn = (clickX / rect.width) * seg.duration;
-                                setSegments(prev => prev.map(s => s.id === seg.id ? { ...s, fadeIn: Math.min(newFadeIn, seg.duration - (seg.fadeOut || 0)) } : s));
-                            };
-                            const handleUp = () => {
-                                window.removeEventListener('pointermove', handleMove);
-                                window.removeEventListener('pointerup', handleUp);
-                                commitSegmentChange();
-                            };
-                            window.addEventListener('pointermove', handleMove);
-                            window.addEventListener('pointerup', handleUp);
-                        }}
-                    >
-                      <div className="w-[6px] h-[6px] bg-black/30 rounded-full group-hover/fadein:bg-black/50" />
-                    </div>
-                    <div 
-                        className="absolute top-0 w-4 h-4 bg-white/80 hover:bg-white hover:scale-110 cursor-ew-resize z-40 rounded-bl-lg shadow-sm transition-transform -translate-x-full flex items-center justify-center group/fadeout"
-                        style={{ left: `${100 - ((seg.fadeOut || 0) / seg.duration) * 100}%` }}
-                        title="Fade Out"
-                        onPointerDown={(e) => {
-                            if (activeTool !== 'move') return;
-                            e.stopPropagation();
-                            const rect = e.target.parentElement.getBoundingClientRect();
-                            const handleMove = (moveEv) => {
-                                const clickX = Math.max(0, rect.right - moveEv.clientX);
-                                const newFadeOut = (clickX / rect.width) * seg.duration;
-                                setSegments(prev => prev.map(s => s.id === seg.id ? { ...s, fadeOut: Math.min(newFadeOut, seg.duration - (seg.fadeIn || 0)) } : s));
-                            };
-                            const handleUp = () => {
-                                window.removeEventListener('pointermove', handleMove);
-                                window.removeEventListener('pointerup', handleUp);
-                                commitSegmentChange();
-                            };
-                            window.addEventListener('pointermove', handleMove);
-                            window.addEventListener('pointerup', handleUp);
-                        }}
-                    >
-                      <div className="w-[6px] h-[6px] bg-black/30 rounded-full group-hover/fadeout:bg-black/50" />
-                    </div>
-
-                    {/* Waveform - Pro grade rendering (peak fill + RMS body + outline) */}
-                    {(() => {
-                      const wf = seg.waveform || [];
-                      const wLen = wf.length - 1 || 1;
-                      const g = seg.gain ?? 1;
-                      const gradId = `wf-grad-${seg.id}`;
-                      const rmsId = `wf-rms-${seg.id}`;
-                      const glowId = `wf-glow-${seg.id}`;
-
-                      // Peak closed path
-                      let peakPath = `M 0,50 `;
-                      for (let i = 0; i <= wLen; i++) peakPath += `L ${(i/wLen)*10000},${50 - Math.max(0.001, wf[i])*48*g} `;
-                      for (let i = wLen; i >= 0; i--) peakPath += `L ${(i/wLen)*10000},${50 + Math.max(0.001, wf[i])*48*g} `;
-                      peakPath += 'Z';
-
-                      const baseFill = "text-primary fill-primary";
-
-                      const srcStart = seg.sourceStart || 0;
-                      const srcEnd = seg.sourceEnd ?? 1;
-                      const ratio = srcEnd - srcStart || 1;
-
-                      return (
-                        <div className="absolute inset-y-0 pointer-events-none" style={{
-                           left: `-${(srcStart / ratio) * 100}%`,
-                           width: `${(1 / ratio) * 100}%`
-                        }}>
-                          <svg className="w-full h-full pt-5 pb-0 pointer-events-none" style={{ filter: 'drop-shadow(0px 0px 5px hsl(var(--primary) / 0.45))' }} preserveAspectRatio="none" viewBox="0 0 10000 100">
-                            <defs>
-                              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="currentColor" stopOpacity="0.95" />
-                                <stop offset="35%" stopColor="currentColor" stopOpacity="0.75" />
-                                <stop offset="50%" stopColor="currentColor" stopOpacity="0.3" />
-                                <stop offset="65%" stopColor="currentColor" stopOpacity="0.75" />
-                                <stop offset="100%" stopColor="currentColor" stopOpacity="0.95" />
-                              </linearGradient>
-                            </defs>
-                            <g className={baseFill}>
-                              <path 
-                                d={peakPath} 
-                                fill={`url(#${gradId})`} 
-                                shapeRendering="geometricPrecision"
-                              />
-                            </g>
-                            <line x1="0" y1="50" x2="10000" y2="50" stroke="#000000" strokeOpacity="0.5" strokeWidth="2" vectorEffect="non-scaling-stroke" shapeRendering="geometricPrecision" />
-                          </svg>
-                        </div>
-                      );
-                    })()}
+                    {/* Waveform - Pro grade rendering (memoized so trim/fade drags don't rebuild the path every frame) */}
+                    <SegmentWaveformSVG waveform={seg.waveform} gain={seg.gain} segId={seg.id} sourceStart={seg.sourceStart} sourceEnd={seg.sourceEnd} />
                   </motion.div>
                 ))}
               </div>

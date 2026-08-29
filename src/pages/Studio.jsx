@@ -1613,38 +1613,22 @@ export default function Studio() {
                         const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
 
                         if (activeTool === 'cut') {
+                           // Cut removes the audio after the click point (unlike Split, which
+                           // keeps both halves as separate clips) — the clip is simply shortened.
                            const target = e.currentTarget;
                            const rect = target.getBoundingClientRect();
                            const clickX = e.clientX - rect.left;
                            const clickRatio = clickX / rect.width;
                            
-                           const splitDuration = track.duration * clickRatio;
-                           const splitTime = track.startTime + splitDuration;
+                           const newDuration = track.duration * clickRatio;
                            
-                           let nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
-                           const trackPart1 = {
-                             ...track,
-                             duration: splitDuration,
-                             fullDuration: track.fullDuration || track.duration,
-                             clipStart: track.clipStart || 0
-                           };
-                           
-                           const trackPart2 = {
-                             ...track,
-                             id: nextId,
-                             name: `${track.name} (Cut)`,
-                             startTime: splitTime,
-                             duration: track.duration - splitDuration,
-                             fullDuration: track.fullDuration || track.duration,
-                             clipStart: (track.clipStart || 0) + splitDuration
-                           };
-                           
-                           setTracksWithHistory(prev => {
-                             const idx = prev.findIndex(t => t.id === track.id);
-                             const newTracks = [...prev];
-                             newTracks.splice(idx, 1, trackPart1, trackPart2);
-                             return newTracks;
-                           });
+                           setTracksWithHistory(prev => prev.map(t => t.id === track.id ? {
+                             ...t,
+                             duration: newDuration,
+                             fullDuration: t.fullDuration || t.duration,
+                             clipStart: t.clipStart || 0
+                           } : t));
+                           toast.success("Audio after the cut point removed");
                            return;
                         }
 

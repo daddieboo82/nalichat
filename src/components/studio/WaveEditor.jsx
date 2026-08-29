@@ -107,6 +107,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [selectionRange, setSelectionRange] = useState(null);
   const [isDraggingRange, setIsDraggingRange] = useState(false);
+  const [pendingStart, setPendingStart] = useState(null); // click-to-select: first click marker
   const [activeEnvelope, setActiveEnvelope] = useState(null);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
@@ -242,11 +243,32 @@ export default function WaveEditor({ track, onClose, onSave }) {
       }
 
       if (activeTool === 'range' || (activeTool === 'select' && !segmentEl)) {
+        if (activeTool === 'select') {
+          // Click-to-select: first click sets start marker, second click sets end
+          if (pendingStart === null) {
+            setPendingStart(clickTime);
+            setSelectionRange(null);
+            setPlayhead(clickTime);
+            return;
+          } else {
+            const start = Math.min(pendingStart, clickTime);
+            const end = Math.max(pendingStart, clickTime);
+            if (end - start > 0.001) {
+              setSelectionRange({ start, end });
+            }
+            setPendingStart(null);
+            return;
+          }
+        }
+        // Range tool: drag to select (original behavior)
         setIsDraggingRange(true);
         setSelectionRange({ start: clickTime, end: clickTime });
-        if (activeTool === 'select') setPlayhead(clickTime);
+        setPlayhead(clickTime);
         return;
       }
+
+      // Clicking on a segment cancels any pending selection start
+      if (pendingStart !== null) setPendingStart(null);
 
       if (segmentEl && activeTool === 'move') return;
 
@@ -394,6 +416,52 @@ export default function WaveEditor({ track, onClose, onSave }) {
     });
   };
 
+  // Apply fade in/out to segments overlapping the selection range
+  const handleRangeFade = (direction) => {
+    if (!selectionRange) return;
+    const { start, end } = selectionRange;
+    setSegments(prev => {
+      let changed = false;
+      const newSegs = prev.map(seg => {
+        const segEnd = seg.startOffset + seg.duration;
+        // Only apply to segments that overlap the selection
+        if (segEnd <= start || seg.startOffset >= end) return seg;
+        changed = true;
+        if (direction === 'in') {
+          // Fade in starts at selection start, duration = selection length
+          return { ...seg, fadeIn: end - start };
+        } else {
+          return { ...seg, fadeOut: end - start };
+        }
+      });
+      if (changed) {
+        saveHistory(newSegs);
+        toast.success(`Fade ${direction} applied to selection`);
+      }
+      return newSegs;
+    });
+  };
+
+  // Mute segments overlapping the selection range (set gain to 0)
+  const handleRangeMute = () => {
+    if (!selectionRange) return;
+    const { start, end } = selectionRange;
+    setSegments(prev => {
+      let changed = false;
+      const newSegs = prev.map(seg => {
+        const segEnd = seg.startOffset + seg.duration;
+        if (segEnd <= start || seg.startOffset >= end) return seg;
+        changed = true;
+        return { ...seg, gain: 0 };
+      });
+      if (changed) {
+        saveHistory(newSegs);
+        toast.success("Selection muted");
+      }
+      return newSegs;
+    });
+  };
+
   const handleSave = () => {
     if (!track) return;
     try {
@@ -439,11 +507,14 @@ export default function WaveEditor({ track, onClose, onSave }) {
         setIsPlaying(p => !p);
       } else if (e.code === 'Escape') {
         e.preventDefault();
+        if (pendingStart !== null) { setPendingStart(null); return; }
+        if (selectionRange) { setSelectionRange(null); return; }
         handleClose();
       } else if ((e.metaKey || e.ctrlKey) && e.code === 'KeyZ') {
         if (e.shiftKey) handleRedo();
         else handleUndo();
       } else if (e.code === 'Backspace' || e.code === 'Delete') {
+        if (pendingStart !== null) { setPendingStart(null); return; }
         if (selectionRange) {
            handleRangeDelete();
         } else {
@@ -489,7 +560,7 @@ export default function WaveEditor({ track, onClose, onSave }) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [historyIdx, history, selectedSegmentId, playhead]);
+  }, [historyIdx, history, selectedSegmentId, playhead, pendingStart, selectionRange]);
 
   if (!track) return null;
 
@@ -773,23 +844,49 @@ export default function WaveEditor({ track, onClose, onSave }) {
 
               <div className="flex flex-col bg-secondary/30 px-3 py-1 rounded-lg shadow-inner border border-border/50">
                 <span className="text-[8px] text-muted-foreground font-sans font-bold leading-none mb-1 uppercase">Selection</span>
-                <div className="flex gap-4">
+                <div className="flex gap-3 items-end">
                   <div className="flex flex-col">
                     <span className="text-[7px] text-muted-foreground/70 leading-none mb-0.5">Start</span>
-                    <span className="text-[10px] text-foreground font-mono leading-none">
-                      {selectionRange ? selectionRange.start.toFixed(4) : "0.0000"}
-                    </span>
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      max={track?.duration || 40}
+                      value={selectionRange ? selectionRange.start.toFixed(3) : "0.000"}
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value) || 0;
+                        if (selectionRange) {
+                          setSelectionRange({ start: v, end: Math.max(v, selectionRange.end) });
+                        } else {
+                          setSelectionRange({ start: v, end: v });
+                        }
+                      }}
+                      className="text-[10px] text-foreground font-mono leading-none w-16 bg-background/50 border border-border/50 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[7px] text-muted-foreground/70 leading-none mb-0.5">End</span>
-                    <span className="text-[10px] text-foreground font-mono leading-none">
-                      {selectionRange ? selectionRange.end.toFixed(4) : "0.0000"}
-                    </span>
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      max={track?.duration || 40}
+                      value={selectionRange ? selectionRange.end.toFixed(3) : "0.000"}
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value) || 0;
+                        if (selectionRange) {
+                          setSelectionRange({ start: Math.min(v, selectionRange.start), end: v });
+                        } else {
+                          setSelectionRange({ start: v, end: v });
+                        }
+                      }}
+                      className="text-[10px] text-foreground font-mono leading-none w-16 bg-background/50 border border-border/50 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[7px] text-muted-foreground/70 leading-none mb-0.5">Length</span>
-                    <span className="text-[10px] text-foreground font-mono leading-none">
-                      {selectionRange ? Math.abs(selectionRange.end - selectionRange.start).toFixed(4) : "0.0000"}
+                    <span className="text-[10px] text-primary font-mono leading-none font-bold">
+                      {selectionRange ? Math.abs(selectionRange.end - selectionRange.start).toFixed(3) : "0.000"}
                     </span>
                   </div>
                 </div>
@@ -892,22 +989,37 @@ export default function WaveEditor({ track, onClose, onSave }) {
               {/* Center Line (Zero Crossing) */}
               <div className="absolute top-1/2 left-0 right-0 h-px bg-border/50 pointer-events-none z-0" style={{ width: `${100 * zoom}%`, minWidth: '100%' }} />
 
+              {/* Pending Start Marker (click-to-select first click) */}
+              {pendingStart !== null && (
+                <div
+                  className="absolute top-0 bottom-0 w-[2px] bg-accent z-25 pointer-events-none shadow-[0_0_8px_rgba(var(--accent),0.8)]"
+                  style={{ left: `${(pendingStart / (track?.duration || 40)) * 100 * zoom}%` }}
+                >
+                  <div className="absolute top-0 -translate-x-1/2 bg-accent text-accent-foreground text-[9px] font-mono px-1.5 py-0.5 rounded-b font-bold whitespace-nowrap">
+                    START
+                  </div>
+                </div>
+              )}
+
               {/* Range Selection Overlay */}
               {selectionRange && (
                 <>
-                <div 
-                  className="absolute top-6 bottom-0 bg-black/20 border-l border-r border-black/50 pointer-events-none z-20 mix-blend-multiply"
+                <div
+                  className="absolute top-6 bottom-0 bg-primary/20 border-l-2 border-r-2 border-primary pointer-events-none z-20"
                   style={{
                     left: `${(Math.min(selectionRange.start, selectionRange.end) / (track?.duration || 40)) * 100 * zoom}%`,
                     width: `${(Math.abs(selectionRange.end - selectionRange.start) / (track?.duration || 40)) * 100 * zoom}%`
                   }}
                 >
-
+                  {/* Length label inside the highlight */}
+                  <div className="absolute top-1 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-mono px-2 py-0.5 rounded font-bold shadow-lg whitespace-nowrap">
+                    {Math.abs(selectionRange.end - selectionRange.start).toFixed(3)}s
+                  </div>
                 </div>
 
                 {/* Floating Context Menu */}
                 {!isDraggingRange && Math.abs(selectionRange.end - selectionRange.start) > 0.05 && (
-                  <div 
+                  <div
                     className="absolute top-2 z-50 flex items-center gap-1 bg-[#252528] p-1 rounded-md shadow-2xl border border-white/10"
                     style={{
                        left: `${((Math.min(selectionRange.start, selectionRange.end) + Math.abs(selectionRange.end - selectionRange.start)/2) / (track?.duration || 40)) * 100 * zoom}%`,
@@ -917,16 +1029,37 @@ export default function WaveEditor({ track, onClose, onSave }) {
                     <Button size="sm" variant="ghost" className="h-7 text-xs text-white/80 hover:text-white px-2 gap-1" onClick={(e) => { e.stopPropagation(); handleRangeSplit(); }}>
                       <Scissors className="w-3 h-3" /> Split
                     </Button>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs text-white/80 hover:text-white px-2 gap-1" onClick={(e) => { e.stopPropagation(); handleRangeFade('in'); }}>
+                      <Wand2 className="w-3 h-3" /> Fade In
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs text-white/80 hover:text-white px-2 gap-1" onClick={(e) => { e.stopPropagation(); handleRangeFade('out'); }}>
+                      <Wand2 className="w-3 h-3" /> Fade Out
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs text-white/80 hover:text-white px-2 gap-1" onClick={(e) => { e.stopPropagation(); handleRangeMute(); }}>
+                      <VolumeX className="w-3 h-3" /> Mute
+                    </Button>
                     <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-400/10 px-2 gap-1" onClick={(e) => { e.stopPropagation(); handleRangeDelete(); }}>
                       <Trash2 className="w-3 h-3" /> Delete
                     </Button>
                     <div className="w-px h-3 bg-white/10 mx-1" />
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-white/50 hover:text-white" onClick={(e) => { e.stopPropagation(); setSelectionRange(null); }}>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-white/50 hover:text-white" onClick={(e) => { e.stopPropagation(); setSelectionRange(null); setPendingStart(null); }}>
                       <X className="w-3 h-3" />
                     </Button>
                   </div>
                 )}
                 </>
+              )}
+
+              {/* Click-to-select hint */}
+              {activeTool === 'select' && !selectionRange && !pendingStart && (
+                <div className="absolute top-7 left-1/2 -translate-x-1/2 z-10 bg-secondary/80 text-muted-foreground text-[10px] px-3 py-1 rounded-full border border-border/50 pointer-events-none animate-pulse">
+                  Click to set start, click again to set end — then Split, Fade, Mute, or Delete
+                </div>
+              )}
+              {pendingStart !== null && (
+                <div className="absolute top-7 left-1/2 -translate-x-1/2 z-10 bg-accent/20 text-accent text-[10px] px-3 py-1 rounded-full border border-accent/50 pointer-events-none font-semibold">
+                  Start set at {pendingStart.toFixed(3)}s — click end point to complete selection
+                </div>
               )}
 
               {/* Segments Container */}

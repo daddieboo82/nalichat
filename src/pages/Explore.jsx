@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Heart, Eye, Plus, Upload, X, Search, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/lib/AuthContext";
 import ArtPostCard from "@/components/explore/ArtPostCard";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import UploadArtDialog from "@/components/explore/UploadArtDialog";
@@ -14,7 +15,10 @@ import { sounds } from "@/hooks/use-sound";
 const MEDIUMS = ["all", "original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
 
 export default function Explore() {
-  const [currentUser, setCurrentUser] = useState(null);
+  // Use the already-resolved app-wide auth state instead of a fresh per-page
+  // fetch — a local base44.auth.me() call left currentUser null for a brief
+  // window on mount, wrongly redirecting logged-in users to login.
+  const { user: currentUser } = useAuth();
   const urlParams = new URLSearchParams(window.location.search);
   const [filter, setFilter] = useState(urlParams.get("filter") || "all");
   const [search, setSearch] = useState(urlParams.get("search") || "");
@@ -32,8 +36,6 @@ export default function Explore() {
   const [selectedTrackForPlaylist, setSelectedTrackForPlaylist] = useState(null);
   const [commentTrack, setCommentTrack] = useState(null);
   const queryClient = useQueryClient();
-
-  useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["artposts", filter],

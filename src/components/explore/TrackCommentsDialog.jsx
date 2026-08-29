@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, Loader2, MessageCircle, Clock, Play, Pause } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 function formatTime(seconds) {
@@ -67,6 +66,9 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
 
   const addComment = useMutation({
     mutationFn: async () => {
+      // Notifying the track creator is handled server-side by the
+      // notifyOnTrackComment automation — no client-side notify() call here,
+      // since a client can't create a Notification for another user (RLS).
       await base44.entities.TrackComment.create({
         track_id: post.id,
         author_id: currentUser.id,
@@ -74,13 +76,6 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
         author_avatar: currentUser.avatar_url,
         text: text.trim(),
         timestamp: currentTime,
-      });
-      await notify({
-        recipientId: post.creator_id,
-        actor: currentUser,
-        type: "comment",
-        message: `commented on your track "${post.title}"${currentTime != null ? ` at ${formatTime(currentTime)}` : ""}`,
-        link: "/explore",
       });
     },
     onSuccess: () => {

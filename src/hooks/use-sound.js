@@ -130,6 +130,10 @@ export const sounds = {
     playTone({ frequency: 196, type: "sine", duration: 0.15, volume: 0.16, delay: 0 });
     playTone({ frequency: 294, type: "sine", duration: 0.20, volume: 0.13, delay: 0.10 });
   },
+  // Per-step countdown beep (3, 2, 1)
+  countdown: () => playTone({ frequency: 660, type: "sine", duration: 0.10, volume: 0.14, attack: 0.005, decay: 0.08 }),
+  // Final "go" tone at the end of the countdown
+  countdownGo: () => playTone({ frequency: 990, type: "sine", duration: 0.18, volume: 0.15, attack: 0.005, decay: 0.12 }),
   // Descending resolve — recording stopped
   recStop: () => {
     playTone({ frequency: 392, type: "sine", duration: 0.10, volume: 0.13, delay: 0 });

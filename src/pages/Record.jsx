@@ -2,12 +2,17 @@ import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
-import { Mic, Square, Play, Pause, Save, Trash2, Loader2, Radio } from "lucide-react";
+import { Mic, Square, Play, Pause, Save, Trash2, Loader2, Radio, RotateCcw, HelpCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { sounds } from "@/hooks/use-sound";
-import DeviceSelector from "@/components/audio/DeviceSelector";
+import { useAudioDevices } from "@/hooks/useAudioDevices";
+import MicCheckPanel from "@/components/record/MicCheckPanel";
+import RecordingCountdown from "@/components/record/RecordingCountdown";
+import RecordingTips from "@/components/record/RecordingTips";
+import RecordingGuide from "@/components/record/RecordingGuide";
+
+const GUIDE_KEY = "nali_rec_guide_done";
 
 export default function Record() {
   const [isRecording, setIsRecording] = useState(false);
@@ -16,9 +21,12 @@ export default function Record() {
   const [currentTime, setCurrentTime] = useState(0);
   const [saving, setSaving] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
-  const [inputDevice, setInputDevice] = useState("");
-  const [devices, setDevices] = useState([]);
   const [visualData, setVisualData] = useState(new Array(64).fill(0));
+  const [recLevel, setRecLevel] = useState(0);
+  const [countdown, setCountdown] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+
+  const { devices, selectedDevices, selectDevice } = useAudioDevices();
 
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -26,12 +34,13 @@ export default function Record() {
   const analyserRef = useRef(null);
   const animationRef = useRef(null);
   const streamRef = useRef(null);
+  const currentTimeRef = useRef(0);
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser);
-    navigator.mediaDevices.enumerateDevices().then(devs => {
-      setDevices(devs.filter(d => d.kind === "audioinput"));
-    });
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+    try {
+      if (localStorage.getItem(GUIDE_KEY) !== "1") setShowGuide(true);
+    } catch {}
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       streamRef.current?.getTracks().forEach(t => t.stop());
@@ -40,22 +49,34 @@ export default function Record() {
 
   const updateVisualizer = () => {
     if (!analyserRef.current) return;
-    const data = new Uint8Array(analyserRef.current.frequencyBinCount);
-    analyserRef.current.getByteFrequencyData(data);
+    const freqData = new Uint8Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getByteFrequencyData(freqData);
     const sampled = Array.from({ length: 64 }, (_, i) =>
-      data[Math.floor(i * data.length / 64)] / 255
+      freqData[Math.floor(i * freqData.length / 64)] / 255
     );
     setVisualData(sampled);
+
+    // Peak level (time-domain) for smart tips.
+    const timeData = new Uint8Array(analyserRef.current.fftSize);
+    analyserRef.current.getByteTimeDomainData(timeData);
+    let peak = 0;
+    for (let i = 0; i < timeData.length; i++) {
+      const v = Math.abs(timeData[i] - 128) / 128;
+      if (v > peak) peak = v;
+    }
+    setRecLevel(peak);
+
     animationRef.current = requestAnimationFrame(updateVisualizer);
   };
 
   const startRecording = async () => {
+    setCountdown(false);
     sounds.recStart();
-    const constraints = { audio: inputDevice ? { deviceId: { exact: inputDevice } } : true };
+    const devId = selectedDevices.input && selectedDevices.input !== "default" ? selectedDevices.input : undefined;
+    const constraints = { audio: devId ? { deviceId: { exact: devId } } : true };
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     streamRef.current = stream;
 
-    // Set up analyzer
     const audioCtx = new AudioContext();
     const source = audioCtx.createMediaStreamSource(stream);
     const analyser = audioCtx.createAnalyser();
@@ -75,18 +96,30 @@ export default function Record() {
         id: Date.now().toString(),
         blob,
         url,
-        duration: currentTime,
+        duration: currentTimeRef.current,
         name: `Recording ${prev.length + 1}`,
       }]);
       setCurrentTime(0);
+      currentTimeRef.current = 0;
       setVisualData(new Array(64).fill(0));
+      setRecLevel(0);
     };
 
     mediaRecorderRef.current = recorder;
     recorder.start();
     setIsRecording(true);
-    timerRef.current = setInterval(() => setCurrentTime(t => t + 1), 1000);
+    setIsPaused(false);
+    currentTimeRef.current = 0;
+    timerRef.current = setInterval(() => {
+      setCurrentTime(t => t + 1);
+      currentTimeRef.current += 1;
+    }, 1000);
     updateVisualizer();
+  };
+
+  const beginRecording = () => {
+    if (isRecording) return;
+    setCountdown(true);
   };
 
   const stopRecording = () => {
@@ -100,7 +133,10 @@ export default function Record() {
   const togglePause = () => {
     if (isPaused) {
       mediaRecorderRef.current?.resume();
-      timerRef.current = setInterval(() => setCurrentTime(t => t + 1), 1000);
+      timerRef.current = setInterval(() => {
+        setCurrentTime(t => t + 1);
+        currentTimeRef.current += 1;
+      }, 1000);
       updateVisualizer();
     } else {
       mediaRecorderRef.current?.pause();
@@ -134,19 +170,23 @@ export default function Record() {
   return (
     <div className="h-full flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-2xl">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h1 className="text-3xl font-heading font-bold mb-2">Recording Studio</h1>
           <p className="text-sm text-muted-foreground">Capture your ideas with professional-quality recording</p>
         </div>
 
-        {/* Device Selector */}
-        <div className="flex justify-center mb-8">
-          <DeviceSelector compact={true} />
+        {/* Pre-flight mic check */}
+        <div className="mb-6">
+          <MicCheckPanel
+            devices={devices.input}
+            selectedDevice={selectedDevices.input}
+            onSelectDevice={(id) => selectDevice("input", id)}
+            recording={isRecording}
+          />
         </div>
 
         {/* Immersive Visualizer */}
-        <div className="relative flex flex-col items-center justify-center mb-8">
-          {/* Ambient outer glow */}
+        <div className="relative flex flex-col items-center justify-center mb-4">
           <AnimatePresence>
             {isRecording && !isPaused && (
               <motion.div
@@ -159,7 +199,6 @@ export default function Record() {
             )}
           </AnimatePresence>
 
-          {/* Radial bar ring */}
           <div className="relative w-72 h-72 flex items-center justify-center">
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 288 288" style={{ overflow: "visible" }}>
               {visualData.slice(0, 48).map((v, i) => {
@@ -183,11 +222,10 @@ export default function Record() {
               })}
             </svg>
 
-            {/* Center button */}
             <div className="relative z-10 flex flex-col items-center gap-3">
               {!isRecording ? (
                 <motion.button
-                  onClick={startRecording}
+                  onClick={beginRecording}
                   whileTap={{ scale: 0.93 }}
                   whileHover={{ scale: 1.05 }}
                   className="w-24 h-24 rounded-full flex items-center justify-center shadow-2xl shadow-primary/40"
@@ -217,7 +255,6 @@ export default function Record() {
                 </div>
               )}
 
-              {/* Timer */}
               <p className="text-3xl font-mono font-black tracking-wider mt-1">{formatTime(currentTime)}</p>
               {isRecording && (
                 <div className="flex items-center gap-1.5">
@@ -233,10 +270,35 @@ export default function Record() {
           </div>
         </div>
 
+        {/* Smart tips during recording */}
+        {isRecording && (
+          <RecordingTips level={recLevel} isPaused={isPaused} />
+        )}
+
+        {/* Friendly empty state */}
+        {!isRecording && recordings.length === 0 && (
+          <div className="text-center mb-4 px-4">
+            <p className="text-sm text-muted-foreground">
+              Press the glowing button to record. You'll get a 3-second countdown first so you're never caught off guard.
+            </p>
+            <button
+              onClick={() => setShowGuide(true)}
+              className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+            >
+              <HelpCircle className="w-3.5 h-3.5" /> New to recording? Replay the guide
+            </button>
+          </div>
+        )}
+
         {/* Recordings */}
         {recordings.length > 0 && (
           <div>
-            <h2 className="font-heading font-semibold text-lg mb-4">Recordings</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-heading font-semibold text-lg">Recordings</h2>
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <RotateCcw className="w-3 h-3" /> Nothing is saved until you choose to save — retake freely
+              </span>
+            </div>
             <div className="space-y-3">
               {recordings.map(rec => (
                 <RecordingItem
@@ -252,6 +314,19 @@ export default function Record() {
           </div>
         )}
       </div>
+
+      {/* Countdown overlay */}
+      <AnimatePresence>
+        {countdown && (
+          <RecordingCountdown
+            onComplete={startRecording}
+            onCancel={() => setCountdown(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* First-time guided flow */}
+      <RecordingGuide open={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }

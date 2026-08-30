@@ -89,7 +89,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#0a0a0c] border-white/10 max-w-5xl p-0 overflow-hidden shadow-2xl sm:rounded-3xl">
+      <DialogContent className="bg-[#0a0a0c] border-white/10 max-w-5xl p-0 shadow-2xl sm:rounded-3xl max-h-[90vh] overflow-y-auto">
         <DialogTitle className="sr-only">{post.title || "Media viewer"}</DialogTitle>
         <DialogDescription className="sr-only">{post.description || "View media details and playback."}</DialogDescription>
         
@@ -391,7 +391,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
             onClick={() => onOpenChange(false)}
             title="Close"
             aria-label="Close"
-            className="absolute top-4 right-4 p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md transition-all z-20 border border-white/10"
+            className="fixed top-4 right-4 p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md transition-all z-50 border border-white/10"
           >
             <X className="w-5 h-5" />
           </button>

@@ -1,0 +1,110 @@
+{
+  "name": "ChallengeSubmission",
+  "type": "object",
+  "properties": {
+    "challenge_id": {
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "producer_id": {
+      "type": "string"
+    },
+    "producer_name": {
+      "type": "string"
+    },
+    "producer_avatar": {
+      "type": "string"
+    },
+    "remix_file_url": {
+      "type": "string"
+    },
+    "remix_name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "vote_count": {
+      "type": "number",
+      "default": 0
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "nalichat_studio",
+        "external_upload",
+        "link_import"
+      ]
+    },
+    "external_url": {
+      "type": "string"
+    },
+    "file_format": {
+      "type": "string",
+      "enum": [
+        "wav",
+        "mp3",
+        "flac",
+        "aiff"
+      ]
+    },
+    "device_type": {
+      "type": "string",
+      "enum": [
+        "desktop",
+        "mobile",
+        "tablet"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "approved"
+    },
+    "share_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "challenge_id",
+    "producer_id",
+    "remix_file_url",
+    "remix_name"
+  ],
+  "rls": {
+    "create": {
+      "data.producer_id": "{{user.id}}"
+    },
+    "read": {},
+    "update": {
+      "$or": [
+        {
+          "data.producer_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.producer_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

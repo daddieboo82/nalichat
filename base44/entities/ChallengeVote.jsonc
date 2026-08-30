@@ -1,0 +1,50 @@
+{
+  "name": "ChallengeVote",
+  "type": "object",
+  "properties": {
+    "submission_id": {
+      "type": "string"
+    },
+    "challenge_id": {
+      "type": "string"
+    },
+    "voter_id": {
+      "type": "string"
+    },
+    "voter_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "submission_id",
+    "challenge_id",
+    "voter_id"
+  ],
+  "rls": {
+    "create": {
+      "data.voter_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.voter_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

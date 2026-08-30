@@ -47,6 +47,10 @@ const Record = lazy(() => import('@/pages/Record'));
 const CoverArt = lazy(() => import('@/pages/CoverArt'));
 const WebhookTest = lazy(() => import('@/pages/WebhookTest'));
 const ProjectsSummary = lazy(() => import('@/pages/ProjectsSummary'));
+const ChallengeHub = lazy(() => import('@/pages/ChallengeHub'));
+const ChallengeDetail = lazy(() => import('@/pages/ChallengeDetail'));
+const ChallengeLeaderboard = lazy(() => import('@/pages/ChallengeLeaderboard'));
+const SubmissionPlayer = lazy(() => import('@/pages/SubmissionPlayer'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -148,6 +152,10 @@ const AuthenticatedApp = () => {
         <Route path="/explore" element={<Explore />} />
         <Route path="/pricing" element={<PricingPlans />} />
         <Route path="/PricingPlans" element={<PricingPlans />} />
+        <Route path="/challenges" element={<ChallengeHub />} />
+        <Route path="/challenge/:challengeId" element={<ChallengeDetail />} />
+        <Route path="/challenge/:challengeId/leaderboard" element={<ChallengeLeaderboard />} />
+        <Route path="/challenge/:challengeId/submission/:submissionId" element={<SubmissionPlayer />} />
       </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/studio" element={<Studio />} />

@@ -3,9 +3,12 @@ import { base44 } from "@/api/base44Client";
 import ChallengeCard from "@/components/challenges/ChallengeCard";
 import CountdownTimer from "@/components/challenges/CountdownTimer";
 import { Link } from "react-router-dom";
-import { Trophy } from "lucide-react";
+import { Trophy, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function ChallengeHub() {
+  const { user } = useAuth();
   const [challenges, setChallenges] = useState([]);
   const [winners, setWinners] = useState({});
   const [loading, setLoading] = useState(true);
@@ -36,9 +39,16 @@ export default function ChallengeHub() {
 
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-8">
-      <div>
-        <h1 className="font-heading text-2xl sm:text-3xl font-bold text-gradient-animate">Remix Challenges</h1>
-        <p className="text-muted-foreground text-sm mt-1">Drop stems, remix, and vote for the community's best.</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold text-gradient-animate">Remix Challenges</h1>
+          <p className="text-muted-foreground text-sm mt-1">Drop stems, remix, and vote for the community's best.</p>
+        </div>
+        {user && (
+          <Link to="/create-challenge">
+            <Button className="rounded-full gap-1.5 bg-gradient-to-r from-primary to-accent text-white"><Plus className="w-4 h-4" /> Create Challenge</Button>
+          </Link>
+        )}
       </div>
 
       {featured && (

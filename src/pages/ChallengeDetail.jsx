@@ -3,7 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Trophy, ListOrdered } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Download, Trophy, ListOrdered, Square, Gavel } from "lucide-react";
 import CountdownTimer from "@/components/challenges/CountdownTimer";
 import SubmissionCard from "@/components/challenges/SubmissionCard";
 import SubmitRemixModal from "@/components/challenges/SubmitRemixModal";
@@ -48,6 +49,17 @@ export default function ChallengeDetail() {
   if (loading || !challenge) return <div className="p-8 flex justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
 
   const canSubmit = challenge.status === "active";
+  const isHostOrAdmin = user && (user.id === challenge.host_artist_id || user.role === "admin");
+
+  const changeStatus = async (newStatus) => {
+    try {
+      await base44.entities.Challenge.update(challengeId, { status: newStatus });
+      setChallenge((c) => ({ ...c, status: newStatus }));
+      toast.success(newStatus === "voting" ? "Submissions closed — voting is now open." : "Voting closed — challenge completed.");
+    } catch (err) {
+      toast.error("Couldn't update challenge status.");
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
@@ -59,7 +71,14 @@ export default function ChallengeDetail() {
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <h1 className="font-heading text-2xl font-bold">{challenge.title}</h1>
-              <p className="text-sm text-muted-foreground">Hosted by {challenge.host_artist_name}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <Avatar className="w-5 h-5">
+                  <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
+                    {(challenge.host_artist_name || "?").charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <p className="text-sm text-muted-foreground">Hosted by {challenge.host_artist_name}</p>
+              </div>
             </div>
             <Link to={`/challenge/${challengeId}/leaderboard`}>
               <Button variant="outline" size="sm" className="rounded-full gap-1.5"><ListOrdered className="w-4 h-4" /> Leaderboard</Button>
@@ -82,6 +101,21 @@ export default function ChallengeDetail() {
 
           {challenge.submission_end_date && challenge.status === "active" && (
             <CountdownTimer targetDate={challenge.submission_end_date} label="Submissions close in" />
+          )}
+
+          {isHostOrAdmin && (challenge.status === "active" || challenge.status === "voting") && (
+            <div className="pt-2 border-t border-border/50">
+              {challenge.status === "active" && (
+                <Button variant="outline" size="sm" className="rounded-full gap-1.5" onClick={() => changeStatus("voting")}>
+                  <Square className="w-3.5 h-3.5" /> End Submissions
+                </Button>
+              )}
+              {challenge.status === "voting" && (
+                <Button variant="outline" size="sm" className="rounded-full gap-1.5" onClick={() => changeStatus("completed")}>
+                  <Gavel className="w-3.5 h-3.5" /> End Voting
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>

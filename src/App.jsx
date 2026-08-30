@@ -48,6 +48,7 @@ const CoverArt = lazy(() => import('@/pages/CoverArt'));
 const WebhookTest = lazy(() => import('@/pages/WebhookTest'));
 const ProjectsSummary = lazy(() => import('@/pages/ProjectsSummary'));
 const ChallengeHub = lazy(() => import('@/pages/ChallengeHub'));
+const CreateChallenge = lazy(() => import('@/pages/CreateChallenge'));
 const ChallengeDetail = lazy(() => import('@/pages/ChallengeDetail'));
 const ChallengeLeaderboard = lazy(() => import('@/pages/ChallengeLeaderboard'));
 const SubmissionPlayer = lazy(() => import('@/pages/SubmissionPlayer'));
@@ -175,6 +176,7 @@ const AuthenticatedApp = () => {
           <Route path="/webhook-test" element={<WebhookTest />} />
           <Route path="/WebhookTest" element={<Navigate to="/webhook-test" replace />} />
           <Route path="/projects-summary" element={<ProjectsSummary />} />
+          <Route path="/create-challenge" element={<CreateChallenge />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/business" element={<Navigate to="/admin" replace />} />
         </Route>

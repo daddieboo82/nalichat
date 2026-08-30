@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Save, Loader2, X, Plus, CreditCard, BarChart3 } from "lucide-react";
+import { Camera, Save, Loader2, X, Plus, CreditCard, BarChart3, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import DeleteAccountDialog from "@/components/settings/DeleteAccountDialog";
@@ -207,6 +207,22 @@ export default function Settings() {
               <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-0 gap-2 font-semibold">
                 <BarChart3 className="w-4 h-4" />
                 View Analytics
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-12 pt-8 border-t border-border">
+          <h2 className="text-xl font-heading font-bold mb-6">Squad & Scale</h2>
+          <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06]">
+            <div>
+              <h3 className="font-heading font-semibold text-lg text-foreground">Link Up With a Partner</h3>
+              <p className="text-sm text-muted-foreground mt-1">Team up with a friend — hit your weekly chat or task goals together and unlock a 1.5x weekend bonus.</p>
+            </div>
+            <Link to="/squad">
+              <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent text-white border-0 gap-2 font-semibold">
+                <Users className="w-4 h-4" />
+                Open Squad & Scale
               </Button>
             </Link>
           </div>

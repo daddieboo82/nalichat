@@ -1,17 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Download } from "lucide-react";
+import { Loader2, Download, Sparkles } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { renderMixToWav, renderMixToMp3 } from "@/lib/audioProcessing";
+import { getSquadBonusStatus, BONUS_MULTIPLIER } from "@/lib/squadBonus";
 
 const EXPORT_PRICES = { wav: 1.99, mp3: 0.99 };
 const EXPORT_LABELS = { wav: "WAV (Studio Quality)", mp3: "MP3 (Compressed)" };
 
 export default function ExportPurchaseDialog({ open, onOpenChange, format, tracks, projectName }) {
   const [stage, setStage] = useState("idle"); // idle | rendering | uploading | redirecting
-  const price = EXPORT_PRICES[format] || 1.99;
+  const [bonusActive, setBonusActive] = useState(false);
+  const basePrice = EXPORT_PRICES[format] || 1.99;
+  const price = bonusActive ? Math.round((basePrice / BONUS_MULTIPLIER) * 100) / 100 : basePrice;
+
+  useEffect(() => {
+    if (!open) return;
+    base44.auth.me().then((u) => getSquadBonusStatus(u)).then((s) => setBonusActive(s.active)).catch(() => {});
+  }, [open]);
 
   const handlePurchase = async () => {
     setStage("rendering");
@@ -102,9 +110,18 @@ export default function ExportPurchaseDialog({ open, onOpenChange, format, track
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-foreground">Price</span>
-              <span className="text-lg font-bold text-primary">${price.toFixed(2)}</span>
+              <span className="flex items-center gap-2">
+                {bonusActive && <span className="text-xs text-muted-foreground line-through">${basePrice.toFixed(2)}</span>}
+                <span className="text-lg font-bold text-primary">${price.toFixed(2)}</span>
+              </span>
             </div>
           </div>
+
+          {bonusActive && (
+            <div className="flex items-center gap-2 text-xs text-primary bg-primary/10 rounded-lg px-3 py-2">
+              <Sparkles className="w-3.5 h-3.5 shrink-0" /> Squad weekend bonus applied — {BONUS_MULTIPLIER}x discount
+            </div>
+          )}
 
           {stage !== "idle" && (
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-1">

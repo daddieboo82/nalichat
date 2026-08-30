@@ -1,0 +1,96 @@
+{
+  "name": "SquadProgress",
+  "type": "object",
+  "properties": {
+    "squad_id": {
+      "type": "string"
+    },
+    "member_a_id": {
+      "type": "string"
+    },
+    "member_b_id": {
+      "type": "string"
+    },
+    "week_key": {
+      "type": "string",
+      "description": "Monday date (yyyy-MM-dd) identifying the tracked week"
+    },
+    "member_a_messages": {
+      "type": "number",
+      "default": 0
+    },
+    "member_a_tasks": {
+      "type": "number",
+      "default": 0
+    },
+    "member_b_messages": {
+      "type": "number",
+      "default": 0
+    },
+    "member_b_tasks": {
+      "type": "number",
+      "default": 0
+    },
+    "bonus_unlocked": {
+      "type": "boolean",
+      "default": false
+    },
+    "bonus_starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "bonus_expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "credits_awarded_a": {
+      "type": "boolean",
+      "default": false
+    },
+    "credits_awarded_b": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "squad_id",
+    "week_key"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.member_a_id": "{{user.id}}"
+        },
+        {
+          "data.member_b_id": "{{user.id}}"
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.member_a_id": "{{user.id}}"
+        },
+        {
+          "data.member_b_id": "{{user.id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.member_a_id": "{{user.id}}"
+        },
+        {
+          "data.member_b_id": "{{user.id}}"
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

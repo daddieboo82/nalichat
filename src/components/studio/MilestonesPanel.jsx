@@ -13,6 +13,7 @@ import { format, isPast, isToday, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { recordSquadActivity } from "@/lib/squadBonus";
 
 const priorityColors = {
   low: "bg-muted text-muted-foreground",
@@ -59,7 +60,12 @@ export default function MilestonesPanel({ projectId, canEdit }) {
       completed: !m.completed,
       completed_at: !m.completed ? new Date().toISOString() : null,
     }),
-    onSuccess: invalidate,
+    onSuccess: (_, m) => {
+      invalidate();
+      if (!m.completed) {
+        base44.auth.me().then((u) => recordSquadActivity(u.id, "task"));
+      }
+    },
   });
 
   const remove = useMutation({

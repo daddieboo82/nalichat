@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { X, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { recordSquadActivity } from "@/lib/squadBonus";
 
 const MEDIUMS = ["original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
 const TAGS_SUGGESTIONS = ["hip-hop", "trap", "lofi", "electronic", "ambient", "house", "techno", "synthwave", "dark", "experimental"];
@@ -87,6 +88,8 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
     } catch (err) {
       console.error("Failed to update XP:", err);
     }
+
+    recordSquadActivity(currentUser.id, "task");
 
     setLoading(false);
     onSuccess();

@@ -52,6 +52,8 @@ const CreateChallenge = lazy(() => import('@/pages/CreateChallenge'));
 const ChallengeDetail = lazy(() => import('@/pages/ChallengeDetail'));
 const ChallengeLeaderboard = lazy(() => import('@/pages/ChallengeLeaderboard'));
 const SubmissionPlayer = lazy(() => import('@/pages/SubmissionPlayer'));
+const Squad = lazy(() => import('@/pages/Squad'));
+const SquadJoin = lazy(() => import('@/pages/SquadJoin'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -157,6 +159,7 @@ const AuthenticatedApp = () => {
         <Route path="/challenge/:challengeId" element={<ChallengeDetail />} />
         <Route path="/challenge/:challengeId/leaderboard" element={<ChallengeLeaderboard />} />
         <Route path="/challenge/:challengeId/submission/:submissionId" element={<SubmissionPlayer />} />
+        <Route path="/squad/join/:inviteCode" element={<SquadJoin />} />
       </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/studio" element={<Studio />} />
@@ -177,6 +180,7 @@ const AuthenticatedApp = () => {
           <Route path="/WebhookTest" element={<Navigate to="/webhook-test" replace />} />
           <Route path="/projects-summary" element={<ProjectsSummary />} />
           <Route path="/create-challenge" element={<CreateChallenge />} />
+          <Route path="/squad" element={<Squad />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/business" element={<Navigate to="/admin" replace />} />
         </Route>

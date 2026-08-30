@@ -59,6 +59,11 @@
       "type": "boolean",
       "default": false,
       "description": "Permanently banned for repeated severe violations"
+    },
+    "squad_credits": {
+      "type": "number",
+      "default": 0,
+      "description": "Squad & Scale co-op credits earned from hitting weekly squad goals"
     }
   }
 }

@@ -125,16 +125,17 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
             <TabsContent value="external" className="space-y-2 pt-3">
               <input
                 type="file"
-                accept=".wav,.mp3,.flac,.aiff,audio/*"
+                accept=".mp3,.wav"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                 className="w-full text-sm rounded-xl border border-border p-2 file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-1.5"
               />
               {file && <p className="text-xs text-muted-foreground truncate">{file.name}</p>}
-              <p className="text-xs text-muted-foreground">.wav, .mp3, .flac, .aiff — up to 100MB</p>
+              <p className="text-xs text-muted-foreground">.mp3, .wav — up to 100MB</p>
             </TabsContent>
 
             <TabsContent value="link" className="space-y-2 pt-3">
               <Input placeholder="https://soundcloud.com/... or Drive/Dropbox link" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} className="rounded-xl" />
+              <p className="text-xs text-muted-foreground">Linked file should be MP3 or WAV</p>
             </TabsContent>
           </Tabs>
 

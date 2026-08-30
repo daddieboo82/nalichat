@@ -31,7 +31,7 @@ export default function StemUploadList({ stems, onChange }) {
           ref={inputRef}
           type="file"
           multiple
-          accept=".wav,.mp3,.flac,.aiff,audio/*"
+          accept=".mp3,.wav"
           className="hidden"
           onChange={handleFiles}
         />

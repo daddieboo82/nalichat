@@ -71,8 +71,11 @@ export default function Login() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-          {error}
+        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm space-y-1">
+          <p>{error}</p>
+          <p className="text-muted-foreground">
+            If you originally signed up with Google, use "Continue with Google" above instead of a password. Otherwise, try "Forgot password?" to set one.
+          </p>
         </div>
       )}
 

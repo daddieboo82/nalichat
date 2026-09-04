@@ -16,16 +16,23 @@ export default function Timeline({ currentTime, duration, zoom, onClick }) {
     ctx.fillStyle = "hsl(var(--secondary) / 0.5)";
     ctx.fillRect(0, 0, width, height);
 
-    // Draw grid and time markers
-    const pixelsPerSecond = 50 * zoom;
-    const majorTickInterval = 5; // seconds
-    const minorTickInterval = 1;
+    // Map time → position as (time / duration) * width — the same mapping the
+    // track waveforms use for their comment markers, so the ruler and every
+    // waveform stay perfectly aligned at any zoom level or track count.
+    const safeDuration = duration > 0 ? duration : 1;
+    const pixelsPerSecond = width / safeDuration;
 
-    for (let t = 0; t <= (width / pixelsPerSecond); t += minorTickInterval) {
+    // Zoom adjusts tick density for visual detail without changing the mapping.
+    const majorTickInterval = Math.max(0.5, 5 / zoom);
+    const minorTickInterval = Math.max(0.1, 1 / zoom);
+    const majorEvery = Math.max(1, Math.round(majorTickInterval / minorTickInterval));
+
+    for (let i = 0; i * minorTickInterval <= safeDuration; i++) {
+      const t = i * minorTickInterval;
       const x = t * pixelsPerSecond;
       if (x > width) break;
 
-      const isMajor = t % majorTickInterval === 0;
+      const isMajor = i % majorEvery === 0;
       const height_tick = isMajor ? 12 : 6;
 
       ctx.strokeStyle = isMajor ? "hsl(var(--muted-foreground) / 0.5)" : "hsl(var(--muted-foreground) / 0.2)";
@@ -39,7 +46,8 @@ export default function Timeline({ currentTime, duration, zoom, onClick }) {
         ctx.fillStyle = "hsl(var(--muted-foreground))";
         ctx.font = "11px monospace";
         ctx.textAlign = "center";
-        ctx.fillText(`${Math.floor(t)}s`, x, canvas.height - 16);
+        const label = majorTickInterval >= 1 ? `${Math.round(t)}s` : `${t.toFixed(majorTickInterval >= 0.5 ? 1 : 2)}s`;
+        ctx.fillText(label, x, canvas.height - 16);
       }
     }
 
@@ -67,7 +75,8 @@ export default function Timeline({ currentTime, duration, zoom, onClick }) {
     const rect = canvas.getBoundingClientRect();
     const scale = canvas.width / rect.width;
     const x = (e.clientX - rect.left) * scale;
-    return Math.max(0, x / (50 * zoom));
+    const safeDuration = duration > 0 ? duration : 1;
+    return Math.max(0, (x / canvas.width) * safeDuration);
   };
 
   const handleClick = (e) => {

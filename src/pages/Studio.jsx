@@ -1317,6 +1317,9 @@ export default function Studio() {
         <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} />
         {/* Track Headers (Left Sidebar) */}
         <div ref={trackHeadersScrollRef} className="w-44 sm:w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 rounded-l-2xl">
+          {/* Spacer matching the timeline ruler (h-8) so track headers stay
+              vertically aligned with their waveforms when scrolling. */}
+          <div className="h-8 shrink-0 border-b border-white/10" />
           <DragDropContext onDragEnd={handleReorderTracks}>
             <Droppable droppableId="studio-track-headers">
               {(dropProvided) => (
@@ -1495,7 +1498,7 @@ export default function Studio() {
         {/* Timeline & Waveforms (Right Area) */}
         <div ref={timelineScrollRef} className="flex-1 relative overflow-auto custom-scrollbar flex flex-col bg-gradient-to-b from-[#12101C]/80 to-[#0B0912]/90 rounded-r-2xl">
           {/* Timeline Header */}
-          <div className="h-8 border-b border-white/10 bg-white/[0.04] backdrop-blur-md sticky top-0 z-20 flex items-end px-0 overflow-hidden timeline-ruler">
+          <div className="h-8 shrink-0 border-b border-white/10 bg-white/[0.04] backdrop-blur-md sticky top-0 z-20 flex items-end px-0 overflow-hidden timeline-ruler">
             {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[2px] bg-red-500/50 z-10 pointer-events-none" style={{ left: `${projectEnd * 20 * zoom}px` }}><div className="absolute top-0 -translate-x-1/2 bg-red-500/80 text-white text-[8px] px-1 rounded-b shadow-md font-bold">END</div></div>; })()}
             <div className="h-full relative cursor-pointer select-none" style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px` }}
               onPointerDown={(e) => {

@@ -213,12 +213,21 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
 
       {/* Timeline & Tracks */}
       <div className="flex-1 overflow-hidden flex flex-col">
-        <Timeline
-          currentTime={currentTime}
-          duration={duration}
-          zoom={zoom}
-          onClick={handleTimelineClick}
-        />
+        {/* Timeline — wrapped in the same padding/checkbox layout as the track
+            rows below so the ruler's width matches every waveform's width. */}
+        <div className="px-3 pt-3">
+          <div className="flex items-start gap-2" style={{ padding: "0 12px" }}>
+            <div className="w-4 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <Timeline
+                currentTime={currentTime}
+                duration={duration}
+                zoom={zoom}
+                onClick={handleTimelineClick}
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Tracks Container */}
         <div className="flex-1 overflow-y-auto">

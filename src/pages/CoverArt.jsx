@@ -311,7 +311,7 @@ export default function CoverArt() {
   if (!currentUser) return <div className="p-8 text-center">Please log in to use the Cover Art Creator.</div>;
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-8 flex flex-col min-h-[calc(100vh-6rem)] pb-32 md:pb-12">
+    <div className="max-w-6xl mx-auto p-4 sm:p-8 flex flex-col min-h-[calc(100vh-6rem)] pb-32 md:pb-12 h-full overflow-y-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-heading font-black flex items-center gap-3">
           <Sparkles className="w-8 h-8 text-primary" />

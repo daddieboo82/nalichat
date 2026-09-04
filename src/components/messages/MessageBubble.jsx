@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Forward, Pencil, Sparkles, Volume2 } from "lucide-react";
+import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Forward, Pencil, Sparkles, Volume2, Share2 } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import EmojiReactionPicker from "./EmojiReactionPicker";
 import CustomMediaPlayer from "../audio/CustomMediaPlayer";
 import ChatSessionViewer from "./ChatSessionViewer";
 import ViralMomentDialog from "./ViralMomentDialog";
+import VoiceCardDialog from "./VoiceCardDialog";
 import MessageContextMenu from "./MessageContextMenu";
 import VoiceTranscription from "./VoiceTranscription";
 
@@ -136,12 +137,14 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viralOpen, setViralOpen] = useState(false);
+  const [voiceCardOpen, setVoiceCardOpen] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState(null);
   const longPressTimer = useRef(null);
 
   const hasFile = message.file_url && message.type !== "text";
   const isAudioMessage = !!(message.file_url && (message.type === "audio" || message.file_type?.startsWith("audio") || message.file_name?.match(/\.(mp3|wav|ogg|m4a|aac)$/i)));
   const canGoViral = !!(message.text || isAudioMessage);
+  const canShareVoiceCard = !!isAudioMessage;
 
   const showContextMenu = (x, y) => {
     const menuW = 200, menuH = 320;
@@ -368,6 +371,17 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           </button>
         )}
 
+        {canShareVoiceCard && (
+          <button
+            onClick={() => setVoiceCardOpen(true)}
+            className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-accent/15 hover:border-accent/40 hover:text-accent transition-all shadow-sm"
+            title="Share voice card"
+            aria-label="Share voice card"
+          >
+            <Share2 className="w-3.5 h-3.5 text-muted-foreground hover:text-accent" />
+          </button>
+        )}
+
         <button
           onClick={() => onOpenThread?.(message)}
           className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
@@ -427,11 +441,18 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         onClose={() => setViralOpen(false)}
       />
 
+      <VoiceCardDialog
+        message={message}
+        isOpen={voiceCardOpen}
+        onClose={() => setVoiceCardOpen(false)}
+      />
+
       <MessageContextMenu
         position={contextMenuPos}
         onClose={() => setContextMenuPos(null)}
         items={[
           { icon: Sparkles, label: "Create Viral Moment", onClick: () => setViralOpen(true), highlight: true },
+          ...(canShareVoiceCard ? [{ icon: Share2, label: "Share Voice Card", onClick: () => setVoiceCardOpen(true), highlight: true }] : []),
           { icon: Reply, label: "Reply", onClick: () => onReply?.(message) },
           { icon: MessageSquareQuote, label: "Open Thread", onClick: () => onOpenThread?.(message) },
           ...(message.text ? [{ icon: Copy, label: "Copy", onClick: () => onCopy?.(message) }] : []),

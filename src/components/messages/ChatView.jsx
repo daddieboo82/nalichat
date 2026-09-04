@@ -13,6 +13,7 @@ import ThreadPanel from "./ThreadPanel";
 import MessageSearch from "./MessageSearch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { recordSquadActivity } from "@/lib/squadBonus";
+import { queryClientInstance as queryClient } from "@/lib/query-client";
 
 import React from "react";
 
@@ -183,12 +184,17 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               onDelete={async (id) => {
                 if (editingMessage?.id === id) setEditingMessage(null);
                 if (replyTo?.id === id) setReplyTo(null);
-                // Optimistic delete: remove from parent cache immediately for instant UI feedback.
-                // The real-time subscription will confirm the delete server-side.
+                // Instant optimistic delete: remove from the cache immediately so the
+                // message vanishes from the UI with zero network delay.
+                const previous = queryClient.getQueryData(["messages", conversation?.id]);
+                queryClient.setQueryData(["messages", conversation?.id], (old = []) =>
+                  old.filter(m => m.id !== id)
+                );
                 try {
                   await base44.entities.Message.delete(id);
                 } catch (e) {
-                  // If the delete failed, the subscription refetch will restore the message.
+                  // Restore the message if the server delete failed.
+                  if (previous) queryClient.setQueryData(["messages", conversation?.id], previous);
                 }
               }}
               currentUser={currentUser}

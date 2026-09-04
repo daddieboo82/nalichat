@@ -17,6 +17,7 @@ import { queryClientInstance as queryClient } from "@/lib/query-client";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import NaliContextHint from "@/components/nali/NaliContextHint";
 import { sounds } from "@/hooks/use-sound";
+import { routeNativeCall } from "@/lib/nativeCall";
 
 import React from "react";
 
@@ -75,6 +76,18 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const endCall = () => {
     sounds.callEnd();
     setCallState(null);
+  };
+
+  // Route a call to the device's native calling app when supported; fall back
+  // to the in-app call engine (callState overlay) when it isn't.
+  const startCall = (type) => {
+    const phoneNumber = other?.phone || other?.phone_number;
+    const email = other?.email;
+    const launchedNative = routeNativeCall({ type, phoneNumber, email });
+    if (!launchedNative) {
+      // Native calling unavailable — use the custom in-app audio/video engine.
+      setCallState({ type, status: "ringing", source: "fallback" });
+    }
   };
 
   useEffect(() => {
@@ -170,10 +183,10 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl border-border/50 bg-background/95 backdrop-blur-xl">
-                <DropdownMenuItem onClick={() => setCallState({ type: 'audio' })} className="py-2.5 rounded-lg cursor-pointer" aria-label="Audio Call" title="Audio Call">
+                <DropdownMenuItem onClick={() => startCall('audio')} className="py-2.5 rounded-lg cursor-pointer" aria-label="Audio Call" title="Audio Call">
                   <Phone className="w-4 h-4 mr-2 text-muted-foreground" /> Audio Call
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setCallState({ type: 'video' })} className="py-2.5 rounded-lg cursor-pointer" aria-label="Video Call" title="Video Call">
+                <DropdownMenuItem onClick={() => startCall('video')} className="py-2.5 rounded-lg cursor-pointer" aria-label="Video Call" title="Video Call">
                   <Video className="w-4 h-4 mr-2 text-muted-foreground" /> Video Call
                 </DropdownMenuItem>
                 {conversation?.type === "group" && (
@@ -340,7 +353,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
           </Avatar>
           
           <h2 className="text-3xl font-heading font-bold mb-2">{displayName}</h2>
-          <p className="text-muted-foreground mb-12 flex items-center gap-2">
+          <p className="text-muted-foreground mb-2 flex items-center gap-2">
             {callState.status === 'connecting' ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -357,6 +370,11 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               </>
             )}
           </p>
+          {callState.source === 'fallback' && (
+            <p className="text-[11px] text-muted-foreground/70 mb-10 text-center max-w-xs">
+              Native calling unavailable — using NaliChat's built-in {callState.type} engine.
+            </p>
+          )}
           
           <div className="flex items-center gap-6">
             {callState.type === 'video' && (

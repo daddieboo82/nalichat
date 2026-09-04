@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Rocket, Sparkles, Loader2, RefreshCw, Zap } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ViralConceptCard from "@/components/viralseed/ViralConceptCard";
@@ -80,6 +81,7 @@ export default function ViralSeed() {
   const [mood, setMood] = useState("all");
   const [error, setError] = useState(null);
   const [xpAwarded, setXpAwarded] = useState(null);
+  const queryClient = useQueryClient();
 
   const generate = async () => {
     setLoading(true);
@@ -113,6 +115,8 @@ export default function ViralSeed() {
         }
         setXpAwarded(50);
         setTimeout(() => setXpAwarded(null), 3000);
+        queryClient.invalidateQueries({ queryKey: ["leaderboard-users"] });
+        queryClient.invalidateQueries({ queryKey: ["all-achievements"] });
       } catch (xpErr) {
         // XP awarding is secondary — don't fail the whole generation
       }

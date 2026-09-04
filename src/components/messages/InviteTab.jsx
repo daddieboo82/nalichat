@@ -61,11 +61,7 @@ export default function InviteTab() {
   const shareViaEmail = async () => {
     setLoading(true);
     try {
-      await base44.integrations.Core.SendEmail({
-        to: 'recipient@example.com',
-        subject: 'Join me on NaliChat',
-        body: `Hey! I'd love to collaborate with you on NaliChat. Join me here: ${inviteLink}`
-      });
+      await base44.functions.invoke('send-invite-email', { to: 'recipient@example.com', inviteLink });
     } catch (err) {
       console.error('Failed to send invite:', err);
     } finally {

@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
       ? stems.map(s => `- ${s.name} (${s.type || 'unknown'})`).join('\n')
       : 'unknown';
 
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       model: "claude_opus_4_8",
       prompt: `You are a world-class mastering engineer. Produce concrete, numeric processing settings to turn a multi-stem mix into an industry-ready, streaming-loud master.
 

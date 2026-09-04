@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     }
 
     // Classify the content with the AI moderator.
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `You are a strict content moderation system for a music collaboration platform. Analyze the following user message and determine if it violates community policy.
 
 Flag ONLY genuine violations in these categories:

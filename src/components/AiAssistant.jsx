@@ -60,8 +60,8 @@ export default function AiAssistant() {
     try {
       if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; }
       setIsSpeaking(true);
-      const res = await base44.integrations.Core.GenerateSpeech({ text: clean, voice: "honey" });
-      const audio = new Audio(res.url);
+      const res = await base44.functions.invoke('generate-speech', { text: clean, voice: "honey" });
+      const audio = new Audio(res.data.url);
       currentAudioRef.current = audio;
       audio.onended = () => { setIsSpeaking(false); currentAudioRef.current = null; };
       audio.onerror = () => { setIsSpeaking(false); currentAudioRef.current = null; };

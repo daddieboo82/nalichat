@@ -223,34 +223,16 @@ export default function CoverArt() {
   const generateArtMutation = useMutation({
     mutationFn: async (post) => {
       setGeneratingStatus("Listening to your track...");
-      let transcript = "No lyrics available.";
-      if (post.file_url) {
-        try {
-          const transRes = await base44.integrations.Core.TranscribeAudio({ audio_url: post.file_url });
-          transcript = transRes || transcript;
-        } catch (e) {
-          console.error("Transcription failed", e);
-        }
-      }
-
-      setGeneratingStatus("Designing unique cover art concept...");
-      const prompt = `You are a visionary, avant-garde album cover designer. 
-Analyze the following track details:
-Title: ${post.title || 'Untitled'}
-Genre: ${post.genre || 'Unknown'}
-Tags: ${post.tags ? post.tags.join(', ') : 'None'}
-Lyrics/Vibe: ${transcript}
-
-Create a highly detailed, breathtaking, and completely unique image generation prompt for an album cover that perfectly captures the mood and themes of this track. 
-CRITICAL: Do NOT include any text, typography, or words in the image itself. Focus entirely on the visual elements, lighting, style, and atmosphere. 
-Respond with ONLY the raw image generation prompt string, nothing else.`;
-
-      const aiPrompt = await base44.integrations.Core.InvokeLLM({ prompt });
-
+      const res = await base44.functions.invoke('generate-cover-art', {
+        file_url: post.file_url,
+        title: post.title,
+        genre: post.genre,
+        tags: post.tags,
+      });
+      if (res.data?.error) throw new Error(res.data.error);
+      if (!res.data?.image_url) throw new Error("Image generation failed");
       setGeneratingStatus("Painting final masterpiece...");
-      const imgRes = await base44.integrations.Core.GenerateImage({ prompt: aiPrompt });
-      if (!imgRes || !imgRes.url) throw new Error("Image generation failed");
-      return imgRes.url;
+      return res.data.image_url;
     },
     onSuccess: (url) => {
       setGeneratedImage(url);

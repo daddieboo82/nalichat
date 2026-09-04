@@ -7,7 +7,7 @@ import NotificationBell from "@/components/notifications/NotificationBell";
 import {
   Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users,
   Settings, LogOut, LogIn, HelpCircle, UserPlus, Mic, Radio, ShoppingCart,
-  Wand2, AudioLines, Plus, Gem, Swords
+  Wand2, AudioLines, Plus, Gem, Swords, Rocket
 } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";
@@ -50,6 +50,7 @@ const NAV_GROUPS = [
       { icon: Swords, label: "Challenges", path: "/challenges" },
       { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
       { icon: BarChart3, label: "Analytics", path: "/analytics" },
+      { icon: Rocket, label: "ViralSeed", path: "/viral-seed" },
     ],
   },
 ];

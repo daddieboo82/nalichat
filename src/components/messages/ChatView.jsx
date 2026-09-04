@@ -16,6 +16,7 @@ import { recordSquadActivity } from "@/lib/squadBonus";
 import { queryClientInstance as queryClient } from "@/lib/query-client";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import NaliContextHint from "@/components/nali/NaliContextHint";
+import { sounds } from "@/hooks/use-sound";
 
 import React from "react";
 
@@ -33,8 +34,11 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const prevLenRef = useRef(0);
   const markedRef = useRef(new Set());
   const typingTimeoutRef = useRef(null);
+  const ringIntervalRef = useRef(null);
+  const callTimerRef = useRef(null);
   const [selectedMedia, setSelectedMedia] = useState(null);
 
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (!scrollRef.current) return;
     const isNearBottom = scrollRef.current.scrollHeight - scrollRef.current.scrollTop - scrollRef.current.clientHeight < 200;
@@ -43,6 +47,35 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     }
     prevLenRef.current = messages.length;
   }, [messages]);
+
+  // Call audio feedback — ring tone while calling, connect chime, end tone
+  useEffect(() => {
+    if (!callState) {
+      if (ringIntervalRef.current) { clearInterval(ringIntervalRef.current); ringIntervalRef.current = null; }
+      if (callTimerRef.current) { clearTimeout(callTimerRef.current); callTimerRef.current = null; }
+      return;
+    }
+
+    // Play ring tone immediately, then repeat every 2s
+    sounds.callRing();
+    ringIntervalRef.current = setInterval(() => sounds.callRing(), 2000);
+
+    // After 3s of ringing, simulate "connecting" then "connected"
+    callTimerRef.current = setTimeout(() => {
+      setCallState(prev => ({ ...prev, status: 'connecting' }));
+      if (ringIntervalRef.current) { clearInterval(ringIntervalRef.current); ringIntervalRef.current = null; }
+    }, 3000);
+
+    return () => {
+      if (ringIntervalRef.current) { clearInterval(ringIntervalRef.current); ringIntervalRef.current = null; }
+      if (callTimerRef.current) { clearTimeout(callTimerRef.current); callTimerRef.current = null; }
+    };
+  }, [callState?.type]);
+
+  const endCall = () => {
+    sounds.callEnd();
+    setCallState(null);
+  };
 
   useEffect(() => {
     if (!currentUser || !messages.length) return;
@@ -101,7 +134,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const avatarGradient = gradients[(displayName?.charCodeAt(0) || 0) % gradients.length];
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden relative">
+    <div className="flex-1 flex flex-col overflow-hidden relative min-h-0 h-full">
       {/* Floating Header */}
       <div className="absolute top-0 left-0 right-0 z-20 p-2 sm:p-4 pointer-events-none">
         <div className="h-16 bg-background/80 backdrop-blur-2xl border border-border/50 rounded-3xl flex items-center px-4 gap-3 shadow-xl pointer-events-auto transition-all">
@@ -155,7 +188,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       </div>
 
       {/* Messages Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 pt-24 pb-32 space-y-0.5 custom-scrollbar">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-6 pt-24 pb-40 space-y-0.5 custom-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -308,8 +341,21 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
           
           <h2 className="text-3xl font-heading font-bold mb-2">{displayName}</h2>
           <p className="text-muted-foreground mb-12 flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            {callState.type === 'video' ? 'Starting video call...' : 'Calling...'}
+            {callState.status === 'connecting' ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              <>
+                <span className="flex gap-1">
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.2s' }} />
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.4s' }} />
+                </span>
+                {callState.type === 'video' ? 'Video calling...' : 'Calling...'}
+              </>
+            )}
           </p>
           
           <div className="flex items-center gap-6">
@@ -322,7 +368,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               size="icon" 
               variant="destructive" 
               className="w-16 h-16 rounded-full shadow-lg shadow-destructive/20 hover:scale-105 transition-transform"
-              onClick={() => setCallState(null)}
+              onClick={endCall}
               title="End Call"
               aria-label="End Call"
             >

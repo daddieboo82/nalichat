@@ -77,8 +77,8 @@ export default function Messages() {
   const { data: conversations = [] } = useQuery({
     queryKey: ["conversations"],
     queryFn: () => base44.entities.Conversation.list("-last_message_at"),
-    refetchInterval: 3000, // fast polling for near-real-time conversation list updates
-    staleTime: 1000 * 2,
+    refetchInterval: 1500, // lightning-fast polling for real-time conversation list
+    staleTime: 500,
   });
 
   const myConversations = conversations.filter(c => c.participant_ids?.includes(currentUser?.id));
@@ -90,8 +90,8 @@ export default function Messages() {
       return msgs.reverse();
     },
     enabled: !!selectedConvId,
-    refetchInterval: 3000, // fast polling — subscription not firing, so poll every 3s
-    staleTime: 1000 * 2,
+    refetchInterval: 1500, // lightning-fast polling — subscription not firing, so poll every 1.5s
+    staleTime: 500,
   });
 
   useEffect(() => {
@@ -333,7 +333,7 @@ export default function Messages() {
     : isTimedOut;
 
   return (
-    <div className="h-[calc(100dvh-70px)] sm:h-[calc(100vh-80px)] p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden">
+    <div className="h-[calc(100dvh-64px)] sm:h-[calc(100vh-80px)] p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden">
       <div className="w-full max-w-7xl h-full flex flex-col sm:flex-row bg-card/60 sm:bg-card/40 backdrop-blur-3xl sm:border border-border/40 sm:rounded-[2.5rem] shadow-none sm:shadow-2xl overflow-hidden relative">
         
         {/* Sidebar */}

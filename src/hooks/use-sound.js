@@ -147,6 +147,21 @@ export const sounds = {
   },
   // Soft navigation whoosh
   nav: () => playTone({ frequency: 440, type: "sine", duration: 0.08, volume: 0.08, attack: 0.02, decay: 0.08 }),
+  // Phone ring tone — two-tone ring pattern (like a real phone)
+  callRing: () => {
+    playTone({ frequency: 440, type: "sine", duration: 1.0, volume: 0.14, attack: 0.02, decay: 0.08, delay: 0 });
+    playTone({ frequency: 480, type: "sine", duration: 1.0, volume: 0.14, attack: 0.02, decay: 0.08, delay: 0 });
+  },
+  // Call connect chime — when the call connects
+  callConnect: () => {
+    playTone({ frequency: 587, type: "sine", duration: 0.10, volume: 0.12, delay: 0 });
+    playTone({ frequency: 880, type: "sine", duration: 0.15, volume: 0.10, delay: 0.08 });
+  },
+  // Call end tone — soft descending
+  callEnd: () => {
+    playTone({ frequency: 392, type: "sine", duration: 0.10, volume: 0.12, delay: 0 });
+    playTone({ frequency: 294, type: "sine", duration: 0.14, volume: 0.10, delay: 0.07 });
+  },
   // Premium startup chime — a warm, welcoming ascending arpeggio for the splash screen
   startup: () => {
     playTone({ frequency: 261, type: "sine", duration: 0.18, volume: 0.14, attack: 0.01, decay: 0.14, delay: 0 });

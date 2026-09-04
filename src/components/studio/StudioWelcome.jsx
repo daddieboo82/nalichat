@@ -20,7 +20,7 @@ export default function StudioWelcome({
         <p className="text-muted-foreground text-center mb-8">Choose how you'd like to start your session.</p>
         
         <div className="flex flex-col gap-3 w-full">
-          <Button onClick={() => navigate('/projects-summary?new=true')} className="w-full justify-start h-12 text-base font-medium" variant="default">
+          <Button onClick={handleStartBlank} className="w-full justify-start h-12 text-base font-medium" variant="default">
             <Plus className="w-5 h-5 mr-3" /> Create New Project
           </Button>
           

@@ -49,7 +49,11 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     const unread = messages.filter(m => m.sender_id !== currentUser.id && !m.read_by?.includes(currentUser.id) && !markedRef.current.has(m.id));
     if (!unread.length) return;
     unread.forEach(m => markedRef.current.add(m.id));
-    unread.forEach(m => base44.entities.Message.update(m.id, { read_by: [...(m.read_by || []), currentUser.id] }));
+    // Read receipts require updating another user's message, which RLS blocks.
+    // Fire-and-forget — the 403 is expected and harmless; the UI still shows the message.
+    unread.forEach(m => {
+      base44.entities.Message.update(m.id, { read_by: [...(m.read_by || []), currentUser.id] }).catch(() => {});
+    });
   }, [messages, currentUser]);
 
   useEffect(() => {

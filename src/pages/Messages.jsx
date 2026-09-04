@@ -56,13 +56,18 @@ export default function Messages() {
           await base44.functions.invoke("updateUserPresence", { isOnline });
         } catch (err) {}
       }
+      if (isOnline) {
+        // Immediately refresh messages and conversations when returning to the tab
+        queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
     if (currentUser) {
       base44.functions.invoke("updateUserPresence", { isOnline: true }).catch(() => {});
     }
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [currentUser]);
+  }, [currentUser, queryClient, selectedConvId]);
 
   const { data: users = [] } = useQuery({
     queryKey: ["users"],
@@ -72,6 +77,8 @@ export default function Messages() {
   const { data: conversations = [] } = useQuery({
     queryKey: ["conversations"],
     queryFn: () => base44.entities.Conversation.list("-last_message_at"),
+    refetchInterval: 3000, // fast polling for near-real-time conversation list updates
+    staleTime: 1000 * 2,
   });
 
   const myConversations = conversations.filter(c => c.participant_ids?.includes(currentUser?.id));
@@ -83,8 +90,8 @@ export default function Messages() {
       return msgs.reverse();
     },
     enabled: !!selectedConvId,
-    refetchInterval: 20000, // safety net; real-time subscription handles live updates
-    staleTime: 1000 * 10,
+    refetchInterval: 3000, // fast polling — subscription not firing, so poll every 3s
+    staleTime: 1000 * 2,
   });
 
   useEffect(() => {

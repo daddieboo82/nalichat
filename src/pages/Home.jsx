@@ -17,6 +17,8 @@ import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import ImmersiveOnboarding from "@/components/onboarding/ImmersiveOnboarding";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import PullToRefresh from "@/components/layout/PullToRefresh";
 
 const features = [
   {
@@ -149,13 +151,14 @@ const itemVariants = {
 
 export default function Home() {
   const { user: authUser, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const [showWizard, setShowWizard] = useState(false);
   // Only treat as logged-in when both the flag and the user record are present,
   // so the greeting disappears instantly on logout.
   const user = isAuthenticated ? authUser : null;
 
   return (
-    <div className="h-full overflow-auto bg-background">
+    <PullToRefresh onRefresh={() => queryClient.invalidateQueries()} className="h-full overflow-auto bg-background">
 
       {/* ── Immersive onboarding for first-time visitors ── */}
       {!user && <ImmersiveOnboarding />}
@@ -377,11 +380,11 @@ export default function Home() {
                     <span className="text-xs font-bold tracking-widest text-primary uppercase bg-primary/10 px-3 py-1 rounded-full">Live Collaboration</span>
                   </div>
                   <h2 className="font-heading font-bold text-2xl sm:text-3xl md:text-4xl mb-3 flex items-center gap-3">
-                   <MessageSquare className="w-8 h-8 text-primary shrink-0" />
-                   Seamless Communication
+                    <MessageSquare className="w-8 h-8 text-primary shrink-0" />
+                    Seamless Communication
                   </h2>
                   <p className="text-lg text-foreground/90 mb-6 max-w-xl">
-                   Connect instantly with other artists. Share files, exchange ideas, and collaborate without friction. All conversations in one organized inbox.
+                    Connect instantly with other artists. Share files, exchange ideas, and collaborate without friction. All conversations in one organized inbox.
                   </p>
                   <div className="flex items-center gap-2 text-primary font-semibold group-hover:gap-3 transition-all">
                     Start connecting <ChevronRight className="w-4 h-4" />
@@ -427,7 +430,7 @@ export default function Home() {
                 </div>
                 <h2 className="font-heading font-bold text-2xl md:text-3xl mb-2">Your Personal Music Assistant</h2>
                 <p className="text-foreground/90 leading-relaxed">
-                 Need help? You can ask Nali to perform tasks across the app, suggest track tags, or answer absolutely anything music-related. From production tips to navigating the studio, Nali is here to help you create your best work.
+                  Need help? You can ask Nali to perform tasks across the app, suggest track tags, or answer absolutely anything music-related. From production tips to navigating the studio, Nali is here to help you create your best work.
                 </p>
               </div>
             </div>
@@ -631,6 +634,6 @@ export default function Home() {
         </motion.div>
 
       </section>
-    </div>
+    </PullToRefresh>
   );
 }

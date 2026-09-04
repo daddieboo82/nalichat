@@ -236,14 +236,16 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
-                  onClick={() => setShowPan(!showPan)}
-                  className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
-                    showPan ? "bg-primary/20 text-primary" : "bg-secondary hover:bg-secondary/80"
-                  )}
-                >
-                  <Settings2 className="w-3 h-3" />
-                </button>
+                <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
+                  <button
+                    onClick={() => setShowPan(!showPan)}
+                    className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
+                      showPan ? "bg-primary/20 text-primary" : "bg-secondary hover:bg-secondary/80"
+                    )}
+                  >
+                    <Settings2 className="w-3 h-3" />
+                  </button>
+                </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">Pan</TooltipContent>
             </Tooltip>
@@ -251,14 +253,16 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
             {onToggleQueue && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
-                    onClick={onToggleQueue}
-                    className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
-                      inQueue ? "bg-primary/20 text-primary" : "bg-secondary hover:bg-secondary/80"
-                    )}
-                  >
-                    <Layers className="w-3 h-3" />
-                  </button>
+                  <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
+                    <button
+                      onClick={onToggleQueue}
+                      className={cn("w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
+                        inQueue ? "bg-primary/20 text-primary" : "bg-secondary hover:bg-secondary/80"
+                      )}
+                    >
+                      <Layers className="w-3 h-3" />
+                    </button>
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">{inQueue ? "Remove from queue" : "Add to queue"}</TooltipContent>
               </Tooltip>
@@ -266,12 +270,14 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
-                  onClick={() => setShowVersionHistory(true)}
-                  className="w-7 h-7 rounded-lg bg-secondary hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-colors"
-                >
-                  <History className="w-3 h-3" />
-                </button>
+                <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
+                  <button
+                    onClick={() => setShowVersionHistory(true)}
+                    className="w-7 h-7 rounded-lg bg-secondary hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-colors"
+                  >
+                    <History className="w-3 h-3" />
+                  </button>
+                </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">Version history</TooltipContent>
             </Tooltip>
@@ -279,12 +285,14 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
             {canEdit && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
-                    onClick={onDelete}
-                    className="w-7 h-7 rounded-lg bg-secondary hover:bg-destructive/20 hover:text-destructive flex items-center justify-center transition-colors"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+                  <div className="min-w-[44px] min-h-[44px] flex items-center justify-center">
+                    <button
+                      onClick={onDelete}
+                      className="w-7 h-7 rounded-lg bg-secondary hover:bg-destructive/20 hover:text-destructive flex items-center justify-center transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">Delete</TooltipContent>
               </Tooltip>

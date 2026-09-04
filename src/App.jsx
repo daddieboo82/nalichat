@@ -96,6 +96,9 @@ const AuthenticatedApp = () => {
 
   useEffect(() => {
     if (!isAuthenticated) return;
+    // Reset the activity timestamp on session start so a stale value from a
+    // previous session doesn't immediately log the user out right after login.
+    localStorage.setItem('last_activity', Date.now().toString());
     const checkActivity = () => {
       const lastActive = localStorage.getItem('last_activity');
       if (lastActive && Date.now() - parseInt(lastActive, 10) > 24 * 60 * 60 * 1000) {

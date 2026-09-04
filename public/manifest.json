@@ -1,103 +1,24 @@
 {
-  "id": "https://nalichat.org",
-  "name": "NaliChat - Collaborate on Music",
+  "name": "NaliChat",
   "short_name": "NaliChat",
-  "description": "Collaborate, create, and share music with musicians worldwide",
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "theme_color": "#1a0f2e",
+  "orientation": "portrait",
   "background_color": "#0f0a14",
+  "theme_color": "#7c3aed",
+  "description": "NaliChat - Collaborate, Create & Share Music",
   "icons": [
     {
-      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
+      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/2089b13d8_generated_image.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
-      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
+      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/2089b13d8_generated_image.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
-      "sizes": "540x720",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
-      "sizes": "540x720",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
-      "sizes": "540x720",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
-      "sizes": "540x720",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Explore Music",
-      "short_name": "Explore",
-      "description": "Browse and discover music from creators",
-      "url": "/explore",
-      "icons": [
-        {
-          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "Studio",
-      "short_name": "Studio",
-      "description": "Access your music production studio",
-      "url": "/studio",
-      "icons": [
-        {
-          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "Messages",
-      "short_name": "Messages",
-      "description": "Chat with collaborators",
-      "url": "/messages",
-      "icons": [
-        {
-          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
+      "purpose": "any maskable"
     }
   ]
 }

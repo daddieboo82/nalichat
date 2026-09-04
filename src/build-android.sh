@@ -50,10 +50,22 @@ else
   echo "✅ Using existing keystore: ./android.keystore"
 fi
 
-# ---- Step 4: Initialize TWA project ----
+# ---- Step 4: Initialize or update TWA project ----
 echo ""
-echo "▶ Initializing TWA Android project..."
-bubblewrap init --manifest https://nalichat.org/manifest.json
+if [ -f "./twa-manifest.json" ]; then
+  echo "▶ twa-manifest.json found — preserving existing config (packageId: com.nalichat)"
+  echo "  Skipping 'bubblewrap init' to avoid overwriting the package ID."
+  echo "  Running 'bubblewrap update' to pull any web manifest changes..."
+  bubblewrap update --skip-gradle-build --manifest https://nalichat.org/manifest.json || echo "⚠️  Update skipped (first run or no changes needed)"
+else
+  echo "▶ No twa-manifest.json found. Initializing new TWA project..."
+  bubblewrap init --manifest https://nalichat.org/manifest.json
+  echo ""
+  echo "⚠️  IMPORTANT: Verify packageId in twa-manifest.json is 'com.nalichat' before building!"
+  echo "   The init command may generate a different package ID based on the domain."
+  echo "   Edit twa-manifest.json and set: \"packageId\": \"com.nalichat\""
+  exit 1
+fi
 
 # ---- Step 5: Build the AAB ----
 echo ""

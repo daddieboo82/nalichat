@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.nalichat.app",
+      "package_name": "com.nalichat",
       "sha256_cert_fingerprints": [
-        "C1:36:82:00:26:86:AC:81:DF:CC:59:1E:38:A6:1B:E5:5C:26:9F:C2:35:49:B5:DC:92:D2:7C:5C:1E:37:E8:C0"
+        "REPLACE_WITH_YOUR_SHA256_FINGERPRINT"
       ]
     }
   }

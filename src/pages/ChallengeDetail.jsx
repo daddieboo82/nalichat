@@ -120,20 +120,20 @@ export default function ChallengeDetail() {
         </div>
       </div>
 
-      {challenge.stem_file_urls?.length > 0 && (
-        <div className="rounded-2xl bg-card border border-border p-4 space-y-2">
-          <h2 className="font-heading font-bold">Original Stems</h2>
-          {challenge.stem_file_urls.map((url, i) => (
-            <div key={url} className="flex items-center gap-3 p-2 rounded-xl bg-secondary/40">
-              <audio controls src={url} className="flex-1 h-9" />
-              <a href={url} download title="Download stem">
-                <Button size="icon" variant="ghost"><Download className="w-4 h-4" /></Button>
-              </a>
-              <span className="text-xs text-muted-foreground shrink-0 max-w-[100px] truncate">{challenge.stem_names?.[i] || `Stem ${i + 1}`}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="rounded-2xl bg-card border border-border p-4 space-y-2">
+        <h2 className="font-heading font-bold">Source Track</h2>
+        {challenge.source_track_url ? (
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-secondary/40">
+            <audio controls src={challenge.source_track_url} className="flex-1 h-9" />
+            <a href={challenge.source_track_url} download title="Download source track">
+              <Button size="icon" variant="ghost"><Download className="w-4 h-4" /></Button>
+            </a>
+            <span className="text-xs text-muted-foreground shrink-0 max-w-[120px] truncate">{challenge.source_track_name || "Source Track"}</span>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground py-2">Host hasn't uploaded the source track yet.</p>
+        )}
+      </div>
 
       {challenge.rules && (
         <div className="rounded-2xl bg-card border border-border p-4">

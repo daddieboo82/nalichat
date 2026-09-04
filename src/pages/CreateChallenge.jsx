@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
-import { Loader2, Image as ImageIcon, ArrowLeft } from "lucide-react";
+import { Loader2, Image as ImageIcon, ArrowLeft, Upload, Music, X } from "lucide-react";
 import { toast } from "sonner";
-import StemUploadList from "@/components/challenges/StemUploadList";
 import DateField from "@/components/challenges/DateField";
 
 const GENRES = ["EDM", "Hip Hop", "R&B", "Pop", "Rock", "Lo-Fi", "Ambient", "Other"];
@@ -23,7 +22,8 @@ export default function CreateChallenge() {
     rules: "", prize_description: "",
     start_date: "", submission_end_date: "", voting_end_date: "",
   });
-  const [stems, setStems] = useState([]);
+  const [sourceTrackFile, setSourceTrackFile] = useState(null);
+  const [sourceTrackName, setSourceTrackName] = useState("");
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -35,7 +35,7 @@ export default function CreateChallenge() {
     setCoverPreview(URL.createObjectURL(f));
   };
 
-  const canSubmit = form.title.trim() && form.description.trim() && !submitting;
+  const canSubmit = form.title.trim() && form.description.trim() && sourceTrackFile && !submitting;
 
   const handleSubmit = async () => {
     if (!user || !canSubmit) return;
@@ -47,13 +47,9 @@ export default function CreateChallenge() {
         cover_url = res.file_url;
       }
 
-      const stem_file_urls = [];
-      const stem_names = [];
-      for (const stem of stems) {
-        const res = await base44.integrations.Core.UploadFile({ file: stem.file });
-        stem_file_urls.push(res.file_url);
-        stem_names.push(stem.name || stem.file.name);
-      }
+      const trackRes = await base44.integrations.Core.UploadFile({ file: sourceTrackFile });
+      const source_track_url = trackRes.file_url;
+      const source_track_name = sourceTrackName.trim() || sourceTrackFile.name.replace(/\.[^/.]+$/, "");
 
       const now = new Date();
       const status = form.start_date && new Date(form.start_date) > now ? "upcoming" : "active";
@@ -69,8 +65,8 @@ export default function CreateChallenge() {
         rules: form.rules || undefined,
         prize_description: form.prize_description || undefined,
         cover_url: cover_url || undefined,
-        stem_file_urls,
-        stem_names,
+        source_track_url,
+        source_track_name,
         status,
         start_date: form.start_date || undefined,
         submission_end_date: form.submission_end_date || undefined,
@@ -95,7 +91,7 @@ export default function CreateChallenge() {
 
       <div>
         <h1 className="font-heading text-2xl sm:text-3xl font-bold text-gradient-animate">Create a Remix Challenge</h1>
-        <p className="text-muted-foreground text-sm mt-1">Drop your stems and let the community remix your track.</p>
+        <p className="text-muted-foreground text-sm mt-1">Upload a source track and let the community remix it.</p>
       </div>
 
       <div className="space-y-4">
@@ -176,8 +172,50 @@ export default function CreateChallenge() {
         </div>
 
         <div>
-          <label className="text-xs text-muted-foreground mb-2 block">Stem Files</label>
-          <StemUploadList stems={stems} onChange={setStems} />
+          <label className="text-xs text-muted-foreground mb-2 block">Source Track *</label>
+          <div className="space-y-2">
+            <div
+              className="relative border-2 border-dashed border-border rounded-xl h-20 flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => !sourceTrackFile && document.getElementById("source-track-input").click()}
+            >
+              <input
+                id="source-track-input"
+                type="file"
+                accept=".mp3,.wav"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) {
+                    if (!/\.(mp3|wav)$/i.test(f.name)) {
+                      toast.error("Only MP3 or WAV files are allowed.");
+                      e.target.value = "";
+                      return;
+                    }
+                    setSourceTrackFile(f);
+                    if (!sourceTrackName) setSourceTrackName(f.name.replace(/\.[^/.]+$/, ""));
+                  }
+                }}
+              />
+              <div className="text-center text-muted-foreground pointer-events-none">
+                <Upload className="w-5 h-5 mx-auto mb-1 opacity-40" />
+                <p className="text-sm">{sourceTrackFile ? sourceTrackFile.name : "Click to upload source track (MP3/WAV)"}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Music className="w-4 h-4 text-primary shrink-0" />
+              <Input
+                value={sourceTrackName}
+                onChange={(e) => setSourceTrackName(e.target.value)}
+                placeholder="Track name"
+                className="h-9 bg-secondary/50 border-0 rounded-xl"
+              />
+              {sourceTrackFile && (
+                <button type="button" onClick={() => { setSourceTrackFile(null); }} className="text-muted-foreground hover:text-destructive shrink-0">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         <div>
@@ -186,7 +224,7 @@ export default function CreateChallenge() {
             id="challenge-rules"
             value={form.rules}
             onChange={(e) => setForm((f) => ({ ...f, rules: e.target.value }))}
-            placeholder="Any specific rules for remixers..."
+            placeholder="Remix must incorporate elements from the source track..."
             rows={3}
             className="bg-secondary/50 border-0 rounded-xl resize-none"
           />

@@ -14,17 +14,27 @@
     "host_artist_id": {
       "type": "string"
     },
+    "source_track_url": {
+      "type": "string",
+      "description": "URL of the single uploaded source track (MP3/WAV) that producers remix from"
+    },
+    "source_track_name": {
+      "type": "string",
+      "description": "Name of the source track"
+    },
     "stem_file_urls": {
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Legacy multi-stem uploads \u2014 kept for backward compatibility, no longer used by the UI"
     },
     "stem_names": {
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Legacy stem names \u2014 kept for backward compatibility, no longer used by the UI"
     },
     "genre": {
       "type": "string"

@@ -11,9 +11,11 @@ export default function ChallengeCard({ challenge, winner, dimmed }) {
       to={`/challenge/${challenge.id}`}
       className={`block rounded-2xl overflow-hidden bg-card border border-border hover:border-primary/40 transition-all ${dimmed ? "opacity-60" : "hover:-translate-y-1"}`}
     >
-      <div className="relative aspect-video bg-secondary">
-        {challenge.cover_url && (
+      <div className="relative aspect-video bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+        {challenge.cover_url ? (
           <img src={challenge.cover_url} alt={challenge.title} className="w-full h-full object-cover" />
+        ) : (
+          <Trophy className="w-8 h-8 text-primary/30" />
         )}
         <Badge className="absolute top-2 left-2 bg-black/60 text-white border-none">
           {STATUS_LABEL[challenge.status] || challenge.status}

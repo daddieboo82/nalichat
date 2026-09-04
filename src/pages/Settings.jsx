@@ -137,7 +137,7 @@ export default function Settings() {
 
           <div>
             <label className="text-sm font-medium mb-2 block">Bio</label>
-            <Textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} className="bg-secondary/50 border-0 rounded-xl min-h-[100px]" placeholder="Tell others about yourself..." />
+            <Textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} className="bg-secondary/50 border-0 rounded-xl min-h-[120px] resize-y" placeholder="Tell others about yourself..." />
           </div>
 
           <div>

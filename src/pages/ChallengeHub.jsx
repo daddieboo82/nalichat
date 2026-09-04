@@ -53,8 +53,12 @@ export default function ChallengeHub() {
 
       {featured && (
         <Link to={`/challenge/${featured.id}`} className="block rounded-3xl overflow-hidden border border-primary/30 bg-gradient-to-br from-primary/10 to-accent/10 hover:border-primary/60 transition-all">
-          <div className="relative aspect-[16/7] bg-secondary">
-            {featured.cover_url && <img src={featured.cover_url} alt={featured.title} className="w-full h-full object-cover" />}
+          <div className="relative aspect-[16/7] bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+            {featured.cover_url ? (
+              <img src={featured.cover_url} alt={featured.title} className="w-full h-full object-cover" />
+            ) : (
+              <Trophy className="w-12 h-12 text-primary/30" />
+            )}
           </div>
           <div className="p-4 sm:p-6 space-y-2">
             <h2 className="font-heading text-xl sm:text-2xl font-bold">{featured.title}</h2>

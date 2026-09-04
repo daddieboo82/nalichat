@@ -25,7 +25,7 @@ export default function StudioWelcome({
           </Button>
           
           <Button onClick={handleLoadAutosave} disabled={!hasAutosave} className="w-full justify-start h-12 text-base font-medium" variant="outline">
-            <Undo className="w-5 h-5 mr-3" /> Pick Up Where I Left Off {hasAutosave ? "" : "(No autosave)"}
+            <Undo className="w-5 h-5 mr-3" /> Pick Up Where I Left Off
           </Button>
           
           <Button onClick={handleLoadDemo} className="w-full justify-start h-12 text-base font-medium" variant="secondary">

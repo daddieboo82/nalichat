@@ -132,7 +132,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
         {/* Existing Chats */}
         {searchResults.filteredChats.map(conv => {
           const other = getOtherUser(conv);
-          const displayName = conv.type === "group" ? conv.name : (other?.display_name || other?.full_name || "Unknown");
+          const displayName = conv.type === "group" ? conv.name : (other?.display_name || other?.full_name || conv.name || "User");
           const avatar = conv.type === "group" ? conv.avatar_url : other?.avatar_url;
           const isSelected = selectedId === conv.id;
           const gradient = getGradient(displayName);

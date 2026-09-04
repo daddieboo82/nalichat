@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Copy, Download, Share2, RefreshCw, Clapperboard, Image as ImageIcon } from "lucide-react";
+import { Sparkles, Copy, Download, Share2, RefreshCw, Clapperboard, Image as ImageIcon, Music } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -30,11 +30,16 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
     setError(null);
     setResult(null);
     try {
-      const response = await base44.functions.invoke("generate-viral-moment", {
+      const payload = {
         messageText: message.text,
         senderName: message.sender_name,
         type,
-      });
+      };
+      // For voice notes with no text, pass the audio URL for server-side transcription
+      if (!message.text && message.file_url && (message.type === "audio" || message.file_type?.startsWith("audio"))) {
+        payload.audioUrl = message.file_url;
+      }
+      const response = await base44.functions.invoke("generate-viral-moment", payload);
       setResult(response.data);
     } catch (err) {
       setError("Nali couldn't create that moment. Try again!");
@@ -137,7 +142,14 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
         <div className="px-5 pb-3">
           <div className="bg-secondary/60 rounded-lg px-3 py-2 border-l-2 border-primary/40">
             <p className="text-[11px] text-muted-foreground font-medium mb-0.5">{message.sender_name || "You"}</p>
-            <p className="text-sm text-foreground line-clamp-3">{message.text}</p>
+            {message.text ? (
+              <p className="text-sm text-foreground line-clamp-3">{message.text}</p>
+            ) : message.file_url ? (
+              <p className="text-sm text-foreground flex items-center gap-2">
+                <Music className="w-4 h-4 text-primary shrink-0" />
+                Voice note{message.duration ? ` • ${Math.round(message.duration)}s` : ""}
+              </p>
+            ) : null}
           </div>
         </div>
 

@@ -12,6 +12,7 @@ import EmojiReactionPicker from "./EmojiReactionPicker";
 import CustomMediaPlayer from "../audio/CustomMediaPlayer";
 import ChatSessionViewer from "./ChatSessionViewer";
 import ViralMomentDialog from "./ViralMomentDialog";
+import MessageContextMenu from "./MessageContextMenu";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -111,8 +112,42 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viralOpen, setViralOpen] = useState(false);
+  const [contextMenuPos, setContextMenuPos] = useState(null);
+  const longPressTimer = useRef(null);
 
   const hasFile = message.file_url && message.type !== "text";
+  const isAudioMessage = !!(message.file_url && (message.type === "audio" || message.file_type?.startsWith("audio") || message.file_name?.match(/\.(mp3|wav|ogg|m4a|aac)$/i)));
+  const canGoViral = !!(message.text || isAudioMessage);
+
+  const showContextMenu = (x, y) => {
+    const menuW = 200, menuH = 320;
+    setContextMenuPos({
+      x: Math.min(x, window.innerWidth - menuW - 16),
+      y: Math.min(y, window.innerHeight - menuH - 16),
+    });
+  };
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showContextMenu(e.clientX, e.clientY);
+  };
+
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0];
+    longPressTimer.current = setTimeout(() => {
+      showContextMenu(touch.clientX, touch.clientY);
+      if (navigator.vibrate) navigator.vibrate(50);
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  };
+
+  const handleTouchMove = () => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  };
   const avatarGradient = getGradient(message.sender_name);
 
   return (
@@ -124,6 +159,10 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
       className={cn("flex gap-2 group mb-0.5 py-0.5", isOwn ? "flex-row-reverse" : "flex-row", showAvatar ? "mt-4" : "mt-0.5")}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => { setShowActions(false); }}
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
     >
       {/* Avatar */}
       <div className="w-8 shrink-0 mt-auto">
@@ -283,7 +322,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           <Reply className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
 
-        {message.text && (
+        {canGoViral && (
           <button
             onClick={() => setViralOpen(true)}
             className="min-w-[44px] min-h-[44px] rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-primary/15 hover:border-primary/40 hover:text-primary transition-all shadow-sm"
@@ -351,6 +390,19 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         message={message}
         isOpen={viralOpen}
         onClose={() => setViralOpen(false)}
+      />
+
+      <MessageContextMenu
+        position={contextMenuPos}
+        onClose={() => setContextMenuPos(null)}
+        items={[
+          { icon: Sparkles, label: "Create Viral Moment", onClick: () => setViralOpen(true), highlight: true },
+          { icon: Reply, label: "Reply", onClick: () => onReply?.(message) },
+          { icon: MessageSquareQuote, label: "Open Thread", onClick: () => onOpenThread?.(message) },
+          ...(message.text ? [{ icon: Copy, label: "Copy", onClick: () => onCopy?.(message) }] : []),
+          ...(isOwn && message.type === "text" ? [{ icon: Pencil, label: "Edit", onClick: () => onEdit?.(message) }] : []),
+          ...((canDelete !== undefined ? canDelete : isOwn) ? [{ icon: Trash2, label: "Delete", onClick: () => onDelete?.(message.id), destructive: true }] : []),
+        ]}
       />
     </motion.div>
   );

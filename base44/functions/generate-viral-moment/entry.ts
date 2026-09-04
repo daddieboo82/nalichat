@@ -1,8 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-// Generates a viral "moment" from a chat message — either an AI meme
-// (image + caption) or a vertical reel script. All credit-costly
-// integration calls run server-side under asServiceRole.
+// Generates a viral "moment" from a chat message or voice note — either an
+// AI meme (image + caption) or a vertical reel script for TikTok / Instagram.
+// All credit-costly integration calls run server-side under asServiceRole.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -11,16 +11,33 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { messageText, senderName, type } = await req.json();
+    const { messageText, senderName, type, audioUrl } = await req.json();
 
-    if (!messageText || messageText.trim().length === 0) {
-      return Response.json({ error: 'Message text is required' }, { status: 400 });
+    let finalMessageText = messageText;
+
+    // If no text but an audio recording is provided, transcribe it first.
+    if ((!finalMessageText || finalMessageText.trim().length === 0) && audioUrl) {
+      try {
+        const transcript = await base44.asServiceRole.integrations.Core.TranscribeAudio({
+          audio_url: audioUrl,
+        });
+        finalMessageText = typeof transcript === 'string' ? transcript : transcript?.text || '';
+      } catch (transcribeErr) {
+        console.error('Transcription failed:', transcribeErr.message);
+        return Response.json({ error: 'Could not transcribe the voice note. Try a text message instead.' }, { status: 400 });
+      }
     }
 
-    if (type === "meme") {
-      const memePrompt = `You are a viral meme creator with a sharp, witty sense of humor. Turn this chat message into a funny, shareable meme.
+    if (!finalMessageText || finalMessageText.trim().length === 0) {
+      return Response.json({ error: 'Message text or a voice note is required' }, { status: 400 });
+    }
 
-Message: "${messageText}"
+    const sourceLabel = audioUrl && !messageText ? 'a voice note' : 'a chat message';
+
+    if (type === "meme") {
+      const memePrompt = `You are a viral meme creator with a sharp, witty sense of humor. Turn ${sourceLabel} into a funny, shareable meme.
+
+Message: "${finalMessageText}"
 Sender: ${senderName || 'Someone'}
 
 Create:
@@ -51,12 +68,13 @@ Respond as JSON: { "caption": "the meme text", "image_prompt": "detailed visual 
       return Response.json({
         type: "meme",
         caption,
-        image_url: imgRes.url
+        image_url: imgRes.url,
+        source_text: finalMessageText
       });
     } else {
-      const reelPrompt = `You are a viral short-form video creator. Turn this chat message into a vertical video reel script for TikTok / Instagram Reels.
+      const reelPrompt = `You are a viral short-form video creator. Turn ${sourceLabel} into a vertical video reel script for TikTok / Instagram Reels.
 
-Message: "${messageText}"
+Message: "${finalMessageText}"
 Sender: ${senderName || 'Someone'}
 
 Create a 15-30 second vertical video script:
@@ -97,7 +115,8 @@ Respond as JSON: {
 
       return Response.json({
         type: "reel",
-        ...reelRes
+        ...reelRes,
+        source_text: finalMessageText
       });
     }
   } catch (error) {

@@ -66,7 +66,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     // Read receipts require updating another user's message, which RLS blocks.
     // Fire-and-forget — the 403 is expected and harmless; the UI still shows the message.
     unread.forEach(m => {
-      base44.entities.Message.update(m.id, { read_by: [...(m.read_by || []), currentUser.id] }).catch(() => {});
+      base44.functions.invoke('markMessageRead', { message_id: m.id }).catch(() => {});
     });
   }, [messages, currentUser]);
 

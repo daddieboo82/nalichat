@@ -288,7 +288,7 @@ export default function Settings() {
           <DeviceSelector compact={true} />
         </div>
 
-        {user && (
+        {user?.role === 'admin' && (
           <div className="mt-12 pt-8 border-t border-border">
             <h2 className="text-xl font-heading font-bold mb-6 text-orange-500">Developer Testing</h2>
             <div className="bg-orange-500/10 rounded-2xl p-6 border border-orange-500/30">

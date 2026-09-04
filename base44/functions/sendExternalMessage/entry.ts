@@ -24,8 +24,8 @@ Deno.serve(async (req) => {
       if (!emailRegex.test(cleanDestination)) {
         return Response.json({ error: 'Invalid email address' }, { status: 400 });
       }
-      const users = await base44.asServiceRole.entities.User.list();
-      const isRegistered = users.some((u) => u.email && u.email.toLowerCase() === cleanDestination.toLowerCase());
+      const users = await base44.asServiceRole.entities.User.filter({ email: cleanDestination });
+      const isRegistered = users.length > 0;
       if (!isRegistered) {
         return Response.json({ error: 'Recipient is not a registered NaliChat user' }, { status: 403 });
       }
@@ -43,8 +43,8 @@ Deno.serve(async (req) => {
       // Prevent open SMS relay: only allow sending to a registered app user's phone,
       // mirroring the email path's "registered user" restriction.
       const cleanPhone = destination.replace(/[\r\n]/g, '').trim();
-      const smsUsers = await base44.asServiceRole.entities.User.list();
-      const isRegisteredPhone = smsUsers.some((u) => u.phone && u.phone.trim() === cleanPhone);
+      const smsUsers = await base44.asServiceRole.entities.User.filter({ phone: cleanPhone });
+      const isRegisteredPhone = smsUsers.length > 0;
       if (!isRegisteredPhone) {
         return Response.json({ error: 'Recipient is not a registered NaliChat user' }, { status: 403 });
       }

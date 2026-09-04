@@ -10,7 +10,7 @@ const DefaultFallback = () => (
 );
 
 export default function ProtectedRoute({ children, fallback = <DefaultFallback />, unauthenticatedElement }) {
-  const { isAuthenticated, isLoadingAuth, authChecked, authError, checkUserAuth } = useAuth();
+  const { isAuthenticated, isLoadingAuth, authChecked, authError, checkUserAuth, user } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -32,6 +32,18 @@ export default function ProtectedRoute({ children, fallback = <DefaultFallback /
 
   if (!isAuthenticated) {
     return unauthenticatedElement;
+  }
+
+  if (user?.is_banned) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-6">
+        <div className="text-center max-w-md">
+          <h1 className="font-heading font-bold text-2xl mb-2 text-destructive">Account Banned</h1>
+          <p className="text-muted-foreground mb-6">Your account has been banned for policy violations. Contact support if you believe this is an error.</p>
+          <button onClick={() => window.location.href = "/login"} className="text-primary underline">Back to Login</button>
+        </div>
+      </div>
+    );
   }
 
   return children ? children : <Outlet />;

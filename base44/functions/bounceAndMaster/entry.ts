@@ -50,6 +50,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Failed to fetch audio' }, { status: 400 });
     }
 
+    // Reject files larger than 50MB to prevent OOM in the Deno function
+    const contentLength = audioResponse.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 50 * 1024 * 1024) {
+      return Response.json({ error: 'Audio file too large (max 50MB)' }, { status: 413 });
+    }
+
     const arrayBuffer = await audioResponse.arrayBuffer();
     
     // Create simulated audio analysis from file size (since we can't decode MP3)

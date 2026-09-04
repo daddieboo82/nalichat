@@ -85,6 +85,13 @@ Deno.serve(async (req) => {
         }
 
         const sub = subs[0];
+
+        // Idempotency: if already activated, ack and return — Wix redelivers
+        if (sub.status === 'active') {
+          console.log('Subscription already active, skipping:', checkoutId);
+          return Response.json({ success: true });
+        }
+
         let subscriptionId = null;
         for (const lineItem of order.lineItems || []) {
           if (lineItem.subscriptionInfo) {
@@ -140,11 +147,29 @@ Deno.serve(async (req) => {
           subscription_id: subscriptionId || null,
         });
 
+        // Handle one-time purchases (Base44Purchase) — grant access
+        try {
+          const purchases = await base44.asServiceRole.entities.Base44Purchase.filter({ checkoutSessionId: checkoutId });
+          if (purchases.length > 0) {
+            const purchase = purchases[0];
+            if (purchase.status !== 'paid') {
+              await base44.asServiceRole.entities.Base44Purchase.update(purchase.id, {
+                status: 'paid',
+                wix_order_id: order?.id || null,
+                paid_at: new Date().toISOString(),
+              });
+              console.log('Purchase marked paid:', checkoutId);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to process Base44Purchase:', e);
+        }
+
         console.log('Subscription activated for user:', sub.user_id);
         return Response.json({ success: true });
       } catch (err) {
         console.error('Order approved handler error:', err);
-        return Response.json({ success: true }); // Still ack to prevent retries
+        return Response.json({ error: err.message }, { status: 500 });
       }
     }
 

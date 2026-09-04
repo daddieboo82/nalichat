@@ -77,8 +77,8 @@ export default function Messages() {
   const { data: conversations = [] } = useQuery({
     queryKey: ["conversations"],
     queryFn: () => base44.entities.Conversation.list("-last_message_at"),
-    refetchInterval: 1500, // lightning-fast polling for real-time conversation list
-    staleTime: 500,
+    refetchInterval: 5000,
+    staleTime: 3000,
   });
 
   const myConversations = conversations.filter(c => c.participant_ids?.includes(currentUser?.id));
@@ -86,12 +86,12 @@ export default function Messages() {
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
     queryKey: ["messages", selectedConvId],
     queryFn: async () => {
-      const msgs = await base44.entities.Message.filter({ conversation_id: selectedConvId }, "-created_date", 5000);
+      const msgs = await base44.entities.Message.filter({ conversation_id: selectedConvId }, "-created_date", 200);
       return msgs.reverse();
     },
     enabled: !!selectedConvId,
-    refetchInterval: 1500, // lightning-fast polling — subscription not firing, so poll every 1.5s
-    staleTime: 500,
+    refetchInterval: 5000,
+    staleTime: 3000,
   });
 
   useEffect(() => {

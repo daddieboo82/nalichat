@@ -1,0 +1,73 @@
+{
+  "name": "Base44Purchase",
+  "type": "object",
+  "properties": {
+    "checkoutSessionId": {
+      "type": "string",
+      "description": "Wix checkout session ID \u2014 the only link from a payment back to the buyer"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "App user ID if logged in at checkout time"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Cart items at checkout time"
+    },
+    "wix_order_id": {
+      "type": "string"
+    },
+    "paid_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "checkoutSessionId",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

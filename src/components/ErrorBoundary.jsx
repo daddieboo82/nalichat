@@ -27,7 +27,7 @@ export default class ErrorBoundary extends React.Component {
             <h1 className="font-heading font-bold text-2xl mb-2">Something went wrong</h1>
             <p className="text-muted-foreground mb-6">{this.state.error?.message || "An unexpected error occurred"}</p>
             <div className="flex gap-3 justify-center">
-              <Button variant="outline" onClick={() => this.setState({ hasError: false, error: null })}>Try Again</Button>
+              <Button variant="outline" onClick={() => window.location.href = "/"}>Try Again</Button>
               <Button onClick={() => window.location.href = "/"}>Back to Home</Button>
             </div>
           </div>

@@ -14,11 +14,23 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
     }
 
-    // Fetch all subscriptions using service role
+    // Return aggregated counts only — never expose raw user/subscription PII
     const subscriptions = await base44.asServiceRole.entities.Subscription.filter({});
     const users = await base44.asServiceRole.entities.User.filter({});
 
-    return Response.json({ subscriptions, users });
+    const activeSubs = subscriptions.filter(s => s.status === 'active').length;
+    const trialSubs = subscriptions.filter(s => s.status === 'trial').length;
+    const canceledSubs = subscriptions.filter(s => s.status === 'canceled' || s.status === 'ended').length;
+
+    return Response.json({
+      stats: {
+        totalUsers: users.length,
+        totalSubscriptions: subscriptions.length,
+        activeSubscriptions: activeSubs,
+        trialSubscriptions: trialSubs,
+        canceledSubscriptions: canceledSubs,
+      },
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

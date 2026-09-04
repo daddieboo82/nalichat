@@ -99,10 +99,12 @@ const AuthenticatedApp = () => {
     window.addEventListener('mousemove', updateActivity, { passive: true });
     window.addEventListener('keydown', updateActivity, { passive: true });
     window.addEventListener('touchstart', updateActivity, { passive: true });
+    window.addEventListener('play', updateActivity, { passive: true, capture: true });
     return () => {
       window.removeEventListener('mousemove', updateActivity);
       window.removeEventListener('keydown', updateActivity);
       window.removeEventListener('touchstart', updateActivity);
+      window.removeEventListener('play', updateActivity);
     };
   }, [isAuthenticated]);
 

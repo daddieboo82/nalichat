@@ -14,12 +14,19 @@ export default async function(req) {
     if (!post) return Response.json({ error: 'Post not found' }, { status: 404 });
 
     const alreadyLiked = (post.liked_by || []).includes(user.id);
-    const liked_by = alreadyLiked
-      ? (post.liked_by || []).filter(id => id !== user.id)
-      : [...(post.liked_by || []), user.id];
-    const likes = Math.max(0, (post.likes || 0) + (alreadyLiked ? -1 : 1));
 
-    await base44.asServiceRole.entities.ArtPost.update(postId, { liked_by, likes });
+    // Use atomic $addToSet/$pull to prevent race conditions on concurrent likes
+    if (alreadyLiked) {
+      await base44.asServiceRole.entities.ArtPost.updateMany({ id: postId }, { $pull: { liked_by: user.id } });
+    } else {
+      await base44.asServiceRole.entities.ArtPost.updateMany({ id: postId }, { $addToSet: { liked_by: user.id } });
+    }
+
+    // Read back to sync the likes count with the actual liked_by array
+    const updated = await base44.asServiceRole.entities.ArtPost.get(postId);
+    const liked_by = updated.liked_by || [];
+    const likes = liked_by.length;
+    await base44.asServiceRole.entities.ArtPost.update(postId, { likes });
 
     return Response.json({ liked: !alreadyLiked, likes, liked_by });
   } catch (error) {

@@ -92,6 +92,19 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Persist the checkout session ID so the webhook can correlate the payment
+    try {
+      await base44.asServiceRole.entities.Base44Purchase.create({
+        checkoutSessionId: data.checkoutSession.id,
+        status: 'pending',
+        user_id: user?.id || null,
+        user_email: user?.email || null,
+        items: formattedItems,
+      });
+    } catch (e) {
+      console.error('Failed to persist Base44Purchase:', e);
+    }
+
     return Response.json({
       checkoutUrl: data.checkoutSession.redirectUrl,
       checkoutId: data.checkoutSession.id,

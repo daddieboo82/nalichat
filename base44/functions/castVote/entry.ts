@@ -31,9 +31,10 @@ export default async function(req) {
       voter_name: user.full_name || user.email,
     });
 
-    const updated = await base44.asServiceRole.entities.ChallengeSubmission.update(submission_id, {
-      vote_count: (submission.vote_count || 0) + 1,
-    });
+    // Use atomic $inc to prevent race conditions on concurrent votes
+    await base44.asServiceRole.entities.ChallengeSubmission.updateMany({ id: submission_id }, { $inc: { vote_count: 1 } });
+
+    const updated = await base44.asServiceRole.entities.ChallengeSubmission.get(submission_id);
 
     return Response.json({ success: true, vote_count: updated.vote_count });
   } catch (error) {

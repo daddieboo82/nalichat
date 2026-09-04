@@ -13,6 +13,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing phone or link' }, { status: 400 });
     }
 
+    // Validate E.164 phone format to prevent SMS abuse
+    const cleanPhone = phone.replace(/[\r\n]/g, '').trim();
+    const e164Regex = /^\+?[1-9]\d{6,14}$/;
+    if (!e164Regex.test(cleanPhone)) {
+      return Response.json({ error: 'Invalid phone number format. Use E.164 format (e.g., +1234567890).' }, { status: 400 });
+    }
+
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const fromNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
@@ -21,7 +28,7 @@ Deno.serve(async (req) => {
     const body = `${inviterName} invited you to collaborate on NaliChat. Join here: ${link}`;
 
     const params = new URLSearchParams();
-    params.append('To', phone);
+    params.append('To', cleanPhone);
     params.append('From', fromNumber);
     params.append('Body', body);
 

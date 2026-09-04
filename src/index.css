@@ -112,13 +112,10 @@
   nav.lg\:hidden span { font-size: 9px; }
 }
 
-/* Mobile minimum text size — prevent sub-11px text from being unreadable */
+/* Mobile minimum text size — only override truly unreadable sub-11px text */
 @media (max-width: 768px) {
   [class*='text-[9px'],
-  [class*='text-[10px'],
-  [class*='text-[11px'],
-  [class*='text-[12px'],
-  [class*='text-[13px'] { font-size: 14px !important; }
+  [class*='text-[10px'] { font-size: 11px !important; }
 }
 
 /* Safe-area padding so content never clips under notches / system bars */

@@ -23,6 +23,7 @@ export default function AiAssistant() {
   const unsubRef = useRef(null);
   const spokenIdsRef = useRef(new Set());
   const currentAudioRef = useRef(null);
+  const loadingTimerRef = useRef(null);
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
@@ -49,8 +50,11 @@ export default function AiAssistant() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Clean up the conversation subscription on unmount
-  useEffect(() => () => { unsubRef.current?.(); }, []);
+  // Clean up the conversation subscription and loading timer on unmount
+  useEffect(() => () => {
+    unsubRef.current?.();
+    if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+  }, []);
 
   // Speak Nali's replies aloud when voice is enabled
   const speakText = async (text) => {
@@ -105,7 +109,10 @@ export default function AiAssistant() {
     unsubRef.current = base44.agents.subscribeToConversation(conv.id, (data) => {
       const msgs = data.messages || [];
       setMessages(msgs);
-      if (msgs.length && msgs[msgs.length - 1].role !== "user") setLoading(false);
+      if (msgs.length && msgs[msgs.length - 1].role !== "user") {
+        if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
+        setLoading(false);
+      }
     });
     return conv;
   };
@@ -129,9 +136,37 @@ export default function AiAssistant() {
     setInput("");
     setLoading(true);
     let conv = conversation;
-    if (!conv) conv = await initConversation();
-    await base44.agents.addMessage(conv, { role: "user", content: text.trim() });
-    // loading is cleared by the subscription when Nali's reply arrives
+    try {
+      if (!conv) conv = await initConversation();
+      await base44.agents.addMessage(conv, { role: "user", content: text.trim() });
+      // loading is cleared by the subscription when Nali's reply arrives,
+      // but set a safety timeout in case the subscription never fires
+      // (agent error, WebSocket drop, or very long tool call)
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+      loadingTimerRef.current = setTimeout(() => {
+        loadingTimerRef.current = null;
+        setLoading(prev => {
+          if (!prev) return prev;
+          setMessages(prevMsgs => {
+            const last = prevMsgs[prevMsgs.length - 1];
+            if (last && last.role !== "user") return prevMsgs;
+            return [...prevMsgs, {
+              role: "assistant",
+              content: "I'm taking longer than expected — please try sending your message again.",
+            }];
+          });
+          return false;
+        });
+      }, 90000);
+    } catch (err) {
+      console.error("Nali send error", err);
+      if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
+      setLoading(false);
+      setMessages(prevMsgs => [...prevMsgs, {
+        role: "assistant",
+        content: "Sorry, I couldn't process that message. Please try again.",
+      }]);
+    }
   };
 
   const send = () => sendText(input);

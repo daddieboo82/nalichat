@@ -1,10 +1,11 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Forward, Pencil, Sparkles } from "lucide-react";
+import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Forward, Pencil, Sparkles, Volume2 } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { base44 } from "@/api/base44Client";
 import { resumableDownload } from "@/lib/resumableUpload";
 import MediaViewer from "./MediaViewer";
 import AudioWaveform from "./AudioWaveform";
@@ -13,8 +14,30 @@ import CustomMediaPlayer from "../audio/CustomMediaPlayer";
 import ChatSessionViewer from "./ChatSessionViewer";
 import ViralMomentDialog from "./ViralMomentDialog";
 import MessageContextMenu from "./MessageContextMenu";
+import VoiceTranscription from "./VoiceTranscription";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
+
+// Speak text aloud via the generate-speech backend function (Nali "honey" voice).
+const speakingAudios = new Map();
+async function speakText(text) {
+  if (!text) return;
+  // Stop any currently playing TTS
+  for (const a of speakingAudios.values()) { try { a.pause(); } catch {} }
+  speakingAudios.clear();
+  try {
+    const res = await base44.functions.invoke("generate-speech", { text: text.slice(0, 1000), voice: "honey" });
+    const url = res?.data?.url;
+    if (!url) return;
+    const audio = new Audio(url);
+    speakingAudios.set(text, audio);
+    audio.onended = () => speakingAudios.delete(text);
+    audio.onerror = () => speakingAudios.delete(text);
+    await audio.play();
+  } catch (e) {
+    console.error("TTS error", e);
+  }
+}
 
 function ReadReceipts({ readBy, users }) {
   if (!readBy.length) return <span className="text-[10px] text-muted-foreground/50">✓</span>;
@@ -66,6 +89,7 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
     return (
       <div className="flex flex-col gap-2 min-w-[200px] sm:min-w-[240px]">
         <CustomMediaPlayer src={message.file_url} title={message.file_name || "Audio Message"} className="shadow-md" />
+        <VoiceTranscription message={message} isOwn={isOwn} />
         <button onClick={() => onOpenViewer(message)} className="text-[10px] text-muted-foreground hover:text-foreground flex items-center justify-end gap-1 transition-colors mt-1 font-medium px-1">
           <Maximize2 className="w-3 h-3" /> Open full viewer
         </button>
@@ -333,6 +357,17 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           </button>
         )}
 
+        {message.text && message.type === "text" && (
+          <button
+            onClick={() => speakText(message.text)}
+            className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-primary/15 hover:border-primary/40 hover:text-primary transition-all shadow-sm"
+            title="Read aloud"
+            aria-label="Read aloud"
+          >
+            <Volume2 className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
+          </button>
+        )}
+
         <button
           onClick={() => onOpenThread?.(message)}
           className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
@@ -400,6 +435,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           { icon: Reply, label: "Reply", onClick: () => onReply?.(message) },
           { icon: MessageSquareQuote, label: "Open Thread", onClick: () => onOpenThread?.(message) },
           ...(message.text ? [{ icon: Copy, label: "Copy", onClick: () => onCopy?.(message) }] : []),
+          ...(message.text ? [{ icon: Volume2, label: "Read Aloud", onClick: () => speakText(message.text) }] : []),
           ...(isOwn && message.type === "text" ? [{ icon: Pencil, label: "Edit", onClick: () => onEdit?.(message) }] : []),
           ...((canDelete !== undefined ? canDelete : isOwn) ? [{ icon: Trash2, label: "Delete", onClick: () => onDelete?.(message.id), destructive: true }] : []),
         ]}

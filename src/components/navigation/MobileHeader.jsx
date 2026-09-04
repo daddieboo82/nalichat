@@ -86,13 +86,14 @@ export default function MobileHeader() {
 
   const path = location.pathname;
 
-  const rootTabs = [
+  const ROOT_PATHS = new Set([
     "/", "/explore", "/messages", "/profile", "/files", "/leaderboard",
     "/playlists", "/settings", "/record", "/studio", "/cover-art",
-    "/network", "/analytics", "/pricing", "/business",
-  ];
-  const isRootTab = rootTabs.includes(path) && !location.search;
-  const isSubPage = location.state?.from || !isRootTab || location.search.length > 0;
+    "/analytics", "/pricing", "/projects-summary", "/challenges", "/squad",
+    "/admin", "/create-challenge", "/viral-seed",
+  ]);
+  const hasDynamicSegment = path.split("/").filter(Boolean).length > 1 && !ROOT_PATHS.has(path);
+  const isSubPage = location.state?.from || hasDynamicSegment || !ROOT_PATHS.has(path) || location.search.length > 0;
 
   const title =
     TITLES[path] ||

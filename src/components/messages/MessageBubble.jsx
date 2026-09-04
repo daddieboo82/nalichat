@@ -286,7 +286,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
             <button
               key={emoji}
               onClick={() => { onReact?.(message.id, emoji); setShowActions(false); }}
-              className="min-w-[44px] min-h-[44px] rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:scale-125 hover:border-primary/40 transition-all shadow-sm text-sm"
+              className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:scale-125 hover:border-primary/40 transition-all shadow-sm text-sm"
               title={`React with ${emoji}`}
               aria-label={`React with ${emoji}`}
             >
@@ -298,7 +298,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         <button
           type="button"
           onClick={(e) => { e.preventDefault(); setShowEmojiPicker(!showEmojiPicker); }}
-          className="min-w-[44px] min-h-[44px] rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
+          className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
           title="More reactions"
           aria-label="More reactions"
         >
@@ -315,7 +315,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
 
         <button
           onClick={() => onReply?.(message)}
-          className="min-w-[44px] min-h-[44px] rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
+          className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
           title="Reply"
           aria-label="Reply"
         >
@@ -325,7 +325,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         {canGoViral && (
           <button
             onClick={() => setViralOpen(true)}
-            className="min-w-[44px] min-h-[44px] rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-primary/15 hover:border-primary/40 hover:text-primary transition-all shadow-sm"
+            className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-primary/15 hover:border-primary/40 hover:text-primary transition-all shadow-sm"
             title="Create viral moment"
             aria-label="Create viral moment"
           >
@@ -335,7 +335,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
 
         <button
           onClick={() => onOpenThread?.(message)}
-          className="min-w-[44px] min-h-[44px] rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
+          className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
           title="Open thread"
           aria-label="Open thread"
         >
@@ -348,7 +348,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
               const otherUser = users?.find(u => u.id === message.sender_id);
               if (otherUser) onStartDM(otherUser);
             }}
-            className="min-w-[44px] min-h-[44px] rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
+            className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
             title="Message privately"
             aria-label="Message privately"
           >
@@ -359,7 +359,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         {isOwn && message.type === "text" && (
           <button
             onClick={() => onEdit?.(message)}
-            className="min-w-[44px] min-h-[44px] rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 hover:text-primary transition-all shadow-sm"
+            className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 hover:text-primary transition-all shadow-sm"
             title="Edit message"
             aria-label="Edit message"
           >
@@ -370,7 +370,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         {(canDelete !== undefined ? canDelete : isOwn) && (
           <button
             onClick={() => onDelete?.(message.id)}
-            className="min-w-[44px] min-h-[44px] rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-destructive/20 hover:border-destructive/30 hover:text-destructive transition-all shadow-sm"
+            className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-destructive/20 hover:border-destructive/30 hover:text-destructive transition-all shadow-sm"
             title="Delete message"
             aria-label="Delete message"
           >

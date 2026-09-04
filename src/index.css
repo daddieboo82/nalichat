@@ -114,7 +114,11 @@
 
 /* Mobile minimum text size — prevent sub-11px text from being unreadable */
 @media (max-width: 768px) {
-  [class*='text-[9px'], [class*='text-[10px'] { font-size: 11px !important; }
+  [class*='text-[9px'],
+  [class*='text-[10px'],
+  [class*='text-[11px'],
+  [class*='text-[12px'],
+  [class*='text-[13px'] { font-size: 14px !important; }
 }
 
 /* Safe-area padding so content never clips under notches / system bars */

@@ -115,7 +115,7 @@ export default function EmojiReactionPicker({ onSelect, onClose, position = "top
             }}
             title={`Select emoji ${emoji}`}
             aria-label={`Select emoji ${emoji}`}
-            className="w-8 h-8 flex items-center justify-center text-lg hover:bg-primary/20 rounded-lg transition-all hover:scale-110 active:scale-95"
+            className="w-11 h-11 flex items-center justify-center text-lg hover:bg-primary/20 rounded-lg transition-all hover:scale-110 active:scale-95"
           >
             {emoji}
           </button>

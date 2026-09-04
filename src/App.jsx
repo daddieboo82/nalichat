@@ -71,19 +71,27 @@ const AuthenticatedApp = () => {
 
   // Fire Google Ads SIGNUP conversion once per freshly-created user.
   useEffect(() => {
-    if (!user) return;
-    if (sessionStorage.getItem('is_new_user') !== 'true') return;
-    const dedupKey = `gads_signup_${user.id}`;
-    try {
-      if (localStorage.getItem(dedupKey) === '1') { sessionStorage.removeItem('is_new_user'); return; }
-    } catch {}
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'conversion', {
-        send_to: 'AW-18416125487/twIWCJHa5OkcEK-Mv81E',
-        transaction_id: user.id,
-      });
-    }
-    try { localStorage.setItem(dedupKey, '1'); sessionStorage.removeItem('is_new_user'); } catch {}
+    if (typeof window === 'undefined' || !user || !user.id) return;
+    const createdDate = String(user.created_date || '');
+    const createdDateUtc = /(?:Z|[+-]\d{2}:?\d{2})$/.test(createdDate)
+        ? createdDate
+        : createdDate + 'Z';
+    const createdAtMs = Date.parse(createdDateUtc);
+    const isNewSignup = Number.isFinite(createdAtMs) &&
+        Date.now() - createdAtMs < 24 * 60 * 60 * 1000;
+    const key = '_aw_signup_fired_AW-18416125487/twIWCJHa5OkcEK-Mv81E_' + user.id;
+    if (!isNewSignup || localStorage.getItem(key)) return;
+    let tries = 0;
+    const fire = () => {
+        if (!window.gtag) { if (tries++ < 20) setTimeout(fire, 250); return; }
+        if (localStorage.getItem(key)) return;
+        localStorage.setItem(key, '1');
+        window.gtag('event', 'conversion', {
+            send_to: 'AW-18416125487/twIWCJHa5OkcEK-Mv81E',
+            transaction_id: user.id,
+        });
+    };
+    fire();
   }, [user]);
 
   useEffect(() => {

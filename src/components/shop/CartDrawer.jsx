@@ -14,11 +14,9 @@ export default function CartDrawer() {
     setIsCheckingOut(true);
     try {
       if (typeof window !== 'undefined' && window.gtag) {
-        window.gtag('event', 'conversion', {
-          send_to: 'AW-18416125487/OnfzCI7a5OkcEK-Mv81E',
-          value: total,
-          currency: 'USD',
-        });
+        const convParams = { send_to: 'AW-18416125487/OnfzCI7a5OkcEK-Mv81E' };
+        if (total > 0) { convParams.value = total; convParams.currency = 'USD'; }
+        window.gtag('event', 'conversion', convParams);
       }
       try { localStorage.setItem('gads_purchase_value', String(total)); } catch {}
       const checkoutItems = items.map(item => ({

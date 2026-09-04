@@ -19,6 +19,14 @@ export default function DonationButton({ variant = "hero" }) {
     setLoading(true);
     try {
       const appUrl = window.location.origin;
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'conversion', {
+          send_to: 'AW-18416125487/OnfzCI7a5OkcEK-Mv81E',
+          value: amount,
+          currency: 'USD',
+        });
+      }
+      try { localStorage.setItem('gads_purchase_value', String(amount)); } catch {}
       const response = await base44.functions.invoke("createCheckout", {
         items: [{ name: "Donation to NaliChat", quantity: 1, price: amount.toFixed(2) }],
         callbackUrls: {

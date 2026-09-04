@@ -27,11 +27,9 @@ export function CartProvider({ children }) {
     });
     setIsOpen(true);
     if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'conversion', {
-        send_to: 'AW-18416125487/YZpUCNfY5OkcEK-Mv81E',
-        value: product.price || 0,
-        currency: 'USD',
-      });
+      const convParams = { send_to: 'AW-18416125487/YZpUCNfY5OkcEK-Mv81E' };
+      if (product.price > 0) { convParams.value = product.price; convParams.currency = 'USD'; }
+      window.gtag('event', 'conversion', convParams);
     }
   };
 

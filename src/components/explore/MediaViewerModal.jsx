@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 
 export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlaylist }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -150,6 +151,16 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                  {post.description && (
                    <p className="text-sm text-white/70 line-clamp-3 mb-6 leading-relaxed">{post.description}</p>
                  )}
+
+                 {/* Nali presence — proactive but muted; respects user's presence level setting */}
+                 <div className="flex items-center gap-2 mb-6">
+                   <NaliPresenceIndicator
+                     surface="track"
+                     size="sm"
+                     greeting={`Nali, the user is viewing "${post.title}" by ${post.creator_name || 'this artist'}. Offer a brief, expert insight about the track's genre, production, or arrangement.`}
+                   />
+                   <span className="text-[11px] text-white/40">Ask Nali about this track</span>
+                 </div>
 
                  <div className="flex flex-wrap items-center gap-4 mb-8">
                    {Number(post.price) > 0 && (

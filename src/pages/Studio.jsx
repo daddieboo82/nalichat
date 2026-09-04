@@ -1316,7 +1316,7 @@ export default function Studio() {
         {/* Jam Room Floating Overlay */}
         <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} />
         {/* Track Headers (Left Sidebar) */}
-        <div ref={trackHeadersScrollRef} className="w-44 sm:w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 rounded-l-2xl">
+        <div ref={trackHeadersScrollRef} className="w-44 sm:w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col overflow-y-auto no-scrollbar z-10 shrink-0 rounded-l-2xl">
           {/* Spacer matching the timeline ruler (h-8) so track headers stay
               vertically aligned with their waveforms when scrolling. */}
           <div className="h-8 shrink-0 border-b border-white/10" />

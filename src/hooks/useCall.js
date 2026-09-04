@@ -10,6 +10,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { CallEngine } from "@/lib/callEngine";
+import { toast } from "sonner";
 
 export const SIGNAL_SENTINEL = "__nalichat_call__";
 
@@ -158,6 +159,12 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
         engineRef.current?.endCall();
         setCallState(null);
         callIdRef.current = null;
+        const reason = e?.name === "NotFoundError"
+          ? "No microphone or camera was found on this device."
+          : e?.name === "NotAllowedError"
+            ? "Microphone or camera access was denied. Check your browser permissions."
+            : "Couldn't start the call. Please try again.";
+        toast.error(reason);
       }
     },
     [currentUser, getEngine]
@@ -176,6 +183,12 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
       setCallState(null);
       callIdRef.current = null;
       pendingOfferRef.current = null;
+      const reason = e?.name === "NotFoundError"
+        ? "No microphone or camera was found on this device."
+        : e?.name === "NotAllowedError"
+          ? "Microphone or camera access was denied. Check your browser permissions."
+          : "Couldn't accept the call. Please try again.";
+      toast.error(reason);
     }
   }, [getEngine]);
 

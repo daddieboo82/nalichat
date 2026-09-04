@@ -49,7 +49,15 @@ export const AuthProvider = ({ children }) => {
           if (reason === 'auth_required') {
             setAuthError({ type: 'auth_required', message: 'Authentication required' });
           } else if (reason === 'user_not_registered') {
-            setAuthError({ type: 'user_not_registered', message: 'User not registered for this app' });
+            // For a brand-new Google OAuth user the user record may not be
+            // propagated yet, causing public-settings to 403 with
+            // user_not_registered even though the access_token is valid.
+            // Do NOT set authError here when we have a token — checkUserAuth()
+            // will call me() and clear the error on success.  Only surface
+            // the error if there is no token to fall back on.
+            if (!appParams.token) {
+              setAuthError({ type: 'user_not_registered', message: 'User not registered for this app' });
+            }
           } else {
             setAuthError({ type: reason, message: appError.message || 'Access Denied' });
           }
@@ -86,7 +94,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const checkUserAuth = async (isRetry = false) => {
+  const checkUserAuth = async (retryCount = 0) => {
     try {
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
@@ -97,11 +105,12 @@ export const AuthProvider = ({ children }) => {
       setAuthChecked(true);
     } catch (error) {
       console.error('User auth check failed:', error);
-      // Retry once after a short delay — right after Google OAuth the user
-      // record may not be propagated yet, causing me() to 404/403 on the
-      // very first call.  The token is valid; a single retry usually resolves.
-      if (!isRetry) {
-        setTimeout(() => checkUserAuth(true), 1500);
+      // Retry up to 3 times with increasing delays — right after Google OAuth
+      // the user record may not be propagated yet, causing me() to 404/403.
+      // The token is valid; the record usually appears within a few seconds.
+      if (retryCount < 3) {
+        const delay = retryCount === 0 ? 1500 : retryCount === 1 ? 3000 : 5000;
+        setTimeout(() => checkUserAuth(retryCount + 1), delay);
         return;
       }
       setIsLoadingAuth(false);
@@ -117,7 +126,9 @@ export const AuthProvider = ({ children }) => {
     // Clear the token locally without triggering a full-page hard reload (which
     // causes a multi-second blank screen while the whole app re-boots).
     try {
+      localStorage.removeItem('base44_access_token');
       localStorage.removeItem('base44_token');
+      sessionStorage.removeItem('base44_access_token');
       sessionStorage.removeItem('base44_token');
     } catch (e) {}
     setUser(null);

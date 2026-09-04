@@ -177,8 +177,8 @@ export default React.memo(function ConversationList({ conversations, myConversat
                     </span>
                   )}
                 </div>
-                <p className={cn("text-xs truncate leading-snug", isSelected ? "text-foreground/80" : "text-muted-foreground/80")}>
-                  {conv.last_message_text || <span className="italic opacity-60">Start chatting...</span>}
+                <p className={cn("text-xs truncate leading-snug select-none", isSelected ? "text-foreground/50" : "text-muted-foreground/50")} aria-hidden="true">
+                  {conv.last_message_text ? "•••" : <span className="italic opacity-60">Start chatting...</span>}
                 </p>
               </div>
             </button>

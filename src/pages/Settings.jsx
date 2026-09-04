@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import DeleteAccountDialog from "@/components/settings/DeleteAccountDialog";
 import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import DeviceSelector from "@/components/audio/DeviceSelector";
+import NaliProactivitySettings from "@/components/nali/NaliProactivitySettings";
 import { sounds } from "@/hooks/use-sound";
 import { useSubscription } from "@/hooks/useSubscription";
 
@@ -167,6 +168,11 @@ export default function Settings() {
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Save Profile
           </Button>
+        </div>
+
+        <div className="mt-12 pt-8 border-t border-border">
+          <h2 className="text-xl font-heading font-bold mb-6">Nali Presence</h2>
+          <NaliProactivitySettings />
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">

@@ -74,6 +74,16 @@
       "type": "number",
       "default": 0,
       "description": "Number of viral content concepts generated via ViralSeed AI"
+    },
+    "nali_presence_level": {
+      "type": "string",
+      "enum": [
+        "proactive",
+        "minimal",
+        "off"
+      ],
+      "default": "proactive",
+      "description": "How omnipresent Nali is across the app: proactive (auto hints), minimal (on-demand), or off (hidden)"
     }
   }
 }

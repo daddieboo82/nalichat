@@ -15,6 +15,7 @@ import NavRipple from '@/components/layout/NavRipple';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { AudioPlayerProvider } from '@/lib/AudioPlayerContext';
 import { CartProvider } from '@/lib/CartContext';
+import { NaliPresenceProvider } from '@/lib/NaliPresenceContext';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -249,20 +250,22 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClientInstance}>
         <AuthProvider>
-          <AudioPlayerProvider>
-            <CartProvider>
-              <MotionConfig reducedMotion={isLowEnd ? "always" : "user"}>
-                {!loaded && <AppLoader onDone={handleSplashDone} />}
-                {!isLowEnd && <NavRipple />}
-                <Router>
-                  <AuthenticatedApp />
-                </Router>
-                {loaded && <AiAssistant />}
-                <Toaster />
-                <SonnerToaster />
-              </MotionConfig>
-            </CartProvider>
-          </AudioPlayerProvider>
+          <NaliPresenceProvider>
+            <AudioPlayerProvider>
+              <CartProvider>
+                <MotionConfig reducedMotion={isLowEnd ? "always" : "user"}>
+                  {!loaded && <AppLoader onDone={handleSplashDone} />}
+                  {!isLowEnd && <NavRipple />}
+                  <Router>
+                    <AuthenticatedApp />
+                  </Router>
+                  {loaded && <AiAssistant />}
+                  <Toaster />
+                  <SonnerToaster />
+                </MotionConfig>
+              </CartProvider>
+            </AudioPlayerProvider>
+          </NaliPresenceProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

@@ -14,6 +14,8 @@ import MessageSearch from "./MessageSearch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { recordSquadActivity } from "@/lib/squadBonus";
 import { queryClientInstance as queryClient } from "@/lib/query-client";
+import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
+import NaliContextHint from "@/components/nali/NaliContextHint";
 
 import React from "react";
 
@@ -116,6 +118,11 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
           </div>
 
           <div className="flex items-center gap-1.5">
+            <NaliPresenceIndicator
+              surface="chat"
+              size="md"
+              greeting={`Nali, I'm in a chat with ${displayName}. Read the vibe of our conversation and suggest a music idea, a playlist, or a creative prompt that fits.`}
+            />
             <Button variant="ghost" size="icon" className="w-11 h-11 rounded-full text-muted-foreground hover:bg-secondary/80" onClick={() => setShowSearch(true)} title="Search Messages" aria-label="Search Messages">
               <SearchIcon className="w-4 h-4" />
             </Button>
@@ -220,6 +227,11 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
           <span>{typingUsers.map(u => u.display_name || u.full_name).join(", ")} typing</span>
         </div>
       )}
+
+      {/* Proactive Nali context hint — subtle, dismissible, respects presence level */}
+      <div className="absolute bottom-24 right-6 z-10">
+        <NaliContextHint surface="chat" contextLabel={conversation?.id || "chat"} />
+      </div>
 
       {/* Floating Input Area */}
       <div className="absolute bottom-0 left-0 right-0 z-20 p-2 sm:p-4 flex flex-col justify-end">

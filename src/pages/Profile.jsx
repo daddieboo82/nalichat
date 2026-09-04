@@ -9,6 +9,8 @@ import ArtPostCard from "@/components/explore/ArtPostCard";
 import AchievementsPanel from "@/components/profile/AchievementsPanel";
 import LevelBadge from "@/components/profile/LevelBadge";
 import TopWorksGallery from "@/components/profile/TopWorksGallery";
+import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
+import NaliContextHint from "@/components/nali/NaliContextHint";
 
 const ROLES = ["Producer", "Beatmaker", "Sound Engineer", "Mixing Engineer", "Mastering Engineer", "Vocalist", "Instrumentalist", "DJ", "Composer", "Other"];
 const GENRES = ["Hip-Hop", "Trap", "Lo-Fi", "Electronic", "House", "Techno", "Ambient", "R&B", "Indie", "Alternative"];
@@ -176,6 +178,10 @@ export default function Profile() {
               {editing ? "Save" : "Edit"}
             </button>
           )}
+          <div className="pb-2 flex flex-col items-end gap-2">
+            <NaliPresenceIndicator surface="profile" size="md" greeting={`Tell me about ${user.display_name || user.full_name || "this artist"} — help me understand their sound and suggest ways to grow their audience.`} />
+            <NaliContextHint surface="profile" contextLabel={user.display_name || user.full_name || "profile"} />
+          </div>
         </div>
 
         {/* XP Bar */}

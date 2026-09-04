@@ -13,7 +13,9 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
   const [smsStatus, setSmsStatus] = useState(null); // { type: 'success' | 'error', message: string }
   const { toast } = useToast();
 
-  const inviteUrl = `https://nalichat.org/register`;
+  // Derive the invite URL from the current app origin so the link always points
+  // to the real app (works on custom domains, base44.app, and preview alike).
+  const inviteUrl = `${window.location.origin}/register`;
 
   const sendSms = async () => {
     setSmsStatus(null);

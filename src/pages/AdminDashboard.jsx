@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+import NaliMaintenancePanel from "@/components/admin/NaliMaintenancePanel";
 
 export default function AdminDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -113,6 +114,8 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      <NaliMaintenancePanel />
 
       <div className="bg-card border border-border rounded-xl p-6 mb-8">
         <h2 className="text-xl font-bold mb-4 border-b border-border pb-2 flex items-center gap-2">

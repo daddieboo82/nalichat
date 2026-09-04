@@ -331,7 +331,7 @@ export default function Messages() {
         
         {/* Sidebar */}
         <div className={cn(
-          "w-full sm:w-[360px] md:w-[400px] shrink-0 flex flex-col bg-background/40 sm:border-r border-border/30 transition-all z-10 relative",
+          "w-full sm:w-[360px] md:w-[400px] shrink-0 h-full min-h-0 flex flex-col bg-background/40 sm:border-r border-border/30 transition-all z-10 relative",
           selectedConvId ? "hidden sm:flex" : "flex"
         )}>
           {/* Header */}

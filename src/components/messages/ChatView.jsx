@@ -16,8 +16,9 @@ import { recordSquadActivity } from "@/lib/squadBonus";
 import { queryClientInstance as queryClient } from "@/lib/query-client";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import NaliContextHint from "@/components/nali/NaliContextHint";
-import { sounds } from "@/hooks/use-sound";
 import { routeNativeCall } from "@/lib/nativeCall";
+import { useCall, isCallSignal } from "@/hooks/useCall";
+import CallOverlay from "./CallOverlay";
 
 import React from "react";
 
@@ -30,13 +31,10 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const [threadMessage, setThreadMessage] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
-  const [callState, setCallState] = useState(null);
   const scrollRef = useRef(null);
   const prevLenRef = useRef(0);
   const markedRef = useRef(new Set());
   const typingTimeoutRef = useRef(null);
-  const ringIntervalRef = useRef(null);
-  const callTimerRef = useRef(null);
   const [selectedMedia, setSelectedMedia] = useState(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -49,44 +47,14 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     prevLenRef.current = messages.length;
   }, [messages]);
 
-  // Call audio feedback — ring tone while calling, connect chime, end tone
-  useEffect(() => {
-    if (!callState) {
-      if (ringIntervalRef.current) { clearInterval(ringIntervalRef.current); ringIntervalRef.current = null; }
-      if (callTimerRef.current) { clearTimeout(callTimerRef.current); callTimerRef.current = null; }
-      return;
-    }
-
-    // Play ring tone immediately, then repeat every 2s
-    sounds.callRing();
-    ringIntervalRef.current = setInterval(() => sounds.callRing(), 2000);
-
-    // After 3s of ringing, simulate "connecting" then "connected"
-    callTimerRef.current = setTimeout(() => {
-      setCallState(prev => ({ ...prev, status: 'connecting' }));
-      if (ringIntervalRef.current) { clearInterval(ringIntervalRef.current); ringIntervalRef.current = null; }
-    }, 3000);
-
-    return () => {
-      if (ringIntervalRef.current) { clearInterval(ringIntervalRef.current); ringIntervalRef.current = null; }
-      if (callTimerRef.current) { clearTimeout(callTimerRef.current); callTimerRef.current = null; }
-    };
-  }, [callState?.type]);
-
-  const endCall = () => {
-    sounds.callEnd();
-    setCallState(null);
-  };
-
   // Route a call to the device's native calling app when supported; fall back
-  // to the in-app call engine (callState overlay) when it isn't.
+  // to the in-app WebRTC engine when it isn't.
   const startCall = (type) => {
     const phoneNumber = other?.phone || other?.phone_number;
     const email = other?.email;
     const launchedNative = routeNativeCall({ type, phoneNumber, email });
     if (!launchedNative) {
-      // Native calling unavailable — use the custom in-app audio/video engine.
-      setCallState({ type, status: "ringing", source: "fallback" });
+      callActions.startCall(type);
     }
   };
 
@@ -108,7 +76,6 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     setShowGroupInfo(false);
     setThreadMessage(null);
     setShowSearch(false);
-    setCallState(null);
   }, [conversation?.id]);
 
   const getOtherUser = () => {
@@ -118,13 +85,17 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   };
 
   const other = getOtherUser();
+
+  // --- WebRTC call engine (audio + video) ---
+  const callActions = useCall({ conversation, messages, currentUser, otherUser: other });
+
   const displayName = conversation?.type === "group" ? conversation.name : (other?.display_name || other?.full_name || "Unknown");
   const avatarSrc = conversation?.type === "group" ? conversation?.avatar_url : other?.avatar_url;
   const subtitle = conversation?.type === "group" 
     ? `${conversation.participant_ids?.length || 0} members` 
     : (other?.is_online ? "Active now" : (other?.role ? other.role.charAt(0).toUpperCase() + other.role.slice(1) : "Offline"));
 
-  const topLevelMessages = messages.filter(m => !m.thread_id);
+  const topLevelMessages = messages.filter(m => !m.thread_id && !isCallSignal(m.text));
   const enriched = topLevelMessages.map((msg, i) => {
     const prev = topLevelMessages[i - 1];
     const showAvatar = !prev || prev.sender_id !== msg.sender_id;
@@ -342,59 +313,22 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
         />
       )}
 
-      {/* Call UI Overlay */}
-      {callState && (
-        <div className="absolute inset-0 z-50 bg-background/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-200">
-          <Avatar className="w-32 h-32 mb-6 shadow-2xl ring-4 ring-primary/20">
-            <AvatarImage src={avatarSrc} />
-            <AvatarFallback className={cn("text-4xl text-white font-bold bg-gradient-to-br", avatarGradient)}>
-              {displayName?.[0]?.toUpperCase() || "?"}
-            </AvatarFallback>
-          </Avatar>
-          
-          <h2 className="text-3xl font-heading font-bold mb-2">{displayName}</h2>
-          <p className="text-muted-foreground mb-2 flex items-center gap-2">
-            {callState.status === 'connecting' ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Connecting...
-              </>
-            ) : (
-              <>
-                <span className="flex gap-1">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.2s' }} />
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.4s' }} />
-                </span>
-                {callState.type === 'video' ? 'Video calling...' : 'Calling...'}
-              </>
-            )}
-          </p>
-          {callState.source === 'fallback' && (
-            <p className="text-[11px] text-muted-foreground/70 mb-10 text-center max-w-xs">
-              Native calling unavailable — using NaliChat's built-in {callState.type} engine.
-            </p>
-          )}
-          
-          <div className="flex items-center gap-6">
-            {callState.type === 'video' && (
-              <Button size="icon" variant="outline" className="w-14 h-14 rounded-full bg-secondary/50 border-white/10 hover:bg-secondary" title="Enable/Disable Video" aria-label="Enable/Disable Video">
-                <Video className="w-6 h-6" />
-              </Button>
-            )}
-            <Button 
-              size="icon" 
-              variant="destructive" 
-              className="w-16 h-16 rounded-full shadow-lg shadow-destructive/20 hover:scale-105 transition-transform"
-              onClick={endCall}
-              title="End Call"
-              aria-label="End Call"
-            >
-              <Phone className="w-7 h-7 rotate-[135deg]" />
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* WebRTC Call Overlay — real audio/video engine */}
+      <CallOverlay
+        callState={callActions.callState}
+        localStream={callActions.localStream}
+        remoteStream={callActions.remoteStream}
+        displayName={displayName}
+        avatarSrc={avatarSrc}
+        avatarGradient={avatarGradient}
+        muted={callActions.muted}
+        videoEnabled={callActions.videoEnabled}
+        onAccept={callActions.acceptCall}
+        onDecline={callActions.declineCall}
+        onEnd={callActions.endCall}
+        onToggleMute={callActions.toggleMute}
+        onToggleVideo={callActions.toggleVideo}
+      />
     </div>
   );
 });

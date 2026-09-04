@@ -67,12 +67,44 @@ else
   exit 1
 fi
 
-# ---- Step 5: Build the AAB ----
+# ---- Step 5: Enforce package name com.nalichat in Gradle ----
+echo ""
+echo "▶ Enforcing applicationId = com.nalichat in generated Gradle files..."
+
+GRADLE_FILE="./app/build.gradle"
+if [ -f "$GRADLE_FILE" ]; then
+  CURRENT_ID=$(grep -E "^\s*applicationId" "$GRADLE_FILE" | head -1 | sed "s/.*['\"]//;s/['\"].*//")
+  echo "  Current applicationId in build.gradle: $CURRENT_ID"
+  if [ "$CURRENT_ID" != "com.nalichat" ]; then
+    echo "  ⚠️  applicationId is '$CURRENT_ID' — fixing to 'com.nalichat'"
+    # Replace applicationId
+    sed -i "s/applicationId [\"'].*[\"']/applicationId \"com.nalichat\"/g" "$GRADLE_FILE"
+    # Replace namespace if present (newer AGP)
+    sed -i "s/namespace [\"'].*[\"']/namespace \"com.nalichat\"/g" "$GRADLE_FILE"
+    echo "  ✅ applicationId and namespace set to com.nalichat"
+  else
+    echo "  ✅ applicationId already correct"
+  fi
+else
+  echo "  ⚠️  build.gradle not found at $GRADLE_FILE — skipping (bubblewrap build will use twa-manifest.json)"
+fi
+
+# Also verify twa-manifest.json packageId
+MANIFEST_ID=$(grep -o '"packageId"[[:space:]]*:[[:space:]]*"[^"]*"' ./twa-manifest.json | head -1 | sed 's/.*: *//;s/"//g')
+if [ "$MANIFEST_ID" != "com.nalichat" ]; then
+  echo "  ⚠️  twa-manifest.json packageId is '$MANIFEST_ID' — fixing to 'com.nalichat'"
+  sed -i "s/\"packageId\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"packageId\": \"com.nalichat\"/g" ./twa-manifest.json
+  echo "  ✅ twa-manifest.json packageId set to com.nalichat"
+else
+  echo "  ✅ twa-manifest.json packageId already correct: com.nalichat"
+fi
+
+# ---- Step 6: Build the AAB ----
 echo ""
 echo "▶ Building Android App Bundle (.aab)..."
 bubblewrap build
 
-# ---- Step 6: Done ----
+# ---- Step 7: Done ----
 echo ""
 echo "========================================="
 echo "  ✅ Build Complete!"

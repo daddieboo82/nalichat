@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import { useQueryClient } from "@tanstack/react-query";
 
-const USER_TABS = ["xp", "likes", "posts", "achievements"];
+const USER_TABS = ["xp", "likes", "posts", "achievements", "viral"];
 const CONTENT_TABS = ["songs", "pics", "videos"];
 
 export default function Leaderboard() {
@@ -61,6 +61,7 @@ export default function Leaderboard() {
     if (userTab === "likes") return (likesCountByUser[b.id] || 0) - (likesCountByUser[a.id] || 0);
     if (userTab === "posts") return (postCountByUser[b.id] || 0) - (postCountByUser[a.id] || 0);
     if (userTab === "achievements") return (achievementCountByUser[b.id] || 0) - (achievementCountByUser[a.id] || 0);
+    if (userTab === "viral") return (b.viral_concepts_generated || 0) - (a.viral_concepts_generated || 0);
     return 0;
   }).slice(0, 50);
 
@@ -69,6 +70,7 @@ export default function Leaderboard() {
     if (userTab === "likes") return `${likesCountByUser[user.id] || 0} ❤️`;
     if (userTab === "posts") return `${postCountByUser[user.id] || 0} posts`;
     if (userTab === "achievements") return `${achievementCountByUser[user.id] || 0} 🏆`;
+    if (userTab === "viral") return `${user.viral_concepts_generated || 0} 🚀`;
   };
 
   const topSongs = [...posts].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 20);
@@ -163,7 +165,7 @@ export default function Leaderboard() {
                     userTab === t ? "bg-card text-foreground shadow-sm border border-border/50" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {t === "xp" ? "⚡ XP" : t === "likes" ? "❤️ Likes" : t === "posts" ? "🎨 Posts" : "🏆 Awards"}
+                  {t === "xp" ? "⚡ XP" : t === "likes" ? "❤️ Likes" : t === "posts" ? "🎨 Posts" : t === "achievements" ? "🏆 Awards" : "🚀 Viral"}
                 </button>
               ))}
             </div>

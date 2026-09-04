@@ -64,6 +64,16 @@
       "type": "number",
       "default": 0,
       "description": "Squad & Scale co-op credits earned from hitting weekly squad goals"
+    },
+    "xp": {
+      "type": "number",
+      "default": 0,
+      "description": "Experience points earned through platform activity"
+    },
+    "viral_concepts_generated": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of viral content concepts generated via ViralSeed AI"
     }
   }
 }

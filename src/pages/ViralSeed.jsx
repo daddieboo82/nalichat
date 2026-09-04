@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Rocket, Sparkles, Loader2, RefreshCw } from "lucide-react";
+import { Rocket, Sparkles, Loader2, RefreshCw, Zap } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ViralConceptCard from "@/components/viralseed/ViralConceptCard";
@@ -79,6 +79,7 @@ export default function ViralSeed() {
   const [loading, setLoading] = useState(false);
   const [mood, setMood] = useState("all");
   const [error, setError] = useState(null);
+  const [xpAwarded, setXpAwarded] = useState(null);
 
   const generate = async () => {
     setLoading(true);
@@ -89,6 +90,32 @@ export default function ViralSeed() {
         response_json_schema: RESPONSE_SCHEMA,
       });
       setConcepts(res?.concepts || []);
+
+      // Award XP and track viral generation for leaderboard
+      try {
+        const me = await base44.auth.me();
+        const conceptCount = res?.concepts?.length || 5;
+        const wasFirstGeneration = !(me.viral_concepts_generated > 0);
+        await base44.auth.updateMe({
+          xp: (me.xp || 0) + 50,
+          viral_concepts_generated: (me.viral_concepts_generated || 0) + conceptCount,
+        });
+        if (wasFirstGeneration) {
+          await base44.entities.Achievement.create({
+            user_id: me.id,
+            key: "viral_seed",
+            title: "Viral Seed",
+            description: "Generated your first viral content concepts with ViralSeed AI",
+            icon: "rocket",
+            xp: 50,
+            category: "creative",
+          });
+        }
+        setXpAwarded(50);
+        setTimeout(() => setXpAwarded(null), 3000);
+      } catch (xpErr) {
+        // XP awarding is secondary — don't fail the whole generation
+      }
     } catch (err) {
       setError("Failed to generate viral concepts. Please try again.");
     }
@@ -111,8 +138,27 @@ export default function ViralSeed() {
           <p className="text-sm text-muted-foreground max-w-xl mx-auto">
             Generate platform-native viral content for NaliChat — TikTok scripts, Reddit posts, Discord messages, X threads, and YouTube Shorts, all optimized for explosive growth.
           </p>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20">
+            <Zap className="w-3.5 h-3.5 text-yellow-400" />
+            <span className="text-[11px] font-semibold text-yellow-400">Earn +50 XP per generation</span>
+          </div>
         </div>
       </div>
+
+      {/* XP earned toast */}
+      <AnimatePresence>
+        {xpAwarded && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-yellow-500/90 to-amber-500/90 text-white shadow-lg shadow-yellow-500/30 backdrop-blur-sm"
+          >
+            <Zap className="w-4 h-4" />
+            <span className="text-sm font-bold">+{xpAwarded} XP earned!</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Controls */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-4">

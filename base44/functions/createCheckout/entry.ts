@@ -29,15 +29,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Admin test bypass — skip Stripe and go straight to ThankYou (internal QA only)
-    const isTestAccount = !!(user && user.role === 'admin');
-    if (isTestAccount) {
-      return Response.json({
-        checkoutUrl: callbackUrls.thankYouPageUrl,
-        checkoutId: 'test_checkout_' + Date.now(),
-      });
-    }
-
     // Map app items to Stripe line items (unit_amount is in cents)
     const lineItems = items.map((item: any) => ({
       price_data: {

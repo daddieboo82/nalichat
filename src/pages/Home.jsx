@@ -15,6 +15,7 @@ import StudioTutorial from "@/components/home/StudioTutorial";
 import HowItWorks from "@/components/home/HowItWorks";
 import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import ImmersiveOnboarding from "@/components/onboarding/ImmersiveOnboarding";
+import DonationButton from "@/components/home/DonationButton";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -261,6 +262,11 @@ export default function Home() {
                 </Link>
               </>
             )}
+          </div>
+
+          {/* Donation button */}
+          <div className="mt-8 flex justify-center">
+            <DonationButton />
           </div>
 
           {/* Trust strip */}

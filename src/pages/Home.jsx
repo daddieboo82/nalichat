@@ -241,6 +241,14 @@ export default function Home() {
                   </Button>
                 </Link>
 
+                <Link to="/studio" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-accent to-cyan-500 hover:opacity-90 text-base glow-accent shimmer-hover px-7">
+                    <Music className="w-5 h-5 mr-2" />
+                    Open Studio
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+
               </>
             ) : (
               <>

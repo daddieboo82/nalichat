@@ -50,11 +50,8 @@ export default function ThankYou() {
 
           const { fileUri, fileName } = JSON.parse(pending);
           try {
-            const signedRes = await base44.integrations.Core.CreateFileSignedUrl({
-              file_uri: fileUri,
-              expires_in: 3600,
-            });
-            const signedUrl = signedRes.signed_url;
+            const signedRes = await base44.functions.invoke('get-studio-export-url', { fileUri });
+            const signedUrl = signedRes.data.signed_url;
 
             // Trigger the download
             const a = document.createElement("a");

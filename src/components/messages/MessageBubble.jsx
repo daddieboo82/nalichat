@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Forward, Pencil } from "lucide-react";
+import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Forward, Pencil, Sparkles } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ import AudioWaveform from "./AudioWaveform";
 import EmojiReactionPicker from "./EmojiReactionPicker";
 import CustomMediaPlayer from "../audio/CustomMediaPlayer";
 import ChatSessionViewer from "./ChatSessionViewer";
+import ViralMomentDialog from "./ViralMomentDialog";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -109,6 +110,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [viralOpen, setViralOpen] = useState(false);
 
   const hasFile = message.file_url && message.type !== "text";
   const avatarGradient = getGradient(message.sender_name);
@@ -281,6 +283,17 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           <Reply className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
 
+        {message.text && (
+          <button
+            onClick={() => setViralOpen(true)}
+            className="min-w-[44px] min-h-[44px] rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-primary/15 hover:border-primary/40 hover:text-primary transition-all shadow-sm"
+            title="Create viral moment"
+            aria-label="Create viral moment"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
+          </button>
+        )}
+
         <button
           onClick={() => onOpenThread?.(message)}
           className="min-w-[44px] min-h-[44px] rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
@@ -332,6 +345,12 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         media={hasFile ? message : null}
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
+      />
+
+      <ViralMomentDialog
+        message={message}
+        isOpen={viralOpen}
+        onClose={() => setViralOpen(false)}
       />
     </motion.div>
   );

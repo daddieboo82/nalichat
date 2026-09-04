@@ -104,15 +104,12 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setAuthChecked(true);
       
-      // If user auth fails, it might be an expired token
-      // We just treat them as unauthenticated and let ProtectedRoute handle redirects
-      if (error.status === 401 || error.status === 403) {
-        // Clear token from local storage directly to prevent repeated failing requests on future reloads
-        try {
-          localStorage.removeItem('base44_token');
-          sessionStorage.removeItem('base44_token');
-        } catch(e) {}
-      }
+      // If user auth fails, it might be a transient network/timing issue — NOT necessarily
+      // an expired token.  Do NOT clear the token here; clearing it on a transient failure
+      // is the race condition that causes the app to immediately revert to a logged-out
+      // state right after a successful login or page reload.
+      // The token is only cleared on explicit logout().  ProtectedRoute will redirect
+      // to /login if the user is genuinely unauthenticated.
     }
   };
 

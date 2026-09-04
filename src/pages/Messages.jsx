@@ -91,8 +91,18 @@ export default function Messages() {
     if (!currentUser?.id) return;
 
     const unsubMsg = base44.entities.Message.subscribe(async (event) => {
+      // For delete events, event.data may be null (the record is gone) —
+      // remove by ID from the active conversation without requiring conversation_id.
+      if (event.type === "delete") {
+        queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+          old.filter(m => m.id !== event.id)
+        );
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        return;
+      }
+
       if (!event.data?.conversation_id) return;
-      
+
       let convs = queryClient.getQueryData(["conversations"]) || [];
       let isMyConv = convs.some(c => c.id === event.data.conversation_id && c.participant_ids?.includes(currentUser.id));
 
@@ -385,10 +395,10 @@ export default function Messages() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden relative">
+          <div className="flex-1 overflow-hidden relative bg-background/40">
             <AnimatePresence mode="wait">
               {sidebarTab === "chats" ? (
-                <motion.div key="chats" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="absolute inset-0 flex flex-col">
+                <motion.div key="chats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col bg-background/40">
                   <ConversationList
                     conversations={conversations}
                     myConversations={myConversations}
@@ -400,7 +410,7 @@ export default function Messages() {
                   />
                 </motion.div>
               ) : (
-                <motion.div key="contacts" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="absolute inset-0 flex flex-col pt-2">
+                <motion.div key="contacts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col pt-2 bg-background/40">
                   <ContactsTab 
                     currentUserId={currentUser?.id} 
                     onMessageContact={(u) => { startDM(u); setSidebarTab("chats"); }} 

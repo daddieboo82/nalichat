@@ -31,6 +31,7 @@ import StudioDialogs from '@/components/studio/StudioDialogs';
 import JamRoomOverlay from '@/components/studio/JamRoomOverlay';
 import StudioToolbar2 from '@/components/studio/StudioToolbar2';
 import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
+import PluginRack from '@/components/studio/PluginRack';
 
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
@@ -140,6 +141,10 @@ export default function Studio() {
   const [tracks, setTracks] = useState([]);
   const [showWelcome, setShowWelcome] = useState(true);
   const [hasAutosave, setHasAutosave] = useState(false);
+  const [showPluginRack, setShowPluginRack] = useState(false);
+  const trackHeadersScrollRef = useRef(null);
+  const timelineScrollRef = useRef(null);
+  const isSyncingScroll = useRef(false);
 
   useEffect(() => {
     try {
@@ -150,6 +155,34 @@ export default function Studio() {
       }
     } catch (e) {}
   }, []);
+
+  // Sync vertical scroll between track headers (left) and waveform timeline (right)
+  // so track names stay aligned with their waveforms when multiple tracks are loaded.
+  useEffect(() => {
+    const headersEl = trackHeadersScrollRef.current;
+    const timelineEl = timelineScrollRef.current;
+    if (!headersEl || !timelineEl) return;
+
+    const syncFromHeaders = () => {
+      if (isSyncingScroll.current) return;
+      isSyncingScroll.current = true;
+      timelineEl.scrollTop = headersEl.scrollTop;
+      requestAnimationFrame(() => { isSyncingScroll.current = false; });
+    };
+    const syncFromTimeline = () => {
+      if (isSyncingScroll.current) return;
+      isSyncingScroll.current = true;
+      headersEl.scrollTop = timelineEl.scrollTop;
+      requestAnimationFrame(() => { isSyncingScroll.current = false; });
+    };
+
+    headersEl.addEventListener('scroll', syncFromHeaders);
+    timelineEl.addEventListener('scroll', syncFromTimeline);
+    return () => {
+      headersEl.removeEventListener('scroll', syncFromHeaders);
+      timelineEl.removeEventListener('scroll', syncFromTimeline);
+    };
+  }, [showWelcome, tracks.length]);
 
   useEffect(() => {
     if (roomId) {
@@ -762,9 +795,15 @@ export default function Studio() {
     if (selectedTrackIds.length === 0) return;
     sounds.error();
     selectedTrackIds.forEach(id => {
+      const track = tracks.find(t => t.id === id);
       if (audioElementsRef.current[id]) {
         audioElementsRef.current[id].pause();
+        audioElementsRef.current[id].src = '';
         delete audioElementsRef.current[id];
+      }
+      // Revoke object URLs to free memory from blob-based audio
+      if (track?.audioUrl?.startsWith('blob:')) {
+        try { URL.revokeObjectURL(track.audioUrl); } catch (e) {}
       }
     });
     setTracksWithHistory(tracks.filter(t => !selectedTrackIds.includes(t.id)));
@@ -800,8 +839,18 @@ export default function Studio() {
   };
 
   const deleteTrack = (trackId) => {
-    if (audioElementsRef.current[trackId]) { audioElementsRef.current[trackId].pause(); delete audioElementsRef.current[trackId]; }
-    setTracksWithHistory(prev => prev.filter(t => t.id !== trackId)); setSelectedTrackIds(prev => prev.filter(id => id !== trackId)); toast.success("Track deleted");
+    const track = tracks.find(t => t.id === trackId);
+    if (audioElementsRef.current[trackId]) {
+      audioElementsRef.current[trackId].pause();
+      audioElementsRef.current[trackId].src = '';
+      delete audioElementsRef.current[trackId];
+    }
+    if (track?.audioUrl?.startsWith('blob:')) {
+      try { URL.revokeObjectURL(track.audioUrl); } catch (e) {}
+    }
+    setTracksWithHistory(prev => prev.filter(t => t.id !== trackId));
+    setSelectedTrackIds(prev => prev.filter(id => id !== trackId));
+    toast.success("Track deleted");
   };
   const duplicateTrack = (track) => {
     if (tracks.length >= maxTracks) return toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
@@ -1267,7 +1316,7 @@ export default function Studio() {
         {/* Jam Room Floating Overlay */}
         <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} />
         {/* Track Headers (Left Sidebar) */}
-        <div className="w-44 sm:w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 rounded-l-2xl">
+        <div ref={trackHeadersScrollRef} className="w-44 sm:w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col overflow-y-auto z-10 custom-scrollbar shrink-0 rounded-l-2xl">
           <DragDropContext onDragEnd={handleReorderTracks}>
             <Droppable droppableId="studio-track-headers">
               {(dropProvided) => (
@@ -1444,7 +1493,7 @@ export default function Studio() {
         </div>
 
         {/* Timeline & Waveforms (Right Area) */}
-        <div className="flex-1 relative overflow-auto custom-scrollbar flex flex-col bg-gradient-to-b from-[#12101C]/80 to-[#0B0912]/90 rounded-r-2xl">
+        <div ref={timelineScrollRef} className="flex-1 relative overflow-auto custom-scrollbar flex flex-col bg-gradient-to-b from-[#12101C]/80 to-[#0B0912]/90 rounded-r-2xl">
           {/* Timeline Header */}
           <div className="h-8 border-b border-white/10 bg-white/[0.04] backdrop-blur-md sticky top-0 z-20 flex items-end px-0 overflow-hidden timeline-ruler">
             {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[2px] bg-red-500/50 z-10 pointer-events-none" style={{ left: `${projectEnd * 20 * zoom}px` }}><div className="absolute top-0 -translate-x-1/2 bg-red-500/80 text-white text-[8px] px-1 rounded-b shadow-md font-bold">END</div></div>; })()}
@@ -1520,12 +1569,12 @@ export default function Studio() {
             {/* Waveform Rows */}
             <div className="flex flex-col">
               {tracks.map((track) => (
-                <div 
-                  key={track.id} 
+                <div
+                  key={track.id}
                   onClick={(e) => handleTrackClick(e, track.id)}
-                  style={{ height: track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px') }}
+                  style={{ height: track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px'), flexShrink: 0 }}
                   className={cn(
-                    "border-b border-border/20 relative group transition-none", 
+                    "border-b border-border/20 relative group transition-none shrink-0",
                     track.muted ? "opacity-30" : "",
                     selectedTrackIds.includes(track.id) ? "bg-primary/15 shadow-[inset_0_0_30px_hsl(var(--primary)/0.1)]" : "",
                     tracks.some(t => t.solo) && !track.solo && "opacity-40 grayscale"
@@ -1875,7 +1924,7 @@ export default function Studio() {
                         </div>
                       )}
 
-                      <div className={cn("absolute inset-y-0 overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "bottom-1 top-5")} style={{ left: 0, right: 0 }}>
+                      <div className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>
                         <div style={{ position: 'absolute', left: `${-(track.clipStart || 0) * 20 * zoom}px`, width: `${(track.fullDuration || track.duration || 40) * 20 * zoom}px`, height: '100%' }}>
                           <TrackWaveformSVG track={track} />
                         </div>
@@ -1895,11 +1944,22 @@ export default function Studio() {
         </div>
       </div>
 
+      {/* Plugin Rack Panel (collapsible, sits between workspace and mixer) */}
+      <PluginRack
+        open={showPluginRack}
+        onToggle={() => setShowPluginRack(!showPluginRack)}
+        trackName={tracks.find(t => selectedTrackIds.includes(t.id))?.name}
+        tracks={tracks}
+      />
+
       {/* Bottom Mixer / Status Bar */}
       <div className="min-h-[2.5rem] py-1.5 mx-2 sm:mx-3 mb-2 sm:mb-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-wrap items-center justify-between px-3 sm:px-4 text-xs text-muted-foreground shrink-0 overflow-hidden gap-2 relative z-10">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <Button variant="ghost" size="sm" onClick={() => setShowMixerPanel(!showMixerPanel)} className={cn("h-6 text-xs gap-1.5", showMixerPanel && "bg-secondary text-foreground")}>
             <SlidersHorizontal className="w-3 h-3" /> Mixer
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setShowPluginRack(!showPluginRack)} className={cn("h-6 text-xs gap-1.5 transition-colors", showPluginRack && "bg-secondary text-foreground")}>
+            <SlidersHorizontal className="w-3 h-3" /> Plugins
           </Button>
           <div className="hidden md:flex items-center gap-2 border-l border-r border-border/50 px-3 mx-1" title="Master Output Level (Scales all track volumes)">
             <span className="text-[10px] font-bold text-muted-foreground uppercase mr-1">Master</span>

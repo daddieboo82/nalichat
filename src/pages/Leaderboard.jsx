@@ -112,7 +112,8 @@ export default function Leaderboard() {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
+    <div className="h-full flex flex-col overflow-hidden bg-background">
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
       <PullToRefresh onRefresh={handleRefresh}>
       {/* Header */}
       <div className="bg-gradient-to-br from-yellow-500/10 via-background to-primary/10 px-4 sm:px-8 pt-8 pb-6">
@@ -323,6 +324,7 @@ export default function Leaderboard() {
         onOpenChange={setIsViewerOpen}
       />
       </PullToRefresh>
+      </div>
     </div>
   );
 }

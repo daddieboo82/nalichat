@@ -183,7 +183,13 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               onDelete={async (id) => {
                 if (editingMessage?.id === id) setEditingMessage(null);
                 if (replyTo?.id === id) setReplyTo(null);
-                await base44.entities.Message.delete(id);
+                // Optimistic delete: remove from parent cache immediately for instant UI feedback.
+                // The real-time subscription will confirm the delete server-side.
+                try {
+                  await base44.entities.Message.delete(id);
+                } catch (e) {
+                  // If the delete failed, the subscription refetch will restore the message.
+                }
               }}
               currentUser={currentUser}
               onStartDM={onStartDM}

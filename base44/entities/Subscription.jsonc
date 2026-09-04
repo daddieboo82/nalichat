@@ -31,11 +31,11 @@
     },
     "subscription_id": {
       "type": "string",
-      "description": "Wix subscription ID (from order_approved webhook)"
+      "description": "Stripe subscription ID (from Stripe webhook)"
     },
     "checkout_id": {
       "type": "string",
-      "description": "Checkout session ID for correlation"
+      "description": "Stripe Checkout Session ID for correlation"
     },
     "trial_end_date": {
       "type": "string",

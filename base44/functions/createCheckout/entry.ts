@@ -1,4 +1,5 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { stripeRequest } from '../../shared/stripe.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -8,24 +9,14 @@ Deno.serve(async (req) => {
     let user;
     try {
       user = await base44.auth.me();
-    } catch (e) {
-      // User not authenticated
-    }
-
-    const WIX_API_KEY = Deno.env.get("WIX_PAYMENTS_API_KEY");
-    const WIX_SITE_ID = Deno.env.get("WIX_PAYMENTS_SITE_ID");
-
-    if (!WIX_API_KEY || !WIX_SITE_ID) {
-      return Response.json(
-        { error: "Missing Wix Payments configuration" },
-        { status: 500 }
-      );
+    } catch (_e) {
+      // Checkout is public — storefront buyers may not have an account
     }
 
     // Validate items
     if (!items || !Array.isArray(items) || items.length === 0) {
       return Response.json(
-        { error: "Items array is required and must not be empty" },
+        { error: 'Items array is required and must not be empty' },
         { status: 400 }
       );
     }
@@ -33,86 +24,69 @@ Deno.serve(async (req) => {
     // Validate callback URLs
     if (!callbackUrls?.thankYouPageUrl || !callbackUrls?.postFlowUrl) {
       return Response.json(
-        { error: "Both thankYouPageUrl and postFlowUrl are required" },
+        { error: 'Both thankYouPageUrl and postFlowUrl are required' },
         { status: 400 }
       );
     }
 
-    const formattedItems = items.map(item => ({
-      ...item,
-      price: Number(item.price).toFixed(2)
-    }));
-
-    // Security: only real admins can bypass payment (for internal QA), never
-    // based on the buyer-supplied email — any regular user could register an
-    // email containing "test"/"demo" and get free items otherwise.
+    // Admin test bypass — skip Stripe and go straight to ThankYou (internal QA only)
     const isTestAccount = !!(user && user.role === 'admin');
-
     if (isTestAccount) {
       return Response.json({
         checkoutUrl: callbackUrls.thankYouPageUrl,
-        checkoutId: "test_checkout_" + Date.now(),
+        checkoutId: 'test_checkout_' + Date.now(),
       });
     }
 
-    let customerInfo = {};
-    
-    if (user && user.email) {
-      customerInfo.email = user.email;
-    }
-
-    const payload = {
-      cart: { 
-        items: formattedItems,
-        ...(Object.keys(customerInfo).length > 0 ? { customerInfo } : {})
+    // Map app items to Stripe line items (unit_amount is in cents)
+    const lineItems = items.map((item: any) => ({
+      price_data: {
+        currency: 'usd',
+        unit_amount: Math.round(Number(item.price) * 100),
+        product_data: {
+          name: item.name || item.title || 'Item',
+        },
       },
-      callbackUrls,
+      quantity: item.quantity || 1,
+    }));
+
+    const sessionParams: Record<string, any> = {
+      mode: 'payment',
+      line_items: lineItems,
+      success_url: callbackUrls.thankYouPageUrl,
+      cancel_url: callbackUrls.postFlowUrl,
     };
 
-    const response = await fetch(
-      "https://www.wixapis.com/payments/platform/v1/checkout-sessions/construct",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": WIX_API_KEY,
-          "wix-site-id": WIX_SITE_ID,
-        },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("Wix Payments API error:", data);
-      return Response.json(
-        { error: data.message || "Failed to create checkout session" },
-        { status: response.status }
-      );
+    if (user?.email) {
+      sessionParams.customer_email = user.email;
     }
 
-    // Persist the checkout session ID so the webhook can correlate the payment
+    const session = await stripeRequest('/checkout/sessions', sessionParams);
+
+    // Persist the Stripe session ID so the webhook can correlate the payment
     try {
       await base44.asServiceRole.entities.Base44Purchase.create({
-        checkoutSessionId: data.checkoutSession.id,
+        checkoutSessionId: session.id,
         status: 'pending',
         user_id: user?.id || null,
         user_email: user?.email || null,
-        items: formattedItems,
+        items: items.map((item: any) => ({
+          ...item,
+          price: Number(item.price).toFixed(2),
+        })),
       });
     } catch (e) {
       console.error('Failed to persist Base44Purchase:', e);
     }
 
     return Response.json({
-      checkoutUrl: data.checkoutSession.redirectUrl,
-      checkoutId: data.checkoutSession.id,
+      checkoutUrl: session.url,
+      checkoutId: session.id,
     });
   } catch (error) {
-    console.error("Checkout error:", error.message);
+    console.error('Checkout error:', error.message);
     return Response.json(
-      { error: "Failed to create checkout session" },
+      { error: error.message || 'Failed to create checkout session' },
       { status: 500 }
     );
   }

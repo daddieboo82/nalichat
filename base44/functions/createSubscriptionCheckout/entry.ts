@@ -1,17 +1,57 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { stripeRequest } from '../../shared/stripe.ts';
 
 Deno.serve(async (req) => {
   try {
-    const base44 = createClientFromRequest(req);
+    const { priceId, plan, callbackUrls } = await req.json();
 
-    // The app is completely free — no paid subscriptions.
-    // Redirect users to the ThankYou page (which clears the cart) without charging.
-    const url = new URL(req.url);
-    const appUrl = req.headers.get('X-Base44-App-Url') || `${url.protocol}//${url.host}`;
+    const base44 = createClientFromRequest(req);
+    let user;
+    try {
+      user = await base44.auth.me();
+    } catch (_e) {
+      return Response.json({ error: 'Authentication required for subscriptions' }, { status: 401 });
+    }
+
+    if (!priceId) {
+      return Response.json({ error: 'priceId is required' }, { status: 400 });
+    }
+
+    if (!callbackUrls?.thankYouPageUrl || !callbackUrls?.postFlowUrl) {
+      return Response.json(
+        { error: 'Both thankYouPageUrl and postFlowUrl are required' },
+        { status: 400 }
+      );
+    }
+
+    const sessionParams: Record<string, any> = {
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: callbackUrls.thankYouPageUrl,
+      cancel_url: callbackUrls.postFlowUrl,
+    };
+
+    if (user?.email) {
+      sessionParams.customer_email = user.email;
+    }
+
+    const session = await stripeRequest('/checkout/sessions', sessionParams);
+
+    // Create a pending Subscription record — the webhook activates it on payment
+    try {
+      await base44.asServiceRole.entities.Subscription.create({
+        user_id: user.id,
+        plan: plan || 'pro',
+        status: 'pending',
+        checkout_id: session.id,
+      });
+    } catch (e) {
+      console.error('Failed to create Subscription record:', e);
+    }
 
     return Response.json({
-      freeAccess: true,
-      checkoutUrl: `${appUrl}/ThankYou`,
+      checkoutUrl: session.url,
+      checkoutId: session.id,
     });
   } catch (error) {
     console.error('Subscription checkout error:', error);

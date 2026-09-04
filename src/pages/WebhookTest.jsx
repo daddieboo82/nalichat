@@ -2,14 +2,12 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Webhook, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
+import { Loader2, Webhook, Trash2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function WebhookTest() {
   const [loading, setLoading] = useState(false);
-  const [loadingId, setLoadingId] = useState(null);
-  const [result, setResult] = useState(null);
   const [subscriptions, setSubscriptions] = useState([]);
   const [fetchingSubs, setFetchingSubs] = useState(true);
   const queryClient = useQueryClient();
@@ -103,9 +101,9 @@ export default function WebhookTest() {
       setLoading(true);
       await base44.entities.Subscription.delete(id);
       toast.success("Subscription removed");
-      
+
       setSubscriptions(prev => prev.filter(s => s.id !== id));
-      
+
       setTimeout(() => {
         fetchSubscriptions();
         queryClient.removeQueries({ queryKey: ['subscription'] });
@@ -118,107 +116,6 @@ export default function WebhookTest() {
     }
   };
 
-  const simulateSubscriptionCanceled = async (subscriptionId) => {
-    setLoadingId(subscriptionId);
-    setResult(null);
-    try {
-      const payload = {
-        eventType: "wix.ecom.subscription_contracts.v1.subscription_contract_canceled",
-        data: JSON.stringify({
-          actionEvent: {
-            body: {
-              subscriptionContract: {
-                id: subscriptionId
-              }
-            }
-          }
-        })
-      };
-
-      const res = await base44.functions.invoke("wixPaymentsWebhook", {
-        isTestBypass: true,
-        payload: payload
-      });
-
-      if (res.data?.success) {
-        setResult({ success: true, message: "Cancel webhook successfully processed and acknowledged." });
-        toast.success("Cancel webhook processed successfully");
-        
-        setSubscriptions(prev => prev.map(s => 
-          (s.subscription_id === subscriptionId || s.id === subscriptionId) 
-            ? { ...s, status: 'canceled' } 
-            : s
-        ));
-
-        setTimeout(() => {
-          fetchSubscriptions();
-          queryClient.removeQueries({ queryKey: ['subscription'] });
-        }, 1000);
-      } else {
-        setResult({ success: false, message: res.data?.error || "Webhook failed to process." });
-        toast.error("Webhook processing failed");
-      }
-    } catch (error) {
-      setResult({ success: false, message: error.message || "Network error" });
-      toast.error("Error triggering webhook");
-    } finally {
-      setLoadingId(null);
-    }
-  };
-
-  const simulateOrderApproved = async (checkoutId) => {
-    setLoadingId(checkoutId);
-    setResult(null);
-    try {
-      const payload = {
-        eventType: "wix.ecom.v1.order_approved",
-        data: JSON.stringify({
-          actionEvent: {
-            body: {
-              order: {
-                checkoutId: checkoutId,
-                lineItems: [
-                  {
-                    subscriptionInfo: { id: "test-sub-" + Date.now() }
-                  }
-                ]
-              }
-            }
-          }
-        })
-      };
-
-      const res = await base44.functions.invoke("wixPaymentsWebhook", {
-        isTestBypass: true,
-        payload: payload
-      });
-
-      if (res.data?.success) {
-        setResult({ success: true, message: "Webhook successfully processed and acknowledged." });
-        toast.success("Webhook processed successfully");
-        
-        setSubscriptions(prev => prev.map(s => 
-          (s.checkout_id === checkoutId || s.id === checkoutId)
-            ? { ...s, status: 'active' }
-            : s
-        ));
-
-        setTimeout(() => {
-          fetchSubscriptions();
-          queryClient.removeQueries({ queryKey: ['subscription'] });
-        }, 1000);
-      } else {
-        setResult({ success: false, message: res.data?.error || "Webhook failed to process." });
-        toast.error("Webhook processing failed");
-      }
-    } catch (error) {
-      setResult({ success: false, message: error.message || "Network error" });
-      toast.error("Error triggering webhook");
-    } finally {
-      setLoadingId(null);
-    }
-  };
-
   return (
     <div className="container max-w-3xl mx-auto p-6 py-12">
       <div className="flex items-center gap-3 mb-8">
@@ -227,7 +124,7 @@ export default function WebhookTest() {
         </div>
         <div>
           <h1 className="text-3xl font-heading font-bold">Backend Testing Interface</h1>
-          <p className="text-muted-foreground">Manage and test incoming webhooks</p>
+          <p className="text-muted-foreground">Manage test subscriptions and Stripe webhook events</p>
         </div>
       </div>
 
@@ -235,9 +132,9 @@ export default function WebhookTest() {
         <Card className="border-primary/20">
           <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <CardTitle>Webhook Simulation</CardTitle>
+              <CardTitle>Subscription Management</CardTitle>
               <CardDescription>
-                Simulate webhook events for your subscriptions (e.g. approve pending orders or cancel active subscriptions).
+                Create mock subscriptions for testing. Real subscriptions are activated by the Stripe webhook when a checkout completes.
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -259,7 +156,7 @@ export default function WebhookTest() {
               </div>
             ) : subscriptions.length === 0 ? (
               <div className="text-sm text-muted-foreground p-4 bg-secondary/50 rounded-lg">
-                No subscriptions found for your account. Please start a checkout flow first.
+                No subscriptions found for your account. Start a checkout flow or add a mock subscription above.
               </div>
             ) : (
               <div className="space-y-4">
@@ -282,29 +179,12 @@ export default function WebhookTest() {
                           Checkout: {sub.checkout_id}
                         </div>
                       )}
+                      {sub.subscription_id && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Stripe Sub: {sub.subscription_id}
+                        </div>
+                      )}
                     </div>
-                    
-                    {sub.status === 'pending' && (sub.checkout_id || sub.id) && (
-                      <Button 
-                        onClick={() => simulateOrderApproved(sub.checkout_id || sub.id)} 
-                        disabled={loadingId === (sub.checkout_id || sub.id)}
-                        className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
-                      >
-                        {loadingId === (sub.checkout_id || sub.id) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                        Approve Order
-                      </Button>
-                    )}
-                    {sub.status === 'active' && (
-                      <Button 
-                        onClick={() => simulateSubscriptionCanceled(sub.subscription_id || sub.id)} 
-                        disabled={loadingId === (sub.subscription_id || sub.id)}
-                        variant="destructive"
-                        className="shrink-0"
-                      >
-                        {loadingId === (sub.subscription_id || sub.id) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                        Cancel Subscription
-                      </Button>
-                    )}
                     <Button
                       onClick={() => removeSubscription(sub.id)}
                       disabled={loading}
@@ -319,18 +199,35 @@ export default function WebhookTest() {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
 
-            {result && (
-              <div className={`mt-6 p-4 rounded-lg flex items-start gap-3 border ${
-                result.success ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-red-500/10 border-red-500/20 text-red-500'
-              }`}>
-                {result.success ? <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />}
-                <div>
-                  <div className="font-semibold">{result.success ? 'Success' : 'Error'}</div>
-                  <div className="text-sm opacity-90">{result.message}</div>
-                </div>
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg">Stripe Webhook Setup</CardTitle>
+            <CardDescription>
+              To test real webhook events, register the endpoint in your Stripe Dashboard.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 text-sm text-muted-foreground">
+              <div className="flex items-start gap-2">
+                <span className="font-mono text-xs bg-secondary px-2 py-1 rounded shrink-0">1</span>
+                <p>Go to <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary inline-flex items-center gap-1 hover:underline">Stripe Dashboard → Webhooks <ExternalLink className="w-3 h-3" /></a></p>
               </div>
-            )}
+              <div className="flex items-start gap-2">
+                <span className="font-mono text-xs bg-secondary px-2 py-1 rounded shrink-0">2</span>
+                <p>Add endpoint: <code className="text-primary bg-secondary px-1.5 py-0.5 rounded text-xs">https://nalichat.base44.app/functions/stripeWebhook</code></p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="font-mono text-xs bg-secondary px-2 py-1 rounded shrink-0">3</span>
+                <p>Subscribe to events: <code className="text-xs">checkout.session.completed</code>, <code className="text-xs">customer.subscription.updated</code>, <code className="text-xs">customer.subscription.deleted</code>, <code className="text-xs">invoice.paid</code>, <code className="text-xs">invoice.payment_failed</code></p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="font-mono text-xs bg-secondary px-2 py-1 rounded shrink-0">4</span>
+                <p>Copy the signing secret (<code className="text-xs">whsec_...</code>) and set it as the <code className="text-xs">STRIPE_WEBHOOK_SECRET</code> app secret</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

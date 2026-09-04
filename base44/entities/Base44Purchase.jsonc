@@ -4,7 +4,7 @@
   "properties": {
     "checkoutSessionId": {
       "type": "string",
-      "description": "Wix checkout session ID \u2014 the only link from a payment back to the buyer"
+      "description": "Stripe Checkout Session ID \u2014 the only link from a payment back to the buyer"
     },
     "status": {
       "type": "string",
@@ -29,8 +29,13 @@
       },
       "description": "Cart items at checkout time"
     },
-    "wix_order_id": {
-      "type": "string"
+    "stripe_payment_intent_id": {
+      "type": "string",
+      "description": "Stripe Payment Intent ID"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe Customer ID"
     },
     "paid_at": {
       "type": "string",

@@ -47,7 +47,7 @@ export default function ExportPurchaseDialog({ open, onOpenChange, format, track
         timestamp: Date.now(),
       }));
 
-      // 4. Create a Wix checkout session and redirect
+      // 4. Create a Stripe checkout session and redirect
       setStage("redirecting");
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'conversion', {

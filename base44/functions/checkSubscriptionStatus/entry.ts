@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
 Deno.serve(async (req) => {
   try {
@@ -9,14 +9,28 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // The app is completely free — all users have full access.
-    // Monetization is through per-item sales (tracks, files), not subscriptions.
+    // Look for subscriptions in the database (kept up to date by the Stripe webhook)
+    const subs = await base44.asServiceRole.entities.Subscription.filter({ user_id: user.id });
+
+    const activeSub = subs.find((s: any) => s.status === 'active');
+    const pendingSub = subs.find((s: any) => s.status === 'pending');
+
+    if (activeSub) {
+      return Response.json({
+        plan: activeSub.plan || 'pro',
+        status: 'active',
+        hasAccess: true,
+        hasPending: !!pendingSub,
+        currentPeriodEnd: activeSub.current_period_end || null,
+      });
+    }
+
+    // No active subscription — the app is free, so all users have access
     return Response.json({
       plan: 'free',
-      status: 'active',
-      trialActive: false,
+      status: pendingSub ? 'pending' : 'active',
       hasAccess: true,
-      hasPending: false,
+      hasPending: !!pendingSub,
     });
   } catch (error) {
     console.error('Check subscription error:', error);

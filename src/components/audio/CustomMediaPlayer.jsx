@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, Pause, Volume2, VolumeX, FastForward, Rewind } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, FastForward, Rewind, Wand2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import AudioWaveform from "../messages/AudioWaveform";
+import VoiceEffectsBar from "../messages/VoiceEffectsBar";
 
 export default function CustomMediaPlayer({ src, className, title }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -13,7 +14,20 @@ export default function CustomMediaPlayer({ src, className, title }) {
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [showEffects, setShowEffects] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("original");
+  const [duetMode, setDuetMode] = useState("off");
   const audioRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const filterRef = useRef(null);
+  const delayRef = useRef(null);
+  const feedbackRef = useRef(null);
+  const dryGainRef = useRef(null);
+  const wetGainRef = useRef(null);
+  const masterGainRef = useRef(null);
+  const duetAudioRef = useRef(null);
+  const duetGainRef = useRef(null);
+  const graphReadyRef = useRef(false);
 
   useEffect(() => {
     if (!audioRef.current) return;
@@ -29,6 +43,7 @@ export default function CustomMediaPlayer({ src, className, title }) {
     const onEnded = () => {
       setIsPlaying(false);
       setCurrentTime(0);
+      duetAudioRef.current?.pause();
     };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
@@ -42,18 +57,144 @@ export default function CustomMediaPlayer({ src, className, title }) {
     };
   }, []);
 
+  // Initialize Web Audio API graph for real-time voice effects
+  const initAudioGraph = () => {
+    if (graphReadyRef.current) return;
+    const audio = audioRef.current;
+    if (!audio) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    const ctx = new AC();
+    if (ctx.state === "suspended") ctx.resume().catch(() => {});
+    audioCtxRef.current = ctx;
+
+    const source = ctx.createMediaElementSource(audio);
+    const filter = ctx.createBiquadFilter();
+    filter.type = "allpass";
+    filterRef.current = filter;
+
+    const delay = ctx.createDelay(1.0);
+    delay.delayTime.value = 0;
+    delayRef.current = delay;
+
+    const feedback = ctx.createGain();
+    feedback.gain.value = 0;
+    feedbackRef.current = feedback;
+
+    const dryGain = ctx.createGain();
+    dryGain.gain.value = 1;
+    dryGainRef.current = dryGain;
+
+    const wetGain = ctx.createGain();
+    wetGain.gain.value = 0;
+    wetGainRef.current = wetGain;
+
+    const masterGain = ctx.createGain();
+    masterGain.gain.value = 1;
+    masterGainRef.current = masterGain;
+
+    // source → filter → [dry + wet(delay+feedback)] → master → destination
+    source.connect(filter);
+    filter.connect(dryGain);
+    filter.connect(delay);
+    delay.connect(feedback);
+    feedback.connect(delay);
+    delay.connect(wetGain);
+    dryGain.connect(masterGain);
+    wetGain.connect(masterGain);
+    masterGain.connect(ctx.destination);
+
+    // Duet layer — second audio element with pitch shift via playbackRate
+    const duetAudio = new Audio(src);
+    duetAudio.crossOrigin = "anonymous";
+    duetAudio.preload = "metadata";
+    duetAudioRef.current = duetAudio;
+
+    const duetSource = ctx.createMediaElementSource(duetAudio);
+    const duetGain = ctx.createGain();
+    duetGain.gain.value = 0;
+    duetGainRef.current = duetGain;
+    duetSource.connect(duetGain);
+    duetGain.connect(ctx.destination);
+
+    graphReadyRef.current = true;
+  };
+
+  const applyFilter = (presetId) => {
+    initAudioGraph();
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    const presets = {
+      original: { type: "allpass", freq: 1000, Q: 0, delay: 0, feedback: 0, wet: 0 },
+      deep: { type: "lowpass", freq: 400, Q: 1, delay: 0, feedback: 0, wet: 0 },
+      bright: { type: "highpass", freq: 2000, Q: 1, delay: 0, feedback: 0, wet: 0 },
+      robot: { type: "bandpass", freq: 1200, Q: 8, delay: 0, feedback: 0, wet: 0 },
+      echo: { type: "allpass", freq: 1000, Q: 0, delay: 0.25, feedback: 0.4, wet: 0.6 },
+      lofi: { type: "lowpass", freq: 2500, Q: 0.5, delay: 0, feedback: 0, wet: 0 },
+    };
+    const p = presets[presetId] || presets.original;
+    const t = ctx.currentTime;
+    filterRef.current.type = p.type;
+    filterRef.current.frequency.setTargetAtTime(p.freq, t, 0.02);
+    filterRef.current.Q.setTargetAtTime(p.Q, t, 0.02);
+    delayRef.current.delayTime.setTargetAtTime(p.delay, t, 0.02);
+    feedbackRef.current.gain.setTargetAtTime(p.feedback, t, 0.02);
+    wetGainRef.current.gain.setTargetAtTime(p.wet, t, 0.02);
+    setActiveFilter(presetId);
+  };
+
+  const setDuet = (mode) => {
+    initAudioGraph();
+    const duetAudio = duetAudioRef.current;
+    const duetGain = duetGainRef.current;
+    if (!duetAudio || !duetGain) return;
+    if (mode === "off") {
+      duetGain.gain.value = 0;
+      duetAudio.pause();
+    } else {
+      duetAudio.playbackRate = mode === "high" ? 1.5 : 0.667;
+      duetGain.gain.value = 0.45;
+      duetAudio.currentTime = audioRef.current?.currentTime || 0;
+      if (audioRef.current && !audioRef.current.paused) {
+        duetAudio.play().catch(() => {});
+      }
+    }
+    setDuetMode(mode);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (duetAudioRef.current) {
+        duetAudioRef.current.pause();
+        duetAudioRef.current.src = "";
+      }
+      if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+        audioCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
+
   const togglePlay = (e) => {
     e.stopPropagation();
+    if (graphReadyRef.current && audioCtxRef.current?.state === "suspended") {
+      audioCtxRef.current.resume().catch(() => {});
+    }
     if (!audioRef.current) return;
     if (isPlaying) {
       audioRef.current.pause();
+      duetAudioRef.current?.pause();
     } else {
       document.querySelectorAll("audio").forEach(el => {
-        if (el !== audioRef.current) {
+        if (el !== audioRef.current && el !== duetAudioRef.current) {
           el.pause();
         }
       });
       audioRef.current.play().catch(console.error);
+      if (duetMode !== "off" && duetAudioRef.current) {
+        duetAudioRef.current.currentTime = audioRef.current.currentTime;
+        duetAudioRef.current.play().catch(() => {});
+      }
     }
     setIsPlaying(!isPlaying);
   };
@@ -61,6 +202,7 @@ export default function CustomMediaPlayer({ src, className, title }) {
   const handleSeek = (val) => {
     if (!audioRef.current) return;
     audioRef.current.currentTime = val[0];
+    if (duetAudioRef.current) duetAudioRef.current.currentTime = val[0];
     setCurrentTime(val[0]);
   };
 
@@ -253,7 +395,35 @@ export default function CustomMediaPlayer({ src, className, title }) {
               className="w-12 [&_[role=slider]]:w-2.5 [&_[role=slider]]:h-2.5 [&_[role=slider]]:opacity-0 group-hover/slider:[&_[role=slider]]:opacity-100 transition-all" 
             />
           </div>
+
+          {/* FX Toggle */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!showEffects) initAudioGraph();
+              setShowEffects(!showEffects);
+            }}
+            className={cn(
+              "shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all touch-manipulation",
+              showEffects ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+            )}
+            title="Voice Effects"
+            aria-label="Voice Effects"
+          >
+            <Wand2 className="w-3.5 h-3.5" />
+          </button>
         </div>
+
+        {/* Voice Effects Bar */}
+        {showEffects && (
+          <VoiceEffectsBar
+            activeFilter={activeFilter}
+            onFilterChange={applyFilter}
+            duetMode={duetMode}
+            onDuetChange={setDuet}
+            audioCtxRef={audioCtxRef}
+          />
+        )}
       </div>
     </div>
   );

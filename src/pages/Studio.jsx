@@ -142,10 +142,6 @@ export default function Studio() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [hasAutosave, setHasAutosave] = useState(false);
   const [showPluginRack, setShowPluginRack] = useState(false);
-  const trackHeadersScrollRef = useRef(null);
-  const timelineScrollRef = useRef(null);
-  const isSyncingScroll = useRef(false);
-
   useEffect(() => {
     try {
       const saved = localStorage.getItem('nalistudio_project_autosave');
@@ -155,34 +151,6 @@ export default function Studio() {
       }
     } catch (e) {}
   }, []);
-
-  // Sync vertical scroll between track headers (left) and waveform timeline (right)
-  // so track names stay aligned with their waveforms when multiple tracks are loaded.
-  useEffect(() => {
-    const headersEl = trackHeadersScrollRef.current;
-    const timelineEl = timelineScrollRef.current;
-    if (!headersEl || !timelineEl) return;
-
-    const syncFromHeaders = () => {
-      if (isSyncingScroll.current) return;
-      isSyncingScroll.current = true;
-      timelineEl.scrollTop = headersEl.scrollTop;
-      requestAnimationFrame(() => { isSyncingScroll.current = false; });
-    };
-    const syncFromTimeline = () => {
-      if (isSyncingScroll.current) return;
-      isSyncingScroll.current = true;
-      headersEl.scrollTop = timelineEl.scrollTop;
-      requestAnimationFrame(() => { isSyncingScroll.current = false; });
-    };
-
-    headersEl.addEventListener('scroll', syncFromHeaders);
-    timelineEl.addEventListener('scroll', syncFromTimeline);
-    return () => {
-      headersEl.removeEventListener('scroll', syncFromHeaders);
-      timelineEl.removeEventListener('scroll', syncFromTimeline);
-    };
-  }, [showWelcome, tracks.length]);
 
   useEffect(() => {
     if (roomId) {
@@ -1312,14 +1280,15 @@ export default function Studio() {
       {/* setEditingTrack prop removed — Wave Editor was merged into this inline timeline */}
 
       {/* Main Workspace */}
-      <div className="flex-1 flex overflow-hidden bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+      <div className="flex-1 overflow-auto bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
         {/* Jam Room Floating Overlay */}
         <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} />
+        {/* Unified scroll — left pane + waveforms move together in one container */}
+        <div className="flex w-fit min-w-full min-h-full">
         {/* Track Headers (Left Sidebar) */}
-        <div ref={trackHeadersScrollRef} className="w-44 sm:w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col overflow-y-auto no-scrollbar z-10 shrink-0 rounded-l-2xl">
-          {/* Spacer matching the timeline ruler (h-8) so track headers stay
-              vertically aligned with their waveforms when scrolling. */}
-          <div className="h-8 shrink-0 border-b border-white/10" />
+        <div className="w-44 sm:w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col sticky left-0 z-10 shrink-0 rounded-l-2xl">
+          {/* Spacer matching the timeline ruler — sticky so it stays aligned at top */}
+          <div className="h-8 shrink-0 sticky top-0 z-20 border-b border-white/10 bg-[#12101C]/80 backdrop-blur-md" />
           <DragDropContext onDragEnd={handleReorderTracks}>
             <Droppable droppableId="studio-track-headers">
               {(dropProvided) => (
@@ -1496,7 +1465,7 @@ export default function Studio() {
         </div>
 
         {/* Timeline & Waveforms (Right Area) */}
-        <div ref={timelineScrollRef} className="flex-1 relative overflow-auto custom-scrollbar flex flex-col bg-gradient-to-b from-[#12101C]/80 to-[#0B0912]/90 rounded-r-2xl">
+        <div className="flex-1 relative flex flex-col bg-gradient-to-b from-[#12101C]/80 to-[#0B0912]/90 rounded-r-2xl">
           {/* Timeline Header */}
           <div className="h-8 shrink-0 border-b border-white/10 bg-white/[0.04] backdrop-blur-md sticky top-0 z-20 flex items-end px-0 overflow-hidden timeline-ruler">
             {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[2px] bg-red-500/50 z-10 pointer-events-none" style={{ left: `${projectEnd * 20 * zoom}px` }}><div className="absolute top-0 -translate-x-1/2 bg-red-500/80 text-white text-[8px] px-1 rounded-b shadow-md font-bold">END</div></div>; })()}
@@ -1545,7 +1514,7 @@ export default function Studio() {
           </div>
 
           {/* Tracks Area */}
-          <div style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px`, minHeight: '100%' }}>
+          <div style={{ width: `${2000 * zoom}px`, minWidth: `${2000 * zoom}px` }}>
             <div 
               className="relative w-full min-h-full cursor-text select-none" 
               onPointerDown={(e) => {
@@ -1944,6 +1913,7 @@ export default function Studio() {
             </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
 

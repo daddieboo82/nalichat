@@ -46,6 +46,9 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Split Stems</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+E</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Toggle Loop</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+L</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Generate Melody</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+G</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Heal Split</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">H</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Repeat Clip ×2</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+R</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Group Tracks</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+G</span></div>
             <div className="col-span-2 mt-2 font-semibold">Tools</div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Trim Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">T</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Cut Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">C</span></div>
@@ -68,6 +71,27 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             </div>
             <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
               <strong className="text-primary">Hide Track</strong> — Right-click a track header → Hide Track to declutter the timeline without deleting.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Heal Split</strong> — Rejoin two clips that were split from the same source. Select a clip and press H.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Repeat Clip</strong> — Quickly duplicate a clip end-to-end (×2 or ×4) from the track options menu or Shift+R.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Crossfades</strong> — When two clips on the same track overlap or touch, a crossfade zone with an × indicator appears automatically for seamless transitions.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Pan Automation</strong> — Click the VOL AUTO label in the automation lane to toggle to PAN AUTO. Top = Left, center = Center, bottom = Right.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Capture Selection → Loop</strong> — Set in/out points (I/O), then click the crosshair button to instantly loop that region.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Punch-in Recording</strong> — With a selection active, recording auto-stops at the out-point for precise punch-ins.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Track Groups</strong> — Select multiple tracks (Ctrl+click), then Ctrl+G to group them for synchronized editing.
             </div>
           </div>
         </div>

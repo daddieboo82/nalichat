@@ -42,6 +42,7 @@ import ClipGainLine from '@/components/studio/ClipGainLine';
 import SpotDialog from '@/components/studio/SpotDialog';
 import SelectionRegion from '@/components/studio/SelectionRegion';
 import AutomationLane from '@/components/studio/AutomationLane';
+import CrossfadeOverlay from '@/components/studio/CrossfadeOverlay';
 
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
@@ -401,6 +402,14 @@ export default function Studio() {
       // Post-roll check: when playhead reaches the pending stop point, stop playback
       if (pendingStopAfterRef.current !== null && currentTimeRef.current >= pendingStopAfterRef.current) {
         pendingStopAfterRef.current = null;
+        Object.values(audioElementsRef.current).forEach(audio => audio.pause());
+        setIsPlaying(false);
+      }
+
+      // Punch-in/out: if recording and a selection is active, auto-stop at selection end
+      if (isRecording && selectionStartRef.current !== null && selectionEndRef.current !== null && currentTimeRef.current >= selectionEndRef.current) {
+        setIsRecording(false);
+        stopRecordingProcess();
         Object.values(audioElementsRef.current).forEach(audio => audio.pause());
         setIsPlaying(false);
       }
@@ -802,7 +811,7 @@ export default function Studio() {
       else if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
       else if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
       else if (e.code === 'Numpad0') { e.preventDefault(); stop(); }
-      else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); toggleRecord(); }
+      else if (!e.shiftKey && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); toggleRecord(); }
       else if (e.key === 'Backspace' || e.key === 'Delete') { if (selectedTrackIds.length > 0) { e.preventDefault(); deleteSelectedTracks(); } }
       else if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); duplicateSelectedTracks(); }
       else if ((e.ctrlKey || e.metaKey) && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); splitSelectedTracks(); }
@@ -873,6 +882,9 @@ export default function Studio() {
       }
       else if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); setLoopActive(!loopActive); }
       else if (e.key === '7') { e.preventDefault(); setMetronomeEnabled(!metronomeEnabled); }
+      else if (e.key === 'h' || e.key === 'H') { e.preventDefault(); const t = tracks.find(t => selectedTrackIds.includes(t.id)); if (t) handleHealSplit(t); }
+      else if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); const t = tracks.find(t => selectedTrackIds.includes(t.id)); if (t) handleToggleGroup(t); }
+      else if (e.shiftKey && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); const t = tracks.find(t => selectedTrackIds.includes(t.id)); if (t) handleRepeatClip(t, 2); }
       else if (e.shiftKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); handleSeparateStems(); }
       else if (e.shiftKey && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); handleGenerateMelody(); }
       else if (e.key === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.min(100, currentTimeRef.current + step)); }
@@ -984,6 +996,71 @@ export default function Studio() {
     setTracksWithHistory(prev => [...prev, { ...track, id: nextId, name: `${track.name} (Copy)` }]); toast.success("Track duplicated");
   };
 
+  // Pro Tools-style Heal Split: rejoin two clips that were split from the same source.
+  // Finds the "other half" (same splitFrom parent) and merges them back into one clip.
+  const handleHealSplit = (track) => {
+    if (!track.splitFrom) {
+      toast.error("This clip wasn't split — nothing to heal.");
+      return;
+    }
+    // Find the sibling clip that shares the same splitFrom id
+    const sibling = tracks.find(t => t.id !== track.id && t.splitFrom === track.splitFrom);
+    if (!sibling) {
+      toast.error("Can't find the other half of this split.");
+      return;
+    }
+    // Determine which is left and which is right
+    const [left, right] = (track.startTime || 0) < (sibling.startTime || 0) ? [track, sibling] : [sibling, track];
+    const mergedDuration = (left.duration || 0) + (right.duration || 0);
+    setTracksWithHistory(prev => prev
+      .map(t => t.id === left.id ? { ...t, duration: mergedDuration, splitFrom: undefined, clipStart: left.clipStart || 0, fullDuration: left.fullDuration || mergedDuration } : t)
+      .filter(t => t.id !== right.id)
+    );
+    toast.success("Split healed — clips rejoined.");
+    sounds.nav();
+  };
+
+  // Pro Tools-style Repeat Clip: duplicate a clip N times to the right, end-to-end.
+  const handleRepeatClip = (track, count) => {
+    if (tracks.length + count - 1 > maxTracks) {
+      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      return;
+    }
+    const clipDur = track.duration || 40;
+    const clipStart = track.startTime || 0;
+    let nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    const newClips = [];
+    for (let i = 1; i <= count; i++) {
+      newClips.push({
+        ...track,
+        id: nextId++,
+        name: `${track.name} (Repeat ${i})`,
+        startTime: clipStart + clipDur * i,
+        splitFrom: track.id,
+        armed: false,
+      });
+    }
+    setTracksWithHistory(prev => [...prev, ...newClips]);
+    toast.success(`Clip repeated ${count}×`);
+    sounds.success();
+  };
+
+  // Pro Tools-style Track Groups: link selected tracks for synchronized editing.
+  const handleToggleGroup = (track) => {
+    if (track.groupId) {
+      // Ungroup: clear groupId on all tracks in this group
+      setTracksWithHistory(prev => prev.map(t => t.groupId === track.groupId ? { ...t, groupId: undefined } : t));
+      toast.success("Track ungrouped.");
+    } else {
+      // Group: assign a new groupId to all selected tracks (or just this one if none selected)
+      const groupTargets = selectedTrackIds.length > 0 ? selectedTrackIds : [track.id];
+      const newGroupId = `grp_${Date.now()}`;
+      setTracksWithHistory(prev => prev.map(t => groupTargets.includes(t.id) ? { ...t, groupId: newGroupId } : t));
+      toast.success(`${groupTargets.length} track${groupTargets.length > 1 ? 's' : ''} grouped.`);
+    }
+    sounds.click();
+  };
+
   const splitSelectedTracks = () => {
     if (selectedTrackIds.length === 0) return;
     sounds.click();
@@ -1017,14 +1094,16 @@ export default function Studio() {
             startTime: curr,
             duration: clipDuration - splitDuration,
             fullDuration: t.fullDuration || t.duration,
-            clipStart: (t.clipStart || 0) + splitDuration
+            clipStart: (t.clipStart || 0) + splitDuration,
+            splitFrom: t.id
           });
-          
+
           return {
             ...t,
             duration: splitDuration,
             fullDuration: t.fullDuration || t.duration,
-            clipStart: t.clipStart || 0
+            clipStart: t.clipStart || 0,
+            splitFrom: t.id
           };
         }
       }
@@ -1337,6 +1416,9 @@ export default function Studio() {
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Play/Pause (Space)" aria-label="Play/Pause (Space)" aria-keyshortcuts="Space" onClick={(e) => { togglePlay(); e.currentTarget.blur(); }} className={cn("w-12 h-12 rounded-lg transition-all", isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>{isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-current" />}</Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">{isPlaying ? "Pause" : "Play"} <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Space</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Record (R)" aria-label="Record (R)" aria-keyshortcuts="R" onClick={toggleRecord} className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}>{isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}<Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Record <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">R</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Toggle Loop Region" aria-label="Loop" onClick={(e) => { setLoopActive(!loopActive); e.currentTarget.blur(); }} className={cn("w-10 h-10 rounded-lg transition-all", loopActive ? "bg-blue-500/20 text-blue-500" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}><RefreshCw className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Toggle Loop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+L</kbd></TooltipContent></Tooltip>
+            {selectionStart !== null && selectionEnd !== null && (
+              <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Capture Selection as Loop" aria-label="Capture to Loop" onClick={(e) => { setLoopActive(true); e.currentTarget.blur(); }} className="w-10 h-10 rounded-lg text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"><Crosshair className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Capture Selection → Loop</TooltipContent></Tooltip>
+            )}
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Fast-forward" aria-label="Fast-forward" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><FastForward className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Fast-forward <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">→</kbd></TooltipContent></Tooltip>
            </TooltipProvider>
            <Metronome isPlaying={isPlaying} bpm={bpm} timeSignature={timeSignature} enabled={metronomeEnabled} onToggle={setMetronomeEnabled} />
@@ -1512,7 +1594,7 @@ export default function Studio() {
                           className={cn(
                             "border-b border-border/40 p-3 flex flex-col justify-between transition-none cursor-pointer border-l-4 relative group/header",
                             track.muted ? "bg-card/30 opacity-70" : "bg-card/80 hover:bg-secondary/40",
-                            selectedTrackIds.includes(track.id) ? "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]" : "border-l-transparent",
+                            selectedTrackIds.includes(track.id) ? "border-l-primary bg-primary/20 shadow-[inset_0_0_30px_hsl(var(--primary)/0.15)]" : (track.groupId ? "border-l-accent" : "border-l-transparent"),
                             dragSnapshot.isDragging && "shadow-xl ring-1 ring-primary/40 bg-secondary/60"
                           )}
                         >
@@ -1532,13 +1614,16 @@ export default function Studio() {
                         {index + 1}
                       </div>
                       <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="truncate max-w-[100px] sm:max-w-none sm:whitespace-pre-wrap sm:break-words text-xs font-semibold cursor-help" title={track.name}>{track.name}</span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[240px] break-words">{track.name}</TooltipContent>
-                        </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="truncate max-w-[100px] sm:max-w-none sm:whitespace-pre-wrap sm:break-words text-xs font-semibold cursor-help" title={track.name}>{track.name}</span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[240px] break-words">{track.name}</TooltipContent>
+                      </Tooltip>
                       </TooltipProvider>
+                      {track.groupId && (
+                      <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-accent/20 text-accent border border-accent/30 shrink-0" title={`Group: ${track.groupId}`}>GRP</span>
+                      )}
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
                       <Select 
@@ -1576,6 +1661,18 @@ export default function Studio() {
                         </DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, hidden: !t.hidden } : t))}>
                           {track.hidden ? <><Eye className="w-4 h-4 mr-2" /> Show Track</> : <><EyeOff className="w-4 h-4 mr-2" /> Hide Track</>}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleHealSplit(track)}>
+                          <Link2 className="w-4 h-4 mr-2" /> Heal Split
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleRepeatClip(track, 2)}>
+                          <Repeat className="w-4 h-4 mr-2" /> Repeat Clip ×2
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleRepeatClip(track, 4)}>
+                          <Repeat className="w-4 h-4 mr-2" /> Repeat Clip ×4
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleToggleGroup(track)}>
+                          <Users className="w-4 h-4 mr-2" /> {track.groupId ? 'Ungroup' : 'Group Selected'}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <div className="px-2 py-1.5">
@@ -1704,12 +1801,16 @@ export default function Studio() {
                 window.addEventListener('pointermove', handleMove); window.addEventListener('pointerup', handleUp);
               }}
             >
-              {loopActive && (
-                <div className="absolute bottom-0 h-full bg-blue-500/10 border-x-2 border-blue-500 pointer-events-none z-10" style={{ left: 0, width: `${(60/bpm) * parseInt(timeSignature.split('/')[0]||4) * 4 * 20 * zoom}px` }}>
+              {loopActive && (() => {
+                const loopStart = (selectionStart !== null && selectionEnd !== null) ? selectionStart : 0;
+                const loopEnd = (selectionStart !== null && selectionEnd !== null) ? selectionEnd : (60/bpm) * parseInt(timeSignature.split('/')[0]||4) * 4;
+                return (
+                <div className="absolute bottom-0 h-full bg-blue-500/10 border-x-2 border-blue-500 pointer-events-none z-10" style={{ left: `${loopStart * 20 * zoom}px`, width: `${(loopEnd - loopStart) * 20 * zoom}px` }}>
                   <div className="absolute top-0 left-0 bg-blue-500 text-white text-[8px] px-1 rounded-br font-bold shadow-md">LOOP START</div>
                   <div className="absolute top-0 right-0 bg-blue-500 text-white text-[8px] px-1 rounded-bl font-bold shadow-md">LOOP END</div>
                 </div>
-              )}
+                );
+              })()}
               {Array.from({ length: Math.max(1000, Math.ceil(2000/(60/bpm))) }).slice(0, 2000).map((_, i) => {
                 const beatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
                 const secondsPerBeat = 60 / bpm;
@@ -1761,7 +1862,11 @@ export default function Studio() {
               window.addEventListener('pointerup', handleUp);
             }}
           >
-            {loopActive && <div className="absolute top-0 bottom-0 bg-blue-500/10 border-x border-blue-500/50 pointer-events-none z-10" style={{ left: 0, width: `${(60/bpm) * parseInt(timeSignature.split('/')[0]||4) * 4 * 20 * zoom}px` }} />}
+            {loopActive && (() => {
+              const loopStart = (selectionStart !== null && selectionEnd !== null) ? selectionStart : 0;
+              const loopEnd = (selectionStart !== null && selectionEnd !== null) ? selectionEnd : (60/bpm) * parseInt(timeSignature.split('/')[0]||4) * 4;
+              return <div className="absolute top-0 bottom-0 bg-blue-500/10 border-x border-blue-500/50 pointer-events-none z-10" style={{ left: `${loopStart * 20 * zoom}px`, width: `${(loopEnd - loopStart) * 20 * zoom}px` }} />;
+            })()}
             {/* Pro Tools-style selection region (in/out points) */}
             <SelectionRegion selectionStart={selectionStart} selectionEnd={selectionEnd} zoom={zoom} />
             {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[1px] bg-red-500/30 border-r border-red-500/10 pointer-events-none z-0" style={{ left: `${projectEnd * 20 * zoom}px` }} />; })()}
@@ -1782,12 +1887,20 @@ export default function Studio() {
                   {/* Grid lines */}
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px)] opacity-30 pointer-events-none z-0" style={{ backgroundSize: `${(60 / bpm) * parseInt(timeSignature.split('/')[0] || 4) * 20 * zoom}px 100%` }} />
                   
+                  {/* Pro Tools-style Crossfade overlay between adjacent clips on this track */}
+                  <CrossfadeOverlay clips={tracks.filter(t => t.id === track.id || (t.splitFrom === track.id))} zoom={zoom} trackId={track.id} />
+
                   {/* Pro Tools-style Volume Automation Lane */}
                   {track.showAutomation && (
                     <AutomationLane
                       track={track}
                       zoom={zoom}
-                      onPointsChange={(newPoints) => setTracks(prev => prev.map(t => t.id === track.id ? { ...t, automationPoints: newPoints } : t))}
+                      onPointsChange={(newPoints, mode) => setTracks(prev => prev.map(t => {
+                        if (t.id !== track.id) return t;
+                        if (mode === 'pan') return { ...t, panAutomationPoints: newPoints, automationMode: 'pan' };
+                        if (mode === 'volume') return { ...t, automationPoints: newPoints, automationMode: 'volume' };
+                        return t;
+                      }))}
                       onCommit={() => pushToHistory(tracksRef.current)}
                     />
                   )}

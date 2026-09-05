@@ -49,6 +49,7 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Heal Split</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">H</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Repeat Clip ×2</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+R</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Group Tracks</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+G</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Beat Detective</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+B</span></div>
             <div className="col-span-2 mt-2 font-semibold">Tools</div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Trim Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">T</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Cut Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">C</span></div>
@@ -92,6 +93,12 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             </div>
             <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
               <strong className="text-primary">Track Groups</strong> — Select multiple tracks (Ctrl+click), then Ctrl+G to group them for synchronized editing.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Beat Detective</strong> — Open with Ctrl+B or track options menu. Detects transients in the selected track and quantizes them to a chosen grid division (1/4 through 1/32, including triplets).
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Track Commit</strong> — Renders a track's current settings (volume, pan, clip gain, fades) into a new audio file, freeing CPU. Available from the track options menu.
             </div>
           </div>
         </div>

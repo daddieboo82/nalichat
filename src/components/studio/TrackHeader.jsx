@@ -4,7 +4,7 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/responsive-select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { GripVertical, Settings2, Activity, TrendingUp, PenTool, Eye, EyeOff, Link2, Repeat, Users, Palette, Copy, Trash2, Circle, Volume2, Snowflake } from 'lucide-react';
+import { GripVertical, Settings2, Activity, TrendingUp, PenTool, Eye, EyeOff, Link2, Repeat, Users, Palette, Copy, Trash2, Circle, Volume2, Snowflake, Wand2, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -20,6 +20,7 @@ export default function TrackHeader({
   handleHealSplit, handleRepeatClip, handleToggleGroup,
   duplicateTrack, deleteTrack,
   setSelectedTrackIds, setShowBeatDetective, setShowCommitDialog,
+  setShowAudioSuite, setShowFadePresets,
 }) {
   const inputType = track.inputType || ((track.name || "").toLowerCase().includes("beat") || (track.name || "").toLowerCase().includes("instrumental") ? "Internal Audio" : "In: Default Mic");
 
@@ -111,6 +112,12 @@ export default function TrackHeader({
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => { setSelectedTrackIds([track.id]); setShowCommitDialog(true); }} disabled={!track.audioUrl}>
                 <Snowflake className="w-4 h-4 mr-2" /> Commit Track
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => { setSelectedTrackIds([track.id]); setShowAudioSuite(true); }} disabled={!track.audioUrl}>
+                <Wand2 className="w-4 h-4 mr-2" /> AudioSuite (Offline FX)
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => { setSelectedTrackIds([track.id]); setShowFadePresets(true); }} disabled={!track.audioUrl}>
+                <SlidersHorizontal className="w-4 h-4 mr-2" /> Fade Presets
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <div className="px-2 py-1.5">

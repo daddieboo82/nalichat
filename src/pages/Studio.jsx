@@ -46,6 +46,10 @@ import CrossfadeOverlay from '@/components/studio/CrossfadeOverlay';
 import BeatDetectiveDialog from '@/components/studio/BeatDetectiveDialog';
 import TrackCommitDialog from '@/components/studio/TrackCommitDialog';
 import TrackHeader from '@/components/studio/TrackHeader';
+import BigCounter from '@/components/studio/BigCounter';
+import AudioSuiteDialog from '@/components/studio/AudioSuiteDialog';
+import FadePresetsDialog from '@/components/studio/FadePresetsDialog';
+import NudgeValueSelector from '@/components/studio/NudgeValueSelector';
 
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
@@ -162,6 +166,10 @@ export default function Studio() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showBeatDetective, setShowBeatDetective] = useState(false);
   const [showCommitDialog, setShowCommitDialog] = useState(false);
+  const [showBigCounter, setShowBigCounter] = useState(false);
+  const [showAudioSuite, setShowAudioSuite] = useState(false);
+  const [showFadePresets, setShowFadePresets] = useState(false);
+  const [nudgeValue, setNudgeValue] = useState(0.01); // 10ms default nudge
   
   const [hardware, setHardware] = useState({
     mic: false,
@@ -828,12 +836,13 @@ export default function Studio() {
       else if (e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); selectedTrackIds.forEach(id => toggleSolo(id)); }
       else if (e.shiftKey && (e.key === 'm' || e.key === 'M')) { e.preventDefault(); selectedTrackIds.forEach(id => toggleMute(id)); }
       else if ((e.key === 'm' || e.key === 'M') && !e.shiftKey) { e.preventDefault(); window.dispatchEvent(new CustomEvent('studio-add-marker')); }
-      else if (e.key === 't' || e.key === 'T') setActiveTool('trim');
-      else if (e.key === 'c' || e.key === 'C') setActiveTool('cut');
-      else if (e.key === 'g' || e.key === 'G') setActiveTool('grab');
-      else if (e.key === 'f' || e.key === 'F') setActiveTool('fade');
-      else if (e.key === 's' || e.key === 'S') { if (!e.shiftKey) { e.preventDefault(); setActiveTool('scrub'); } }
-      else if (e.key === 'e' || e.key === 'E') setActiveTool('smart');
+      else if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F') && e.shiftKey) { e.preventDefault(); if (selectedTrackIds.length > 0) setShowFadePresets(true); }
+      else if (!e.ctrlKey && !e.metaKey && (e.key === 't' || e.key === 'T')) setActiveTool('trim');
+      else if (!e.ctrlKey && !e.metaKey && (e.key === 'c' || e.key === 'C')) setActiveTool('cut');
+      else if (!e.ctrlKey && !e.metaKey && (e.key === 'g' || e.key === 'G')) setActiveTool('grab');
+      else if (!e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === 'f' || e.key === 'F')) setActiveTool('fade');
+      else if (!e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); setActiveTool('scrub'); }
+      else if (!e.ctrlKey && !e.metaKey && (e.key === 'e' || e.key === 'E')) setActiveTool('smart');
       else if (e.shiftKey && e.key === '4') { e.preventDefault(); setEditMode('spot'); }
       else if (e.key === 'Home') { e.preventDefault(); updateCurrentTime(0); }
       else if (e.key === 'i' || e.key === 'I') { e.preventDefault(); setSelectionStart(currentTimeRef.current); if (selectionEnd !== null && currentTimeRef.current >= selectionEnd) setSelectionEnd(null); }
@@ -893,10 +902,19 @@ export default function Studio() {
       else if (e.shiftKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); handleSeparateStems(); }
       else if (e.shiftKey && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); handleGenerateMelody(); }
       else if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) { e.preventDefault(); if (selectedTrackIds.length > 0) setShowBeatDetective(true); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === '1') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 40 } : t)); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === '2') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 64 } : t)); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === '3') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 96 } : t)); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === '4') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 160 } : t)); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === '5') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 240 } : t)); }
+      else if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) { e.preventDefault(); setShowBigCounter(!showBigCounter); }
+      else if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); if (selectedTrackIds.length > 0) setShowAudioSuite(true); }
+      else if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); handleConsolidateClips(); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'Tab') { e.preventDefault(); tabToClip(!e.shiftKey); }
       else if (e.key === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.min(100, currentTimeRef.current + step)); }
       else if (e.key === 'ArrowLeft' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.max(0, currentTimeRef.current - step)); }
-      else if (e.key === 'ArrowRight' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = gridSize; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) + nudge) } : t)); }
-      else if (e.key === 'ArrowLeft' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = gridSize; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) - nudge) } : t)); }
+      else if (e.key === 'ArrowRight' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = nudgeValue; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) + nudge) } : t)); }
+      else if (e.key === 'ArrowLeft' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = nudgeValue; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) - nudge) } : t)); }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -1049,6 +1067,75 @@ export default function Studio() {
     setTracksWithHistory(prev => [...prev, ...newClips]);
     toast.success(`Clip repeated ${count}×`);
     sounds.success();
+  };
+
+  // Pro Tools-style Consolidate Clips: render selected clips to new audio files
+  const handleConsolidateClips = async () => {
+    const selected = tracks.filter(t => selectedTrackIds.includes(t.id) && t.audioUrl);
+    if (selected.length === 0) {
+      toast.error("Select at least one clip with audio to consolidate.");
+      return;
+    }
+    setIsDownloading(true);
+    toast.info(`Consolidating ${selected.length} clip${selected.length > 1 ? 's' : ''}...`);
+    try {
+      for (const track of selected) {
+        const response = await fetch(track.audioUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        // Apply clip start offset and duration trimming
+        const clipStart = track.clipStart || 0;
+        const clipDuration = track.duration || audioBuffer.duration;
+        const startSample = Math.floor(clipStart * audioBuffer.sampleRate);
+        const endSample = Math.min(audioBuffer.length, startSample + Math.floor(clipDuration * audioBuffer.sampleRate));
+        const trimmedBuffer = audioCtx.createBuffer(audioBuffer.numberOfChannels, endSample - startSample, audioBuffer.sampleRate);
+        for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+          const src = audioBuffer.getChannelData(ch);
+          const dst = trimmedBuffer.getChannelData(ch);
+          for (let i = 0; i < dst.length; i++) dst[i] = src[startSample + i] || 0;
+        }
+        audioCtx.close();
+        // Encode to WAV
+        const wavBlob = await import('@/lib/audioProcessing').then(m => m.renderMixToWav ? m.renderMixToWav([track]) : null);
+        if (wavBlob) {
+          const url = URL.createObjectURL(wavBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${track.name.replace(/[^a-z0-9]/gi, '_')}_consolidated.wav`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        }
+      }
+      toast.success(`${selected.length} clip${selected.length > 1 ? 's' : ''} consolidated!`);
+    } catch (e) {
+      console.error('Consolidate failed:', e);
+      toast.error("Consolidation failed.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Pro Tools-style Tab to Next/Prev Clip: navigate between clip boundaries
+  const tabToClip = (forward) => {
+    const curr = currentTimeRef.current;
+    const clipBoundaries = [];
+    tracks.forEach(t => {
+      if (!t.waveform || t.waveform.length === 0) return;
+      const start = t.startTime || 0;
+      const end = start + (t.duration || 40);
+      clipBoundaries.push(start, end);
+    });
+    clipBoundaries.sort((a, b) => a - b);
+    if (forward) {
+      const next = clipBoundaries.find(b => b > curr + 0.01);
+      if (next !== undefined) { updateCurrentTime(next); sounds.nav(); }
+    } else {
+      const prev = [...clipBoundaries].reverse().find(b => b < curr - 0.01);
+      if (prev !== undefined) { updateCurrentTime(prev); sounds.nav(); }
+    }
   };
 
   // Pro Tools-style Track Groups: link selected tracks for synchronized editing.
@@ -1498,6 +1585,17 @@ export default function Studio() {
             </Button>
           </div>
 
+          {/* Pro Tools-style Big Counter toggle */}
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={() => setShowBigCounter(!showBigCounter)} className={cn("w-8 h-8 rounded-lg", showBigCounter ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary")} title="Big Counter (Ctrl+=)">
+                  <Maximize2 className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">Big Counter <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+=</kbd></TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           {/* Pro Tools-style transport counter with switchable time formats */}
           <TransportCounter currentTimeRef={currentTimeRef} isRecording={isRecording} bpm={bpm} sampleRate={audioSettings.sampleRate} />
           {/* Sample rate / bit depth badge — Pro Tools shows this prominently in the transport */}
@@ -1527,7 +1625,10 @@ export default function Studio() {
                 <DropdownMenuItem onClick={() => { setExportFormat('wav'); setExportDialogOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Download Mix (WAV)</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setExportFormat('mp3'); setExportDialogOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Download Mix (MP3)</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleExportStems()} className="cursor-pointer py-2"><Layers className="w-4 h-4 mr-2" /> Export Stems (Each Track)</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleConsolidateClips} className="cursor-pointer py-2"><Layers className="w-4 h-4 mr-2" /> Consolidate Clips <kbd className="ml-auto bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+K</kbd></DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => { if (selectedTrackIds.length > 0) setShowAudioSuite(true); else toast.error("Select a track first"); }} className="cursor-pointer py-2"><Wand2 className="w-4 h-4 mr-2" /> AudioSuite (Offline FX) <kbd className="ml-auto bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+U</kbd></DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { if (selectedTrackIds.length > 0) setShowFadePresets(true); else toast.error("Select clips first"); }} className="cursor-pointer py-2"><SlidersHorizontal className="w-4 h-4 mr-2" /> Fade Presets <kbd className="ml-auto bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Shift+F</kbd></DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setBounceRedirect('explore'); setBounceOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Export & Publish</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setBounceRedirect('cover-art'); setBounceOpen(true); }} className="cursor-pointer py-2"><ImageIcon className="w-4 h-4 mr-2" /> Export to Cover Creator</DropdownMenuItem>
               </DropdownMenuContent>
@@ -1618,6 +1719,8 @@ export default function Studio() {
                           setSelectedTrackIds={setSelectedTrackIds}
                           setShowBeatDetective={setShowBeatDetective}
                           setShowCommitDialog={setShowCommitDialog}
+                          setShowAudioSuite={setShowAudioSuite}
+                          setShowFadePresets={setShowFadePresets}
                         />
                       )}
                     </Draggable>
@@ -2190,6 +2293,7 @@ export default function Studio() {
             <span className="w-7 text-right font-mono text-[10px]">{masterVolume}%</span>
           </div>
           <span className="flex items-center gap-1.5 shrink-0"><Layers className="w-3.5 h-3.5" /> {tracks.length} Tracks</span>
+          <NudgeValueSelector nudgeValue={nudgeValue} setNudgeValue={setNudgeValue} bpm={bpm} />
         </div>
         <div className="flex items-center gap-4 shrink-0">
           <span className="flex items-center gap-1.5">
@@ -2297,6 +2401,41 @@ export default function Studio() {
             toast.success(`Moved "${spotClip.name}" to ${timeInSeconds.toFixed(3)}s`);
             sounds.nav();
           }
+        }}
+      />
+
+      {/* Pro Tools-style Big Counter overlay */}
+      <BigCounter
+        open={showBigCounter}
+        onToggle={setShowBigCounter}
+        currentTimeRef={currentTimeRef}
+        isRecording={isRecording}
+        bpm={bpm}
+        sampleRate={audioSettings.sampleRate}
+      />
+
+      {/* Pro Tools-style AudioSuite — offline clip processing */}
+      <AudioSuiteDialog
+        open={showAudioSuite}
+        onOpenChange={setShowAudioSuite}
+        track={tracks.find(t => selectedTrackIds.includes(t.id))}
+        onProcess={({ audioUrl, waveform, duration }) => {
+          const track = tracks.find(t => selectedTrackIds.includes(t.id));
+          if (!track) return;
+          if (track.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(track.audioUrl); } catch (e) {} }
+          setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, audioUrl, waveform, duration, fullDuration: duration, clipStart: 0 } : t));
+        }}
+      />
+
+      {/* Pro Tools-style Fade Presets — apply preset fade curves */}
+      <FadePresetsDialog
+        open={showFadePresets}
+        onOpenChange={setShowFadePresets}
+        tracks={tracks}
+        selectedTrackIds={selectedTrackIds}
+        onApply={(fadeIn, fadeOut, preset) => {
+          setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, fadeIn, fadeOut, fadePreset: preset } : t));
+          toast.success(`Fade preset applied to ${selectedTrackIds.length} clip${selectedTrackIds.length > 1 ? 's' : ''}`);
         }}
       />
 

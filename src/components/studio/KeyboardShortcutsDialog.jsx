@@ -50,6 +50,11 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Repeat Clip ×2</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+R</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Group Tracks</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+G</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Beat Detective</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+B</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Big Counter</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+=</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">AudioSuite FX</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+U</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Fade Presets</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+Shift+F</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Consolidate Clips</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+K</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Tab to Next Clip</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+Tab</span></div>
             <div className="col-span-2 mt-2 font-semibold">Tools</div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Trim Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">T</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Cut Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">C</span></div>
@@ -99,6 +104,27 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             </div>
             <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
               <strong className="text-primary">Track Commit</strong> — Renders a track's current settings (volume, pan, clip gain, fades) into a new audio file, freeing CPU. Available from the track options menu.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Track Height Presets</strong> — Select tracks and press Ctrl+1 (Mini), Ctrl+2 (Small), Ctrl+3 (Medium), Ctrl+4 (Large), or Ctrl+5 (Jumbo) to instantly resize.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Big Counter</strong> — Toggle with Ctrl+= for a large, always-visible transport counter that cycles through Bars|Beats|Ticks, Min:Sec, and Samples.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">AudioSuite</strong> — Open with Ctrl+U for offline clip processing: Normalize, Gain, Reverse, Pitch Shift, Time Stretch, and Silence. Non-destructive — creates a new audio file.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Fade Presets</strong> — Open with Ctrl+Shift+F to apply preset fade curves (Equal Power, Equal Gain, Fast In/Out, S-Curve) to selected clips with adjustable amounts.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Consolidate Clips</strong> — Press Ctrl+K to render selected clips to new WAV files with clip start/duration baked in. Ideal for exporting individual clips.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Tab to Clip</strong> — Ctrl+Tab navigates to the next clip boundary, Ctrl+Shift+Tab to the previous. Pro Tools-style region navigation.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Nudge Value Selector</strong> — Configure the nudge amount (samples, ms, ticks, beats, bars) in the bottom status bar. Shift+Arrow nudges selected clips by this amount.
             </div>
           </div>
         </div>

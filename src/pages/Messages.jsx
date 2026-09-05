@@ -405,7 +405,7 @@ export default function Messages() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden relative bg-background/40">
+          <div className="flex-1 min-h-0 overflow-hidden relative bg-background/40">
             <AnimatePresence mode="wait">
               {sidebarTab === "chats" ? (
                 <motion.div key="chats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col bg-background/40">

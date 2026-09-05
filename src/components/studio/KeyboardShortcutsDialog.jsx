@@ -48,6 +48,16 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Fade Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">F</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Smart Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">E</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Scrub Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">S</span></div>
+            <div className="col-span-2 mt-2 font-semibold">Pro Tools Features</div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Clip Gain Line</strong> — Select Smart or Trim tool, then drag the yellow dashed line on any clip to adjust gain (±12 dB).
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Spot Mode</strong> — Select Spot mode (Shift+4), then click any clip to type an exact timecode position.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Pre/Post-roll</strong> — Set pre-roll and post-roll seconds in the transport bar for punch-in recording with context.
+            </div>
           </div>
         </div>
         <div className="flex justify-end pt-4 border-t border-border">

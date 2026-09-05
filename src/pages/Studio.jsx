@@ -37,6 +37,9 @@ import PluginRack from '@/components/studio/PluginRack';
 import TransportCounter from '@/components/studio/TransportCounter';
 import CpuMeter from '@/components/studio/CpuMeter';
 import CountInIndicator from '@/components/studio/CountInIndicator';
+import PreRollPostRoll from '@/components/studio/PreRollPostRoll';
+import ClipGainLine from '@/components/studio/ClipGainLine';
+import SpotDialog from '@/components/studio/SpotDialog';
 
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
@@ -113,6 +116,17 @@ export default function Studio() {
   const [metronomeEnabled, setMetronomeEnabled] = useState(false);
   const [countInActive, setCountInActive] = useState(false);
   const skipCountInRef = useRef(false);
+  const toggleRecordRef = useRef(null);
+
+  // Pro Tools-style Pre-roll / Post-roll for punch-in recording
+  const [preRoll, setPreRoll] = useState(0);
+  const [postRoll, setPostRoll] = useState(0);
+  const pendingRecordStartRef = useRef(null); // time in seconds when actual recording should begin (after pre-roll)
+  const pendingStopAfterRef = useRef(null); // time in seconds when playback should stop (after post-roll)
+
+  // Spot mode dialog — lets the user type exact timecode for a clip
+  const [spotDialogOpen, setSpotDialogOpen] = useState(false);
+  const [spotClip, setSpotClip] = useState(null);
 
   // Session musical settings shown in the transport (BPM, time signature, key)
   const [bpm, setBpm] = useState(120);
@@ -363,6 +377,19 @@ export default function Studio() {
         }
       }
 
+      // Pre-roll check: when playhead reaches the pending record start point, begin actual recording
+      if (pendingRecordStartRef.current !== null && !isRecording && currentTimeRef.current >= pendingRecordStartRef.current) {
+        pendingRecordStartRef.current = null;
+        toggleRecordRef.current();
+      }
+
+      // Post-roll check: when playhead reaches the pending stop point, stop playback
+      if (pendingStopAfterRef.current !== null && currentTimeRef.current >= pendingStopAfterRef.current) {
+        pendingStopAfterRef.current = null;
+        Object.values(audioElementsRef.current).forEach(audio => audio.pause());
+        setIsPlaying(false);
+      }
+
       animationFrameId = requestAnimationFrame(updateTime);
     };
 
@@ -406,7 +433,7 @@ export default function Studio() {
           
           if (currentTimeRef.current >= trackStart && currentTimeRef.current < trackEnd) {
             audio.currentTime = clipStartOffset + (currentTimeRef.current - trackStart);
-            audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100));
+            audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100) * Math.pow(10, (track.clipGain || 0) / 20));
             playPromises.push(
               audio.play().catch(e => { console.error("Audio playback error:", e); return { failed: true }; })
             );
@@ -454,7 +481,7 @@ export default function Studio() {
     tracks.forEach(track => {
       const audio = audioElementsRef.current[track.id];
       if (audio) {
-        audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100));
+        audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100) * Math.pow(10, (track.clipGain || 0) / 20));
       }
     });
   }, [tracks, masterVolume]);
@@ -533,7 +560,7 @@ export default function Studio() {
     };
   }, []);
 
-  const stopRecordingProcess = () => {
+  const stopRecordingProcess = (keepPlaying = false) => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.onstop = async () => {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
@@ -610,8 +637,10 @@ export default function Studio() {
       audioContextRef.current = null;
     }
     recordingStartRealRef.current = null;
-    // Stop overdub playback when recording ends
-    Object.values(audioElementsRef.current).forEach(audio => audio.pause());
+    // Stop overdub playback when recording ends — unless post-roll is keeping it alive
+    if (!keepPlaying) {
+      Object.values(audioElementsRef.current).forEach(audio => audio.pause());
+    }
     sounds.recStop();
   };
 
@@ -627,6 +656,31 @@ export default function Studio() {
       return;
     }
     skipCountInRef.current = false;
+
+    // Pre-roll: jump back and start playback so the user hears context before the record point
+    if (!isRecording && preRoll > 0) {
+      const recordStartPos = currentTimeRef.current;
+      pendingRecordStartRef.current = recordStartPos;
+      updateCurrentTime(Math.max(0, recordStartPos - preRoll));
+      sounds.nav();
+      setActivity(`Pre-roll ${preRoll}s → recording 🎙️`);
+      // Start playback of existing (non-armed) tracks for context
+      tracks.forEach(track => {
+        if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
+          let audio = audioElementsRef.current[track.id];
+          if (!audio || audio.src !== track.audioUrl) {
+            audio = new Audio(track.audioUrl);
+            audioElementsRef.current[track.id] = audio;
+          }
+          audio.currentTime = Math.max(0, recordStartPos - preRoll - (track.startTime || 0));
+          audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100) * Math.pow(10, (track.clipGain || 0) / 20));
+          audio.play().catch(() => {});
+        }
+      });
+      setIsPlaying(true);
+      return; // RAF loop will call toggleRecord when playhead reaches recordStartPos
+    }
+
     if (isPlaying) setIsPlaying(false);
 
     if (!isRecording) {
@@ -650,7 +704,7 @@ export default function Studio() {
               audioElementsRef.current[track.id] = audio;
             }
             audio.currentTime = currentTimeRef.current;
-            audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100));
+            audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100) * Math.pow(10, (track.clipGain || 0) / 20));
             audio.play().catch(e => console.error("Overdub playback error:", e));
           }
         });
@@ -694,14 +748,25 @@ export default function Studio() {
       }
     } else {
       setIsRecording(false);
-      stopRecordingProcess();
+      const hasPostRoll = postRoll > 0;
+      stopRecordingProcess(hasPostRoll);
+      if (hasPostRoll) {
+        // Post-roll: keep playback running for postRoll seconds after recording stops
+        pendingStopAfterRef.current = currentTimeRef.current + postRoll;
+        setActivity(`Post-roll ${postRoll}s → stopping ⏹️`);
+      }
     }
   };
+
+  // Keep ref in sync so the RAF loop can invoke the latest toggleRecord for pre-roll
+  toggleRecordRef.current = toggleRecord;
 
   const stop = () => {
     setIsPlaying(false);
     setCountInActive(false);
     skipCountInRef.current = false;
+    pendingRecordStartRef.current = null;
+    pendingStopAfterRef.current = null;
     if (isRecording) { setIsRecording(false); stopRecordingProcess(); } else { sounds.recStop(); }
     Object.values(audioElementsRef.current).forEach(a => { a.pause(); a.currentTime = 0; });
     setTimeout(() => updateCurrentTime(0), 10);
@@ -1200,7 +1265,10 @@ export default function Studio() {
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Fast-forward" aria-label="Fast-forward" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><FastForward className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Fast-forward <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">→</kbd></TooltipContent></Tooltip>
            </TooltipProvider>
            <Metronome isPlaying={isPlaying} bpm={bpm} timeSignature={timeSignature} enabled={metronomeEnabled} onToggle={setMetronomeEnabled} />
-        </div>
+           </div>
+
+           {/* Pro Tools-style Pre-roll / Post-roll */}
+           <PreRollPostRoll preRoll={preRoll} setPreRoll={setPreRoll} postRoll={postRoll} setPostRoll={setPostRoll} />
 
         {/* Right Tools - Hardware & Export */}
         <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
@@ -1705,7 +1773,14 @@ export default function Studio() {
                       onPointerDown={(e) => {
                         e.stopPropagation();
                         if (track.locked || activeTool === 'fade') return;
-                        
+
+                        // Spot mode: open dialog to type exact timecode position
+                        if (editMode === 'spot') {
+                          setSpotClip(track);
+                          setSpotDialogOpen(true);
+                          return;
+                        }
+
                         const rect = e.currentTarget.getBoundingClientRect();
                         const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
 
@@ -1747,7 +1822,7 @@ export default function Studio() {
                                }
                                const offset = (track.clipStart || 0) + ((track.duration || 40) * clickRatio);
                                audio.currentTime = Math.max(0, Math.min(offset, (track.fullDuration || track.duration || 40) - 0.1));
-                               audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100));
+                               audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100) * Math.pow(10, (track.clipGain || 0) / 20));
                                audio.play().then(() => {
                                  setTimeout(() => audio.pause(), 150);
                                }).catch(() => {});
@@ -2014,6 +2089,14 @@ export default function Studio() {
                         </div>
                       )}
 
+                      {/* Pro Tools-style Clip Gain Line — drag to adjust clip gain independently */}
+                      <ClipGainLine
+                        clipGain={track.clipGain || 0}
+                        activeTool={activeTool}
+                        onChange={(newGain) => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, clipGain: newGain } : t))}
+                        onCommit={() => pushToHistory(tracksRef.current)}
+                      />
+
                       <div className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>
                         <div style={{ position: 'absolute', left: `${-(track.clipStart || 0) * 20 * zoom}px`, width: `${(track.fullDuration || track.duration || 40) * 20 * zoom}px`, height: '100%' }}>
                           <TrackWaveformSVG track={track} />
@@ -2157,6 +2240,22 @@ export default function Studio() {
         beatsPerBar={parseInt(timeSignature.split('/')[0]) || 4}
         bpm={bpm}
         onComplete={handleCountInComplete}
+      />
+
+      {/* Pro Tools-style Spot dialog — type exact timecode to position a clip */}
+      <SpotDialog
+        open={spotDialogOpen}
+        onOpenChange={setSpotDialogOpen}
+        clip={spotClip}
+        bpm={bpm}
+        timeSignature={timeSignature}
+        onSpot={(timeInSeconds) => {
+          if (spotClip) {
+            setTracksWithHistory(prev => prev.map(t => t.id === spotClip.id ? { ...t, startTime: Math.max(0, timeInSeconds) } : t));
+            toast.success(`Moved "${spotClip.name}" to ${timeInSeconds.toFixed(3)}s`);
+            sounds.nav();
+          }
+        }}
       />
 
       {/* Mobile bottom bar - Studio only */}

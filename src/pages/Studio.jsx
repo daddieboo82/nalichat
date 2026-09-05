@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight, ChevronLeft, Repeat, RefreshCw, ListTodo, AudioLines, Home, Compass, MessageSquare, User, Palette } from 'lucide-react';
+import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight, ChevronLeft, Repeat, RefreshCw, ListTodo, AudioLines, Home, Compass, MessageSquare, User, Palette, Eye, EyeOff } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -40,6 +40,7 @@ import CountInIndicator from '@/components/studio/CountInIndicator';
 import PreRollPostRoll from '@/components/studio/PreRollPostRoll';
 import ClipGainLine from '@/components/studio/ClipGainLine';
 import SpotDialog from '@/components/studio/SpotDialog';
+import SelectionRegion from '@/components/studio/SelectionRegion';
 
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
@@ -113,6 +114,8 @@ export default function Studio() {
   const [masterVolume, setMasterVolume] = useState(100);
   const [showMixerPanel, setShowMixerPanel] = useState(false);
   const [loopActive, setLoopActive] = useState(false);
+  const loopActiveRef = useRef(false);
+  useEffect(() => { loopActiveRef.current = loopActive; }, [loopActive]);
   const [metronomeEnabled, setMetronomeEnabled] = useState(false);
   const [countInActive, setCountInActive] = useState(false);
   const skipCountInRef = useRef(false);
@@ -127,6 +130,14 @@ export default function Studio() {
   // Spot mode dialog — lets the user type exact timecode for a clip
   const [spotDialogOpen, setSpotDialogOpen] = useState(false);
   const [spotClip, setSpotClip] = useState(null);
+
+  // Pro Tools-style selection region (in/out points)
+  const [selectionStart, setSelectionStart] = useState(null);
+  const [selectionEnd, setSelectionEnd] = useState(null);
+  const selectionStartRef = useRef(null);
+  const selectionEndRef = useRef(null);
+  useEffect(() => { selectionStartRef.current = selectionStart; }, [selectionStart]);
+  useEffect(() => { selectionEndRef.current = selectionEnd; }, [selectionEnd]);
 
   // Session musical settings shown in the transport (BPM, time signature, key)
   const [bpm, setBpm] = useState(120);
@@ -306,7 +317,10 @@ export default function Studio() {
       lastTime = time;
       
       let newTime = currentTimeRef.current + delta;
-      if (newTime > 100) newTime = 0; // Loop at 100s
+      // Selection-based loop: when a selection is active and loop is on, loop within the selection
+      if (loopActiveRef.current && selectionStartRef.current !== null && selectionEndRef.current !== null) {
+        if (newTime >= selectionEndRef.current) newTime = selectionStartRef.current;
+      } else if (newTime > 100) newTime = 0; // Loop at 100s
       
       currentTimeRef.current = newTime;
       
@@ -807,27 +821,54 @@ export default function Studio() {
       else if (e.key === 'e' || e.key === 'E') setActiveTool('smart');
       else if (e.shiftKey && e.key === '4') { e.preventDefault(); setEditMode('spot'); }
       else if (e.key === 'Home') { e.preventDefault(); updateCurrentTime(0); }
+      else if (e.key === 'i' || e.key === 'I') { e.preventDefault(); setSelectionStart(currentTimeRef.current); if (selectionEnd !== null && currentTimeRef.current >= selectionEnd) setSelectionEnd(null); }
+      else if (e.key === 'o' || e.key === 'O') { e.preventDefault(); setSelectionEnd(currentTimeRef.current); if (selectionStart !== null && currentTimeRef.current <= selectionStart) setSelectionStart(null); }
+      else if (e.key === 'a' || e.key === 'A') { if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); const end = Math.max(...tracks.map(t => (t.startTime||0)+(t.duration||0)), 20); setSelectionStart(0); setSelectionEnd(end); } }
+      else if (e.key === 'Escape') { e.preventDefault(); setSelectionStart(null); setSelectionEnd(null); setSelectedTrackIds([]); }
       else if (e.key === 'Tab') { e.preventDefault();
-        // Tab-to-transient: snap playhead to the next waveform peak
+        // Tab-to-transient: snap playhead to the next (or previous with Shift) waveform peak
         const curr = currentTimeRef.current;
-        let nextPeak = null;
-        for (const track of tracks) {
-          if (!track.waveform || track.waveform.length === 0) continue;
-          const trackStart = track.startTime || 0;
-          const fullDuration = track.fullDuration || track.duration || 40;
-          const posInTrack = curr - trackStart;
-          if (posInTrack < 0) continue;
-          const startIdx = Math.floor((posInTrack / fullDuration) * track.waveform.length);
-          for (let i = startIdx + 2; i < track.waveform.length - 1; i++) {
-            const v = track.waveform[i];
-            if (v > 0.25 && v >= (track.waveform[i-1] || 0) && v >= (track.waveform[i+1] || 0)) {
-              const peakTime = trackStart + (i / track.waveform.length) * fullDuration;
-              if (nextPeak === null || peakTime < nextPeak) nextPeak = peakTime;
-              break;
+        if (e.shiftKey) {
+          // Shift+Tab: backward to previous transient
+          let prevPeak = null;
+          for (const track of tracks) {
+            if (!track.waveform || track.waveform.length === 0) continue;
+            const trackStart = track.startTime || 0;
+            const fullDuration = track.fullDuration || track.duration || 40;
+            const posInTrack = curr - trackStart;
+            if (posInTrack < 0) continue;
+            const startIdx = Math.floor((posInTrack / fullDuration) * track.waveform.length);
+            for (let i = startIdx - 2; i > 0; i--) {
+              const v = track.waveform[i];
+              if (v > 0.25 && v >= (track.waveform[i-1] || 0) && v >= (track.waveform[i+1] || 0)) {
+                const peakTime = trackStart + (i / track.waveform.length) * fullDuration;
+                if (prevPeak === null || peakTime > prevPeak) prevPeak = peakTime;
+                break;
+              }
             }
           }
+          if (prevPeak !== null) { updateCurrentTime(prevPeak); sounds.nav(); }
+        } else {
+          // Tab: forward to next transient
+          let nextPeak = null;
+          for (const track of tracks) {
+            if (!track.waveform || track.waveform.length === 0) continue;
+            const trackStart = track.startTime || 0;
+            const fullDuration = track.fullDuration || track.duration || 40;
+            const posInTrack = curr - trackStart;
+            if (posInTrack < 0) continue;
+            const startIdx = Math.floor((posInTrack / fullDuration) * track.waveform.length);
+            for (let i = startIdx + 2; i < track.waveform.length - 1; i++) {
+              const v = track.waveform[i];
+              if (v > 0.25 && v >= (track.waveform[i-1] || 0) && v >= (track.waveform[i+1] || 0)) {
+                const peakTime = trackStart + (i / track.waveform.length) * fullDuration;
+                if (nextPeak === null || peakTime < nextPeak) nextPeak = peakTime;
+                break;
+              }
+            }
+          }
+          if (nextPeak !== null) { updateCurrentTime(nextPeak); sounds.nav(); }
         }
-        if (nextPeak !== null) { updateCurrentTime(nextPeak); sounds.nav(); }
       }
       else if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); setLoopActive(!loopActive); }
       else if (e.key === '7') { e.preventDefault(); setMetronomeEnabled(!metronomeEnabled); }
@@ -1498,6 +1539,9 @@ export default function Studio() {
                         }}>
                           <PenTool className="w-4 h-4 mr-2" /> Rename
                         </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, hidden: !t.hidden } : t))}>
+                          {track.hidden ? <><Eye className="w-4 h-4 mr-2" /> Show Track</> : <><EyeOff className="w-4 h-4 mr-2" /> Hide Track</>}
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <div className="px-2 py-1.5">
                           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1.5"><Palette className="w-3 h-3" /> Track Color</div>
@@ -1683,10 +1727,12 @@ export default function Studio() {
             }}
           >
             {loopActive && <div className="absolute top-0 bottom-0 bg-blue-500/10 border-x border-blue-500/50 pointer-events-none z-10" style={{ left: 0, width: `${(60/bpm) * parseInt(timeSignature.split('/')[0]||4) * 4 * 20 * zoom}px` }} />}
+            {/* Pro Tools-style selection region (in/out points) */}
+            <SelectionRegion selectionStart={selectionStart} selectionEnd={selectionEnd} zoom={zoom} />
             {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[1px] bg-red-500/30 border-r border-red-500/10 pointer-events-none z-0" style={{ left: `${projectEnd * 20 * zoom}px` }} />; })()}
             {/* Waveform Rows */}
             <div className="flex flex-col">
-              {tracks.map((track) => (
+              {tracks.filter(t => !t.hidden).map((track) => (
                 <div
                   key={track.id}
                   onClick={(e) => handleTrackClick(e, track.id)}

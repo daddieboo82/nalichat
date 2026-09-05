@@ -31,6 +31,11 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Return to Zero</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Home</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Add Marker</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">M</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Tab to Transient</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Tab</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Prev Transient</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+Tab</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Set In Point</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">I</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Set Out Point</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">O</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Select All</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">A</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Clear Selection</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Esc</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Nudge Forward</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+→</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Nudge Backward</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+←</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Fast-forward</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Right Arrow</span></div>
@@ -57,6 +62,12 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             </div>
             <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
               <strong className="text-primary">Pre/Post-roll</strong> — Set pre-roll and post-roll seconds in the transport bar for punch-in recording with context.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Selection Region</strong> — Press I at the playhead to set an in-point, O for out-point. The highlighted region is used for loop playback and edit operations.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Hide Track</strong> — Right-click a track header → Hide Track to declutter the timeline without deleting.
             </div>
           </div>
         </div>

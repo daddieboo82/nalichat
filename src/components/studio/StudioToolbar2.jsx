@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Settings2, Scissors, Copy, Layers, Wand2, Undo, Redo, Edit2, Shuffle, MoveHorizontal, Grid, MousePointer2, Crosshair, Link2, Unlock, Trash2, Maximize2, Loader2, SlidersHorizontal, Search, MapPin, Gauge } from 'lucide-react';
+import { Plus, Settings2, Scissors, Copy, Layers, Wand2, Undo, Redo, Edit2, Shuffle, MoveHorizontal, Grid, MousePointer2, Crosshair, Link2, Unlock, Trash2, Maximize2, Loader2, SlidersHorizontal, Search, MapPin, Gauge, Folder, Volume2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { cn } from '@/lib/utils';
@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { sounds } from '@/hooks/use-sound';
 
 export default function StudioToolbar2({
-  addTrack, selectedTrackIds, tracks, handleSeparateStems, isProcessing, handleGenerateMelody, undo, redo, historyIndex, historyLength,
+  addTrack, addVcaTrack, addFolderTrack, selectedTrackIds, tracks, handleSeparateStems, isProcessing, handleGenerateMelody, undo, redo, historyIndex, historyLength,
   bpm, setBpm, bpmInput, setBpmInput, timeSignature, setTimeSignature, songKey, setSongKey, editMode, setEditMode,
   activeTool, setActiveTool, toggleTrackProperty, splitSelectedTracks, duplicateSelectedTracks, deleteSelectedTracks, zoom, setZoom,
   gridSize, setGridSize
@@ -35,6 +35,8 @@ export default function StudioToolbar2({
                 <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Track</span>
               </Button>
             </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Add Track <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+N</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button aria-label="Add VCA Master" onClick={addVcaTrack} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-accent hover:bg-accent/20 shrink-0"><Volume2 className="w-4 h-4" /> <span className="hidden lg:inline">Add VCA</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Add VCA Master Track</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button aria-label="Add Folder" onClick={addFolderTrack} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0"><Folder className="w-4 h-4" /> <span className="hidden lg:inline">Add Folder</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs">Add Folder Track</TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button aria-label="Split Stems" onClick={handleSeparateStems} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'separate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} <span className="hidden md:inline">Split Stems</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Separate Vocals & Instrumental <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+E</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button aria-label="Generate Melody" onClick={handleGenerateMelody} disabled={isProcessing} variant="ghost" size="sm" className="gap-1.5 h-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0 disabled:opacity-50">{isProcessing === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} <span className="hidden lg:inline">Generate Melody</span></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Generate AI Melody <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+G</kbd></TooltipContent></Tooltip>
           </TooltipProvider>

@@ -50,6 +50,9 @@ import BigCounter from '@/components/studio/BigCounter';
 import AudioSuiteDialog from '@/components/studio/AudioSuiteDialog';
 import FadePresetsDialog from '@/components/studio/FadePresetsDialog';
 import NudgeValueSelector from '@/components/studio/NudgeValueSelector';
+import VcaTrackHeader from '@/components/studio/VcaTrackHeader';
+import FolderTrackHeader from '@/components/studio/FolderTrackHeader';
+import { createStudioKeyHandler } from '@/lib/studioKeyHandler';
 
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
@@ -816,106 +819,23 @@ export default function Studio() {
     toggleRecord();
   };
 
-  // Keyboard shortcuts for Power Users
+  // Keyboard shortcuts — handler logic extracted to src/lib/studioKeyHandler.js
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
-      else if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
-      else if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
-      else if (e.code === 'Numpad0') { e.preventDefault(); stop(); }
-      else if (!e.shiftKey && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); toggleRecord(); }
-      else if (e.key === 'Backspace' || e.key === 'Delete') { if (selectedTrackIds.length > 0) { e.preventDefault(); deleteSelectedTracks(); } }
-      else if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); duplicateSelectedTracks(); }
-      else if ((e.ctrlKey || e.metaKey) && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); splitSelectedTracks(); }
-      else if (e.key === 'l' || e.key === 'L') { e.preventDefault(); selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked')); }
-      else if (e.shiftKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); addTrack(); }
-      else if (e.shiftKey && e.key === '1') { e.preventDefault(); setEditMode('shuffle'); }
-      else if (e.shiftKey && e.key === '2') { e.preventDefault(); setEditMode('slip'); }
-      else if (e.shiftKey && e.key === '3') { e.preventDefault(); setEditMode('grid'); }
-      else if (e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); selectedTrackIds.forEach(id => toggleSolo(id)); }
-      else if (e.shiftKey && (e.key === 'm' || e.key === 'M')) { e.preventDefault(); selectedTrackIds.forEach(id => toggleMute(id)); }
-      else if ((e.key === 'm' || e.key === 'M') && !e.shiftKey) { e.preventDefault(); window.dispatchEvent(new CustomEvent('studio-add-marker')); }
-      else if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F') && e.shiftKey) { e.preventDefault(); if (selectedTrackIds.length > 0) setShowFadePresets(true); }
-      else if (!e.ctrlKey && !e.metaKey && (e.key === 't' || e.key === 'T')) setActiveTool('trim');
-      else if (!e.ctrlKey && !e.metaKey && (e.key === 'c' || e.key === 'C')) setActiveTool('cut');
-      else if (!e.ctrlKey && !e.metaKey && (e.key === 'g' || e.key === 'G')) setActiveTool('grab');
-      else if (!e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === 'f' || e.key === 'F')) setActiveTool('fade');
-      else if (!e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); setActiveTool('scrub'); }
-      else if (!e.ctrlKey && !e.metaKey && (e.key === 'e' || e.key === 'E')) setActiveTool('smart');
-      else if (e.shiftKey && e.key === '4') { e.preventDefault(); setEditMode('spot'); }
-      else if (e.key === 'Home') { e.preventDefault(); updateCurrentTime(0); }
-      else if (e.key === 'i' || e.key === 'I') { e.preventDefault(); setSelectionStart(currentTimeRef.current); if (selectionEnd !== null && currentTimeRef.current >= selectionEnd) setSelectionEnd(null); }
-      else if (e.key === 'o' || e.key === 'O') { e.preventDefault(); setSelectionEnd(currentTimeRef.current); if (selectionStart !== null && currentTimeRef.current <= selectionStart) setSelectionStart(null); }
-      else if (e.key === 'a' || e.key === 'A') { if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); const end = Math.max(...tracks.map(t => (t.startTime||0)+(t.duration||0)), 20); setSelectionStart(0); setSelectionEnd(end); } }
-      else if (e.key === 'Escape') { e.preventDefault(); setSelectionStart(null); setSelectionEnd(null); setSelectedTrackIds([]); }
-      else if (e.key === 'Tab') { e.preventDefault();
-        // Tab-to-transient: snap playhead to the next (or previous with Shift) waveform peak
-        const curr = currentTimeRef.current;
-        if (e.shiftKey) {
-          // Shift+Tab: backward to previous transient
-          let prevPeak = null;
-          for (const track of tracks) {
-            if (!track.waveform || track.waveform.length === 0) continue;
-            const trackStart = track.startTime || 0;
-            const fullDuration = track.fullDuration || track.duration || 40;
-            const posInTrack = curr - trackStart;
-            if (posInTrack < 0) continue;
-            const startIdx = Math.floor((posInTrack / fullDuration) * track.waveform.length);
-            for (let i = startIdx - 2; i > 0; i--) {
-              const v = track.waveform[i];
-              if (v > 0.25 && v >= (track.waveform[i-1] || 0) && v >= (track.waveform[i+1] || 0)) {
-                const peakTime = trackStart + (i / track.waveform.length) * fullDuration;
-                if (prevPeak === null || peakTime > prevPeak) prevPeak = peakTime;
-                break;
-              }
-            }
-          }
-          if (prevPeak !== null) { updateCurrentTime(prevPeak); sounds.nav(); }
-        } else {
-          // Tab: forward to next transient
-          let nextPeak = null;
-          for (const track of tracks) {
-            if (!track.waveform || track.waveform.length === 0) continue;
-            const trackStart = track.startTime || 0;
-            const fullDuration = track.fullDuration || track.duration || 40;
-            const posInTrack = curr - trackStart;
-            if (posInTrack < 0) continue;
-            const startIdx = Math.floor((posInTrack / fullDuration) * track.waveform.length);
-            for (let i = startIdx + 2; i < track.waveform.length - 1; i++) {
-              const v = track.waveform[i];
-              if (v > 0.25 && v >= (track.waveform[i-1] || 0) && v >= (track.waveform[i+1] || 0)) {
-                const peakTime = trackStart + (i / track.waveform.length) * fullDuration;
-                if (nextPeak === null || peakTime < nextPeak) nextPeak = peakTime;
-                break;
-              }
-            }
-          }
-          if (nextPeak !== null) { updateCurrentTime(nextPeak); sounds.nav(); }
-        }
-      }
-      else if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); setLoopActive(!loopActive); }
-      else if (e.key === '7') { e.preventDefault(); setMetronomeEnabled(!metronomeEnabled); }
-      else if (e.key === 'h' || e.key === 'H') { e.preventDefault(); const t = tracks.find(t => selectedTrackIds.includes(t.id)); if (t) handleHealSplit(t); }
-      else if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); const t = tracks.find(t => selectedTrackIds.includes(t.id)); if (t) handleToggleGroup(t); }
-      else if (e.shiftKey && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); const t = tracks.find(t => selectedTrackIds.includes(t.id)); if (t) handleRepeatClip(t, 2); }
-      else if (e.shiftKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); handleSeparateStems(); }
-      else if (e.shiftKey && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); handleGenerateMelody(); }
-      else if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) { e.preventDefault(); if (selectedTrackIds.length > 0) setShowBeatDetective(true); }
-      else if ((e.ctrlKey || e.metaKey) && e.key === '1') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 40 } : t)); }
-      else if ((e.ctrlKey || e.metaKey) && e.key === '2') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 64 } : t)); }
-      else if ((e.ctrlKey || e.metaKey) && e.key === '3') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 96 } : t)); }
-      else if ((e.ctrlKey || e.metaKey) && e.key === '4') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 160 } : t)); }
-      else if ((e.ctrlKey || e.metaKey) && e.key === '5') { e.preventDefault(); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, height: 240 } : t)); }
-      else if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) { e.preventDefault(); setShowBigCounter(!showBigCounter); }
-      else if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); if (selectedTrackIds.length > 0) setShowAudioSuite(true); }
-      else if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); handleConsolidateClips(); }
-      else if ((e.ctrlKey || e.metaKey) && e.key === 'Tab') { e.preventDefault(); tabToClip(!e.shiftKey); }
-      else if (e.key === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.min(100, currentTimeRef.current + step)); }
-      else if (e.key === 'ArrowLeft' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.max(0, currentTimeRef.current - step)); }
-      else if (e.key === 'ArrowRight' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = nudgeValue; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) + nudge) } : t)); }
-      else if (e.key === 'ArrowLeft' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = nudgeValue; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) - nudge) } : t)); }
-    };
+    const handleKeyDown = createStudioKeyHandler({
+      undo, redo, togglePlay, toggleRecord, stop,
+      selectedTrackIds, setSelectedTrackIds,
+      deleteSelectedTracks, duplicateSelectedTracks, splitSelectedTracks,
+      toggleTrackProperty, addTrack, setEditMode,
+      toggleSolo, toggleMute, setShowFadePresets, setActiveTool,
+      updateCurrentTime, setSelectionStart, setSelectionEnd,
+      selectionStart, selectionEnd, tracks, setLoopActive, loopActive,
+      setMetronomeEnabled, metronomeEnabled, handleHealSplit,
+      handleToggleGroup, handleRepeatClip, handleSeparateStems,
+      handleGenerateMelody, setShowBeatDetective, setTracksWithHistory,
+      setShowBigCounter, showBigCounter, setShowAudioSuite,
+      handleConsolidateClips, tabToClip, nudgeValue, zoom, currentTimeRef,
+      sounds,
+    });
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPlaying, isRecording, togglePlay, toggleRecord, selectedTrackIds, tracks, activeTool]);
@@ -1229,6 +1149,27 @@ export default function Studio() {
     setTracksWithHistory([...tracks, { id: newId, name: newTrackName.trim(), type: newTrackType, color: ["bg-green-500", "bg-blue-500", "bg-purple-500", "bg-yellow-500", "bg-pink-500"][newId % 5], volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0 }]);
     setCreatingTrack(false);
     toast.success("Track added");
+  };
+
+  // Pro Tools-style VCA Master Track: controls volume of assigned member tracks
+  const addVcaTrack = () => {
+    sounds.click();
+    const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    setTracksWithHistory([...tracks, { id: newId, name: `VCA Master ${newId}`, trackType: 'vca', color: 'bg-accent', volume: 100, vcaMembers: [], muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0 }]);
+    toast.success("VCA Master track added");
+  };
+
+  // Pro Tools-style Folder Track: collapsible container for grouping tracks
+  const addFolderTrack = () => {
+    sounds.click();
+    const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    setTracksWithHistory([...tracks, { id: newId, name: `Folder ${newId}`, trackType: 'folder', color: 'bg-primary', collapsed: false, folderMembers: [], muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0 }]);
+    toast.success("Folder track added");
+  };
+
+  const toggleFolderCollapse = (folderId) => {
+    sounds.click();
+    setTracksWithHistory(prev => prev.map(t => t.id === folderId ? { ...t, collapsed: !t.collapsed } : t));
   };
 
   const handleSeparateStems = async () => {
@@ -1690,41 +1631,52 @@ export default function Studio() {
             <Droppable droppableId="studio-track-headers">
               {(dropProvided) => (
                 <div ref={dropProvided.innerRef} {...dropProvided.droppableProps}>
-                  {tracks.map((track, index) => (
+                  {tracks.map((track, index) => {
+                    // Skip tracks hidden by a collapsed folder
+                    const parentFolder = tracks.find(t => t.trackType === 'folder' && (t.folderMembers || []).includes(track.id) && t.collapsed);
+                    if (parentFolder) return null;
+                    return (
                     <Draggable key={track.id} draggableId={String(track.id)} index={index} isDragDisabled={isRecording}>
                       {(dragProvided, dragSnapshot) => (
-                        <TrackHeader
-                          track={track}
-                          index={index}
-                          isRecording={isRecording}
-                          selectedTrackIds={selectedTrackIds}
-                          dragProvided={dragProvided}
-                          dragSnapshot={dragSnapshot}
-                          handleTrackClick={handleTrackClick}
-                          setTracksWithHistory={setTracksWithHistory}
-                          toggleTrackProperty={toggleTrackProperty}
-                          toggleMute={toggleMute}
-                          toggleSolo={toggleSolo}
-                          toggleArm={toggleArm}
-                          updateVolume={updateVolume}
-                          pushToHistory={pushToHistory}
-                          tracksRef={tracksRef}
-                          setRenamingTrack={setRenamingTrack}
-                          setNewTrackName={setNewTrackName}
-                          handleHealSplit={handleHealSplit}
-                          handleRepeatClip={handleRepeatClip}
-                          handleToggleGroup={handleToggleGroup}
-                          duplicateTrack={duplicateTrack}
-                          deleteTrack={deleteTrack}
-                          setSelectedTrackIds={setSelectedTrackIds}
-                          setShowBeatDetective={setShowBeatDetective}
-                          setShowCommitDialog={setShowCommitDialog}
-                          setShowAudioSuite={setShowAudioSuite}
-                          setShowFadePresets={setShowFadePresets}
-                        />
+                        track.trackType === 'vca' ? (
+                          <VcaTrackHeader track={track} index={index} isRecording={isRecording} selectedTrackIds={selectedTrackIds} dragProvided={dragProvided} dragSnapshot={dragSnapshot} handleTrackClick={handleTrackClick} setTracksWithHistory={setTracksWithHistory} pushToHistory={pushToHistory} tracksRef={tracksRef} setRenamingTrack={setRenamingTrack} setNewTrackName={setNewTrackName} duplicateTrack={duplicateTrack} deleteTrack={deleteTrack} allTracks={tracks} />
+                        ) : track.trackType === 'folder' ? (
+                          <FolderTrackHeader track={track} index={index} isRecording={isRecording} selectedTrackIds={selectedTrackIds} dragProvided={dragProvided} dragSnapshot={dragSnapshot} handleTrackClick={handleTrackClick} setTracksWithHistory={setTracksWithHistory} pushToHistory={pushToHistory} tracksRef={tracksRef} setRenamingTrack={setRenamingTrack} setNewTrackName={setNewTrackName} duplicateTrack={duplicateTrack} deleteTrack={deleteTrack} allTracks={tracks} toggleFolderCollapse={toggleFolderCollapse} />
+                        ) : (
+                          <TrackHeader
+                            track={track}
+                            index={index}
+                            isRecording={isRecording}
+                            selectedTrackIds={selectedTrackIds}
+                            dragProvided={dragProvided}
+                            dragSnapshot={dragSnapshot}
+                            handleTrackClick={handleTrackClick}
+                            setTracksWithHistory={setTracksWithHistory}
+                            toggleTrackProperty={toggleTrackProperty}
+                            toggleMute={toggleMute}
+                            toggleSolo={toggleSolo}
+                            toggleArm={toggleArm}
+                            updateVolume={updateVolume}
+                            pushToHistory={pushToHistory}
+                            tracksRef={tracksRef}
+                            setRenamingTrack={setRenamingTrack}
+                            setNewTrackName={setNewTrackName}
+                            handleHealSplit={handleHealSplit}
+                            handleRepeatClip={handleRepeatClip}
+                            handleToggleGroup={handleToggleGroup}
+                            duplicateTrack={duplicateTrack}
+                            deleteTrack={deleteTrack}
+                            setSelectedTrackIds={setSelectedTrackIds}
+                            setShowBeatDetective={setShowBeatDetective}
+                            setShowCommitDialog={setShowCommitDialog}
+                            setShowAudioSuite={setShowAudioSuite}
+                            setShowFadePresets={setShowFadePresets}
+                          />
+                        )
                       )}
                     </Draggable>
-                  ))}
+                    );
+                  })}
                   {dropProvided.placeholder}
                 </div>
               )}
@@ -1820,11 +1772,11 @@ export default function Studio() {
             {(() => { const projectEnd = Math.max(...tracks.map(t => (t.startTime || 0) + (t.duration || 0)), 20); return <div className="absolute top-0 bottom-0 w-[1px] bg-red-500/30 border-r border-red-500/10 pointer-events-none z-0" style={{ left: `${projectEnd * 20 * zoom}px` }} />; })()}
             {/* Waveform Rows */}
             <div className="flex flex-col">
-              {tracks.filter(t => !t.hidden).map((track) => (
+              {tracks.filter(t => !t.hidden && !(tracks.find(f => f.trackType === 'folder' && (f.folderMembers || []).includes(t.id) && f.collapsed))).map((track) => (
                 <div
                   key={track.id}
                   onClick={(e) => handleTrackClick(e, track.id)}
-                  style={{ height: track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px'), flexShrink: 0 }}
+                  style={{ height: track.trackType === 'vca' ? '96px' : track.trackType === 'folder' ? '48px' : (track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px')), flexShrink: 0 }}
                   className={cn(
                     "border-b border-border/20 relative group transition-none shrink-0",
                     track.muted ? "opacity-30" : "",

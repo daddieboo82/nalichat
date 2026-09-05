@@ -24,6 +24,17 @@ export default function Messages() {
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [sidebarTab, setSidebarTab] = useState("chats");
 
+  // Mark a conversation as read (stores timestamp in localStorage for the unread badge).
+  const markConversationRead = (convId) => {
+    if (!convId) return;
+    try { localStorage.setItem(`lastReadAt:${convId}`, Date.now().toString()); } catch {}
+  };
+
+  const handleSelectConv = (convId) => {
+    setSelectedConvId(convId);
+    markConversationRead(convId);
+  };
+
   useEffect(() => {
     if (location.pathname === "/messages" && !location.search) {
       setSelectedConvId(null);
@@ -128,6 +139,10 @@ export default function Messages() {
       if (isMyConv) {
         if (event.type === "create" && event.data?.sender_id !== currentUser.id) {
           sounds.notification();
+        }
+        // If the user is viewing this conversation, mark it as read immediately
+        if (event.data?.conversation_id === selectedConvId && document.visibilityState === "visible") {
+          markConversationRead(selectedConvId);
         }
         // Apply the change directly to the cache for instant, lag-free updates
         // instead of refetching all messages from the server.
@@ -297,13 +312,13 @@ export default function Messages() {
       const existing = myConversations.find(c =>
         c.type === "dm" && c.participant_ids?.includes(otherUser.id) && c.participant_ids?.length === 2
       );
-      if (existing) { setSelectedConvId(existing.id); return; }
+      if (existing) { handleSelectConv(existing.id); return; }
       const conv = await base44.entities.Conversation.create({
         type: "dm",
         participant_ids: [currentUser.id, otherUser.id],
       });
       await queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      setSelectedConvId(conv.id);
+      handleSelectConv(conv.id);
     } catch (err) {
       toast.error("Couldn't start the conversation. Please try again.");
     }
@@ -318,7 +333,7 @@ export default function Messages() {
         participant_ids: [currentUser.id, ...participant_ids],
       });
       await queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      setSelectedConvId(conv.id);
+      handleSelectConv(conv.id);
     } catch (err) {
       toast.error("Couldn't create the group. Please try again.");
     }
@@ -413,7 +428,7 @@ export default function Messages() {
                     conversations={conversations}
                     myConversations={myConversations}
                     selectedId={selectedConvId}
-                    onSelect={setSelectedConvId}
+                    onSelect={handleSelectConv}
                     users={users}
                     currentUserId={currentUser?.id}
                     onStartDM={startDM}

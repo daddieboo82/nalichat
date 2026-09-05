@@ -19,6 +19,19 @@ export default React.memo(function ConversationList({ conversations, myConversat
     return users?.find(u => u.id === otherId);
   };
 
+  // Unread check: a conversation is unread if its last message is newer than
+  // the last time the user opened it (tracked in localStorage by Messages.jsx).
+  const isUnread = (conv) => {
+    if (!conv.last_message_at) return false;
+    try {
+      const lastRead = localStorage.getItem(`lastReadAt:${conv.id}`);
+      if (!lastRead) return true;
+      return new Date(conv.last_message_at).getTime() > parseInt(lastRead);
+    } catch { return false; }
+  };
+
+  const onlineUsers = (users || []).filter(u => u.is_online && u.id !== currentUserId).slice(0, 12);
+
   // Searching applies globally to find NEW people to message too
   const searchResults = useMemo(() => {
     const term = search.toLowerCase();
@@ -120,6 +133,37 @@ export default React.memo(function ConversationList({ conversations, myConversat
         </div>
       )}
 
+      {/* Active Now — horizontal avatar strip (Messenger pattern) */}
+      {!search && onlineUsers.length > 0 && (
+        <div className="px-4 mb-3 shrink-0">
+          <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider mb-2 px-2">Active Now</p>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+            {onlineUsers.map(u => (
+              <button
+                key={u.id}
+                onClick={() => onStartDM(u)}
+                className="flex flex-col items-center gap-1 shrink-0 group"
+                title={`Message ${u.display_name || u.full_name}`}
+                aria-label={`Message ${u.display_name || u.full_name}`}
+              >
+                <div className="relative">
+                  <Avatar className="w-14 h-14 border-2 border-primary/30 group-hover:border-primary/60 transition-colors">
+                    <AvatarImage src={u.avatar_url} />
+                    <AvatarFallback className={cn("font-bold text-sm text-white bg-gradient-to-br", getGradient(u.display_name || u.full_name))}>
+                      {(u.display_name || u.full_name)?.[0]?.toUpperCase() || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-background" />
+                </div>
+                <span className="text-[10px] text-muted-foreground truncate max-w-[56px] text-center">
+                  {(u.display_name || u.full_name || "")?.split(" ")[0]}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* List */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-6 space-y-1 custom-scrollbar">
         {searchResults.filteredChats.length === 0 && !search && (
@@ -136,6 +180,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
           const avatar = conv.type === "group" ? conv.avatar_url : other?.avatar_url;
           const isSelected = selectedId === conv.id;
           const gradient = getGradient(displayName);
+          const unread = isUnread(conv);
 
           return (
             <button
@@ -151,7 +196,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
               aria-label={`Open chat with ${displayName}`}
             >
               <div className="relative shrink-0">
-                <Avatar className="w-12 h-12 shadow-sm">
+                <Avatar className={cn("w-12 h-12 shadow-sm transition-all", unread && !isSelected && "ring-2 ring-primary/40")}>
                   <AvatarImage src={avatar} />
                   <AvatarFallback className={cn("font-bold text-sm bg-gradient-to-br text-white", gradient)}>
                     {displayName?.[0]?.toUpperCase() || "?"}
@@ -168,16 +213,19 @@ export default React.memo(function ConversationList({ conversations, myConversat
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-baseline mb-0.5">
-                  <p className={cn("font-semibold truncate pr-2 text-[15px]", isSelected ? "text-primary" : "text-foreground")}>
+                  <p className={cn("font-semibold truncate pr-2 text-[15px]", isSelected ? "text-primary" : unread ? "text-foreground" : "text-foreground/90")}>
                     {displayName}
                   </p>
-                  {conv.last_message_at && !isNaN(new Date(conv.last_message_at).getTime()) && (
-                    <span className={cn("text-[10px] shrink-0 font-medium", isSelected ? "text-primary/70" : "text-muted-foreground/60")}>
-                      {formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: false }).replace('about ','').replace('less than a minute','now')}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {unread && !isSelected && <span className="w-2.5 h-2.5 rounded-full bg-primary shrink-0" />}
+                    {conv.last_message_at && !isNaN(new Date(conv.last_message_at).getTime()) && (
+                      <span className={cn("text-[10px] font-medium", unread ? "text-primary/80" : isSelected ? "text-primary/70" : "text-muted-foreground/60")}>
+                        {formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: false }).replace('about ','').replace('less than a minute','now')}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <p className={cn("text-xs truncate leading-snug select-none", isSelected ? "text-foreground/50" : "text-muted-foreground/50")} aria-hidden="true">
+                <p className={cn("text-xs truncate leading-snug select-none", isSelected ? "text-foreground/50" : unread ? "text-muted-foreground/80 font-medium" : "text-muted-foreground/50")} aria-hidden="true">
                   {conv.last_message_text ? "•••" : <span className="italic opacity-60">Start chatting...</span>}
                 </p>
               </div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, ArrowLeft, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2 } from "lucide-react";
+import { MessageSquare, ArrowLeft, ArrowDown, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2 } from "lucide-react";
 import MediaViewerModal from "@/components/explore/MediaViewerModal";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
@@ -19,6 +19,7 @@ import NaliContextHint from "@/components/nali/NaliContextHint";
 import { routeNativeCall } from "@/lib/nativeCall";
 import { useCall, isCallSignal } from "@/hooks/useCall";
 import CallOverlay from "./CallOverlay";
+import { motion, AnimatePresence } from "framer-motion";
 
 import React from "react";
 
@@ -31,18 +32,39 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const [threadMessage, setThreadMessage] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const [unreadSinceScroll, setUnreadSinceScroll] = useState(0);
   const scrollRef = useRef(null);
   const prevLenRef = useRef(0);
+  const isNearBottomRef = useRef(true);
   const markedRef = useRef(new Set());
   const typingTimeoutRef = useRef(null);
   const [selectedMedia, setSelectedMedia] = useState(null);
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
+  const handleScroll = () => {
     if (!scrollRef.current) return;
     const isNearBottom = scrollRef.current.scrollHeight - scrollRef.current.scrollTop - scrollRef.current.clientHeight < 200;
-    if (isNearBottom || messages.length !== prevLenRef.current) {
+    isNearBottomRef.current = isNearBottom;
+    setShowScrollBottom(!isNearBottom);
+    if (isNearBottom) setUnreadSinceScroll(0);
+  };
+
+  const scrollToBottom = (behavior = 'smooth') => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
+    isNearBottomRef.current = true;
+    setShowScrollBottom(false);
+    setUnreadSinceScroll(0);
+  };
+
+  // Auto-scroll to bottom only when already near bottom (Messenger pattern).
+  // If the user is reading older messages, don't yank them down — just badge the FAB.
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    if (isNearBottomRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      setUnreadSinceScroll(0);
+    } else if (messages.length > prevLenRef.current) {
+      setUnreadSinceScroll(c => c + (messages.length - prevLenRef.current));
     }
     prevLenRef.current = messages.length;
   }, [messages]);
@@ -102,14 +124,29 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     return { ...msg, showAvatar };
   });
 
+  // First unread message from the other person (for the "New Messages" separator)
+  const firstUnreadId = (() => {
+    for (const msg of enriched) {
+      if (msg.sender_id !== currentUser?.id && !msg.read_by?.includes(currentUser?.id)) {
+        return msg.id;
+      }
+    }
+    return null;
+  })();
+
   const groups = [];
   let lastDate = null;
+  let unreadInserted = false;
   for (const msg of enriched) {
     const d = msg.created_date ? new Date(msg.created_date) : new Date();
     const dateStr = d.toDateString();
     if (dateStr !== lastDate) {
       groups.push({ type: "date", label: formatDateLabel(d), key: dateStr });
       lastDate = dateStr;
+    }
+    if (firstUnreadId === msg.id && !unreadInserted) {
+      groups.push({ type: "unread", key: "unread-sep-" + msg.id });
+      unreadInserted = true;
     }
     groups.push({ type: "msg", ...msg });
   }
@@ -172,7 +209,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       </div>
 
       {/* Messages Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-6 pt-24 pb-40 space-y-0.5 custom-scrollbar">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-6 pt-24 pb-40 space-y-0.5 custom-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -189,6 +226,14 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               <span className="text-[10px] text-muted-foreground font-semibold px-3 py-1 rounded-full bg-background/60 backdrop-blur-md border border-border/30 shadow-sm uppercase tracking-wider">
                 {item.label}
               </span>
+            </div>
+          ) : item.type === "unread" ? (
+            <div key={item.key} className="flex items-center justify-center my-3 gap-2">
+              <div className="h-px flex-1 bg-border/40" />
+              <span className="text-[10px] font-bold text-primary px-2 uppercase tracking-wider bg-primary/10 rounded-full py-0.5 border border-primary/20">
+                New Messages
+              </span>
+              <div className="h-px flex-1 bg-border/40" />
             </div>
           ) : (
             <MessageBubble
@@ -240,6 +285,28 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
           )
         ))}
       </div>
+
+      {/* Scroll-to-bottom FAB (Messenger pattern) */}
+      <AnimatePresence>
+        {showScrollBottom && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 10 }}
+            onClick={() => scrollToBottom('smooth')}
+            className="absolute bottom-32 right-6 z-20 w-11 h-11 rounded-full bg-card border border-border/60 shadow-2xl flex items-center justify-center hover:bg-secondary/80 transition-colors"
+            title="Scroll to latest"
+            aria-label="Scroll to latest"
+          >
+            <ArrowDown className="w-5 h-5 text-primary" />
+            {unreadSinceScroll > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                {unreadSinceScroll > 9 ? '9+' : unreadSinceScroll}
+              </span>
+            )}
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Typing indicator */}
       {typingUsers.length > 0 && (

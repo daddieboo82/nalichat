@@ -18,6 +18,8 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Shuffle Mode</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+1</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Slip Mode</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+2</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Grid Mode</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+3</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Spot Mode</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+4</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Metronome</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">7</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Undo</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+Z</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Redo</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+Y</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Split Clip</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Ctrl+E</span></div>
@@ -41,6 +43,7 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Grabber Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">G</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Fade Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">F</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Smart Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">E</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Scrub Tool</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">S</span></div>
           </div>
         </div>
         <div className="flex justify-end pt-4 border-t border-border">

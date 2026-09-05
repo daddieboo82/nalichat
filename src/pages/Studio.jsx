@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import BounceDialog from '@/components/studio/BounceDialog';
+import Metronome from '@/components/studio/Metronome';
+import MarkersBar from '@/components/studio/MarkersBar';
 import { sounds } from '@/hooks/use-sound';
 import { useSubscription } from '@/hooks/useSubscription';
 
@@ -54,6 +56,7 @@ export default function Studio() {
   const headerPlayheadRef = useRef(null);
 
   const formatTime = (seconds) => {
+    seconds = Math.max(0, seconds || 0);
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
@@ -104,6 +107,7 @@ export default function Studio() {
   const [masterVolume, setMasterVolume] = useState(100);
   const [showMixerPanel, setShowMixerPanel] = useState(false);
   const [loopActive, setLoopActive] = useState(false);
+  const [metronomeEnabled, setMetronomeEnabled] = useState(false);
 
   // Session musical settings shown in the transport (BPM, time signature, key)
   const [bpm, setBpm] = useState(120);
@@ -712,9 +716,12 @@ export default function Studio() {
       else if (e.key === 'c' || e.key === 'C') setActiveTool('cut');
       else if (e.key === 'g' || e.key === 'G') setActiveTool('grab');
       else if (e.key === 'f' || e.key === 'F') setActiveTool('fade');
+      else if (e.key === 's' || e.key === 'S') { if (!e.shiftKey) { e.preventDefault(); setActiveTool('scrub'); } }
       else if (e.key === 'e' || e.key === 'E') setActiveTool('smart');
+      else if (e.shiftKey && e.key === '4') { e.preventDefault(); setEditMode('spot'); }
       else if (e.key === 'Home') { e.preventDefault(); updateCurrentTime(0); }
       else if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); setLoopActive(!loopActive); }
+      else if (e.key === '7') { e.preventDefault(); setMetronomeEnabled(!metronomeEnabled); }
       else if (e.shiftKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); handleSeparateStems(); }
       else if (e.shiftKey && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); handleGenerateMelody(); }
       else if (e.key === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.min(100, currentTimeRef.current + step)); }
@@ -1147,7 +1154,8 @@ export default function Studio() {
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Record (R)" aria-label="Record (R)" aria-keyshortcuts="R" onClick={toggleRecord} className={cn("w-12 h-12 rounded-lg transition-all relative overflow-hidden", isRecording ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-400" : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10")}>{isRecording && <span className="absolute inset-0 bg-red-500/20 animate-ping rounded-lg" />}<Circle className={cn("w-5 h-5", isRecording ? "fill-current" : "fill-current")} /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Record <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">R</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Toggle Loop Region" aria-label="Loop" onClick={(e) => { setLoopActive(!loopActive); e.currentTarget.blur(); }} className={cn("w-10 h-10 rounded-lg transition-all", loopActive ? "bg-blue-500/20 text-blue-500" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}><RefreshCw className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Toggle Loop <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+L</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" title="Fast-forward" aria-label="Fast-forward" onClick={(e) => { updateCurrentTime(Math.min(100, currentTimeRef.current + 5)); e.currentTarget.blur(); }} className="hidden sm:flex w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground"><FastForward className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Fast-forward <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">→</kbd></TooltipContent></Tooltip>
-          </TooltipProvider>
+           </TooltipProvider>
+           <Metronome isPlaying={isPlaying} bpm={bpm} timeSignature={timeSignature} enabled={metronomeEnabled} onToggle={setMetronomeEnabled} />
         </div>
 
         {/* Right Tools - Hardware & Export */}
@@ -1278,6 +1286,14 @@ export default function Studio() {
         deleteSelectedTracks={deleteSelectedTracks} zoom={zoom} setZoom={setZoom}
       />
       {/* setEditingTrack prop removed — Wave Editor was merged into this inline timeline */}
+
+      {/* Markers Bar — Pro Tools-style memory locations */}
+      <MarkersBar
+        projectId={roomId || 'local_studio'}
+        currentTime={currentTimeRef.current}
+        onSeek={updateCurrentTime}
+        zoom={zoom}
+      />
 
       {/* Main Workspace */}
       <div className="flex-1 overflow-auto bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
@@ -1613,14 +1629,16 @@ export default function Studio() {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const isTopHalf = (e.clientY - rect.top) < rect.height / 2;
                         if (activeTool === 'smart') {
-                          e.currentTarget.style.cursor = isTopHalf ? 'text' : 'grab';
-                        } else if (activeTool === 'grab') {
-                          e.currentTarget.style.cursor = 'grab';
-                        } else if (activeTool === 'cut') {
-                          e.currentTarget.style.cursor = 'crosshair';
-                        } else {
-                          e.currentTarget.style.cursor = 'default';
-                        }
+                           e.currentTarget.style.cursor = isTopHalf ? 'text' : 'grab';
+                         } else if (activeTool === 'grab') {
+                           e.currentTarget.style.cursor = 'grab';
+                         } else if (activeTool === 'cut') {
+                           e.currentTarget.style.cursor = 'crosshair';
+                         } else if (activeTool === 'scrub') {
+                           e.currentTarget.style.cursor = 'ew-resize';
+                         } else {
+                           e.currentTarget.style.cursor = 'default';
+                         }
                       }}
                       onPointerDown={(e) => {
                         e.stopPropagation();
@@ -1646,6 +1664,44 @@ export default function Studio() {
                              clipStart: t.clipStart || 0
                            } : t));
                            toast.success("Audio after the cut point removed");
+                           return;
+                        }
+
+                        if (activeTool === 'scrub') {
+                           // Pro Tools scrub: play a short snippet at the click/drag position
+                           const target = e.currentTarget;
+                           const rect = target.getBoundingClientRect();
+                           const playScrub = (clientX) => {
+                             const clickX = clientX - rect.left;
+                             const clickRatio = Math.max(0, Math.min(1, clickX / rect.width));
+                             const newTime = (track.startTime || 0) + ((track.duration || 40) * clickRatio);
+                             updateCurrentTime(newTime);
+                             // Play a short snippet from this position
+                             if (track.audioUrl) {
+                               let audio = audioElementsRef.current[track.id];
+                               if (!audio || audio.src !== track.audioUrl) {
+                                 audio = new Audio(track.audioUrl);
+                                 audioElementsRef.current[track.id] = audio;
+                               }
+                               const offset = (track.clipStart || 0) + ((track.duration || 40) * clickRatio);
+                               audio.currentTime = Math.max(0, Math.min(offset, (track.fullDuration || track.duration || 40) - 0.1));
+                               audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100));
+                               audio.play().then(() => {
+                                 setTimeout(() => audio.pause(), 150);
+                               }).catch(() => {});
+                             }
+                           };
+                           playScrub(e.clientX);
+                           target.setPointerCapture(e.pointerId);
+                           const handleMove = (moveEvent) => playScrub(moveEvent.clientX);
+                           const handleUp = (upEvent) => {
+                             target.releasePointerCapture(upEvent.pointerId);
+                             target.removeEventListener('pointermove', handleMove);
+                             target.removeEventListener('pointerup', handleUp);
+                             Object.values(audioElementsRef.current).forEach(a => a.pause());
+                           };
+                           target.addEventListener('pointermove', handleMove);
+                           target.addEventListener('pointerup', handleUp);
                            return;
                         }
 

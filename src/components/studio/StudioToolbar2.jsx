@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Settings2, Scissors, Copy, Layers, Wand2, Undo, Redo, Edit2, Shuffle, MoveHorizontal, Grid, MousePointer2, Crosshair, Link2, Unlock, Trash2, Maximize2, Loader2, SlidersHorizontal } from 'lucide-react';
+import { Plus, Settings2, Scissors, Copy, Layers, Wand2, Undo, Redo, Edit2, Shuffle, MoveHorizontal, Grid, MousePointer2, Crosshair, Link2, Unlock, Trash2, Maximize2, Loader2, SlidersHorizontal, Search, MapPin } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { cn } from '@/lib/utils';
@@ -114,6 +114,11 @@ export default function StudioToolbar2({
                 <Grid className="w-3.5 h-3.5" /><span className="text-xs">Grid</span>
               </Button></div>
             </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Grid Mode <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+3</kbd></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild>
+              <div><Button variant="ghost" size="sm" aria-label="Spot" onClick={() => setEditMode('spot')} aria-pressed={editMode === 'spot'} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", editMode === 'spot' && "bg-primary/20 text-primary")}>
+                <MapPin className="w-3.5 h-3.5" /><span className="text-xs">Spot</span>
+              </Button></div>
+            </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Spot Mode — type exact position <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+4</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 
@@ -125,10 +130,11 @@ export default function StudioToolbar2({
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Fade Tool (F)" onClick={() => setActiveTool('fade')} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'fade' && "bg-primary/20 text-primary")}><Crosshair className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Fade</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Fade Tool <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">F</kbd></TooltipContent></Tooltip>
             <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Smart Tool (E)" onClick={() => setActiveTool('smart')} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground border border-transparent hover:text-foreground gap-1.5", activeTool === 'smart' && "border-primary text-primary bg-primary/10")}>
                <div className="flex flex-col gap-0.5 items-center">
-                 <div className="flex gap-[1px]"><MoveHorizontal className="w-2 h-2"/><MousePointer2 className="w-2 h-2"/></div>
-               </div>
-               <span className="text-xs hidden lg:inline">Smart</span>
-            </Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex flex-col gap-1"><span>Smart Tool (Top: Edit, Bottom: Grab)</span><div className="flex items-center gap-1"><kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">E</kbd></div></TooltipContent></Tooltip>
+                  <div className="flex gap-[1px]"><MoveHorizontal className="w-2 h-2"/><MousePointer2 className="w-2 h-2"/></div>
+                </div>
+                <span className="text-xs hidden lg:inline">Smart</span>
+             </Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex flex-col gap-1"><span>Smart Tool (Top: Edit, Bottom: Grab)</span><div className="flex items-center gap-1"><kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">E</kbd></div></TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><div><Button variant="ghost" size="sm" title="Scrub Tool (S)" onClick={() => setActiveTool('scrub')} className={cn("min-w-[44px] min-h-[44px] px-2 rounded text-muted-foreground hover:text-foreground gap-1.5", activeTool === 'scrub' && "bg-primary/20 text-primary")}><Search className="w-3.5 h-3.5" /><span className="text-xs hidden lg:inline">Scrub</span></Button></div></TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Scrub Tool — drag to hear audio <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">S</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight, ChevronLeft, Repeat, RefreshCw, ListTodo, AudioLines, Home, Compass, MessageSquare, User, Palette, Eye, EyeOff, Snowflake } from 'lucide-react';
+import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight, ChevronLeft, Repeat, RefreshCw, ListTodo, AudioLines, Home, Compass, MessageSquare, User, Palette, Eye, EyeOff, Snowflake, Folder } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -825,7 +825,7 @@ export default function Studio() {
       undo, redo, togglePlay, toggleRecord, stop,
       selectedTrackIds, setSelectedTrackIds,
       deleteSelectedTracks, duplicateSelectedTracks, splitSelectedTracks,
-      toggleTrackProperty, addTrack, setEditMode,
+      toggleTrackProperty, addTrack, addVcaTrack, addFolderTrack, setEditMode,
       toggleSolo, toggleMute, setShowFadePresets, setActiveTool,
       updateCurrentTime, setSelectionStart, setSelectionEnd,
       selectionStart, selectionEnd, tracks, setLoopActive, loopActive,
@@ -1597,7 +1597,7 @@ export default function Studio() {
 
       {/* Toolbar 2 (Tools) */}
       <StudioToolbar2
-        addTrack={addTrack} selectedTrackIds={selectedTrackIds} tracks={tracks}
+        addTrack={addTrack} addVcaTrack={addVcaTrack} addFolderTrack={addFolderTrack} selectedTrackIds={selectedTrackIds} tracks={tracks}
         handleSeparateStems={handleSeparateStems} isProcessing={isProcessing} handleGenerateMelody={handleGenerateMelody}
         undo={undo} redo={redo} historyIndex={historyIndex} historyLength={historyRef.current.length}
         bpm={bpm} setBpm={setBpm} bpmInput={bpmInput} setBpmInput={setBpmInput} timeSignature={timeSignature} setTimeSignature={setTimeSignature}
@@ -1840,11 +1840,29 @@ export default function Studio() {
                   )}
                   
                   {/* Empty track placeholder — clarifies the track exists but has no audio yet */}
-                  {(!track.waveform || track.waveform.length === 0) && !track.armed && (
+                  {(!track.waveform || track.waveform.length === 0) && !track.armed && track.trackType !== 'vca' && track.trackType !== 'folder' && (
                     <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none z-10">
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60 italic">
                         <Mic className="w-3.5 h-3.5 shrink-0" />
                         <span>Empty — upload a file or record to fill this track</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* VCA Master lane label */}
+                  {track.trackType === 'vca' && (
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none z-10">
+                      <div className="flex items-center gap-2 text-[11px] text-accent/70 italic">
+                        <Volume2 className="w-3.5 h-3.5 shrink-0" />
+                        <span>VCA Master — assign member tracks from the header</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Folder lane label */}
+                  {track.trackType === 'folder' && (
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none z-10">
+                      <div className="flex items-center gap-2 text-[11px] text-primary/70 italic">
+                        <Folder className="w-3.5 h-3.5 shrink-0" />
+                        <span>Folder — assign member tracks from the header</span>
                       </div>
                     </div>
                   )}

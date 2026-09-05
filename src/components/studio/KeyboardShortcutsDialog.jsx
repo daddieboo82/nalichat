@@ -15,6 +15,8 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Stop</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Numpad 0</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Record</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">R</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Add Track</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+N</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Add VCA Master</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+Alt+V</span></div>
+            <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Add Folder</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+Alt+B</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Shuffle Mode</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+1</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Slip Mode</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+2</span></div>
             <div className="flex justify-between items-center bg-secondary/50 p-2 rounded"><span className="text-muted-foreground">Grid Mode</span><span className="font-mono bg-background px-1.5 py-0.5 rounded border border-border">Shift+3</span></div>
@@ -125,6 +127,12 @@ export default function KeyboardShortcutsDialog({ open, onOpenChange }) {
             </div>
             <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
               <strong className="text-primary">Nudge Value Selector</strong> — Configure the nudge amount (samples, ms, ticks, beats, bars) in the bottom status bar. Shift+Arrow nudges selected clips by this amount.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">VCA Master Tracks</strong> — Add with Shift+Alt+V or the toolbar. A VCA Master controls the volume of all assigned member tracks. Assign tracks from the VCA header dropdown.
+            </div>
+            <div className="col-span-2 bg-primary/5 border border-primary/20 p-2 rounded text-[10px] text-muted-foreground">
+              <strong className="text-primary">Folder Tracks</strong> — Add with Shift+Alt+B or the toolbar. Folders group tracks visually and can be collapsed to hide their members from the timeline. Assign tracks and pick a color from the folder header.
             </div>
           </div>
         </div>

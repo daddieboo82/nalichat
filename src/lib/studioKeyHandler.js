@@ -7,7 +7,7 @@ export function createStudioKeyHandler(deps) {
     undo, redo, togglePlay, toggleRecord, stop,
     selectedTrackIds, setSelectedTrackIds,
     deleteSelectedTracks, duplicateSelectedTracks, splitSelectedTracks,
-    toggleTrackProperty, addTrack, setEditMode,
+    toggleTrackProperty, addTrack, addVcaTrack, addFolderTrack, setEditMode,
     toggleSolo, toggleMute, setShowFadePresets, setActiveTool,
     updateCurrentTime, setSelectionStart, setSelectionEnd,
     selectionStart, selectionEnd, tracks, setLoopActive, loopActive,
@@ -31,6 +31,8 @@ export function createStudioKeyHandler(deps) {
     else if ((e.ctrlKey || e.metaKey) && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); splitSelectedTracks(); }
     else if (e.key === 'l' || e.key === 'L') { e.preventDefault(); selectedTrackIds.forEach(id => toggleTrackProperty(id, 'locked')); }
     else if (e.shiftKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); addTrack(); }
+    else if (e.shiftKey && (e.altKey) && (e.key === 'v' || e.key === 'V')) { e.preventDefault(); addVcaTrack(); }
+    else if (e.shiftKey && e.altKey && (e.key === 'b' || e.key === 'B')) { e.preventDefault(); addFolderTrack(); }
     else if (e.shiftKey && e.key === '1') { e.preventDefault(); setEditMode('shuffle'); }
     else if (e.shiftKey && e.key === '2') { e.preventDefault(); setEditMode('slip'); }
     else if (e.shiftKey && e.key === '3') { e.preventDefault(); setEditMode('grid'); }

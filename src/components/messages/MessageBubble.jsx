@@ -236,7 +236,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
               }
             }} />
           ) : (
-            <div className={cn("text-[15px] leading-relaxed break-words whitespace-pre-wrap", isOwn ? "text-white" : "text-foreground")}>
+            <div className={cn("text-[15px] leading-relaxed break-words whitespace-pre-wrap [overflow-wrap:anywhere]", isOwn ? "text-white" : "text-foreground")}>
               <ReactMarkdown
                 components={{
                   a: ({node, ...props}) => <a {...props} target="_blank" rel="noreferrer" className="underline font-semibold hover:opacity-80 break-all" />,
@@ -304,9 +304,9 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
 
       {/* Hover action buttons */}
       <div className={cn(
-        "flex items-center gap-1 opacity-0 focus-within:opacity-100 transition-all self-center shrink-0 relative",
+        "hidden md:flex items-center gap-1 opacity-0 focus-within:opacity-100 transition-all self-center shrink-0 relative",
         (showActions || showEmojiPicker) && "opacity-100",
-        isOwn ? "flex-row order-first mr-2" : "flex-row ml-2"
+        isOwn ? "flex-row mr-2" : "flex-row ml-2"
       )}>
         <div className="hidden md:flex items-center gap-1 mr-1">
           {QUICK_REACTIONS.map(emoji => (

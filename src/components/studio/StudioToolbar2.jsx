@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Settings2, Scissors, Copy, Layers, Wand2, Undo, Redo, Edit2, Shuffle, MoveHorizontal, Grid, MousePointer2, Crosshair, Link2, Unlock, Trash2, Maximize2, Loader2, SlidersHorizontal, Search, MapPin } from 'lucide-react';
+import { Plus, Settings2, Scissors, Copy, Layers, Wand2, Undo, Redo, Edit2, Shuffle, MoveHorizontal, Grid, MousePointer2, Crosshair, Link2, Unlock, Trash2, Maximize2, Loader2, SlidersHorizontal, Search, MapPin, Gauge } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { cn } from '@/lib/utils';
@@ -13,9 +13,18 @@ import { sounds } from '@/hooks/use-sound';
 export default function StudioToolbar2({
   addTrack, selectedTrackIds, tracks, handleSeparateStems, isProcessing, handleGenerateMelody, undo, redo, historyIndex, historyLength,
   bpm, setBpm, bpmInput, setBpmInput, timeSignature, setTimeSignature, songKey, setSongKey, editMode, setEditMode,
-  activeTool, setActiveTool, toggleTrackProperty, splitSelectedTracks, duplicateSelectedTracks, deleteSelectedTracks, zoom, setZoom
+  activeTool, setActiveTool, toggleTrackProperty, splitSelectedTracks, duplicateSelectedTracks, deleteSelectedTracks, zoom, setZoom,
+  gridSize, setGridSize
 }) {
   const isMobile = useIsMobile();
+  const gridOptions = [
+    { value: 1, label: '1 bar' },
+    { value: 0.5, label: '1/2' },
+    { value: 0.25, label: '1/4' },
+    { value: 0.125, label: '1/8' },
+    { value: 0.0625, label: '1/16' },
+    { value: 0.03125, label: '1/32' },
+  ];
 
   const toolbarContent = (
     <>
@@ -121,6 +130,32 @@ export default function StudioToolbar2({
             </TooltipTrigger><TooltipContent side="bottom" className="text-xs flex items-center gap-1">Spot Mode — type exact position <kbd className="bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Shift+4</kbd></TooltipContent></Tooltip>
           </TooltipProvider>
         </div>
+
+        {/* Grid Value Selector — Pro Tools shows the current grid/nudge resolution */}
+        {setGridSize && (
+          <div className="hidden md:flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5 px-2 h-8">
+                    <Gauge className="w-3.5 h-3.5 text-muted-foreground" />
+                    <Select value={String(gridSize)} onValueChange={(v) => setGridSize(parseFloat(v))}>
+                      <SelectTrigger className="h-5 p-0 border-none bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none font-mono text-[10px] font-bold text-foreground w-14 text-center flex justify-center [&>svg]:hidden">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {gridOptions.map(opt => (
+                          <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Grid / Nudge Resolution</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
 
         <div className="flex items-center gap-1 bg-secondary/20 border border-border/40 p-1 rounded-xl shadow-sm shrink-0">
           <TooltipProvider delayDuration={200}>

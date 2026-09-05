@@ -34,6 +34,9 @@ import JamRoomOverlay from '@/components/studio/JamRoomOverlay';
 import StudioToolbar2 from '@/components/studio/StudioToolbar2';
 import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
 import PluginRack from '@/components/studio/PluginRack';
+import TransportCounter from '@/components/studio/TransportCounter';
+import CpuMeter from '@/components/studio/CpuMeter';
+import CountInIndicator from '@/components/studio/CountInIndicator';
 
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
@@ -108,6 +111,8 @@ export default function Studio() {
   const [showMixerPanel, setShowMixerPanel] = useState(false);
   const [loopActive, setLoopActive] = useState(false);
   const [metronomeEnabled, setMetronomeEnabled] = useState(false);
+  const [countInActive, setCountInActive] = useState(false);
+  const skipCountInRef = useRef(false);
 
   // Session musical settings shown in the transport (BPM, time signature, key)
   const [bpm, setBpm] = useState(120);
@@ -615,6 +620,13 @@ export default function Studio() {
       toast.error("Please arm at least one track to record (click the circle icon on a track)");
       return;
     }
+    // Pro Tools count-in: if metronome is on and starting a fresh recording,
+    // show a 1-bar count-in overlay first. The onComplete callback re-invokes us.
+    if (!isRecording && metronomeEnabled && !skipCountInRef.current) {
+      setCountInActive(true);
+      return;
+    }
+    skipCountInRef.current = false;
     if (isPlaying) setIsPlaying(false);
 
     if (!isRecording) {
@@ -688,9 +700,18 @@ export default function Studio() {
 
   const stop = () => {
     setIsPlaying(false);
+    setCountInActive(false);
+    skipCountInRef.current = false;
     if (isRecording) { setIsRecording(false); stopRecordingProcess(); } else { sounds.recStop(); }
     Object.values(audioElementsRef.current).forEach(a => { a.pause(); a.currentTime = 0; });
     setTimeout(() => updateCurrentTime(0), 10);
+  };
+
+  // Called when the count-in overlay finishes its 1-bar count → start actual recording
+  const handleCountInComplete = () => {
+    setCountInActive(false);
+    skipCountInRef.current = true;
+    toggleRecord();
   };
 
   // Keyboard shortcuts for Power Users
@@ -1223,9 +1244,12 @@ export default function Studio() {
             </Button>
           </div>
 
-          <div className="font-mono text-sm sm:text-xl text-primary font-bold bg-[#0a0a0c] px-2 sm:px-4 py-1.5 rounded-lg border border-border w-32 sm:w-44 text-center shadow-inner tracking-tight sm:tracking-normal relative group shrink-0">
-            <span ref={timeDisplayRef}>{formatTime(currentTimeRef.current)}</span>
-            {isRecording && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
+          {/* Pro Tools-style transport counter with switchable time formats */}
+          <TransportCounter currentTimeRef={currentTimeRef} isRecording={isRecording} bpm={bpm} sampleRate={audioSettings.sampleRate} />
+          {/* Sample rate / bit depth badge — Pro Tools shows this prominently in the transport */}
+          <div className="hidden md:flex flex-col items-center justify-center px-2 py-1 rounded-lg bg-black/30 border border-border/50 shrink-0" title="Audio Quality">
+            <span className="text-[9px] font-mono font-bold text-muted-foreground">{audioSettings.sampleRate}</span>
+            <span className="text-[8px] text-muted-foreground/70">{audioSettings.bitDepth}</span>
           </div>
 
 
@@ -1284,6 +1308,7 @@ export default function Studio() {
         editMode={editMode} setEditMode={setEditMode} activeTool={activeTool} setActiveTool={setActiveTool}
         toggleTrackProperty={toggleTrackProperty} splitSelectedTracks={splitSelectedTracks} duplicateSelectedTracks={duplicateSelectedTracks}
         deleteSelectedTracks={deleteSelectedTracks} zoom={zoom} setZoom={setZoom}
+        gridSize={gridSize} setGridSize={setGridSize}
       />
       {/* setEditingTrack prop removed — Wave Editor was merged into this inline timeline */}
 
@@ -2009,19 +2034,24 @@ export default function Studio() {
             <Circle className={cn("w-2.5 h-2.5", isRecording ? "fill-red-500 text-red-500 animate-pulse" : isPlaying ? "fill-primary text-primary" : "fill-foreground text-foreground")} />
             {isRecording ? "Recording" : isPlaying ? "Playing" : "Stopped"}
           </span>
+          <div className="hidden sm:flex items-center gap-3 border-l border-border/50 pl-3">
+            <CpuMeter />
+          </div>
         </div>
       </div>
 
-      <MixerPanel 
-        show={showMixerPanel} 
-        onClose={() => setShowMixerPanel(false)} 
-        tracks={tracks} 
-        masterVolume={masterVolume} 
-        setMasterVolume={setMasterVolume} 
-        updateVolume={updateVolume} 
-        toggleMute={toggleMute} 
-        toggleSolo={toggleSolo} 
+      <MixerPanel
+        show={showMixerPanel}
+        onClose={() => setShowMixerPanel(false)}
+        tracks={tracks}
+        masterVolume={masterVolume}
+        setMasterVolume={setMasterVolume}
+        updateVolume={updateVolume}
+        toggleMute={toggleMute}
+        toggleSolo={toggleSolo}
         updateTrack={(trackId, data) => setTracks(prev => prev.map(t => t.id === trackId ? { ...t, ...data } : t))}
+        isPlaying={isPlaying}
+        currentTimeRef={currentTimeRef}
       />
 
       <HardwarePreferencesDialog 
@@ -2082,6 +2112,13 @@ export default function Studio() {
         ref={editTooltipRef}
         className="fixed z-[200] pointer-events-none bg-primary text-primary-foreground text-xs font-mono px-2 py-1 rounded-md shadow-lg opacity-0 transition-opacity duration-150"
         style={{ top: 0, left: 0 }}
+      />
+
+      {/* Pro Tools-style count-in overlay — shows 1-bar count before recording */}
+      <CountInIndicator
+        active={countInActive}
+        beatsPerBar={parseInt(timeSignature.split('/')[0]) || 4}
+        onComplete={handleCountInComplete}
       />
 
       {/* Mobile bottom bar - Studio only */}

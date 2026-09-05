@@ -115,7 +115,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <NaliMaintenancePanel />
+      {currentUser?.role === 'admin' && <NaliMaintenancePanel />}
 
       <div className="bg-card border border-border rounded-xl p-6 mb-8">
         <h2 className="text-xl font-bold mb-4 border-b border-border pb-2 flex items-center gap-2">

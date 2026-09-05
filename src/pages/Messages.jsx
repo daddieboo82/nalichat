@@ -71,7 +71,10 @@ export default function Messages() {
 
   const { data: users = [] } = useQuery({
     queryKey: ["users"],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listPublicUsers', {});
+      return res.data?.users || [];
+    },
   });
 
   const { data: conversations = [] } = useQuery({

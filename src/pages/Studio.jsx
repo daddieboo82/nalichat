@@ -41,6 +41,7 @@ import PreRollPostRoll from '@/components/studio/PreRollPostRoll';
 import ClipGainLine from '@/components/studio/ClipGainLine';
 import SpotDialog from '@/components/studio/SpotDialog';
 import SelectionRegion from '@/components/studio/SelectionRegion';
+import AutomationLane from '@/components/studio/AutomationLane';
 
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
@@ -1261,6 +1262,39 @@ export default function Studio() {
 
   // handleExport removed in favor of BounceDialog
 
+  // Export each track as a separate stem file — Pro Tools "Export Stems" workflow
+  const handleExportStems = async () => {
+    const audioTracks = tracks.filter(t => t.audioUrl && !t.muted);
+    if (audioTracks.length === 0) {
+      toast.error("No audio tracks to export as stems.");
+      return;
+    }
+    setIsDownloading(true);
+    toast.info(`Exporting ${audioTracks.length} stems...`);
+    try {
+      for (const track of audioTracks) {
+        const blob = await renderMixToWav([track]);
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${track.name.replace(/[^a-z0-9]/gi, '_')}_stem.wav`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        }
+      }
+      sounds.success();
+      toast.success(`${audioTracks.length} stems exported!`);
+    } catch (e) {
+      console.error("Stem export failed", e);
+      toast.error("Failed to export stems.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   if (showWelcome) return <StudioWelcome hasAutosave={hasAutosave} handleStartBlank={handleStartBlank} handleLoadAutosave={handleLoadAutosave} handleLoadDemo={handleLoadDemo} navigate={navigate} />;
 
   return (
@@ -1404,6 +1438,7 @@ export default function Studio() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onClick={() => { setExportFormat('wav'); setExportDialogOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Download Mix (WAV)</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setExportFormat('mp3'); setExportDialogOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Download Mix (MP3)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportStems()} className="cursor-pointer py-2"><Layers className="w-4 h-4 mr-2" /> Export Stems (Each Track)</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { setBounceRedirect('explore'); setBounceOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Export & Publish</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setBounceRedirect('cover-art'); setBounceOpen(true); }} className="cursor-pointer py-2"><ImageIcon className="w-4 h-4 mr-2" /> Export to Cover Creator</DropdownMenuItem>
@@ -1747,11 +1782,14 @@ export default function Studio() {
                   {/* Grid lines */}
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px)] opacity-30 pointer-events-none z-0" style={{ backgroundSize: `${(60 / bpm) * parseInt(timeSignature.split('/')[0] || 4) * 20 * zoom}px 100%` }} />
                   
-                  {/* Automation Lane Background */}
+                  {/* Pro Tools-style Volume Automation Lane */}
                   {track.showAutomation && (
-                    <div className="absolute bottom-0 left-0 right-0 h-16 border-t border-white/5 bg-black/40 flex items-center justify-center">
-                       <span className="text-[10px] text-muted-foreground/50">Volume & pan automation editing coming soon</span>
-                    </div>
+                    <AutomationLane
+                      track={track}
+                      zoom={zoom}
+                      onPointsChange={(newPoints) => setTracks(prev => prev.map(t => t.id === track.id ? { ...t, automationPoints: newPoints } : t))}
+                      onCommit={() => pushToHistory(tracksRef.current)}
+                    />
                   )}
 
                   {/* Armed / Recording Indicator */}

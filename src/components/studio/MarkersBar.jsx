@@ -49,6 +49,13 @@ export default function MarkersBar({ projectId, currentTime, onSeek, zoom, durat
     sounds.nav();
   };
 
+  // Listen for the keyboard shortcut to add a marker at the playhead
+  useEffect(() => {
+    const handler = () => setShowInput(true);
+    window.addEventListener('studio-add-marker', handler);
+    return () => window.removeEventListener('studio-add-marker', handler);
+  }, []);
+
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 border-b border-white/10 bg-white/[0.02] shrink-0 min-h-[2rem]">
       <div className="flex items-center gap-1.5 shrink-0">
@@ -58,7 +65,7 @@ export default function MarkersBar({ projectId, currentTime, onSeek, zoom, durat
 
       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1 min-w-0">
         {markers.length === 0 && !showInput && (
-          <span className="text-[10px] text-muted-foreground/50 italic">No markers yet — press + to add one at the playhead position</span>
+          <span className="text-[10px] text-muted-foreground/50 italic">No markers yet — press M or + to add one at the playhead</span>
         )}
         {markers.map(m => (
           <div

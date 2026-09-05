@@ -4,15 +4,15 @@ import { Cpu } from 'lucide-react';
 
 /**
  * Pro Tools-style CPU/DSP usage meter for the status bar.
- * Measures actual main-thread load via frame timing (RAF intervals).
- * Uses a rolling average for smooth, accurate readings.
+ * Measures main-thread load by comparing actual frame time to the 60fps budget.
+ * At 60fps with no JS work, shows ~0%. When frames drop, shows increasing load.
  */
 export default function CpuMeter() {
   const [cpu, setCpu] = useState(0);
-  const lastFrameRef = useRef(0);
   const rafRef = useRef(null);
   const samplesRef = useRef([]);
   const lastUpdateRef = useRef(0);
+  const lastFrameRef = useRef(0);
 
   useEffect(() => {
     let firstFrame = true;
@@ -27,13 +27,14 @@ export default function CpuMeter() {
       const delta = now - lastFrameRef.current;
       lastFrameRef.current = now;
 
-      // A 60fps frame is ~16.67ms. CPU% = how much of the frame budget is used.
-      const load = Math.min(100, (delta / 16.67) * 100);
+      // 60fps budget = 16.67ms. CPU load = how much the frame OVERSHOT the budget.
+      // At 60fps with no work: delta ≈ 16.67, overhead ≈ 0, load ≈ 0%.
+      // At 30fps (struggling): delta ≈ 33.34, overhead ≈ 16.67, load ≈ 100%.
+      const overhead = Math.max(0, delta - 16.67);
+      const load = Math.min(100, (overhead / 16.67) * 100);
       samplesRef.current.push(load);
-      // Keep last 60 samples (~1 second at 60fps)
       if (samplesRef.current.length > 60) samplesRef.current.shift();
 
-      // Update display every ~500ms
       if (now - lastUpdateRef.current > 500 && samplesRef.current.length >= 10) {
         const avg = samplesRef.current.reduce((a, b) => a + b, 0) / samplesRef.current.length;
         setCpu(Math.round(avg));

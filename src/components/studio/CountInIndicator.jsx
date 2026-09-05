@@ -4,15 +4,13 @@ import { cn } from '@/lib/utils';
 /**
  * Pro Tools-style count-in overlay.
  * Shows a visual 1-bar count-in (1-2-3-4) before recording starts,
- * with audible metronome clicks if the metronome is enabled.
- * Pro Tools engineers rely on count-in to prepare for recording punches.
+ * with audible metronome clicks at the session BPM.
  */
-export default function CountInIndicator({ active, beatsPerBar = 4, onComplete, audioCtxRef }) {
+export default function CountInIndicator({ active, beatsPerBar = 4, bpm = 120, onComplete, audioCtxRef }) {
   const [beat, setBeat] = useState(0);
   const rafRef = useRef(null);
   const nextClickTimeRef = useRef(0);
   const currentBeatRef = useRef(0);
-  const oscRef = useRef(null);
 
   useEffect(() => {
     if (!active) {
@@ -24,7 +22,7 @@ export default function CountInIndicator({ active, beatsPerBar = 4, onComplete, 
     const ctx = audioCtxRef?.current || new (window.AudioContext || window.webkitAudioContext)();
     if (ctx.state === 'suspended') ctx.resume();
 
-    const secondsPerBeat = 60 / 120; // default; overridden by caller via bpm
+    const secondsPerBeat = 60 / (bpm || 120);
     nextClickTimeRef.current = ctx.currentTime + 0.1;
     currentBeatRef.current = 0;
     setBeat(0);
@@ -54,7 +52,6 @@ export default function CountInIndicator({ active, beatsPerBar = 4, onComplete, 
         nextClickTimeRef.current += secondsPerBeat;
 
         if (currentBeatRef.current >= beatsPerBar) {
-          // Count-in complete — fire callback slightly after the last click
           setTimeout(() => onComplete?.(), (nextClickTimeRef.current - ctx.currentTime) * 1000 + 50);
           return;
         }
@@ -64,7 +61,7 @@ export default function CountInIndicator({ active, beatsPerBar = 4, onComplete, 
 
     schedule();
     return () => cancelAnimationFrame(rafRef.current);
-  }, [active, beatsPerBar, onComplete, audioCtxRef]);
+  }, [active, beatsPerBar, bpm, onComplete, audioCtxRef]);
 
   if (!active) return null;
 

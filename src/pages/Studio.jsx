@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight, ChevronLeft, Repeat, RefreshCw, ListTodo, AudioLines, Home, Compass, MessageSquare, User } from 'lucide-react';
+import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight, ChevronLeft, Repeat, RefreshCw, ListTodo, AudioLines, Home, Compass, MessageSquare, User, Palette } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -733,6 +733,7 @@ export default function Studio() {
       else if (e.shiftKey && e.key === '3') { e.preventDefault(); setEditMode('grid'); }
       else if (e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); selectedTrackIds.forEach(id => toggleSolo(id)); }
       else if (e.shiftKey && (e.key === 'm' || e.key === 'M')) { e.preventDefault(); selectedTrackIds.forEach(id => toggleMute(id)); }
+      else if ((e.key === 'm' || e.key === 'M') && !e.shiftKey) { e.preventDefault(); window.dispatchEvent(new CustomEvent('studio-add-marker')); }
       else if (e.key === 't' || e.key === 'T') setActiveTool('trim');
       else if (e.key === 'c' || e.key === 'C') setActiveTool('cut');
       else if (e.key === 'g' || e.key === 'G') setActiveTool('grab');
@@ -741,14 +742,36 @@ export default function Studio() {
       else if (e.key === 'e' || e.key === 'E') setActiveTool('smart');
       else if (e.shiftKey && e.key === '4') { e.preventDefault(); setEditMode('spot'); }
       else if (e.key === 'Home') { e.preventDefault(); updateCurrentTime(0); }
+      else if (e.key === 'Tab') { e.preventDefault();
+        // Tab-to-transient: snap playhead to the next waveform peak
+        const curr = currentTimeRef.current;
+        let nextPeak = null;
+        for (const track of tracks) {
+          if (!track.waveform || track.waveform.length === 0) continue;
+          const trackStart = track.startTime || 0;
+          const fullDuration = track.fullDuration || track.duration || 40;
+          const posInTrack = curr - trackStart;
+          if (posInTrack < 0) continue;
+          const startIdx = Math.floor((posInTrack / fullDuration) * track.waveform.length);
+          for (let i = startIdx + 2; i < track.waveform.length - 1; i++) {
+            const v = track.waveform[i];
+            if (v > 0.25 && v >= (track.waveform[i-1] || 0) && v >= (track.waveform[i+1] || 0)) {
+              const peakTime = trackStart + (i / track.waveform.length) * fullDuration;
+              if (nextPeak === null || peakTime < nextPeak) nextPeak = peakTime;
+              break;
+            }
+          }
+        }
+        if (nextPeak !== null) { updateCurrentTime(nextPeak); sounds.nav(); }
+      }
       else if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); setLoopActive(!loopActive); }
       else if (e.key === '7') { e.preventDefault(); setMetronomeEnabled(!metronomeEnabled); }
       else if (e.shiftKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); handleSeparateStems(); }
       else if (e.shiftKey && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); handleGenerateMelody(); }
       else if (e.key === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.min(100, currentTimeRef.current + step)); }
       else if (e.key === 'ArrowLeft' && !e.shiftKey) { e.preventDefault(); const step = 1 / (20 * zoom); updateCurrentTime(Math.max(0, currentTimeRef.current - step)); }
-      else if (e.key === 'ArrowRight' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = 1 / (20 * zoom); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) + nudge) } : t)); }
-      else if (e.key === 'ArrowLeft' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = 1 / (20 * zoom); setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) - nudge) } : t)); }
+      else if (e.key === 'ArrowRight' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = gridSize; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) + nudge) } : t)); }
+      else if (e.key === 'ArrowLeft' && e.shiftKey && selectedTrackIds.length > 0) { e.preventDefault(); const nudge = gridSize; setTracksWithHistory(prev => prev.map(t => selectedTrackIds.includes(t.id) ? { ...t, startTime: Math.max(0, (t.startTime || 0) - nudge) } : t)); }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -1400,13 +1423,27 @@ export default function Studio() {
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" title="Track Options" onClick={(e) => e.stopPropagation()} className="w-6 h-6 text-muted-foreground hover:text-foreground"><Settings2 className="w-3.5 h-3.5" /></Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenuItem onSelect={() => {
                           setRenamingTrack({ ...track, isNew: false });
                           setNewTrackName(track.name);
                         }}>
                           <PenTool className="w-4 h-4 mr-2" /> Rename
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <div className="px-2 py-1.5">
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1.5"><Palette className="w-3 h-3" /> Track Color</div>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {['bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-pink-500', 'bg-red-500', 'bg-orange-500', 'bg-cyan-500'].map(color => (
+                              <button
+                                key={color}
+                                onClick={(e) => { e.stopPropagation(); setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, color } : t)); }}
+                                className={cn('w-5 h-5 rounded-md transition-all hover:scale-110', color, track.color === color && 'ring-2 ring-primary ring-offset-1 ring-offset-card')}
+                                aria-label={`Set track color to ${color}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => duplicateTrack(track)}>
                           <Copy className="w-4 h-4 mr-2" /> Duplicate
@@ -2118,6 +2155,7 @@ export default function Studio() {
       <CountInIndicator
         active={countInActive}
         beatsPerBar={parseInt(timeSignature.split('/')[0]) || 4}
+        bpm={bpm}
         onComplete={handleCountInComplete}
       />
 

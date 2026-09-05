@@ -131,7 +131,7 @@ export default function MixerPanel({
                   <WaveformVuMeter track={track} isPlaying={isPlaying} currentTimeRef={currentTimeRef} masterVolume={masterVolume} />
                 </div>
 
-                <div className="text-[10px] font-mono text-center font-semibold mb-2">{track.volume.toFixed(1)} dB</div>
+                <div className="text-[10px] font-mono text-center font-semibold mb-2">{track.volume === 0 ? '-∞' : (20 * Math.log10(track.volume / 100)).toFixed(1)} dB</div>
 
                 <div className="flex gap-1 w-full mb-2">
                   <Button type="button" size="icon" variant="outline" className={cn('w-full h-7 text-[10px] font-bold border-border/50', track.muted && 'bg-red-500 text-white border-red-500')} onClick={() => toggleMute(track.id)}>M</Button>
@@ -167,7 +167,7 @@ export default function MixerPanel({
                 </div>
               </div>
 
-              <div className="text-[10px] font-mono text-center font-bold text-primary/90 mb-2">{masterVolume.toFixed(1)} dB</div>
+              <div className="text-[10px] font-mono text-center font-bold text-primary/90 mb-2">{masterVolume === 0 ? '-∞' : (20 * Math.log10(masterVolume / 100)).toFixed(1)} dB</div>
 
               <div className="flex gap-1 w-full mb-2 opacity-0 pointer-events-none">
                 <Button type="button" size="icon" className="w-full h-7">M</Button>

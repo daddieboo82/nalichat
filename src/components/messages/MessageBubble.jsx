@@ -16,6 +16,7 @@ import ViralMomentDialog from "./ViralMomentDialog";
 import VoiceCardDialog from "./VoiceCardDialog";
 import MessageContextMenu from "./MessageContextMenu";
 import VoiceTranscription from "./VoiceTranscription";
+import SwipeToReply from "./SwipeToReply";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -177,7 +178,13 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
   };
   const avatarGradient = getGradient(message.sender_name);
 
+  const handleReact = (emoji) => {
+    if (navigator.vibrate) navigator.vibrate(15);
+    onReact?.(message.id, emoji);
+  };
+
   return (
+    <SwipeToReply isOwn={isOwn} onReply={() => { if (navigator.vibrate) navigator.vibrate(20); onReply?.(message); }} disabled={!onReply}>
     <motion.div
       id={`message-${message.id}`}
       initial={{ opacity: 0, y: 8, scale: 0.98 }}
@@ -267,7 +274,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
               {entries.map(([emoji, count]) => {
                 const hasReacted = userReaction === emoji;
                 return (
-                  <button key={emoji} onClick={() => onReact?.(message.id, emoji)}
+                  <button key={emoji} onClick={() => handleReact(emoji)}
                     className={cn(
                       "border rounded-full px-2.5 py-0.5 text-xs transition-all hover:scale-105 active:scale-95 shadow-sm",
                       hasReacted ? "bg-primary/20 border-primary/50 text-primary" : "bg-secondary/80 border-border/60 hover:bg-primary/15 hover:border-primary/30"
@@ -312,7 +319,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           {QUICK_REACTIONS.map(emoji => (
             <button
               key={emoji}
-              onClick={() => { onReact?.(message.id, emoji); setShowActions(false); }}
+              onClick={() => { handleReact(emoji); setShowActions(false); }}
               className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:scale-125 hover:border-primary/40 transition-all shadow-sm text-sm"
               title={`React with ${emoji}`}
               aria-label={`React with ${emoji}`}
@@ -335,7 +342,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         {showEmojiPicker && (
           <EmojiReactionPicker
             position={isOwn ? "bottom" : "bottom"}
-            onSelect={(emoji) => { onReact?.(message.id, emoji); }}
+            onSelect={(emoji) => { handleReact(emoji); }}
             onClose={() => setShowEmojiPicker(false)}
           />
         )}
@@ -453,14 +460,15 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         items={[
           { icon: Sparkles, label: "Create Viral Moment", onClick: () => setViralOpen(true), highlight: true },
           ...(canShareVoiceCard ? [{ icon: Share2, label: "Share Voice Card", onClick: () => setVoiceCardOpen(true), highlight: true }] : []),
-          { icon: Reply, label: "Reply", onClick: () => onReply?.(message) },
+          { icon: Reply, label: "Reply", onClick: () => { if (navigator.vibrate) navigator.vibrate(20); onReply?.(message); } },
           { icon: MessageSquareQuote, label: "Open Thread", onClick: () => onOpenThread?.(message) },
           ...(message.text ? [{ icon: Copy, label: "Copy", onClick: () => onCopy?.(message) }] : []),
           ...(message.text ? [{ icon: Volume2, label: "Read Aloud", onClick: () => speakText(message.text) }] : []),
           ...(isOwn && message.type === "text" ? [{ icon: Pencil, label: "Edit", onClick: () => onEdit?.(message) }] : []),
-          ...((canDelete !== undefined ? canDelete : isOwn) ? [{ icon: Trash2, label: "Delete", onClick: () => onDelete?.(message.id), destructive: true }] : []),
+          ...((canDelete !== undefined ? canDelete : isOwn) ? [{ icon: Trash2, label: "Delete", onClick: () => { if (navigator.vibrate) navigator.vibrate(40); onDelete?.(message.id); }, destructive: true }] : []),
         ]}
       />
     </motion.div>
+    </SwipeToReply>
   );
 });

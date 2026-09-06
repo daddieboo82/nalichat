@@ -44,6 +44,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
   const handleSend = () => {
     if (!text.trim() || disabled) return;
     sounds.upload();
+    if (navigator.vibrate) navigator.vibrate(15);
     const payload = { text: text.trim(), type: "text" };
     if (replyTo) {
       payload.reply_to_text = replyTo.text || `[${replyTo.type}]`;

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Search, Users, Hash, UserPlus, Circle } from "lucide-react";
+import { Search, Users, Hash, UserPlus, Circle, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -167,9 +167,25 @@ export default React.memo(function ConversationList({ conversations, myConversat
       {/* List */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-6 space-y-1 custom-scrollbar">
         {searchResults.filteredChats.length === 0 && !search && (
-          <div className="text-center py-10 px-4 text-muted-foreground">
-            <p className="text-sm">No conversations yet.</p>
-            <p className="text-xs mt-1 opacity-70">Start one by tapping the + button above.</p>
+          <div className="text-center py-12 px-6">
+            <div className="inline-flex w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 items-center justify-center mb-4">
+              <MessageSquare className="w-7 h-7 text-primary" />
+            </div>
+            <p className="font-heading font-bold text-base text-foreground mb-1">No conversations yet</p>
+            <p className="text-xs text-muted-foreground mb-4 max-w-[200px] mx-auto leading-relaxed">
+              Search for someone above or tap the + button to start your first chat.
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {["#TikTokMusic", "#BeatMakers"].map(topic => (
+                <button
+                  key={topic}
+                  onClick={() => setSearch(topic.toLowerCase())}
+                  className="px-3 py-1.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                >
+                  {topic}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

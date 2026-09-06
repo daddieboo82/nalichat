@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   ChevronLeft, Music, ShoppingCart, AudioLines, LogIn, Menu,
   Mic, Wand2, FileText, Trophy, Settings, Gem, BarChart3,
-  Home, Compass, MessageSquare, Users, Radio, X
+  Home, Compass, MessageSquare, Users, Radio, X, Swords, Rocket, Clock
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useEffect, useState } from "react";
@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { sounds } from "@/hooks/use-sound";
 import { cn } from "@/lib/utils";
+import RecentlyVisited from "@/components/navigation/RecentlyVisited";
 
 const SUBPAGE_PREFIXES = ["/playlist/", "/record", "/settings", "/analytics"];
 
@@ -66,8 +67,10 @@ const MENU_GROUPS = [
   {
     label: "Grow",
     items: [
+      { icon: Swords, label: "Challenges", path: "/challenges", desc: "Remix competitions" },
       { icon: Trophy, label: "Leaderboard", path: "/leaderboard", desc: "Top creators & tracks" },
       { icon: BarChart3, label: "Analytics", path: "/analytics", desc: "Track your growth" },
+      { icon: Rocket, label: "ViralSeed", path: "/viral-seed", desc: "Viral content engine" },
     ],
   },
 ];
@@ -200,6 +203,9 @@ export default function MobileHeader() {
           </SheetHeader>
 
           <div className="p-4 space-y-5">
+            {/* Recently Visited */}
+            <RecentlyVisited onNavigate={handleNavigate} currentPath={path} />
+
             {MENU_GROUPS.map((group) => (
               <div key={group.label}>
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2 px-1">

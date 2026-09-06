@@ -16,6 +16,7 @@ import HowItWorks from "@/components/home/HowItWorks";
 import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import ImmersiveOnboarding from "@/components/onboarding/ImmersiveOnboarding";
 import DonationButton from "@/components/home/DonationButton";
+import QuickAccessGrid from "@/components/home/QuickAccessGrid";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -277,6 +278,9 @@ export default function Home() {
           )}
         </motion.div>
       </section>
+
+      {/* ── Quick Access for logged-in users ── */}
+      {user && <QuickAccessGrid />}
 
       {/* ── Pillar pills ── */}
       <section className="relative z-10 overflow-hidden border-y border-border bg-card/40 py-4">

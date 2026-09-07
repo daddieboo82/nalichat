@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { sounds } from "@/hooks/use-sound";
 import { cn } from "@/lib/utils";
 import RecentlyVisited from "@/components/navigation/RecentlyVisited";
+import Logo from "@/components/branding/Logo";
 
 const SUBPAGE_PREFIXES = ["/playlist/", "/record", "/settings", "/analytics"];
 
@@ -147,12 +148,8 @@ export default function MobileHeader() {
                 <Menu className="w-6 h-6" />
               </button>
             )}
-            <img
-              src="https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png"
-              alt="NaliChat Logo"
-              className="w-8 h-8 object-cover rounded-lg mr-1"
-            />
-            <h1 className="font-heading font-bold text-base truncate">{title}</h1>
+            <Logo size={30} className="mr-1" />
+            <h1 className="font-heading font-extrabold text-base truncate tracking-tight">{title}</h1>
           </div>
 
           {/* Right Section */}
@@ -192,12 +189,8 @@ export default function MobileHeader() {
         <SheetContent side="left" className="w-[85vw] sm:max-w-sm p-0 bg-card/95 backdrop-blur-xl border-r border-white/[0.06] overflow-y-auto">
           <SheetHeader className="p-4 pb-2 border-b border-white/[0.06]">
             <SheetTitle className="flex items-center gap-2">
-              <img
-                src="https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png"
-                alt="NaliChat Logo"
-                className="w-8 h-8 rounded-xl object-cover"
-              />
-              <span className="font-heading font-bold text-gradient-animate">NaliChat</span>
+              <Logo size={30} />
+              <span className="font-heading font-extrabold text-gradient-animate tracking-tight">NaliChat</span>
             </SheetTitle>
             <SheetDescription className="sr-only">All features and navigation</SheetDescription>
           </SheetHeader>

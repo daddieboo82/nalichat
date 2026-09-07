@@ -13,6 +13,7 @@ import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import Logo from "@/components/branding/Logo";
 
 const NAV_GROUPS = [
   {
@@ -83,12 +84,8 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
         {/* Logo */}
         <Link to="/" className="group shrink-0">
           <div className="flex items-center gap-2">
-            <img
-              src="https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png"
-              alt="NaliChat Logo"
-              className="w-8 h-8 rounded-xl object-cover shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform"
-            />
-            <span className="font-heading font-bold text-sm text-gradient-animate hidden xl:inline">NaliChat</span>
+            <Logo size={30} className="group-hover:scale-105 transition-transform shadow-lg shadow-primary/30" />
+            <span className="font-heading font-extrabold text-sm text-gradient-animate hidden xl:inline tracking-tight">NaliChat</span>
           </div>
         </Link>
 

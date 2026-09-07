@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -31,9 +31,9 @@
     --chart-4: 45 90% 55%;
     --chart-5: 200 75% 55%;
     --radius: 0.75rem;
-    --font-heading: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --font-heading: 'Sora', ui-sans-serif, system-ui, sans-serif;
     --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Sora', ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --sidebar-background: 240 8% 6%;
     --sidebar-foreground: 0 0% 90%;
@@ -170,7 +170,7 @@
   50% { background-position: 100% 50%; }
 }
 .text-gradient-animate {
-  background: linear-gradient(90deg, hsl(265 80% 65%), hsl(175 70% 50%), hsl(330 80% 60%), hsl(265 80% 65%));
+  background: linear-gradient(90deg, hsl(325 100% 62%), hsl(285 90% 60%), hsl(188 95% 50%), hsl(325 100% 62%));
   background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;

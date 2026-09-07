@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare } from "lucide-react";
+import Logo from "@/components/branding/Logo";
 
 const BARS = 20;
 
@@ -77,11 +78,11 @@ export default function AppLoader({ onDone }) {
             {/* Logo */}
             <div className="relative">
               <motion.div
-                className="w-20 h-20 rounded-3xl flex items-center justify-center shadow-2xl overflow-hidden border border-white/20"
-                animate={{ boxShadow: ["0 0 30px hsl(265 80% 60% / 0.4)", "0 0 60px hsl(265 80% 60% / 0.7)", "0 0 30px hsl(265 80% 60% / 0.4)"] }}
+                className="rounded-3xl flex items-center justify-center shadow-2xl"
+                animate={{ boxShadow: ["0 0 30px hsl(285 90% 55% / 0.45)", "0 0 60px hsl(285 90% 55% / 0.75)", "0 0 30px hsl(285 90% 55% / 0.45)"] }}
                 transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
               >
-                <img src="https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png" alt="NaliChat Logo" className="w-full h-full object-cover" />
+                <Logo size={80} glow={false} />
               </motion.div>
               {/* Rotating ring */}
               <motion.div

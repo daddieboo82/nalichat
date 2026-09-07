@@ -43,6 +43,7 @@ const ThankYou = lazy(() => import('@/pages/ThankYou'));
 const Onboarding = lazy(() => import('@/pages/Onboarding'));
 const PricingPlans = lazy(() => import('@/components/pricing/PricingPlans'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
+const EncryptionDocumentation = lazy(() => import('@/pages/EncryptionDocumentation'));
 const Studio = lazy(() => import('@/pages/Studio'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const Record = lazy(() => import('@/pages/Record'));
@@ -203,6 +204,7 @@ const AuthenticatedApp = () => {
         </Route>
       </Route>
       <Route path="/privacy" element={<Privacy />} />
+      <Route path="/encryption-documentation" element={<EncryptionDocumentation />} />
       <Route path="*" element={<PageNotFound />} />
       </Routes>
       </Suspense>

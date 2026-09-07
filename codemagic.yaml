@@ -113,11 +113,16 @@ workflows:
           EOF
       - name: Verify AAB package name
         script: |
-          AAB_FILE="./app-release-bundle.aab"
-          if [ ! -f "$AAB_FILE" ]; then
-            echo "❌ AAB file not found — build may have failed"
+          # Search for the AAB in common bubblewrap output locations
+          AAB_FILE=$(find . -name "*.aab" -type f 2>/dev/null | head -1)
+          if [ -z "$AAB_FILE" ]; then
+            echo "❌ AAB file not found — searching for any build outputs..."
+            find . -name "*.aab" -o -name "*.apk" 2>/dev/null || true
             exit 1
           fi
+          echo "✅ Found AAB at: $AAB_FILE"
+          # Copy to root for artifacts collection
+          cp "$AAB_FILE" ./app-release-bundle.aab
           TMP_DIR=$(mktemp -d)
           unzip -o "$AAB_FILE" "base/manifest/AndroidManifest.xml" -d "$TMP_DIR" 2>/dev/null || true
           MANIFEST_XML="$TMP_DIR/base/manifest/AndroidManifest.xml"

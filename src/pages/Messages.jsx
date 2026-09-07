@@ -12,6 +12,7 @@ import GroupChatDialog from "@/components/messages/GroupChatDialog";
 import ExternalMessageDialog from "@/components/messages/ExternalMessageDialog";
 import GlobalInviteDialog from "@/components/GlobalInviteDialog";
 import { sounds } from "@/hooks/use-sound";
+import PullToRefresh from "@/components/layout/PullToRefresh";
 import { toast } from "sonner";
 import ModerationBanner from "@/components/messages/ModerationBanner";
 import { MessageSquare, Users, Mail, Plus, Zap, UserPlus, Hash, Search, MoreHorizontal } from "lucide-react";
@@ -428,15 +429,17 @@ export default function Messages() {
             <AnimatePresence mode="wait">
               {sidebarTab === "chats" ? (
                 <motion.div key="chats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col bg-background/40">
-                  <ConversationList
-                    conversations={conversations}
-                    myConversations={myConversations}
-                    selectedId={selectedConvId}
-                    onSelect={handleSelectConv}
-                    users={users}
-                    currentUserId={currentUser?.id}
-                    onStartDM={startDM}
-                  />
+                  <PullToRefresh onRefresh={async () => { await queryClient.invalidateQueries({ queryKey: ["conversations"] }); }} className="flex-1 overflow-y-auto">
+                    <ConversationList
+                      conversations={conversations}
+                      myConversations={myConversations}
+                      selectedId={selectedConvId}
+                      onSelect={handleSelectConv}
+                      users={users}
+                      currentUserId={currentUser?.id}
+                      onStartDM={startDM}
+                    />
+                  </PullToRefresh>
                 </motion.div>
               ) : (
                 <motion.div key="contacts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col pt-2 bg-background/40">

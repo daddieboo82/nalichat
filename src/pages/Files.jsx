@@ -10,7 +10,7 @@ import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, L
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { downloadFilesAsZip } from "@/lib/downloadZip";
 import { useToast } from "@/components/ui/use-toast";
 import { resumableDownload } from "@/lib/resumableUpload";
@@ -65,7 +65,7 @@ function FileDownloadButton({ file }) {
 
   if (dlProgress !== null) {
     return (
-      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/20 text-primary text-[10px] font-bold">
+      <div className="flex items-center justify-center w-11 h-11 rounded-lg bg-primary/20 text-primary text-[10px] font-bold">
         {dlProgress}%
       </div>
     );
@@ -75,7 +75,7 @@ function FileDownloadButton({ file }) {
     <Button 
       size="icon" 
       variant="ghost" 
-      className="w-8 h-8 rounded-lg hover:bg-primary/20 hover:text-primary transition-colors" 
+      className="w-11 h-11 rounded-lg hover:bg-primary/20 hover:text-primary transition-colors" 
       onClick={handleDownload}
       title="Download file"
     >
@@ -100,7 +100,7 @@ function FileShareButton({ file }) {
     <Button 
       size="icon" 
       variant="ghost" 
-      className="w-8 h-8 rounded-lg hover:bg-primary/20 hover:text-primary transition-colors" 
+      className="w-11 h-11 rounded-lg hover:bg-primary/20 hover:text-primary transition-colors" 
       onClick={handleShare}
       title="Copy share link"
     >
@@ -428,7 +428,7 @@ export default function Files() {
             <Button 
               size="icon"
               variant="ghost"
-              className="w-8 h-8 rounded-lg text-destructive"
+              className="w-11 h-11 rounded-lg text-destructive"
               onClick={() => deleteFolderMutation.mutate(currentFolder.id)}
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -571,10 +571,10 @@ export default function Files() {
                           <FileDownloadButton file={file} />
                           {file.uploader_id === currentUser?.id && (
                             <>
-                              <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg" onClick={(e) => handleEditClick(e, file)}>
+                              <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg" onClick={(e) => handleEditClick(e, file)}>
                                 <Edit className="w-3.5 h-3.5" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg text-destructive" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
+                              <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg text-destructive" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
                                 <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             </>
@@ -654,10 +654,10 @@ export default function Files() {
                       <FileDownloadButton file={file} />
                       {file.uploader_id === currentUser?.id && (
                         <>
-                          <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg" onClick={(e) => handleEditClick(e, file)}>
+                          <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg" onClick={(e) => handleEditClick(e, file)}>
                             <Edit className="w-3.5 h-3.5" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg text-destructive" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
+                          <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg text-destructive" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </>

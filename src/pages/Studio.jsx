@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -17,6 +17,8 @@ import Metronome from '@/components/studio/Metronome';
 import MarkersBar from '@/components/studio/MarkersBar';
 import { sounds } from '@/hooks/use-sound';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { usePerformance } from '@/hooks/use-performance';
 
 
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -24,7 +26,7 @@ import { separateStems, generateMelody, renderMixToWav, renderMixToMp3 } from '@
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import LivePresenceBar from '@/components/studio/LivePresenceBar';
 import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
-import MixerPanel from '@/components/studio/MixerPanel';
+const MixerPanel = lazy(() => import('@/components/studio/MixerPanel'));
 import KeyboardShortcutsDialog from '@/components/studio/KeyboardShortcutsDialog';
 import TrackWaveformSVG from '@/components/studio/TrackWaveformSVG';
 import StudioExtras from '@/components/studio/StudioExtras';
@@ -33,7 +35,7 @@ import StudioDialogs from '@/components/studio/StudioDialogs';
 import JamRoomOverlay from '@/components/studio/JamRoomOverlay';
 import StudioToolbar2 from '@/components/studio/StudioToolbar2';
 import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
-import PluginRack from '@/components/studio/PluginRack';
+const PluginRack = lazy(() => import('@/components/studio/PluginRack'));
 import TransportCounter from '@/components/studio/TransportCounter';
 import CpuMeter from '@/components/studio/CpuMeter';
 import CountInIndicator from '@/components/studio/CountInIndicator';
@@ -43,11 +45,11 @@ import SpotDialog from '@/components/studio/SpotDialog';
 import SelectionRegion from '@/components/studio/SelectionRegion';
 import AutomationLane from '@/components/studio/AutomationLane';
 import CrossfadeOverlay from '@/components/studio/CrossfadeOverlay';
-import BeatDetectiveDialog from '@/components/studio/BeatDetectiveDialog';
+const BeatDetectiveDialog = lazy(() => import('@/components/studio/BeatDetectiveDialog'));
 import TrackCommitDialog from '@/components/studio/TrackCommitDialog';
 import TrackHeader from '@/components/studio/TrackHeader';
 import BigCounter from '@/components/studio/BigCounter';
-import AudioSuiteDialog from '@/components/studio/AudioSuiteDialog';
+const AudioSuiteDialog = lazy(() => import('@/components/studio/AudioSuiteDialog'));
 import FadePresetsDialog from '@/components/studio/FadePresetsDialog';
 import NudgeValueSelector from '@/components/studio/NudgeValueSelector';
 import VcaTrackHeader from '@/components/studio/VcaTrackHeader';
@@ -60,6 +62,9 @@ export default function Studio() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const roomId = searchParams.get('room');
+  const isMobile = useIsMobile();
+  const { isLowEnd } = usePerformance();
+  const WAVEFORM_POINTS = isMobile ? 2000 : 8000;
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const currentTimeRef = useRef(0);
@@ -606,7 +611,7 @@ export default function Studio() {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
         const audioUrl = URL.createObjectURL(blob);
         
-        let realWaveform = generateWaveform(8000);
+        let realWaveform = generateWaveform(WAVEFORM_POINTS);
         let recordedDuration = null;
         try {
           const arrayBuffer = await blob.arrayBuffer();
@@ -616,7 +621,7 @@ export default function Studio() {
           const channelData = audioBuffer.getChannelData(0);
           
           // Max efficiency waveform generation using Float32Array and striding
-          const numPoints = 8000;
+          const numPoints = WAVEFORM_POINTS;
           const blockSize = Math.max(1, Math.floor(channelData.length / numPoints));
           const stride = Math.max(1, Math.floor(blockSize / 64)); // Sample max 64 points per block to prevent blocking main thread
           
@@ -1272,7 +1277,7 @@ export default function Studio() {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
       const channelData = audioBuffer.getChannelData(0);
-      const numPoints = 8000;
+      const numPoints = WAVEFORM_POINTS;
       const blockSize = Math.max(1, Math.floor(channelData.length / numPoints));
       const stride = Math.max(1, Math.floor(blockSize / 64));
       const waveform = new Float32Array(numPoints);
@@ -1293,7 +1298,7 @@ export default function Studio() {
       return { waveform: normalized, duration: audioBuffer.duration };
     } catch (err) {
       console.error("Failed to decode audio file", err);
-      return { waveform: generateWaveform(8000), duration: 40 };
+      return { waveform: generateWaveform(WAVEFORM_POINTS), duration: 40 };
     }
   };
 
@@ -1417,6 +1422,13 @@ export default function Studio() {
         <div className="absolute -top-40 left-1/4 w-[36rem] h-[36rem] rounded-full bg-primary/15 blur-3xl" />
         <div className="absolute -bottom-40 right-1/4 w-[32rem] h-[32rem] rounded-full bg-accent/10 blur-3xl" />
       </div>
+
+      {/* Performance warning for low-end devices */}
+      {isLowEnd && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 px-4 py-1.5 rounded-full bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-xs font-medium backdrop-blur-md whitespace-nowrap">
+          ⚠ Performance Mode: Reduced waveform quality for smoother experience
+        </div>
+      )}
 
       {/* Top Toolbar */}
       <div className="min-h-[4rem] py-2 mx-2 sm:mx-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-wrap items-center justify-between gap-2 pl-2 sm:pl-4 pr-2 shrink-0 relative z-10">
@@ -2234,12 +2246,14 @@ export default function Studio() {
       </div>
 
       {/* Plugin Rack Panel (collapsible, sits between workspace and mixer) */}
+      <Suspense fallback={null}>
       <PluginRack
         open={showPluginRack}
         onToggle={() => setShowPluginRack(!showPluginRack)}
         trackName={tracks.find(t => selectedTrackIds.includes(t.id))?.name}
         tracks={tracks}
       />
+      </Suspense>
 
       {/* Bottom Mixer / Status Bar */}
       <div className="min-h-[2.5rem] py-1.5 mx-2 sm:mx-3 mb-2 sm:mb-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-wrap items-center justify-between px-3 sm:px-4 text-xs text-muted-foreground shrink-0 overflow-hidden gap-2 relative z-10">
@@ -2276,6 +2290,7 @@ export default function Studio() {
         </div>
       </div>
 
+      <Suspense fallback={null}>
       <MixerPanel
         show={showMixerPanel}
         onClose={() => setShowMixerPanel(false)}
@@ -2289,6 +2304,7 @@ export default function Studio() {
         isPlaying={isPlaying}
         currentTimeRef={currentTimeRef}
       />
+      </Suspense>
 
       <HardwarePreferencesDialog 
         open={showPreferencesDialog} 
@@ -2385,6 +2401,7 @@ export default function Studio() {
       />
 
       {/* Pro Tools-style AudioSuite — offline clip processing */}
+      <Suspense fallback={null}>
       <AudioSuiteDialog
         open={showAudioSuite}
         onOpenChange={setShowAudioSuite}
@@ -2396,6 +2413,7 @@ export default function Studio() {
           setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, audioUrl, waveform, duration, fullDuration: duration, clipStart: 0 } : t));
         }}
       />
+      </Suspense>
 
       {/* Pro Tools-style Fade Presets — apply preset fade curves */}
       <FadePresetsDialog
@@ -2410,6 +2428,7 @@ export default function Studio() {
       />
 
       {/* Pro Tools-style Beat Detective — transient detection + quantize */}
+      <Suspense fallback={null}>
       <BeatDetectiveDialog
         open={showBeatDetective}
         onOpenChange={setShowBeatDetective}
@@ -2426,6 +2445,7 @@ export default function Studio() {
           });
         }}
       />
+      </Suspense>
 
       {/* Pro Tools-style Track Commit — render track to audio */}
       <TrackCommitDialog

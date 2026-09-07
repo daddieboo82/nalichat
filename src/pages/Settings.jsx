@@ -15,6 +15,7 @@ import DeviceSelector from "@/components/audio/DeviceSelector";
 import NaliProactivitySettings from "@/components/nali/NaliProactivitySettings";
 import { sounds } from "@/hooks/use-sound";
 import { useSubscription } from "@/hooks/useSubscription";
+import PullToRefresh from "@/components/layout/PullToRefresh";
 
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];
 
@@ -80,7 +81,7 @@ export default function Settings() {
   if (!user) return <div className="flex items-center justify-center h-full"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
 
   return (
-    <div className="h-full overflow-y-auto">
+    <PullToRefresh onRefresh={async () => { const u = await base44.auth.me(); setUser(u); setForm({ display_name: u.display_name || u.full_name || "", bio: u.bio || "", role: u.role || "artist", location: u.location || "", genres: u.genres || [], avatar_url: u.avatar_url || "" }); }} className="h-full overflow-y-auto">
       <div className="max-w-xl mx-auto p-6 py-12">
         <h1 className="text-2xl font-heading font-bold mb-8">Profile Settings</h1>
 
@@ -310,6 +311,6 @@ export default function Settings() {
         <DeleteAccountDialog />
       </div>
       <InteractiveWizard open={showWizard} onOpenChange={setShowWizard} />
-    </div>
+    </PullToRefresh>
   );
 }

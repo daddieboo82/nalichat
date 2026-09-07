@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { Trophy, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/AuthContext";
+import PullToRefresh from "@/components/layout/PullToRefresh";
 
 export default function ChallengeHub() {
   const { user } = useAuth();
@@ -13,21 +14,22 @@ export default function ChallengeHub() {
   const [winners, setWinners] = useState({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    base44.entities.Challenge.list("-created_date").then(async (list) => {
-      setChallenges(list);
-      const completed = list.filter((c) => c.status === "completed");
-      const winnerMap = {};
-      await Promise.all(
-        completed.map(async (c) => {
-          const top = await base44.entities.ChallengeSubmission.filter({ challenge_id: c.id }, "-vote_count", 1);
-          if (top[0]) winnerMap[c.id] = top[0];
-        })
-      );
-      setWinners(winnerMap);
-      setLoading(false);
-    });
-  }, []);
+  const refresh = async () => {
+    const list = await base44.entities.Challenge.list("-created_date");
+    setChallenges(list);
+    const completed = list.filter((c) => c.status === "completed");
+    const winnerMap = {};
+    await Promise.all(
+      completed.map(async (c) => {
+        const top = await base44.entities.ChallengeSubmission.filter({ challenge_id: c.id }, "-vote_count", 1);
+        if (top[0]) winnerMap[c.id] = top[0];
+      })
+    );
+    setWinners(winnerMap);
+    setLoading(false);
+  };
+
+  useEffect(() => { refresh(); }, []);
 
   const featured = challenges.find((c) => c.status === "active") || challenges.find((c) => c.status === "voting");
   const upcoming = challenges.filter((c) => c.status === "upcoming");
@@ -38,7 +40,7 @@ export default function ChallengeHub() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-8">
+    <PullToRefresh onRefresh={refresh} className="max-w-5xl mx-auto p-4 sm:p-6 space-y-8">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-heading text-2xl sm:text-3xl font-bold text-gradient-animate">Remix Challenges</h1>
@@ -89,6 +91,6 @@ export default function ChallengeHub() {
       {challenges.length === 0 && (
         <p className="text-center text-muted-foreground py-12">No challenges yet — check back soon!</p>
       )}
-    </div>
+    </PullToRefresh>
   );
 }

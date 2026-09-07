@@ -345,7 +345,7 @@ function RecordingItem({ recording, saving, onSave, onDelete, onRename }) {
   return (
     <div className="bg-card/50 backdrop-blur-xl rounded-xl border border-white/[0.06] p-4 flex items-center gap-3">
       <audio ref={audioRef} src={recording.url} onEnded={() => setPlaying(false)} />
-      <button onClick={togglePlay} className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 hover:bg-primary/30 transition-colors">
+      <button onClick={togglePlay} className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center shrink-0 hover:bg-primary/30 transition-colors">
         {playing ? <Pause className="w-4 h-4 text-primary" /> : <Play className="w-4 h-4 text-primary ml-0.5" />}
       </button>
       <div className="flex-1 min-w-0">
@@ -357,10 +357,10 @@ function RecordingItem({ recording, saving, onSave, onDelete, onRename }) {
         <p className="text-[10px] text-muted-foreground">{Math.floor(recording.duration / 60)}:{String(recording.duration % 60).padStart(2, '0')} • {(recording.blob.size / 1024 / 1024).toFixed(1)} MB</p>
       </div>
       <div className="flex gap-1">
-        <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg" onClick={onSave} disabled={saving}>
+        <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg" onClick={onSave} disabled={saving}>
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
         </Button>
-        <Button size="icon" variant="ghost" className="w-8 h-8 rounded-lg text-destructive" onClick={onDelete}>
+        <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg text-destructive" onClick={onDelete}>
           <Trash2 className="w-3.5 h-3.5" />
         </Button>
       </div>

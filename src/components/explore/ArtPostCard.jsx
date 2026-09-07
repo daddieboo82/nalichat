@@ -93,14 +93,14 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
           <div className="flex items-center gap-1.5">
             <button
               onClick={(e) => { e.stopPropagation(); sounds.click(); onComment?.(post); }}
-              className="p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+              className="p-2.5 rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
               title="Comments"
             >
               <MessageCircle className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); sounds.click(); onAddToPlaylist?.(post.id); }}
-              className="p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+              className="p-2.5 rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
               title="Add to playlist"
             >
               <Music className="w-3.5 h-3.5" />
@@ -114,7 +114,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
                     onDelete(post);
                   }
                 }}
-                className="p-1.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                className="p-2.5 rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
                 title="Delete track"
                 aria-label="Delete track"
               >
@@ -131,7 +131,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
               title="Like"
               aria-label="Like"
               className={cn(
-                "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-all shrink-0",
+                "flex items-center gap-1 px-2.5 py-2 rounded-full text-xs font-semibold transition-all shrink-0 min-h-[44px]",
                 liked
                   ? "bg-destructive/15 text-destructive"
                   : "bg-secondary text-muted-foreground hover:bg-destructive/10 hover:text-destructive"

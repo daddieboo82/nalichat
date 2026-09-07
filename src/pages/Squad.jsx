@@ -6,6 +6,7 @@ import { Loader2, Users, Copy, Check, Sparkles, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import SquadMemberProgress from "@/components/squad/SquadMemberProgress";
 import { getSquadBonusStatus, generateInviteCode, BONUS_MULTIPLIER, CREDITS_REWARD } from "@/lib/squadBonus";
+import PullToRefresh from "@/components/layout/PullToRefresh";
 
 export default function Squad() {
   const { user } = useAuth();
@@ -92,7 +93,7 @@ export default function Squad() {
   const partnerName = isMemberA ? squad?.member_b_name : squad?.member_a_name;
 
   return (
-    <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-6">
+    <PullToRefresh onRefresh={load} className="max-w-2xl mx-auto p-4 sm:p-6 space-y-6">
       <div>
         <h1 className="font-heading text-2xl sm:text-3xl font-bold text-gradient-animate">Squad & Scale</h1>
         <p className="text-muted-foreground text-sm mt-1">Link up with a partner — hit your weekly goals together and unlock a 1.5x weekend bonus.</p>
@@ -159,6 +160,6 @@ export default function Squad() {
           </Button>
         </div>
       )}
-    </div>
+    </PullToRefresh>
   );
 }

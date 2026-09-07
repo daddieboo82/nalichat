@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import PullToRefresh from "@/components/layout/PullToRefresh";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { TrendingUp, Eye, Heart, Music } from "lucide-react";
 import { motion } from "framer-motion";
 export default function Analytics() {
   const [currentUser, setCurrentUser] = useState(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -65,7 +67,7 @@ export default function Analytics() {
   ];
 
   return (
-    <div className="h-full flex flex-col bg-background overflow-y-auto">
+    <PullToRefresh onRefresh={async () => { queryClient.invalidateQueries({ queryKey: ["userAnalytics"] }); }} className="h-full flex flex-col bg-background overflow-y-auto">
       {/* Header */}
       <div className="p-6 border-b border-border">
         <h1 className="text-3xl font-heading font-bold">Analytics</h1>
@@ -172,6 +174,6 @@ export default function Analytics() {
           </Card>
         )}
       </div>
-    </div>
+    </PullToRefresh>
   );
 }

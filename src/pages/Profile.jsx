@@ -11,6 +11,7 @@ import LevelBadge from "@/components/profile/LevelBadge";
 import TopWorksGallery from "@/components/profile/TopWorksGallery";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import NaliContextHint from "@/components/nali/NaliContextHint";
+import PullToRefresh from "@/components/layout/PullToRefresh";
 
 const ROLES = ["Producer", "Beatmaker", "Sound Engineer", "Mixing Engineer", "Mastering Engineer", "Vocalist", "Instrumentalist", "DJ", "Composer", "Other"];
 const GENRES = ["Hip-Hop", "Trap", "Lo-Fi", "Electronic", "House", "Techno", "Ambient", "R&B", "Indie", "Alternative"];
@@ -130,7 +131,7 @@ export default function Profile() {
   if (!user) return <div className="h-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
+    <PullToRefresh onRefresh={async () => { queryClient.invalidateQueries({ queryKey: ["my-posts"] }); queryClient.invalidateQueries({ queryKey: ["my-achievements"] }); }} className="h-full overflow-y-auto bg-background">
       {/* Cover */}
       <div className="relative h-40 sm:h-52 bg-gradient-to-br from-primary/30 via-secondary to-accent/20 overflow-hidden">
         {user.cover_url && <img src={user.cover_url} className="w-full h-full object-cover" alt="cover" />}
@@ -287,6 +288,6 @@ export default function Profile() {
           <AchievementsPanel achievements={achievements} userId={user.id} />
         )}
       </div>
-    </div>
+    </PullToRefresh>
   );
 }

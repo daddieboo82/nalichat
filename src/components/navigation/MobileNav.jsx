@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Home, Compass, MessageSquare, User, Settings, Mic, Wand2, Radio, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -13,42 +13,92 @@ const TABS = [
   { icon: User, label: "Profile", path: "/profile" },
 ];
 
+const STORAGE_KEY = "mobile_nav_stacks";
+
+function getTabForPath(pathname) {
+  if (pathname === "/" || pathname.startsWith("/playlist")) return "/";
+  if (pathname.startsWith("/explore")) return "/explore";
+  if (pathname.startsWith("/messages")) return "/messages";
+  if (pathname.startsWith("/profile")) return "/profile";
+  return null;
+}
+
+function loadStacks() {
+  try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
+}
+
+function saveStacks(stacks) {
+  try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stacks)); } catch {}
+}
+
 export default function MobileNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
+  const currentEntry = path + location.search;
 
   const isActive = (tabPath) => tabPath === "/" ? path === "/" : path.startsWith(tabPath);
 
-  const [tabPaths, setTabPaths] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem('mobile_nav_tabs') || '{}'); } catch { return {}; }
-  });
+  const [stacks, setStacks] = useState(loadStacks);
+  const activeTabRef = useRef(getTabForPath(path));
 
+  // Track which tab is active and push navigation entries to the correct tab stack
   useEffect(() => {
-    const newPaths = { ...tabPaths };
-    const p = path;
-    if (p.startsWith('/explore')) newPaths['/explore'] = p + location.search;
-    else if (p.startsWith('/messages')) newPaths['/messages'] = p + location.search;
-    else if (p.startsWith('/profile')) newPaths['/profile'] = p + location.search;
-    else if (p === '/' || p.startsWith('/playlist')) newPaths['/'] = p + location.search;
+    const tab = getTabForPath(path);
+    if (tab === null) return; // Pages not owned by any tab (e.g. /studio, /settings) don't modify stacks
 
-    setTabPaths(newPaths);
-    try { sessionStorage.setItem('mobile_nav_tabs', JSON.stringify(newPaths)); } catch {}
+    const prev = activeTabRef.current;
+    activeTabRef.current = tab;
+
+    setStacks(prevStacks => {
+      const next = { ...prevStacks };
+      const stack = next[tab] || [tab];
+
+      // If switching to a different tab, don't push — just let the restore handle it
+      if (prev !== null && prev !== tab) {
+        return prevStacks;
+      }
+
+      // Same tab navigation: push the new entry if it's different from the last one
+      const last = stack[stack.length - 1];
+      if (last !== currentEntry) {
+        // If the new entry is the tab root, reset the stack (user navigated "home" within the tab)
+        if (currentEntry === tab || currentEntry === tab + location.search) {
+          next[tab] = [currentEntry];
+        } else {
+          next[tab] = [...stack, currentEntry];
+        }
+      }
+      saveStacks(next);
+      return next;
+    });
   }, [path, location.search]);
 
   const handleTap = (tabPath) => {
     const active = isActive(tabPath);
     sounds.click();
+
     if (active) {
-      const scroller = document.querySelector("main");
-      scroller?.scrollTo?.({ top: 0, behavior: "smooth" });
-      if (path !== tabPath) {
-        navigate(tabPath);
+      // Tapping the active tab: if not at root, go back to root; otherwise scroll to top
+      const stack = stacks[tabPath] || [tabPath];
+      if (stack.length > 1) {
+        // Pop back to root of this tab
+        const newStack = [stack[0]];
+        const next = { ...stacks, [tabPath]: newStack };
+        setStacks(next);
+        saveStacks(next);
+        navigate(newStack[0]);
+      } else {
+        const scroller = document.querySelector("main");
+        scroller?.scrollTo?.({ top: 0, behavior: "smooth" });
       }
       return;
     }
-    const targetPath = tabPaths[tabPath] || tabPath;
-    navigate(targetPath);
+
+    // Switching to a different tab: restore the last entry in that tab's stack
+    const stack = stacks[tabPath] || [tabPath];
+    const target = stack[stack.length - 1] || tabPath;
+    navigate(target);
   };
 
   return (

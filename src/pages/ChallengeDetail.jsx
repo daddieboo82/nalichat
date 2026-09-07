@@ -9,6 +9,7 @@ import CountdownTimer from "@/components/challenges/CountdownTimer";
 import SubmissionCard from "@/components/challenges/SubmissionCard";
 import SubmitRemixModal from "@/components/challenges/SubmitRemixModal";
 import { toast } from "sonner";
+import PullToRefresh from "@/components/layout/PullToRefresh";
 
 export default function ChallengeDetail() {
   const { challengeId } = useParams();
@@ -20,6 +21,13 @@ export default function ChallengeDetail() {
   const [loading, setLoading] = useState(true);
 
   const loadSubmissions = () => base44.entities.ChallengeSubmission.filter({ challenge_id: challengeId, status: "approved" }, "-vote_count").then(setSubmissions);
+
+  const refresh = async () => {
+    const c = await base44.entities.Challenge.get(challengeId);
+    setChallenge(c);
+    setLoading(false);
+    await loadSubmissions();
+  };
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -62,7 +70,7 @@ export default function ChallengeDetail() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 pb-24 lg:pb-20">
+    <PullToRefresh onRefresh={refresh} className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 pb-24 lg:pb-20">
       <div className="rounded-3xl overflow-hidden border border-border bg-card">
         <div className="relative aspect-[16/6] bg-secondary">
           {challenge.cover_url && <img src={challenge.cover_url} alt={challenge.title} className="w-full h-full object-cover" />}
@@ -168,6 +176,6 @@ export default function ChallengeDetail() {
       {user && (
         <SubmitRemixModal open={modalOpen} onOpenChange={setModalOpen} challenge={challenge} user={user} onSubmitted={loadSubmissions} />
       )}
-    </div>
+    </PullToRefresh>
   );
 }

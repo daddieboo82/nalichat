@@ -205,10 +205,12 @@ export default function Messages() {
         sender_avatar: currentUser.avatar_url,
         participant_ids: selectedConv?.participant_ids || [],
       });
-      await base44.entities.Conversation.update(selectedConvId, {
+      // Fire-and-forget: update the conversation preview in the background
+      // so it never delays the message swap in onSuccess.
+      base44.entities.Conversation.update(selectedConvId, {
         last_message_text: msgData.text || `Sent a ${msgData.type}`,
         last_message_at: new Date().toISOString(),
-      });
+      }).catch(() => {});
 
       // Run content moderation on text messages (skip for banned users appealing to an admin).
       if (msgData.text && msgData.text.trim() && !currentUser?.is_banned) {
@@ -225,8 +227,10 @@ export default function Messages() {
       }
       return msg;
     },
-    onMutate: async (msgData) => {
-      await queryClient.cancelQueries({ queryKey: ["messages", selectedConvId] });
+    onMutate: (msgData) => {
+      // Fire-and-forget: don't await cancelQueries — the optimistic message
+      // must appear in the UI on the same tick the user hits send, with zero delay.
+      queryClient.cancelQueries({ queryKey: ["messages", selectedConvId] });
       const previous = queryClient.getQueryData(["messages", selectedConvId]);
       const tempMsg = {
         id: `temp-${Date.now()}`,

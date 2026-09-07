@@ -16,7 +16,7 @@ export default function PageTransition({ children }) {
       animate="animate"
       exit="exit"
       transition={{ duration: 0.12, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="h-full w-full overflow-y-auto"
+      className="relative h-full w-full overflow-y-auto"
     >
       {children}
     </motion.div>

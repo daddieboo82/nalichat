@@ -355,8 +355,8 @@ export default function Messages() {
     : isTimedOut;
 
   return (
-    <div className="h-full sm:h-[calc(100vh-80px)] p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden">
-      <div className="w-full max-w-7xl h-full flex flex-col sm:flex-row bg-card/60 sm:bg-card/40 backdrop-blur-3xl sm:border border-border/40 sm:rounded-[2.5rem] shadow-none sm:shadow-2xl overflow-hidden relative">
+    <div className="absolute inset-0 sm:relative sm:inset-auto sm:h-[calc(100vh-80px)] p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden">
+      <div className="w-full max-w-7xl h-full max-h-full flex flex-col sm:flex-row bg-card/60 sm:bg-card/40 backdrop-blur-3xl sm:border border-border/40 sm:rounded-[2.5rem] shadow-none sm:shadow-2xl overflow-hidden relative">
         
         {/* Sidebar */}
         <div className={cn(
@@ -452,8 +452,8 @@ export default function Messages() {
 
         {/* Chat View */}
         <div className={cn(
-          "flex-1 flex flex-col min-w-0 bg-transparent relative z-0",
-          !selectedConvId && "hidden sm:flex"
+        "flex-1 flex flex-col min-w-0 bg-transparent relative z-0 overflow-hidden",
+        !selectedConvId && "hidden sm:flex"
         )}>
           {selectedConv ? (
             <ChatView

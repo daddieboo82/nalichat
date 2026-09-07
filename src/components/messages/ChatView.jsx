@@ -40,6 +40,26 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const markedRef = useRef(new Set());
   const typingTimeoutRef = useRef(null);
   const [selectedMedia, setSelectedMedia] = useState(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+  // iOS Safari/WebView overlays the keyboard on top of the viewport without
+  // resizing it, so position:absolute bottom:0 elements get hidden behind the
+  // keyboard. Track the visualViewport to lift the input bar above the keyboard.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKeyboardOffset(offset);
+    };
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    onResize();
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('scroll', onResize);
+    };
+  }, []);
 
   const handleScroll = () => {
     if (!scrollRef.current) return;
@@ -155,7 +175,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const avatarGradient = gradients[(displayName?.charCodeAt(0) || 0) % gradients.length];
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden relative min-h-0 h-full">
+    <div className="flex-1 flex flex-col overflow-hidden relative min-h-0">
       {/* Floating Header */}
       <div className="absolute top-0 left-0 right-0 z-20 p-2 sm:p-4 pointer-events-none">
         <div className="h-16 bg-background/80 backdrop-blur-2xl border border-border/50 rounded-3xl flex items-center px-4 gap-3 shadow-xl pointer-events-auto transition-all">
@@ -209,7 +229,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       </div>
 
       {/* Messages Area */}
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-6 pt-24 pb-40 space-y-0.5 custom-scrollbar">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-6 pt-24 pb-4 space-y-0.5 custom-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -321,8 +341,8 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
         <NaliContextHint surface="chat" contextLabel={conversation?.id || "chat"} />
       </div>
 
-      {/* Floating Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 p-2 sm:p-4 flex flex-col justify-end">
+      {/* Input Area — flex child so it always sits at the bottom of the column */}
+      <div className="shrink-0 z-20 p-2 sm:p-4" style={{ marginBottom: `${keyboardOffset}px` }}>
         {isBlocked ? moderationBanner : (
         <div className="w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-visible bg-background/90 backdrop-blur-2xl border border-border/50">
           <ChatInput

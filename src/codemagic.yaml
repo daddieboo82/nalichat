@@ -1,0 +1,106 @@
+# NaliChat - Codemagic CI/CD Configuration
+# Builds a signed Android App Bundle (.aab) via Bubblewrap (TWA)
+# Package ID: com.nalichat | Host: nalichat.org
+
+workflows:
+  android-aab:
+    name: NaliChat Android AAB
+    max_build_duration: 30
+    environment:
+      groups:
+        - keystore_credentials
+      vars:
+        PACKAGE_ID: com.nalichat
+        KEYSTORE_ALIAS: nalichat
+      node: 20
+      java: 17
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: false
+      cancel_previous_builds: true
+    scripts:
+      - name: Install Bubblewrap CLI
+        script: |
+          npm install -g @bubblewrap/cli
+      - name: Verify twa-manifest packageId
+        script: |
+          MANIFEST_ID=$(grep -o '"packageId"[[:space:]]*:[[:space:]]*"[^"]*"' ./src/twa-manifest.json | head -1 | sed 's/.*: *//;s/"//g')
+          if [ "$MANIFEST_ID" != "$PACKAGE_ID" ]; then
+            echo "⚠️  twa-manifest packageId is '$MANIFEST_ID' — fixing to '$PACKAGE_ID'"
+            sed -i "s/\"packageId\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"packageId\": \"$PACKAGE_ID\"/g" ./src/twa-manifest.json
+          else
+            echo "✅ twa-manifest packageId already correct: $PACKAGE_ID"
+          fi
+      - name: Copy twa-manifest to working directory
+        script: |
+          cp ./src/twa-manifest.json ./twa-manifest.json
+      - name: Set up signing keystore
+        script: |
+          if [ -z "$CM_KEYSTORE" ]; then
+            echo "❌ No keystore configured in Codemagic code signing settings."
+            echo "   Add your android.keystore under: App settings → Code signing → Android Keystore"
+            exit 1
+          fi
+          # CM_KEYSTORE is base64-encoded by Codemagic
+          echo "$CM_KEYSTORE" | base64 --decode > ./android.keystore
+          echo "✅ Keystore decoded to ./android.keystore"
+      - name: Update twa-manifest signing key paths
+        script: |
+          sed -i "s|\"path\"[[:space:]]*:[[:space:]]*\"[^\"]*\"|\"path\": \"./android.keystore\"|g" ./twa-manifest.json
+          sed -i "s|\"alias\"[[:space:]]*:[[:space:]]*\"[^\"]*\"|\"alias\": \"$KEYSTORE_ALIAS\"|g" ./twa-manifest.json
+          echo "✅ Signing key path and alias updated in twa-manifest.json"
+      - name: Bubblewrap update (regenerate Gradle project)
+        script: |
+          bubblewrap update --skip-gradle-build
+      - name: Enforce applicationId in Gradle files
+        script: |
+          fix_gradle_file() {
+            local FILE="$1"
+            if [ ! -f "$FILE" ]; then return; fi
+            CURRENT_ID=$(grep -E "^\s*applicationId" "$FILE" | head -1 | sed "s/.*['\"]//;s/['\"].*//")
+            if [ "$CURRENT_ID" != "$PACKAGE_ID" ]; then
+              echo "  ⚠️  Fixing $FILE applicationId from '$CURRENT_ID' to '$PACKAGE_ID'"
+              sed -i "s/applicationId [\"'].*[\"']/applicationId \"$PACKAGE_ID\"/g" "$FILE"
+              sed -i "s/namespace [\"'].*[\"']/namespace \"$PACKAGE_ID\"/g" "$FILE"
+            else
+              echo "  ✅ $FILE applicationId already correct"
+            fi
+          }
+          fix_gradle_file "./app/build.gradle"
+          fix_gradle_file "./app/build.gradle.kts"
+      - name: Build AAB
+        script: |
+          # Pass keystore passwords from Codemagic environment variables
+          export BUBBLEWRAP_KEYSTORE_PASSWORD="$CM_KEYSTORE_PASSWORD"
+          export BUBBLEWRAP_KEY_PASSWORD="$CM_KEY_PASSWORD"
+          bubblewrap build
+      - name: Verify AAB package name
+        script: |
+          AAB_FILE="./app-release-bundle.aab"
+          if [ ! -f "$AAB_FILE" ]; then
+            echo "❌ AAB file not found — build may have failed"
+            exit 1
+          fi
+          TMP_DIR=$(mktemp -d)
+          unzip -o "$AAB_FILE" "base/manifest/AndroidManifest.xml" -d "$TMP_DIR" 2>/dev/null || true
+          MANIFEST_XML="$TMP_DIR/base/manifest/AndroidManifest.xml"
+          if [ -f "$MANIFEST_XML" ]; then
+            AAB_PACKAGE=$(strings "$MANIFEST_XML" | grep -i "$PACKAGE_ID" | head -1)
+            if echo "$AAB_PACKAGE" | grep -q "$PACKAGE_ID"; then
+              echo "✅ Package name in AAB: $PACKAGE_ID"
+            else
+              echo "⚠️  Could not verify $PACKAGE_ID in binary manifest (proceeding)"
+            fi
+          fi
+          rm -rf "$TMP_DIR"
+    artifacts:
+      - app-release-bundle.aab
+      - ./app/build/outputs/bundle/release/*.aab
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal

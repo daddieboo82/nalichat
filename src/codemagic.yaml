@@ -101,8 +101,18 @@ workflows:
           export CI=true
           export BUBBLEWRAP_KEYSTORE_PASSWORD="${CM_KEYSTORE_PASSWORD:-nalichat-store}"
           export BUBBLEWRAP_KEY_PASSWORD="${CM_KEY_PASSWORD:-nalichat-key}"
-          # Allocate a real PTY (satisfies inquirer) and auto-answer all prompts with "y"
-          script -qec "yes | bubblewrap build" /dev/null
+          # Answer "n" to JDK install prompt (use Codemagic's JDK 17), "y" to everything else
+          expect << 'EOF'
+            set timeout 900
+            log_user 1
+            spawn bubblewrap build
+            expect {
+              "(Y/n)" { send "n\r"; exp_continue }
+              "(y/N)" { send "y\r"; exp_continue }
+              "license" { send "y\r"; exp_continue }
+              eof
+            }
+          EOF
       - name: Verify AAB package name
         script: |
           AAB_FILE="./app-release-bundle.aab"

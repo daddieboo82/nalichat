@@ -40,14 +40,19 @@ workflows:
           cp ./src/twa-manifest.json ./twa-manifest.json
       - name: Set up signing keystore
         script: |
-          if [ -z "$CM_KEYSTORE" ]; then
-            echo "❌ No keystore configured in Codemagic code signing settings."
-            echo "   Add your android.keystore under: App settings → Code signing → Android Keystore"
-            exit 1
+          if [ -n "$CM_KEYSTORE" ]; then
+            echo "$CM_KEYSTORE" | base64 --decode > ./android.keystore
+            echo "✅ Keystore decoded from Codemagic code signing settings"
+          else
+            echo "⚠️  No keystore in Codemagic code signing — generating a self-signed one"
+            keytool -genkeypair -v \
+              -keystore ./android.keystore \
+              -alias "$KEYSTORE_ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass nalichat-store -keypass nalichat-key \
+              -dname "CN=NaliChat, OU=Mobile, O=NaliChat, L=Indianapolis, ST=IN, C=US"
+            echo "✅ Self-signed keystore generated at ./android.keystore"
           fi
-          # CM_KEYSTORE is base64-encoded by Codemagic
-          echo "$CM_KEYSTORE" | base64 --decode > ./android.keystore
-          echo "✅ Keystore decoded to ./android.keystore"
       - name: Update twa-manifest signing key paths
         script: |
           sed -i "s|\"path\"[[:space:]]*:[[:space:]]*\"[^\"]*\"|\"path\": \"./android.keystore\"|g" ./twa-manifest.json
@@ -74,9 +79,8 @@ workflows:
           fix_gradle_file "./app/build.gradle.kts"
       - name: Build AAB
         script: |
-          # Pass keystore passwords from Codemagic environment variables
-          export BUBBLEWRAP_KEYSTORE_PASSWORD="$CM_KEYSTORE_PASSWORD"
-          export BUBBLEWRAP_KEY_PASSWORD="$CM_KEY_PASSWORD"
+          export BUBBLEWRAP_KEYSTORE_PASSWORD="${CM_KEYSTORE_PASSWORD:-nalichat-store}"
+          export BUBBLEWRAP_KEY_PASSWORD="${CM_KEY_PASSWORD:-nalichat-key}"
           bubblewrap build
       - name: Verify AAB package name
         script: |

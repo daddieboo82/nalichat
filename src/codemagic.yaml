@@ -68,8 +68,18 @@ workflows:
           echo "✅ Bubblewrap config updated with JDK and Android SDK paths"
       - name: Bubblewrap update (regenerate Gradle project)
         script: |
-          # Answer "n" to "Install JDK?" (use existing), "y" to any license prompts
-          printf 'n\ny\ny\ny\n' | bubblewrap update --skip-gradle-build
+          # Inquirer requires a TTY — use expect to create a pseudo-TTY and auto-answer prompts
+          expect << 'EOF'
+            set timeout 600
+            spawn bubblewrap update --skip-gradle-build
+            expect {
+              -re "Install JDK\\?" { send "n\r"; exp_continue }
+              -re "\\(Y/n\\)" { send "n\r"; exp_continue }
+              -re "\\(y/N\\)" { send "y\r"; exp_continue }
+              -re "license" { send "y\r"; exp_continue }
+              eof
+            }
+          EOF
       - name: Enforce applicationId in Gradle files
         script: |
           fix_gradle_file() {

@@ -98,20 +98,11 @@ workflows:
           fix_gradle_file "./app/build.gradle.kts"
       - name: Build AAB
         script: |
+          export CI=true
           export BUBBLEWRAP_KEYSTORE_PASSWORD="${CM_KEYSTORE_PASSWORD:-nalichat-store}"
           export BUBBLEWRAP_KEY_PASSWORD="${CM_KEY_PASSWORD:-nalichat-key}"
-          # Inquirer requires a TTY — use expect to create a pseudo-TTY and auto-answer prompts
-          expect << 'EOF'
-            set timeout 900
-            spawn bubblewrap build
-            expect {
-              -re "Install JDK\\?" { send "n\r"; exp_continue }
-              -re "\\(Y/n\\)" { send "n\r"; exp_continue }
-              -re "\\(y/N\\)" { send "y\r"; exp_continue }
-              -re "license" { send "y\r"; exp_continue }
-              eof
-            }
-          EOF
+          # Allocate a real PTY (satisfies inquirer) and auto-answer all prompts with "y"
+          script -qec "yes | bubblewrap build" /dev/null
       - name: Verify AAB package name
         script: |
           AAB_FILE="./app-release-bundle.aab"

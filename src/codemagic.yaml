@@ -112,6 +112,13 @@ workflows:
               "license" { send "y\r"; exp_continue }
               eof
             }
+            # Propagate the spawned process's exit code so a failed build fails this step
+            catch wait result
+            set exit_code [lindex $result 3]
+            if { $exit_code != 0 } {
+              puts "\n❌ bubblewrap build exited with code $exit_code"
+            }
+            exit $exit_code
           EOF
       - name: Verify AAB package name
         script: |

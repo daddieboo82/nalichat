@@ -62,7 +62,7 @@ workflows:
           echo "✅ Signing key path and alias updated in twa-manifest.json"
       - name: Bubblewrap update (regenerate Gradle project)
         script: |
-          bubblewrap update --skip-gradle-build
+          yes | bubblewrap update --skip-gradle-build --yes
       - name: Enforce applicationId in Gradle files
         script: |
           fix_gradle_file() {

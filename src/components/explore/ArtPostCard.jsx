@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, Eye, Music, MessageCircle, Play, Pause, ShoppingCart } from "lucide-react";
+import { Heart, Eye, Music, MessageCircle, Play, Pause, ShoppingCart, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import MediaViewerModal from "./MediaViewerModal";
@@ -10,7 +10,7 @@ import { sounds } from "@/hooks/use-sound";
 
 import React from "react";
 
-export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist, onComment, large }) {
+export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAddToPlaylist, onComment, onDelete, large }) {
   const [showMedia, setShowMedia] = useState(false);
   const liked = post.liked_by?.includes(currentUser?.id);
   const audioPlayer = useAudioPlayer();
@@ -105,6 +105,22 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
             >
               <Music className="w-3.5 h-3.5" />
             </button>
+            {currentUser?.id === post.creator_id && onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.confirm(`Delete "${post.title}"? This cannot be undone.`)) {
+                    sounds.error();
+                    onDelete(post);
+                  }
+                }}
+                className="p-1.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                title="Delete track"
+                aria-label="Delete track"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
             <button
               onClick={(e) => { 
                 e.stopPropagation(); 

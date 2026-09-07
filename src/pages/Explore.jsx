@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Heart, Eye, Plus, Upload, X, Search, Sparkles } from "lucide-react";
+import { Heart, Eye, Plus, Upload, X, Search, Sparkles, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/AuthContext";
@@ -11,6 +11,7 @@ import UploadArtDialog from "@/components/explore/UploadArtDialog";
 import AddToPlaylistDialog from "@/components/explore/AddToPlaylistDialog";
 import TrackCommentsDialog from "@/components/explore/TrackCommentsDialog";
 import { sounds } from "@/hooks/use-sound";
+import { toast } from "sonner";
 
 const MEDIUMS = ["all", "original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
 
@@ -42,6 +43,15 @@ export default function Explore() {
     queryFn: () => filter === "all"
       ? base44.entities.ArtPost.list("-created_date", 100)
       : base44.entities.ArtPost.filter({ medium: filter }, "-created_date", 100),
+  });
+
+  const deletePost = useMutation({
+    mutationFn: async (post) => base44.entities.ArtPost.delete(post.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["artposts"] });
+      toast.success("Track deleted");
+    },
+    onError: () => toast.error("Failed to delete track"),
   });
 
   const toggleLike = useMutation({
@@ -163,7 +173,7 @@ export default function Explore() {
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">🔥 Trending</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {featured.slice(0, 3).map(post => (
-                <ArtPostCard key={post.id} post={post} currentUser={currentUser} onLike={() => toggleLike.mutate(post)} onComment={setCommentTrack} onAddToPlaylist={setSelectedTrackForPlaylist} large />
+                <ArtPostCard key={post.id} post={post} currentUser={currentUser} onLike={() => toggleLike.mutate(post)} onComment={setCommentTrack} onAddToPlaylist={setSelectedTrackForPlaylist} onDelete={() => deletePost.mutate(post)} large />
               ))}
             </div>
           </div>
@@ -203,6 +213,7 @@ export default function Explore() {
                   onLike={() => toggleLike.mutate(post)}
                   onAddToPlaylist={setSelectedTrackForPlaylist}
                   onComment={setCommentTrack}
+                  onDelete={() => deletePost.mutate(post)}
                 />
               ))}
             </div>

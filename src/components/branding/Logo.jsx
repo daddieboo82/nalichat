@@ -49,11 +49,6 @@ export default function Logo({ size = 32, className, glow = true }) {
           </linearGradient>
         </defs>
 
-        {/* Dark rounded tile with subtle radial illumination */}
-        <rect x="1" y="1" width="46" height="46" rx="12" fill={`url(#${tileId})`} />
-        {/* Subtle inner border for depth */}
-        <rect x="1.5" y="1.5" width="45" height="45" rx="11.5" fill="none" stroke="white" strokeOpacity="0.06" strokeWidth="1" />
-
         {/* Chat bubble outline — rounded square body with a tail curling
             out of the bottom-left toward the first wave bar */}
         <path
@@ -86,8 +81,8 @@ export default function Logo({ size = 32, className, glow = true }) {
 
       {glow && (
         <div
-          className="absolute inset-0 rounded-[28%] pointer-events-none"
-          style={{ boxShadow: "0 0 14px -2px hsl(320 90% 55% / 0.45), 0 0 22px -6px hsl(190 90% 50% / 0.3)" }}
+          className="absolute inset-0 pointer-events-none"
+          style={{ boxShadow: "0 0 14px -4px hsl(320 90% 55% / 0.4), 0 0 22px -8px hsl(190 90% 50% / 0.25)" }}
         />
       )}
     </div>

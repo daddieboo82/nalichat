@@ -62,12 +62,12 @@ export default function Logo({ size = 32, className, glow = true }) {
           strokeLinecap="round"
         />
 
-        {/* Three diagonal waveform bars — the longest aligns with the tail
-            so the tail morphs into the first bar (message → sound) */}
+        {/* Three vertical equalizer bars inside the bubble — reads instantly
+            as sound/audio fused with the chat bubble (message → sound) */}
         <g fill="url(#nali-neon)">
-          <rect x="13" y="27" width="15" height="3" rx="1.5" transform="rotate(-45 20.5 28.5)" />
-          <rect x="18" y="23" width="11" height="3" rx="1.5" transform="rotate(-45 23.5 24.5)" />
-          <rect x="22.5" y="19" width="7" height="3" rx="1.5" transform="rotate(-45 26 20.5)" />
+          <rect x="16.5" y="24" width="3" height="8" rx="1.5" />
+          <rect x="22.5" y="18" width="3" height="14" rx="1.5" />
+          <rect x="28.5" y="22" width="3" height="10" rx="1.5" />
         </g>
       </svg>
 

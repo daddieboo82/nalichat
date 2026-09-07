@@ -1,88 +1,107 @@
-const CACHE_NAME = 'nalichat-v2';
+/**
+ * NaliChat Service Worker
+ *
+ * Strategy:
+ *  - Navigation requests: network-first (always fetch fresh HTML so users
+ *    get new JS/CSS chunks on every visit).
+ *  - Static assets (JS/CSS/images/fonts): stale-while-revalidate (serve
+ *    cached instantly, update cache from network in background).
+ *  - Old caches are purged on activate.
+ *
+ * Update flow:
+ *  The browser byte-compares /sw.js on every navigation. When a new SW is
+ *  deployed it installs in the background and enters the "waiting" state.
+ *  The client (usePwaUpdate hook) detects the waiting worker, shows an
+ *  "Update available" banner, and on user confirmation sends
+ *  { action: 'skipWaiting' } to activate the new SW immediately, then
+ *  reloads the page.
+ */
 
-// Never cache these — Vite dev chunks, JS modules, CSS, or API calls
-const BYPASS_PATTERNS = [
-  '/src/',
-  '/node_modules/.vite',
-  '/@vite',
-  '/@react-refresh',
-  '/api/',
-  '.js',
-  '.jsx',
-  '.ts',
-  '.tsx',
-  '.css',
-  '.mjs',
+const CACHE_NAME = 'nalichat-v1';
+
+// App shell — pre-cached on install so the app works offline on first load.
+const APP_SHELL = [
+  '/',
+  '/index.html',
+  '/manifest.json',
 ];
 
-function shouldBypass(url) {
-  return BYPASS_PATTERNS.some(p => url.includes(p));
-}
-
+// ── Install ──────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.map(key => caches.delete(key)))
-    ).then(() => self.clients.claim())
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.addAll(APP_SHELL).catch(() => {
+        // If any individual asset fails, just skip it — the SW still installs.
+      })
+    )
   );
 });
 
+// ── Activate ─────────────────────────────────────────────────────────────
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+      )
+    )
+  );
+  self.clients.claim();
+});
+
+// ── Fetch ────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
-  const url = event.request.url;
+  const { request } = event;
 
-  // Bypass: non-GET, cross-origin, or any JS/CSS/Vite/API resource
-  if (
-    event.request.method !== 'GET' ||
-    !url.startsWith(self.location.origin) ||
-    shouldBypass(url)
-  ) {
-    return; // Let the browser handle it normally
-  }
+  // Only handle GET requests.
+  if (request.method !== 'GET') return;
 
-  // For navigation requests (HTML), serve network-first
-  if (event.request.mode === 'navigate') {
+  const url = new URL(request.url);
+
+  // Skip cross-origin requests (analytics, CDNs, etc.)
+  if (url.origin !== self.location.origin) return;
+
+  // Skip API calls — always go to network.
+  if (url.pathname.startsWith('/api/')) return;
+
+  // Network-first for navigation (HTML documents).
+  if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match('/index.html'))
+      fetch(request)
+        .then((response) => {
+          // Cache the fresh HTML for offline fallback.
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', clone));
+          return response;
+        })
+        .catch(() =>
+          caches.match('/index.html').then((r) => r || new Response('Offline', { status: 503 }))
+        )
     );
     return;
   }
 
-  // For static assets (icons, manifest, images), cache-first
+  // Stale-while-revalidate for static assets.
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      });
+    caches.match(request).then((cached) => {
+      const networkFetch = fetch(request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => cached);
+
+      return cached || networkFetch;
     })
   );
 });
 
-// Show push notifications from server-sent push events
-self.addEventListener('push', (event) => {
-  if (!event.data) return;
-  const data = event.data.json();
-  event.waitUntil(
-    self.registration.showNotification(data.title || 'NaliChat', {
-      body: data.body || '',
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      tag: 'nali-notification',
-      data: { url: data.url || '/' },
-    })
-  );
-});
-
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  const url = event.notification.data?.url || '/';
-  event.waitUntil(clients.openWindow(url));
+// ── Message ──────────────────────────────────────────────────────────────
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    self.skipWaiting();
+  }
 });

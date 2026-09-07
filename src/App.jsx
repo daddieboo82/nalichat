@@ -26,6 +26,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import Home from '@/pages/Home';
 import AiAssistant from '@/components/AiAssistant';
 import AskNaliHint from '@/components/AskNaliHint';
+import PwaUpdatePrompt from '@/components/PwaUpdatePrompt';
 import { base44 } from '@/api/base44Client';
 
 // Lazily-loaded routes — each downloads on demand so initial load & tab-switching are fastest.
@@ -273,6 +274,7 @@ function App() {
                     <AuthenticatedApp />
                   </Router>
                   {loaded && <AiAssistant />}
+                  <PwaUpdatePrompt />
                   <Toaster />
                   <SonnerToaster />
                 </MotionConfig>

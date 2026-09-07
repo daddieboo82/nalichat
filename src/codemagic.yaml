@@ -102,7 +102,8 @@ workflows:
           export BUBBLEWRAP_KEYSTORE_PASSWORD="${CM_KEYSTORE_PASSWORD:-nalichat-store}"
           export BUBBLEWRAP_KEY_PASSWORD="${CM_KEY_PASSWORD:-nalichat-key}"
           # Answer "n" to JDK install prompt (use Codemagic's JDK 17), "y" to everything else
-          expect << 'EOF'
+          set +e
+          expect << 'EOF' 2>&1 | tee /tmp/bubblewrap_build.log
             set timeout 900
             log_user 1
             spawn bubblewrap build
@@ -112,14 +113,22 @@ workflows:
               "license" { send "y\r"; exp_continue }
               eof
             }
-            # Propagate the spawned process's exit code so a failed build fails this step
             catch wait result
-            set exit_code [lindex $result 3]
-            if { $exit_code != 0 } {
-              puts "\n❌ bubblewrap build exited with code $exit_code"
-            }
-            exit $exit_code
+            exit [lindex $result 3]
           EOF
+          BUILD_EXIT=$?
+          echo ""
+          echo "=== Bubblewrap build exit code: $BUILD_EXIT ==="
+          echo "=== Looking for AAB files ==="
+          find . -name "*.aab" -type f 2>/dev/null || echo "No AAB found"
+          echo "=== Build output directory ==="
+          ls -la ./app/build/outputs/bundle/release/ 2>/dev/null || echo "No bundle output directory"
+          echo "=== Last 50 lines of build log ==="
+          tail -50 /tmp/bubblewrap_build.log
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "❌ bubblewrap build failed with exit code $BUILD_EXIT"
+            exit 1
+          fi
       - name: Verify AAB package name
         script: |
           # Search for the AAB in common bubblewrap output locations

@@ -58,9 +58,26 @@ workflows:
           sed -i "s|\"path\"[[:space:]]*:[[:space:]]*\"[^\"]*\"|\"path\": \"./android.keystore\"|g" ./twa-manifest.json
           sed -i "s|\"alias\"[[:space:]]*:[[:space:]]*\"[^\"]*\"|\"alias\": \"$KEYSTORE_ALIAS\"|g" ./twa-manifest.json
           echo "✅ Signing key path and alias updated in twa-manifest.json"
+      - name: Configure Bubblewrap JDK and Android SDK paths
+        script: |
+          bubblewrap updateConfig \
+            --jdkPath="$JAVA_HOME" \
+            --androidSdkPath="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$ANDROID_SDK}}"
+          echo "✅ Bubblewrap config updated with JDK and Android SDK paths"
       - name: Bubblewrap update (regenerate Gradle project)
         script: |
-          bubblewrap update --skip-gradle-build
+          # Inquirer requires a TTY — use expect to create a pseudo-TTY and auto-answer prompts
+          expect << 'EOF'
+            set timeout 600
+            spawn bubblewrap update --skip-gradle-build
+            expect {
+              -re "Install JDK\\?" { send "n\r"; exp_continue }
+              -re "\\(Y/n\\)" { send "n\r"; exp_continue }
+              -re "\\(y/N\\)" { send "y\r"; exp_continue }
+              -re "license" { send "y\r"; exp_continue }
+              eof
+            }
+          EOF
       - name: Enforce applicationId in Gradle files
         script: |
           fix_gradle_file() {

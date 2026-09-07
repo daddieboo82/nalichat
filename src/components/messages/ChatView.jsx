@@ -42,22 +42,30 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
 
-  // iOS Safari/WebView overlays the keyboard on top of the viewport without
-  // resizing it, so position:absolute bottom:0 elements get hidden behind the
-  // keyboard. Track the visualViewport to lift the input bar above the keyboard.
+  // The keyboard can overlay the viewport without resizing it (iOS Safari/WebView,
+  // older Android WebView) or resize it (Android Chrome 108+ with
+  // interactive-widget=resizes-content). Track the visualViewport to lift the
+  // input bar above the keyboard in both cases. The window resize listener
+  // handles the Android race condition where innerHeight updates after VV.
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return;
     const onResize = () => {
+      if (!vv) return;
       const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       setKeyboardOffset(offset);
     };
-    vv.addEventListener('resize', onResize);
-    vv.addEventListener('scroll', onResize);
+    if (vv) {
+      vv.addEventListener('resize', onResize);
+      vv.addEventListener('scroll', onResize);
+    }
+    window.addEventListener('resize', onResize);
     onResize();
     return () => {
-      vv.removeEventListener('resize', onResize);
-      vv.removeEventListener('scroll', onResize);
+      if (vv) {
+        vv.removeEventListener('resize', onResize);
+        vv.removeEventListener('scroll', onResize);
+      }
+      window.removeEventListener('resize', onResize);
     };
   }, []);
 

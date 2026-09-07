@@ -1,0 +1,51 @@
+# Export Compliance Documentation — NaliChat
+
+## App Name
+NaliChat
+
+## Bundle Identifier
+com.base6a1f5ee134147461560c2b37.app
+
+## Encryption Usage Statement
+
+NaliChat does **not** contain any custom, proprietary, or non-exempt encryption.
+
+All encryption used by this app falls under the standard encryption exemptions
+defined by the U.S. Bureau of Industry and Security (BIS) for mass-market
+consumer software.
+
+### Encryption Technologies Used (All Exempt)
+
+1. **HTTPS / TLS** — All network communication uses standard Transport Layer
+   Security (TLS) via the operating system's built-in networking stack.
+   This is exempt under the "standard networking" category.
+
+2. **OS-Provided Cryptographic APIs** — Any cryptographic operations (such as
+   secure storage of authentication tokens) use the platform's built-in
+   Keychain / secure storage APIs provided by iOS/iPadOS. No custom
+   cryptographic algorithms are implemented.
+
+3. **Standard Authentication** — User authentication uses industry-standard
+   JWT (JSON Web Token) handling over HTTPS, provided by the app's backend
+   platform (Base44). No custom encryption is applied.
+
+### Exemption Claim
+
+This app qualifies for the mass-market encryption exemption under
+15 CFR §740.13(e) because:
+
+- It uses only encryption that is publicly available and standard.
+- It does not implement any proprietary or custom cryptographic algorithms.
+- All cryptographic functionality is provided by the operating system or
+  standard, widely-available libraries.
+- The app is a consumer-facing application available to the general public.
+
+### Declaration
+
+I confirm that this app does not use, implement, or distribute any
+non-exempt encryption technology. All encryption used is standard,
+publicly available, and falls within the exemptions described above.
+
+---
+
+Date: September 7, 2026

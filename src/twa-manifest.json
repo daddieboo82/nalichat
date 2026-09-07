@@ -13,9 +13,9 @@
   "backgroundColor": "#0f0a14",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/2089b13d8_generated_image.png",
-  "maskableIconUrl": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/2089b13d8_generated_image.png",
-  "monochromeIconUrl": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/2089b13d8_generated_image.png",
+  "iconUrl": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/857674632_generated_image.png",
+  "maskableIconUrl": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/857674632_generated_image.png",
+  "monochromeIconUrl": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/857674632_generated_image.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./android.keystore",
@@ -30,7 +30,7 @@
       "url": "/explore",
       "icons": [
         {
-          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/2089b13d8_generated_image.png",
+          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/857674632_generated_image.png",
           "sizes": "192x192"
         }
       ]
@@ -41,7 +41,7 @@
       "url": "/studio",
       "icons": [
         {
-          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/2089b13d8_generated_image.png",
+          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/857674632_generated_image.png",
           "sizes": "192x192"
         }
       ]

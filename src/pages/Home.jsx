@@ -21,6 +21,7 @@ import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import PullToRefresh from "@/components/layout/PullToRefresh";
+import Logo from "@/components/branding/Logo";
 
 const features = [
   {
@@ -191,9 +192,9 @@ export default function Home() {
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-              className="relative z-10 w-24 h-24 rounded-3xl flex items-center justify-center glow-primary shadow-2xl border border-white/20 overflow-hidden"
+              className="relative z-10 flex items-center justify-center glow-primary shadow-2xl"
             >
-              <img src="https://media.base44.com/images/public/6a1f5ee134147461560c2b37/e95b14649_generated_image.png" alt="NaliChat Logo" className="w-full h-full object-cover" />
+              <Logo size={96} glow={false} />
             </motion.div>
           </div>
 

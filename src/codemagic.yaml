@@ -199,33 +199,29 @@ workflows:
           # Use Python to reliably inject the signing config into the Gradle file
           export KEYSTORE_PASS KEY_PASS KEY_ALIAS GRADLE_FILE
           python3 << 'PYEOF'
-import os, re
-gf = os.environ['GRADLE_FILE']
-kp, kpw, ka = os.environ['KEYSTORE_PASS'], os.environ['KEY_PASS'], os.environ['KEY_ALIAS']
-is_kts = gf.endswith('.kts')
-with open(gf, 'r') as f:
-    content = f.read()
-# Remove any existing signingConfigs block (handles one level of nested braces)
-content = re.sub(r'\s*signingConfigs\s*\{(?:[^{}]|\{[^{}]*\})*\}', '', content, flags=re.DOTALL)
-# Build the signing config block for the correct DSL
-if is_kts:
-    sc = '\n    signingConfigs {\n        create("release") {\n            storeFile = file("../android.keystore")\n            storePassword = "%s"\n            keyAlias = "%s"\n            keyPassword = "%s"\n        }\n    }\n' % (kp, ka, kpw)
-    rsc = 'signingConfig = signingConfigs.getByName("release")'
-else:
-    sc = "\n    signingConfigs {\n        release {\n            storeFile file('../android.keystore')\n            storePassword '%s'\n            keyAlias '%s'\n            keyPassword '%s'\n        }\n    }\n" % (kp, ka, kpw)
-    rsc = 'signingConfig signingConfigs.release'
-# Insert signingConfigs before buildTypes
-if 'buildTypes {' in content:
-    content = content.replace('buildTypes {', sc + '    buildTypes {', 1)
-else:
-    content += sc
-# Add signingConfig reference to release buildType if not present
-if 'signingConfig' not in content:
-    content = content.replace('release {', 'release {\n            ' + rsc, 1)
-with open(gf, 'w') as f:
-    f.write(content)
-print(f"✅ Signing config injected into {gf}")
-PYEOF
+          import os, re
+          gf = os.environ['GRADLE_FILE']
+          kp, kpw, ka = os.environ['KEYSTORE_PASS'], os.environ['KEY_PASS'], os.environ['KEY_ALIAS']
+          is_kts = gf.endswith('.kts')
+          with open(gf, 'r') as f:
+              content = f.read()
+          content = re.sub(r'\s*signingConfigs\s*\{(?:[^{}]|\{[^{}]*\})*\}', '', content, flags=re.DOTALL)
+          if is_kts:
+              sc = '\n    signingConfigs {\n        create("release") {\n            storeFile = file("../android.keystore")\n            storePassword = "%s"\n            keyAlias = "%s"\n            keyPassword = "%s"\n        }\n    }\n' % (kp, ka, kpw)
+              rsc = 'signingConfig = signingConfigs.getByName("release")'
+          else:
+              sc = "\n    signingConfigs {\n        release {\n            storeFile file('../android.keystore')\n            storePassword '%s'\n            keyAlias '%s'\n            keyPassword '%s'\n        }\n    }\n" % (kp, ka, kpw)
+              rsc = 'signingConfig signingConfigs.release'
+          if 'buildTypes {' in content:
+              content = content.replace('buildTypes {', sc + '    buildTypes {', 1)
+          else:
+              content += sc
+          if 'signingConfig' not in content:
+              content = content.replace('release {', 'release {\n            ' + rsc, 1)
+          with open(gf, 'w') as f:
+              f.write(content)
+          print(f"Signing config injected into {gf}")
+          PYEOF
           echo "=== Updated signing config ==="
           grep -n -A 10 "signingConfig" "$GRADLE_FILE" 2>/dev/null || echo "  (none found after injection)"
       - name: Fix local.properties SDK path

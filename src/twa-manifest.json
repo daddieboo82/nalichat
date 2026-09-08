@@ -28,6 +28,7 @@
       "name": "Explore Music",
       "shortName": "Explore",
       "url": "/explore",
+      "chosenIconUrl": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/da0cb6e0c_generated_image.png",
       "icons": [
         {
           "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/da0cb6e0c_generated_image.png",
@@ -39,6 +40,7 @@
       "name": "Studio",
       "shortName": "Studio",
       "url": "/studio",
+      "chosenIconUrl": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/da0cb6e0c_generated_image.png",
       "icons": [
         {
           "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/da0cb6e0c_generated_image.png",

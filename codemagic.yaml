@@ -60,30 +60,43 @@ workflows:
           cp ./src/twa-manifest.json ./twa-manifest.json
       - name: Set up signing keystore
         script: |
-          # Always generate a self-signed keystore with fixed passwords.
-          # Avoids password mismatches when CM_KEYSTORE is set but CM_KEYSTORE_PASSWORD is not.
-          # Download this keystore from build artifacts and upload to Codemagic code signing
-          # (passwords: nalichat-store / nalichat-key, alias: nalichat) for consistent future builds.
-          # Remove any stale keystore (from CM_KEYSTORE auto-decode or previous cache)
+          # Use Codemagic code signing keystore if available (CM_KEYSTORE).
+          # This ensures the SAME signing key is used across all builds — required by Google Play.
+          # If CM_KEYSTORE is not set, generate a self-signed keystore (download from artifacts
+          # and upload to Codemagic → Code Signing → Android for future builds).
+          KEYSTORE_PASS="${CM_KEYSTORE_PASSWORD:-nalichat-store}"
+          KEY_PASS="${CM_KEY_PASSWORD:-$KEYSTORE_PASS}"
+          KEY_ALIAS="${CM_KEY_ALIAS:-$KEYSTORE_ALIAS}"
           rm -f ./android.keystore
-          echo "🔑 Generating a self-signed keystore with fixed passwords"
-          keytool -genkeypair -v \
-            -keystore ./android.keystore \
-            -alias "$KEYSTORE_ALIAS" \
-            -storetype JKS \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass nalichat-store -keypass nalichat-store \
-            -dname "CN=NaliChat, OU=Mobile, O=NaliChat, L=Indianapolis, ST=IN, C=US"
-          if [ $? -ne 0 ]; then
-            echo "❌ keytool failed to generate keystore"
-            exit 1
+          if [ -n "$CM_KEYSTORE" ] && [ -f "$CM_KEYSTORE" ]; then
+            echo "🔑 Using Codemagic code signing keystore: $CM_KEYSTORE"
+            cp "$CM_KEYSTORE" ./android.keystore
+          else
+            echo "⚠️  No CM_KEYSTORE found — generating a self-signed keystore"
+            echo "📌 Download android.keystore from build artifacts and upload to"
+            echo "    Codemagic → Code Signing → Android for consistent future builds"
+            keytool -genkeypair -v \
+              -keystore ./android.keystore \
+              -alias "$KEY_ALIAS" \
+              -storetype JKS \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$KEYSTORE_PASS" -keypass "$KEY_PASS" \
+              -dname "CN=NaliChat, OU=Mobile, O=NaliChat, L=Indianapolis, ST=IN, C=US"
+            if [ $? -ne 0 ]; then
+              echo "❌ keytool failed to generate keystore"
+              exit 1
+            fi
           fi
           # Verify the keystore can be read with the expected passwords
-          keytool -list -keystore ./android.keystore -storepass nalichat-store -alias "$KEYSTORE_ALIAS" || {
-            echo "❌ Cannot read keystore with password nalichat-store — aborting"
+          keytool -list -keystore ./android.keystore -storepass "$KEYSTORE_PASS" -alias "$KEY_ALIAS" || {
+            echo "❌ Cannot read keystore — check CM_KEYSTORE_PASSWORD / CM_KEY_ALIAS in code signing settings"
             exit 1
           }
-          echo "✅ Self-signed keystore generated and verified at ./android.keystore"
+          echo "✅ Keystore ready at ./android.keystore (alias: $KEY_ALIAS)"
+          # Persist passwords for subsequent steps via $CM_ENV
+          echo "export KEYSTORE_PASS='$KEYSTORE_PASS'" >> "$CM_ENV"
+          echo "export KEY_PASS='$KEY_PASS'" >> "$CM_ENV"
+          echo "export KEY_ALIAS='$KEY_ALIAS'" >> "$CM_ENV"
       - name: Update twa-manifest signing key paths
         script: |
           sed -i "s|\"path\"[[:space:]]*:[[:space:]]*\"[^\"]*\"|\"path\": \"./android.keystore\"|g" ./twa-manifest.json
@@ -98,7 +111,9 @@ workflows:
       - name: Bubblewrap update (regenerate Gradle project)
         script: |
           # Let bubblewrap install its own JDK — avoids path prompt infinite loop
-          expect << 'EOF' 2>&1 | tee /tmp/bubblewrap_update.log
+          KEYSTORE_PASS="${KEYSTORE_PASS:-${CM_KEYSTORE_PASSWORD:-nalichat-store}}"
+          KEY_PASS="${KEY_PASS:-${CM_KEY_PASSWORD:-$KEYSTORE_PASS}}"
+          expect << EOF 2>&1 | tee /tmp/bubblewrap_update.log
             set timeout 1800
             log_user 1
             spawn bubblewrap update --skip-gradle-build
@@ -108,6 +123,10 @@ workflows:
               "(Y/n)" { send "y\r"; exp_continue }
               "(y/N)" { send "y\r"; exp_continue }
               "license" { send "y\r"; exp_continue }
+              "Password for the Key Store" { send "$KEYSTORE_PASS\r"; exp_continue }
+              "Password for the Key" { send "$KEY_PASS\r"; exp_continue }
+              "Keystore password" { send "$KEYSTORE_PASS\r"; exp_continue }
+              "Key password" { send "$KEY_PASS\r"; exp_continue }
               timeout {
                 puts "\n❌ Timed out after 1800s — check /tmp/bubblewrap_update.log"
                 exit 1
@@ -173,21 +192,24 @@ workflows:
       - name: Build AAB
         script: |
           export CI=true
-          export BUBBLEWRAP_KEYSTORE_PASSWORD="nalichat-store"
-          export BUBBLEWRAP_KEY_PASSWORD="nalichat-store"
-          # Regenerate keystore right before build — ensures it matches our passwords
-          rm -f ./android.keystore
-          keytool -genkeypair -v \
-            -keystore ./android.keystore \
-            -alias nalichat \
-            -storetype JKS \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass nalichat-store -keypass nalichat-store \
-            -dname "CN=NaliChat, OU=Mobile, O=NaliChat, L=Indianapolis, ST=IN, C=US"
-          keytool -list -keystore ./android.keystore -storepass nalichat-store -alias nalichat || exit 1
-          # Let bubblewrap install its own JDK; answer "y" to all prompts
+          # Use the keystore from the "Set up signing keystore" step — do NOT regenerate it.
+          # Regenerating would produce a different signing key each build, breaking Play Store updates.
+          KEYSTORE_PASS="${KEYSTORE_PASS:-${CM_KEYSTORE_PASSWORD:-nalichat-store}}"
+          KEY_PASS="${KEY_PASS:-${CM_KEY_PASSWORD:-$KEYSTORE_PASS}}"
+          KEY_ALIAS="${KEY_ALIAS:-${CM_KEY_ALIAS:-$KEYSTORE_ALIAS}}"
+          # Verify keystore exists and is readable
+          if [ ! -f ./android.keystore ]; then
+            echo "❌ android.keystore not found — aborting"
+            exit 1
+          fi
+          keytool -list -keystore ./android.keystore -storepass "$KEYSTORE_PASS" -alias "$KEY_ALIAS" || {
+            echo "❌ Cannot read keystore — check CM_KEYSTORE_PASSWORD / CM_KEY_ALIAS"
+            exit 1
+          }
+          echo "✅ Keystore verified, starting Bubblewrap build"
+          # Bubblewrap prompts for keystore/key passwords interactively — handle them via expect
           set +e
-          expect << 'EOF' 2>&1 | tee /tmp/bubblewrap_build.log
+          expect << EOF 2>&1 | tee /tmp/bubblewrap_build.log
             set timeout 1800
             log_user 1
             spawn bubblewrap build
@@ -197,6 +219,10 @@ workflows:
               "(Y/n)" { send "y\r"; exp_continue }
               "(y/N)" { send "y\r"; exp_continue }
               "license" { send "y\r"; exp_continue }
+              "Password for the Key Store" { send "$KEYSTORE_PASS\r"; exp_continue }
+              "Password for the Key" { send "$KEY_PASS\r"; exp_continue }
+              "Keystore password" { send "$KEYSTORE_PASS\r"; exp_continue }
+              "Key password" { send "$KEY_PASS\r"; exp_continue }
               timeout {
                 puts "\n❌ Timed out after 1800s — check /tmp/bubblewrap_build.log"
                 exit 1
@@ -204,7 +230,7 @@ workflows:
               eof
             }
             catch wait result
-            exit [lindex $result 3]
+            exit [lindex \$result 3]
           EOF
           BUILD_EXIT=${PIPESTATUS[0]}
           echo ""
@@ -246,6 +272,27 @@ workflows:
             fi
           fi
           rm -rf "$TMP_DIR"
+      - name: Verify AAB is signed
+        script: |
+          AAB_FILE="./app-release-bundle.aab"
+          if [ ! -f "$AAB_FILE" ]; then
+            AAB_FILE=$(find . -name "*.aab" -type f 2>/dev/null | head -1)
+          fi
+          if [ -z "$AAB_FILE" ]; then
+            echo "❌ No AAB found to verify signing"
+            exit 1
+          fi
+          echo "🔐 Verifying AAB signing: $AAB_FILE"
+          # jarsigner checks the signature on the AAB
+          if jarsigner -verify -verbose -certs "$AAB_FILE" 2>&1 | grep -q "jar verified"; then
+            echo "✅ AAB is SIGNED and verified"
+          else
+            echo "⚠️  jarsigner verification result:"
+            jarsigner -verify -verbose "$AAB_FILE" 2>&1 | tail -20
+            echo "⚠️  AAB may not be properly signed — check build logs"
+          fi
+          # Print the signing certificate fingerprint for comparison
+          keytool -printcert -jarfile "$AAB_FILE" 2>/dev/null | grep -E "Owner|Issuer|SHA256" || echo "  (no cert info found)"
     artifacts:
       - app-release-bundle.aab
       - ./app/build/outputs/bundle/release/*.aab

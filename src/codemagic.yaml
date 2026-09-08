@@ -64,14 +64,26 @@ workflows:
           # Avoids password mismatches when CM_KEYSTORE is set but CM_KEYSTORE_PASSWORD is not.
           # Download this keystore from build artifacts and upload to Codemagic code signing
           # (passwords: nalichat-store / nalichat-key, alias: nalichat) for consistent future builds.
+          # Remove any stale keystore (from CM_KEYSTORE auto-decode or previous cache)
+          rm -f ./android.keystore
           echo "🔑 Generating a self-signed keystore with fixed passwords"
           keytool -genkeypair -v \
             -keystore ./android.keystore \
             -alias "$KEYSTORE_ALIAS" \
+            -storetype PKCS12 \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass nalichat-store -keypass nalichat-key \
             -dname "CN=NaliChat, OU=Mobile, O=NaliChat, L=Indianapolis, ST=IN, C=US"
-          echo "✅ Self-signed keystore generated at ./android.keystore"
+          if [ $? -ne 0 ]; then
+            echo "❌ keytool failed to generate keystore"
+            exit 1
+          fi
+          # Verify the keystore can be read with the expected passwords
+          keytool -list -keystore ./android.keystore -storepass nalichat-store -alias "$KEYSTORE_ALIAS" || {
+            echo "❌ Cannot read keystore with password nalichat-store — aborting"
+            exit 1
+          }
+          echo "✅ Self-signed keystore generated and verified at ./android.keystore"
       - name: Update twa-manifest signing key paths
         script: |
           sed -i "s|\"path\"[[:space:]]*:[[:space:]]*\"[^\"]*\"|\"path\": \"./android.keystore\"|g" ./twa-manifest.json

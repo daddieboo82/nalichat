@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Forward, Pencil, Sparkles, Volume2, Share2 } from "lucide-react";
+import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Forward, Pencil, Sparkles, Volume2, Share2, Flag } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ import VoiceCardDialog from "./VoiceCardDialog";
 import MessageContextMenu from "./MessageContextMenu";
 import VoiceTranscription from "./VoiceTranscription";
 import SwipeToReply from "./SwipeToReply";
+import ReportContentDialog from "@/components/ReportContentDialog";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -140,6 +141,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
   const [viralOpen, setViralOpen] = useState(false);
   const [voiceCardOpen, setVoiceCardOpen] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState(null);
+  const [reportOpen, setReportOpen] = useState(false);
   const longPressTimer = useRef(null);
 
   const hasFile = message.file_url && message.type !== "text";
@@ -466,7 +468,17 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           ...(message.text ? [{ icon: Volume2, label: "Read Aloud", onClick: () => speakText(message.text) }] : []),
           ...(isOwn && message.type === "text" ? [{ icon: Pencil, label: "Edit", onClick: () => onEdit?.(message) }] : []),
           ...((canDelete !== undefined ? canDelete : isOwn) ? [{ icon: Trash2, label: "Delete", onClick: () => { if (navigator.vibrate) navigator.vibrate(40); onDelete?.(message.id); }, destructive: true }] : []),
+          { icon: Flag, label: "Report", onClick: () => setReportOpen(true), destructive: true },
         ]}
+      />
+
+      <ReportContentDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        contentType="message"
+        contentId={message.id}
+        contentText={message.text || message.file_name || ""}
+        conversationId={message.conversation_id}
       />
     </motion.div>
     </SwipeToReply>

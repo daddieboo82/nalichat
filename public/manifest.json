@@ -1,26 +1,36 @@
 {
   "name": "NaliChat",
   "short_name": "NaliChat",
-  "description": "Collaborate, create & share music — studio, messaging, and more.",
-  "start_url": "/",
-  "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0f0a14",
-  "theme_color": "#7c3aed",
+  "description": "A professional collaborative workspace for musicians, producers, and industry professionals to message, share studio sessions, and mix music remotely.",
   "icons": [
     {
-      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/da0cb6e0c_generated_image.png",
+      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/d8bbad742_NalichatLogo.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/da0cb6e0c_generated_image.png",
+      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/d8bbad742_NalichatLogo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/d8bbad742_NalichatLogo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0a0a0f",
+  "background_color": "#0a0a0f",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["music", "social", "productivity", "multimedia"],
   "shortcuts": [
     {
       "name": "Explore Music",
@@ -28,8 +38,9 @@
       "url": "/explore",
       "icons": [
         {
-          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/da0cb6e0c_generated_image.png",
-          "sizes": "192x192"
+          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/d8bbad742_NalichatLogo.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
@@ -39,8 +50,21 @@
       "url": "/studio",
       "icons": [
         {
-          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/da0cb6e0c_generated_image.png",
-          "sizes": "192x192"
+          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/d8bbad742_NalichatLogo.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "short_name": "Messages",
+      "url": "/messages",
+      "icons": [
+        {
+          "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/d8bbad742_NalichatLogo.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     }

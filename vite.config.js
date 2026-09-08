@@ -1,6 +1,34 @@
 import base44 from "@base44/vite-plugin"
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+// Serve a Microsoft Store-compliant PWA manifest, overriding the
+// Base44 plugin's dynamically generated one.
+function customManifestPlugin() {
+  let manifestContent = '';
+  try {
+    manifestContent = readFileSync(resolve(process.cwd(), 'public/manifest.json'), 'utf-8');
+  } catch (e) {
+    console.warn('public/manifest.json not found — using Base44 default manifest');
+  }
+  return {
+    name: 'custom-manifest',
+    configureServer(server) {
+      server.middlewares.use('/manifest.json', (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(manifestContent);
+      });
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use('/manifest.json', (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(manifestContent);
+      });
+    },
+  };
+}
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -16,5 +44,6 @@ export default defineConfig({
       visualEditAgent: true
     }),
     react(),
+    customManifestPlugin(),
   ]
 });

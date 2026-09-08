@@ -72,6 +72,7 @@ export default function Privacy() {
           <p>If you have questions about this Privacy Policy, please contact us at:</p>
           <p className="mt-1"><strong>Email:</strong> privacy@nalichat.org</p>
           <p><strong>Website:</strong> <a href="https://nalichat.org" className="text-primary underline">nalichat.org</a></p>
+          <p className="mt-2"><a href="/terms" className="text-primary underline">View our Terms of Service</a></p>
         </div>
 
       </section>

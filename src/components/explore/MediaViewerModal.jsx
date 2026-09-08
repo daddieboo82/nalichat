@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward, Square, ShoppingCart, Minimize2, Download, Share2 } from "lucide-react";
+import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward, Square, ShoppingCart, Minimize2, Download, Share2, Flag } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
 import { toast } from "sonner";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
+import ReportContentDialog from "@/components/ReportContentDialog";
 
 export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlaylist }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -19,6 +20,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
   const inCart = items.some(item => item.id === post?.id);
   const audioPlayer = useAudioPlayer();
   const playTrack = audioPlayer?.playTrack;
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -246,6 +248,20 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                      <Share2 className="w-5 h-5" />
                      Share
                    </Button>
+
+                   <Button
+                     type="button"
+                     size="lg"
+                     onClick={(e) => {
+                       e.preventDefault();
+                       e.stopPropagation();
+                       setReportOpen(true);
+                     }}
+                     className="bg-white/5 text-white/50 hover:bg-destructive/15 hover:text-destructive border border-white/10 shadow-lg gap-2 h-14 px-6 text-base rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
+                   >
+                     <Flag className="w-5 h-5" />
+                     Report
+                   </Button>
                  </div>
 
                  <div className="grid grid-cols-2 gap-4 mb-8">
@@ -406,8 +422,15 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          </div>
+          </DialogContent>
+          <ReportContentDialog
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+          contentType="art_post"
+          contentId={post.id}
+          contentText={post.title || ""}
+          />
+          </Dialog>
   );
 }

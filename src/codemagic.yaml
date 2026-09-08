@@ -68,28 +68,25 @@ workflows:
           echo "✅ Bubblewrap config updated with JDK and Android SDK paths"
       - name: Bubblewrap update (regenerate Gradle project)
         script: |
-          # Inquirer requires a TTY — use expect to create a pseudo-TTY and auto-answer prompts
+          # Let bubblewrap install its own JDK — avoids path prompt infinite loop
           expect << 'EOF' 2>&1 | tee /tmp/bubblewrap_update.log
             set timeout 1800
             log_user 1
             spawn bubblewrap update --skip-gradle-build
             expect {
-              "Path to your existing JDK 17:" { send "$env(JAVA_HOME)\r"; exp_continue }
-              "Path to your existing Android SDK:" { send "$env(ANDROID_HOME)\r"; exp_continue }
-              "Install JDK?" { send "n\r"; exp_continue }
-              "install the JDK" { send "n\r"; exp_continue }
-              "(Y/n)" { send "n\r"; exp_continue }
+              "Install JDK?" { send "y\r"; exp_continue }
+              "install the JDK" { send "y\r"; exp_continue }
+              "(Y/n)" { send "y\r"; exp_continue }
               "(y/N)" { send "y\r"; exp_continue }
               "license" { send "y\r"; exp_continue }
               timeout {
-                puts "\n❌ Timed out after 1800s waiting for a prompt — check /tmp/bubblewrap_update.log"
+                puts "\n❌ Timed out after 1800s — check /tmp/bubblewrap_update.log"
                 exit 1
               }
               eof
             }
           EOF
           UPDATE_EXIT=$?
-          echo "=== Bubblewrap update exit code: $UPDATE_EXIT ==="
           if [ $UPDATE_EXIT -ne 0 ]; then
             echo "=== Last 50 lines of update log ==="
             tail -50 /tmp/bubblewrap_update.log
@@ -116,19 +113,22 @@ workflows:
           export CI=true
           export BUBBLEWRAP_KEYSTORE_PASSWORD="${CM_KEYSTORE_PASSWORD:-nalichat-store}"
           export BUBBLEWRAP_KEY_PASSWORD="${CM_KEY_PASSWORD:-nalichat-key}"
-          # Answer "n" to JDK install prompt (use Codemagic's JDK 17), "y" to everything else
+          # Let bubblewrap install its own JDK; answer "y" to all prompts
           set +e
           expect << 'EOF' 2>&1 | tee /tmp/bubblewrap_build.log
-            set timeout 900
+            set timeout 1800
             log_user 1
             spawn bubblewrap build
             expect {
-              "Path to your existing JDK 17:" { send "$env(JAVA_HOME)\r"; exp_continue }
-              "Path to your existing Android SDK:" { send "$env(ANDROID_HOME)\r"; exp_continue }
-              "Install JDK?" { send "n\r"; exp_continue }
-              "(Y/n)" { send "n\r"; exp_continue }
+              "Install JDK?" { send "y\r"; exp_continue }
+              "install the JDK" { send "y\r"; exp_continue }
+              "(Y/n)" { send "y\r"; exp_continue }
               "(y/N)" { send "y\r"; exp_continue }
               "license" { send "y\r"; exp_continue }
+              timeout {
+                puts "\n❌ Timed out after 1800s — check /tmp/bubblewrap_build.log"
+                exit 1
+              }
               eof
             }
             catch wait result

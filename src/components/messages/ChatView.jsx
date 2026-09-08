@@ -17,6 +17,7 @@ import { queryClientInstance as queryClient } from "@/lib/query-client";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import NaliContextHint from "@/components/nali/NaliContextHint";
 import { routeNativeCall } from "@/lib/nativeCall";
+import { copyToClipboard } from "@/lib/clipboard";
 import { useCall, isCallSignal } from "@/hooks/useCall";
 import CallOverlay from "./CallOverlay";
 import { motion, AnimatePresence } from "framer-motion";
@@ -281,7 +282,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               onReact={onReact}
               onOpenThread={setThreadMessage}
               users={users}
-              onCopy={() => navigator.clipboard.writeText(item.text || "")}
+              onCopy={() => copyToClipboard(item.text || "")}
               onDelete={async (id) => {
                 if (editingMessage?.id === id) setEditingMessage(null);
                 if (replyTo?.id === id) setReplyTo(null);

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Copy, Check, Mail, MessageSquare, Loader2, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { base44 } from "@/api/base44Client";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export default function GlobalInviteDialog({ open, onOpenChange }) {
   const [copied, setCopied] = useState(false);
@@ -49,7 +50,7 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(inviteUrl);
+    await copyToClipboard(inviteUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast({ title: "Copied!", description: "Invite link copied to clipboard." });

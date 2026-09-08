@@ -17,6 +17,7 @@ import { resumableDownload } from "@/lib/resumableUpload";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import LargeFileTransfer from "@/components/files/LargeFileTransfer";
 import { sounds } from "@/hooks/use-sound";
+import { copyToClipboard } from "@/lib/clipboard";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 
 const typeIcons = {
@@ -92,7 +93,7 @@ function FileShareButton({ file }) {
     e.stopPropagation();
     sounds.click();
     const url = `${window.location.origin}/files?download=${file.id}`;
-    navigator.clipboard.writeText(url);
+    copyToClipboard(url);
     toast({ title: "Link copied", description: "Share link copied to clipboard" });
   };
 

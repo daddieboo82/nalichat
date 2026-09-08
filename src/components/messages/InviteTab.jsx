@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Mail, Copy, Check, MessageSquare, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { copyToClipboard } from '@/lib/clipboard';
 
 export default function InviteTab() {
   const [copied, setCopied] = useState(false);
@@ -22,7 +23,7 @@ export default function InviteTab() {
   const inviteLink = `${getOrigin()}/register`;
 
   const copyLink = () => {
-    navigator.clipboard.writeText(inviteLink);
+    copyToClipboard(inviteLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

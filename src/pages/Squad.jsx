@@ -66,7 +66,19 @@ export default function Squad() {
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(inviteLink);
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+    } catch {
+      // Fallback for when Clipboard API is unavailable (e.g. document not focused)
+      const ta = document.createElement("textarea");
+      ta.value = inviteLink;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

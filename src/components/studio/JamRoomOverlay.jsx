@@ -4,6 +4,7 @@ import { Users } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { copyToClipboard } from '@/lib/clipboard';
 
 export default function JamRoomOverlay({ jamRoomActive, defaultRole, setDefaultRole }) {
   return (
@@ -36,7 +37,7 @@ export default function JamRoomOverlay({ jamRoomActive, defaultRole, setDefaultR
                 </SelectContent>
               </Select>
               <Button variant="outline" size="sm" className="w-full h-7 text-[10px] mt-2" onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
+                copyToClipboard(window.location.href);
                 toast.success("Invite link copied!");
               }}>
                 Copy Invite Link

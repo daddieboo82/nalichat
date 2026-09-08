@@ -5,6 +5,7 @@ import { Sparkles, Copy, Download, Share2, RefreshCw, Clapperboard, Image as Ima
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export default function ViralMomentDialog({ message, isOpen, onClose }) {
   const [mode, setMode] = useState(null);
@@ -58,7 +59,7 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(buildShareText());
+    copyToClipboard(buildShareText());
     toast.success("Copied to clipboard!");
   };
 

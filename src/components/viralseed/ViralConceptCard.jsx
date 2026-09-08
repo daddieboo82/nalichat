@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Copy, Check, ChevronDown, Hash, MessageCircle, Video, FileText, Send, Youtube, Repeat2, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { copyToClipboard } from "@/lib/clipboard";
 import { motion, AnimatePresence } from "framer-motion";
 
 const PLATFORMS = [
@@ -17,7 +18,7 @@ function CopyBlock({ label, content, icon: Icon, color }) {
 
   const handleCopy = (e) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(content || "");
+    copyToClipboard(content || "");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Twitter, Facebook, Link2, Instagram } from "lucide-react";
 import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export default function ShareButtons({ url, text }) {
   const copy = () => {
-    navigator.clipboard.writeText(url);
+    copyToClipboard(url);
     toast.success("Link copied — paste it anywhere!");
   };
 

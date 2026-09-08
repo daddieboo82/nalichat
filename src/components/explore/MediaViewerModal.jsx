@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import ReportContentDialog from "@/components/ReportContentDialog";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlaylist }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -239,7 +240,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                            url: window.location.href,
                          }).catch(console.error);
                        } else {
-                         navigator.clipboard.writeText(`${textToShare} ${window.location.href}`);
+                         copyToClipboard(`${textToShare} ${window.location.href}`);
                          toast.success("Link copied to clipboard to share in messages!");
                        }
                      }}

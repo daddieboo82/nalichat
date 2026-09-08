@@ -170,8 +170,11 @@ workflows:
           find . -name "*.aab" -type f 2>/dev/null || echo "No AAB found"
           echo "=== Build output directory ==="
           ls -la ./app/build/outputs/bundle/release/ 2>/dev/null || echo "No bundle output directory"
-          echo "=== Last 50 lines of build log ==="
-          tail -50 /tmp/bubblewrap_build.log
+          echo "=== Last 200 lines of build log ==="
+          tail -200 /tmp/bubblewrap_build.log
+          echo ""
+          echo "=== Extracted error messages ==="
+          grep -i -A 5 "FAILURE\|What went wrong\|Could not\|Cannot\|Error\|Exception\|failed" /tmp/bubblewrap_build.log | head -60
           if [ $BUILD_EXIT -ne 0 ]; then
             echo "❌ bubblewrap build failed with exit code $BUILD_EXIT"
             exit 1

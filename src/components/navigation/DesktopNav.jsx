@@ -113,7 +113,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
                       <div className="absolute top-0 inset-x-2 h-0.5 bg-primary rounded-b-full shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
                     )}
                     <Icon className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", active && "text-primary")} />
-                    <span className="hidden xl:inline">{label}</span>
+                    <span className="hidden 2xl:inline">{label}</span>
                   </Link>
                 );
               })}

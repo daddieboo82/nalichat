@@ -21,8 +21,8 @@
     "path": "./android.keystore",
     "alias": "nalichat"
   },
-  "appVersionCode": 1,
-  "appVersionName": "1.0.0",
+  "appVersionCode": 2,
+  "appVersionName": "1.0.1",
   "shortcuts": [
     {
       "name": "Explore Music",

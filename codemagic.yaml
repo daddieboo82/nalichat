@@ -129,15 +129,25 @@ workflows:
       - name: Enforce minSdkVersion 21 in Gradle files
         script: |
           # androidbrowserhelper 2.6.2 requires minSdk 21 — bubblewrap may generate 19
-          for GRADLE in ./app/build.gradle ./app/build.gradle.kts; do
+          # Handle both Groovy (minSdk 19 / minSdkVersion 19) and Kotlin DSL (minSdk = 19)
+          for GRADLE in $(find . -name "build.gradle" -o -name "build.gradle.kts" 2>/dev/null); do
             if [ -f "$GRADLE" ]; then
-              CURRENT_MIN=$(grep -E "minSdkVersion" "$GRADLE" | head -1 | grep -oE '[0-9]+')
-              if [ -n "$CURRENT_MIN" ] && [ "$CURRENT_MIN" -lt 21 ]; then
-                echo "⚠️  Fixing minSdkVersion from $CURRENT_MIN to 21 in $GRADLE"
-                sed -i "s/minSdkVersion[[:space:]]*[0-9]*/minSdkVersion 21/g" "$GRADLE"
-              else
-                echo "✅ $GRADLE minSdkVersion already >= 21"
-              fi
+              echo "=== Checking $GRADLE ==="
+              grep -n -E "minSdk" "$GRADLE" || echo "  (no minSdk found)"
+              # Fix all minSdk/minSdkVersion patterns: space or = separator
+              sed -i -E "s/(minSdkVersion[[:space:]]*=?[[:space:]]*)[0-9]+/\121/g" "$GRADLE"
+              sed -i -E "s/(minSdk[[:space:]]*=?[[:space:]]*)[0-9]+/\121/g" "$GRADLE"
+              echo "  After fix:"
+              grep -n -E "minSdk" "$GRADLE" || echo "  (no minSdk found)"
+            fi
+          done
+          # Also fix AndroidManifest.xml if it has minSdkVersion
+          for MANIFEST in $(find . -name "AndroidManifest.xml" 2>/dev/null); do
+            if [ -f "$MANIFEST" ] && grep -q 'minSdkVersion' "$MANIFEST"; then
+              echo "=== Fixing $MANIFEST ==="
+              sed -i -E 's/android:minSdkVersion="[0-9]+"/android:minSdkVersion="21"/g' "$MANIFEST"
+              echo "  After fix:"
+              grep -n 'minSdkVersion' "$MANIFEST" || echo "  (no minSdkVersion found)"
             fi
           done
       - name: Fix local.properties SDK path

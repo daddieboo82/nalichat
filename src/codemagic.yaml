@@ -70,7 +70,7 @@ workflows:
           keytool -genkeypair -v \
             -keystore ./android.keystore \
             -alias "$KEYSTORE_ALIAS" \
-            -storetype PKCS12 \
+            -storetype JKS \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass nalichat-store -keypass nalichat-store \
             -dname "CN=NaliChat, OU=Mobile, O=NaliChat, L=Indianapolis, ST=IN, C=US"
@@ -180,7 +180,7 @@ workflows:
           keytool -genkeypair -v \
             -keystore ./android.keystore \
             -alias nalichat \
-            -storetype PKCS12 \
+            -storetype JKS \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass nalichat-store -keypass nalichat-store \
             -dname "CN=NaliChat, OU=Mobile, O=NaliChat, L=Indianapolis, ST=IN, C=US"

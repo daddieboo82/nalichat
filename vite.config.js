@@ -4,8 +4,9 @@ import { defineConfig } from 'vite'
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-// Serve a Microsoft Store-compliant PWA manifest, overriding the
-// Base44 plugin's dynamically generated one.
+// Serve a Microsoft Store-compliant PWA manifest at a custom path that
+// bypasses the Base44 plugin's default manifest handler, then rewrite the
+// <link rel="manifest"> tag in index.html to point to it.
 function customManifestPlugin() {
   let manifestContent = '';
   try {
@@ -13,19 +14,24 @@ function customManifestPlugin() {
   } catch (e) {
     console.warn('public/manifest.json not found — using Base44 default manifest');
   }
+  const serveManifest = (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.end(manifestContent);
+  };
   return {
     name: 'custom-manifest',
     configureServer(server) {
-      server.middlewares.use('/manifest.json', (req, res) => {
-        res.setHeader('Content-Type', 'application/json');
-        res.end(manifestContent);
-      });
+      server.middlewares.use('/store-manifest.json', serveManifest);
     },
     configurePreviewServer(server) {
-      server.middlewares.use('/manifest.json', (req, res) => {
-        res.setHeader('Content-Type', 'application/json');
-        res.end(manifestContent);
-      });
+      server.middlewares.use('/store-manifest.json', serveManifest);
+    },
+    transformIndexHtml(html) {
+      // Replace any manifest link href with our custom path
+      return html.replace(
+        /<link\s+rel="manifest"\s+href="[^"]*"/g,
+        '<link rel="manifest" href="/store-manifest.json"'
+      );
     },
   };
 }

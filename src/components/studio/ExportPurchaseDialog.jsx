@@ -59,8 +59,8 @@ export default function ExportPurchaseDialog({ open, onOpenChange, format, track
       try { localStorage.setItem('gads_purchase_value', String(price)); } catch {}
       const res = await base44.functions.invoke("createCheckout", {
         items: [{
-          name: `Studio Export - ${format.toUpperCase()} Download`,
-          price: price,
+          type: "studio_export",
+          format: format,
           quantity: 1,
         }],
         callbackUrls: {

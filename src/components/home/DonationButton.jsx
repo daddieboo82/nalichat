@@ -28,7 +28,7 @@ export default function DonationButton({ variant = "hero" }) {
       }
       try { localStorage.setItem('gads_purchase_value', String(amount)); } catch {}
       const response = await base44.functions.invoke("createCheckout", {
-        items: [{ name: "Donation to NaliChat", quantity: 1, price: amount.toFixed(2) }],
+        items: [{ type: "donation", amount: amount, quantity: 1 }],
         callbackUrls: {
           postFlowUrl: appUrl,
           thankYouPageUrl: `${appUrl}/ThankYou`,

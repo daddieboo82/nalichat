@@ -62,7 +62,7 @@ export default function InviteTab() {
   const shareViaEmail = async () => {
     setLoading(true);
     try {
-      await base44.functions.invoke('send-invite-email', { to: 'recipient@example.com', inviteLink });
+      await base44.functions.invoke('send-invite-email', { to: 'recipient@example.com' });
     } catch (err) {
       console.error('Failed to send invite:', err);
     } finally {

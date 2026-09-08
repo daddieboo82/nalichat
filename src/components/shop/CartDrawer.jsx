@@ -20,8 +20,7 @@ export default function CartDrawer() {
       }
       try { localStorage.setItem('gads_purchase_value', String(total)); } catch {}
       const checkoutItems = items.map(item => ({
-        name: item.title || item.name || "Unknown Item",
-        price: item.price || 0,
+        id: item.id,
         quantity: item.quantity || 1
       }));
 

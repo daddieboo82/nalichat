@@ -175,6 +175,16 @@ workflows:
           export CI=true
           export BUBBLEWRAP_KEYSTORE_PASSWORD="nalichat-store"
           export BUBBLEWRAP_KEY_PASSWORD="nalichat-key"
+          # Regenerate keystore right before build — ensures it matches our passwords
+          rm -f ./android.keystore
+          keytool -genkeypair -v \
+            -keystore ./android.keystore \
+            -alias nalichat \
+            -storetype PKCS12 \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass nalichat-store -keypass nalichat-key \
+            -dname "CN=NaliChat, OU=Mobile, O=NaliChat, L=Indianapolis, ST=IN, C=US"
+          keytool -list -keystore ./android.keystore -storepass nalichat-store -alias nalichat || exit 1
           # Let bubblewrap install its own JDK; answer "y" to all prompts
           set +e
           expect << 'EOF' 2>&1 | tee /tmp/bubblewrap_build.log

@@ -72,7 +72,7 @@ workflows:
             -alias "$KEYSTORE_ALIAS" \
             -storetype PKCS12 \
             -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass nalichat-store -keypass nalichat-key \
+            -storepass nalichat-store -keypass nalichat-store \
             -dname "CN=NaliChat, OU=Mobile, O=NaliChat, L=Indianapolis, ST=IN, C=US"
           if [ $? -ne 0 ]; then
             echo "❌ keytool failed to generate keystore"
@@ -174,7 +174,7 @@ workflows:
         script: |
           export CI=true
           export BUBBLEWRAP_KEYSTORE_PASSWORD="nalichat-store"
-          export BUBBLEWRAP_KEY_PASSWORD="nalichat-key"
+          export BUBBLEWRAP_KEY_PASSWORD="nalichat-store"
           # Regenerate keystore right before build — ensures it matches our passwords
           rm -f ./android.keystore
           keytool -genkeypair -v \
@@ -182,7 +182,7 @@ workflows:
             -alias nalichat \
             -storetype PKCS12 \
             -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass nalichat-store -keypass nalichat-key \
+            -storepass nalichat-store -keypass nalichat-store \
             -dname "CN=NaliChat, OU=Mobile, O=NaliChat, L=Indianapolis, ST=IN, C=US"
           keytool -list -keystore ./android.keystore -storepass nalichat-store -alias nalichat || exit 1
           # Let bubblewrap install its own JDK; answer "y" to all prompts

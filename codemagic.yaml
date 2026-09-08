@@ -26,6 +26,26 @@ workflows:
       - name: Install Bubblewrap CLI
         script: |
           npm install -g @bubblewrap/cli
+      - name: Prepare Android SDK (licenses + components)
+        script: |
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/share/android-sdk}}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          SDKMANAGER=$(find "$ANDROID_HOME" -name "sdkmanager" -type f 2>/dev/null | head -1)
+          if [ -n "$SDKMANAGER" ]; then
+            yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+            "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1 || true
+            echo "✅ SDK licenses accepted, components installed at $ANDROID_HOME"
+          else
+            echo "⚠️  sdkmanager not found — trying cmdline-tools"
+            CMDLINE="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+            if [ -f "$CMDLINE" ]; then
+              yes | "$CMDLINE" --licenses > /dev/null 2>&1 || true
+              "$CMDLINE" "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1 || true
+              echo "✅ SDK licenses accepted via cmdline-tools"
+            else
+              echo "❌ No sdkmanager found at $ANDROID_HOME"
+            fi
+          fi
       - name: Verify twa-manifest packageId
         script: |
           MANIFEST_ID=$(grep -o '"packageId"[[:space:]]*:[[:space:]]*"[^"]*"' ./src/twa-manifest.json | head -1 | sed 's/.*: *//;s/"//g')
@@ -106,6 +126,15 @@ workflows:
           }
           fix_gradle_file "./app/build.gradle"
           fix_gradle_file "./app/build.gradle.kts"
+      - name: Fix local.properties SDK path
+        script: |
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/share/android-sdk}}"
+          if [ -f "./local.properties" ]; then
+            sed -i "s|sdk.dir=.*|sdk.dir=$ANDROID_HOME|" ./local.properties
+          else
+            echo "sdk.dir=$ANDROID_HOME" > ./local.properties
+          fi
+          echo "✅ local.properties SDK path set to: $ANDROID_HOME"
       - name: Build AAB
         script: |
           export CI=true

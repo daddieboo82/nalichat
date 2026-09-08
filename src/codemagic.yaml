@@ -60,21 +60,18 @@ workflows:
           cp ./src/twa-manifest.json ./twa-manifest.json
       - name: Set up signing keystore
         script: |
-          if [ -n "$CM_KEYSTORE" ]; then
-            echo "$CM_KEYSTORE" | base64 --decode > ./android.keystore
-            echo "✅ Keystore decoded from Codemagic code signing settings"
-          else
-            echo "⚠️  No keystore in Codemagic code signing — generating a self-signed one"
-            keytool -genkeypair -v \
-              -keystore ./android.keystore \
-              -alias "$KEYSTORE_ALIAS" \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass nalichat-store -keypass nalichat-key \
-              -dname "CN=NaliChat, OU=Mobile, O=NaliChat, L=Indianapolis, ST=IN, C=US"
-            export BUBBLEWRAP_KEYSTORE_PASSWORD=nalichat-store
-            export BUBBLEWRAP_KEY_PASSWORD=nalichat-key
-            echo "✅ Self-signed keystore generated at ./android.keystore"
-          fi
+          # Always generate a self-signed keystore with fixed passwords.
+          # Avoids password mismatches when CM_KEYSTORE is set but CM_KEYSTORE_PASSWORD is not.
+          # Download this keystore from build artifacts and upload to Codemagic code signing
+          # (passwords: nalichat-store / nalichat-key, alias: nalichat) for consistent future builds.
+          echo "🔑 Generating a self-signed keystore with fixed passwords"
+          keytool -genkeypair -v \
+            -keystore ./android.keystore \
+            -alias "$KEYSTORE_ALIAS" \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass nalichat-store -keypass nalichat-key \
+            -dname "CN=NaliChat, OU=Mobile, O=NaliChat, L=Indianapolis, ST=IN, C=US"
+          echo "✅ Self-signed keystore generated at ./android.keystore"
       - name: Update twa-manifest signing key paths
         script: |
           sed -i "s|\"path\"[[:space:]]*:[[:space:]]*\"[^\"]*\"|\"path\": \"./android.keystore\"|g" ./twa-manifest.json
@@ -164,8 +161,8 @@ workflows:
       - name: Build AAB
         script: |
           export CI=true
-          export BUBBLEWRAP_KEYSTORE_PASSWORD="${CM_KEYSTORE_PASSWORD:-nalichat-store}"
-          export BUBBLEWRAP_KEY_PASSWORD="${CM_KEY_PASSWORD:-nalichat-key}"
+          export BUBBLEWRAP_KEYSTORE_PASSWORD="nalichat-store"
+          export BUBBLEWRAP_KEY_PASSWORD="nalichat-key"
           # Let bubblewrap install its own JDK; answer "y" to all prompts
           set +e
           expect << 'EOF' 2>&1 | tee /tmp/bubblewrap_build.log
@@ -230,3 +227,4 @@ workflows:
     artifacts:
       - app-release-bundle.aab
       - ./app/build/outputs/bundle/release/*.aab
+      - android.keystore

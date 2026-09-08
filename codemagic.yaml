@@ -126,6 +126,20 @@ workflows:
           }
           fix_gradle_file "./app/build.gradle"
           fix_gradle_file "./app/build.gradle.kts"
+      - name: Enforce minSdkVersion 21 in Gradle files
+        script: |
+          # androidbrowserhelper 2.6.2 requires minSdk 21 — bubblewrap may generate 19
+          for GRADLE in ./app/build.gradle ./app/build.gradle.kts; do
+            if [ -f "$GRADLE" ]; then
+              CURRENT_MIN=$(grep -E "minSdkVersion" "$GRADLE" | head -1 | grep -oE '[0-9]+')
+              if [ -n "$CURRENT_MIN" ] && [ "$CURRENT_MIN" -lt 21 ]; then
+                echo "⚠️  Fixing minSdkVersion from $CURRENT_MIN to 21 in $GRADLE"
+                sed -i "s/minSdkVersion[[:space:]]*[0-9]*/minSdkVersion 21/g" "$GRADLE"
+              else
+                echo "✅ $GRADLE minSdkVersion already >= 21"
+              fi
+            fi
+          done
       - name: Fix local.properties SDK path
         script: |
           export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/share/android-sdk}}"

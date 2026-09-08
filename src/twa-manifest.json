@@ -67,6 +67,6 @@
   "isChromeOSOnly": false,
   "isMetaQuest": false,
   "fullScopeUrl": "https://nalichat.org/",
-  "minSdkVersion": 19,
+  "minSdkVersion": 21,
   "targetSdkVersion": 34
 }

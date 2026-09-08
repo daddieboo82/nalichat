@@ -71,10 +71,12 @@ workflows:
             set timeout 600
             spawn bubblewrap update --skip-gradle-build
             expect {
-              -re "Install JDK\\?" { send "n\r"; exp_continue }
-              -re "\\(Y/n\\)" { send "n\r"; exp_continue }
-              -re "\\(y/N\\)" { send "y\r"; exp_continue }
-              -re "license" { send "y\r"; exp_continue }
+              "Path to your existing JDK 17:" { send "$env(JAVA_HOME)\r"; exp_continue }
+              "Path to your existing Android SDK:" { send "$env(ANDROID_HOME)\r"; exp_continue }
+              "Install JDK?" { send "n\r"; exp_continue }
+              "(Y/n)" { send "n\r"; exp_continue }
+              "(y/N)" { send "y\r"; exp_continue }
+              "license" { send "y\r"; exp_continue }
               eof
             }
           EOF
@@ -99,18 +101,37 @@ workflows:
           export CI=true
           export BUBBLEWRAP_KEYSTORE_PASSWORD="${CM_KEYSTORE_PASSWORD:-nalichat-store}"
           export BUBBLEWRAP_KEY_PASSWORD="${CM_KEY_PASSWORD:-nalichat-key}"
-          # Answer "n" to JDK install prompt (use Codemagic's JDK 17), "y" to everything else
-          expect << 'EOF'
+          # Answer "n" to JDK install, send actual paths when asked, "y" to licenses
+          set +e
+          expect << 'EOF' 2>&1 | tee /tmp/bubblewrap_build.log
             set timeout 900
             log_user 1
             spawn bubblewrap build
             expect {
+              "Path to your existing JDK 17:" { send "$env(JAVA_HOME)\r"; exp_continue }
+              "Path to your existing Android SDK:" { send "$env(ANDROID_HOME)\r"; exp_continue }
+              "Install JDK?" { send "n\r"; exp_continue }
               "(Y/n)" { send "n\r"; exp_continue }
               "(y/N)" { send "y\r"; exp_continue }
               "license" { send "y\r"; exp_continue }
               eof
             }
+            catch wait result
+            exit [lindex $result 3]
           EOF
+          BUILD_EXIT=$?
+          echo ""
+          echo "=== Bubblewrap build exit code: $BUILD_EXIT ==="
+          echo "=== Looking for AAB files ==="
+          find . -name "*.aab" -type f 2>/dev/null || echo "No AAB found"
+          echo "=== Build output directory ==="
+          ls -la ./app/build/outputs/bundle/release/ 2>/dev/null || echo "No bundle output directory"
+          echo "=== Last 50 lines of build log ==="
+          tail -50 /tmp/bubblewrap_build.log
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "❌ bubblewrap build failed with exit code $BUILD_EXIT"
+            exit 1
+          fi
       - name: Verify AAB package name
         script: |
           # Search for the AAB in common bubblewrap output locations

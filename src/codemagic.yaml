@@ -73,10 +73,12 @@ workflows:
             set timeout 600
             spawn bubblewrap update --skip-gradle-build
             expect {
-              -re "Install JDK\\?" { send "n\r"; exp_continue }
-              -re "\\(Y/n\\)" { send "n\r"; exp_continue }
-              -re "\\(y/N\\)" { send "y\r"; exp_continue }
-              -re "license" { send "y\r"; exp_continue }
+              "Path to your existing JDK 17:" { send "$env(JAVA_HOME)\r"; exp_continue }
+              "Path to your existing Android SDK:" { send "$env(ANDROID_HOME)\r"; exp_continue }
+              "Install JDK?" { send "n\r"; exp_continue }
+              "(Y/n)" { send "n\r"; exp_continue }
+              "(y/N)" { send "y\r"; exp_continue }
+              "license" { send "y\r"; exp_continue }
               eof
             }
           EOF
@@ -108,6 +110,9 @@ workflows:
             log_user 1
             spawn bubblewrap build
             expect {
+              "Path to your existing JDK 17:" { send "$env(JAVA_HOME)\r"; exp_continue }
+              "Path to your existing Android SDK:" { send "$env(ANDROID_HOME)\r"; exp_continue }
+              "Install JDK?" { send "n\r"; exp_continue }
               "(Y/n)" { send "n\r"; exp_continue }
               "(y/N)" { send "y\r"; exp_continue }
               "license" { send "y\r"; exp_continue }

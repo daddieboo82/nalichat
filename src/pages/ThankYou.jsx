@@ -16,6 +16,7 @@ export default function ThankYou() {
 
   const urlParams = new URLSearchParams(window.location.search);
   const isExport = urlParams.get("export") === "download";
+  const checkoutId = urlParams.get("checkout_id");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -37,6 +38,17 @@ export default function ThankYou() {
           localStorage.removeItem('gads_purchase_value');
         }
       } catch (e) {}
+
+      // Verify payment via backend fallback — ensures the purchase is fulfilled
+      // even if the Stripe webhook hasn't fired yet.
+      if (checkoutId) {
+        try {
+          await base44.functions.invoke('verifyCheckoutPayment', { checkoutId });
+        } catch (err) {
+          console.error("Payment verification failed:", err);
+        }
+      }
+
       try {
         if (isExport) {
           // Studio export download flow — deliver the rendered file
@@ -84,7 +96,7 @@ export default function ThankYou() {
     };
 
     processThankYou();
-  }, [queryClient, isExport, clearCart]);
+  }, [queryClient, isExport, clearCart, checkoutId]);
 
   // ── Export download view ──
   if (isExport) {

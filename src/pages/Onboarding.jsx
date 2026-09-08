@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, ArrowRight, CheckCircle2, Music, Users, PlaySquare } from "lucide-react";
+import { Loader2, CheckCircle2, Music } from "lucide-react";
 import { toast } from "sonner";
 import OnboardingNaliGuide from "@/components/onboarding/OnboardingNaliGuide";
 
@@ -20,7 +20,6 @@ export default function Onboarding() {
   });
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
-  const [step, setStep] = useState(1);
 
   useEffect(() => {
     if (user) {
@@ -37,17 +36,11 @@ export default function Onboarding() {
     }
   }, [user, isAuthenticated]);
 
-  const handleNextStep = () => {
-    if (step === 1) {
-      if (!form.display_name || !form.birthdate) {
-        toast.error("Please fill in required fields (Name and Birthdate)");
-        return;
-      }
-      setStep(2);
-    }
-  };
-
   const handleSave = async () => {
+    if (!form.display_name || !form.birthdate) {
+      toast.error("Please fill in your name and birthdate");
+      return;
+    }
     setLoading(true);
     try {
       await base44.auth.updateMe({
@@ -80,73 +73,58 @@ export default function Onboarding() {
 
   return (
     <>
-    <OnboardingNaliGuide step={step} profileComplete={profileComplete} />
+    <OnboardingNaliGuide step={1} profileComplete={profileComplete} />
     <div className="flex min-h-screen items-center justify-center bg-background p-4 lg:justify-start lg:pl-[6%] xl:pl-[12%]">
       <div className="w-full max-w-md bg-card border rounded-2xl p-8 shadow-xl">
         <div className="flex items-center gap-2 mb-6">
           <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
-            {step === 1 ? <Music className="w-5 h-5 text-primary" /> : <Users className="w-5 h-5 text-primary" />}
+            <Music className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <p className="font-heading font-bold text-lg leading-tight">
-              {step === 1 ? "Tell us about you" : "Almost done"}
-            </p>
-            <p className="text-xs text-muted-foreground">Step {step} of 2</p>
+            <p className="font-heading font-bold text-lg leading-tight">Welcome to NaliChat</p>
+            <p className="text-xs text-muted-foreground">Let's set up your profile</p>
           </div>
         </div>
 
-        {step === 1 ? (
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Display Name *</label>
-              <Input
-                value={form.display_name}
-                onChange={(e) => setForm(f => ({ ...f, display_name: e.target.value }))}
-                placeholder="How should we call you?"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Birthdate *</label>
-              <Input
-                type="date"
-                value={form.birthdate}
-                onChange={(e) => setForm(f => ({ ...f, birthdate: e.target.value }))}
-              />
-            </div>
-            <Button onClick={handleNextStep} className="w-full mt-2" size="lg">
-              Continue <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Display Name *</label>
+            <Input
+              value={form.display_name}
+              onChange={(e) => setForm(f => ({ ...f, display_name: e.target.value }))}
+              placeholder="How should we call you?"
+            />
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Bio</label>
-              <Textarea
-                value={form.bio}
-                onChange={(e) => setForm(f => ({ ...f, bio: e.target.value }))}
-                placeholder="A short bio about your music (optional)"
-                rows={3}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Location</label>
-              <Input
-                value={form.location}
-                onChange={(e) => setForm(f => ({ ...f, location: e.target.value }))}
-                placeholder="City, Country (optional)"
-              />
-            </div>
-            <div className="flex gap-2 mt-2">
-              <Button variant="outline" onClick={() => setStep(1)} disabled={loading} className="flex-1" size="lg">
-                Back
-              </Button>
-              <Button onClick={handleSave} disabled={loading} className="flex-1" size="lg">
-                {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-                Finish
-              </Button>
-            </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Birthdate *</label>
+            <Input
+              type="date"
+              value={form.birthdate}
+              onChange={(e) => setForm(f => ({ ...f, birthdate: e.target.value }))}
+            />
           </div>
-        )}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Bio</label>
+            <Textarea
+              value={form.bio}
+              onChange={(e) => setForm(f => ({ ...f, bio: e.target.value }))}
+              placeholder="A short bio about your music (optional)"
+              rows={2}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Location</label>
+            <Input
+              value={form.location}
+              onChange={(e) => setForm(f => ({ ...f, location: e.target.value }))}
+              placeholder="City, Country (optional)"
+            />
+          </div>
+          <Button onClick={handleSave} disabled={loading} className="w-full mt-2" size="lg">
+            {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+            {loading ? "Saving..." : "Get Started"}
+          </Button>
+        </div>
       </div>
     </div>
     </>

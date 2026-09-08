@@ -157,10 +157,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Append Stripe's {CHECKOUT_SESSION_ID} placeholder so the ThankYou page
+    // can verify the payment even if the webhook hasn't fired yet.
+    const separator = callbackUrls.thankYouPageUrl.includes('?') ? '&' : '?';
+    const successUrl = `${callbackUrls.thankYouPageUrl}${separator}checkout_id={CHECKOUT_SESSION_ID}`;
+
     const sessionParams: Record<string, any> = {
       mode: 'payment',
       line_items: lineItems,
-      success_url: callbackUrls.thankYouPageUrl,
+      success_url: successUrl,
       cancel_url: callbackUrls.postFlowUrl,
     };
 

@@ -132,7 +132,7 @@ workflows:
             catch wait result
             exit [lindex $result 3]
           EOF
-          BUILD_EXIT=$?
+          BUILD_EXIT=${PIPESTATUS[0]}
           echo ""
           echo "=== Bubblewrap build exit code: $BUILD_EXIT ==="
           echo "=== Looking for AAB files ==="

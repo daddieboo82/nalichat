@@ -5,6 +5,7 @@ import { stripeRequest } from '../../shared/stripe.ts';
 const DONATION_PRESETS = [5, 10, 25, 50];
 const EXPORT_PRICES: Record<string, number> = { wav: 1.99, mp3: 0.99 };
 const BONUS_MULTIPLIER = 1.5;
+const APK_PRICE = 1.99;
 
 function getWeekKey(date = new Date()): string {
   const d = new Date(date);
@@ -114,6 +115,9 @@ Deno.serve(async (req) => {
         }
         unitPrice = amount;
         name = 'Donation to NaliChat';
+      } else if (item.type === 'apk_download') {
+        unitPrice = APK_PRICE;
+        name = 'NaliChat Android App (APK)';
       } else if (item.type === 'studio_export') {
         // Studio export — use fixed server-side price table
         const format = String(item.format).toLowerCase();

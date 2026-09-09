@@ -3,6 +3,8 @@ import { Download as DownloadIcon, Shield, Smartphone, Apple, Monitor, Laptop, A
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { base44 } from '@/api/base44Client';
+import { toast } from 'sonner';
 
 // ┌──────────────────────────────────────────────────────────────────────┐
 // │  DOWNLOAD URLs                                                        │
@@ -68,6 +70,81 @@ function DownloadButton({ url, fileName, label }) {
   );
 }
 
+function ApkPurchaseButton() {
+  const [loading, setLoading] = useState(false);
+  const [paid, setPaid] = useState(() => {
+    try { return sessionStorage.getItem('apk_paid') === '1'; } catch { return false; }
+  });
+
+  const handlePurchase = async () => {
+    setLoading(true);
+    try {
+      const appUrl = window.location.origin;
+      try { localStorage.setItem('gads_purchase_value', '1.99'); } catch {}
+      const response = await base44.functions.invoke("createCheckout", {
+        items: [{ type: "apk_download", quantity: 1 }],
+        callbackUrls: {
+          postFlowUrl: `${appUrl}/download`,
+          thankYouPageUrl: `${appUrl}/ThankYou?apk=1`,
+        },
+      });
+      const checkoutUrl = response?.data?.checkoutUrl || response?.checkoutUrl;
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (error) {
+      toast.error("Failed to start checkout. Please try again.");
+      setLoading(false);
+    }
+  };
+
+  if (paid) {
+    return (
+      <>
+        <div className="flex items-center gap-2 text-sm text-green-500">
+          <CheckCircle className="w-4 h-4" />
+          <span>Thank you! Your purchase is confirmed.</span>
+        </div>
+        <a href={APK_DOWNLOAD_URL} download="nalichat.apk" className="block">
+          <Button className="w-full h-14 text-base font-semibold" size="lg">
+            <DownloadIcon className="w-5 h-5" />
+            Download APK
+          </Button>
+        </a>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-2 text-sm text-primary">
+        <Smartphone className="w-4 h-4" />
+        <span>One-time purchase · $1.99</span>
+      </div>
+      <Button
+        onClick={handlePurchase}
+        disabled={loading}
+        className="w-full h-14 text-base font-semibold"
+        size="lg"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Redirecting...
+          </>
+        ) : (
+          <>
+            <DownloadIcon className="w-5 h-5" />
+            Buy APK · $1.99
+          </>
+        )}
+      </Button>
+    </>
+  );
+}
+
 function Step({ n, children }) {
   return (
     <div className="flex gap-3">
@@ -118,7 +195,7 @@ export default function Download() {
           <TabsContent value="android" className="space-y-6 mt-6">
             <Card className="border-primary/20">
               <CardContent className="pt-6 space-y-4">
-                <DownloadButton url={APK_DOWNLOAD_URL} fileName="nalichat.apk" label="Download APK" />
+                <ApkPurchaseButton />
                 <p className="text-xs text-muted-foreground text-center">
                   File size: ~5–15 MB · Android 5.0+ (API 21+)
                 </p>

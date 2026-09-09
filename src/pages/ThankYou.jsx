@@ -16,6 +16,7 @@ export default function ThankYou() {
 
   const urlParams = new URLSearchParams(window.location.search);
   const isExport = urlParams.get("export") === "download";
+  const isApk = urlParams.get("apk") === "1";
   const checkoutId = urlParams.get("checkout_id");
 
   useEffect(() => {
@@ -50,7 +51,13 @@ export default function ThankYou() {
       }
 
       try {
-        if (isExport) {
+        if (isApk) {
+          // APK purchase — mark paid so the Download page reveals the link
+          try { sessionStorage.setItem('apk_paid', '1'); } catch {}
+          setExportState("done");
+          setExportInfo({ fileName: "NaliChat.apk" });
+          setProcessing(false);
+        } else if (isExport) {
           // Studio export download flow — deliver the rendered file
           setExportState("downloading");
           const pending = localStorage.getItem("pending_studio_export");
@@ -97,6 +104,50 @@ export default function ThankYou() {
 
     processThankYou();
   }, [queryClient, isExport, clearCart, checkoutId]);
+
+  // ── APK purchase view ──
+  if (isApk) {
+    const APK_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat.apk';
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-2xl"
+        >
+          <motion.div
+            className="mb-6 inline-block"
+          >
+            {processing ? (
+              <Loader2 className="w-20 h-20 text-primary animate-spin" />
+            ) : (
+              <CheckCircle className="w-20 h-20 text-accent" />
+            )}
+          </motion.div>
+
+          <h1 className="font-heading font-black text-5xl mb-4">
+            {processing ? "Confirming Purchase..." : "Thank You!"}
+          </h1>
+
+          <p className="text-xl text-muted-foreground mb-8">
+            {processing
+              ? "Confirming your payment. This takes just a moment..."
+              : "Your purchase is complete. Download the NaliChat app below."}
+          </p>
+
+          {!processing && (
+            <a href={APK_DOWNLOAD_URL} download="NaliChat.apk">
+              <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 h-14 px-8 text-lg font-bold">
+                <Download className="w-5 h-5 mr-2" />
+                Download APK
+              </Button>
+            </a>
+          )}
+        </motion.div>
+      </div>
+    );
+  }
 
   // ── Export download view ──
   if (isExport) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download as DownloadIcon, Shield, Smartphone, Apple, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { Download as DownloadIcon, Shield, Smartphone, Apple, Monitor, Laptop, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // └──────────────────────────────────────────────────────────────────────┘
 const APK_DOWNLOAD_URL = 'https://github.com/nalichat/nalichat/releases/latest/download/app-release.apk';
 const IPA_DOWNLOAD_URL = 'https://github.com/nalichat/nalichat/releases/latest/download/nalichat.ipa';
+const EXE_DOWNLOAD_URL = 'https://github.com/nalichat/nalichat/releases/latest/download/NaliChat-Setup.exe';
+const DMG_DOWNLOAD_URL = 'https://github.com/nalichat/nalichat/releases/latest/download/NaliChat.dmg';
 
 function useAvailability(url) {
   const [state, setState] = useState({ checking: true, available: false, finalUrl: url });
@@ -93,7 +95,7 @@ export default function Download() {
         </div>
 
         <Tabs value={platform} onValueChange={setPlatform}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="android" className="text-sm">
               <Smartphone className="w-4 h-4 mr-1.5" />
               Android
@@ -101,6 +103,14 @@ export default function Download() {
             <TabsTrigger value="ios" className="text-sm">
               <Apple className="w-4 h-4 mr-1.5" />
               iOS
+            </TabsTrigger>
+            <TabsTrigger value="windows" className="text-sm">
+              <Monitor className="w-4 h-4 mr-1.5" />
+              Windows
+            </TabsTrigger>
+            <TabsTrigger value="macos" className="text-sm">
+              <Laptop className="w-4 h-4 mr-1.5" />
+              macOS
             </TabsTrigger>
           </TabsList>
 
@@ -165,6 +175,62 @@ export default function Download() {
               <CardContent className="space-y-2 text-sm text-muted-foreground">
                 <p>• Sideloading requires re-signing every <strong className="text-foreground">7 days</strong> with a free Apple ID, or <strong className="text-foreground">1 year</strong> with a paid Apple Developer account.</p>
                 <p>• For the best iOS experience, use the <strong className="text-foreground">Add to Home Screen</strong> option in Safari for the PWA version — it works without re-signing.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Windows Tab */}
+          <TabsContent value="windows" className="space-y-6 mt-6">
+            <Card className="border-primary/20">
+              <CardContent className="pt-6 space-y-4">
+                <DownloadButton url={EXE_DOWNLOAD_URL} fileName="NaliChat-Setup.exe" label="Download for Windows" />
+                <p className="text-xs text-muted-foreground text-center">
+                  File size: ~50–100 MB · Windows 10/11 (64-bit)
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-primary" />
+                  How to Install
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <Step n={1}>Click <strong className="text-foreground">Download for Windows</strong> above and save the setup file.</Step>
+                <Step n={2}>Open <strong className="text-foreground">NaliChat-Setup.exe</strong> from your Downloads folder.</Step>
+                <Step n={3}>If Windows shows a <strong className="text-foreground">"Windows protected your PC"</strong> SmartScreen warning, click <strong className="text-foreground">More info</strong> then <strong className="text-foreground">Run anyway</strong>.</Step>
+                <Step n={4}>Follow the installer prompts to complete the installation.</Step>
+                <Step n={5}>Launch <strong className="text-foreground">NaliChat</strong> from your Start menu or desktop shortcut.</Step>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* macOS Tab */}
+          <TabsContent value="macos" className="space-y-6 mt-6">
+            <Card className="border-primary/20">
+              <CardContent className="pt-6 space-y-4">
+                <DownloadButton url={DMG_DOWNLOAD_URL} fileName="NaliChat.dmg" label="Download for macOS" />
+                <p className="text-xs text-muted-foreground text-center">
+                  File size: ~50–100 MB · macOS 11+ (Universal)
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-primary" />
+                  How to Install
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <Step n={1}>Click <strong className="text-foreground">Download for macOS</strong> above and save the DMG file.</Step>
+                <Step n={2}>Open <strong className="text-foreground">NaliChat.dmg</strong> from your Downloads folder.</Step>
+                <Step n={3}>Drag the <strong className="text-foreground">NaliChat</strong> app icon into the <strong className="text-foreground">Applications</strong> folder.</Step>
+                <Step n={4}>If macOS shows an <strong className="text-foreground">"unidentified developer"</strong> warning, right-click the app and select <strong className="text-foreground">Open</strong>, then confirm in the dialog.</Step>
+                <Step n={5}>Launch <strong className="text-foreground">NaliChat</strong> from your Applications folder or Launchpad.</Step>
               </CardContent>
             </Card>
           </TabsContent>

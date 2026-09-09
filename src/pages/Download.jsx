@@ -10,10 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // │  APK: https://github.com/<owner>/<repo>/releases/latest/download/app-release.apk
 // │  IPA: https://github.com/<owner>/<repo>/releases/latest/download/nalichat.ipa
 // └──────────────────────────────────────────────────────────────────────┘
-const APK_DOWNLOAD_URL = 'https://github.com/nalichat/nalichat/releases/latest/download/app-release.apk';
-const IPA_DOWNLOAD_URL = 'https://github.com/nalichat/nalichat/releases/latest/download/nalichat.ipa';
-const EXE_DOWNLOAD_URL = 'https://github.com/nalichat/nalichat/releases/latest/download/NaliChat-Setup.exe';
-const DMG_DOWNLOAD_URL = 'https://github.com/nalichat/nalichat/releases/latest/download/NaliChat.dmg';
+const APK_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/app-release.apk';
+const IPA_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/nalichat.ipa';
+const EXE_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat-Setup.exe';
+const DMG_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat.dmg';
 
 function useAvailability(url) {
   const [state, setState] = useState({ checking: true, available: false, finalUrl: url });

@@ -414,6 +414,36 @@ workflows:
         script: |
           cd ./electron
           npm install
+      - name: Configure code signing
+        script: |
+          if [ -n "$CM_CERTIFICATE" ]; then
+            echo "$CM_CERTIFICATE" | base64 --decode > ./electron/cert.p12
+            echo "export CSC_LINK='cert.p12'" >> "$CM_ENV"
+            echo "export CSC_KEY_PASSWORD='$CM_CERTIFICATE_PASSWORD'" >> "$CM_ENV"
+            echo "✅ Apple Developer certificate configured"
+          else
+            echo "⚠️  No Apple Developer cert — generating self-signed cert for basic signing"
+            echo "📌 Self-signed won't bypass Gatekeeper — for that, use an Apple Developer ID cert"
+            cat > /tmp/openssl.cnf << 'CNF'
+          [req]
+          distinguished_name = req_distinguished_name
+          x509_extensions = v3_ca
+          prompt = no
+          [req_distinguished_name]
+          CN = NaliChat
+          [v3_ca]
+          keyUsage = digitalSignature
+          extendedKeyUsage = codeSigning
+          CNF
+            openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes \
+              -config /tmp/openssl.cnf 2>/dev/null
+            openssl pkcs12 -export -out ./electron/cert.p12 -inkey key.pem -in cert.pem \
+              -password pass:nalichat
+            rm -f key.pem cert.pem /tmp/openssl.cnf
+            echo "export CSC_LINK='cert.p12'" >> "$CM_ENV"
+            echo "export CSC_KEY_PASSWORD='nalichat'" >> "$CM_ENV"
+            echo "✅ Self-signed certificate generated — DMG will be signed (not Gatekeeper-trusted)"
+          fi
       - name: Build macOS DMG
         script: |
           cd ./electron

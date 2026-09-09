@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download as DownloadIcon, Shield, Smartphone, Monitor, Laptop, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { Download as DownloadIcon, Shield, Smartphone, Monitor, Laptop, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -53,12 +53,12 @@ function DownloadButton({ url, fileName, label }) {
   }
   return (
     <>
-      <div className="flex items-center gap-2 text-sm text-yellow-500">
-        <AlertTriangle className="w-4 h-4" />
-        <span>Build is in progress — check back soon</span>
+      <div className="flex items-center gap-2 text-sm text-green-500">
+        <CheckCircle className="w-4 h-4" />
+        <span>Latest build is ready to download</span>
       </div>
-      <a href={finalUrl} className="block">
-        <Button className="w-full h-14 text-base font-semibold" size="lg" variant="outline">
+      <a href={finalUrl} download={fileName} className="block">
+        <Button className="w-full h-14 text-base font-semibold" size="lg">
           <DownloadIcon className="w-5 h-5" />
           {label}
         </Button>

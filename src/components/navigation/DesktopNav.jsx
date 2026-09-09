@@ -7,7 +7,7 @@ import NotificationBell from "@/components/notifications/NotificationBell";
 import {
   Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users,
   Settings, LogOut, LogIn, HelpCircle, UserPlus, Mic, Radio, ShoppingCart,
-  Wand2, AudioLines, Plus, Gem, Swords, Rocket
+  Wand2, AudioLines, Plus, Gem, Swords, Rocket, Smartphone
 } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";
@@ -177,6 +177,11 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onHelpClick} className="cursor-pointer">
                   <HelpCircle className="w-4 h-4 mr-2" /> Help
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/download" className="cursor-pointer">
+                    <Smartphone className="w-4 h-4 mr-2" /> Download App
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/pricing" className="cursor-pointer">

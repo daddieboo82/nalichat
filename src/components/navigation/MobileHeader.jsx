@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   ChevronLeft, Music, ShoppingCart, AudioLines, LogIn, Menu,
   Mic, Wand2, FileText, Trophy, Settings, Gem, BarChart3,
-  Home, Compass, MessageSquare, Users, Radio, X, Swords, Rocket, Clock
+  Home, Compass, MessageSquare, Users, Radio, X, Swords, Rocket, Clock, Smartphone
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useEffect, useState } from "react";
@@ -237,6 +237,18 @@ export default function MobileHeader() {
 
             {/* Footer items */}
             <div className="pt-3 border-t border-white/[0.06] space-y-1">
+              <button
+                onClick={() => handleNavigate("/download")}
+                className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/50 text-left transition-all"
+              >
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Smartphone className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Download App</p>
+                  <p className="text-[11px] text-muted-foreground">Android, iOS, Desktop</p>
+                </div>
+              </button>
               <button
                 onClick={() => handleNavigate("/pricing")}
                 className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/50 text-left transition-all"

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Edit3, Award, Star, Grid, Heart, Users, Zap, Save, X, Sparkles } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,6 +19,7 @@ const GENRES = ["Hip-Hop", "Trap", "Lo-Fi", "Electronic", "House", "Techno", "Am
 
 export default function Profile() {
   const location = useLocation();
+  const { checkUserAuth } = useAuth();
   const targetUserId = new URLSearchParams(location.search).get("id");
   
   const [currentUser, setCurrentUser] = useState(null);
@@ -86,6 +88,9 @@ export default function Profile() {
     setCurrentUser(updated);
     setForm(updated);
     setEditing(false);
+    // Refresh the global auth context so the new display_name propagates
+    // to the Home greeting, nav bar, and anywhere else that reads user data.
+    await checkUserAuth();
     } finally { setSaving(false); }
   };
 

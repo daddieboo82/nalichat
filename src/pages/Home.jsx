@@ -215,7 +215,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               className="text-sm font-bold tracking-[0.2em] text-primary mb-4 uppercase drop-shadow-md"
             >
-              Welcome back, {user.full_name?.split(" ")[0] || "Creator"} 🚀
+              Welcome back, {(user.display_name || user.full_name)?.split(" ")[0] || "Creator"} 🚀
             </motion.p>
           )}
 
@@ -632,7 +632,7 @@ export default function Home() {
                 <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white" />
               </div>
               <h3 className="font-heading font-black text-4xl sm:text-5xl md:text-7xl mb-4 md:mb-6 text-gradient-animate drop-shadow-xl tracking-tight">
-                {user ? `Start Chatting, ${user.full_name?.split(" ")[0] || "Creator"}` : "Collaboration Starts Here"}
+                {user ? `Start Chatting, ${(user.display_name || user.full_name)?.split(" ")[0] || "Creator"}` : "Collaboration Starts Here"}
               </h3>
               <p className="text-lg sm:text-xl text-foreground/90 font-medium mb-8 md:mb-10 max-w-3xl mx-auto leading-relaxed">
                 {user

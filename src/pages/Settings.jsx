@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +22,7 @@ import PullToRefresh from "@/components/layout/PullToRefresh";
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];
 
 export default function Settings() {
+  const { checkUserAuth } = useAuth();
   const [user, setUser] = useState(null);
   const [form, setForm] = useState({ display_name: "", bio: "", role: "artist", location: "", genres: [], avatar_url: "" });
   const [saving, setSaving] = useState(false);
@@ -77,6 +79,9 @@ export default function Settings() {
         toast.warning("Your previous avatar URL was invalid and has been cleared. Please upload an image.");
       }
       await base44.auth.updateMe(cleanedForm);
+      // Refresh the global auth context so the new display_name propagates
+      // to the Home greeting, nav bar, and anywhere else that reads user data.
+      await checkUserAuth();
       sounds.success();
       toast.success("Profile updated!");
     } finally {
@@ -114,7 +119,7 @@ export default function Settings() {
           </div>
           <div className="relative z-10">
             <h2 className="text-3xl font-heading font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-pink-500 drop-shadow-sm">
-              {user.full_name}
+              {form.display_name || user.full_name}
             </h2>
             <p className="text-sm font-medium text-muted-foreground mt-1 bg-background/50 px-3 py-1 rounded-full inline-block border border-border/50">
               {user.email}

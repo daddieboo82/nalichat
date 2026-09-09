@@ -9,9 +9,44 @@ export function getSupabaseConfig() {
   return { url, serviceKey };
 }
 
+let _tableColumnsCache = null;
+
+export async function getTableColumns() {
+  if (_tableColumnsCache) return _tableColumnsCache;
+  const { url, serviceKey } = getSupabaseConfig();
+  const res = await fetch(url, {
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+  });
+  const spec = await res.json();
+  const columns = {};
+  for (const [tableName, definition] of Object.entries(spec.definitions || {})) {
+    if (definition.properties) {
+      columns[tableName] = Object.keys(definition.properties);
+    }
+  }
+  _tableColumnsCache = columns;
+  return columns;
+}
+
+function filterRecord(record, columns) {
+  const filtered = {};
+  for (const col of columns) {
+    filtered[col] = record[col] === undefined ? null : record[col];
+  }
+  return filtered;
+}
+
 export async function supabaseUpsert(table, records) {
   const { url, serviceKey } = getSupabaseConfig();
   if (!records || records.length === 0) return { upserted: 0 };
+
+  const allColumns = await getTableColumns();
+  const tableCols = allColumns[table];
+  if (!tableCols) {
+    throw new Error(`Table "${table}" not found in Supabase schema — create it first`);
+  }
+
+  const filteredRecords = records.map((r) => filterRecord(r, tableCols));
 
   const res = await fetch(`${url}/${table}`, {
     method: "POST",
@@ -21,7 +56,7 @@ export async function supabaseUpsert(table, records) {
       "Content-Type": "application/json",
       Prefer: "resolution=merge-duplicates",
     },
-    body: JSON.stringify(records),
+    body: JSON.stringify(filteredRecords),
   });
 
   if (!res.ok) {
@@ -34,30 +69,11 @@ export async function supabaseUpsert(table, records) {
 export async function supabaseSelect(table, columns = "*") {
   const { url, serviceKey } = getSupabaseConfig();
   const res = await fetch(`${url}/${table}?select=${encodeURIComponent(columns)}`, {
-    headers: {
-      apikey: serviceKey,
-      Authorization: `Bearer ${serviceKey}`,
-    },
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
   });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Supabase select from "${table}" failed (${res.status}): ${text}`);
   }
   return res.json();
-}
-
-export async function supabaseDeleteAll(table) {
-  const { url, serviceKey } = getSupabaseConfig();
-  const res = await fetch(`${url}/${table}?id=neq.0`, {
-    method: "DELETE",
-    headers: {
-      apikey: serviceKey,
-      Authorization: `Bearer ${serviceKey}`,
-    },
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Supabase delete from "${table}" failed (${res.status}): ${text}`);
-  }
-  return { deleted: true };
 }

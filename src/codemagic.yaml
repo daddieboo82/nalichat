@@ -145,17 +145,28 @@ workflows:
           fix_gradle_file() {
             local FILE="$1"
             if [ ! -f "$FILE" ]; then return; fi
-            CURRENT_ID=$(grep -E "^\s*applicationId" "$FILE" | head -1 | sed "s/.*['\"]//;s/['\"].*//")
-            if [ "$CURRENT_ID" != "$PACKAGE_ID" ]; then
-              echo "  ⚠️  Fixing $FILE applicationId from '$CURRENT_ID' to '$PACKAGE_ID'"
-              sed -i "s/applicationId [\"'].*[\"']/applicationId \"$PACKAGE_ID\"/g" "$FILE"
-              sed -i "s/namespace [\"'].*[\"']/namespace \"$PACKAGE_ID\"/g" "$FILE"
+            echo "=== Checking $FILE ==="
+            if [[ "$FILE" == *.kts ]]; then
+              # Kotlin DSL: applicationId = "..." and namespace = "..."
+              sed -i -E "s/applicationId[[:space:]]*=[[:space:]]*[\"'][^\"']*[\"']/applicationId = \"$PACKAGE_ID\"/g" "$FILE"
+              sed -i -E "s/namespace[[:space:]]*=[[:space:]]*[\"'][^\"']*[\"']/namespace = \"$PACKAGE_ID\"/g" "$FILE"
             else
-              echo "  ✅ $FILE applicationId already correct"
+              # Groovy DSL: applicationId "..." and namespace "..."
+              sed -i -E "s/applicationId[[:space:]]*[\"'][^\"']*[\"']/applicationId \"$PACKAGE_ID\"/g" "$FILE"
+              sed -i -E "s/namespace[[:space:]]*[\"'][^\"']*[\"']/namespace \"$PACKAGE_ID\"/g" "$FILE"
             fi
+            echo "  After fix:"
+            grep -n -E "applicationId|namespace" "$FILE" || echo "  (none found)"
           }
           fix_gradle_file "./app/build.gradle"
           fix_gradle_file "./app/build.gradle.kts"
+          # Also fix AndroidManifest.xml package attribute if present
+          for MANIFEST in $(find . -name "AndroidManifest.xml" 2>/dev/null); do
+            if [ -f "$MANIFEST" ] && grep -q 'package="' "$MANIFEST"; then
+              echo "=== Fixing package attribute in $MANIFEST ==="
+              sed -i -E "s/package=\"[^\"]*\"/package=\"$PACKAGE_ID\"/g" "$MANIFEST"
+            fi
+          done
       - name: Enforce minSdkVersion 21 in Gradle files
         script: |
           # androidbrowserhelper 2.6.2 requires minSdk 21 — bubblewrap may generate 19

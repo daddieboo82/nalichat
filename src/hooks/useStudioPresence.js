@@ -11,6 +11,7 @@ export function useStudioPresence(roomId = 'studio-main') {
   const meRef = useRef(null);
   const recordRef = useRef(null);
   const activityRef = useRef('In the studio');
+  const cancelledRef = useRef(false);
 
   const filterActive = useCallback((rows) => {
     const now = Date.now();
@@ -35,8 +36,10 @@ export function useStudioPresence(roomId = 'studio-main') {
   }, [roomId, filterActive]);
 
   const writeHeartbeat = useCallback(async () => {
+    if (cancelledRef.current) return;
     const me = meRef.current;
     if (!me) return;
+    const currentId = recordRef.current;
     const payload = {
       room_id: roomId,
       user_id: me.id,
@@ -46,11 +49,11 @@ export function useStudioPresence(roomId = 'studio-main') {
       last_heartbeat: new Date().toISOString(),
     };
     try {
-      if (recordRef.current) {
-        await base44.entities.StudioPresence.update(recordRef.current, payload);
+      if (currentId) {
+        await base44.entities.StudioPresence.update(currentId, payload);
       } else {
         const created = await base44.entities.StudioPresence.create(payload);
-        recordRef.current = created.id;
+        if (!cancelledRef.current) recordRef.current = created.id;
       }
     } catch (e) {
       // If update failed (record gone), recreate next tick
@@ -89,10 +92,17 @@ export function useStudioPresence(roomId = 'studio-main') {
 
     return () => {
       cancelled = true;
+      cancelledRef.current = true;
       if (interval) clearInterval(interval);
       if (unsubscribe) unsubscribe();
-      if (recordRef.current) {
-        base44.entities.StudioPresence.delete(recordRef.current).catch(() => {});
+      // Clear the ref first so no in-flight heartbeat can update a stale record,
+      // then delete with a short delay to let any in-flight update settle first.
+      const idToDelete = recordRef.current;
+      recordRef.current = null;
+      if (idToDelete) {
+        setTimeout(() => {
+          base44.entities.StudioPresence.delete(idToDelete).catch(() => {});
+        }, 2000);
       }
     };
   }, [roomId, writeHeartbeat, refresh]);

@@ -32,6 +32,8 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "differentialPackage": true,
       "artifactName": "NaliChat-Setup.${ext}"
     },
     "dmg": {

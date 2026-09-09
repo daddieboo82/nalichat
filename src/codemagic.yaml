@@ -446,7 +446,7 @@ workflows:
   windows-exe:
     name: NaliChat Windows EXE
     max_build_duration: 30
-    instance_type: mac_mini_m2
+    instance_type: windows_x2
     environment:
       vars:
         PACKAGE_ID: com.nalichat
@@ -465,12 +465,6 @@ workflows:
           curl -fsSL -o ./electron/icon.png \
             "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/da0cb6e0c_generated_image.png" \
             || echo "⚠️  Icon download failed — electron-builder will use a default icon"
-      - name: Install Wine (for Windows cross-compilation)
-        script: |
-          if ! command -v wine &>/dev/null; then
-            brew install --cask wine-stable || echo "⚠️  Wine install failed — trying wine64"
-          fi
-          echo "✅ Wine available: $(which wine || which wine64 || echo 'not found')"
       - name: Install Electron dependencies
         script: |
           cd ./electron
@@ -478,7 +472,7 @@ workflows:
       - name: Build Windows EXE (NSIS installer)
         script: |
           cd ./electron
-          npx electron-builder --win nsis
+          DEBUG=electron-builder npx electron-builder --win nsis --x64
           echo "=== EXE output ==="
           ls -lh ./dist/*.exe 2>/dev/null || echo "No EXE found"
       - name: Publish EXE to GitHub Releases

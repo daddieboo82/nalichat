@@ -45,6 +45,11 @@
       "type": "boolean",
       "default": false
     },
+    "reengagement_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of the last onboarding re-engagement email sent to this user (null = never sent)"
+    },
     "violation_count": {
       "type": "number",
       "default": 0,

@@ -61,6 +61,11 @@
     "suggested_bpm": {
       "type": "number",
       "description": "AI-suggested BPM based on the uploaded track"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description (up to 1000 characters)",
+      "maxLength": 1000
     }
   },
   "required": [

@@ -38,6 +38,11 @@
     "read": {
       "type": "boolean",
       "default": false
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description (up to 1000 characters)",
+      "maxLength": 1000
     }
   },
   "required": [

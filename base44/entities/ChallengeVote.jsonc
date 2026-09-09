@@ -13,6 +13,11 @@
     },
     "voter_name": {
       "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description (up to 1000 characters)",
+      "maxLength": 1000
     }
   },
   "required": [

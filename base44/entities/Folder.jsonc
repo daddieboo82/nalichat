@@ -18,6 +18,11 @@
       "type": "string",
       "description": "Optional folder color hex code",
       "default": "#5B5BFF"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description (up to 1000 characters)",
+      "maxLength": 1000
     }
   },
   "required": [

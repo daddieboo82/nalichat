@@ -472,19 +472,18 @@ workflows:
       - name: Configure code signing
         script: |
           if [ -z "$WINDOWS_CERTIFICATE_PFX" ]; then
-            echo "⚠️  WINDOWS_CERTIFICATE_PFX not set — EXE will be unsigned"
-            echo "📌 To sign the EXE and bypass Windows SmartScreen:"
-            echo "    1. Buy a code signing certificate (OV or EV) from DigiCert/Sectigo/Comodo"
-            echo "    2. Export it as a .pfx file with a password"
-            echo "    3. Base64 encode it and set as WINDOWS_CERTIFICATE_PFX env var"
-            echo "    4. Set WINDOWS_CERTIFICATE_PASSWORD in Codemagic environment variables"
-            echo "EV certs bypass SmartScreen immediately; OV certs build reputation over time"
+            echo "⚠️  No purchased cert — generating a self-signed certificate so the EXE is signed"
+            echo "📌 Self-signed won't bypass SmartScreen — for that, set WINDOWS_CERTIFICATE_PFX + WINDOWS_CERTIFICATE_PASSWORD"
+            powershell.exe -NoProfile -Command "New-SelfSignedCertificate -Type CodeSigningCert -Subject 'CN=NaliChat' -CertStoreLocation 'Cert:\CurrentUser\My' | Export-PfxCertificate -FilePath electron/cert.pfx -Password (ConvertTo-SecureString -String 'nalichat' -Force -AsPlainText)"
+            echo "export CSC_LINK='cert.pfx'" >> "$CM_ENV"
+            echo "export CSC_KEY_PASSWORD='nalichat'" >> "$CM_ENV"
+            echo "✅ Self-signed certificate generated — EXE will be signed (not SmartScreen-trusted)"
             exit 0
           fi
           echo "$WINDOWS_CERTIFICATE_PFX" | base64 --decode > ./electron/cert.pfx
           echo "export CSC_LINK='cert.pfx'" >> "$CM_ENV"
           echo "export CSC_KEY_PASSWORD='$WINDOWS_CERTIFICATE_PASSWORD'" >> "$CM_ENV"
-          echo "✅ Code signing certificate configured"
+          echo "✅ Purchased code signing certificate configured"
       - name: Build Windows EXE (NSIS installer)
         script: |
           cd ./electron

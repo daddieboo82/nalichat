@@ -499,12 +499,45 @@ workflows:
         script: |
           cd ./electron
           npm install
+      - name: Convert icon to ICO format
+        script: |
+          if [ ! -f ./electron/icon.png ]; then
+            echo "⚠️  No icon.png found — skipping ICO conversion"
+            exit 0
+          fi
+          cat > /tmp/convert_icon.ps1 << 'PS1'
+          Add-Type -AssemblyName System.Drawing
+          $src = [System.Drawing.Image]::FromFile("electron\icon.png")
+          $bmp = New-Object System.Drawing.Bitmap(256, 256)
+          $g = [System.Drawing.Graphics]::FromImage($bmp)
+          $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+          $g.DrawImage($src, 0, 0, 256, 256)
+          $g.Dispose()
+          $src.Dispose()
+          $icon = [System.Drawing.Icon]::FromHandle($bmp.GetHicon())
+          $fs = [System.IO.File]::Create("electron\icon.ico")
+          $icon.Save($fs)
+          $fs.Close()
+          $bmp.Dispose()
+          Write-Host "icon.ico created (256x256)"
+          PS1
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File /tmp/convert_icon.ps1 || {
+            echo "⚠️  ICO conversion failed — electron-builder will try PNG directly"
+            exit 0
+          }
       - name: Configure code signing
         script: |
           if [ -z "$WINDOWS_CERTIFICATE_PFX" ]; then
             echo "⚠️  No purchased cert — generating a self-signed certificate so the EXE is signed"
             echo "📌 Self-signed won't bypass SmartScreen — for that, set WINDOWS_CERTIFICATE_PFX + WINDOWS_CERTIFICATE_PASSWORD"
-            powershell.exe -NoProfile -Command "New-SelfSignedCertificate -Type CodeSigningCert -Subject 'CN=Nalibase' -CertStoreLocation 'Cert:\CurrentUser\My' | Export-PfxCertificate -FilePath electron/cert.pfx -Password (ConvertTo-SecureString -String 'nalichat' -Force -AsPlainText)"
+            powershell.exe -NoProfile -Command "New-SelfSignedCertificate -Type CodeSigningCert -Subject 'CN=Nalibase' -CertStoreLocation 'Cert:\CurrentUser\My' | Export-PfxCertificate -FilePath electron/cert.pfx -Password (ConvertTo-SecureString -String 'nalichat' -Force -AsPlainText)" || {
+              echo "⚠️  Self-signed cert generation failed — EXE will be unsigned"
+              exit 0
+            }
+            if [ ! -f ./electron/cert.pfx ]; then
+              echo "⚠️  cert.pfx not created — EXE will be unsigned"
+              exit 0
+            fi
             echo "export CSC_LINK='cert.pfx'" >> "$CM_ENV"
             echo "export CSC_KEY_PASSWORD='nalichat'" >> "$CM_ENV"
             echo "✅ Self-signed certificate generated — EXE will be signed (not SmartScreen-trusted)"
@@ -517,9 +550,17 @@ workflows:
       - name: Build Windows EXE (NSIS installer)
         script: |
           cd ./electron
-          DEBUG=electron-builder npx electron-builder --win nsis --x64
+          npx electron-builder --win nsis --x64
+          BUILD_EXIT=$?
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "❌ electron-builder failed with exit code $BUILD_EXIT"
+            exit 1
+          fi
           echo "=== EXE output ==="
-          ls -lh ./dist/*.exe 2>/dev/null || echo "No EXE found"
+          ls -lh ./dist/*.exe 2>/dev/null || {
+            echo "❌ No EXE found — build failed"
+            exit 1
+          }
       - name: Publish EXE to GitHub Releases
         script: |
           if [ -z "$GH_TOKEN" ]; then

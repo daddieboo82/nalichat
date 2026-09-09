@@ -45,6 +45,11 @@
       "type": "boolean",
       "default": false
     },
+    "welcome_tour_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the user has completed or dismissed the guided welcome tour"
+    },
     "reengagement_sent_at": {
       "type": "string",
       "format": "date-time",

@@ -14,6 +14,7 @@ import QuickStartGuide from "@/components/home/QuickStartGuide";
 import StudioTutorial from "@/components/home/StudioTutorial";
 import HowItWorks from "@/components/home/HowItWorks";
 import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
+import WelcomeTour from "@/components/onboarding/WelcomeTour";
 import ImmersiveOnboarding from "@/components/onboarding/ImmersiveOnboarding";
 import DonationButton from "@/components/home/DonationButton";
 import QuickAccessGrid from "@/components/home/QuickAccessGrid";
@@ -156,9 +157,18 @@ export default function Home() {
   const { user: authUser, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const [showWizard, setShowWizard] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   // Only treat as logged-in when both the flag and the user record are present,
   // so the greeting disappears instantly on logout.
   const user = isAuthenticated ? authUser : null;
+
+  // Auto-show the welcome tour for users who finished onboarding but haven't seen it yet.
+  useEffect(() => {
+    if (user && user.onboarding_completed && !user.welcome_tour_completed) {
+      const timer = setTimeout(() => setShowTour(true), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
 
   return (
     <PullToRefresh onRefresh={() => queryClient.invalidateQueries()} className="h-full overflow-auto bg-background">
@@ -515,13 +525,22 @@ export default function Home() {
               <h3 className="font-heading font-bold text-2xl mb-2 text-foreground">Interactive Tutorial</h3>
               <p className="text-muted-foreground text-lg">New to NaliChat? Take our interactive onboarding wizard to get up to speed in seconds.</p>
             </div>
-            <Button onClick={() => setShowWizard(true)} size="lg" className="shrink-0 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl h-14 px-8 text-lg font-bold shadow-lg shadow-indigo-500/20">
-              Start Onboarding Wizard
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+              <Button onClick={() => setShowWizard(true)} size="lg" className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl h-14 px-8 text-lg font-bold shadow-lg shadow-indigo-500/20">
+                Start Onboarding Wizard
+              </Button>
+              {user && (
+                <Button onClick={() => setShowTour(true)} variant="outline" size="lg" className="rounded-xl h-14 px-8 text-lg font-bold">
+                  Take Welcome Tour
+                </Button>
+              )}
+            </div>
           </div>
         </motion.div>
 
         <InteractiveWizard open={showWizard} onOpenChange={setShowWizard} />
+
+        <WelcomeTour open={showTour} onClose={() => setShowTour(false)} />
 
         {/* ── How it Works ── */}
         <HowItWorks />

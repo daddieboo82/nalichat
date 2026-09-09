@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download as DownloadIcon, Shield, Smartphone, Apple, Monitor, Laptop, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { Download as DownloadIcon, Shield, Smartphone, Monitor, Laptop, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,7 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // │  IPA: https://github.com/<owner>/<repo>/releases/latest/download/nalichat.ipa
 // └──────────────────────────────────────────────────────────────────────┘
 const APK_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat.apk';
-const IPA_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/nalichat.ipa';
 const EXE_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat-Setup.exe';
 const DMG_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat.dmg';
 
@@ -95,14 +94,10 @@ export default function Download() {
         </div>
 
         <Tabs value={platform} onValueChange={setPlatform}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="android" className="text-sm">
               <Smartphone className="w-4 h-4 mr-1.5" />
               Android
-            </TabsTrigger>
-            <TabsTrigger value="ios" className="text-sm">
-              <Apple className="w-4 h-4 mr-1.5" />
-              iOS
             </TabsTrigger>
             <TabsTrigger value="windows" className="text-sm">
               <Monitor className="w-4 h-4 mr-1.5" />
@@ -137,44 +132,6 @@ export default function Download() {
                 <Step n={2}>Open the downloaded file. If prompted, allow <strong className="text-foreground">"Install from unknown sources"</strong> in your browser or file manager settings.</Step>
                 <Step n={3}>Tap <strong className="text-foreground">Install</strong> and wait for the installation to complete.</Step>
                 <Step n={4}>Open <strong className="text-foreground">NaliChat</strong> from your app drawer and start creating!</Step>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* iOS Tab */}
-          <TabsContent value="ios" className="space-y-6 mt-6">
-            <Card className="border-primary/20">
-              <CardContent className="pt-6 space-y-4">
-                <DownloadButton url={IPA_DOWNLOAD_URL} fileName="nalichat.ipa" label="Download IPA" />
-                <p className="text-xs text-muted-foreground text-center">
-                  File size: ~15–30 MB · iOS 14.0+
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-primary" />
-                  How to Install (Sideload)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <Step n={1}>Download the <strong className="text-foreground">IPA file</strong> to your computer (Mac or PC).</Step>
-                <Step n={2}>Install a sideloading tool: <strong className="text-foreground">AltStore</strong> (altstore.io), <strong className="text-foreground">Sideloadly</strong>, or use <strong className="text-foreground">Apple Configurator 2</strong> (Mac only).</Step>
-                <Step n={3}>Connect your iPhone via USB and open the sideloading tool. Select the downloaded <strong className="text-foreground">nalichat.ipa</strong> file and enter your Apple ID to sign it.</Step>
-                <Step n={4}>On your iPhone, go to <strong className="text-foreground">Settings → General → VPN & Device Management</strong> and tap <strong className="text-foreground">Trust</strong> on your developer certificate.</Step>
-                <Step n={5}>Open <strong className="text-foreground">NaliChat</strong> from your home screen and start creating!</Step>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Important Notes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm text-muted-foreground">
-                <p>• Sideloading requires re-signing every <strong className="text-foreground">7 days</strong> with a free Apple ID, or <strong className="text-foreground">1 year</strong> with a paid Apple Developer account.</p>
-                <p>• For the best iOS experience, use the <strong className="text-foreground">Add to Home Screen</strong> option in Safari for the PWA version — it works without re-signing.</p>
               </CardContent>
             </Card>
           </TabsContent>

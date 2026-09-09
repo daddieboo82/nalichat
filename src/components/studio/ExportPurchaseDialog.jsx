@@ -1,27 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Download, Sparkles } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { renderMixToWav, renderMixToMp3 } from "@/lib/audioProcessing";
-import { getSquadBonusStatus, BONUS_MULTIPLIER } from "@/lib/squadBonus";
 
-const EXPORT_PRICES = { wav: 1.99, mp3: 0.99 };
 const EXPORT_LABELS = { wav: "WAV (Studio Quality)", mp3: "MP3 (Compressed)" };
 
 export default function ExportPurchaseDialog({ open, onOpenChange, format, tracks, projectName }) {
-  const [stage, setStage] = useState("idle"); // idle | rendering | uploading | redirecting
-  const [bonusActive, setBonusActive] = useState(false);
-  const basePrice = EXPORT_PRICES[format] || 1.99;
-  const price = bonusActive ? Math.round((basePrice / BONUS_MULTIPLIER) * 100) / 100 : basePrice;
+  const [stage, setStage] = useState("idle"); // idle | rendering | downloading
 
-  useEffect(() => {
-    if (!open) return;
-    base44.auth.me().then((u) => getSquadBonusStatus(u)).then((s) => setBonusActive(s.active)).catch(() => {});
-  }, [open]);
-
-  const handlePurchase = async () => {
+  const handleExport = async () => {
     setStage("rendering");
     try {
       // 1. Render the mix to a blob
@@ -32,52 +21,24 @@ export default function ExportPurchaseDialog({ open, onOpenChange, format, track
         return;
       }
 
-      // 2. Upload as a private file so it survives the checkout redirect
-      setStage("uploading");
+      // 2. Trigger a direct download — no payment, no redirect
+      setStage("downloading");
       const fileName = `${projectName || "NaliStudio Mix"}.${format}`;
-      const file = new File([blob], fileName, { type: format === "mp3" ? "audio/mp3" : "audio/wav" });
-      const uploadRes = await base44.integrations.Core.UploadPrivateFile({ file });
-      const fileUri = uploadRes.file_uri;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
 
-      // 3. Stash the file URI so the ThankYou page can deliver it after payment
-      localStorage.setItem("pending_studio_export", JSON.stringify({
-        fileUri,
-        format,
-        fileName,
-        timestamp: Date.now(),
-      }));
-
-      // 4. Create a Stripe checkout session and redirect
-      setStage("redirecting");
-      if (typeof window !== 'undefined' && window.gtag) {
-        window.gtag('event', 'conversion', {
-          send_to: 'AW-18416125487/OnfzCI7a5OkcEK-Mv81E',
-          value: price,
-          currency: 'USD',
-        });
-      }
-      try { localStorage.setItem('gads_purchase_value', String(price)); } catch {}
-      const res = await base44.functions.invoke("createCheckout", {
-        items: [{
-          type: "studio_export",
-          format: format,
-          quantity: 1,
-        }],
-        callbackUrls: {
-          thankYouPageUrl: window.location.origin + "/ThankYou?export=download",
-          postFlowUrl: window.location.origin + "/studio",
-        },
-      });
-
-      if (res.data && res.data.checkoutUrl) {
-        window.top.location.href = res.data.checkoutUrl;
-      } else {
-        toast.error("Checkout failed. Please try again.");
-        setStage("idle");
-      }
+      toast.success("Export complete — check your downloads folder!");
+      setStage("idle");
+      onOpenChange(false);
     } catch (error) {
-      console.error("Export purchase error:", error);
-      toast.error("Failed to process export. Please try again.");
+      console.error("Export error:", error);
+      toast.error("Failed to export. Please try again.");
       setStage("idle");
     }
   };
@@ -98,7 +59,7 @@ export default function ExportPurchaseDialog({ open, onOpenChange, format, track
             Export Mix ({(format || "").toUpperCase()})
           </DialogTitle>
           <DialogDescription className="text-center text-sm text-muted-foreground mt-2">
-            Render and download your mixed track as a {EXPORT_LABELS[format] || "high-quality"} file.
+            Render and download your mixed track as a {EXPORT_LABELS[format] || "high-quality"} file. 100% free.
           </DialogDescription>
         </DialogHeader>
 
@@ -110,25 +71,15 @@ export default function ExportPurchaseDialog({ open, onOpenChange, format, track
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-foreground">Price</span>
-              <span className="flex items-center gap-2">
-                {bonusActive && <span className="text-xs text-muted-foreground line-through">${basePrice.toFixed(2)}</span>}
-                <span className="text-lg font-bold text-primary">${price.toFixed(2)}</span>
-              </span>
+              <span className="text-lg font-bold text-accent">Free</span>
             </div>
           </div>
-
-          {bonusActive && (
-            <div className="flex items-center gap-2 text-xs text-primary bg-primary/10 rounded-lg px-3 py-2">
-              <Sparkles className="w-3.5 h-3.5 shrink-0" /> Squad weekend bonus applied — {BONUS_MULTIPLIER}x discount
-            </div>
-          )}
 
           {stage !== "idle" && (
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-1">
               <Loader2 className="w-4 h-4 animate-spin" />
               {stage === "rendering" && "Rendering your mix…"}
-              {stage === "uploading" && "Preparing file for download…"}
-              {stage === "redirecting" && "Redirecting to secure checkout…"}
+              {stage === "downloading" && "Preparing your download…"}
             </div>
           )}
         </div>
@@ -138,14 +89,14 @@ export default function ExportPurchaseDialog({ open, onOpenChange, format, track
             Cancel
           </Button>
           <Button
-            onClick={handlePurchase}
+            onClick={handleExport}
             disabled={stage !== "idle"}
             className="bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-white"
           >
             {stage === "idle" ? (
               <>
                 <Download className="w-4 h-4 mr-2" />
-                Pay ${price.toFixed(2)} & Download
+                Download Free
               </>
             ) : (
               <>

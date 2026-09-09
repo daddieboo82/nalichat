@@ -14,7 +14,7 @@ export default async function(req) {
     const appUrl =
       req.headers.get('X-Base44-App-Url') ||
       Deno.env.get('WIX_CHECKOUT_APP_URL') ||
-      '';
+      'https://nalichat.base44.app';
     if (!appUrl) {
       return Response.json(
         { error: 'Server is not configured with an app URL' },

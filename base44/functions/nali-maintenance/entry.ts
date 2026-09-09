@@ -265,6 +265,32 @@ export default async function(req) {
       });
     }
 
+    // =====================================================
+    // 12. USER — invalid avatar_url (not an image URL)
+    // =====================================================
+    if (data.users) {
+      const IMAGE_EXT = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?|#|$)/i;
+      const CDN_PATTERNS = ['base44', 'googleapis', 'amazonaws', 'cloudinary', 'imgur', 'githubusercontent'];
+      const isValidAvatar = (url) => {
+        if (!url) return true;
+        if (typeof url !== 'string') return false;
+        if (!url.startsWith('http://') && !url.startsWith('https://')) return false;
+        if (IMAGE_EXT.test(url)) return true;
+        if (CDN_PATTERNS.some(p => url.includes(p))) return true;
+        return false;
+      };
+      const badAvatars = data.users.filter(u => !isValidAvatar(u.avatar_url));
+      const avatarFixes = [];
+      badAvatars.forEach(u => {
+        issues.push({ entity: 'User', id: u.id, field: 'avatar_url', issue: `Invalid avatar_url (not an image): "${u.avatar_url}"` });
+        if (mode === 'repair') avatarFixes.push({ id: u.id, avatar_url: '' });
+      });
+      if (mode === 'repair' && avatarFixes.length) {
+        await s.User.bulkUpdate(avatarFixes);
+        avatarFixes.forEach(u => fixed.push({ entity: 'User', id: u.id, change: 'avatar_url cleared (was not an image URL)' }));
+      }
+    }
+
     // --- Build summary ---
     const byEntity = {};
     issues.forEach(i => {

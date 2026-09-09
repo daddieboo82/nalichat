@@ -15,6 +15,7 @@ import DeviceSelector from "@/components/audio/DeviceSelector";
 import NaliProactivitySettings from "@/components/nali/NaliProactivitySettings";
 import { sounds } from "@/hooks/use-sound";
 import { useSubscription } from "@/hooks/useSubscription";
+import { sanitizeAvatarUrl, isValidAvatarUrl } from "@/lib/avatarValidation";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];
@@ -70,7 +71,12 @@ export default function Settings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await base44.auth.updateMe(form);
+      const cleanedForm = { ...form };
+      if (!isValidAvatarUrl(cleanedForm.avatar_url)) {
+        cleanedForm.avatar_url = "";
+        toast.warning("Your previous avatar URL was invalid and has been cleared. Please upload an image.");
+      }
+      await base44.auth.updateMe(cleanedForm);
       sounds.success();
       toast.success("Profile updated!");
     } finally {

@@ -59,6 +59,7 @@ const SubmissionPlayer = lazy(() => import('@/pages/SubmissionPlayer'));
 const Squad = lazy(() => import('@/pages/Squad'));
 const SquadJoin = lazy(() => import('@/pages/SquadJoin'));
 const ViralSeed = lazy(() => import('@/pages/ViralSeed'));
+const Download = lazy(() => import('@/pages/Download'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -204,6 +205,7 @@ const AuthenticatedApp = () => {
           <Route path="/business" element={<Navigate to="/admin" replace />} />
         </Route>
       </Route>
+      <Route path="/download" element={<Download />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/encryption-documentation" element={<EncryptionDocumentation />} />

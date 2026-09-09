@@ -348,7 +348,39 @@ workflows:
           fi
           # Print the signing certificate fingerprint for comparison
           keytool -printcert -jarfile "$AAB_FILE" 2>/dev/null | grep -E "Owner|Issuer|SHA256" || echo "  (no cert info found)"
+      - name: Build APK for direct download
+        script: |
+          # Build a release APK for direct download (sideloading outside Play Store)
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/share/android-sdk}}"
+          cd ./app
+          ./gradlew assembleRelease --no-daemon
+          cd ..
+          APK_FILE=$(find . -name "*.apk" -path "*/release/*" -type f 2>/dev/null | head -1)
+          if [ -z "$APK_FILE" ]; then
+            echo "❌ APK not found — build may have failed"
+            exit 1
+          fi
+          cp "$APK_FILE" ./app-release.apk
+          echo "✅ APK built at ./app-release.apk"
+          ls -lh ./app-release.apk
+      - name: Publish APK to GitHub Releases
+        script: |
+          # Upload the APK to GitHub Releases so users can download it directly from the site.
+          # Requires GH_TOKEN environment variable (GitHub personal access token with repo scope).
+          if [ -z "$GH_TOKEN" ]; then
+            echo "⚠️  GH_TOKEN not set — skipping GitHub Release upload"
+            echo "📌 Set GH_TOKEN in Codemagic environment variables to enable direct APK download"
+            exit 0
+          fi
+          TAG="v$(date +%Y%m%d-%H%M%S)"
+          gh release create "$TAG" ./app-release.apk \
+            --title "NaliChat Android $TAG" \
+            --notes "Direct APK download for Android (sideload install)" \
+            || echo "⚠️  gh release create failed — APK is still available as a build artifact"
+          echo "✅ APK published to GitHub Releases: $TAG"
     artifacts:
       - app-release-bundle.aab
       - ./app/build/outputs/bundle/release/*.aab
+      - app-release.apk
+      - ./app/build/outputs/apk/release/*.apk
       - android.keystore

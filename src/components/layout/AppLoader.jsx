@@ -25,24 +25,24 @@ export default function AppLoader({ onDone }) {
     return () => clearInterval(interval);
   }, []);
 
-  // fake progress ramp: 0→85 in 1.4s, then 85→100 in 0.4s
+  // progress ramp: 0→85 in 400ms, then 85→100 in 200ms, 200ms exit
   useEffect(() => {
     let v = 0;
     const interval = setInterval(() => {
       const elapsed = Date.now() - startRef.current;
-      if (elapsed < 1400) {
-        v = Math.min(85, (elapsed / 1400) * 85);
+      if (elapsed < 400) {
+        v = Math.min(85, (elapsed / 400) * 85);
       } else {
-        v = Math.min(100, 85 + ((elapsed - 1400) / 400) * 15);
+        v = Math.min(100, 85 + ((elapsed - 400) / 200) * 15);
       }
       setProgress(Math.round(v));
       if (v >= 100) {
         clearInterval(interval);
         setPhase("done");
-        setTimeout(onDone, 600);
+        setTimeout(onDone, 200);
       }
     }, 30);
-    setTimeout(() => setPhase("loading"), 200);
+    setTimeout(() => setPhase("loading"), 100);
     return () => clearInterval(interval);
   }, [onDone]);
 

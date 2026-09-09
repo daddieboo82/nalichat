@@ -27,7 +27,8 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "icon.png"
+      "icon": "icon.png",
+      "publisherName": "Nalibase"
     },
     "nsis": {
       "oneClick": false,

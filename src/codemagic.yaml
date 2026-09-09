@@ -81,7 +81,7 @@ workflows:
               -storetype JKS \
               -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass "$KEYSTORE_PASS" -keypass "$KEY_PASS" \
-              -dname "CN=NaliChat, OU=Mobile, O=NaliChat, L=Indianapolis, ST=IN, C=US"
+              -dname "CN=Nalibase, OU=Mobile, O=Nalibase, L=Indianapolis, ST=IN, C=US"
             if [ $? -ne 0 ]; then
               echo "❌ keytool failed to generate keystore"
               exit 1
@@ -430,7 +430,7 @@ workflows:
           x509_extensions = v3_ca
           prompt = no
           [req_distinguished_name]
-          CN = NaliChat
+          CN = Nalibase
           [v3_ca]
           keyUsage = digitalSignature
           extendedKeyUsage = codeSigning
@@ -504,7 +504,7 @@ workflows:
           if [ -z "$WINDOWS_CERTIFICATE_PFX" ]; then
             echo "⚠️  No purchased cert — generating a self-signed certificate so the EXE is signed"
             echo "📌 Self-signed won't bypass SmartScreen — for that, set WINDOWS_CERTIFICATE_PFX + WINDOWS_CERTIFICATE_PASSWORD"
-            powershell.exe -NoProfile -Command "New-SelfSignedCertificate -Type CodeSigningCert -Subject 'CN=NaliChat' -CertStoreLocation 'Cert:\CurrentUser\My' | Export-PfxCertificate -FilePath electron/cert.pfx -Password (ConvertTo-SecureString -String 'nalichat' -Force -AsPlainText)"
+            powershell.exe -NoProfile -Command "New-SelfSignedCertificate -Type CodeSigningCert -Subject 'CN=Nalibase' -CertStoreLocation 'Cert:\CurrentUser\My' | Export-PfxCertificate -FilePath electron/cert.pfx -Password (ConvertTo-SecureString -String 'nalichat' -Force -AsPlainText)"
             echo "export CSC_LINK='cert.pfx'" >> "$CM_ENV"
             echo "export CSC_KEY_PASSWORD='nalichat'" >> "$CM_ENV"
             echo "✅ Self-signed certificate generated — EXE will be signed (not SmartScreen-trusted)"

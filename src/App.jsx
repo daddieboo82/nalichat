@@ -201,6 +201,7 @@ const AuthenticatedApp = () => {
         <Route path="/squad/join/:inviteCode" element={<SquadJoin />} />
       <Route path="/viral-seed" element={<ViralSeed />} />
         <Route path="/ThankYou" element={<ThankYou />} />
+        <Route path="/thankyou" element={<ThankYou />} />
       </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/studio" element={<Studio />} />

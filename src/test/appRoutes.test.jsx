@@ -143,4 +143,18 @@ describe('app routing guards', () => {
     await screen.findByText('Thank You Page');
     expect(window.location.pathname).toBe('/ThankYou');
   });
+
+  it('keeps the lowercase thankyou route reachable mid-onboarding', async () => {
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      isAuthenticated: true,
+      user: { id: 'u1', onboarding_completed: false, role: 'artist' },
+    };
+    window.history.pushState({}, '', '/thankyou?checkout_id=cs_test_123');
+
+    render(<App />);
+
+    await screen.findByText('Thank You Page');
+    expect(window.location.pathname).toBe('/thankyou');
+  });
 });

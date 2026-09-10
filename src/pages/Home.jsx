@@ -282,7 +282,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mt-5 text-sm text-muted-foreground">
-             ✅ Unlimited Messages · 🚀 Full Creative Toolkit · 💯 Always Free
+             ✅ Unlimited Messages · 🚀 Full Creative Toolkit · 🌐 Free on Web & Mobile
             </p>
           )}
         </motion.div>
@@ -662,7 +662,7 @@ export default function Home() {
               </div>
               {!user && (
                 <p className="mt-8 text-sm font-bold text-muted-foreground tracking-wide uppercase">
-                  ✨ Completely free to use · No credit card required · No trials ✨
+                  ✨ Free to start on web and mobile · No subscription required ✨
                 </p>
               )}
             </div>

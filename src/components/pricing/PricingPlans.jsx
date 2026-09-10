@@ -21,10 +21,10 @@ export default function PricingPlans() {
       <section className="py-16 px-6 max-w-3xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="font-heading font-black text-4xl mb-4">
-            Everything is Free
+            Free Core App + Optional Purchases
           </h2>
           <p className="text-lg text-muted-foreground">
-            All features are unlocked for everyone. NaliChat is 100% free — we monetize through per-item sales, not subscriptions.
+            Core app features are unlocked for everyone. NaliChat monetizes through optional per-item sales and donations, not subscriptions.
           </p>
         </div>
 
@@ -37,16 +37,16 @@ export default function PricingPlans() {
         >
           <div className="absolute -top-4 left-1/2 -translate-x-1/2">
             <span className="bg-primary text-white text-xs font-bold px-4 py-1 rounded-full">
-              100% FREE
+              FREE TO START
             </span>
           </div>
 
           <div className="p-8">
             <h3 className="font-heading font-bold text-2xl mb-2">
-              NaliChat Free
+              NaliChat Core
             </h3>
             <p className="text-muted-foreground text-sm mb-6">
-              Full access to every feature — no credit card, no trial, no limits.
+              Start creating with the web and mobile experience at no cost. Optional desktop downloads and track licenses are sold separately.
             </p>
 
             <div className="mb-6">
@@ -68,6 +68,16 @@ export default function PricingPlans() {
                   <span className="text-sm">{feature}</span>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-8 rounded-xl border border-primary/20 bg-background/60 p-4 text-left">
+              <p className="text-sm font-semibold mb-2">Optional paid items</p>
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                <li>• Windows desktop download — $9.99</li>
+                <li>• macOS desktop download — $9.99</li>
+                <li>• Track licenses — creator-set pricing</li>
+                <li>• Donations — optional support</li>
+              </ul>
             </div>
           </div>
         </motion.div>

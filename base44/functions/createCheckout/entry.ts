@@ -3,6 +3,10 @@ import { stripeRequest } from '../../shared/stripe.ts';
 
 // Server-side price catalog — never trust client-supplied prices
 const DONATION_PRESETS = [5, 10, 25, 50];
+const DESKTOP_DOWNLOAD_PRICES: Record<string, { price: number; name: string }> = {
+  desktop_download_windows: { price: 9.99, name: 'NaliChat for Windows' },
+  desktop_download_macos: { price: 9.99, name: 'NaliChat for macOS' },
+};
 
 Deno.serve(async (req) => {
   try {
@@ -68,6 +72,9 @@ Deno.serve(async (req) => {
         }
         unitPrice = amount;
         name = 'Donation to NaliChat';
+      } else if (item.type && item.type in DESKTOP_DOWNLOAD_PRICES) {
+        unitPrice = DESKTOP_DOWNLOAD_PRICES[item.type].price;
+        name = DESKTOP_DOWNLOAD_PRICES[item.type].name;
       } else {
         return Response.json(
           { error: 'Item must have an id or a valid type' },

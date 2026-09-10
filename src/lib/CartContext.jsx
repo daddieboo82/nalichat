@@ -13,6 +13,11 @@ export function CartProvider({ children }) {
   });
   const [isOpen, setIsOpen] = useState(false);
 
+  const getCartIdentity = (product) => [
+    product?.type || 'item',
+    product?.id || product?.title || product?.name || 'unknown',
+  ].join(':');
+
   useEffect(() => {
     localStorage.setItem('shopping_cart', JSON.stringify(items));
   }, [items]);
@@ -22,8 +27,9 @@ export function CartProvider({ children }) {
       ...product,
       ...(product?.id && !product?.type ? { type: 'stem_license' } : {}),
     };
+    const nextIdentity = getCartIdentity(normalizedProduct);
     setItems(prev => {
-      const existing = prev.find(item => item.id === normalizedProduct.id);
+      const existing = prev.find(item => getCartIdentity(item) === nextIdentity);
       if (existing) {
         return prev;
       }

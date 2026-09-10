@@ -7,6 +7,19 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCart } from "@/lib/CartContext";
 
+const DESKTOP_DOWNLOADS = {
+  desktop_download_windows: {
+    label: "Download for Windows",
+    fileName: "NaliChat-Setup.exe",
+    url: "https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat-Setup.exe",
+  },
+  desktop_download_macos: {
+    label: "Download for macOS",
+    fileName: "NaliChat.dmg",
+    url: "https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat.dmg",
+  },
+};
+
 export default function ThankYou() {
   const queryClient = useQueryClient();
   const { clearCart } = useCart();
@@ -17,6 +30,8 @@ export default function ThankYou() {
   // actual delivery of what they paid for.
   const [purchasedTracks, setPurchasedTracks] = useState([]);
   const [hadDonationOnly, setHadDonationOnly] = useState(false);
+  const [desktopDownload, setDesktopDownload] = useState(null);
+  const [hasOtherPurchase, setHasOtherPurchase] = useState(false);
 
   const urlParams = new URLSearchParams(window.location.search);
   const checkoutId = urlParams.get("checkout_id");
@@ -62,6 +77,17 @@ export default function ThankYou() {
         // licenses to real ArtPost records so we can deliver a download,
         // instead of silently discarding what was actually bought.
         const licenseItems = purchasedItems.filter((it) => it.type === "stem_license" && it.id);
+        const desktopItem = purchasedItems.find((it) => it.type && DESKTOP_DOWNLOADS[it.type]);
+        const donationOnly = purchasedItems.some((it) => it.type === "donation");
+        const handledTypes = new Set([
+          "donation",
+          "stem_license",
+          ...Object.keys(DESKTOP_DOWNLOADS),
+        ]);
+
+        if (desktopItem) {
+          setDesktopDownload(DESKTOP_DOWNLOADS[desktopItem.type]);
+        }
         if (licenseItems.length > 0) {
           const resolved = await Promise.all(
             licenseItems.map(async (it) => {
@@ -75,8 +101,10 @@ export default function ThankYou() {
             })
           );
           setPurchasedTracks(resolved.filter(Boolean));
-        } else if (purchasedItems.some((it) => it.type === "donation")) {
+        } else if (donationOnly) {
           setHadDonationOnly(true);
+        } else if (purchasedItems.length > 0 && purchasedItems.some((it) => !handledTypes.has(it.type))) {
+          setHasOtherPurchase(true);
         }
         await queryClient.invalidateQueries({ queryKey: ["subscription"] });
         clearCart();
@@ -89,6 +117,55 @@ export default function ThankYou() {
 
     processThankYou();
   }, [queryClient, clearCart, checkoutId]);
+
+  if (desktopDownload) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-2xl"
+        >
+          <motion.div
+            animate={{ rotate: processing ? 360 : 0 }}
+            transition={{ duration: processing ? 2 : 0.8 }}
+            className="mb-6 inline-block"
+          >
+            {processing ? (
+              <Loader2 className="w-20 h-20 text-primary animate-spin" />
+            ) : (
+              <CheckCircle className="w-20 h-20 text-accent" />
+            )}
+          </motion.div>
+
+          <h1 className="font-heading font-black text-5xl mb-4">
+            {processing ? "Confirming Purchase..." : "Desktop Download Ready!"}
+          </h1>
+
+          <p className="text-xl text-muted-foreground mb-8">
+            {processing
+              ? "Confirming your payment. This takes just a moment..."
+              : `Your desktop purchase is complete. Download ${desktopDownload.fileName} below.`}
+          </p>
+
+          {!processing && (
+            <div className="flex gap-4 justify-center flex-wrap">
+              <a href={desktopDownload.url} download={desktopDownload.fileName}>
+                <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 h-14 px-8 text-lg font-bold">
+                  <Download className="w-5 h-5 mr-2" />
+                  {desktopDownload.label}
+                </Button>
+              </a>
+              <Button size="lg" variant="outline" className="rounded-xl" asChild>
+                <Link to="/download">Back to Downloads</Link>
+              </Button>
+            </div>
+          )}
+        </motion.div>
+      </div>
+    );
+  }
 
   // ── Standard cart purchase view ──
   return (
@@ -122,7 +199,9 @@ export default function ThankYou() {
               ? "Your license purchase is confirmed. Download your track below."
               : hadDonationOnly
                 ? "Thank you for supporting NaliChat — your donation keeps the app free for everyone."
-                : "Your purchase is complete. Your items are now available."}
+                : hasOtherPurchase
+                  ? "Your purchase is complete. Check the relevant area of the app to access what you bought."
+                  : "Your purchase is complete. Your items are now available."}
         </p>
 
         {!processing && purchasedTracks.length > 0 && (

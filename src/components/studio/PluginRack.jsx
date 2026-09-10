@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { SlidersHorizontal, Power, X, Plus, Waves, Gauge, Sparkles, Clock, Volume2 } from 'lucide-react';
+import { SlidersHorizontal, Power, X, Plus, Waves, Gauge, Sparkles, Clock } from 'lucide-react';
 
 const PLUGINS = [
   { id: 'eq', name: 'Equalizer', icon: Waves, color: 'text-blue-400', params: [
@@ -29,12 +27,23 @@ const PLUGINS = [
   ]},
 ];
 
-export default function PluginRack({ open, onToggle, trackName, tracks }) {
+export default function PluginRack({ open, onToggle, trackName, tracks, plugins, onPluginsChange }) {
   const [activePlugins, setActivePlugins] = useState({});
-  const [selectedSlot, setSelectedSlot] = useState(null);
+
+  useEffect(() => {
+    setActivePlugins(plugins || {});
+  }, [plugins, trackName]);
+
+  const updatePlugins = (updater) => {
+    setActivePlugins(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      onPluginsChange?.(next);
+      return next;
+    });
+  };
 
   const togglePlugin = (pluginId) => {
-    setActivePlugins(prev => {
+    updatePlugins(prev => {
       const next = { ...prev };
       if (next[pluginId]) {
         delete next[pluginId];
@@ -50,7 +59,7 @@ export default function PluginRack({ open, onToggle, trackName, tracks }) {
   };
 
   const updateParam = (pluginId, paramLabel, value) => {
-    setActivePlugins(prev => ({
+    updatePlugins(prev => ({
       ...prev,
       [pluginId]: {
         ...prev[pluginId],
@@ -60,13 +69,12 @@ export default function PluginRack({ open, onToggle, trackName, tracks }) {
   };
 
   const togglePower = (pluginId) => {
-    setActivePlugins(prev => ({
+    updatePlugins(prev => ({
       ...prev,
       [pluginId]: { ...prev[pluginId], enabled: !prev[pluginId].enabled },
     }));
   };
 
-  const activeCount = Object.keys(activePlugins).length;
   const hasTracks = tracks && tracks.length > 0;
 
   return (

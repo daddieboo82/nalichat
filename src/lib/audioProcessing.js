@@ -64,6 +64,62 @@ function bufferToWaveform(buffer, numPoints = 2000) {
       sum += Math.abs(data[start + j] || 0);
       n++;
     }
+
+    function connectTrackEffects(context, source, track, destination) {
+      const effects = track.effects || track.plugins || {};
+      let node = source;
+      const connect = (next) => { node.connect(next); node = next; };
+
+      const eq = effects.eq;
+      if (eq?.enabled !== false && eq) {
+        const low = context.createBiquadFilter();
+        low.type = 'lowshelf';
+        low.frequency.value = 180;
+        low.gain.value = ((eq.params?.Low ?? 50) - 50) / 8;
+        connect(low);
+        const mid = context.createBiquadFilter();
+        mid.type = 'peaking';
+        mid.frequency.value = 1000;
+        mid.Q.value = 0.8;
+        mid.gain.value = ((eq.params?.Mid ?? 50) - 50) / 8;
+        connect(mid);
+        const high = context.createBiquadFilter();
+        high.type = 'highshelf';
+        high.frequency.value = 5000;
+        high.gain.value = ((eq.params?.High ?? 50) - 50) / 8;
+        connect(high);
+      }
+
+      const comp = effects.comp;
+      if (comp?.enabled !== false && comp) {
+        const compressor = context.createDynamicsCompressor();
+        compressor.threshold.value = -60 + (comp.params?.Threshold ?? 60) * 0.5;
+        compressor.ratio.value = 1 + (comp.params?.Ratio ?? 40) / 20;
+        compressor.attack.value = 0.003;
+        compressor.release.value = 0.15;
+        connect(compressor);
+        const makeup = context.createGain();
+        makeup.gain.value = Math.pow(10, (((comp.params?.Gain ?? 50) - 50) / 10) / 20);
+        connect(makeup);
+      }
+
+      const delay = effects.delay;
+      if (delay?.enabled !== false && delay) {
+        const wet = context.createGain();
+        wet.gain.value = (delay.params?.Mix ?? 20) / 100;
+        const delayNode = context.createDelay(2);
+        delayNode.delayTime.value = 0.05 + ((delay.params?.Time ?? 30) / 100) * 0.45;
+        const feedback = context.createGain();
+        feedback.gain.value = Math.min(0.85, (delay.params?.Feedback ?? 25) / 100);
+        node.connect(delayNode);
+        delayNode.connect(feedback);
+        feedback.connect(delayNode);
+        delayNode.connect(wet);
+        wet.connect(destination);
+      }
+
+      node.connect(destination);
+    }
     const v = sum / (n || 1);
     wf[i] = v;
     if (v > maxVal) maxVal = v;
@@ -136,7 +192,7 @@ export async function renderMixToWav(tracks) {
     const gain = offline.createGain();
     gain.gain.value = (track.volume ?? 75) / 100;
     src.connect(gain);
-    gain.connect(offline.destination);
+    connectTrackEffects(offline, gain, track, offline.destination);
     src.start(track.startTime || 0);
   });
 
@@ -171,7 +227,7 @@ export async function renderMixToMp3(tracks) {
     const gain = offline.createGain();
     gain.gain.value = (track.volume ?? 75) / 100;
     src.connect(gain);
-    gain.connect(offline.destination);
+    connectTrackEffects(offline, gain, track, offline.destination);
     src.start(track.startTime || 0);
   });
 

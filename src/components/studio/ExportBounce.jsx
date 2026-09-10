@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
-import { Download, Loader2, Music, Award } from "lucide-react";
+import { Download, Loader2, Award } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import AudioAnalysisPanel from "./AudioAnalysisPanel";
 import MasterPresets from "./MasterPresets";
+import { toast } from "sonner";
 
 const EXPORT_FORMATS = {
   mp3: { label: "MP3", bitrate: "320kbps", size: "small", quality: "High Quality" },
@@ -51,15 +52,24 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
 
       setAnalysis(response.data.analysis);
 
-      // Simulate download of processed audio
-      const link = document.createElement("a");
-      link.href = audioUrl;
-      link.download = `${title || "export"}-mastered.${format}`;
-      link.click();
-
-      setOpen(false);
+      // The current backend returns analysis only. Never label the input as a
+      // mastered file; download only when a processing service provides an
+      // actual output URL.
+      const exportedUrl = response.data?.audioUrl || response.data?.audio_url || response.data?.signed_url;
+      if (exportedUrl) {
+        const link = document.createElement("a");
+        link.href = exportedUrl;
+        link.download = `${title || "export"}-mastered.${format}`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setOpen(false);
+      } else {
+        toast.info("Mastering analysis is ready. Audio re-encoding is not available from the current service.");
+      }
     } catch (error) {
       console.error("Export failed:", error);
+      toast.error("Export failed. Please try again.");
     } finally {
       setExporting(false);
       setProcessing(false);

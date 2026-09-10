@@ -74,10 +74,11 @@ export async function resumableUpload(file, onProgress) {
  */
 export async function resumableDownload(url, fileName, onProgress) {
   const STORAGE_KEY_DL = `dl_${fileName}_${url.slice(-20)}`;
-  const savedBytes = parseInt(localStorage.getItem(STORAGE_KEY_DL) || "0");
-
-  const headers = {};
-  if (savedBytes > 0) headers["Range"] = `bytes=${savedBytes}-`;
+  // Partial bytes are not persisted, so a saved offset cannot be safely
+  // resumed: concatenating the response would produce a corrupt file.
+  // Clear stale progress and restart from the beginning instead.
+  const savedBytes = parseInt(localStorage.getItem(STORAGE_KEY_DL) || "0", 10);
+  if (savedBytes > 0) localStorage.removeItem(STORAGE_KEY_DL);
 
   const triggerFallback = () => {
     const a = document.createElement("a");
@@ -92,15 +93,10 @@ export async function resumableDownload(url, fileName, onProgress) {
 
   let response;
   try {
-    response = await fetch(url, { headers });
+    response = await fetch(url);
   } catch {
-    // Network error (likely CORS preflight failed for Range header) — try simple fetch
-    try {
-      response = await fetch(url);
-    } catch {
-      triggerFallback();
-      return;
-    }
+    triggerFallback();
+    return;
   }
 
   // If server doesn't support range or content-length, fall back
@@ -111,13 +107,13 @@ export async function resumableDownload(url, fileName, onProgress) {
 
   const contentLength = response.headers.get("content-length");
   const contentType = response.headers.get("content-type") || "";
-  const total = contentLength ? parseInt(contentLength) + savedBytes : 0;
+  const total = contentLength ? parseInt(contentLength, 10) : 0;
 
   const reader = response.body?.getReader();
   if (!reader) { triggerFallback(); return; }
 
   const chunks = [];
-  let received = savedBytes;
+  let received = 0;
 
   while (true) {
     const { done, value } = await reader.read();

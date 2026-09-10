@@ -239,29 +239,49 @@ export default function Studio() {
     setShowPluginRack(true);
   };
 
-  // Master FX chain persists alongside the track autosave.
-  useEffect(() => {
+  // Master FX persists to the Project entity when in a room (so it follows the
+  // project across devices and collaborators), and to localStorage otherwise.
+  // The ref gates saving so we never clobber a collaborator's chain with the
+  // empty default before the initial load resolves.
+  const masterFxLoadedRef = useRef(false);
+
+  const loadLocalMasterFx = () => {
     try {
       const saved = localStorage.getItem('nalistudio_master_fx');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') setMasterFx(parsed);
+        if (parsed && typeof parsed === 'object') return parsed;
       }
     } catch (e) {
       console.error('Failed to load master FX chain', e);
     }
-  }, []);
+    return null;
+  };
 
   useEffect(() => {
+    if (roomId) return; // room projects load their chain with the project below
+    masterFxLoadedRef.current = false;
+    const local = loadLocalMasterFx();
+    if (local) setMasterFx(local);
+    masterFxLoadedRef.current = true;
+  }, [roomId]);
+
+  useEffect(() => {
+    if (!masterFxLoadedRef.current) return;
+    const chain = masterFx || {};
     const timeoutId = setTimeout(() => {
       try {
-        localStorage.setItem('nalistudio_master_fx', JSON.stringify(masterFx || {}));
+        localStorage.setItem('nalistudio_master_fx', JSON.stringify(chain));
       } catch (e) {
         console.error('Failed to autosave master FX chain', e);
       }
+      if (roomId) {
+        base44.entities.Project.update(roomId, { master_fx: chain })
+          .catch(err => console.error('Failed to sync master FX to project', err));
+      }
     }, 1000);
     return () => clearTimeout(timeoutId);
-  }, [masterFx]);
+  }, [masterFx, roomId]);
 
   useEffect(() => {
     try {
@@ -275,15 +295,24 @@ export default function Studio() {
 
   useEffect(() => {
     if (roomId) {
+      masterFxLoadedRef.current = false;
       base44.entities.Project.get(roomId).then(project => {
         if (project) {
           setProjectName(project.title);
           if (project.bpm) setBpm(project.bpm);
           if (project.key) setSongKey(project.key);
+          // Remote chain wins; fall back to whatever this device had locally.
+          const remote = project.master_fx;
+          if (remote && typeof remote === 'object') setMasterFx(remote);
+          else {
+            const local = loadLocalMasterFx();
+            if (local) setMasterFx(local);
+          }
           setShowWelcome(false);
           setJamRoomActive(true);
         }
-      }).catch(err => console.error("Failed to load project:", err));
+      }).catch(err => console.error("Failed to load project:", err))
+        .finally(() => { masterFxLoadedRef.current = true; });
     }
   }, [roomId]);
 
@@ -1376,11 +1405,13 @@ export default function Studio() {
   const handleSave = async () => {
     try {
       localStorage.setItem('nalistudio_project_autosave', JSON.stringify(tracks));
+      localStorage.setItem('nalistudio_master_fx', JSON.stringify(masterFx || {}));
       if (roomId) {
         await base44.entities.Project.update(roomId, {
           title: projectName,
           bpm: bpm,
-          key: songKey
+          key: songKey,
+          master_fx: masterFx || {}
         });
       }
       toast.success("Project saved successfully!");

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Wand2, ArrowUpCircle, ArrowDownCircle, FlipHorizontal2, Gauge, Music2, Volume2, RotateCcw } from 'lucide-react';
+import { Wand2, ArrowUpCircle, FlipHorizontal2, Gauge, Music2, Volume2, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 

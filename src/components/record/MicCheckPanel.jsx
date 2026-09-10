@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, ShieldCheck, AlertCircle, Activity, Loader2, RefreshCw } from 'lucide-react';
+import { Mic, MicOff, ShieldCheck, AlertCircle, Activity, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/responsive-select';
 import { Button } from '@/components/ui/button';
 import { useMicMonitor } from '@/hooks/useMicMonitor';

@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
-import { Flag, Plus, X, Trash2 } from 'lucide-react';
+import { Flag, Plus, X } from 'lucide-react';
 import { sounds } from '@/hooks/use-sound';
 
 /**

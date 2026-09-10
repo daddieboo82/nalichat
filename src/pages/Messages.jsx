@@ -15,7 +15,7 @@ import { sounds } from "@/hooks/use-sound";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import { toast } from "sonner";
 import ModerationBanner from "@/components/messages/ModerationBanner";
-import { MessageSquare, Users, Mail, Plus, Zap, UserPlus, Hash, Search, MoreHorizontal } from "lucide-react";
+import { MessageSquare, Users, Plus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -155,8 +155,16 @@ export default function Messages() {
             if (event.type === "update") {
               return old.map(m => (m.id === event.id ? { ...m, ...event.data } : m));
             }
-            // create: drop any optimistic temp from this sender, then append if new
-            const withoutTemp = old.filter(m => !(m._optimistic && m.sender_id === event.data.sender_id));
+            // create: the real message arrived. Retire at most ONE matching
+            // optimistic temp (same sender, same content) rather than every temp
+            // from this sender, which would strip other still-in-flight sends.
+            const idx = old.findIndex(m =>
+              m._optimistic &&
+              m.sender_id === event.data?.sender_id &&
+              (m.text || "") === (event.data?.text || "") &&
+              (m.type || "text") === (event.data?.type || "text")
+            );
+            const withoutTemp = idx >= 0 ? old.filter((_, i) => i !== idx) : old;
             if (withoutTemp.some(m => m.id === event.id)) return withoutTemp;
             return [...withoutTemp, event.data];
           });
@@ -233,8 +241,12 @@ export default function Messages() {
       // must appear in the UI on the same tick the user hits send, with zero delay.
       queryClient.cancelQueries({ queryKey: ["messages", selectedConvId] });
       const previous = queryClient.getQueryData(["messages", selectedConvId]);
+      // Unique per send (Date.now() alone collides when two sends land in the
+      // same millisecond) so each temp can be retired individually.
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       const tempMsg = {
-        id: `temp-${Date.now()}`,
+        id: tempId,
+        _tempId: tempId,
         ...msgData,
         conversation_id: selectedConvId,
         sender_id: currentUser?.id,
@@ -252,17 +264,22 @@ export default function Messages() {
         );
         return updated.sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0));
       });
-      return { previous };
+      return { previous, tempId };
     },
     onError: (_err, _msgData, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData(["messages", selectedConvId], ctx.previous);
+      // Remove only the failed send's bubble. Restoring the whole pre-send
+      // snapshot would also erase other messages still in flight.
+      if (!ctx?.tempId) return;
+      queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+        old.filter(m => m._tempId !== ctx.tempId)
+      );
     },
-    onSuccess: (msg) => {
+    onSuccess: (msg, _vars, ctx) => {
       // If the message was flagged by moderation, remove it from the cache and warn the user.
       if (msg?._flagged) {
         const f = msg._flagged;
         queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
-          old.filter(m => !m._optimistic && m.id !== msg.id)
+          old.filter(m => m._tempId !== ctx?.tempId && m.id !== msg.id)
         );
         const labels = {
           violence: "violence", racism: "racism", sexual_violence: "sexual violence",
@@ -278,9 +295,9 @@ export default function Messages() {
         base44.auth.me().then(setCurrentUser).catch(() => {});
         return;
       }
-      // Swap the optimistic temp for the real saved message instantly (no refetch).
+      // Swap this send's optimistic temp for the real saved message (no refetch).
       queryClient.setQueryData(["messages", selectedConvId], (old = []) => {
-        const withoutTemp = old.filter(m => !m._optimistic);
+        const withoutTemp = old.filter(m => m._tempId !== ctx?.tempId);
         if (withoutTemp.some(m => m.id === msg.id)) return withoutTemp;
         return [...withoutTemp, msg];
       });

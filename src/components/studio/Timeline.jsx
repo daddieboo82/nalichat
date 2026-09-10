@@ -1,5 +1,4 @@
 import { useRef, useEffect } from "react";
-import { cn } from "@/lib/utils";
 
 export default function Timeline({ currentTime, duration, zoom, onClick }) {
   const canvasRef = useRef(null);

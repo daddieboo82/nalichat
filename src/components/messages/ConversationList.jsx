@@ -1,10 +1,9 @@
 import { useState, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Search, Users, Hash, UserPlus, Circle, MessageSquare } from "lucide-react";
+import { Search, Users, Hash, UserPlus, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 
 import React from "react";

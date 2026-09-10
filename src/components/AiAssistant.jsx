@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { Bot, X, Send, Minimize2, Maximize2, Sparkles, Expand, Shrink, AudioLines, Disc, Activity, Mic, Music, ChevronUp, ChevronDown, Volume2, VolumeX } from "lucide-react";
+import { X, Send, Expand, Shrink, AudioLines, Disc, Activity, Mic, Music, ChevronUp, ChevronDown, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import TutorialTopics from "@/components/ai/TutorialTopics";

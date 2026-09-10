@@ -2,12 +2,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   ChevronLeft, Music, ShoppingCart, AudioLines, LogIn, Menu,
   Mic, Wand2, FileText, Trophy, Settings, Gem, BarChart3,
-  Home, Compass, MessageSquare, Users, Radio, X, Swords, Rocket, Clock, Smartphone
+  Home, Compass, MessageSquare, Users, Radio, Swords, Rocket, Smartphone
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useEffect, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Link } from "react-router-dom";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";

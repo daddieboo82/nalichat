@@ -5,8 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Trash2, MessageSquare, Loader2, Music, MapPin } from "lucide-react";
-import { motion } from "framer-motion";
+import { Search, Plus, Trash2, MessageSquare, Loader2, MapPin } from "lucide-react";
 
 const roleColors = {
   artist: "bg-primary/20 text-primary border-primary/30",

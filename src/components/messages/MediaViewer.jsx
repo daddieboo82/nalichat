@@ -1,8 +1,7 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import React from "react";
 import { X, Download, ZoomIn, ZoomOut } from "lucide-react";
 import { resumableDownload } from "@/lib/resumableUpload";
-import { cn } from "@/lib/utils";
 import CustomMediaPlayer from "../audio/CustomMediaPlayer";
 
 export default function MediaViewer({ media, isOpen, onClose }) {
@@ -94,7 +93,6 @@ export default function MediaViewer({ media, isOpen, onClose }) {
                 controls
                 autoPlay
                 playsInline
-                webkit-playsinline="true"
                 className="rounded-xl max-h-[70vh] max-w-full object-contain shadow-2xl border border-white/10 bg-black/50"
               />
             </div>

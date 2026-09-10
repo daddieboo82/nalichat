@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  MessageSquare, Music, Users, BarChart3, Sparkles,
-  Trophy, Compass, Play, ArrowRight, Zap, Shield, Star,
-  Headphones, Radio, Wand2, FileAudio, ChevronRight,
-  Image, Cloud, UserCircle, Video, Layers, ShoppingCart,
+  MessageSquare, Music, BarChart3, Sparkles,
+  Trophy, ArrowRight, Zap, Shield, Star,
+  Headphones, Wand2, FileAudio, ChevronRight, UserCircle, Video, Layers, ShoppingCart,
   SlidersHorizontal, Tag, FolderKanban
 } from "lucide-react";
 import { motion } from "framer-motion";

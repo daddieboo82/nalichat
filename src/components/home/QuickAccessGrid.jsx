@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  MessageSquare, Music, Compass, Mic, Wand2, BarChart3,
+  MessageSquare, Compass, Mic, Wand2, BarChart3,
   Trophy, FileText, Users, Sparkles, ArrowRight
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";

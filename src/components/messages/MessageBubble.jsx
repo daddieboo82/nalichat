@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Pause, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Forward, Pencil, Sparkles, Volume2, Share2, Flag } from "lucide-react";
+import { Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Pencil, Sparkles, Volume2, Share2, Flag } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -8,7 +8,6 @@ import { format } from "date-fns";
 import { base44 } from "@/api/base44Client";
 import { resumableDownload } from "@/lib/resumableUpload";
 import MediaViewer from "./MediaViewer";
-import AudioWaveform from "./AudioWaveform";
 import EmojiReactionPicker from "./EmojiReactionPicker";
 import CustomMediaPlayer from "../audio/CustomMediaPlayer";
 import ChatSessionViewer from "./ChatSessionViewer";

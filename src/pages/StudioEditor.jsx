@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { Play, Pause, Download, Share2, Loader2, Wand2, Music, Zap, Radio, Users } from "lucide-react";
+import { Play, Pause, Share2, Loader2, Wand2, Music, Zap, Radio } from "lucide-react";
 import { motion } from "framer-motion";
 import CollaboratorPresence from "@/components/studio/CollaboratorPresence";
 import ExportBounce from "@/components/studio/ExportBounce";

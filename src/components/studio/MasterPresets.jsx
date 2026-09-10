@@ -1,4 +1,4 @@
-import { Award, Zap } from 'lucide-react';
+import { Award } from 'lucide-react';
 
 const MASTER_PRESETS = [
   {

@@ -268,10 +268,7 @@ export default function CustomMediaPlayer({ src, className, title }) {
           ref={audioRef} 
           src={src} 
           preload="metadata" 
-          playsInline
-          webkitPlaysInline
           controlsList="nodownload nofullscreen noremoteplayback"
-          disablePictureInPicture
         />
         
         <div className="flex items-center justify-between gap-4">

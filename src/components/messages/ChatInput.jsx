@@ -3,8 +3,10 @@ import { base44 } from "@/api/base44Client";
 import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile, Layers, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resumableUpload } from "@/lib/resumableUpload";
+import { validateUpload } from "@/lib/uploadValidation";
+import { toast } from "sonner";
 import { sounds } from "@/hooks/use-sound";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import EmojiReactionPicker from "./EmojiReactionPicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -65,6 +67,14 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
   };
 
   const uploadFile = async (file) => {
+    // Validate before showing a progress row so oversized/invalid files fail
+    // immediately with a reason instead of after a long transfer.
+    const check = validateUpload(file);
+    if (!check.ok) {
+      sounds.error();
+      toast.error(check.error);
+      return;
+    }
     const id = `${file.name}-${Date.now()}`;
     setUploads(u => [...u, { id, name: file.name, progress: 0, done: false, error: false }]);
 
@@ -76,6 +86,10 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     try {
       file_url = await resumableUpload(file, updateProgress);
     } catch (err) {
+      // Previously this failed silently apart from a red bar, leaving the user
+      // with no idea why the attachment never sent.
+      sounds.error();
+      toast.error(err?.message || `Couldn't upload ${file.name}.`);
       setUploads(u => u.map(x => x.id === id ? { ...x, error: true } : x));
       setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 3000);
       return;

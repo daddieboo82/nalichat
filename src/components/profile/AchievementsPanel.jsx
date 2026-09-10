@@ -1,7 +1,4 @@
-import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQueryClient } from "@tanstack/react-query";
-import { Award, Star, Flame, Zap, Users, Palette, Lock } from "lucide-react";
+import { Zap, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ALL_ACHIEVEMENTS = [

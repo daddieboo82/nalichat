@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Sparkles, MessageCircle, HelpCircle } from "lucide-react";
+import { Sparkles, MessageCircle, HelpCircle } from "lucide-react";
 
 export default function GlobalHelpDialog({ open, onOpenChange }) {
   return (

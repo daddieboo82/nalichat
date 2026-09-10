@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, Edit3, Award, Star, Grid, Heart, Users, Zap, Save, X, Sparkles } from "lucide-react";
+import { Camera, Edit3, Award, Grid, Heart, Zap, Save } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import ArtPostCard from "@/components/explore/ArtPostCard";

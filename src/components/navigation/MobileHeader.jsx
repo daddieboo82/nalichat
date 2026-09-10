@@ -25,7 +25,6 @@ const TITLES = {
   "/playlists": "Playlists",
   "/files": "Files",
   "/leaderboard": "Leaderboard",
-  "/network": "Network",
   "/settings": "Settings",
   "/analytics": "Analytics",
   "/record": "Record",

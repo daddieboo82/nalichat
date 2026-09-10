@@ -28,7 +28,11 @@ const quickStarts = [
     icon: Users,
     title: 'Find Collaborators',
     desc: 'Grow your network',
-    link: '/network',
+    // There is no standalone "/network" route in App.jsx — this previously linked
+    // to a page that never existed, so the button 404'd. Starting a new
+    // conversation from Messages is how users actually discover and connect
+    // with other creators today.
+    link: '/messages',
     bgClass: 'bg-gradient-to-br from-emerald-500 to-teal-500',
   },
 ];

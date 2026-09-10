@@ -8,7 +8,10 @@ import { cn } from "@/lib/utils";
 
 function ThreadMessage({ msg, isOwn }) {
   return (
-    <div className={cn("flex gap-2 mb-3", isOwn ? "flex-row-reverse" : "flex-row")}>
+    <div
+      id={`thread-message-${msg.id}`}
+      className={cn("flex gap-2 mb-3", isOwn ? "flex-row-reverse" : "flex-row")}
+    >
       <Avatar className="w-6 h-6 shrink-0 mt-0.5">
         <AvatarImage src={msg.sender_avatar} />
         <AvatarFallback className="bg-primary/20 text-primary text-[9px] font-bold">
@@ -33,7 +36,7 @@ function ThreadMessage({ msg, isOwn }) {
   );
 }
 
-export default function ThreadPanel({ parentMessage, currentUser, onClose }) {
+export default function ThreadPanel({ parentMessage, currentUser, targetMessageId, onClose }) {
   const [text, setText] = useState("");
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
@@ -46,10 +49,23 @@ export default function ThreadPanel({ parentMessage, currentUser, onClose }) {
   });
 
   useEffect(() => {
+    const target = targetMessageId
+      ? document.getElementById(`thread-message-${targetMessageId}`)
+      : null;
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.classList.add("ring-2", "ring-primary/40", "rounded-xl");
+      const timer = window.setTimeout(
+        () => target.classList.remove("ring-2", "ring-primary/40", "rounded-xl"),
+        2000,
+      );
+      return () => window.clearTimeout(timer);
+    }
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [replies]);
+    return undefined;
+  }, [replies, targetMessageId]);
 
   useEffect(() => {
     if (textareaRef.current) {

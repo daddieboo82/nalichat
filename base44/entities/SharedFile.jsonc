@@ -54,11 +54,29 @@
     },
     "likes": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "Field-level security: readable by everyone, but only an admin may write it directly. Row-level RLS lets the uploader update their own SharedFile record, which would otherwise let them self-inflate this leaderboard metric with a direct entity update. Locked here for the same reason as ArtPost.likes \u2014 write only via a trusted server function using asServiceRole (service role bypasses FLS).",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "views": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "Field-level security: readable by everyone, but only an admin may write it directly. Locked for the same self-inflation reason as 'likes' \u2014 write only via a trusted server function using asServiceRole.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [

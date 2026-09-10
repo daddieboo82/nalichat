@@ -45,14 +45,32 @@
     },
     "likes": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "Field-level security: readable by everyone, but only an admin may write it directly. Without this, the row-level 'creator can update own post' rule would let a creator self-inflate their own like count with a direct entity update, bypassing toggleLike entirely. Real likes are written only by the toggleLike function via asServiceRole (service role bypasses FLS).",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "liked_by": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "default": []
+      "default": [],
+      "description": "Field-level security: readable by everyone, but only an admin may write it directly. Locked here for the same reason as 'likes' \u2014 written only by toggleLike via asServiceRole.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "creator_id": {
       "type": "string"
@@ -65,7 +83,16 @@
     },
     "views": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "Field-level security: readable by everyone, but only an admin may write it directly. Locked for the same self-inflation reason as 'likes' \u2014 write only via a trusted server function using asServiceRole.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "duration": {
       "type": "number",
@@ -79,7 +106,16 @@
     },
     "featured": {
       "type": "boolean",
-      "default": false
+      "default": false,
+      "description": "Field-level security: readable by everyone, but only an admin may write it directly. Without this, the row-level 'creator can update own post' rule would let any creator self-promote their own post to featured status. Curated/set only by an admin.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [

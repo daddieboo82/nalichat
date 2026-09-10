@@ -158,6 +158,12 @@ Deno.serve(async (req) => {
         quantity,
         ...(item.id ? { id: item.id } : {}),
         ...(item.type ? { type: item.type } : {}),
+        // Bind the studio export purchase to the exact rendered file so
+        // get-studio-export-url can verify the caller actually paid for this
+        // specific file instead of signing any fileUri they pass in.
+        ...(item.type === 'studio_export' && typeof item.fileUri === 'string'
+          ? { fileUri: item.fileUri }
+          : {}),
       });
     }
 

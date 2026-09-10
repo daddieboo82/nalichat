@@ -28,7 +28,16 @@
     },
     "vote_count": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "Field-level security: readable by everyone, but only an admin may write it directly. Without this, the row-level 'producer can update own submission' rule would let a producer self-inflate their own vote_count with a direct entity update, bypassing castVote entirely. Real votes are written only by the castVote function via asServiceRole (service role bypasses FLS).",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "source_type": {
       "type": "string",

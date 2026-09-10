@@ -12,7 +12,7 @@ async function fetchAudioBuffer(url) {
 }
 
 // Render an AudioBuffer to a WAV Blob (16-bit PCM)
-function audioBufferToWav(buffer) {
+export function audioBufferToWav(buffer) {
   const numChannels = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
   const numFrames = buffer.length;
@@ -52,7 +52,7 @@ function audioBufferToWav(buffer) {
 }
 
 // Build a peak waveform array (0..1) from an AudioBuffer
-function bufferToWaveform(buffer, numPoints = 2000) {
+export function bufferToWaveform(buffer, numPoints = 2000) {
   const data = buffer.getChannelData(0);
   const blockSize = Math.max(1, Math.floor(data.length / numPoints));
   const wf = new Array(numPoints);

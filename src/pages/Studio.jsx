@@ -24,6 +24,7 @@ import { usePerformance } from '@/hooks/use-performance';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3 } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
+import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import LivePresenceBar from '@/components/studio/LivePresenceBar';
 import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
@@ -123,6 +124,8 @@ export default function Studio() {
   const [newTrackName, setNewTrackName] = useState("");
   const [creatingTrack, setCreatingTrack] = useState(false);
   const [newTrackType, setNewTrackType] = useState('audio');
+  const [newTrackInstrument, setNewTrackInstrument] = useState('default');
+  const [newTrackMidiChannel, setNewTrackMidiChannel] = useState('1');
   const [selectedTrackIds, setSelectedTrackIds] = useState([]);
 
   const [maxTracks, setMaxTracks] = useState(2); // Free tier default
@@ -1302,9 +1305,53 @@ export default function Studio() {
   const handleCreateTrackConfirm = () => {
     if (!newTrackName.trim()) return;
     const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
-    setTracksWithHistory([...tracks, { id: newId, name: newTrackName.trim(), type: newTrackType, color: ["bg-green-500", "bg-blue-500", "bg-purple-500", "bg-yellow-500", "bg-pink-500"][newId % 5], volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0 }]);
+    const isInstrument = newTrackType === 'midi' || newTrackType === 'instrument';
+    setTracksWithHistory([...tracks, {
+      id: newId, name: newTrackName.trim(), type: newTrackType,
+      color: ["bg-green-500", "bg-blue-500", "bg-purple-500", "bg-yellow-500", "bg-pink-500"][newId % 5],
+      volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0,
+      // Instrument choice is persisted so the track can actually be rendered later.
+      ...(isInstrument ? { instrument: newTrackInstrument, midiChannel: newTrackMidiChannel } : {}),
+    }]);
     setCreatingTrack(false);
-    toast.success("Track added");
+    setSelectedTrackIds([newId]);
+    toast.success(isInstrument
+      ? `${getInstrument(newTrackInstrument).name} track added — press Render to generate audio`
+      : "Track added");
+  };
+
+  // Render a phrase for a Software Instrument / MIDI track using the session's
+  // key and tempo, turning the instrument choice into real, mixable audio.
+  const renderInstrumentTrack = async (trackId) => {
+    const track = tracksRef.current.find(t => t.id === trackId);
+    if (!track) return;
+    const instrumentId = track.instrument || 'default';
+    if (!isSynthesizable(instrumentId)) {
+      toast.error("External MIDI routes to outboard gear — record its audio input instead.");
+      return;
+    }
+    setIsProcessing('instrument');
+    const toastId = toast.loading(`Rendering ${getInstrument(instrumentId).name}...`);
+    try {
+      const { url, waveform, duration } = await renderInstrumentPhrase({
+        instrument: instrumentId,
+        bpm,
+        songKey,
+        bars: 4,
+      });
+      setTracksWithHistory(prev => prev.map(t => {
+        if (t.id !== trackId) return t;
+        if (t.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(t.audioUrl); } catch (e) { /* ignore */ } }
+        return { ...t, audioUrl: url, waveform, duration, fullDuration: duration, clipStart: 0 };
+      }));
+      toast.success(`${getInstrument(instrumentId).name} rendered`, { id: toastId });
+      sounds.success();
+    } catch (e) {
+      console.error('Instrument render failed', e);
+      toast.error(e.message || "Couldn't render this instrument.", { id: toastId });
+    } finally {
+      setIsProcessing(null);
+    }
   };
 
   // Pro Tools-style VCA Master Track: controls volume of assigned member tracks
@@ -2008,12 +2055,35 @@ export default function Studio() {
                   
                   {/* Empty track placeholder — clarifies the track exists but has no audio yet */}
                   {(!track.waveform || track.waveform.length === 0) && !track.armed && track.trackType !== 'vca' && track.trackType !== 'folder' && (
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none z-10">
-                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60 italic">
-                        <Mic className="w-3.5 h-3.5 shrink-0" />
-                        <span>Empty — upload a file or record to fill this track</span>
+                    track.instrument ? (
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 z-20">
+                        <div className="flex items-center gap-2 text-[11px]">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={isProcessing === 'instrument'}
+                            onClick={(e) => { e.stopPropagation(); renderInstrumentTrack(track.id); }}
+                            className="h-7 gap-1.5 text-[11px] border-primary/40 text-primary hover:bg-primary/10"
+                          >
+                            {isProcessing === 'instrument'
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <Wand2 className="w-3.5 h-3.5" />}
+                            Render {getInstrument(track.instrument).name}
+                          </Button>
+                          <span className="text-muted-foreground/60 italic hidden sm:inline">
+                            in {songKey} at {bpm} BPM
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none z-10">
+                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60 italic">
+                          <Mic className="w-3.5 h-3.5 shrink-0" />
+                          <span>Empty — upload a file or record to fill this track</span>
+                        </div>
+                      </div>
+                    )
                   )}
                   {/* VCA Master lane label */}
                   {track.trackType === 'vca' && (
@@ -2504,6 +2574,8 @@ export default function Studio() {
         creatingTrack={creatingTrack} setCreatingTrack={setCreatingTrack}
         newTrackName={newTrackName} setNewTrackName={setNewTrackName}
         newTrackType={newTrackType} setNewTrackType={setNewTrackType}
+        newTrackInstrument={newTrackInstrument} setNewTrackInstrument={setNewTrackInstrument}
+        newTrackMidiChannel={newTrackMidiChannel} setNewTrackMidiChannel={setNewTrackMidiChannel}
         handleCreateTrackConfirm={handleCreateTrackConfirm}
         renamingTrack={renamingTrack} setRenamingTrack={setRenamingTrack}
         setTracksWithHistory={setTracksWithHistory}

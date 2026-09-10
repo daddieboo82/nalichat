@@ -19,6 +19,7 @@ import NaliContextHint from "@/components/nali/NaliContextHint";
 import { routeNativeCall } from "@/lib/nativeCall";
 import { copyToClipboard } from "@/lib/clipboard";
 import { useCall, isCallSignal } from "@/hooks/useCall";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import CallOverlay from "./CallOverlay";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -31,7 +32,6 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [threadMessage, setThreadMessage] = useState(null);
-  const [typingUsers, setTypingUsers] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [unreadSinceScroll, setUnreadSinceScroll] = useState(0);
@@ -39,9 +39,16 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const prevLenRef = useRef(0);
   const isNearBottomRef = useRef(true);
   const markedRef = useRef(new Set());
-  const typingTimeoutRef = useRef(null);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+  // Real typing presence: broadcasts our own keystrokes (throttled) and reports
+  // which other participants are currently typing.
+  const { typingUsers, notifyTyping } = useTypingIndicator(
+    conversation?.id,
+    currentUser,
+    conversation?.participant_ids || []
+  );
 
   // The keyboard can overlay the viewport without resizing it (iOS Safari/WebView,
   // older Android WebView) or resize it (Android Chrome 108+ with
@@ -341,7 +348,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       {typingUsers.length > 0 && (
         <div className="absolute bottom-24 left-6 z-10 px-4 py-2 text-[11px] font-medium text-muted-foreground bg-background/80 backdrop-blur-md rounded-full border border-border/50 shadow-sm flex items-center gap-2">
           <TypingIndicator />
-          <span>{typingUsers.map(u => u.display_name || u.full_name).join(", ")} typing</span>
+          <span>{typingUsers.map(u => u.display_name).filter(Boolean).join(", ")} typing</span>
         </div>
       )}
 
@@ -369,10 +376,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
             onCancelReply={() => setReplyTo(null)}
             editingMessage={editingMessage}
             onCancelEdit={() => setEditingMessage(null)}
-            onTyping={() => {
-              clearTimeout(typingTimeoutRef.current);
-              typingTimeoutRef.current = setTimeout(() => setTypingUsers([]), 2000);
-            }}
+            onTyping={notifyTyping}
           />
         </div>
         )}

@@ -1,0 +1,48 @@
+{
+  "name": "TypingStatus",
+  "type": "object",
+  "properties": {
+    "conversation_id": {
+      "type": "string",
+      "description": "Conversation the user is currently typing in"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "ID of the user who is typing"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Display name shown in the 'typing' indicator"
+    },
+    "participant_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Participants of the conversation, mirrored here so reads can be scoped to them"
+    },
+    "last_typed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Heartbeat of the most recent keystroke - readers treat stale rows as not typing"
+    }
+  },
+  "required": [
+    "conversation_id",
+    "user_id"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "data.participant_ids": "{{user.id}}"
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.user_id": "{{user.id}}"
+    }
+  }
+}

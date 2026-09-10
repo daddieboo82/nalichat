@@ -57,6 +57,18 @@ export default function AdminDashboard() {
     );
   }
 
+  // Revenue, subscriber records and the full user list are admin-only. The server
+  // is the real authority, but gating here stops the data rendering for non-admins.
+  if (currentUser.role !== 'admin') {
+    return (
+      <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center min-h-[50vh]">
+        <ShieldAlert className="w-12 h-12 mb-4 opacity-50" />
+        <h2 className="text-xl font-bold mb-2">Admins Only</h2>
+        <p>You don&apos;t have permission to view the business dashboard.</p>
+      </div>
+    );
+  }
+
   // Calculate metrics
   const activeSubs = subscriptions.filter(sub => sub.status === 'active');
   const proSubs = activeSubs.filter(sub => sub.plan === 'pro');
@@ -105,16 +117,6 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      {currentUser.role !== 'admin' && (
-        <div className="mb-8 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-3 text-yellow-600">
-          <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
-          <div>
-            <h3 className="font-bold">Not an Admin</h3>
-            <p className="text-sm opacity-90">You are currently viewing this dashboard as a regular user. For automated testing, use the "Make Me Admin (Automated Testing)" button below to promote your account.</p>
-          </div>
-        </div>
-      )}
-
       {currentUser?.role === 'admin' && <NaliMaintenancePanel />}
 
       <div className="bg-card border border-border rounded-xl p-6 mb-8">
@@ -155,28 +157,10 @@ export default function AdminDashboard() {
               Make Admin
             </Button>
           </div>
-          {currentUser && currentUser.role !== 'admin' && (
-            <Button 
-              variant="outline" 
-              className="w-full sm:w-auto"
-              title="Promote to Admin (Automated Testing)"
-              onClick={async () => {
-                setIsMakingAdmin(true);
-                try {
-                  await base44.auth.updateMe({ role: 'admin' });
-                  toast.success(`You are now an admin! Please refresh the page.`);
-                  setTimeout(() => window.location.href = window.location.href, 1000);
-                } catch (e) {
-                  toast.error("Error updating role: " + e.message);
-                } finally {
-                  setIsMakingAdmin(false);
-                }
-              }}
-              disabled={isMakingAdmin}
-            >
-              Make Me Admin (Automated Testing)
-            </Button>
-          )}
+          {/* NOTE: a "Make Me Admin (Automated Testing)" button used to live here and
+              called base44.auth.updateMe({ role: 'admin' }) directly, letting ANY signed-in
+              user self-promote in one click. Promotion now goes only through the makeAdmin
+              function, which verifies the caller is already an admin. */}
         </div>
       </div>
 

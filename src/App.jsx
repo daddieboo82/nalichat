@@ -148,7 +148,23 @@ const AuthenticatedApp = () => {
   // Admins bypass onboarding gate entirely.
   const isAdminUser = user?.role === 'admin';
 
-  if (isAuthenticated && user && !user.onboarding_completed && location.pathname.toLowerCase() !== '/onboarding' && location.pathname !== '/login' && location.pathname !== '/register') {
+  // Routes that must stay reachable mid-onboarding: legal pages a user is asked to
+  // agree to, the password-reset flow, and the auth screens themselves. Without
+  // these, an authenticated user who hasn't finished onboarding is bounced away
+  // from Terms/Privacy and cannot complete a password reset.
+  const ONBOARDING_EXEMPT_PATHS = new Set([
+    '/onboarding', '/login', '/register', '/forgot-password', '/reset-password',
+    '/privacy', '/terms', '/download',
+  ]);
+  const currentPath = location.pathname.toLowerCase();
+
+  if (
+    isAuthenticated &&
+    user &&
+    !user.onboarding_completed &&
+    !isAdminUser &&
+    !ONBOARDING_EXEMPT_PATHS.has(currentPath)
+  ) {
     return <Navigate to="/onboarding" replace />;
   }
 

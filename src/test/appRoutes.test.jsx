@@ -172,7 +172,7 @@ describe('app routing guards', () => {
     expect(window.location.pathname).toBe('/thankyou');
   });
 
-  it('redirects authenticated users without app access to pricing', async () => {
+  it('keeps core chat available to authenticated free users', async () => {
     mockAuthState.current = {
       ...mockAuthState.current,
       isAuthenticated: true,
@@ -186,7 +186,7 @@ describe('app routing guards', () => {
 
     render(<App />);
 
-    await screen.findByText('Pricing Page');
-    expect(window.location.pathname).toBe('/pricing');
+    await screen.findByText('Messages Page');
+    expect(window.location.pathname).toBe('/messages');
   });
 });

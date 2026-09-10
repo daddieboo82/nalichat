@@ -1,0 +1,76 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
+import { resolvePortalReturnUrl } from '../../shared/stripeBilling.ts';
+import { stripeRequest } from '../../shared/stripe.ts';
+
+Deno.serve(async (req) => {
+  if (req.method !== 'POST') {
+    return Response.json({ error: 'Method not allowed' }, { status: 405 });
+  }
+
+  try {
+    const { returnDestination } = await req.json();
+    const appBaseUrl = Deno.env.get('APP_BASE_URL');
+    if (!appBaseUrl) throw new Error('Missing APP_BASE_URL');
+    const returnUrl = resolvePortalReturnUrl(returnDestination, appBaseUrl);
+
+    const base44 = createClientFromRequest(req);
+    let user;
+    try {
+      user = await base44.auth.me();
+    } catch {
+      return Response.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    if (!user?.id) {
+      return Response.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const subscriptions = await base44.asServiceRole.entities.Subscription.filter({
+      user_id: user.id,
+      provider: 'stripe',
+    });
+    const associatedCustomerIds = new Set(
+      subscriptions
+        .map((subscription: Record<string, unknown>) => subscription.stripe_customer_id)
+        .filter((value: unknown): value is string => typeof value === 'string' && value.length > 0),
+    );
+    const customerId = typeof user.stripe_customer_id === 'string'
+      ? user.stripe_customer_id
+      : associatedCustomerIds.values().next().value;
+    if (!customerId || (
+      user.stripe_customer_id !== customerId
+      && !associatedCustomerIds.has(customerId)
+    )) {
+      return Response.json({ error: 'No Stripe customer belongs to this account' }, { status: 404 });
+    }
+
+    const customer = await stripeRequest(
+      `/customers/${encodeURIComponent(customerId)}`,
+      {},
+      'GET',
+    );
+    const metadataOwner = customer?.metadata?.nali_user_id;
+    const hasLocalOwnership = user.stripe_customer_id === customerId
+      || associatedCustomerIds.has(customerId);
+    if (
+      customer?.deleted === true
+      || (metadataOwner && metadataOwner !== user.id)
+      || (!metadataOwner && !hasLocalOwnership)
+    ) {
+      return Response.json({ error: 'Stripe customer ownership check failed' }, { status: 403 });
+    }
+
+    const session = await stripeRequest('/billing_portal/sessions', {
+      customer: customerId,
+      return_url: returnUrl,
+    });
+    return Response.json({ portalUrl: session.url });
+  } catch (error) {
+    console.error('Billing portal error:', error);
+    const message = error instanceof Error ? error.message : '';
+    const clientError = message.startsWith('Unknown billing portal');
+    return Response.json(
+      { error: clientError ? message : 'Unable to create billing portal session' },
+      { status: clientError ? 400 : 500 },
+    );
+  }
+});

@@ -10,24 +10,47 @@
       "type": "string",
       "enum": [
         "free",
+        "premium",
+        "premium_plus",
         "pro",
         "pro_filesharing",
         "trial"
       ],
       "default": "free",
-      "description": "Subscription tier"
+      "description": "Canonical tier (free, premium, premium_plus); legacy values remain valid during migration"
     },
     "status": {
       "type": "string",
       "enum": [
         "active",
+        "trialing",
         "canceled",
         "ended",
         "pending",
+        "unpaid",
+        "incomplete",
         "trial"
       ],
       "default": "active",
-      "description": "Current subscription status"
+      "description": "Current lifecycle status; trial is a legacy alias for trialing"
+    },
+    "billing_period": {
+      "type": "string",
+      "enum": [
+        "monthly",
+        "annual"
+      ],
+      "description": "Recurring billing cadence"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "stripe",
+        "wix",
+        "manual",
+        "unknown"
+      ],
+      "description": "Billing system of record; Wix is legacy"
     },
     "subscription_id": {
       "type": "string",
@@ -37,15 +60,155 @@
       "type": "string",
       "description": "Stripe Checkout Session ID for correlation"
     },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe Customer ID"
+    },
+    "stripe_product_id": {
+      "type": "string",
+      "description": "Stripe Product ID used by the external subscription"
+    },
+    "stripe_price_id": {
+      "type": "string",
+      "description": "Stripe Price ID used by the external subscription"
+    },
+    "sku": {
+      "type": "string",
+      "enum": [
+        "premium_monthly",
+        "premium_yearly",
+        "premium_plus_monthly",
+        "premium_plus_yearly"
+      ],
+      "description": "Server-owned Stripe catalog SKU"
+    },
+    "stripe_environment": {
+      "type": "string",
+      "description": "Deployment environment stamped into Stripe metadata"
+    },
+    "stripe_subscription_status": {
+      "type": "string",
+      "enum": [
+        "trialing",
+        "active",
+        "past_due",
+        "unpaid",
+        "canceled",
+        "incomplete",
+        "incomplete_expired",
+        "paused"
+      ],
+      "description": "Last raw Stripe subscription lifecycle status"
+    },
+    "checkout_request_key": {
+      "type": "string",
+      "description": "Validated client retry key scoped to this user"
+    },
+    "checkout_success_destination": {
+      "type": "string",
+      "enum": [
+        "subscription_thank_you"
+      ],
+      "description": "Server-approved success destination used by this checkout"
+    },
+    "checkout_cancel_destination": {
+      "type": "string",
+      "enum": [
+        "pricing",
+        "download"
+      ],
+      "description": "Server-approved cancellation destination used by this checkout"
+    },
+    "checkout_url": {
+      "type": "string",
+      "description": "Stripe-hosted checkout URL returned for safe retries"
+    },
+    "checkout_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Expiration time of the Stripe-hosted checkout session"
+    },
+    "checkout_error": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Last checkout creation error; never grants entitlement"
+    },
+    "stripe_event_created": {
+      "type": "number",
+      "description": "Creation time of the latest Stripe event applied to this record"
+    },
+    "stripe_event_id": {
+      "type": "string",
+      "description": "Latest Stripe event applied to this record"
+    },
+    "trial_target_plan": {
+      "type": "string",
+      "enum": [
+        "premium",
+        "premium_plus"
+      ],
+      "description": "Paid tier selected for a trial; legacy trials without this field default to premium"
+    },
+    "trial_started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the account's trial began"
+    },
     "trial_end_date": {
       "type": "string",
       "format": "date-time",
       "description": "When the trial ends (7 days from creation)"
     },
+    "trial_used_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the account consumed its one-time trial eligibility"
+    },
+    "cancel_at_period_end": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether access should stop at the current period end"
+    },
     "current_period_end": {
       "type": "string",
       "format": "date-time",
       "description": "When current billing cycle ends"
+    },
+    "grandfathered": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether legacy external billing terms are intentionally retained"
+    },
+    "grandfathered_from_plan": {
+      "type": "string",
+      "enum": [
+        "pro",
+        "pro_filesharing"
+      ],
+      "description": "Legacy plan that granted Premium Plus grandfathering"
+    },
+    "grandfathered_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When grandfathering was recorded"
+    },
+    "migration_source_plan": {
+      "type": "string",
+      "enum": [
+        "trial",
+        "pro",
+        "pro_filesharing"
+      ],
+      "description": "Legacy plan value before canonical normalization"
+    },
+    "migration_version": {
+      "type": "string",
+      "description": "Last subscription-domain migration applied"
+    },
+    "migrated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the last subscription-domain migration was applied"
     },
     "description": {
       "type": "string",

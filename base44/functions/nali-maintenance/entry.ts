@@ -71,10 +71,12 @@ export default async function(req) {
     // =====================================================
     if (data.subscriptions) {
       const staleTrials = data.subscriptions.filter(sub =>
-        sub.status === 'trial' && sub.trial_end_date && new Date(sub.trial_end_date).getTime() < now
+        (sub.status === 'trial' || sub.status === 'trialing')
+          && sub.trial_end_date
+          && new Date(sub.trial_end_date).getTime() < now
       );
       staleTrials.forEach(sub => {
-        issues.push({ entity: 'Subscription', id: sub.id, field: 'status', issue: 'Trial ended but status still "trial"' });
+        issues.push({ entity: 'Subscription', id: sub.id, field: 'status', issue: `Trial ended but status still "${sub.status}"` });
       });
       if (mode === 'repair' && staleTrials.length) {
         const updates = staleTrials.map(sub => ({ id: sub.id, status: 'ended' }));

@@ -127,6 +127,68 @@
       ],
       "default": "proactive",
       "description": "How omnipresent Nali is across the app: proactive (auto hints), minimal (on-demand), or off (hidden)"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Server-managed Stripe Customer ID for this NaliChat account",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "trial_used_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Server-managed timestamp reserving or consuming the account's one paid trial",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "trial_claim_id": {
+      "type": "string",
+      "description": "Server-managed compare-and-set token used while creating the account's trial checkout",
+      "rls": {
+        "read": false,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      },
+      "stripe_checkout_claim_id": {
+        "type": "string",
+        "description": "Server-managed lease preventing concurrent subscription checkout attempts",
+        "rls": {
+          "read": false,
+          "write": {
+            "user_condition": {
+              "role": "admin"
+            }
+          }
+        }
+      },
+      "stripe_checkout_claimed_at": {
+        "type": "string",
+        "format": "date-time",
+        "description": "When the current subscription checkout lease was acquired",
+        "rls": {
+          "read": false,
+          "write": {
+            "user_condition": {
+              "role": "admin"
+            }
+          }
+        }
+      }
     }
   }
 }

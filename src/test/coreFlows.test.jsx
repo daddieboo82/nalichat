@@ -74,11 +74,24 @@ const mockAuthState = vi.hoisted(() => ({
 
 const mockSubscription = vi.hoisted(() => ({
   current: {
-    subscription: null,
+    subscription: {
+      plan: 'free',
+      status: 'active',
+      billingPeriod: null,
+      provider: null,
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      trialEndDate: null,
+      grandfathered: false,
+      hasPaidAccess: false,
+    },
     isPro: false,
     isProFilesharing: false,
     isTrialActive: false,
     isLoading: false,
+    isError: false,
+    error: null,
+    refetch: vi.fn(),
   },
 }));
 
@@ -191,11 +204,24 @@ describe('core usage flow coverage', () => {
       checkUserAuth: vi.fn(),
     };
     mockSubscription.current = {
-      subscription: null,
+      subscription: {
+        plan: 'free',
+        status: 'active',
+        billingPeriod: null,
+        provider: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        trialEndDate: null,
+        grandfathered: false,
+        hasPaidAccess: false,
+      },
       isPro: false,
       isProFilesharing: false,
       isTrialActive: false,
       isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
     };
     mockBase44.functions.invoke.mockImplementation(async (name) => {
       if (name === 'listPublicUsers') {

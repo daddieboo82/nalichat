@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Music, ArrowRight, Loader2, Download } from "lucide-react";
+import { CheckCircle, Music, ArrowRight, Loader2, Download, CircleAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCart } from "@/lib/CartContext";
+import { useSubscription } from "@/hooks/useSubscription";
+import { pollForSubscriptionConfirmation } from "@/lib/subscriptionConfirmation";
+import { trackPaywallEvent } from "@/lib/paywallAnalytics";
+import { SUBSCRIPTION_QUERY_KEY } from "@/lib/subscriptionClient";
+import { CHECKOUT_RETURN_KEY } from "@/lib/subscriptionBilling";
 
 export default function ThankYou() {
   const queryClient = useQueryClient();
@@ -18,6 +23,8 @@ export default function ThankYou() {
   const [purchasedTracks, setPurchasedTracks] = useState([]);
   const [hadDonationOnly, setHadDonationOnly] = useState(false);
   const [hasOtherPurchase, setHasOtherPurchase] = useState(false);
+  const [subscriptionConfirmation, setSubscriptionConfirmation] = useState("processing");
+  const { refetch: refetchSubscription } = useSubscription();
 
   const urlParams = new URLSearchParams(window.location.search);
   const checkoutId = urlParams.get("checkout_id");
@@ -26,6 +33,52 @@ export default function ThankYou() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const confirmSubscription = async () => {
+      sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
+      setSubscriptionConfirmation("processing");
+      const result = await pollForSubscriptionConfirmation({
+        fetchStatus: async () => {
+          const queryResult = await refetchSubscription();
+          if (queryResult.error) throw queryResult.error;
+          return queryResult.data;
+        },
+      });
+      if (!active) return;
+
+      setSubscriptionConfirmation(result.outcome);
+      if (result.outcome === "confirmed") {
+        const analyticsKey = `nalichat_subscription_confirmation:${checkoutId || "unknown"}`;
+        const alreadyTracked = localStorage.getItem(analyticsKey) === "1";
+        localStorage.setItem(analyticsKey, "1");
+        if (!alreadyTracked) {
+          trackPaywallEvent(
+            result.subscription.isTrialing ? "trial_started" : "purchase_completed",
+            {
+              plan: result.subscription.plan,
+              billing_period: result.subscription.billingPeriod || "unknown",
+              source: "subscription_thank_you",
+            },
+          );
+        }
+      } else if (result.outcome === "failed") {
+        trackPaywallEvent("purchase_failed", {
+          source: "subscription_thank_you",
+          outcome: "verification_error",
+        });
+      }
+    };
+
+    if (isSubscriptionCheckout) {
+      confirmSubscription();
+    }
+    return () => {
+      active = false;
+    };
+  }, [checkoutId, isSubscriptionCheckout, refetchSubscription]);
 
   useEffect(() => {
     const processThankYou = async () => {
@@ -45,9 +98,6 @@ export default function ThankYou() {
       } catch (e) {}
 
       if (isSubscriptionCheckout) {
-        await queryClient.invalidateQueries({ queryKey: ["subscription"] });
-        clearCart();
-        setProcessing(false);
         return;
       }
 
@@ -96,7 +146,7 @@ export default function ThankYou() {
         if (purchasedItems.length > 0 && purchasedItems.some((it) => !handledTypes.has(it.type))) {
           setHasOtherPurchase(true);
         }
-        await queryClient.invalidateQueries({ queryKey: ["subscription"] });
+        await queryClient.invalidateQueries({ queryKey: [SUBSCRIPTION_QUERY_KEY] });
         clearCart();
         setProcessing(false);
       } catch (error) {
@@ -109,50 +159,66 @@ export default function ThankYou() {
   }, [queryClient, clearCart, checkoutId, isSubscriptionCheckout]);
 
   if (isSubscriptionCheckout) {
+    const confirmed = subscriptionConfirmation === "confirmed";
+    const timedOut = subscriptionConfirmation === "timeout";
+    const failed = subscriptionConfirmation === "failed";
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-center max-w-2xl"
-        >
-          <motion.div
-            animate={{ rotate: processing ? 360 : 0 }}
-            transition={{ duration: processing ? 2 : 0.8 }}
-            className="mb-6 inline-block"
-          >
-            {processing ? (
+        <div className="text-center max-w-2xl" aria-live="polite">
+          <div className="mb-6 inline-block">
+            {subscriptionConfirmation === "processing" ? (
               <Loader2 className="w-20 h-20 text-primary animate-spin" />
-            ) : (
+            ) : confirmed ? (
               <CheckCircle className="w-20 h-20 text-accent" />
+            ) : (
+              <CircleAlert className="w-20 h-20 text-amber-500" />
             )}
-          </motion.div>
+          </div>
 
           <h1 className="font-heading font-black text-5xl mb-4">
-            {processing ? "Confirming Purchase..." : "Subscription Active!"}
+            {subscriptionConfirmation === "processing"
+              ? "Confirming subscription..."
+              : confirmed
+                ? "Subscription active!"
+                : timedOut
+                  ? "Still processing"
+                  : "We could not verify your subscription"}
           </h1>
 
           <p className="text-xl text-muted-foreground mb-8">
-            {processing
-              ? "Confirming your payment. This takes just a moment..."
-              : "Your 30-day app access is ready. Open the app, export tracks, and download stems with no separate charges."}
+            {subscriptionConfirmation === "processing"
+              ? "We are checking the authoritative account status. This can take a moment."
+              : confirmed
+                ? "Your paid plan is confirmed and its entitlements are ready."
+                : timedOut
+                  ? "Stripe returned successfully, but the subscription update has not arrived yet. No paid access is granted until confirmation completes."
+                  : "Subscription status could not be checked. No paid access was granted."}
           </p>
 
-          {!processing && (
+          {confirmed && (
             <div className="flex gap-4 justify-center flex-wrap">
               <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 h-14 px-8 text-lg font-bold" asChild>
-                <Link to="/studio">
-                  <Music className="w-5 h-5 mr-2" />
-                  Open Studio
+                <Link to="/messages">
+                  Open chat
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="rounded-xl" asChild>
-                <Link to="/download">Desktop Downloads</Link>
+                <Link to="/settings">Manage Billing</Link>
               </Button>
             </div>
           )}
-        </motion.div>
+          {(timedOut || failed) && (
+            <div className="flex gap-4 justify-center flex-wrap">
+              <Button size="lg" onClick={() => window.location.reload()}>Try again</Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link to="/pricing">Back to plans</Link>
+              </Button>
+              <Button size="lg" variant="ghost" asChild>
+                <Link to="/messages">Continue with Free</Link>
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }

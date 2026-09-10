@@ -55,7 +55,8 @@ export default function PlaylistDetail() {
         creator_id: currentUser.id,
         creator_name: currentUser.display_name || currentUser.full_name,
         creator_avatar: currentUser.avatar_url,
-        medium: "original"
+        medium: "original",
+        is_explicit: false
       });
       const updated = {
         ...playlist,

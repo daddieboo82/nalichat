@@ -321,12 +321,14 @@ describe('core usage flow coverage', () => {
       expect(screen.getByDisplayValue('first-track')).toBeTruthy();
     });
 
+    fireEvent.click(screen.getByRole('radio', { name: 'Mark track as Explicit' }));
     fireEvent.click(screen.getByRole('button', { name: 'Publish Track' }));
 
     await waitFor(() => {
       expect(mockBase44.entities.ArtPost.create).toHaveBeenCalledWith(expect.objectContaining({
         title: 'first-track',
         file_url: 'https://cdn.example.com/file.mp3',
+        is_explicit: true,
         creator_id: 'user-1',
         creator_name: 'Fresh',
       }));

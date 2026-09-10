@@ -10,7 +10,7 @@ const TAGS_SUGGESTIONS = ["hip-hop", "trap", "lofi", "electronic", "ambient", "h
 import { Music } from "lucide-react";
 
 export default function UploadArtDialog({ open, onClose, currentUser, onSuccess }) {
-  const [form, setForm] = useState({ title: "", description: "", medium: "original", tags: [], price: "" });
+  const [form, setForm] = useState({ title: "", description: "", medium: "original", tags: [], price: "", is_explicit: false });
   const [imageFile, setImageFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -93,7 +93,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
 
     setLoading(false);
     onSuccess();
-    setForm({ title: "", description: "", medium: "original", tags: [], price: "" });
+    setForm({ title: "", description: "", medium: "original", tags: [], price: "", is_explicit: false });
     setPreview(null);
     setImageFile(null);
     setAudioFile(null);
@@ -226,6 +226,33 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
               {MEDIUMS.map(m => (
                 <button type="button" role="radio" aria-checked={form.medium === m} id={`medium-${m}`} aria-label={`Select medium ${m}`} key={m} onClick={() => setForm(f => ({ ...f, medium: m }))} className={cn("px-3 py-1 rounded-full text-xs font-semibold capitalize transition-colors", form.medium === m ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}>
                   {m}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label id="content-rating-label" className="text-xs text-muted-foreground mb-2 block">Content Rating</label>
+            <div role="radiogroup" aria-labelledby="content-rating-label" className="flex flex-wrap gap-2">
+              {[
+                { label: "Clean", value: false },
+                { label: "Explicit", value: true },
+              ].map(option => (
+                <button
+                  key={option.label}
+                  type="button"
+                  role="radio"
+                  aria-checked={form.is_explicit === option.value}
+                  aria-label={`Mark track as ${option.label}`}
+                  onClick={() => setForm(f => ({ ...f, is_explicit: option.value }))}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-semibold transition-colors",
+                    form.is_explicit === option.value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {option.label}
                 </button>
               ))}
             </div>

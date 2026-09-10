@@ -10,7 +10,7 @@ const TAGS_SUGGESTIONS = ["hip-hop", "trap", "lofi", "electronic", "ambient", "h
 import { Music } from "lucide-react";
 
 export default function UploadArtDialog({ open, onClose, currentUser, onSuccess }) {
-  const [form, setForm] = useState({ title: "", description: "", medium: "original", tags: [], price: "" });
+  const [form, setForm] = useState({ title: "", description: "", medium: "original", tags: [], price: "", is_explicit: false });
   const [imageFile, setImageFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -65,6 +65,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
       await base44.entities.ArtPost.create({
         ...form,
         price: parsedPrice,
+        is_explicit: form.is_explicit,
         image_url,
         file_url,
         creator_id: currentUser.id,
@@ -93,7 +94,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
 
     setLoading(false);
     onSuccess();
-    setForm({ title: "", description: "", medium: "original", tags: [], price: "" });
+    setForm({ title: "", description: "", medium: "original", tags: [], price: "", is_explicit: false });
     setPreview(null);
     setImageFile(null);
     setAudioFile(null);
@@ -230,6 +231,40 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
               ))}
             </div>
           </div>
+
+          <fieldset>
+            <legend className="text-xs text-muted-foreground mb-2 block">Content Rating</legend>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "Clean", value: false },
+                { label: "Explicit", value: true },
+              ].map(option => {
+                const id = `content-rating-${option.label.toLowerCase()}`;
+                return (
+                  <label
+                    key={option.label}
+                    htmlFor={id}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer",
+                      form.is_explicit === option.value
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <input
+                      id={id}
+                      type="radio"
+                      name="content-rating"
+                      className="sr-only"
+                      checked={form.is_explicit === option.value}
+                      onChange={() => setForm(f => ({ ...f, is_explicit: option.value }))}
+                    />
+                    {option.label}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
 
           <div>
             <label htmlFor="custom-tag-input" id="tags-group-label" className="text-xs text-muted-foreground mb-2 block">Tags</label>

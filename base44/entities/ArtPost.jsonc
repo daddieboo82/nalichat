@@ -80,6 +80,11 @@
     "featured": {
       "type": "boolean",
       "default": false
+    },
+    "is_explicit": {
+      "type": "boolean",
+      "description": "Whether the song contains explicit content",
+      "default": false
     }
   },
   "required": [

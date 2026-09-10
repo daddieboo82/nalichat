@@ -40,6 +40,7 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
   const [bounceGenre, setBounceGenre] = useState(project?.genre || "");
   const [bounceMedium, setBounceMedium] = useState("original");
   const [bounceTags, setBounceTags] = useState("");
+  const [isExplicit, setIsExplicit] = useState(false);
   const [bouncing, setBouncing] = useState(false);
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
@@ -107,6 +108,7 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
         medium: bounceMedium,
         genre: bounceGenre,
         tags: bounceTags.split(',').map(t => t.trim()).filter(Boolean),
+        is_explicit: isExplicit,
         bpm: project?.bpm,
         creator_id: me.id,
         creator_name: me.display_name || me.full_name,
@@ -123,6 +125,7 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
         setBouncing(false);
         setError("");
         setShowManualParams(false);
+        setIsExplicit(false);
         if (redirectAfter === 'cover-art') {
           navigate('/cover-art');
         } else if (redirectAfter === 'explore') {
@@ -193,6 +196,18 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
                     <SelectItem value="mixing">Mixing</SelectItem>
                     <SelectItem value="mastering">Mastering</SelectItem>
                     <SelectItem value="collab">Collab</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="bounce-content-rating" className="text-xs text-muted-foreground block">Content Rating</label>
+                <Select value={isExplicit ? "explicit" : "clean"} onValueChange={(value) => setIsExplicit(value === "explicit")} disabled={bouncing}>
+                  <SelectTrigger id="bounce-content-rating" aria-label="Content Rating" className="rounded-xl">
+                    <SelectValue placeholder="Content Rating" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="clean">Clean</SelectItem>
+                    <SelectItem value="explicit">Explicit</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

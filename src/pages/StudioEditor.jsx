@@ -65,6 +65,7 @@ export default function StudioEditor() {
         description: masterAnalysis?.recommendations || 'AI-mastered session',
         file_url: audioUrl,
         medium: 'production',
+        is_explicit: false,
         creator_id: currentUser.id,
         creator_name: currentUser.full_name,
         creator_avatar: currentUser.avatar_url,

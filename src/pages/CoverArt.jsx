@@ -139,7 +139,7 @@ export default function CoverArt() {
       for (const id of selectedPlaylist.track_ids) {
         try {
            tracks.push(await base44.entities.ArtPost.get(id));
-        } catch (e) {}
+        } catch {}
       }
       return tracks.filter(t => t.creator_id === currentUser.id);
     },
@@ -155,6 +155,7 @@ export default function CoverArt() {
         title: file.name.replace(/\.[^/.]+$/, ""),
         description: "Imported from Files",
         medium: "original",
+        is_explicit: false,
         creator_id: currentUser.id,
         creator_name: currentUser.display_name || currentUser.full_name || "Unknown Artist",
         file_url: file.file_url,
@@ -188,6 +189,7 @@ export default function CoverArt() {
         title: file.name.replace(/\.[^/.]+$/, ""),
         description: "Imported track",
         medium: "original",
+        is_explicit: false,
         creator_id: currentUser.id,
         creator_name: currentUser.display_name || currentUser.full_name || "Unknown Artist",
         file_url: file_url,
@@ -657,6 +659,16 @@ export default function CoverArt() {
                 <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-10">
                   <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
                   <p className="font-heading font-semibold text-lg text-primary animate-pulse">{generatingStatus}</p>
+                </div>
+              )}
+
+              {selectedPost?.is_explicit === true && (
+                <div
+                  data-testid="parental-advisory-badge"
+                  className="absolute left-4 bottom-4 z-20 bg-black/90 text-white border border-white/80 px-3 py-2 text-[10px] font-black uppercase tracking-[0.3em] leading-tight shadow-xl"
+                >
+                  <div>Parental</div>
+                  <div>Advisory</div>
                 </div>
               )}
             </div>

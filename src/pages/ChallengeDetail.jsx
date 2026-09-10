@@ -10,6 +10,7 @@ import SubmissionCard from "@/components/challenges/SubmissionCard";
 import SubmitRemixModal from "@/components/challenges/SubmitRemixModal";
 import { toast } from "sonner";
 import PullToRefresh from "@/components/layout/PullToRefresh";
+import LoadError from "@/components/layout/LoadError";
 
 export default function ChallengeDetail() {
   const { challengeId } = useParams();
@@ -19,27 +20,39 @@ export default function ChallengeDetail() {
   const [myVotes, setMyVotes] = useState(new Set());
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
-  const loadSubmissions = () => base44.entities.ChallengeSubmission.filter({ challenge_id: challengeId, status: "approved" }, "-vote_count").then(setSubmissions);
+  const loadSubmissions = () =>
+    base44.entities.ChallengeSubmission
+      .filter({ challenge_id: challengeId, status: "approved" }, "-vote_count")
+      .then(setSubmissions)
+      .catch((e) => console.error("Failed to load submissions", e));
 
   const refresh = async () => {
-    const c = await base44.entities.Challenge.get(challengeId);
-    setChallenge(c);
-    setLoading(false);
-    await loadSubmissions();
+    // A rejection here used to skip setLoading(false), leaving a permanent spinner.
+    setLoadError(false);
+    try {
+      const c = await base44.entities.Challenge.get(challengeId);
+      setChallenge(c);
+      await loadSubmissions();
+    } catch (e) {
+      console.error("Failed to load challenge", e);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
-    base44.entities.Challenge.get(challengeId).then((c) => { setChallenge(c); setLoading(false); });
-    loadSubmissions();
+    refresh();
   }, [challengeId]);
 
   useEffect(() => {
     if (!user) { setMyVotes(new Set()); return; }
     base44.entities.ChallengeVote.filter({ challenge_id: challengeId, voter_id: user.id }).then((votes) => {
       setMyVotes(new Set(votes.map((v) => v.submission_id)));
-    });
+    }).catch((e) => console.error("Failed to load votes", e));
   }, [user, challengeId]);
 
   const handleVote = async (submissionId) => {
@@ -54,7 +67,19 @@ export default function ChallengeDetail() {
     }
   };
 
-  if (loading || !challenge) return <div className="p-8 flex justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
+  if (loading) return <div className="p-8 flex justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
+
+  if (loadError || !challenge) {
+    return (
+      <LoadError
+        title={loadError ? "Couldn't load this challenge" : "Challenge not found"}
+        message={loadError
+          ? "We couldn't reach this challenge. Check your connection and try again."
+          : "This challenge may have been removed."}
+        onRetry={loadError ? () => { setLoading(true); refresh(); } : undefined}
+      />
+    );
+  }
 
   const canSubmit = challenge.status === "active";
   const isHostOrAdmin = user && (user.id === challenge.host_artist_id || user.role === "admin");

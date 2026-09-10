@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Logo from "@/components/branding/Logo";
+import { sounds } from "@/hooks/use-sound";
 
 const BARS = 20;
 
@@ -12,7 +13,7 @@ export default function AppLoader({ onDone }) {
 
   // play premium startup chime (programmatic — no network dependency, no autoplay block)
   useEffect(() => {
-    import("@/hooks/use-sound").then(({ sounds }) => sounds.startup()).catch(() => {});
+    sounds.startup();
   }, []);
 
   // animate equalizer bars — throttled to ~12fps so the splash doesn't hog

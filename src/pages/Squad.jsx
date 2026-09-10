@@ -7,10 +7,12 @@ import { toast } from "sonner";
 import SquadMemberProgress from "@/components/squad/SquadMemberProgress";
 import { getSquadBonusStatus, generateInviteCode, BONUS_MULTIPLIER, CREDITS_REWARD } from "@/lib/squadBonus";
 import PullToRefresh from "@/components/layout/PullToRefresh";
+import LoadError from "@/components/layout/LoadError";
 
 export default function Squad() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [squad, setSquad] = useState(null);
   const [progress, setProgress] = useState(null);
   const [bonusActive, setBonusActive] = useState(false);
@@ -21,25 +23,33 @@ export default function Squad() {
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const [asA, asB] = await Promise.all([
-      base44.entities.Squad.filter({ member_a_id: user.id }),
-      base44.entities.Squad.filter({ member_b_id: user.id }),
-    ]);
-    const mine = [...asA, ...asB]
-      .filter((s) => s.status !== "ended")
-      .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0] || null;
-    setSquad(mine);
+    // Any rejection below used to skip setLoading(false), leaving a permanent spinner.
+    setLoadError(false);
+    try {
+      const [asA, asB] = await Promise.all([
+        base44.entities.Squad.filter({ member_a_id: user.id }),
+        base44.entities.Squad.filter({ member_b_id: user.id }),
+      ]);
+      const mine = [...asA, ...asB]
+        .filter((s) => s.status !== "ended")
+        .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0] || null;
+      setSquad(mine);
 
-    if (mine && mine.status === "active") {
-      const status = await getSquadBonusStatus(user);
-      setProgress(status.progress);
-      setBonusActive(status.active);
-      const fresh = await base44.auth.me();
-      setCredits(fresh.squad_credits || 0);
-    } else {
-      setCredits(user.squad_credits || 0);
+      if (mine && mine.status === "active") {
+        const status = await getSquadBonusStatus(user);
+        setProgress(status.progress);
+        setBonusActive(status.active);
+        const fresh = await base44.auth.me();
+        setCredits(fresh.squad_credits || 0);
+      } else {
+        setCredits(user.squad_credits || 0);
+      }
+    } catch (e) {
+      console.error("Failed to load squad", e);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
@@ -98,6 +108,16 @@ export default function Squad() {
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  }
+
+  if (loadError) {
+    return (
+      <LoadError
+        title="Couldn't load your squad"
+        message="We couldn't reach the server. Check your connection and try again."
+        onRetry={load}
+      />
+    );
   }
 
   const isMemberA = squad?.member_a_id === user?.id;

@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Logo from "@/components/branding/Logo";
+import { Button } from "@/components/ui/button";
 
 const NAV_GROUPS = [
   {
@@ -124,6 +125,28 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
         {/* Right Section */}
         <div className="flex items-center gap-1 shrink-0">
           <div className="border-l border-white/[0.08] h-6 mr-1" />
+
+          {/* Auth CTAs — the only login/signup entry point was previously a
+              single "Log in" item buried in the Account dropdown behind a
+              generic gear icon, with no signup option at all. Mirror the
+              mobile header's visible pill so anonymous visitors have an
+              obvious way in. */}
+          {!isAuthenticated && (
+            <div className="flex items-center gap-1.5 mr-1 shrink-0">
+              <Link
+                to="/login"
+                onClick={() => sounds.nav()}
+                className="px-3 py-2 rounded-lg text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all whitespace-nowrap"
+              >
+                Log in
+              </Link>
+              <Link to="/register" onClick={() => sounds.nav()}>
+                <Button size="sm" className="rounded-lg text-xs font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/20 whitespace-nowrap">
+                  Sign up
+                </Button>
+              </Link>
+            </div>
+          )}
 
           {/* New Project */}
           <Link

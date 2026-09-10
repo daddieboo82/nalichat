@@ -1,0 +1,249 @@
+// @vitest-environment jsdom
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import Login from '@/pages/Login';
+import Register from '@/pages/Register';
+import Onboarding from '@/pages/Onboarding';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
+import ProtectedRoute from '@/components/ProtectedRoute';
+
+const mockBase44 = vi.hoisted(() => ({
+  auth: {
+    loginViaEmailPassword: vi.fn(),
+    loginWithProvider: vi.fn(),
+    register: vi.fn(),
+    verifyOtp: vi.fn(),
+    resendOtp: vi.fn(),
+    updateMe: vi.fn(),
+    resetPasswordRequest: vi.fn(),
+    resetPassword: vi.fn(),
+    me: vi.fn(),
+    setToken: vi.fn(),
+  },
+}));
+
+const mockAuthState = vi.hoisted(() => ({
+  current: {
+    user: null,
+    isAuthenticated: false,
+    isLoadingAuth: false,
+    isLoadingPublicSettings: false,
+    authChecked: true,
+    authError: null,
+    checkUserAuth: vi.fn(),
+  },
+}));
+
+const mockToast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+  info: vi.fn(),
+}));
+
+const mockToastObject = vi.hoisted(() => vi.fn());
+
+vi.mock('@/api/base44Client', () => ({ base44: mockBase44 }));
+vi.mock('@/components/AuthLayout', () => ({
+  default: ({ title, subtitle, footer, children }) => (
+    <div>
+      <h1>{title}</h1>
+      <p>{subtitle}</p>
+      {children}
+      {footer}
+    </div>
+  ),
+}));
+vi.mock('@/components/GoogleIcon', () => ({ default: () => <span>GoogleIcon</span> }));
+vi.mock('sonner', () => ({ toast: mockToast }));
+vi.mock('@/components/ui/use-toast', () => ({ toast: mockToastObject }));
+vi.mock('@/components/onboarding/OnboardingNaliGuide', () => ({ default: () => <div data-testid="nali-guide" /> }));
+vi.mock('@/components/ui/input-otp', () => ({
+  InputOTP: ({ value, onChange }) => (
+    <input aria-label="OTP" value={value} onChange={(event) => onChange(event.target.value)} />
+  ),
+  InputOTPGroup: ({ children }) => <div>{children}</div>,
+  InputOTPSlot: () => null,
+}));
+vi.mock('@/lib/AuthContext', () => ({
+  AuthProvider: ({ children }) => children,
+  useAuth: () => mockAuthState.current,
+}));
+
+const renderInRouter = (ui, initialEntries = ['/']) =>
+  render(<MemoryRouter initialEntries={initialEntries}>{ui}</MemoryRouter>);
+
+describe('auth and onboarding flows', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sessionStorage.clear();
+    localStorage.clear();
+    mockAuthState.current = {
+      user: null,
+      isAuthenticated: false,
+      isLoadingAuth: false,
+      isLoadingPublicSettings: false,
+      authChecked: true,
+      authError: null,
+      checkUserAuth: vi.fn(),
+    };
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('shows login errors and guidance for invalid credentials', async () => {
+    mockBase44.auth.loginViaEmailPassword.mockRejectedValueOnce(new Error('Invalid email or password'));
+
+    renderInRouter(<Login />);
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'bad@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrongpass' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Log in' }));
+
+    await screen.findByText('Invalid email or password');
+    expect(screen.getByText(/If you originally signed up with Google/)).toBeTruthy();
+    expect(mockToast.error).toHaveBeenCalledWith('Invalid email or password');
+  });
+
+  it('shows Google sign-in entry points on login and register and launches provider auth', () => {
+    const { unmount } = renderInRouter(<Login />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Continue with Google/i }));
+    expect(mockBase44.auth.loginWithProvider).toHaveBeenCalledWith('google', '/');
+
+    unmount();
+    renderInRouter(<Register />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Continue with Google/i }));
+    expect(sessionStorage.getItem('is_new_user')).toBe('true');
+    expect(mockBase44.auth.loginWithProvider).toHaveBeenLastCalledWith('google', '/');
+  });
+
+  it('blocks registration when passwords do not match', async () => {
+    renderInRouter(<Register />);
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'pass12345' } });
+    fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'different' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+
+    await screen.findByText('Passwords do not match');
+    expect(mockBase44.auth.register).not.toHaveBeenCalled();
+  });
+
+  it('transitions into OTP verification and supports failed verify plus resend', async () => {
+    mockBase44.auth.register.mockResolvedValueOnce(undefined);
+    mockBase44.auth.verifyOtp.mockRejectedValueOnce(new Error('Invalid verification code'));
+    mockBase44.auth.resendOtp.mockResolvedValueOnce(undefined);
+
+    renderInRouter(<Register />);
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'pass12345' } });
+    fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'pass12345' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+
+    await screen.findByText('Verify your email');
+    fireEvent.change(screen.getByLabelText('OTP'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
+
+    await screen.findByText('Invalid verification code');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Resend' }));
+    await waitFor(() => {
+      expect(mockBase44.auth.resendOtp).toHaveBeenCalledWith('new@example.com');
+      expect(mockToastObject).toHaveBeenCalled();
+    });
+  });
+
+  it('requires display name and birthdate before onboarding can complete', async () => {
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { display_name: '', full_name: '', birthdate: '', bio: '', location: '' },
+      isAuthenticated: true,
+    };
+
+    renderInRouter(<Onboarding />);
+    fireEvent.click(screen.getByRole('button', { name: 'Get Started' }));
+
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith('Please fill in your name and birthdate');
+    });
+    expect(mockBase44.auth.updateMe).not.toHaveBeenCalled();
+  });
+
+  it('saves onboarding profile data and refreshes auth state', async () => {
+    const checkUserAuth = vi.fn().mockResolvedValue(undefined);
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      user: { display_name: '', full_name: 'New User', birthdate: '', bio: '', location: '' },
+      isAuthenticated: true,
+      checkUserAuth,
+    };
+    mockBase44.auth.updateMe.mockResolvedValueOnce(undefined);
+
+    const { container } = renderInRouter(<Onboarding />);
+    fireEvent.change(screen.getByPlaceholderText('How should we call you?'), { target: { value: 'Fresh Artist' } });
+    fireEvent.change(container.querySelector('input[type="date"]'), { target: { value: '2000-01-01' } });
+    fireEvent.change(screen.getByPlaceholderText('A short bio about your music (optional)'), { target: { value: 'Hello world' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Get Started' }));
+
+    await waitFor(() => {
+      expect(mockBase44.auth.updateMe).toHaveBeenCalledWith({
+        display_name: 'Fresh Artist',
+        birthdate: '2000-01-01',
+        bio: 'Hello world',
+        location: '',
+        onboarding_completed: true,
+      });
+      expect(checkUserAuth).toHaveBeenCalled();
+    });
+  });
+
+  it('shows generic success state for forgot password even when request fails', async () => {
+    mockBase44.auth.resetPasswordRequest.mockRejectedValueOnce(new Error('hidden'));
+
+    renderInRouter(<ForgotPassword />);
+    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'user@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send reset link' }));
+
+    await screen.findByText(/If an account exists with that email/);
+  });
+
+  it('renders the invalid reset-token recovery state', () => {
+    renderInRouter(<ResetPassword />, ['/reset-password']);
+    expect(screen.getByText('Invalid reset link')).toBeTruthy();
+    expect(screen.getByText(/request a new password reset email/i)).toBeTruthy();
+  });
+
+  it('renders the unauthenticated element for protected routes and a banned state when needed', () => {
+    const { rerender } = renderInRouter(
+      <ProtectedRoute unauthenticatedElement={<div>Go to login</div>}>
+        <div>Secret</div>
+      </ProtectedRoute>
+    );
+
+    expect(screen.getByText('Go to login')).toBeTruthy();
+
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      isAuthenticated: true,
+      user: { is_banned: true },
+    };
+
+    rerender(
+      <MemoryRouter>
+        <ProtectedRoute unauthenticatedElement={<div>Go to login</div>}>
+          <div>Secret</div>
+        </ProtectedRoute>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Account Banned')).toBeTruthy();
+  });
+});

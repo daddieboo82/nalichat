@@ -65,6 +65,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
       await base44.entities.ArtPost.create({
         ...form,
         price: parsedPrice,
+        is_explicit: form.is_explicit,
         image_url,
         file_url,
         creator_id: currentUser.id,

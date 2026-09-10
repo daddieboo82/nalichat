@@ -5,8 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Search, Send, Loader2 } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 
 export default function NewChatDialog({ open, onOpenChange, users, onSelectUser, currentUserId }) {
   const [search, setSearch] = useState("");

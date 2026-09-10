@@ -2,12 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Play, Pause, Volume2, X, ChevronLeft, ChevronRight, Music, Rewind, FastForward, Square, ShoppingCart, Minimize2, Download, Share2, Flag } from "lucide-react";
+import { Play, Pause, X, Music, Rewind, FastForward, Square, ShoppingCart, Minimize2, Download, Share2, Flag } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
 import { toast } from "sonner";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import ReportContentDialog from "@/components/ReportContentDialog";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -306,10 +305,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    onEnded={() => setIsPlaying(false)}
                    onPlay={() => setIsPlaying(true)}
                    onPause={() => setIsPlaying(false)}
-                   playsInline
-                   webkitPlaysInline
                    controlsList="nodownload nofullscreen noremoteplayback"
-                   disablePictureInPicture
                  />
 
                  <div className="flex flex-col gap-4">

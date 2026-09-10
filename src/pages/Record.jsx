@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mic, Square, Play, Pause, Save, Trash2, Loader2, Radio, RotateCcw, HelpCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { sounds } from "@/hooks/use-sound";
 import { useAudioDevices } from "@/hooks/useAudioDevices";
 import MicCheckPanel from "@/components/record/MicCheckPanel";

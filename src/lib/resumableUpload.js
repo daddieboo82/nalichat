@@ -4,6 +4,8 @@
  * and can resume from where it left off if interrupted.
  */
 
+import { validateUpload } from "@/lib/uploadValidation";
+
 const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB chunks
 const STORAGE_KEY = "resumable_uploads";
 
@@ -29,9 +31,14 @@ function getFileId(file) {
  * Upload a file with resume support.
  * @param {File} file
  * @param {(progress: number) => void} onProgress - 0..100
+ * @param {{ accept?: string, maxBytes?: number }} [options] - validation options
  * @returns {Promise<string>} file_url
  */
-export async function resumableUpload(file, onProgress) {
+export async function resumableUpload(file, onProgress, options = {}) {
+  // Reject bad input before spending a long transfer on it.
+  const { ok, error } = validateUpload(file, options);
+  if (!ok) throw new Error(error);
+
   const fileId = getFileId(file);
   const state = getUploadState();
   const savedState = state[fileId];

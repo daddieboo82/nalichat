@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, Loader2, MessageCircle, Clock, Play, Pause } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 function formatTime(seconds) {
   if (seconds == null) return null;

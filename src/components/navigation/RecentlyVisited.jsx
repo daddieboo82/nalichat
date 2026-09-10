@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { Clock, X } from "lucide-react";
+import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "nali_recent_pages";

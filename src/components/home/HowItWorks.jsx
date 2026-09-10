@@ -1,6 +1,6 @@
 import {
   UserPlus, FolderPlus, Upload, Wand2, Video, SlidersHorizontal,
-  Rocket, ShoppingCart, ArrowRight
+  Rocket, ShoppingCart
 } from "lucide-react";
 import { motion } from "framer-motion";
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Play, Pause, X, Volume2, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, Play, Pause, X, Volume2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CustomMediaPlayer from "@/components/audio/CustomMediaPlayer";

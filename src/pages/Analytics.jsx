@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { TrendingUp, Eye, Heart, Music } from "lucide-react";
 import { motion } from "framer-motion";
 export default function Analytics() {

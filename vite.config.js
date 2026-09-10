@@ -39,6 +39,36 @@ function customManifestPlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   logLevel: 'warn',
+  test: {
+    environment: 'node',
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+  },
+  resolve: {
+    alias: {
+      '@': resolve(process.cwd(), 'src'),
+    },
+  },
+  build: {
+    // Split rarely-changing vendor code out of the main entry chunk. Without
+    // this the entry bundle is ~950 kB, so every app deploy forces mobile users
+    // to re-download React, the router, charts and animation libraries too.
+    // Splitting them keeps those cached across releases.
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor-react';
+          if (id.includes('react-router')) return 'vendor-router';
+          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
+          if (id.includes('framer-motion')) return 'vendor-motion';
+          if (id.includes('@radix-ui')) return 'vendor-radix';
+          if (id.includes('three')) return 'vendor-three';
+          if (id.includes('jspdf') || id.includes('html2canvas')) return 'vendor-pdf';
+          return undefined;
+        },
+      },
+    },
+  },
   plugins: [
     base44({
       // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.

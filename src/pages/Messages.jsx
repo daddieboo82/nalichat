@@ -15,9 +15,10 @@ import { sounds } from "@/hooks/use-sound";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import { toast } from "sonner";
 import ModerationBanner from "@/components/messages/ModerationBanner";
-import { MessageSquare, Users, Mail, Plus, Zap, UserPlus, Hash, Search, MoreHorizontal } from "lucide-react";
+import { MessageSquare, Users, Plus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { createTempId, applySendSuccess, applySendFailure, applyRealtimeCreate } from "@/lib/messageCache";
 
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -155,10 +156,9 @@ export default function Messages() {
             if (event.type === "update") {
               return old.map(m => (m.id === event.id ? { ...m, ...event.data } : m));
             }
-            // create: drop any optimistic temp from this sender, then append if new
-            const withoutTemp = old.filter(m => !(m._optimistic && m.sender_id === event.data.sender_id));
-            if (withoutTemp.some(m => m.id === event.id)) return withoutTemp;
-            return [...withoutTemp, event.data];
+            // create: retire at most one matching optimistic temp rather than
+            // every temp from this sender, which would strip in-flight sends.
+            return applyRealtimeCreate(old, event.data, event.id);
           });
         }
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
@@ -233,8 +233,10 @@ export default function Messages() {
       // must appear in the UI on the same tick the user hits send, with zero delay.
       queryClient.cancelQueries({ queryKey: ["messages", selectedConvId] });
       const previous = queryClient.getQueryData(["messages", selectedConvId]);
+      const tempId = createTempId();
       const tempMsg = {
-        id: `temp-${Date.now()}`,
+        id: tempId,
+        _tempId: tempId,
         ...msgData,
         conversation_id: selectedConvId,
         sender_id: currentUser?.id,
@@ -252,17 +254,21 @@ export default function Messages() {
         );
         return updated.sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0));
       });
-      return { previous };
+      return { previous, tempId };
     },
     onError: (_err, _msgData, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData(["messages", selectedConvId], ctx.previous);
+      // Remove only the failed send's bubble. Restoring the whole pre-send
+      // snapshot would also erase other messages still in flight.
+      queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+        applySendFailure(old, ctx?.tempId)
+      );
     },
-    onSuccess: (msg) => {
+    onSuccess: (msg, _vars, ctx) => {
       // If the message was flagged by moderation, remove it from the cache and warn the user.
       if (msg?._flagged) {
         const f = msg._flagged;
         queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
-          old.filter(m => !m._optimistic && m.id !== msg.id)
+          old.filter(m => m._tempId !== ctx?.tempId && m.id !== msg.id)
         );
         const labels = {
           violence: "violence", racism: "racism", sexual_violence: "sexual violence",
@@ -278,12 +284,10 @@ export default function Messages() {
         base44.auth.me().then(setCurrentUser).catch(() => {});
         return;
       }
-      // Swap the optimistic temp for the real saved message instantly (no refetch).
-      queryClient.setQueryData(["messages", selectedConvId], (old = []) => {
-        const withoutTemp = old.filter(m => !m._optimistic);
-        if (withoutTemp.some(m => m.id === msg.id)) return withoutTemp;
-        return [...withoutTemp, msg];
-      });
+      // Swap this send's optimistic temp for the real saved message (no refetch).
+      queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+        applySendSuccess(old, msg, ctx?.tempId)
+      );
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });

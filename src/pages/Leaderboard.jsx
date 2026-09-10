@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Star, Flame, Heart, Award, Crown, Medal, Music, Image as ImageIcon, Video, FileText } from "lucide-react";
+import { Trophy, Star, Heart, Award, Crown, Medal, Music, Image as ImageIcon, Video } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import MediaViewerModal from "@/components/explore/MediaViewerModal";
 import { cn } from "@/lib/utils";
@@ -292,7 +292,7 @@ export default function Leaderboard() {
                       <div className="w-16 h-12 rounded-md bg-secondary shrink-0 overflow-hidden relative border border-border/50">
                         <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary relative">
                            {item.file_url ? (
-                             <video src={item.file_url} playsInline webkit-playsinline="true" className="w-full h-full object-cover opacity-50" />
+                             <video src={item.file_url} playsInline className="w-full h-full object-cover opacity-50" />
                            ) : null}
                            <Video className="w-6 h-6 absolute" />
                         </div>

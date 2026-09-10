@@ -1,5 +1,4 @@
 import React, { useRef, useCallback } from 'react';
-import { cn } from '@/lib/utils';
 
 /**
  * Pro Tools-style volume automation lane.

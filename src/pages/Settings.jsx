@@ -16,7 +16,7 @@ import DeviceSelector from "@/components/audio/DeviceSelector";
 import NaliProactivitySettings from "@/components/nali/NaliProactivitySettings";
 import { sounds } from "@/hooks/use-sound";
 import { useSubscription } from "@/hooks/useSubscription";
-import { sanitizeAvatarUrl, isValidAvatarUrl } from "@/lib/avatarValidation";
+import { isValidAvatarUrl } from "@/lib/avatarValidation";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];

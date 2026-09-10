@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Settings2, Scissors, Copy, Layers, Wand2, Undo, Redo, Edit2, Shuffle, MoveHorizontal, Grid, MousePointer2, Crosshair, Link2, Unlock, Trash2, Maximize2, Loader2, SlidersHorizontal, Search, MapPin, Gauge, Folder, Volume2 } from 'lucide-react';
+import { Plus, Settings2, Scissors, Copy, Layers, Wand2, Undo, Redo, Edit2, Shuffle, MoveHorizontal, Grid, MousePointer2, Crosshair, Link2, Unlock, Trash2, Maximize2, Loader2, Search, MapPin, Gauge, Folder, Volume2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { cn } from '@/lib/utils';

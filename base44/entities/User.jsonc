@@ -12,7 +12,16 @@
         "engineer",
         "ar"
       ],
-      "default": "artist"
+      "default": "artist",
+      "description": "Field-level security: anyone may read a role, but only an existing admin may write one. This is what actually stops privilege escalation - auth.updateMe() is a self-write, so without this rule any signed-in user could promote themselves to admin. Admin promotion is expected to go through the makeAdmin function, which verifies the caller is already an admin and then writes via asServiceRole (service role bypasses FLS).",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "display_name": {
       "type": "string"
@@ -58,17 +67,41 @@
     "violation_count": {
       "type": "number",
       "default": 0,
-      "description": "Total number of content policy violations recorded for this user"
+      "description": "Total number of content policy violations recorded for this user. Written only by the moderateContent function via asServiceRole; locked here so a user cannot reset their own strike count.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "timeout_until": {
       "type": "string",
       "format": "date-time",
-      "description": "If set and in the future, the user is timed out and cannot send messages until this time"
+      "description": "If set and in the future, the user is timed out and cannot send messages until this time. Written only by moderateContent via asServiceRole; locked here so a timed-out user cannot clear their own timeout with auth.updateMe().",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "is_banned": {
       "type": "boolean",
       "default": false,
-      "description": "Permanently banned for repeated severe violations"
+      "description": "Permanently banned for repeated severe violations. Written only by moderateContent via asServiceRole; locked here so a banned user cannot self-unban with auth.updateMe().",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "squad_credits": {
       "type": "number",

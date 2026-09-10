@@ -1,14 +1,10 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Square, Circle, Mic, Plus, Settings2, Volume2, Scissors, Copy, Save, Download, FastForward, Rewind, MoreVertical, Maximize2, Pause, Layers, Headphones, Speaker, Keyboard, Upload, Cpu, Activity, Trash2, MousePointer2, MoveHorizontal, Grid, Shuffle, Crosshair, PenTool, Link2, Unlock, TrendingUp, Option, Undo, Redo, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Radio, Loader2, GripVertical, Check, Edit2, ChevronRight, ChevronLeft, Repeat, RefreshCw, ListTodo, AudioLines, Home, Compass, MessageSquare, User, Palette, Eye, EyeOff, Snowflake, Folder } from 'lucide-react';
+import { Play, Square, Circle, Mic, Settings2, Volume2, Save, Download, FastForward, Rewind, Maximize2, Pause, Layers, Keyboard, Upload, Activity, Crosshair, Link2, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Loader2, Check, Edit2, ChevronLeft, RefreshCw, ListTodo, AudioLines, Folder } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -21,7 +17,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { usePerformance } from '@/hooks/use-performance';
 
 
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3 } from '@/lib/audioProcessing';
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';

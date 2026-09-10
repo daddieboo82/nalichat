@@ -2,8 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { GripVertical, Settings2, Volume2, PenTool, Copy, Trash2, Link2, Unlink } from 'lucide-react';
+import { GripVertical, Settings2, Volume2, PenTool, Copy, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**

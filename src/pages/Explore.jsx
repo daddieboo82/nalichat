@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Heart, Eye, Plus, Upload, X, Search, Sparkles, Trash2 } from "lucide-react";
+import { Plus, Search, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/AuthContext";
 import ArtPostCard from "@/components/explore/ArtPostCard";
 import PullToRefresh from "@/components/layout/PullToRefresh";

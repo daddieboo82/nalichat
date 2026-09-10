@@ -113,9 +113,9 @@ export default function ChallengeDetail() {
                 <p className="text-sm text-muted-foreground">Hosted by {challenge.host_artist_name}</p>
               </div>
             </div>
-            <Link to={`/challenge/${challengeId}/leaderboard`}>
-              <Button variant="outline" size="sm" className="rounded-full gap-1.5"><ListOrdered className="w-4 h-4" /> Leaderboard</Button>
-            </Link>
+            <Button variant="outline" size="sm" className="rounded-full gap-1.5" asChild>
+              <Link to={`/challenge/${challengeId}/leaderboard`}><ListOrdered className="w-4 h-4" /> Leaderboard</Link>
+              </Button>
           </div>
 
           <div className="flex flex-wrap gap-2">

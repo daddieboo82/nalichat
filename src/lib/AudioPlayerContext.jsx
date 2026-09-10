@@ -1,6 +1,10 @@
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, useMemo, useCallback } from 'react';
 
 const AudioPlayerContext = createContext();
+// Playback position updates fire ~4x/second. Keeping them in the main context
+// re-rendered every consumer (AppLayout and therefore the whole routed page)
+// on every tick, so they live in their own context that only the player UI reads.
+const AudioPlayerTimeContext = createContext({ currentTime: 0, duration: 0 });
 
 export function AudioPlayerProvider({ children }) {
   const [currentTrack, setCurrentTrack] = useState(null);
@@ -65,36 +69,37 @@ export function AudioPlayerProvider({ children }) {
     }
   }, [volume]);
 
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     if (!audioRef.current) return;
     try {
-      if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      } else {
+      if (audioRef.current.paused) {
         audioRef.current.play().then(() => setIsPlaying(true)).catch(e => {
           console.error("Playback failed:", e);
           setIsPlaying(false);
         });
+      } else {
+        audioRef.current.pause();
+        setIsPlaying(false);
       }
     } catch (e) {
       console.error("Toggle play error:", e);
       setIsPlaying(false);
     }
-  };
+  }, []);
 
-  const seek = (time) => {
+  const seek = useCallback((time) => {
     if (audioRef.current) {
       audioRef.current.currentTime = time;
       setCurrentTime(time);
     }
-  };
+  }, []);
 
-  const playTrack = (track) => {
-    if (currentTrack?.id === track.id) {
-      togglePlay();
-    } else {
-      setCurrentTrack(track);
+  const playTrack = useCallback((track) => {
+    setCurrentTrack(prev => {
+      if (prev?.id === track.id) {
+        togglePlay();
+        return prev;
+      }
       if (audioRef.current && track?.file_url) {
         try {
           audioRef.current.src = track.file_url;
@@ -109,37 +114,45 @@ export function AudioPlayerProvider({ children }) {
           console.error("Audio src error:", e);
         }
       }
+      return track;
+    });
+  }, [togglePlay]);
+
+  const closePlayer = useCallback(() => {
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeAttribute('src'); // Clean up the source
+        audioRef.current.load();
+      }
+    } catch (e) {
+      console.error("Error closing player:", e);
     }
-  };
+    setCurrentTrack(null);
+    setIsPlaying(false);
+  }, []);
+
+  const value = useMemo(() => ({
+    currentTrack,
+    isPlaying,
+    volume,
+    setVolume,
+    togglePlay,
+    seek,
+    playTrack,
+    closePlayer,
+  }), [currentTrack, isPlaying, volume, togglePlay, seek, playTrack, closePlayer]);
+
+  const timeValue = useMemo(() => ({ currentTime, duration }), [currentTime, duration]);
 
   return (
-    <AudioPlayerContext.Provider value={{
-      currentTrack,
-      isPlaying,
-      currentTime,
-      duration,
-      volume,
-      setVolume,
-      togglePlay,
-      seek,
-      playTrack,
-      closePlayer: () => {
-        try {
-          if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.removeAttribute('src'); // Clean up the source
-            audioRef.current.load();
-          }
-        } catch (e) {
-          console.error("Error closing player:", e);
-        }
-        setCurrentTrack(null);
-        setIsPlaying(false);
-      }
-    }}>
-      {children}
+    <AudioPlayerContext.Provider value={value}>
+      <AudioPlayerTimeContext.Provider value={timeValue}>
+        {children}
+      </AudioPlayerTimeContext.Provider>
     </AudioPlayerContext.Provider>
   );
 }
 
 export const useAudioPlayer = () => useContext(AudioPlayerContext);
+export const useAudioPlayerTime = () => useContext(AudioPlayerTimeContext);

@@ -28,7 +28,7 @@ const quickStarts = [
     icon: Users,
     title: 'Find Collaborators',
     desc: 'Grow your network',
-    link: '/network',
+    link: '/explore',
     bgClass: 'bg-gradient-to-br from-emerald-500 to-teal-500',
   },
 ];
@@ -52,13 +52,14 @@ export default function QuickStartGuide() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
             >
-              <Link to={item.link}>
-                <button className={`w-full h-full ${item.bgClass} rounded-xl p-4 text-white hover:shadow-lg hover:shadow-current/30 transition-all hover:scale-105 group text-left`}>
-                  <Icon className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform" />
-                  <p className="font-semibold text-sm">{item.title}</p>
-                  <p className="text-xs opacity-90">{item.desc}</p>
-                  <ArrowRight className="w-3.5 h-3.5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
+              <Link
+                to={item.link}
+                className={`block w-full h-full ${item.bgClass} rounded-xl p-4 text-white hover:shadow-lg hover:shadow-current/30 transition-all hover:scale-105 group text-left`}
+              >
+                <Icon className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform" />
+                <p className="font-semibold text-sm">{item.title}</p>
+                <p className="text-xs opacity-90">{item.desc}</p>
+                <ArrowRight className="w-3.5 h-3.5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
             </motion.div>
           );

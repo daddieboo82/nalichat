@@ -18,11 +18,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="NaliChat" />
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
-      }
-    </script>
+    <!--
+      The service worker is registered from the app (usePwaUpdate) instead of
+      here: that path skips dev/preview/sandbox hosts and native shells, where a
+      SW registered from this tag would cache and later serve stale JS/CSS
+      chunks. It also owns the "update available" prompt for the waiting worker.
+    -->
     <title>NaliChat - Collaborate, Create & Share Music</title>
     <meta name="description" content="NaliChat is the ultimate platform for music creators — collaborate in real-time, mix tracks in the studio, share your art, and grow your music network." />
     <meta property="og:title" content="NaliChat - Collaborate, Create & Share Music" />

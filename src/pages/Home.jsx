@@ -244,32 +244,32 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full max-w-sm mx-auto sm:max-w-none">
             {user ? (
               <>
-                <Link to="/messages" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7">
+                <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7" asChild>
+                  <Link to="/messages" className="w-full sm:w-auto">
                     <MessageSquare className="w-5 h-5 mr-2" />
                     Open Messages
                     <ArrowRight className="w-4 h-4 ml-2" />
+                  </Link>
                   </Button>
-                </Link>
 
-                <Link to="/studio" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-accent to-cyan-500 hover:opacity-90 text-base glow-accent shimmer-hover px-7">
+                <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-accent to-cyan-500 hover:opacity-90 text-base glow-accent shimmer-hover px-7" asChild>
+                  <Link to="/studio" className="w-full sm:w-auto">
                     <Music className="w-5 h-5 mr-2" />
                     Open Studio
                     <ArrowRight className="w-4 h-4 ml-2" />
+                  </Link>
                   </Button>
-                </Link>
 
               </>
             ) : (
               <>
-                <Link to="/register" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7">
+                <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7" asChild>
+                  <Link to="/register" className="w-full sm:w-auto">
                     <MessageSquare className="w-5 h-5 mr-2" />
                     Get Started Free
                     <ArrowRight className="w-4 h-4 ml-2" />
+                  </Link>
                   </Button>
-                </Link>
               </>
             )}
           </div>
@@ -640,23 +640,23 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center w-full max-w-sm mx-auto sm:max-w-none">
                 {user ? (
                     <>
-                      <Link to="/messages" className="w-full sm:w-auto">
-                        <Button size="lg" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105">
+                      <Button size="lg" className="w-full sm:w-auto rounded-2xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105" asChild>
+                        <Link to="/messages" className="w-full sm:w-auto">
                           <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
                           Open Messages
+                        </Link>
                         </Button>
-                      </Link>
 
                     </>
                   ) : (
                   <>
-                    <Link to="/register" className="w-full sm:w-auto">
-                      <Button size="lg" className="w-full sm:w-auto rounded-xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30">
+                    <Button size="lg" className="w-full sm:w-auto rounded-xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30" asChild>
+                      <Link to="/register" className="w-full sm:w-auto">
                         <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
                         Get Started Free
                         <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2 md:ml-3" />
+                      </Link>
                       </Button>
-                    </Link>
                   </>
                 )}
               </div>

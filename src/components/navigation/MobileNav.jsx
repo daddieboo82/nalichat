@@ -103,6 +103,7 @@ export default function MobileNav() {
 
   return (
     <nav
+      aria-label="Primary"
       className="lg:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border bg-card/90 backdrop-blur-md select-none"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
@@ -129,6 +130,7 @@ export default function MobileNav() {
             <button
               key={tabPath}
               onClick={() => handleTap(tabPath)}
+              aria-current={active ? "page" : undefined}
               className={cn(
                 "relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2 select-none transition-colors active:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 active ? "text-primary" : "text-muted-foreground"

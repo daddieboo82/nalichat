@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 
 const NaliPresenceContext = createContext(null);
@@ -30,13 +30,13 @@ export function NaliPresenceProvider({ children }) {
     base44.auth.updateMe({ nali_presence_level: newLevel }).catch(() => {});
   }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     level,
     setLevel,
     isMuted: level === "off",
     isProactive: level === "proactive",
     isMinimal: level === "minimal",
-  };
+  }), [level, setLevel]);
 
   return (
     <NaliPresenceContext.Provider value={value}>

@@ -67,7 +67,7 @@ export default function SquadJoin() {
       <div className="max-w-md mx-auto p-6 text-center space-y-3">
         <h1 className="font-heading text-xl font-bold">Invalid invite</h1>
         <p className="text-sm text-muted-foreground">This squad invite doesn't exist or has ended.</p>
-        <Link to="/squad"><Button variant="outline" className="rounded-full">Go to Squad & Scale</Button></Link>
+        <Button variant="outline" className="rounded-full" asChild><Link to="/squad">Go to Squad & Scale</Link></Button>
       </div>
     );
   }
@@ -77,7 +77,7 @@ export default function SquadJoin() {
       <div className="max-w-md mx-auto p-6 text-center space-y-3">
         <h1 className="font-heading text-xl font-bold">This is your own invite</h1>
         <p className="text-sm text-muted-foreground">Share this link with a friend so they can join your squad.</p>
-        <Link to="/squad"><Button variant="outline" className="rounded-full">Go to Squad & Scale</Button></Link>
+        <Button variant="outline" className="rounded-full" asChild><Link to="/squad">Go to Squad & Scale</Link></Button>
       </div>
     );
   }
@@ -87,7 +87,7 @@ export default function SquadJoin() {
       <div className="max-w-md mx-auto p-6 text-center space-y-3">
         <h1 className="font-heading text-xl font-bold">Invite already used</h1>
         <p className="text-sm text-muted-foreground">This squad is already full.</p>
-        <Link to="/squad"><Button variant="outline" className="rounded-full">Go to Squad & Scale</Button></Link>
+        <Button variant="outline" className="rounded-full" asChild><Link to="/squad">Go to Squad & Scale</Link></Button>
       </div>
     );
   }
@@ -98,9 +98,9 @@ export default function SquadJoin() {
         <Users className="w-10 h-10 mx-auto text-primary/60" />
         <h1 className="font-heading text-xl font-bold">{squad.member_a_name} invited you to squad up</h1>
         <p className="text-sm text-muted-foreground">Log in to accept and start tracking your weekend bonus together.</p>
-        <Link to={`/login?returnTo=${encodeURIComponent(`/squad/join/${inviteCode}`)}`}>
-          <Button className="rounded-full bg-gradient-to-r from-primary to-accent text-white">Log In to Join</Button>
-        </Link>
+        <Button className="rounded-full bg-gradient-to-r from-primary to-accent text-white" asChild>
+          <Link to={`/login?returnTo=${encodeURIComponent(`/squad/join/${inviteCode}`)}`}>Log In to Join</Link>
+          </Button>
       </div>
     );
   }

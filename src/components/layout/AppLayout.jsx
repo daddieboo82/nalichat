@@ -8,6 +8,7 @@ import DesktopNav from "@/components/navigation/DesktopNav";
 import MobileHeader from "@/components/navigation/MobileHeader";
 import MobileNav from "@/components/navigation/MobileNav";
 import { useSystemTheme } from "@/hooks/use-system-theme";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import GlobalInviteDialog from "@/components/GlobalInviteDialog";
 import GlobalMessageDialog from "@/components/GlobalMessageDialog";
 import GlobalHelpDialog from "@/components/GlobalHelpDialog";
@@ -21,13 +22,19 @@ export default function AppLayout() {
   const [showMessage, setShowMessage] = useState(false);
   const audioPlayer = useAudioPlayer();
   const hasAudioPlayer = !!audioPlayer?.currentTrack;
+  // Both nav bars used to mount at every viewport and were only hidden with
+  // CSS, so the notification bell inside each one ran twice: two /me calls, two
+  // notification fetches, two realtime subscriptions and, on every incoming
+  // notification, a duplicated toast, sound and push. Mount only the bar the
+  // current breakpoint actually shows. `lg` matches the Tailwind classes below.
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   useSystemTheme();
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Mobile Header */}
-      <MobileHeader />
+      {!isDesktop && <MobileHeader />}
 
       {/* Main Content */}
       <main className={`flex-1 overflow-hidden ${hasAudioPlayer ? 'pb-[calc(7.75rem+env(safe-area-inset-bottom))] lg:pb-[5rem]' : 'pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0'}`}>
@@ -39,12 +46,14 @@ export default function AppLayout() {
       </main>
 
       {/* Navigation Bars */}
-      <MobileNav />
-      <DesktopNav 
-        onMessageClick={() => setShowMessage(true)}
-        onInviteClick={() => setShowInvite(true)}
-        onHelpClick={() => setShowHelp(true)}
-      />
+      {!isDesktop && <MobileNav />}
+      {isDesktop && (
+        <DesktopNav
+          onMessageClick={() => setShowMessage(true)}
+          onInviteClick={() => setShowInvite(true)}
+          onHelpClick={() => setShowHelp(true)}
+        />
+      )}
 
 
 

@@ -13,7 +13,7 @@ export default function ChallengeCard({ challenge, winner, dimmed }) {
     >
       <div className="relative aspect-video bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
         {challenge.cover_url ? (
-          <img src={challenge.cover_url} alt={challenge.title} className="w-full h-full object-cover" />
+          <img src={challenge.cover_url} alt={challenge.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
         ) : (
           <Trophy className="w-8 h-8 text-primary/30" />
         )}

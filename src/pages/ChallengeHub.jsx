@@ -73,9 +73,9 @@ export default function ChallengeHub() {
           <p className="text-muted-foreground text-sm mt-1">Upload a source track, remix, and vote for the community's best.</p>
         </div>
         {user && (
-          <Link to="/create-challenge">
-            <Button className="rounded-full gap-1.5 bg-gradient-to-r from-primary to-accent text-white"><Plus className="w-4 h-4" /> Create Challenge</Button>
-          </Link>
+          <Button className="rounded-full gap-1.5 bg-gradient-to-r from-primary to-accent text-white" asChild>
+            <Link to="/create-challenge"><Plus className="w-4 h-4" /> Create Challenge</Link>
+            </Button>
         )}
       </div>
 

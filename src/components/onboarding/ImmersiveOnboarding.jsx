@@ -335,14 +335,20 @@ export default function ImmersiveOnboarding() {
             </AnimatePresence>
 
             {/* Progress indicator */}
-            <div className="flex justify-center gap-2 mt-12">
+            <div className="flex justify-center gap-1 mt-12">
               {steps.map((s, i) => (
                 <button
                   key={s.id}
                   onClick={() => { setDirection(i > step ? 1 : -1); setStep(i); }}
-                  className={`h-2 rounded-full transition-all duration-300 ${i === step ? `w-8 bg-gradient-to-r ${current.gradient}` : "w-2 bg-muted hover:bg-muted-foreground/50"}`}
+                  className="h-11 w-8 flex items-center justify-center group"
                   aria-label={`Go to step ${i + 1}`}
-                />
+                  aria-current={i === step ? "step" : undefined}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`h-2 rounded-full transition-all duration-300 block ${i === step ? `w-8 bg-gradient-to-r ${current.gradient}` : "w-2 bg-muted group-hover:bg-muted-foreground/50"}`}
+                  />
+                </button>
               ))}
             </div>
           </div>

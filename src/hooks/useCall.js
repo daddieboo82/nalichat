@@ -35,6 +35,7 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
   const [remoteStream, setRemoteStream] = useState(null);
   const [muted, setMuted] = useState(false);
   const [videoEnabled, setVideoEnabled] = useState(true);
+  const [callEndReason, setCallEndReason] = useState(null);
   const processedRef = useRef(new Set());
   const pendingOfferRef = useRef(null);
   // Signals for the active callId that arrived before the engine existed.
@@ -77,6 +78,7 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
           // nulled callState, so a dropped call left a full-screen overlay stuck on
           // screen with a blank status until the user manually pressed End.
           if (state === "ended" || state === "failed") {
+            setCallEndReason(state === "failed" ? "call_failed" : "ended");
             clearTimeout(ringTimeoutRef.current);
             pendingSignalsRef.current = [];
             setLocalStream(null);
@@ -177,6 +179,7 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
     async (type) => {
       if (!currentUser) return;
       const callId = `${currentUser.id}-${Date.now()}`;
+      setCallEndReason(null);
       callIdRef.current = callId;
       setCallState({ status: "ringing", type, callId, direction: "outgoing" });
       const engine = getEngine();
@@ -217,6 +220,7 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
     if (!signal) return;
     clearTimeout(ringTimeoutRef.current);
     const engine = getEngine();
+    setCallEndReason(null);
     setCallState((prev) => ({ ...prev, status: "connecting" }));
     try {
       await engine.acceptCall({ callId: signal.callId, type: signal.callType, offer: signal.payload });
@@ -279,6 +283,7 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
     remoteStream,
     muted,
     videoEnabled,
+    callEndReason,
     startCall,
     acceptCall,
     declineCall,

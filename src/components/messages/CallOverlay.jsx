@@ -4,6 +4,7 @@ import { Phone, Video, Mic, MicOff, VideoOff, PhoneOff, Loader2 } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { sounds } from "@/hooks/use-sound";
+import CallSummaryPanel from "./CallSummaryPanel";
 
 /**
  * Full-screen call overlay with real WebRTC media rendering.
@@ -23,6 +24,8 @@ export default function CallOverlay({
   onEnd,
   onToggleMute,
   onToggleVideo,
+  summaryActions,
+  participants,
 }) {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -217,6 +220,14 @@ export default function CallOverlay({
           </>
         )}
       </div>
+
+      {isConnected && summaryActions && (
+        <CallSummaryPanel
+          summaryActions={summaryActions}
+          participants={participants}
+          inCall
+        />
+      )}
     </div>
   );
 }

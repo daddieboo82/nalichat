@@ -5,21 +5,30 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
+import LoadError from "@/components/layout/LoadError";
 
 export default function SquadJoin() {
   const { inviteCode } = useParams();
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [squad, setSquad] = useState(null);
   const [joining, setJoining] = useState(false);
 
-  useEffect(() => {
-    base44.entities.Squad.filter({ invite_code: inviteCode }).then((res) => {
-      setSquad(res[0] || null);
-      setLoading(false);
-    });
-  }, [inviteCode]);
+  const loadSquad = () => {
+    // A rejection used to skip setLoading(false) and spin forever.
+    setLoadError(false);
+    base44.entities.Squad.filter({ invite_code: inviteCode })
+      .then((res) => setSquad(res[0] || null))
+      .catch((e) => {
+        console.error("Failed to load squad invite", e);
+        setLoadError(true);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { loadSquad(); }, [inviteCode]);
 
   const handleJoin = async () => {
     if (!squad || !user) return;
@@ -41,6 +50,16 @@ export default function SquadJoin() {
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  }
+
+  if (loadError) {
+    return (
+      <LoadError
+        title="Couldn't check this invite"
+        message="We couldn't reach the server to verify this squad invite."
+        onRetry={() => { setLoading(true); loadSquad(); }}
+      />
+    );
   }
 
   if (!squad || squad.status === "ended") {

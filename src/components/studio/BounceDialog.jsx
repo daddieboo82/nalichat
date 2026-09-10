@@ -269,7 +269,6 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
                   {savedParams && (
                     <button
                       type="button"
-                      type="button"
                       onClick={() => {
                         setParams(savedParams);
                         setShowManualParams(false);

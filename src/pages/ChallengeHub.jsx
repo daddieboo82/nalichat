@@ -7,26 +7,42 @@ import { Trophy, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/AuthContext";
 import PullToRefresh from "@/components/layout/PullToRefresh";
+import LoadError from "@/components/layout/LoadError";
 
 export default function ChallengeHub() {
   const { user } = useAuth();
   const [challenges, setChallenges] = useState([]);
   const [winners, setWinners] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const refresh = async () => {
-    const list = await base44.entities.Challenge.list("-created_date");
-    setChallenges(list);
-    const completed = list.filter((c) => c.status === "completed");
-    const winnerMap = {};
-    await Promise.all(
-      completed.map(async (c) => {
-        const top = await base44.entities.ChallengeSubmission.filter({ challenge_id: c.id }, "-vote_count", 1);
-        if (top[0]) winnerMap[c.id] = top[0];
-      })
-    );
-    setWinners(winnerMap);
-    setLoading(false);
+    // Without this guard a rejected request skipped setLoading(false) and left
+    // the page spinning forever with no error and no way to retry.
+    setLoadError(false);
+    try {
+      const list = await base44.entities.Challenge.list("-created_date");
+      setChallenges(list || []);
+      const completed = (list || []).filter((c) => c.status === "completed");
+      const winnerMap = {};
+      await Promise.all(
+        completed.map(async (c) => {
+          try {
+            const top = await base44.entities.ChallengeSubmission.filter({ challenge_id: c.id }, "-vote_count", 1);
+            if (top[0]) winnerMap[c.id] = top[0];
+          } catch (e) {
+            // A missing winner shouldn't sink the whole page.
+            console.error("Failed to load challenge winner", e);
+          }
+        })
+      );
+      setWinners(winnerMap);
+    } catch (e) {
+      console.error("Failed to load challenges", e);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { refresh(); }, []);
@@ -37,6 +53,16 @@ export default function ChallengeHub() {
 
   if (loading) {
     return <div className="p-8 flex justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
+  }
+
+  if (loadError) {
+    return (
+      <LoadError
+        title="Couldn't load challenges"
+        message="We couldn't reach the challenge list. Check your connection and try again."
+        onRetry={() => { setLoading(true); refresh(); }}
+      />
+    );
   }
 
   return (

@@ -49,6 +49,11 @@ export default defineConfig({
     },
   },
   build: {
+    // The entry chunk is intentionally kept below this app-specific budget
+    // after vendor splitting (it dropped from ~956 kB to ~572 kB). Keep the
+    // warning useful instead of reporting the known, measured entry size on
+    // every production build.
+    chunkSizeWarningLimit: 600,
     // Split rarely-changing vendor code out of the main entry chunk. Without
     // this the entry bundle is ~950 kB, so every app deploy forces mobile users
     // to re-download React, the router, charts and animation libraries too.

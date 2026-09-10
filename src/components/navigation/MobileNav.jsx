@@ -115,6 +115,8 @@ export default function MobileNav() {
               <div key={tabPath} className="relative flex-1 flex items-center justify-center pt-1 pb-2">
                 <button
                   onClick={() => handleTap(tabPath)}
+                  title={label}
+                  aria-label={label}
                   className="absolute -top-4 w-12 h-12 rounded-full bg-gradient-to-tr from-primary to-pink-500 flex items-center justify-center text-white shadow-lg shadow-primary/30 active:scale-95 transition-transform"
                 >
                   <Icon className="w-6 h-6" />

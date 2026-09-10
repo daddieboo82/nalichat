@@ -154,6 +154,8 @@ export default function MobileHeader() {
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => setIsOpen(true)}
+              title={items.length > 0 ? `Cart (${items.length})` : 'Cart'}
+              aria-label={items.length > 0 ? `Cart, ${items.length} item${items.length > 1 ? 's' : ''}` : 'Cart'}
               className="relative p-1.5 rounded-lg hover:bg-primary/10 transition-all text-muted-foreground hover:text-foreground"
             >
               <ShoppingCart className="w-5 h-5" />
@@ -174,6 +176,8 @@ export default function MobileHeader() {
             )}
             <button
               onClick={() => window.dispatchEvent(new Event("open-ai-assistant"))}
+              title="Ask Nali"
+              aria-label="Ask Nali, the AI assistant"
               className="relative p-1.5 ml-1 rounded-lg flex items-center justify-center text-white bg-gradient-to-r from-primary to-accent shadow-lg shadow-primary/20 transition-all active:scale-95"
             >
               <AudioLines className="w-4 h-4 animate-pulse" />

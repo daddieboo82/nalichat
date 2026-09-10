@@ -27,14 +27,17 @@ const PLUGINS = [
   ]},
 ];
 
-export default function PluginRack({ open, onToggle, trackName, tracks, plugins, onPluginsChange }) {
+export default function PluginRack({ open, onToggle, trackName, tracks, plugins, onPluginsChange, isMaster = false, onTargetChange }) {
   const [activePlugins, setActivePlugins] = useState({});
 
   useEffect(() => {
     setActivePlugins(plugins || {});
-  }, [plugins, trackName]);
+  }, [plugins, trackName, isMaster]);
+
+  const hasTarget = isMaster || !!trackName;
 
   const updatePlugins = (updater) => {
+    if (!hasTarget) return;
     setActivePlugins(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       onPluginsChange?.(next);
@@ -99,6 +102,30 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
                       on <span className="text-primary/80">{trackName}</span>
                     </span>
                   )}
+                  {onTargetChange && (
+                    <div className="flex items-center gap-1 ml-3">
+                      <button
+                        onClick={() => onTargetChange(null)}
+                        className={cn(
+                          'px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-colors',
+                          !isMaster ? 'border-primary/50 bg-primary/10 text-primary' : 'border-white/10 text-muted-foreground hover:text-foreground'
+                        )}
+                        title="Edit the selected track's FX chain"
+                      >
+                        Track
+                      </button>
+                      <button
+                        onClick={() => onTargetChange('master')}
+                        className={cn(
+                          'px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-colors',
+                          isMaster ? 'border-primary/50 bg-primary/10 text-primary' : 'border-white/10 text-muted-foreground hover:text-foreground'
+                        )}
+                        title="Edit the master bus FX chain"
+                      >
+                        Master
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={onToggle}
@@ -111,7 +138,7 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
               </div>
 
               {/* Plugin Slots */}
-              <div className="flex overflow-x-auto custom-scrollbar gap-0 shrink-0">
+              <div className={cn("flex overflow-x-auto custom-scrollbar gap-0 shrink-0", !hasTarget && "opacity-50 pointer-events-none")}>
                 {PLUGINS.map((plugin) => {
                   const state = activePlugins[plugin.id];
                   const isActive = !!state;
@@ -197,9 +224,15 @@ export default function PluginRack({ open, onToggle, trackName, tracks, plugins,
                 })}
               </div>
 
-              {!hasTracks && (
+              {!hasTracks && !isMaster && (
                 <div className="px-4 py-3 text-xs text-muted-foreground text-center bg-white/[0.02]">
                   Add tracks to your session to start using effects and plugins.
+                </div>
+              )}
+
+              {hasTracks && !hasTarget && (
+                <div className="px-4 py-3 text-xs text-muted-foreground text-center bg-white/[0.02]">
+                  Select a track (or hit <span className="text-primary/80">FX</span> in the mixer) to edit its chain — or switch to <span className="text-primary/80">Master</span>.
                 </div>
               )}
             </div>

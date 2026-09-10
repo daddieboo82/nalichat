@@ -1,14 +1,20 @@
 // Mixes stacked stems and applies AI mastering parameters (EQ, compression, limiting,
 // loudness boost) in a single offline render, producing an industry-ready WAV blob.
+// Per-track mixer state (fader, clip gain, pan, inserts, Send 1) and the master FX
+// chain are applied first, so a bounce matches what the Studio mixer plays.
+
+import { connectMasterChain, connectTrackChain } from '@/lib/audioProcessing';
 
 const dbToGain = (db) => Math.pow(10, (db || 0) / 20);
 
-export async function renderMasteredMix(tracks, params) {
+export async function renderMasteredMix(tracks, params, mixOptions = {}) {
   const validTracks = tracks.filter(t => t.audioUrl && !t.muted);
   if (validTracks.length === 0) throw new Error("No unmuted tracks with audio to bounce.");
 
   const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  const offline = new OfflineAudioContext(2, audioContext.sampleRate * 300, audioContext.sampleRate);
+  const sampleRate = audioContext.sampleRate;
+  if (audioContext.state !== 'closed') audioContext.close().catch(() => {});
+  const offline = new OfflineAudioContext(2, sampleRate * 300, sampleRate);
 
   // ---- Master processing chain (AI driven) ----
   const lowShelf = offline.createBiquadFilter();
@@ -59,6 +65,13 @@ export async function renderMasteredMix(tracks, params) {
   makeup.connect(limiter);
   limiter.connect(offline.destination);
 
+  // ---- Mixer bus (track FX + Send 1 + master FX) feeding the mastering chain ----
+  const mixBus = connectMasterChain(offline, {
+    masterFx: mixOptions.masterFx,
+    masterVolume: mixOptions.masterVolume ?? 100,
+    destination: lowShelf,
+  });
+
   // ---- Load + connect stems into the master chain ----
   for (const track of validTracks) {
     try {
@@ -70,16 +83,11 @@ export async function renderMasteredMix(tracks, params) {
       const source = offline.createBufferSource();
       source.buffer = audioBuffer;
 
-      const gainNode = offline.createGain();
-      gainNode.gain.value = (track.volume ?? 75) / 100;
-
-      const panNode = offline.createStereoPanner();
-      panNode.pan.value = Math.max(-1, Math.min(1, (track.pan ?? 0) / 100));
-
-      source.connect(gainNode);
-      gainNode.connect(panNode);
-      panNode.connect(lowShelf);
-      source.start(0);
+      connectTrackChain(offline, source, track, {
+        destination: mixBus.input,
+        reverbBus: mixBus.reverbBus,
+      });
+      source.start(Math.max(0, track.startTime || 0));
     } catch (trackErr) {
       console.warn(`Skipping track ${track.name}:`, trackErr);
     }

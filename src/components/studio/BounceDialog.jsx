@@ -29,7 +29,7 @@ const STEPS = [
   "Publishing your finished song...",
 ];
 
-export default function BounceDialog({ projectTitle, project, tracks, trigger, open: controlledOpen, onOpenChange, redirectAfter }) {
+export default function BounceDialog({ projectTitle, project, tracks, trigger, open: controlledOpen, onOpenChange, redirectAfter, mixOptions }) {
   const navigate = useNavigate();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -91,7 +91,7 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
 
       // 2. Mix + apply the AI master in one render
       setStep(2);
-      const wav = await renderMasteredMix(validTracks, masterParams);
+      const wav = await renderMasteredMix(validTracks, masterParams, mixOptions);
       const file = new File([wav], `${bounceTitle || "Untitled Track"}.wav`, { type: "audio/wav" });
 
       // 3. Upload + publish the finished, industry-ready song

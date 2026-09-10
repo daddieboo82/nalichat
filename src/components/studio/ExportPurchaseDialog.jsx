@@ -7,14 +7,14 @@ import { renderMixToWav, renderMixToMp3 } from "@/lib/audioProcessing";
 
 const EXPORT_LABELS = { wav: "WAV (Studio Quality)", mp3: "MP3 (Compressed)" };
 
-export default function ExportPurchaseDialog({ open, onOpenChange, format, tracks, projectName }) {
+export default function ExportPurchaseDialog({ open, onOpenChange, format, tracks, projectName, mixOptions }) {
   const [stage, setStage] = useState("idle"); // idle | rendering | downloading
 
   const handleExport = async () => {
     setStage("rendering");
     try {
       // 1. Render the mix to a blob
-      const blob = format === "mp3" ? await renderMixToMp3(tracks) : await renderMixToWav(tracks);
+      const blob = format === "mp3" ? await renderMixToMp3(tracks, mixOptions) : await renderMixToWav(tracks, mixOptions);
       if (!blob) {
         toast.error("No audio to export. Record or import a track first.");
         setStage("idle");

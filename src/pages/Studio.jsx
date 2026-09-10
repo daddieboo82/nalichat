@@ -23,6 +23,7 @@ import { usePerformance } from '@/hooks/use-performance';
 
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { separateStems, generateMelody, renderMixToWav, renderMixToMp3 } from '@/lib/audioProcessing';
+import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
 import LivePresenceBar from '@/components/studio/LivePresenceBar';
 import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
@@ -114,6 +115,9 @@ export default function Studio() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const audioElementsRef = useRef({});
+  const mixEngineRef = useRef(null);
+  const fxFallbackNotifiedRef = useRef(false);
+  if (!mixEngineRef.current) mixEngineRef.current = createMixEngine();
   const fileInputRef = useRef(null);
   const [renamingTrack, setRenamingTrack] = useState(null);
   const [newTrackName, setNewTrackName] = useState("");
@@ -199,13 +203,66 @@ export default function Studio() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [hasAutosave, setHasAutosave] = useState(false);
   const [showPluginRack, setShowPluginRack] = useState(false);
-  const selectedPluginTrack = tracks.find(t => selectedTrackIds.includes(t.id));
+  // FX target for the plugin rack: 'master' or a track id. null = follow selection.
+  const [fxTarget, setFxTarget] = useState(null);
+  const [masterFx, setMasterFx] = useState({});
+  const selectedPluginTrack = fxTarget === 'master'
+    ? null
+    : (tracks.find(t => t.id === fxTarget) || tracks.find(t => selectedTrackIds.includes(t.id)));
   const handlePluginsChange = (plugins) => {
-    if (!selectedPluginTrack) return;
+    if (fxTarget === 'master') {
+      setMasterFx(plugins || {});
+      return;
+    }
+    if (!selectedPluginTrack) {
+      toast.error('Select a track first to edit its FX chain');
+      return;
+    }
     setTracksWithHistory(prev => prev.map(t => (
       t.id === selectedPluginTrack.id ? { ...t, plugins } : t
     )));
   };
+
+  const openTrackFx = (trackId) => {
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) {
+      toast.error('That track no longer exists');
+      return;
+    }
+    setFxTarget(trackId);
+    setSelectedTrackIds([trackId]);
+    setShowPluginRack(true);
+  };
+
+  const openMasterFx = () => {
+    setFxTarget('master');
+    setShowPluginRack(true);
+  };
+
+  // Master FX chain persists alongside the track autosave.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('nalistudio_master_fx');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') setMasterFx(parsed);
+      }
+    } catch (e) {
+      console.error('Failed to load master FX chain', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      try {
+        localStorage.setItem('nalistudio_master_fx', JSON.stringify(masterFx || {}));
+      } catch (e) {
+        console.error('Failed to autosave master FX chain', e);
+      }
+    }, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [masterFx]);
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem('nalistudio_project_autosave');
@@ -452,6 +509,69 @@ export default function Studio() {
     return () => cancelAnimationFrame(animationFrameId);
   }, [isPlaying, isRecording, zoom, recordingStartTime]);
 
+  /* ---------------- Mixer / FX realtime plumbing ---------------- */
+
+  // Post-fader gain for a track (mute + solo aware), matching the offline bounce.
+  const trackMixGain = (track, allTracks = tracks) => {
+    const hasSolo = (allTracks || []).some(t => t.solo);
+    const audible = track.muted ? false : (hasSolo ? !!track.solo : true);
+    if (!audible) return 0;
+    return ((track.volume ?? 75) / 100) * Math.pow(10, (track.clipGain || 0) / 20);
+  };
+
+  // Creates (or reuses) the <audio> element for a track and routes it through the
+  // FX graph. Falls back to plain element playback if Web Audio routing isn't possible.
+  const getTrackAudio = (track) => {
+    if (!track?.audioUrl) return null;
+    let audio = audioElementsRef.current[track.id];
+    if (!audio || audio.dataset?.srcUrl !== track.audioUrl) {
+      if (audio) {
+        try { audio.pause(); } catch { /* ignore */ }
+        mixEngineRef.current?.detach(track.id);
+      }
+      audio = new Audio();
+      audio.preload = 'auto';
+      if (needsCrossOrigin(track.audioUrl)) audio.crossOrigin = 'anonymous';
+      audio.src = track.audioUrl;
+      audio.dataset.srcUrl = track.audioUrl;
+      audioElementsRef.current[track.id] = audio;
+
+      // Cross-origin media without CORS headers can't be tapped by Web Audio —
+      // retry once without the crossOrigin hint and run that track dry.
+      audio.addEventListener('error', () => {
+        if (audio.crossOrigin !== 'anonymous') return;
+        mixEngineRef.current?.detach(track.id);
+        const plain = new Audio();
+        plain.preload = 'auto';
+        plain.src = track.audioUrl;
+        plain.dataset.srcUrl = track.audioUrl;
+        plain.dataset.fxBypass = '1';
+        plain.volume = trackMixGain(track) * (masterVolume / 100);
+        audioElementsRef.current[track.id] = plain;
+        if (!fxFallbackNotifiedRef.current) {
+          fxFallbackNotifiedRef.current = true;
+          toast.warning("Some audio can't be processed in real time (cross-origin file). FX still apply on bounce/export.");
+        }
+      }, { once: true });
+    }
+
+    if (audio.dataset.fxBypass === '1') {
+      audio.volume = trackMixGain(track) * (masterVolume / 100);
+      return audio;
+    }
+
+    mixEngineRef.current?.ensureContext();
+    const routed = mixEngineRef.current?.attach(track.id, audio, track);
+    if (routed) {
+      mixEngineRef.current.syncTrack(track.id, track, { gain: trackMixGain(track) });
+      mixEngineRef.current.syncMaster({ masterVolume, masterFx });
+    } else {
+      audio.dataset.fxBypass = '1';
+      audio.volume = trackMixGain(track) * (masterVolume / 100);
+    }
+    return audio;
+  };
+
   const updateCurrentTime = (newTime) => {
     currentTimeRef.current = newTime;
     if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
@@ -472,11 +592,8 @@ export default function Studio() {
       const playPromises = [];
       tracks.forEach(track => {
         if (track.audioUrl && (!track.muted || track.solo)) {
-          let audio = audioElementsRef.current[track.id];
-          if (!audio || audio.src !== track.audioUrl) {
-            audio = new Audio(track.audioUrl);
-            audioElementsRef.current[track.id] = audio;
-          }
+          const audio = getTrackAudio(track);
+          if (!audio) return;
           
           // Calculate if playhead is within track bounds
           const trackStart = track.startTime || 0;
@@ -485,7 +602,6 @@ export default function Studio() {
           
           if (currentTimeRef.current >= trackStart && currentTimeRef.current < trackEnd) {
             audio.currentTime = clipStartOffset + (currentTimeRef.current - trackStart);
-            audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100) * Math.pow(10, (track.clipGain || 0) / 20));
             playPromises.push(
               audio.play().catch(e => { console.error("Audio playback error:", e); return { failed: true }; })
             );
@@ -525,18 +641,24 @@ export default function Studio() {
       Object.values(audioElementsRef.current).forEach(audio => {
         audio.pause();
       });
+      mixEngineRef.current?.dispose();
     };
   }, []);
 
-  // Sync audio volumes
+  // Sync mixer state (fader, mute/solo, pan, inserts, sends, master FX) into the live graph
   useEffect(() => {
+    const engine = mixEngineRef.current;
+    engine?.syncMaster({ masterVolume, masterFx });
     tracks.forEach(track => {
       const audio = audioElementsRef.current[track.id];
-      if (audio) {
-        audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100) * Math.pow(10, (track.clipGain || 0) / 20));
+      if (!audio) return;
+      if (audio.dataset?.fxBypass === '1' || !engine?.isRouted(track.id)) {
+        audio.volume = Math.max(0, Math.min(1, trackMixGain(track) * (masterVolume / 100)));
+        return;
       }
+      engine.syncTrack(track.id, track, { gain: trackMixGain(track, tracks) });
     });
-  }, [tracks, masterVolume]);
+  }, [tracks, masterVolume, masterFx]);
 
   // Hardware Detection - Refined and Optimized
   useEffect(() => {
@@ -719,13 +841,9 @@ export default function Studio() {
       // Start playback of existing (non-armed) tracks for context
       tracks.forEach(track => {
         if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
-          let audio = audioElementsRef.current[track.id];
-          if (!audio || audio.src !== track.audioUrl) {
-            audio = new Audio(track.audioUrl);
-            audioElementsRef.current[track.id] = audio;
-          }
+          const audio = getTrackAudio(track);
+          if (!audio) return;
           audio.currentTime = Math.max(0, recordStartPos - preRoll - (track.startTime || 0));
-          audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100) * Math.pow(10, (track.clipGain || 0) / 20));
           audio.play().catch(() => {});
         }
       });
@@ -750,13 +868,9 @@ export default function Studio() {
         // Overdub: play back existing (non-armed) tracks while recording
         tracks.forEach(track => {
           if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
-            let audio = audioElementsRef.current[track.id];
-            if (!audio || audio.src !== track.audioUrl) {
-              audio = new Audio(track.audioUrl);
-              audioElementsRef.current[track.id] = audio;
-            }
+            const audio = getTrackAudio(track);
+            if (!audio) return;
             audio.currentTime = currentTimeRef.current;
-            audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100) * Math.pow(10, (track.clipGain || 0) / 20));
             audio.play().catch(e => console.error("Overdub playback error:", e));
           }
         });
@@ -894,6 +1008,7 @@ export default function Studio() {
         audioElementsRef.current[id].pause();
         audioElementsRef.current[id].src = '';
         delete audioElementsRef.current[id];
+        mixEngineRef.current?.detach(id);
       }
       // Revoke object URLs to free memory from blob-based audio
       if (track?.audioUrl?.startsWith('blob:')) {
@@ -1362,7 +1477,8 @@ export default function Studio() {
     setIsDownloading(true);
     toast.info(`Rendering your mix to ${format.toUpperCase()}...`);
     try {
-      const blob = format === 'mp3' ? await renderMixToMp3(tracks) : await renderMixToWav(tracks);
+      const mixOptions = { masterVolume, masterFx };
+      const blob = format === 'mp3' ? await renderMixToMp3(tracks, mixOptions) : await renderMixToWav(tracks, mixOptions);
       if (!blob) {
         toast.error("Nothing to export (all tracks muted or empty).");
         return;
@@ -1601,6 +1717,7 @@ export default function Studio() {
               project={{ genre: "Electronic", bpm: 120 }}
               tracks={tracks}
               redirectAfter={bounceRedirect}
+              mixOptions={{ masterVolume, masterFx }}
             />
             <div className="border-l border-border/50 h-6 mx-1"></div>
             <button
@@ -1949,14 +2066,10 @@ export default function Studio() {
                              updateCurrentTime(newTime);
                              // Play a short snippet from this position
                              if (track.audioUrl) {
-                               let audio = audioElementsRef.current[track.id];
-                               if (!audio || audio.src !== track.audioUrl) {
-                                 audio = new Audio(track.audioUrl);
-                                 audioElementsRef.current[track.id] = audio;
-                               }
+                               const audio = getTrackAudio(track);
+                               if (!audio) return;
                                const offset = (track.clipStart || 0) + ((track.duration || 40) * clickRatio);
                                audio.currentTime = Math.max(0, Math.min(offset, (track.fullDuration || track.duration || 40) - 0.1));
-                               audio.volume = track.muted ? 0 : ((track.volume / 100) * (masterVolume / 100) * Math.pow(10, (track.clipGain || 0) / 20));
                                audio.play().then(() => {
                                  setTimeout(() => audio.pause(), 150);
                                }).catch(() => {});
@@ -2257,10 +2370,12 @@ export default function Studio() {
       <PluginRack
         open={showPluginRack}
         onToggle={() => setShowPluginRack(!showPluginRack)}
-        trackName={selectedPluginTrack?.name}
+        trackName={fxTarget === 'master' ? 'Master Bus' : selectedPluginTrack?.name}
+        isMaster={fxTarget === 'master'}
         tracks={tracks}
-        plugins={selectedPluginTrack?.plugins}
+        plugins={fxTarget === 'master' ? masterFx : selectedPluginTrack?.plugins}
         onPluginsChange={handlePluginsChange}
+        onTargetChange={(target) => setFxTarget(target)}
       />
       </Suspense>
 
@@ -2310,6 +2425,11 @@ export default function Studio() {
         toggleMute={toggleMute}
         toggleSolo={toggleSolo}
         updateTrack={(trackId, data) => setTracks(prev => prev.map(t => t.id === trackId ? { ...t, ...data } : t))}
+        onCommitTrack={() => pushToHistory(tracksRef.current)}
+        onOpenFX={openTrackFx}
+        onOpenMasterFX={openMasterFx}
+        masterFx={masterFx}
+        fxTarget={showPluginRack ? fxTarget : null}
         isPlaying={isPlaying}
         currentTimeRef={currentTimeRef}
       />
@@ -2366,6 +2486,7 @@ export default function Studio() {
         format={exportFormat}
         tracks={tracks}
         projectName={projectName}
+        mixOptions={{ masterVolume, masterFx }}
       />
 
       {/* Precision editing tooltip — DOM-direct, no re-renders */}
@@ -2465,7 +2586,24 @@ export default function Studio() {
           const track = tracks.find(t => selectedTrackIds.includes(t.id));
           if (!track) return;
           if (track.audioUrl?.startsWith('blob:')) { try { URL.revokeObjectURL(track.audioUrl); } catch (e) {} }
-          setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, audioUrl: newAudioUrl, clipGain: 0, fadeIn: 0, fadeOut: 0, committed: true } : t));
+          // The render bakes fader, pan, inserts and Send 1 into the file — reset them
+          // so committed audio isn't processed twice on playback/export.
+          setTracksWithHistory(prev => prev.map(t => {
+            if (t.id !== track.id) return t;
+            const { effects: _effects, ...rest } = t;
+            return {
+              ...rest,
+              audioUrl: newAudioUrl,
+              clipGain: 0,
+              volume: 100,
+              pan: 50,
+              send1: 0,
+              plugins: {},
+              fadeIn: 0,
+              fadeOut: 0,
+              committed: true,
+            };
+          }));
         }}
       />
 

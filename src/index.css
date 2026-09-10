@@ -234,3 +234,35 @@
 .low-power-mode * {
   box-shadow: none !important; /* Disable heavy glow shadows */
 }
+
+/* User and OS reduced-motion preferences converge on this messaging surface.
+   Keep state changes immediate and visible while suppressing decorative motion. */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after,
+.reduce-motion-surface *,
+.reduce-motion-surface *::before,
+.reduce-motion-surface *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.001ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .waveform-bar,
+  .animate-float-blob,
+  .text-gradient-animate,
+  .shimmer-hover::after {
+    animation: none !important;
+  }
+}

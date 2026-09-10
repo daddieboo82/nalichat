@@ -23,6 +23,7 @@ export default function CallOverlay({
   onEnd,
   onToggleMute,
   onToggleVideo,
+  reduceMotion = false,
 }) {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -76,6 +77,15 @@ export default function CallOverlay({
   const isRinging = callState.status === "ringing";
   const isConnecting = callState.status === "connecting";
   const showRemoteVideo = isVideo && isConnected && !!remoteStream;
+  const callStatusText = isIncoming
+    ? `Incoming ${isVideo ? "video" : "audio"} call`
+    : isConnecting
+      ? "Connecting"
+      : isRinging
+        ? (isVideo ? "Video calling" : "Calling")
+        : isConnected
+          ? "Call connected"
+          : "";
 
   const formatDuration = (s) => {
     const m = Math.floor(s / 60);
@@ -84,7 +94,15 @@ export default function CallOverlay({
   };
 
   return (
-    <div className="absolute inset-0 z-50 bg-background/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-200">
+    <div
+      className={cn(
+        "absolute inset-0 z-50 bg-background/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6",
+        reduceMotion ? "reduce-motion-surface" : "animate-in fade-in zoom-in duration-200"
+      )}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${isVideo ? "Video" : "Audio"} call with ${displayName}`}
+    >
       {/* Remote video — full screen for connected video calls */}
       {showRemoteVideo && (
         <video
@@ -108,24 +126,25 @@ export default function CallOverlay({
           <h2 className="text-3xl font-heading font-bold mb-2">{displayName}</h2>
 
           <p className="text-muted-foreground mb-2 flex items-center gap-2 min-h-[24px]">
-            {isIncoming ? (
-              `Incoming ${isVideo ? "video" : "audio"} call...`
-            ) : isConnecting ? (
+            <span className={isConnected ? "sr-only" : "contents"} role="status" aria-live="polite">
+              {callStatusText}
+            </span>
+            {isConnecting ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Connecting...
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
               </>
             ) : isRinging ? (
               <>
-                <span className="flex gap-1">
+                <span className="flex gap-1" aria-hidden="true">
                   <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                   <span className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: "0.2s" }} />
                   <span className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: "0.4s" }} />
                 </span>
-                {isVideo ? "Video calling..." : "Calling..."}
               </>
             ) : isConnected ? (
-              formatDuration(duration)
+              <span aria-live="off" aria-label={`Call duration ${formatDuration(duration)}`}>
+                {formatDuration(duration)}
+              </span>
             ) : null}
           </p>
         </>
@@ -158,7 +177,10 @@ export default function CallOverlay({
           <>
             <Button
               size="icon"
-              className="w-16 h-16 rounded-full bg-destructive hover:bg-destructive/90 shadow-lg shadow-destructive/20 hover:scale-105 transition-transform"
+              className={cn(
+                "w-16 h-16 rounded-full bg-destructive hover:bg-destructive/90 shadow-lg shadow-destructive/20 transition-transform",
+                !reduceMotion && "hover:scale-105"
+              )}
               onClick={onDecline}
               title="Decline"
               aria-label="Decline Call"
@@ -167,7 +189,10 @@ export default function CallOverlay({
             </Button>
             <Button
               size="icon"
-              className="w-16 h-16 rounded-full bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20 hover:scale-105 transition-transform"
+              className={cn(
+                "w-16 h-16 rounded-full bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20 transition-transform",
+                !reduceMotion && "hover:scale-105"
+              )}
               onClick={onAccept}
               title="Accept"
               aria-label="Accept Call"
@@ -207,7 +232,10 @@ export default function CallOverlay({
             </Button>
             <Button
               size="icon"
-              className="w-16 h-16 rounded-full bg-destructive hover:bg-destructive/90 shadow-lg shadow-destructive/20 hover:scale-105 transition-transform"
+              className={cn(
+                "w-16 h-16 rounded-full bg-destructive hover:bg-destructive/90 shadow-lg shadow-destructive/20 transition-transform",
+                !reduceMotion && "hover:scale-105"
+              )}
               onClick={onEnd}
               title="End Call"
               aria-label="End Call"

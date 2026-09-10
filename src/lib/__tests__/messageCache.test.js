@@ -84,12 +84,16 @@ describe("queued delivery state", () => {
 describe("applySendSuccess", () => {
   it("replaces the keyed optimistic message with the saved message", () => {
     const result = applySendSuccess(
-      [temp("key-a123", "hello")],
+      [{ ...temp("key-a123", "hello"), _animateOnInsert: true }],
       saved("real-1", "key-a123", "hello"),
       "key-a123"
     );
     expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({ id: "real-1", _deliveryState: "sent" });
+    expect(result[0]).toMatchObject({
+      id: "real-1",
+      _deliveryState: "sent",
+      _animateOnInsert: true,
+    });
     expect(result[0]._optimistic).toBeUndefined();
   });
 
@@ -126,7 +130,8 @@ describe("applyRealtimeCreate", () => {
     expect(result).toHaveLength(2);
     expect(result.some(message => message.client_message_key === "key-b123" && message._optimistic))
       .toBe(true);
-    expect(result.some(message => message.id === "real-a" && !message._optimistic)).toBe(true);
+    expect(result.find(message => message.id === "real-a" && !message._optimistic))
+      .toMatchObject({ _animateOnInsert: true });
   });
 
   it("is idempotent for replayed IDs and duplicate records with the same client key", () => {

@@ -1,6 +1,7 @@
 import { Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SOUNDBOARD_SOUNDS } from "@/lib/soundboard";
+import { useReducedMotionPreference } from "@/hooks/useReducedMotionPreference";
 
 const FILTERS = [
   { id: "original", label: "Original" },
@@ -12,6 +13,7 @@ const FILTERS = [
 ];
 
 export default function VoiceEffectsBar({ activeFilter, onFilterChange, duetMode, onDuetChange, audioCtxRef }) {
+  const { reduceMotion } = useReducedMotionPreference();
   const playSound = (sound) => {
     let ctx = audioCtxRef?.current;
     if (!ctx) {
@@ -67,7 +69,10 @@ export default function VoiceEffectsBar({ activeFilter, onFilterChange, duetMode
             <button
               key={s.id}
               onClick={() => playSound(s)}
-              className="w-7 h-7 rounded-full bg-secondary/60 hover:bg-primary/20 flex items-center justify-center text-sm transition-all hover:scale-110 active:scale-95 touch-manipulation"
+              className={cn(
+                "w-7 h-7 rounded-full bg-secondary/60 hover:bg-primary/20 flex items-center justify-center text-sm transition-all touch-manipulation",
+                !reduceMotion && "hover:scale-110 active:scale-95"
+              )}
               title={s.label}
               aria-label={s.label}
             >

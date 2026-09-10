@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { memo, useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile, Layers, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessage, onCancelEdit, disabled, onTyping }) {
+function ChatInput({ onSend, replyTo, onCancelReply, editingMessage, onCancelEdit, disabled = false, onTyping, reduceMotion = false }) {
   const [text, setText] = useState("");
 
   useEffect(() => {
@@ -226,7 +226,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     >
       {/* Edit preview */}
       {editingMessage && (
-        <div className="px-4 pt-3 flex items-center gap-2 animate-in slide-in-from-bottom-1 duration-200">
+        <div className={cn("px-4 pt-3 flex items-center gap-2", !reduceMotion && "animate-in slide-in-from-bottom-1 duration-200")}>
           <div className="flex-1 border-l-2 border-accent/70 pl-3 py-1.5 bg-accent/5 rounded-r-lg">
             <p className="text-[10px] text-accent font-semibold mb-0.5">Editing Message</p>
             <p className="text-xs text-muted-foreground/80 truncate">{editingMessage.text}</p>
@@ -239,7 +239,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
 
       {/* Reply preview */}
       {replyTo && !editingMessage && (
-        <div className="px-4 pt-3 flex items-center gap-2 animate-in slide-in-from-bottom-1 duration-200">
+        <div className={cn("px-4 pt-3 flex items-center gap-2", !reduceMotion && "animate-in slide-in-from-bottom-1 duration-200")}>
           <div className="flex-1 border-l-2 border-primary/70 pl-3 py-1 bg-primary/5 rounded-r-lg">
             <p className="text-[10px] text-primary font-semibold">{replyTo.sender_name}</p>
             <p className="text-xs text-muted-foreground/80 truncate">{replyTo.text || `[${replyTo.type}]`}</p>
@@ -399,6 +399,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
           {showEmoji && (
             <EmojiReactionPicker 
               position="bottom" 
+              reduceMotion={reduceMotion}
               onSelect={(emoji) => { 
                 setText(t => (t || "") + emoji); 
                 setShowEmoji(false);
@@ -426,15 +427,15 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
           <motion.div
             className="flex-1 flex items-center gap-2 sm:gap-3 rounded-2xl px-3 sm:px-4 py-2.5 h-10 relative overflow-hidden"
             style={{ background: "hsl(0 72% 51% / 0.1)", border: "1px solid hsl(0 72% 51% / 0.4)" }}
-            animate={{ boxShadow: ["0 0 0px hsl(0 72% 51% / 0)", "0 0 16px hsl(0 72% 51% / 0.3)", "0 0 0px hsl(0 72% 51% / 0)"] }}
-            transition={{ repeat: Infinity, duration: 1.2 }}
+            animate={reduceMotion ? undefined : { boxShadow: ["0 0 0px hsl(0 72% 51% / 0)", "0 0 16px hsl(0 72% 51% / 0.3)", "0 0 0px hsl(0 72% 51% / 0)"] }}
+            transition={reduceMotion ? undefined : { repeat: Infinity, duration: 1.2 }}
           >
             {/* pulsing waveform */}
             <div className="flex items-center gap-0.5 h-5 shrink-0">
               {[0.4,0.8,1,0.7,0.5,0.9,0.6].map((h, i) => (
                 <motion.div key={i} className="w-0.5 rounded-full bg-destructive"
-                  animate={{ scaleY: [h, 1, h] }}
-                  transition={{ repeat: Infinity, duration: 0.5 + i * 0.07, ease: "easeInOut" }}
+                  animate={reduceMotion ? undefined : { scaleY: [h, 1, h] }}
+                  transition={reduceMotion ? undefined : { repeat: Infinity, duration: 0.5 + i * 0.07, ease: "easeInOut" }}
                   style={{ height: `${h * 20}px`, transformOrigin: "center" }}
                 />
               ))}
@@ -474,8 +475,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             type="button"
             onClick={(e) => { e.preventDefault(); handleSend(); }}
             disabled={disabled}
-            whileTap={{ scale: 0.88 }}
-            whileHover={{ scale: 1.08 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.88 }}
+            whileHover={reduceMotion ? undefined : { scale: 1.08 }}
             className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-primary/40"
             title="Send Message"
             aria-label="Send Message"
@@ -486,10 +487,10 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
           <motion.button
             type="button"
             onClick={(e) => { e.preventDefault(); stopRecording(); }}
-            whileTap={{ scale: 0.88 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.88 }}
             className="w-10 h-10 rounded-full bg-destructive flex items-center justify-center shrink-0 mb-0.5 touch-manipulation shadow-lg shadow-destructive/40"
-            animate={{ boxShadow: ["0 0 8px hsl(0 72% 51% / 0.4)", "0 0 20px hsl(0 72% 51% / 0.7)", "0 0 8px hsl(0 72% 51% / 0.4)"] }}
-            transition={{ repeat: Infinity, duration: 1 }}
+            animate={reduceMotion ? undefined : { boxShadow: ["0 0 8px hsl(0 72% 51% / 0.4)", "0 0 20px hsl(0 72% 51% / 0.7)", "0 0 8px hsl(0 72% 51% / 0.4)"] }}
+            transition={reduceMotion ? undefined : { repeat: Infinity, duration: 1 }}
             title="Stop Recording"
             aria-label="Stop Recording"
           >
@@ -500,8 +501,8 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             type="button"
             onClick={(e) => { e.preventDefault(); startRecording(); }}
             disabled={anyUploading || disabled}
-            whileTap={{ scale: 0.88 }}
-            whileHover={{ scale: 1.1 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.88 }}
+            whileHover={reduceMotion ? undefined : { scale: 1.1 }}
             className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0 mb-0.5 touch-manipulation"
             title="Record Audio"
             aria-label="Record Audio"
@@ -544,3 +545,5 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     </div>
   );
 }
+
+export default memo(ChatInput);

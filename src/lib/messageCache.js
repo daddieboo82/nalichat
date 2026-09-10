@@ -40,11 +40,18 @@ export function applyDeliveryState(messages = [], clientMessageKey, deliveryStat
 /** Swap this send's optimistic bubble for the saved message, leaving others alone. */
 export function applySendSuccess(messages = [], saved, clientMessageKey, tempId) {
   const key = clientMessageKey || saved?.client_message_key;
+  const localMessage = messages.find(message =>
+    matchesClientMessage(message, key, tempId)
+  );
   const withoutLocal = messages.filter(message =>
     !matchesClientMessage(message, key, tempId) &&
     message.id !== saved?.id
   );
-  return [...withoutLocal, { ...saved, _deliveryState: "sent" }];
+  return [...withoutLocal, {
+    ...saved,
+    _deliveryState: "sent",
+    _animateOnInsert: Boolean(localMessage?._animateOnInsert),
+  }];
 }
 
 /** Preserve a failed send so the user can retry it with the same client key. */
@@ -69,7 +76,12 @@ export function removeClientMessage(messages = [], clientMessageKey) {
  * against legacy optimistic messages, so identical keyed sends cannot collide.
  */
 export function applyRealtimeCreate(messages = [], data, eventId) {
-  const incoming = { ...data, id: data?.id || eventId, _deliveryState: "sent" };
+  const incoming = {
+    ...data,
+    id: data?.id || eventId,
+    _deliveryState: "sent",
+    _animateOnInsert: true,
+  };
   const clientMessageKey = incoming.client_message_key;
 
   if (clientMessageKey) {

@@ -42,7 +42,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-export default function VoiceCardDialog({ message, isOpen, onClose }) {
+export default function VoiceCardDialog({ message, isOpen, onClose, reduceMotion = false }) {
   const canvasRef = useRef(null);
   const [transcription, setTranscription] = useState(null);
   const [loadingTx, setLoadingTx] = useState(false);
@@ -322,7 +322,7 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
           <AnimatePresence mode="wait">
             {/* Loading transcription */}
             {loadingTx && (
-              <motion.div key="loading-tx" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-12 gap-4">
+              <motion.div key="loading-tx" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-12 gap-4">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
                 <p className="text-sm text-muted-foreground font-medium">Transcribing voice note…</p>
               </motion.div>
@@ -330,7 +330,7 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
 
             {/* Error */}
             {error && !loadingTx && (
-              <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-8 gap-4">
+              <motion.div key="error" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-8 gap-4">
                 <AlertCircle className="w-8 h-8 text-destructive" />
                 <p className="text-sm text-destructive text-center">{error}</p>
                 <Button onClick={handleRetry} variant="outline" size="sm">
@@ -341,7 +341,7 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
 
             {/* Rendering or result */}
             {!loadingTx && !error && (
-              <motion.div key="card" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-3">
+              <motion.div key="card" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-3">
                 {/* Hidden render canvas */}
                 <canvas ref={canvasRef} style={{ display: "none" }} />
 

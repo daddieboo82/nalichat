@@ -18,6 +18,8 @@ import { sounds } from "@/hooks/use-sound";
 import { useSubscription } from "@/hooks/useSubscription";
 import { isValidAvatarUrl } from "@/lib/avatarValidation";
 import PullToRefresh from "@/components/layout/PullToRefresh";
+import { Switch } from "@/components/ui/switch";
+import { useReducedMotionPreference } from "@/hooks/useReducedMotionPreference";
 
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];
 
@@ -31,6 +33,12 @@ export default function Settings() {
   const fileRef = useRef(null);
   const [showWizard, setShowWizard] = useState(false);
   const { subscription, hasAccess, isLoading: subLoading } = useSubscription();
+  const {
+    osReducedMotion,
+    userReducedMotion,
+    reduceMotion,
+    setUserReducedMotion,
+  } = useReducedMotionPreference();
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -93,7 +101,7 @@ export default function Settings() {
 
   return (
     <PullToRefresh onRefresh={async () => { const u = await base44.auth.me(); setUser(u); setForm({ display_name: u.display_name || u.full_name || "", bio: u.bio || "", role: u.role || "artist", location: u.location || "", genres: u.genres || [], avatar_url: u.avatar_url || "" }); }} className="h-full overflow-y-auto">
-      <div className="max-w-xl mx-auto p-6 py-12">
+      <div className={`max-w-xl mx-auto p-6 py-12 ${reduceMotion ? "reduce-motion-surface" : ""}`}>
         <h1 className="text-2xl font-heading font-bold mb-8">Profile Settings</h1>
 
         {/* Avatar */}
@@ -185,6 +193,28 @@ export default function Settings() {
         <div className="mt-12 pt-8 border-t border-border">
           <h2 className="text-xl font-heading font-bold mb-6">Nali Presence</h2>
           <NaliProactivitySettings />
+        </div>
+
+        <div className="mt-12 pt-8 border-t border-border">
+          <h2 className="text-xl font-heading font-bold mb-6">Accessibility</h2>
+          <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex items-center justify-between gap-4 border border-white/[0.06]">
+            <div>
+              <label htmlFor="reduce-motion" className="font-heading font-semibold text-lg text-foreground">
+                Reduce Motion
+              </label>
+              <p id="reduce-motion-description" className="text-sm text-muted-foreground mt-1">
+                Turns off nonessential message, reaction, typing, and call animations.
+                {osReducedMotion && " Your device already requests reduced motion."}
+              </p>
+            </div>
+            <Switch
+              id="reduce-motion"
+              checked={userReducedMotion}
+              onCheckedChange={setUserReducedMotion}
+              aria-describedby="reduce-motion-description"
+              aria-label="Reduce Motion"
+            />
+          </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">

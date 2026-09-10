@@ -133,7 +133,7 @@ const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.l
 
 import React from "react";
 
-export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onRetry, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM }) {
+function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onRetry, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM, animateEntrance = false, reduceMotion = false }) {
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -187,12 +187,12 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
   };
 
   return (
-    <SwipeToReply isOwn={isOwn} onReply={() => { if (navigator.vibrate) navigator.vibrate(20); onReply?.(message); }} disabled={message._optimistic || !onReply}>
+    <SwipeToReply isOwn={isOwn} onReply={() => { if (navigator.vibrate) navigator.vibrate(20); onReply?.(message); }} disabled={message._optimistic || !onReply} reduceMotion={reduceMotion}>
     <motion.div
       id={`message-${message.id}`}
-      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+      initial={animateEntrance && !reduceMotion ? { opacity: 0, y: 8 } : false}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: "easeOut" }}
       className={cn("flex gap-2 group mb-0.5 py-0.5", isOwn ? "flex-row-reverse" : "flex-row", showAvatar ? "mt-4" : "mt-0.5")}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => { setShowActions(false); }}
@@ -279,7 +279,8 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
                 return (
                   <button key={emoji} onClick={() => handleReact(emoji)}
                     className={cn(
-                      "border rounded-full px-2.5 py-0.5 text-xs transition-all hover:scale-105 active:scale-95 shadow-sm",
+                      "border rounded-full px-2.5 py-0.5 text-xs transition-all shadow-sm",
+                      !reduceMotion && "hover:scale-105 active:scale-95",
                       hasReacted ? "bg-primary/20 border-primary/50 text-primary" : "bg-secondary/80 border-border/60 hover:bg-primary/15 hover:border-primary/30"
                     )}>
                     {emoji} {count > 1 && <span className="opacity-60 font-medium ml-1">{count}</span>}
@@ -290,7 +291,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           );
         })()}
 
-        <div className={cn("flex items-center gap-1.5 mt-1", isOwn ? "justify-end mr-1" : "ml-1")}>
+        <div className={cn("flex items-center gap-1.5 mt-1", isOwn ? "justify-end mr-1" : "ml-1")} aria-live="polite">
           <p className="text-[11px] text-muted-foreground/50 font-medium">
             {message.created_date && !isNaN(new Date(message.created_date).getTime()) ? format(new Date(message.created_date), "h:mm a") : "..."}
             {message.is_edited && " • Edited"}
@@ -299,7 +300,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
             <button
               type="button"
               onClick={() => onRetry?.(message)}
-              className="flex items-center gap-1 text-[10px] font-semibold text-destructive hover:text-destructive/80"
+              className="flex items-center gap-1 text-[10px] font-semibold text-destructive hover:text-destructive/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
               title={message._sendError || "Message not sent"}
               aria-label="Retry sending message"
             >
@@ -339,7 +340,10 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
             <button
               key={emoji}
               onClick={() => { handleReact(emoji); setShowActions(false); }}
-              className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:scale-125 hover:border-primary/40 transition-all shadow-sm text-sm"
+              className={cn(
+                "w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/40 transition-all shadow-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                !reduceMotion && "hover:scale-125"
+              )}
               title={`React with ${emoji}`}
               aria-label={`React with ${emoji}`}
             >
@@ -361,6 +365,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         {showEmojiPicker && (
           <EmojiReactionPicker
             position={isOwn ? "bottom" : "bottom"}
+            reduceMotion={reduceMotion}
             onSelect={(emoji) => { handleReact(emoji); }}
             onClose={() => setShowEmojiPicker(false)}
           />
@@ -459,23 +464,27 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         media={hasFile ? message : null}
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
+        reduceMotion={reduceMotion}
       />
 
       <ViralMomentDialog
         message={message}
         isOpen={viralOpen}
         onClose={() => setViralOpen(false)}
+        reduceMotion={reduceMotion}
       />
 
       <VoiceCardDialog
         message={message}
         isOpen={voiceCardOpen}
         onClose={() => setVoiceCardOpen(false)}
+        reduceMotion={reduceMotion}
       />
 
       <MessageContextMenu
         position={contextMenuPos}
         onClose={() => setContextMenuPos(null)}
+        reduceMotion={reduceMotion}
         items={[
           { icon: Sparkles, label: "Create Viral Moment", onClick: () => setViralOpen(true), highlight: true },
           ...(canShareVoiceCard ? [{ icon: Share2, label: "Share Voice Card", onClick: () => setVoiceCardOpen(true), highlight: true }] : []),
@@ -500,4 +509,6 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
     </motion.div>
     </SwipeToReply>
   );
-});
+}
+
+export default React.memo(MessageBubble);

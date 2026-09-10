@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
  * Shown on long-press (mobile) or right-click (desktop) on a message bubble.
  * Closes on outside click, Escape, or scroll.
  */
-export default function MessageContextMenu({ position, items, onClose }) {
+export default function MessageContextMenu({ position, items, onClose, reduceMotion = false }) {
   if (!position) return null;
 
   const handleKeyDown = (e) => {
@@ -15,12 +15,12 @@ export default function MessageContextMenu({ position, items, onClose }) {
 
   return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-[99]" onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }} onKeyDown={handleKeyDown} tabIndex={-1}>
+      <div className={`fixed inset-0 z-[99] ${reduceMotion ? "reduce-motion-surface" : ""}`} onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }} onKeyDown={handleKeyDown} tabIndex={-1}>
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: -4 }}
+          initial={reduceMotion ? false : { opacity: 0, scale: 0.9, y: -4 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: -4 }}
-          transition={{ duration: 0.12, ease: "easeOut" }}
+          exit={reduceMotion ? undefined : { opacity: 0, scale: 0.9, y: -4 }}
+          transition={reduceMotion ? { duration: 0 } : { duration: 0.12, ease: "easeOut" }}
           className="fixed z-[100] min-w-[190px] rounded-xl bg-popover/95 backdrop-blur-xl border border-border/60 shadow-2xl p-1.5"
           style={{ left: position.x, top: position.y }}
           onClick={(e) => e.stopPropagation()}

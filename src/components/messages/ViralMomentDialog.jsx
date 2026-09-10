@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboard";
 
-export default function ViralMomentDialog({ message, isOpen, onClose }) {
+export default function ViralMomentDialog({ message, isOpen, onClose, reduceMotion = false }) {
   const [mode, setMode] = useState(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -158,12 +158,12 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
           <AnimatePresence mode="wait">
             {/* Choice state */}
             {!mode && !loading && !result && (
-              <motion.div key="choice" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-2 gap-3">
+              <motion.div key="choice" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduceMotion ? undefined : { opacity: 0 }} className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => generate("meme")}
                   className="group flex flex-col items-center gap-3 p-5 rounded-xl bg-gradient-to-br from-primary/20 to-pink-500/10 border border-primary/30 hover:border-primary/60 hover:from-primary/30 hover:to-pink-500/20 transition-all"
                 >
-                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className={`w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center transition-transform ${reduceMotion ? "" : "group-hover:scale-110"}`}>
                     <ImageIcon className="w-6 h-6 text-primary" />
                   </div>
                   <div className="text-center">
@@ -176,7 +176,7 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
                   onClick={() => generate("reel")}
                   className="group flex flex-col items-center gap-3 p-5 rounded-xl bg-gradient-to-br from-accent/20 to-cyan-500/10 border border-accent/30 hover:border-accent/60 hover:from-accent/30 hover:to-cyan-500/20 transition-all"
                 >
-                  <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className={`w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center transition-transform ${reduceMotion ? "" : "group-hover:scale-110"}`}>
                     <Clapperboard className="w-6 h-6 text-accent" />
                   </div>
                   <div className="text-center">
@@ -189,7 +189,7 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
 
             {/* Loading state */}
             {loading && (
-              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center py-12 gap-4">
+              <motion.div key="loading" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduceMotion ? undefined : { opacity: 0 }} className="flex flex-col items-center justify-center py-12 gap-4">
                 <div className="relative">
                   <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
                     <Sparkles className="w-8 h-8 text-primary animate-pulse" />
@@ -207,7 +207,7 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
 
             {/* Error state */}
             {error && !loading && (
-              <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-8 gap-4">
+              <motion.div key="error" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-8 gap-4">
                 <p className="text-sm text-destructive text-center">{error}</p>
                 <Button onClick={() => generate(mode)} variant="outline" size="sm">
                   <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Try Again
@@ -217,7 +217,7 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
 
             {/* Meme result */}
             {result && mode === "meme" && !loading && (
-              <motion.div key="meme-result" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-3">
+              <motion.div key="meme-result" initial={reduceMotion ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-3">
                 <div className="relative rounded-xl overflow-hidden">
                   <img src={result.image_url} alt="AI meme" className="w-full rounded-xl" />
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-primary to-primary/80 py-1.5 px-3 flex items-center justify-center gap-1.5">
@@ -244,7 +244,7 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
 
             {/* Reel result */}
             {result && mode === "reel" && !loading && (
-              <motion.div key="reel-result" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-3">
+              <motion.div key="reel-result" initial={reduceMotion ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 px-1">
                   <Clapperboard className="w-4 h-4 text-accent" />
                   <p className="text-xs font-heading font-semibold text-muted-foreground">REEL SCRIPT</p>

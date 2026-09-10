@@ -12,7 +12,7 @@ const SWIPE_REVEAL = 40; // icon reveal distance
  * triggers onReply when released past the threshold.
  * On desktop, renders children untouched (hover buttons handle reply).
  */
-export default function SwipeToReply({ children, isOwn, onReply, disabled }) {
+export default function SwipeToReply({ children, isOwn, onReply, disabled, reduceMotion = false }) {
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startX = useRef(0);
@@ -95,7 +95,7 @@ export default function SwipeToReply({ children, isOwn, onReply, disabled }) {
         onTouchCancel={handleTouchEnd}
         style={{
           transform: `translateX(${dragX}px)`,
-          transition: isDragging ? "none" : "transform 0.25s cubic-bezier(0.2, 0, 0, 1)",
+          transition: isDragging || reduceMotion ? "none" : "transform 0.25s cubic-bezier(0.2, 0, 0, 1)",
           willChange: isDragging ? "transform" : "auto",
         }}
         className={cn("relative z-10", isDragging && "touch-none")}

@@ -35,6 +35,15 @@ Run browser end-to-end tests:
 1. Install Playwright browsers: `npx playwright install --with-deps chromium`
 2. Execute e2e suite: `npm run test:e2e`
 
+**Messaging performance budget**
+
+- Load or switch conversations without entrance animations for the historical batch or locally restored outbound queue.
+- Animate a realtime or locally composed message at most once, using opacity/transform only; refetches and duplicate reconciliation events must not replay it.
+- Keep composer keystrokes independent of message-list animation work, with stable callbacks and memoized message grouping so typing does not rebuild avoidable per-message props.
+- Keep processing per realtime event bounded to the active conversation and its current cache. The existing query cap is 200 messages; that full 200-message view must remain usable on low-end mobile without historical animation churn.
+- Treat delivery state, retry controls, focus indicators, typing text, and read receipts as essential UI. Reduced motion may remove transitions but must not hide these states.
+- Before release, manually exercise a 200-message conversation on a low-end or throttled mobile profile: switch conversations, type continuously, receive a realtime message, replay a duplicate/refetch event, retry a failed send, and verify responsive interaction without claiming an FPS result unless it was measured.
+
 **Publish your changes**
 
 Open [Base44.com](http://Base44.com) and click on Publish.

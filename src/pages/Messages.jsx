@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import ConversationList from "@/components/messages/ConversationList";
 import ContactsTab from "@/components/messages/ContactsTab";
 import ChatView from "@/components/messages/ChatView";
@@ -36,6 +36,16 @@ import {
   queueEntryToMessage,
   readOutboundQueue,
 } from "@/lib/outboundQueue";
+import { useReducedMotionPreference } from "@/hooks/useReducedMotionPreference";
+
+function markConversationRead(convId) {
+  if (!convId) return;
+  try {
+    localStorage.setItem(`lastReadAt:${convId}`, Date.now().toString());
+  } catch {
+    // The unread badge is best-effort when browser storage is unavailable.
+  }
+}
 
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -43,16 +53,10 @@ export default function Messages() {
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [sidebarTab, setSidebarTab] = useState("chats");
 
-  // Mark a conversation as read (stores timestamp in localStorage for the unread badge).
-  const markConversationRead = (convId) => {
-    if (!convId) return;
-    try { localStorage.setItem(`lastReadAt:${convId}`, Date.now().toString()); } catch {}
-  };
-
-  const handleSelectConv = (convId) => {
+  const handleSelectConv = useCallback((convId) => {
     setSelectedConvId(convId);
     markConversationRead(convId);
-  };
+  }, []);
 
   useEffect(() => {
     if (location.pathname === "/messages" && !location.search) {
@@ -67,6 +71,7 @@ export default function Messages() {
   const retryTimerRef = useRef(null);
   const scheduleRetryRef = useRef(null);
   const userInitiatedKeysRef = useRef(new Set());
+  const { reduceMotion } = useReducedMotionPreference();
 
   const [showInvite, setShowInvite] = useState(false);
 
@@ -119,8 +124,16 @@ export default function Messages() {
     staleTime: 3000,
   });
 
-  const myConversations = conversations.filter(c => c.participant_ids?.includes(currentUser?.id));
-  const selectedConv = myConversations.find(c => c.id === selectedConvId);
+  const myConversations = useMemo(
+    () => conversations.filter(conversation =>
+      conversation.participant_ids?.includes(currentUser?.id)
+    ),
+    [conversations, currentUser?.id]
+  );
+  const selectedConv = useMemo(
+    () => myConversations.find(conversation => conversation.id === selectedConvId),
+    [myConversations, selectedConvId]
+  );
 
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
     queryKey: ["messages", selectedConvId],
@@ -209,7 +222,7 @@ export default function Messages() {
     };
   }, [selectedConvId, queryClient, currentUser]);
 
-  const editMessage = useMutation({
+  const { mutate: mutateEditMessage } = useMutation({
     mutationFn: async ({ id, text }) => {
       return await base44.entities.Message.update(id, { text, is_edited: true });
     },
@@ -336,7 +349,10 @@ export default function Messages() {
       return;
     }
 
-    const queuedMessage = queueEntryToMessage(entry);
+    const queuedMessage = {
+      ...queueEntryToMessage(entry),
+      _animateOnInsert: true,
+    };
     queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
       applyQueuedMessage(old, queuedMessage)
     );
@@ -390,7 +406,7 @@ export default function Messages() {
 
   const isTimedOut = currentUser?.timeout_until && new Date(currentUser.timeout_until) > new Date();
 
-  const handleReact = async (messageId, emoji) => {
+  const handleReact = useCallback(async (messageId, emoji) => {
     const msg = messages.find(m => m.id === messageId);
     if (!msg || !currentUser) return;
     const reactions = { ...(msg.reactions || {}) };
@@ -409,9 +425,9 @@ export default function Messages() {
     } finally {
       queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
     }
-  };
+  }, [currentUser, messages, queryClient, selectedConvId]);
 
-  const startDM = async (otherUser) => {
+  const startDM = useCallback(async (otherUser) => {
     if (!otherUser?.id || !currentUser?.id) return;
     try {
       const existing = myConversations.find(c =>
@@ -427,9 +443,9 @@ export default function Messages() {
     } catch (err) {
       toast.error("Couldn't start the conversation. Please try again.");
     }
-  };
+  }, [currentUser?.id, handleSelectConv, myConversations, queryClient]);
 
-  const createGroup = async ({ name, participant_ids }) => {
+  const createGroup = useCallback(async ({ name, participant_ids }) => {
     if (!currentUser?.id || !participant_ids?.length) return;
     try {
       const conv = await base44.entities.Conversation.create({
@@ -442,9 +458,12 @@ export default function Messages() {
     } catch (err) {
       toast.error("Couldn't create the group. Please try again.");
     }
-  };
+  }, [currentUser?.id, handleSelectConv, queryClient]);
 
-  const otherUsers = users.filter(u => u.id !== currentUser?.id);
+  const otherUsers = useMemo(
+    () => users.filter(user => user.id !== currentUser?.id),
+    [currentUser?.id, users]
+  );
 
   // Banned users may still message an admin (to appeal). Timed-out users are fully blocked.
   const convHasAdmin = selectedConv?.participant_ids?.some(
@@ -453,9 +472,29 @@ export default function Messages() {
   const isBlocked = currentUser?.is_banned
     ? !convHasAdmin
     : isTimedOut;
+  const handleChatSend = useCallback((data) => {
+    if (isBlocked) {
+      toast.error(currentUser?.is_banned ? "You are banned from sending messages." : "You are timed out and cannot send messages right now.");
+      return;
+    }
+    handleSendMessage(data);
+  }, [currentUser?.is_banned, handleSendMessage, isBlocked]);
+  const handleEditMessage = useCallback(
+    (id, text) => mutateEditMessage({ id, text }),
+    [mutateEditMessage]
+  );
+  const handleBack = useCallback(() => setSelectedConvId(null), []);
+  const moderationBanner = useMemo(
+    () => isBlocked ? <ModerationBanner currentUser={currentUser} /> : null,
+    [currentUser, isBlocked]
+  );
 
   return (
-    <div className="absolute inset-0 sm:relative sm:inset-auto sm:h-[calc(100vh-80px)] p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden">
+    <MotionConfig reducedMotion={reduceMotion ? "always" : "never"}>
+    <div className={cn(
+      "absolute inset-0 sm:relative sm:inset-auto sm:h-[calc(100vh-80px)] p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden",
+      reduceMotion && "reduce-motion-surface"
+    )}>
       <div className="w-full max-w-7xl h-full max-h-full flex flex-col sm:flex-row bg-card/60 sm:bg-card/40 backdrop-blur-3xl sm:border border-border/40 sm:rounded-[2.5rem] shadow-none sm:shadow-2xl overflow-hidden relative">
         
         {/* Sidebar */}
@@ -469,7 +508,10 @@ export default function Messages() {
               <h1 className="text-2xl font-heading font-bold tracking-tight">Messages</h1>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20" title="New Conversation Options" aria-label="New Conversation Options">
+                  <button className={cn(
+                    "w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all shadow-lg shadow-primary/20",
+                    !reduceMotion && "hover:scale-105 active:scale-95"
+                  )} title="New Conversation Options" aria-label="New Conversation Options">
                     <Plus className="w-5 h-5" />
                   </button>
                 </DropdownMenuTrigger>
@@ -512,14 +554,14 @@ export default function Messages() {
                 className={cn("pb-3 text-sm font-semibold transition-colors relative", sidebarTab === "chats" ? "text-foreground" : "text-muted-foreground hover:text-foreground")}
               >
                 Chats
-                {sidebarTab === "chats" && <motion.div layoutId="activeTabMsg" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+                {sidebarTab === "chats" && <motion.div layoutId="activeTabMsg" transition={reduceMotion ? { duration: 0 } : undefined} className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
               </button>
               <button 
                 onClick={() => setSidebarTab("contacts")}
                 className={cn("pb-3 text-sm font-semibold transition-colors relative", sidebarTab === "contacts" ? "text-foreground" : "text-muted-foreground hover:text-foreground")}
               >
                 Network
-                {sidebarTab === "contacts" && <motion.div layoutId="activeTabMsg" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+                {sidebarTab === "contacts" && <motion.div layoutId="activeTabMsg" transition={reduceMotion ? { duration: 0 } : undefined} className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
               </button>
             </div>
           </div>
@@ -527,7 +569,7 @@ export default function Messages() {
           <div className="flex-1 min-h-0 overflow-hidden relative bg-background/40">
             <AnimatePresence mode="wait">
               {sidebarTab === "chats" ? (
-                <motion.div key="chats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col bg-background/40">
+                <motion.div key="chats" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduceMotion ? undefined : { opacity: 0 }} className="absolute inset-0 flex flex-col bg-background/40">
                   <PullToRefresh onRefresh={async () => { await queryClient.invalidateQueries({ queryKey: ["conversations"] }); }} className="flex-1 overflow-y-auto">
                     <ConversationList
                       conversations={conversations}
@@ -541,7 +583,7 @@ export default function Messages() {
                   </PullToRefresh>
                 </motion.div>
               ) : (
-                <motion.div key="contacts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col pt-2 bg-background/40">
+                <motion.div key="contacts" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduceMotion ? undefined : { opacity: 0 }} className="absolute inset-0 flex flex-col pt-2 bg-background/40">
                   <ContactsTab 
                     currentUserId={currentUser?.id} 
                     onMessageContact={(u) => { startDM(u); setSidebarTab("chats"); }} 
@@ -564,19 +606,14 @@ export default function Messages() {
               isLoading={isLoadingMessages}
               currentUser={currentUser}
               users={users}
+              reduceMotion={reduceMotion}
               isBlocked={isBlocked}
-              moderationBanner={isBlocked ? <ModerationBanner currentUser={currentUser} /> : null}
-              onSendMessage={(data) => {
-                if (isBlocked) {
-                  toast.error(currentUser?.is_banned ? "You are banned from sending messages." : "You are timed out and cannot send messages right now.");
-                  return;
-                }
-                handleSendMessage(data);
-              }}
+              moderationBanner={moderationBanner}
+              onSendMessage={handleChatSend}
               onRetryMessage={retryMessage}
-              onEditMessage={(id, text) => editMessage.mutate({ id, text })}
+              onEditMessage={handleEditMessage}
               onReact={handleReact}
-              onBack={() => setSelectedConvId(null)}
+              onBack={handleBack}
               onStartDM={startDM}
             />
           ) : (
@@ -629,5 +666,6 @@ export default function Messages() {
         onOpenChange={setShowInvite}
       />
     </div>
+    </MotionConfig>
   );
 }

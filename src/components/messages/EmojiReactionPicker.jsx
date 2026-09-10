@@ -41,7 +41,7 @@ const EMOJI_CATEGORIES = {
   }
 };
 
-export default function EmojiReactionPicker({ onSelect, onClose, position = "top" }) {
+export default function EmojiReactionPicker({ onSelect, onClose, position = "top", reduceMotion = false }) {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("smileys");
 
@@ -115,7 +115,10 @@ export default function EmojiReactionPicker({ onSelect, onClose, position = "top
             }}
             title={`Select emoji ${emoji}`}
             aria-label={`Select emoji ${emoji}`}
-            className="w-11 h-11 flex items-center justify-center text-lg hover:bg-primary/20 rounded-lg transition-all hover:scale-110 active:scale-95"
+            className={cn(
+              "w-11 h-11 flex items-center justify-center text-lg hover:bg-primary/20 rounded-lg transition-all",
+              !reduceMotion && "hover:scale-110 active:scale-95"
+            )}
           >
             {emoji}
           </button>

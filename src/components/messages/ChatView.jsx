@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageSquare, ArrowLeft, ArrowDown, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2 } from "lucide-react";
 import MediaViewerModal from "@/components/explore/MediaViewerModal";
@@ -22,12 +22,17 @@ import { useCall, isCallSignal } from "@/hooks/useCall";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import CallOverlay from "./CallOverlay";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  createMessageAnimationState,
+  getMessageIdentity,
+  resolveMessageAnimations,
+} from "@/lib/messageAnimations";
 
 import React from "react";
 
 const ADMIN_EMAILS = ["bossglop43@gmail.com"];
 
-export default React.memo(function ChatView({ conversation, messages, isLoading, currentUser, users, onSendMessage, onRetryMessage, onEditMessage, onReact, onBack, onStartDM, isBlocked, moderationBanner }) {
+function ChatView({ conversation, messages, isLoading, currentUser, users, onSendMessage, onRetryMessage, onEditMessage, onReact, onBack, onStartDM, isBlocked, moderationBanner, reduceMotion = false }) {
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -41,6 +46,11 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const markedRef = useRef(new Set());
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const animationTrackerRef = useRef({
+    state: createMessageAnimationState(),
+    input: null,
+    result: null,
+  });
 
   // Real typing presence: broadcasts our own keystrokes (throttled) and reports
   // which other participants are currently typing.
@@ -77,20 +87,23 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     };
   }, []);
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
     const isNearBottom = scrollRef.current.scrollHeight - scrollRef.current.scrollTop - scrollRef.current.clientHeight < 200;
     isNearBottomRef.current = isNearBottom;
     setShowScrollBottom(!isNearBottom);
     if (isNearBottom) setUnreadSinceScroll(0);
-  };
+  }, []);
 
-  const scrollToBottom = (behavior = 'smooth') => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
+  const scrollToBottom = useCallback((behavior = 'smooth') => {
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: reduceMotion ? "auto" : behavior,
+    });
     isNearBottomRef.current = true;
     setShowScrollBottom(false);
     setUnreadSinceScroll(0);
-  };
+  }, [reduceMotion]);
 
   // Auto-scroll to bottom only when already near bottom (Messenger pattern).
   // If the user is reading older messages, don't yank them down — just badge the FAB.
@@ -136,13 +149,11 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     setShowSearch(false);
   }, [conversation?.id]);
 
-  const getOtherUser = () => {
+  const other = useMemo(() => {
     if (conversation?.type === "group") return null;
     const otherId = conversation?.participant_ids?.find(id => id !== currentUser?.id);
     return users?.find(u => u.id === otherId);
-  };
-
-  const other = getOtherUser();
+  }, [conversation, currentUser?.id, users]);
 
   // --- WebRTC call engine (audio + video) ---
   const callActions = useCall({ conversation, messages, currentUser, otherUser: other });
@@ -153,39 +164,83 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     ? `${conversation.participant_ids?.length || 0} members` 
     : (other?.is_online ? "Active now" : (other?.role ? other.role.charAt(0).toUpperCase() + other.role.slice(1) : "Offline"));
 
-  const topLevelMessages = messages.filter(m => !m.thread_id && !isCallSignal(m.text));
-  const enriched = topLevelMessages.map((msg, i) => {
-    const prev = topLevelMessages[i - 1];
-    const showAvatar = !prev || prev.sender_id !== msg.sender_id;
-    return { ...msg, showAvatar };
-  });
+  const groups = useMemo(
+    () => buildMessageGroups(messages, currentUser?.id),
+    [messages, currentUser?.id]
+  );
 
-  // First unread message from the other person (for the "New Messages" separator)
-  const firstUnreadId = (() => {
-    for (const msg of enriched) {
-      if (msg.sender_id !== currentUser?.id && !msg.read_by?.includes(currentUser?.id)) {
-        return msg.id;
-      }
-    }
-    return null;
-  })();
-
-  const groups = [];
-  let lastDate = null;
-  let unreadInserted = false;
-  for (const msg of enriched) {
-    const d = msg.created_date ? new Date(msg.created_date) : new Date();
-    const dateStr = d.toDateString();
-    if (dateStr !== lastDate) {
-      groups.push({ type: "date", label: formatDateLabel(d), key: dateStr });
-      lastDate = dateStr;
-    }
-    if (firstUnreadId === msg.id && !unreadInserted) {
-      groups.push({ type: "unread", key: "unread-sep-" + msg.id });
-      unreadInserted = true;
-    }
-    groups.push({ type: "msg", ...msg });
+  const tracker = animationTrackerRef.current;
+  const animationInput = {
+    conversationId: conversation?.id || null,
+    messages,
+    isLoading,
+    reduceMotion,
+  };
+  const previousInput = tracker.input;
+  if (
+    !previousInput ||
+    previousInput.conversationId !== animationInput.conversationId ||
+    previousInput.messages !== animationInput.messages ||
+    previousInput.isLoading !== animationInput.isLoading ||
+    previousInput.reduceMotion !== animationInput.reduceMotion
+  ) {
+    tracker.result = resolveMessageAnimations(tracker.state, animationInput);
+    tracker.state = tracker.result.state;
+    tracker.input = animationInput;
   }
+  const animatedMessageIds = tracker.result?.animated || new Set();
+
+  const handleReply = useCallback((message) => {
+    setReplyTo(message);
+    setEditingMessage(null);
+  }, []);
+
+  const handleEdit = useCallback((message) => {
+    setEditingMessage(message);
+    setReplyTo(null);
+  }, []);
+
+  const handleCopy = useCallback((message) => {
+    copyToClipboard(message.text || "");
+  }, []);
+
+  const handleDelete = useCallback(async (id) => {
+    setEditingMessage(current => current?.id === id ? null : current);
+    setReplyTo(current => current?.id === id ? null : current);
+    const queryKey = ["messages", conversation?.id];
+    const previous = queryClient.getQueryData(queryKey);
+    queryClient.setQueryData(queryKey, (old) =>
+      Array.isArray(old) ? old.filter(message => message.id !== id) : []
+    );
+    try {
+      await base44.entities.Message.delete(id);
+    } catch {
+      if (previous) queryClient.setQueryData(queryKey, previous);
+    }
+  }, [conversation?.id]);
+
+  const handlePlayAudio = useCallback((message) => {
+    setSelectedMedia({
+      id: message.id,
+      title: message.file_name || "Audio message",
+      file_url: message.file_url,
+      creator_name: message.sender_name,
+      creator_avatar: message.sender_avatar,
+    });
+  }, []);
+
+  const handleInputSend = useCallback((payload) => {
+    if (editingMessage && payload.type === "text") {
+      onEditMessage(editingMessage.id, payload.text);
+      setEditingMessage(null);
+      return;
+    }
+    onSendMessage(payload);
+    if (currentUser) recordSquadActivity(currentUser.id, "message");
+  }, [currentUser, editingMessage, onEditMessage, onSendMessage]);
+
+  const cancelReply = useCallback(() => setReplyTo(null), []);
+  const cancelEdit = useCallback(() => setEditingMessage(null), []);
 
   const gradients = ["from-primary to-pink-500","from-accent to-cyan-400","from-yellow-500 to-orange-500","from-green-400 to-emerald-600","from-purple-500 to-indigo-500"];
   const avatarGradient = gradients[(displayName?.charCodeAt(0) || 0) % gradients.length];
@@ -256,7 +311,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
             <p>No messages yet. Say hi!</p>
           </div>
         ) : (
-          groups.map((item, i) =>
+          groups.map((item) =>
           item.type === "date" ? (
             <div key={item.key} className="flex justify-center my-6 sticky top-24 z-10 pointer-events-none">
               <span className="text-[10px] text-muted-foreground font-semibold px-3 py-1 rounded-full bg-background/60 backdrop-blur-md border border-border/30 shadow-sm uppercase tracking-wider">
@@ -273,63 +328,36 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
             </div>
           ) : (
             <MessageBubble
-              key={item.id}
-              message={item}
-              isOwn={item.sender_id === currentUser?.id}
-              canDelete={!item._optimistic && (item.sender_id === currentUser?.id || currentUser?.role === 'admin' || ADMIN_EMAILS.includes(currentUser?.email) || currentUser?.role === 'producer')}
+              key={getMessageIdentity(item.message)}
+              message={item.message}
+              animateEntrance={animatedMessageIds.has(getMessageIdentity(item.message))}
+              reduceMotion={reduceMotion}
+              isOwn={item.message.sender_id === currentUser?.id}
+              canDelete={!item.message._optimistic && (item.message.sender_id === currentUser?.id || currentUser?.role === 'admin' || ADMIN_EMAILS.includes(currentUser?.email) || currentUser?.role === 'producer')}
               showAvatar={item.showAvatar}
-              onReply={(msg) => {
-                setReplyTo(msg);
-                setEditingMessage(null);
-              }}
-              onEdit={(msg) => {
-                setEditingMessage(msg);
-                setReplyTo(null);
-              }}
+              onReply={handleReply}
+              onEdit={handleEdit}
               onReact={onReact}
               onRetry={onRetryMessage}
               onOpenThread={setThreadMessage}
               users={users}
-              onCopy={() => copyToClipboard(item.text || "")}
-              onDelete={async (id) => {
-                if (editingMessage?.id === id) setEditingMessage(null);
-                if (replyTo?.id === id) setReplyTo(null);
-                // Instant optimistic delete: remove from the cache immediately so the
-                // message vanishes from the UI with zero network delay.
-                const previous = queryClient.getQueryData(["messages", conversation?.id]);
-                queryClient.setQueryData(["messages", conversation?.id], (old = []) =>
-                  old.filter(m => m.id !== id)
-                );
-                try {
-                  await base44.entities.Message.delete(id);
-                } catch (e) {
-                  // Restore the message if the server delete failed.
-                  if (previous) queryClient.setQueryData(["messages", conversation?.id], previous);
-                }
-              }}
+              onCopy={handleCopy}
+              onDelete={handleDelete}
               currentUser={currentUser}
               onStartDM={onStartDM}
-              onPlayAudio={(msg) => {
-                setSelectedMedia({
-                  id: msg.id,
-                  title: msg.file_name || "Audio message",
-                  file_url: msg.file_url,
-                  creator_name: msg.sender_name,
-                  creator_avatar: msg.sender_avatar
-                });
-              }}
+              onPlayAudio={handlePlayAudio}
             />
           )
         ))}
       </div>
 
       {/* Scroll-to-bottom FAB (Messenger pattern) */}
-      <AnimatePresence>
+      <AnimatePresence initial={!reduceMotion}>
         {showScrollBottom && (
           <motion.button
-            initial={{ opacity: 0, scale: 0.8, y: 10 }}
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.8, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 10 }}
+            exit={reduceMotion ? undefined : { opacity: 0, scale: 0.8, y: 10 }}
             onClick={() => scrollToBottom('smooth')}
             className="absolute bottom-32 right-6 z-20 w-11 h-11 rounded-full bg-card border border-border/60 shadow-2xl flex items-center justify-center hover:bg-secondary/80 transition-colors"
             title="Scroll to latest"
@@ -348,7 +376,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       {/* Typing indicator */}
       {typingUsers.length > 0 && (
         <div className="absolute bottom-24 left-6 z-10 px-4 py-2 text-[11px] font-medium text-muted-foreground bg-background/80 backdrop-blur-md rounded-full border border-border/50 shadow-sm flex items-center gap-2">
-          <TypingIndicator />
+          <TypingIndicator reduceMotion={reduceMotion} />
           <span>{typingUsers.map(u => u.display_name).filter(Boolean).join(", ")} typing</span>
         </div>
       )}
@@ -364,20 +392,13 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
         <div className="w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-visible bg-background/90 backdrop-blur-2xl border border-border/50">
           <ChatInput
             key={conversation?.id || "chat"}
-            onSend={(payload) => {
-              if (editingMessage && payload.type === 'text') {
-                onEditMessage(editingMessage.id, payload.text);
-                setEditingMessage(null);
-              } else {
-                onSendMessage(payload);
-                if (currentUser) recordSquadActivity(currentUser.id, "message");
-              }
-            }}
+            onSend={handleInputSend}
             replyTo={replyTo}
-            onCancelReply={() => setReplyTo(null)}
+            onCancelReply={cancelReply}
             editingMessage={editingMessage}
-            onCancelEdit={() => setEditingMessage(null)}
+            onCancelEdit={cancelEdit}
             onTyping={notifyTyping}
+            reduceMotion={reduceMotion}
           />
         </div>
         )}
@@ -397,7 +418,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
           onSelectMessage={(msg) => {
             const el = document.getElementById(`message-${msg.id}`);
             if (el) {
-              el.scrollIntoView({ behavior: "smooth", block: "center" });
+              el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
               el.classList.add("bg-primary/20", "rounded-xl", "transition-colors");
               setTimeout(() => el.classList.remove("bg-primary/20", "rounded-xl"), 2000);
             }
@@ -430,10 +451,13 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
         onEnd={callActions.endCall}
         onToggleMute={callActions.toggleMute}
         onToggleVideo={callActions.toggleVideo}
+        reduceMotion={reduceMotion}
       />
     </div>
   );
-});
+}
+
+export default React.memo(ChatView);
 
 function formatDateLabel(date) {
   if (isNaN(date.getTime())) return "Unknown Date";
@@ -442,4 +466,40 @@ function formatDateLabel(date) {
   if (date.toDateString() === today.toDateString()) return "Today";
   if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+export function buildMessageGroups(messages, currentUserId) {
+  const topLevelMessages = messages.filter(
+    message => !message.thread_id && !isCallSignal(message.text)
+  );
+  const firstUnread = topLevelMessages.find(
+    message =>
+      message.sender_id !== currentUserId &&
+      !message.read_by?.includes(currentUserId)
+  );
+  const groups = [];
+  let lastDate = null;
+  let unreadInserted = false;
+
+  topLevelMessages.forEach((message, index) => {
+    const previous = topLevelMessages[index - 1];
+    const date = message.created_date ? new Date(message.created_date) : new Date();
+    const dateString = date.toDateString();
+    if (dateString !== lastDate) {
+      groups.push({ type: "date", label: formatDateLabel(date), key: dateString });
+      lastDate = dateString;
+    }
+    if (firstUnread?.id === message.id && !unreadInserted) {
+      groups.push({ type: "unread", key: `unread-sep-${message.id}` });
+      unreadInserted = true;
+    }
+    groups.push({
+      type: "msg",
+      key: getMessageIdentity(message),
+      message,
+      showAvatar: !previous || previous.sender_id !== message.sender_id,
+    });
+  });
+
+  return groups;
 }

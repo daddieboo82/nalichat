@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Save, Loader2, X, Plus, CreditCard, BarChart3, Users } from "lucide-react";
+import { Camera, Save, Loader2, X, Plus, BarChart3, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import DeleteAccountDialog from "@/components/settings/DeleteAccountDialog";
@@ -15,9 +15,9 @@ import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import DeviceSelector from "@/components/audio/DeviceSelector";
 import NaliProactivitySettings from "@/components/nali/NaliProactivitySettings";
 import { sounds } from "@/hooks/use-sound";
-import { useSubscription } from "@/hooks/useSubscription";
 import { isValidAvatarUrl } from "@/lib/avatarValidation";
 import PullToRefresh from "@/components/layout/PullToRefresh";
+import SubscriptionSettings from "@/components/settings/SubscriptionSettings";
 
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];
 
@@ -30,7 +30,6 @@ export default function Settings() {
   const [genreInput, setGenreInput] = useState("");
   const fileRef = useRef(null);
   const [showWizard, setShowWizard] = useState(false);
-  const { subscription, hasAccess, isLoading: subLoading } = useSubscription();
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -248,39 +247,7 @@ export default function Settings() {
 
         <div className="mt-12 pt-8 border-t border-border">
           <h2 className="text-xl font-heading font-bold mb-6">Subscription & Billing</h2>
-
-          {!subLoading && (
-            <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06] mb-4">
-              <div>
-                <div className="flex items-center gap-3">
-                  <h3 className="font-heading font-semibold text-lg text-foreground">Current Access</h3>
-                  <Badge className={hasAccess ? "bg-primary/20 text-primary hover:bg-primary/20" : "bg-accent/20 text-accent hover:bg-accent/20"}>
-                    {hasAccess ? "App Access Active" : subscription?.hasPending ? "Checkout Pending" : "Subscription Required"}
-                  </Badge>
-                </div>
-                <div className="text-sm text-muted-foreground mt-2 space-y-1">
-                  <p>Account created: {new Date(user.created_date).toLocaleDateString()}</p>
-                  <p>{hasAccess ? "Your subscription unlocks exports, stems, and desktop downloads." : "A $19.99 subscription every 30 days is required for full app access."}</p>
-                  {subscription?.currentPeriodEnd && (
-                    <p>Current period ends: {new Date(subscription.currentPeriodEnd).toLocaleDateString()}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06]">
-            <div>
-              <h3 className="font-heading font-semibold text-lg text-foreground">{hasAccess ? "Manage Your Plan" : "Start App Access"}</h3>
-              <p className="text-sm text-muted-foreground mt-1">{hasAccess ? "View plan details and renewal information." : "Subscribe for $19.99 every 30 days to unlock the app, desktop downloads, exports, and stems."}</p>
-            </div>
-            <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white border-0 gap-2 font-semibold" asChild>
-              <Link to="/pricing">
-                <CreditCard className="w-4 h-4" />
-                {hasAccess ? "View Plan" : "Subscribe"}
-              </Link>
-            </Button>
-          </div>
+          <SubscriptionSettings />
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">

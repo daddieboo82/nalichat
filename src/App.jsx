@@ -172,8 +172,8 @@ const AuthenticatedApp = () => {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // Public marketing pages stay open, but authenticated app surfaces require
-  // an active subscription for full access.
+  // Core app routes require authentication, while individual paid capabilities
+  // use explicit entitlement gates.
 
   return (
     <>
@@ -203,7 +203,7 @@ const AuthenticatedApp = () => {
         <Route path="/ThankYou" element={<ThankYou />} />
         <Route path="/thankyou" element={<ThankYou />} />
       </Route>
-      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} requireSubscription />}>
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/studio" element={<Studio />} />
         <Route element={<AppLayout />}>
           <Route path="/messages" element={<Messages />} />

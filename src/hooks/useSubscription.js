@@ -1,40 +1,59 @@
+import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import {
+  checkSubscriptionStatus,
+  FREE_SUBSCRIPTION,
+  subscriptionQueryKey,
+} from "@/lib/subscriptionClient";
 
 export function useSubscription() {
-  const { isAuthenticated } = useAuth();
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ["subscription"],
-    queryFn: async () => {
-      const res = await base44.functions.invoke("checkSubscriptionStatus");
-      return res?.data || {
-        plan: "free",
-        status: "inactive",
-        hasAccess: false,
-        hasPending: false,
-        currentPeriodEnd: null,
-      };
-    },
+  const { isAuthenticated, user } = useAuth();
+  const query = useQuery({
+    queryKey: subscriptionQueryKey(user?.id),
+    queryFn: checkSubscriptionStatus,
     enabled: !!isAuthenticated,
     retry: false,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
   });
 
-  const subscription = data || {
-    plan: "free",
-    status: "inactive",
-    hasAccess: false,
-    hasPending: false,
-    currentPeriodEnd: null,
-  };
+  const hasVerificationError = query.isError
+    || query.isRefetchError
+    || query.errorUpdatedAt > query.dataUpdatedAt;
+  const subscription = hasVerificationError ? FREE_SUBSCRIPTION : query.data || FREE_SUBSCRIPTION;
+  const hasEntitlement = useCallback(
+    (entitlement) => subscription.entitlements[entitlement] === true,
+    [subscription.entitlements],
+  );
 
   return {
     subscription,
-    isPro: !!subscription.hasAccess,
-    isProFilesharing: !!subscription.hasAccess,
-    isTrialActive: false,
-    hasAccess: !!subscription.hasAccess,
-    isLoading,
-    refetch,
+    plan: subscription.plan,
+    status: subscription.status,
+    billingPeriod: subscription.billingPeriod,
+    trial: {
+      eligible: subscription.trialEligible,
+      startedAt: subscription.trialStartedAt,
+      endsAt: subscription.trialEndDate,
+      usedAt: subscription.trialUsedAt,
+      active: subscription.isTrialing,
+    },
+    grandfathering: {
+      active: subscription.grandfathered,
+      fromPlan: subscription.grandfatheredFromPlan,
+    },
+    entitlements: subscription.entitlements,
+    hasEntitlement,
+    hasPaidAccess: subscription.hasPaidAccess,
+    isTrialActive: subscription.isTrialing,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    isError: hasVerificationError,
+    error: query.error || null,
+    refetch: query.refetch,
   };
 }

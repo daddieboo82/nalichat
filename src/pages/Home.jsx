@@ -662,7 +662,7 @@ export default function Home() {
               </div>
               {!user && (
                 <p className="mt-8 text-sm font-bold text-muted-foreground tracking-wide uppercase">
-                  ✨ Full app access is $19.99 every 30 days ✨
+                  Core chat is free forever
                 </p>
               )}
             </div>

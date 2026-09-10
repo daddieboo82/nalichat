@@ -5,6 +5,7 @@ import {
   normalizeStatus,
   resolveEntitlements,
 } from '../../shared/subscription.ts';
+import { trialEligibility } from '../../shared/stripeBilling.ts';
 
 const PAGE_SIZE = 500;
 
@@ -101,6 +102,7 @@ Deno.serve(async (req) => {
     const hasPending = subs.some((subscription) => (
       subscription.status === 'pending' || subscription.status === 'incomplete'
     ));
+    const eligibility = trialEligibility(user.trial_used_at, subs);
 
     return Response.json({
       plan,
@@ -113,6 +115,8 @@ Deno.serve(async (req) => {
       trialStartedAt: selected?.trial_started_at || null,
       trialEndDate: selected?.trial_end_date || null,
       trialUsedAt: selected?.trial_used_at || null,
+      trialEligible: eligibility.eligible,
+      trialEligibilityReason: eligibility.reason,
       grandfathered: selected?.grandfathered === true,
       grandfatheredFromPlan: selected?.grandfathered_from_plan || null,
       entitlements,

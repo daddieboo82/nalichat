@@ -19,10 +19,10 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
   const audioPlayer = useAudioPlayer();
   const playTrack = audioPlayer?.playTrack;
   const [reportOpen, setReportOpen] = useState(false);
-  const { hasAccess } = useSubscription();
+  const { hasEntitlement } = useSubscription();
 
   const isOwner = !!currentUser && post?.creator_id === currentUser.id;
-  const canDownload = isOwner || hasAccess;
+  const canDownload = isOwner || hasEntitlement("chat.export");
 
   useEffect(() => {
     if (!open) {

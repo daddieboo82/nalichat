@@ -7,8 +7,9 @@ import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { resumableUpload } from "@/lib/resumableUpload";
 import { UploadCloud, FileText, CheckCircle2 } from "lucide-react";
+import { EntitlementGate } from "@/components/subscription/EntitlementGate";
 
-export default function LargeFileTransfer({ currentUser }) {
+function LargeFileTransferContent({ currentUser }) {
   const [file, setFile] = useState(null);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -82,7 +83,7 @@ export default function LargeFileTransfer({ currentUser }) {
       <div className="flex-1 p-6 md:p-8 space-y-6">
         <div>
           <h2 className="text-2xl font-bold font-heading mb-1">Transfer Large Files</h2>
-          <p className="text-sm text-muted-foreground">Resume uploads anytime. Up to 20GB per file for everyone.</p>
+          <p className="text-sm text-muted-foreground">Resume uploads anytime. Up to 20GB per file with Premium.</p>
         </div>
 
         {shareLink ? (
@@ -191,5 +192,18 @@ export default function LargeFileTransfer({ currentUser }) {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LargeFileTransfer({ currentUser }) {
+  return (
+    <EntitlementGate
+      entitlement="files.large_upload"
+      title="Large file transfers are a Premium feature"
+      description="Choose Premium or Premium Plus to upload resumable files up to 20GB."
+      source="large_file_transfer"
+    >
+      <LargeFileTransferContent currentUser={currentUser} />
+    </EntitlementGate>
   );
 }

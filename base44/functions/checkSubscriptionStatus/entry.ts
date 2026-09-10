@@ -25,11 +25,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // No active subscription — the app is free, so all users have access
+    // No active subscription — access stays locked until a recurring plan is active
     return Response.json({
       plan: 'free',
-      status: pendingSub ? 'pending' : 'active',
-      hasAccess: true,
+      status: pendingSub ? 'pending' : 'inactive',
+      hasAccess: false,
       hasPending: !!pendingSub,
     });
   } catch (error) {

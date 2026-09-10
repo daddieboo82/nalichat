@@ -172,8 +172,8 @@ const AuthenticatedApp = () => {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // The app is completely free — no paywall. All users have full access.
-  // Monetization is through per-item sales (tracks, files) via the cart/checkout flow.
+  // Public marketing pages stay open, but authenticated app surfaces require
+  // an active subscription for full access.
 
   return (
     <>
@@ -203,7 +203,7 @@ const AuthenticatedApp = () => {
         <Route path="/ThankYou" element={<ThankYou />} />
         <Route path="/thankyou" element={<ThankYou />} />
       </Route>
-      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} requireSubscription />}>
         <Route path="/studio" element={<Studio />} />
         <Route element={<AppLayout />}>
           <Route path="/messages" element={<Messages />} />

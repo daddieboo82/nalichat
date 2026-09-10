@@ -17,12 +17,6 @@
       "type": "string",
       "description": "Audio file URL"
     },
-    "price": {
-      "type": "number",
-      "minimum": 0,
-      "description": "Price in USD (0 for free)",
-      "default": 0
-    },
     "medium": {
       "type": "string",
       "enum": [

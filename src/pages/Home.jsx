@@ -29,7 +29,7 @@ const features = [
     path: "/messages",
     description: "Real-time messaging, unlimited voice notes & high-res file sharing",
     gradient: "from-primary to-pink-500",
-    badge: "Free",
+    badge: "Included",
   },
   {
     icon: Video,
@@ -266,7 +266,7 @@ export default function Home() {
                 <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7" asChild>
                   <Link to="/register" className="w-full sm:w-auto">
                     <MessageSquare className="w-5 h-5 mr-2" />
-                    Get Started Free
+                    Get Started
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                   </Button>
@@ -282,7 +282,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mt-5 text-sm text-muted-foreground">
-             ✅ Unlimited Messages · 🚀 Full Creative Toolkit · 🌐 Free on Web & Mobile
+             ✅ One plan unlocks the app · 🚀 Exports and stems included · 💻 Desktop downloads included
             </p>
           )}
         </motion.div>
@@ -653,7 +653,7 @@ export default function Home() {
                     <Button size="lg" className="w-full sm:w-auto rounded-xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30" asChild>
                       <Link to="/register" className="w-full sm:w-auto">
                         <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
-                        Get Started Free
+                        Get Started
                         <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2 md:ml-3" />
                       </Link>
                       </Button>
@@ -662,7 +662,7 @@ export default function Home() {
               </div>
               {!user && (
                 <p className="mt-8 text-sm font-bold text-muted-foreground tracking-wide uppercase">
-                  ✨ Free to start on web and mobile · No subscription required ✨
+                  ✨ Full app access is $19.99 every 30 days ✨
                 </p>
               )}
             </div>

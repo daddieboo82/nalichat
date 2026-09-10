@@ -1704,7 +1704,7 @@ export default function Studio() {
                   { sr: "48 kHz", bd: "24-bit", desc: "Video Standard (Moderate CPU)" },
                   { sr: "88.2 kHz", bd: "24-bit", desc: "High Res (High CPU)" },
                   { sr: "96 kHz", bd: "24-bit", desc: "High Res / Video (High CPU)" },
-                  { sr: "96 kHz", bd: "32-bit float", desc: "Pro High Res (Very High CPU/Storage)" },
+                  { sr: "96 kHz", bd: "32-bit float", desc: "Float High Res (Very High CPU/Storage)" },
                   { sr: "192 kHz", bd: "32-bit float", desc: "Audiophile (Extreme CPU/Storage)" }
                 ].map((s, i) => {
                   const isActive = audioSettings.sampleRate === s.sr && audioSettings.bitDepth === s.bd;

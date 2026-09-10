@@ -3,7 +3,7 @@ import { stripeRequest } from '../../shared/stripe.ts';
 
 Deno.serve(async (req) => {
   try {
-    const { priceId, plan, callbackUrls } = await req.json();
+    const { plan, callbackUrls } = await req.json();
 
     const base44 = createClientFromRequest(req);
     let user;
@@ -13,10 +13,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Authentication required for subscriptions' }, { status: 401 });
     }
 
-    if (!priceId) {
-      return Response.json({ error: 'priceId is required' }, { status: 400 });
-    }
-
     if (!callbackUrls?.thankYouPageUrl || !callbackUrls?.postFlowUrl) {
       return Response.json(
         { error: 'Both thankYouPageUrl and postFlowUrl are required' },
@@ -24,10 +20,21 @@ Deno.serve(async (req) => {
       );
     }
 
+    const separator = callbackUrls.thankYouPageUrl.includes('?') ? '&' : '?';
+    const successUrl = `${callbackUrls.thankYouPageUrl}${separator}subscription=1&checkout_id={CHECKOUT_SESSION_ID}`;
+
     const sessionParams: Record<string, any> = {
       mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: callbackUrls.thankYouPageUrl,
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          unit_amount: 1999,
+          recurring: { interval: 'month', interval_count: 1 },
+          product_data: { name: 'NaliChat App Access' },
+        },
+        quantity: 1,
+      }],
+      success_url: successUrl,
       cancel_url: callbackUrls.postFlowUrl,
     };
 

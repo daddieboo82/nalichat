@@ -142,7 +142,7 @@ describe('home, navigation, and recovery flows', () => {
     renderWithProviders(<Home />);
 
     expect(screen.getByText('Immersive Onboarding')).toBeTruthy();
-    expect(screen.getAllByRole('link', { name: /Get Started Free/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /Get Started/i }).length).toBeGreaterThan(0);
     expect(screen.getByText('Quick Start Guide')).toBeTruthy();
   });
 

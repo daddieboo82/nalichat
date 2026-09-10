@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { Heart, Eye, Music, MessageCircle, Play, Pause, ShoppingCart, Trash2 } from "lucide-react";
+import { Heart, Eye, Music, MessageCircle, Play, Pause, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import MediaViewerModal from "./MediaViewerModal";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
-import { useCart } from "@/lib/CartContext";
-import { toast } from "sonner";
 import { sounds } from "@/hooks/use-sound";
 
 import React from "react";
@@ -19,8 +17,6 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
   const isPlaying = audioPlayer?.isPlaying;
   const isActive = currentTrack?.id === post.id;
   
-  const cart = useCart();
-
   return (
     <>
       <div 
@@ -164,31 +160,6 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
               <span className="text-[10px] capitalize bg-secondary text-muted-foreground px-2 py-0.5 rounded-full">
                 {post.medium}
               </span>
-            )}
-            {Number(post.price) > 0 && (
-              <button
-                onClick={(e) => {
-                   e.preventDefault();
-                   e.stopPropagation();
-                   sounds.click();
-                   if (cart && cart.addToCart) {
-                     cart.addToCart({
-                       id: post.id,
-                       title: post.title,
-                       price: Number(post.price),
-                       image_url: post.image_url,
-                       creator_name: post.creator_name,
-                       type: 'stem_license'
-                     });
-                     toast.success("License added to cart");
-                   }
-                }}
-                title="Buy License"
-                className="flex items-center gap-1 bg-gradient-to-r from-primary to-pink-500 text-white px-2 py-0.5 rounded-full font-bold shadow-sm shadow-primary/30 hover:opacity-90 active:scale-95 transition-all"
-              >
-                <ShoppingCart className="w-3 h-3" />
-                ${Number(post.price).toFixed(2)}
-              </button>
             )}
           </div>
         </div>

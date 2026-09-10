@@ -79,8 +79,8 @@ const steps = [
     id: "join",
     icon: Sparkles,
     title: "Join the Movement",
-    subtitle: "Free to start",
-    description: "No subscription required. Just sign up and start creating with unlimited messaging, high-res sharing, and the full web experience. Optional desktop downloads are sold separately.",
+    subtitle: "One plan unlocks everything",
+    description: "Subscribe for full NaliChat access every 30 days, including exports, stem downloads, and desktop builds with no separate per-item charges.",
     gradient: "from-primary via-pink-500 to-accent",
     bgGradient: "from-primary/30 via-pink-600/20 to-accent/30",
     accent: "primary",
@@ -305,7 +305,7 @@ export default function ImmersiveOnboarding() {
                       className={`w-full sm:w-auto h-14 px-8 text-lg font-bold rounded-2xl bg-gradient-to-r ${current.gradient} hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl`}
                     >
                       <Sparkles className="w-5 h-5 mr-2" />
-                      Get Started Free
+                      Get Started
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Button>
                     <button

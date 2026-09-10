@@ -16,6 +16,12 @@ const mockAuthState = vi.hoisted(() => ({
     navigateToLogin: vi.fn(),
   },
 }));
+const mockSubscriptionState = vi.hoisted(() => ({
+  current: {
+    hasAccess: true,
+    isLoading: false,
+  },
+}));
 
 vi.mock('@/lib/AuthContext', async () => {
   const React = await import('react');
@@ -24,6 +30,9 @@ vi.mock('@/lib/AuthContext', async () => {
     useAuth: () => mockAuthState.current,
   };
 });
+vi.mock('@/hooks/useSubscription', () => ({
+  useSubscription: () => mockSubscriptionState.current,
+}));
 vi.mock('@/components/ui/toaster', () => ({ Toaster: () => null }));
 vi.mock('@/components/ui/sonner', () => ({ Toaster: () => null }));
 vi.mock('@/components/layout/AppLoader', () => ({ default: () => null }));
@@ -86,6 +95,10 @@ describe('app routing guards', () => {
       authError: null,
       checkUserAuth: vi.fn(),
       navigateToLogin: vi.fn(),
+    };
+    mockSubscriptionState.current = {
+      hasAccess: true,
+      isLoading: false,
     };
   });
 
@@ -156,5 +169,23 @@ describe('app routing guards', () => {
 
     await screen.findByText('Thank You Page');
     expect(window.location.pathname).toBe('/thankyou');
+  });
+
+  it('redirects authenticated users without app access to pricing', async () => {
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      isAuthenticated: true,
+      user: { id: 'u1', onboarding_completed: true, role: 'artist' },
+    };
+    mockSubscriptionState.current = {
+      hasAccess: false,
+      isLoading: false,
+    };
+    window.history.pushState({}, '', '/messages');
+
+    render(<App />);
+
+    await screen.findByText('App Layout');
+    expect(window.location.pathname).toBe('/pricing');
   });
 });

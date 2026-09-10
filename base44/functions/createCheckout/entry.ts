@@ -3,10 +3,6 @@ import { stripeRequest } from '../../shared/stripe.ts';
 
 // Server-side price catalog — never trust client-supplied prices
 const DONATION_PRESETS = [5, 10, 25, 50];
-const DESKTOP_DOWNLOAD_PRICES: Record<string, { price: number; name: string }> = {
-  desktop_download_windows: { price: 9.99, name: 'NaliChat for Windows' },
-  desktop_download_macos: { price: 9.99, name: 'NaliChat for macOS' },
-};
 
 Deno.serve(async (req) => {
   try {
@@ -45,23 +41,7 @@ Deno.serve(async (req) => {
       let name: string;
       const quantity = Math.min(Math.max(Math.floor(Number(item.quantity)) || 1, 1), 99);
 
-      if (item.id) {
-        // Entity-backed item (ArtPost) — look up price from DB
-        let record;
-        try {
-          record = await base44.asServiceRole.entities.ArtPost.get(item.id);
-        } catch (_e) {
-          // Not found
-        }
-        if (!record) {
-          return Response.json(
-            { error: `Item not found: ${item.id}` },
-            { status: 400 }
-          );
-        }
-        unitPrice = Number(record.price) || 0;
-        name = record.title || record.name || 'Item';
-      } else if (item.type === 'donation') {
+      if (item.type === 'donation') {
         // Donation — validate amount against server-side preset list
         const amount = Number(item.amount);
         if (!DONATION_PRESETS.includes(amount)) {
@@ -72,12 +52,9 @@ Deno.serve(async (req) => {
         }
         unitPrice = amount;
         name = 'Donation to NaliChat';
-      } else if (item.type && item.type in DESKTOP_DOWNLOAD_PRICES) {
-        unitPrice = DESKTOP_DOWNLOAD_PRICES[item.type].price;
-        name = DESKTOP_DOWNLOAD_PRICES[item.type].name;
       } else {
         return Response.json(
-          { error: 'Item must have an id or a valid type' },
+          { error: 'Only donation checkout is supported' },
           { status: 400 }
         );
       }
@@ -95,7 +72,6 @@ Deno.serve(async (req) => {
         name,
         price: unitPrice.toFixed(2),
         quantity,
-        ...(item.id ? { id: item.id, type: 'stem_license' } : {}),
         ...(item.type ? { type: item.type } : {}),
       });
     }

@@ -7,19 +7,6 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCart } from "@/lib/CartContext";
 
-const DESKTOP_DOWNLOADS = {
-  desktop_download_windows: {
-    label: "Download for Windows",
-    fileName: "NaliChat-Setup.exe",
-    url: "https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat-Setup.exe",
-  },
-  desktop_download_macos: {
-    label: "Download for macOS",
-    fileName: "NaliChat.dmg",
-    url: "https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat.dmg",
-  },
-};
-
 export default function ThankYou() {
   const queryClient = useQueryClient();
   const { clearCart } = useCart();
@@ -30,11 +17,11 @@ export default function ThankYou() {
   // actual delivery of what they paid for.
   const [purchasedTracks, setPurchasedTracks] = useState([]);
   const [hadDonationOnly, setHadDonationOnly] = useState(false);
-  const [desktopDownload, setDesktopDownload] = useState(null);
   const [hasOtherPurchase, setHasOtherPurchase] = useState(false);
 
   const urlParams = new URLSearchParams(window.location.search);
   const checkoutId = urlParams.get("checkout_id");
+  const isSubscriptionCheckout = urlParams.get("subscription") === "1";
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -57,6 +44,13 @@ export default function ThankYou() {
         }
       } catch (e) {}
 
+      if (isSubscriptionCheckout) {
+        await queryClient.invalidateQueries({ queryKey: ["subscription"] });
+        clearCart();
+        setProcessing(false);
+        return;
+      }
+
       // Verify payment via backend fallback — ensures the purchase is fulfilled
       // even if the Stripe webhook hasn't fired yet. The response's `items`
       // list is what the buyer actually paid for; resolve any stem/track
@@ -77,17 +71,11 @@ export default function ThankYou() {
         // licenses to real ArtPost records so we can deliver a download,
         // instead of silently discarding what was actually bought.
         const licenseItems = purchasedItems.filter((it) => it.type === "stem_license" && it.id);
-        const desktopItem = purchasedItems.find((it) => it.type && DESKTOP_DOWNLOADS[it.type]);
         const donationOnly = purchasedItems.some((it) => it.type === "donation");
         const handledTypes = new Set([
           "donation",
           "stem_license",
-          ...Object.keys(DESKTOP_DOWNLOADS),
         ]);
-
-        if (desktopItem) {
-          setDesktopDownload(DESKTOP_DOWNLOADS[desktopItem.type]);
-        }
         if (licenseItems.length > 0) {
           const resolved = await Promise.all(
             licenseItems.map(async (it) => {
@@ -101,9 +89,11 @@ export default function ThankYou() {
             })
           );
           setPurchasedTracks(resolved.filter(Boolean));
-        } else if (donationOnly) {
+        }
+        if (donationOnly) {
           setHadDonationOnly(true);
-        } else if (purchasedItems.length > 0 && purchasedItems.some((it) => !handledTypes.has(it.type))) {
+        }
+        if (purchasedItems.length > 0 && purchasedItems.some((it) => !handledTypes.has(it.type))) {
           setHasOtherPurchase(true);
         }
         await queryClient.invalidateQueries({ queryKey: ["subscription"] });
@@ -116,9 +106,9 @@ export default function ThankYou() {
     };
 
     processThankYou();
-  }, [queryClient, clearCart, checkoutId]);
+  }, [queryClient, clearCart, checkoutId, isSubscriptionCheckout]);
 
-  if (desktopDownload) {
+  if (isSubscriptionCheckout) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
         <motion.div
@@ -140,25 +130,25 @@ export default function ThankYou() {
           </motion.div>
 
           <h1 className="font-heading font-black text-5xl mb-4">
-            {processing ? "Confirming Purchase..." : "Desktop Download Ready!"}
+            {processing ? "Confirming Purchase..." : "Subscription Active!"}
           </h1>
 
           <p className="text-xl text-muted-foreground mb-8">
             {processing
               ? "Confirming your payment. This takes just a moment..."
-              : `Your desktop purchase is complete. Download ${desktopDownload.fileName} below.`}
+              : "Your 30-day app access is ready. Open the app, export tracks, and download stems with no separate charges."}
           </p>
 
           {!processing && (
             <div className="flex gap-4 justify-center flex-wrap">
-              <a href={desktopDownload.url} download={desktopDownload.fileName}>
-                <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 h-14 px-8 text-lg font-bold">
-                  <Download className="w-5 h-5 mr-2" />
-                  {desktopDownload.label}
-                </Button>
-              </a>
+              <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 h-14 px-8 text-lg font-bold" asChild>
+                <Link to="/studio">
+                  <Music className="w-5 h-5 mr-2" />
+                  Open Studio
+                </Link>
+              </Button>
               <Button size="lg" variant="outline" className="rounded-xl" asChild>
-                <Link to="/download">Back to Downloads</Link>
+                <Link to="/download">Desktop Downloads</Link>
               </Button>
             </div>
           )}
@@ -198,7 +188,7 @@ export default function ThankYou() {
             : purchasedTracks.length > 0
               ? "Your license purchase is confirmed. Download your track below."
               : hadDonationOnly
-                ? "Thank you for supporting NaliChat — your donation keeps the app free for everyone."
+                ? "Thank you for supporting NaliChat — your donation helps fund ongoing app development."
                 : hasOtherPurchase
                   ? "Your purchase is complete. Check the relevant area of the app to access what you bought."
                   : "Your purchase is complete. Your items are now available."}

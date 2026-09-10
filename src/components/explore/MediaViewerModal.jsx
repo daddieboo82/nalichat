@@ -2,55 +2,27 @@ import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Play, Pause, X, Music, Rewind, FastForward, Square, ShoppingCart, Minimize2, Download, Share2, Flag, Lock } from "lucide-react";
-import { useCart } from "@/lib/CartContext";
+import { Play, Pause, X, Music, Rewind, FastForward, Square, Minimize2, Download, Share2, Flag, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import ReportContentDialog from "@/components/ReportContentDialog";
 import { copyToClipboard } from "@/lib/clipboard";
-import { base44 } from "@/api/base44Client";
+import { useSubscription } from "@/hooks/useSubscription";
 
 export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlaylist, currentUser }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef(null);
-  const { addToCart, items } = useCart();
-  const inCart = items.some(item => item.id === post?.id);
   const audioPlayer = useAudioPlayer();
   const playTrack = audioPlayer?.playTrack;
   const [reportOpen, setReportOpen] = useState(false);
+  const { hasAccess } = useSubscription();
 
-  // A priced track's Download button used to render unconditionally for every
-  // visitor — free or paying — so buying a "license" delivered nothing you
-  // couldn't already get for free. Gate the actual download behind ownership
-  // (creator) or a confirmed Base44Purchase for this exact post; the inline
-  // preview player above is left untouched (streaming a preview before buying
-  // is normal marketplace behavior, unlike an unrestricted full download).
-  const isPriced = Number(post?.price) > 0;
   const isOwner = !!currentUser && post?.creator_id === currentUser.id;
-  const [purchasedIds, setPurchasedIds] = useState(() => new Set());
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!open || !isPriced || !currentUser?.id) {
-      setPurchasedIds(new Set());
-      return;
-    }
-    base44.entities.Base44Purchase.filter({ user_id: currentUser.id, status: "paid" })
-      .then((purchases) => {
-        if (cancelled) return;
-        const ids = new Set();
-        (purchases || []).forEach((p) => (p.items || []).forEach((item) => { if (item.id) ids.add(item.id); }));
-        setPurchasedIds(ids);
-      })
-      .catch(() => { if (!cancelled) setPurchasedIds(new Set()); });
-    return () => { cancelled = true; };
-  }, [open, isPriced, currentUser?.id]);
-
-  const canDownload = !isPriced || isOwner || purchasedIds.has(post?.id);
+  const canDownload = isOwner || hasAccess;
 
   useEffect(() => {
     if (!open) {
@@ -195,33 +167,12 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                  </div>
 
                  <div className="flex flex-wrap items-center gap-4 mb-8">
-                   {Number(post.price) > 0 && (
-                     <Button 
-                       size="lg"
-                       type="button"
-                       onClick={(e) => {
-                         e.preventDefault();
-                         e.stopPropagation();
-                         addToCart({
-                           ...post,
-                           type: 'stem_license',
-                         });
-                       }}
-                       disabled={inCart}
-                       className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 gap-2 h-14 px-6 sm:px-8 text-base rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
-                     >
-                       <ShoppingCart className="w-5 h-5" />
-                       {inCart ? "In Cart" : `Buy for $${Number(post.price).toFixed(2)}`}
-                     </Button>
-                   )}
-                   {(!post.price || Number(post.price) === 0) && (
-                     <Button 
-                       size="lg"
-                       className="bg-white/10 text-white border border-white/10 shadow-lg gap-2 h-14 px-6 sm:px-8 text-base rounded-full flex-shrink-0 cursor-default"
-                     >
-                       Free
-                     </Button>
-                   )}
+                   <Button 
+                     size="lg"
+                     className="bg-white/10 text-white border border-white/10 shadow-lg gap-2 h-14 px-6 sm:px-8 text-base rounded-full flex-shrink-0 cursor-default"
+                   >
+                     {canDownload ? "Included with App Access" : "Subscribe for Full Access"}
+                   </Button>
                    {onAddToPlaylist && (
                      <Button 
                        size="lg"
@@ -263,13 +214,15 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    )}
 
                    {post.file_url && !canDownload && (
-                     <div
-                       title="Purchase this track to unlock the full download"
-                       className="flex items-center gap-2 h-14 px-6 rounded-full border border-white/10 text-white/50 text-sm flex-shrink-0"
+                     <Link
+                       to="/pricing"
+                       onClick={() => onOpenChange(false)}
+                       title="Subscribe to unlock full downloads"
+                       className="flex items-center gap-2 h-14 px-6 rounded-full border border-white/10 text-white/80 text-sm flex-shrink-0 hover:bg-white/5 transition-colors"
                      >
                        <Lock className="w-4 h-4" />
-                       Buy to unlock download
-                     </div>
+                       Subscribe to unlock download
+                     </Link>
                    )}
                    
                    <Button

@@ -1,32 +1,33 @@
-# NaliChat Monetization Status
+# NaliChat Subscription System
 
 ## Current product model
 
-NaliChat currently presents itself as a free-to-use app. The frontend no longer treats subscriptions or trials as active user-facing flows.
+NaliChat sells one recurring plan for full app access.
 
-## Supported monetization
-
-- Optional donations through checkout
-- Per-track stem/license purchases from Explore
-- Windows desktop download for $9.99
-- macOS desktop download for $9.99
+- Price: **$19.99 every 30 days**
+- Includes: app access, desktop downloads, exports, and stem downloads
+- Separate per-item charges are not used for exports or stems
 
 ## Frontend behavior
 
-- Core app features are available without a subscription paywall
-- The thank-you page is reachable after public checkout
-- Studio exports remain free
-- Android and iOS install flows remain free
-- Windows and macOS desktop downloads use one-time checkout
+- Public marketing pages remain browsable
+- Authenticated app routes require an active subscription
+- Pricing starts Stripe subscription checkout
+- Thank-you handles subscription success and donation success
+- Android and iOS install flows remain free to access
+- Windows and macOS downloads are included with app access
 
-## Backend notes
+## Backend behavior
 
-- Legacy subscription webhook and checkout handlers still exist in the repository
-- They are not the primary frontend monetization path today
+- `createSubscriptionCheckout` creates the recurring Stripe checkout session
+- `checkSubscriptionStatus` determines whether a user has access
+- `stripeWebhook` activates and updates subscription records
+- `createCheckout` remains for one-time donation support
 
 ## Areas to keep aligned
 
 - Pricing page copy
-- Settings account messaging
-- Cart and checkout fulfillment
-- Download and export flows
+- Settings billing messaging
+- Protected route gating
+- Download access rules
+- Thank-you fulfillment

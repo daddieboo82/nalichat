@@ -4,7 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 // ┌──────────────────────────────────────────────────────────────────────┐
 // │  DOWNLOAD URLs                                                        │
@@ -13,7 +16,6 @@ import { toast } from 'sonner';
 const APK_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat.apk';
 const EXE_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat-Setup.exe';
 const DMG_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat.dmg';
-const DESKTOP_DOWNLOAD_PRICE = 9.99;
 // iOS does not allow installing an arbitrary downloaded .ipa the way Android
 // allows sideloading an APK — it requires the App Store, TestFlight, or a
 // paid Apple Developer Enterprise/Ad-Hoc distribution setup. None of that
@@ -47,41 +49,8 @@ function DownloadButton({ url, fileName, label }) {
     );
   }
 
-  function PaidDesktopDownloadButton({ url, itemType, label, price }) {
+  function SubscriptionDownloadButton({ url, label, hasAccess, onSubscribe, subscribing }) {
     const { checking, available } = useAvailability(url);
-    const [loading, setLoading] = useState(false);
-
-    const handleCheckout = async () => {
-      setLoading(true);
-      try {
-        if (typeof window !== 'undefined' && window.gtag) {
-          window.gtag('event', 'conversion', {
-            send_to: 'AW-18416125487/OnfzCI7a5OkcEK-Mv81E',
-            value: price,
-            currency: 'USD',
-          });
-        }
-        try { localStorage.setItem('gads_purchase_value', String(price)); } catch {}
-        const appUrl = window.location.origin;
-        const response = await base44.functions.invoke("createCheckout", {
-          items: [{ type: itemType, quantity: 1 }],
-          callbackUrls: {
-            postFlowUrl: `${appUrl}/download`,
-            thankYouPageUrl: `${appUrl}/ThankYou`,
-          },
-        });
-        const checkoutUrl = response?.data?.checkoutUrl || response?.checkoutUrl;
-        if (checkoutUrl) {
-          window.location.href = checkoutUrl;
-          return;
-        }
-        throw new Error("No checkout URL returned");
-      } catch (error) {
-        console.error("Desktop checkout failed:", error);
-        toast.error("Could not start checkout. Please try again.");
-        setLoading(false);
-      }
-    };
 
     if (checking) {
       return (
@@ -112,12 +81,21 @@ function DownloadButton({ url, fileName, label }) {
       <>
         <div className="flex items-center gap-2 text-sm text-green-500">
           <CheckCircle className="w-4 h-4" />
-          <span>Latest build is ready to purchase and download</span>
+          <span>{hasAccess ? "Latest build is ready to download" : "Latest build is ready with app access"}</span>
         </div>
-        <Button className="w-full h-14 text-base font-semibold" size="lg" onClick={handleCheckout} disabled={loading}>
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <DownloadIcon className="w-5 h-5" />}
-          {loading ? "Redirecting to Checkout..." : `${label} — $${price.toFixed(2)}`}
-        </Button>
+        {hasAccess ? (
+          <a href={url} download className="block">
+            <Button className="w-full h-14 text-base font-semibold" size="lg">
+              <DownloadIcon className="w-5 h-5" />
+              {label}
+            </Button>
+          </a>
+        ) : (
+          <Button className="w-full h-14 text-base font-semibold" size="lg" onClick={onSubscribe} disabled={subscribing}>
+            {subscribing ? <Loader2 className="w-5 h-5 animate-spin" /> : <DownloadIcon className="w-5 h-5" />}
+            {subscribing ? "Redirecting..." : "Subscribe for App Access — $19.99 / 30 days"}
+          </Button>
+        )}
       </>
     );
   }
@@ -164,6 +142,39 @@ function Step({ n, children }) {
 
 export default function Download() {
   const [platform, setPlatform] = useState('android');
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { hasAccess } = useSubscription();
+  const [startingCheckout, setStartingCheckout] = useState(false);
+
+  const handleSubscribe = async () => {
+    if (!isAuthenticated) {
+      navigate('/register');
+      return;
+    }
+
+    setStartingCheckout(true);
+    try {
+      const appUrl = window.location.origin;
+      const response = await base44.functions.invoke("createSubscriptionCheckout", {
+        plan: "pro",
+        callbackUrls: {
+          thankYouPageUrl: `${appUrl}/ThankYou`,
+          postFlowUrl: window.location.href,
+        },
+      });
+      const checkoutUrl = response?.data?.checkoutUrl || response?.checkoutUrl;
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+        return;
+      }
+      throw new Error("No checkout URL returned");
+    } catch (error) {
+      console.error("Subscription checkout failed:", error);
+      toast.error("Could not start subscription checkout. Please try again.");
+      setStartingCheckout(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center px-4 py-12">
@@ -175,7 +186,7 @@ export default function Download() {
           </div>
           <h1 className="text-3xl font-heading font-bold">Download NaliChat</h1>
           <p className="text-muted-foreground">
-            Get the NaliChat app directly on your device — no app store required.
+            Download Android for free, install on iPhone as a PWA, or unlock Windows and macOS with app access.
           </p>
         </div>
 
@@ -266,9 +277,9 @@ export default function Download() {
           <TabsContent value="windows" className="space-y-6 mt-6">
             <Card className="border-primary/20">
               <CardContent className="pt-6 space-y-4">
-                <PaidDesktopDownloadButton url={EXE_DOWNLOAD_URL} itemType="desktop_download_windows" label="Buy Windows Download" price={DESKTOP_DOWNLOAD_PRICE} />
+                <SubscriptionDownloadButton url={EXE_DOWNLOAD_URL} label="Download for Windows" hasAccess={hasAccess} onSubscribe={handleSubscribe} subscribing={startingCheckout} />
                 <p className="text-xs text-muted-foreground text-center">
-                  File size: ~50–100 MB · Windows 10/11 (64-bit) · $9.99
+                  File size: ~50–100 MB · Windows 10/11 (64-bit) · Included with app access
                 </p>
               </CardContent>
             </Card>
@@ -281,7 +292,7 @@ export default function Download() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <Step n={1}>Click <strong className="text-foreground">Buy Windows Download</strong> above, complete checkout, and save the setup file.</Step>
+                <Step n={1}>{hasAccess ? <>Click <strong className="text-foreground">Download for Windows</strong> above and save the setup file.</> : <>Click <strong className="text-foreground">Subscribe for App Access</strong> above, complete checkout, and save the setup file.</>}</Step>
                 <Step n={2}>Open <strong className="text-foreground">NaliChat-Setup.exe</strong> from your Downloads folder.</Step>
                 <Step n={3}>If Windows shows a <strong className="text-foreground">"Windows protected your PC"</strong> SmartScreen warning, click <strong className="text-foreground">More info</strong> then <strong className="text-foreground">Run anyway</strong>.</Step>
                 <Step n={4}>Follow the installer prompts to complete the installation.</Step>
@@ -294,9 +305,9 @@ export default function Download() {
           <TabsContent value="macos" className="space-y-6 mt-6">
             <Card className="border-primary/20">
               <CardContent className="pt-6 space-y-4">
-                <PaidDesktopDownloadButton url={DMG_DOWNLOAD_URL} itemType="desktop_download_macos" label="Buy macOS Download" price={DESKTOP_DOWNLOAD_PRICE} />
+                <SubscriptionDownloadButton url={DMG_DOWNLOAD_URL} label="Download for macOS" hasAccess={hasAccess} onSubscribe={handleSubscribe} subscribing={startingCheckout} />
                 <p className="text-xs text-muted-foreground text-center">
-                  File size: ~50–100 MB · macOS 11+ (Universal) · $9.99
+                  File size: ~50–100 MB · macOS 11+ (Universal) · Included with app access
                 </p>
               </CardContent>
             </Card>
@@ -309,7 +320,7 @@ export default function Download() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <Step n={1}>Click <strong className="text-foreground">Buy macOS Download</strong> above, complete checkout, and save the DMG file.</Step>
+                <Step n={1}>{hasAccess ? <>Click <strong className="text-foreground">Download for macOS</strong> above and save the DMG file.</> : <>Click <strong className="text-foreground">Subscribe for App Access</strong> above, complete checkout, and save the DMG file.</>}</Step>
                 <Step n={2}>Open <strong className="text-foreground">NaliChat.dmg</strong> from your Downloads folder.</Step>
                 <Step n={3}>Drag the <strong className="text-foreground">NaliChat</strong> app icon into the <strong className="text-foreground">Applications</strong> folder.</Step>
                 <Step n={4}>If macOS shows an <strong className="text-foreground">"unidentified developer"</strong> warning, right-click the app and select <strong className="text-foreground">Open</strong>, then confirm in the dialog.</Step>

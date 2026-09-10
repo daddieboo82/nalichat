@@ -6,10 +6,9 @@ import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import {
   Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users,
-  Settings, LogOut, LogIn, HelpCircle, UserPlus, Mic, Radio, ShoppingCart,
+  Settings, LogOut, LogIn, HelpCircle, UserPlus, Mic, Radio,
   Wand2, AudioLines, Plus, Gem, Swords, Rocket, Smartphone
 } from "lucide-react";
-import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -61,7 +60,6 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const { items, setIsOpen } = useCart();
   const { isAuthenticated, logout } = useAuth();
 
   const handleLogout = () => {
@@ -156,20 +154,6 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
           >
             <Plus className="w-5 h-5" />
           </Link>
-
-          {/* Cart */}
-          <button
-            onClick={() => setIsOpen(true)}
-            title="Shopping Cart"
-            className="relative w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
-          >
-            <ShoppingCart className="w-5 h-5" />
-            {items.length > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary text-[10px] font-bold text-white flex items-center justify-center border-[1.5px] border-background">
-                {items.length}
-              </span>
-            )}
-          </button>
 
           {/* System */}
           <div className="border-l border-white/[0.08] pl-1.5 ml-1 flex items-center gap-1.5 shrink-0">

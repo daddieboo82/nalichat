@@ -225,15 +225,18 @@ describe('home, navigation, and recovery flows', () => {
 
   it('requests push permission asynchronously without blocking the notification bell', async () => {
     vi.useFakeTimers();
-    mockBase44.auth.me.mockResolvedValue({ id: 'user-1' });
+    try {
+      mockBase44.auth.me.mockResolvedValue({ id: 'user-1' });
 
-    renderWithProviders(<NotificationBell />);
+      renderWithProviders(<NotificationBell />);
 
-    expect(screen.getByRole('button', { name: 'Notifications' })).toBeTruthy();
-    await Promise.resolve();
-    expect(mockPush.registerServiceWorker).toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(3000);
-    expect(mockPush.requestPushPermission).toHaveBeenCalled();
-    vi.useRealTimers();
+      expect(screen.getByRole('button', { name: 'Notifications' })).toBeTruthy();
+      await Promise.resolve();
+      expect(mockPush.registerServiceWorker).toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(mockPush.requestPushPermission).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

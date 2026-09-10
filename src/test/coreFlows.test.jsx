@@ -337,27 +337,30 @@ describe('core usage flow coverage', () => {
 
   it('keeps the upload dialog open when publish fails so the user can retry', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockBase44.entities.ArtPost.create.mockRejectedValueOnce(new Error('upload failed'));
-    const onSuccess = vi.fn();
-    const { container } = renderWithProviders(
-      <UploadArtDialog
-        open
-        onClose={() => {}}
-        currentUser={{ id: 'user-1', display_name: 'Fresh', full_name: 'Fresh User', xp: 0, total_posts: 0 }}
-        onSuccess={onSuccess}
-      />
-    );
+    try {
+      mockBase44.entities.ArtPost.create.mockRejectedValueOnce(new Error('upload failed'));
+      const onSuccess = vi.fn();
+      const { container } = renderWithProviders(
+        <UploadArtDialog
+          open
+          onClose={() => {}}
+          currentUser={{ id: 'user-1', display_name: 'Fresh', full_name: 'Fresh User', xp: 0, total_posts: 0 }}
+          onSuccess={onSuccess}
+        />
+      );
 
-    fireEvent.change(container.querySelector('#audio-upload'), {
-      target: { files: [new File(['audio'], 'retry-track.mp3', { type: 'audio/mpeg' })] },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Publish Track' }));
+      fireEvent.change(container.querySelector('#audio-upload'), {
+        target: { files: [new File(['audio'], 'retry-track.mp3', { type: 'audio/mpeg' })] },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Publish Track' }));
 
-    await waitFor(() => {
-      expect(onSuccess).not.toHaveBeenCalled();
-      expect(screen.getByRole('button', { name: 'Publish Track' })).toBeTruthy();
-    });
-    errorSpy.mockRestore();
+      await waitFor(() => {
+        expect(onSuccess).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Publish Track' })).toBeTruthy();
+      });
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 
   it('loads settings, saves profile edits, and refreshes the global auth user', async () => {

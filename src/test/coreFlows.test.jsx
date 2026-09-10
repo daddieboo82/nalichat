@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Messages from '@/pages/Messages';
 import Explore from '@/pages/Explore';
 import UploadArtDialog from '@/components/explore/UploadArtDialog';
+import BounceDialog from '@/components/studio/BounceDialog';
 import Settings from '@/pages/Settings';
 
 const conversationStore = vi.hoisted(() => ({ items: [] }));
@@ -152,6 +153,9 @@ vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
 vi.mock('sonner', () => ({ toast: mockToast }));
 vi.mock('@/lib/squadBonus', () => ({ recordSquadActivity: vi.fn() }));
 vi.mock('@/lib/avatarValidation', () => ({ isValidAvatarUrl: vi.fn(() => true) }));
+vi.mock('@/lib/autoMaster', () => ({
+  renderMasteredMix: vi.fn(async () => new Uint8Array([1, 2, 3])),
+}));
 
 const createDeferred = () => {
   let resolve;
@@ -305,7 +309,7 @@ describe('core usage flow coverage', () => {
     expect(mockBase44.entities.ArtPost.list).toHaveBeenCalledTimes(2);
   });
 
-  it('publishes tracks from the upload dialog and updates the user profile xp', async () => {
+  it('persists the explicit rating from the upload dialog and updates the user profile xp', async () => {
     const currentUser = { id: 'user-1', display_name: 'Fresh', full_name: 'Fresh User', xp: 150, total_posts: 2 };
     const onSuccess = vi.fn();
     const { container } = renderWithProviders(
@@ -334,6 +338,32 @@ describe('core usage flow coverage', () => {
       }));
       expect(mockBase44.auth.updateMe).toHaveBeenCalledWith({ xp: 200, level: 2, total_posts: 3 });
       expect(onSuccess).toHaveBeenCalled();
+    });
+  });
+
+  it('persists the explicit rating from the bounce dialog when publishing a song', async () => {
+    mockBase44.auth.me.mockResolvedValue({ id: 'user-1', display_name: 'Fresh', full_name: 'Fresh User' });
+    mockBase44.functions.invoke.mockResolvedValue({ data: {} });
+
+    renderWithProviders(
+      <BounceDialog
+        open
+        onOpenChange={() => {}}
+        projectTitle="Night Drive"
+        project={{ genre: 'Hip Hop', bpm: 92 }}
+        tracks={[{ name: 'Lead Vocal', type: 'vocal', audioUrl: 'blob:track', muted: false }]}
+      />
+    );
+
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'explicit' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Export & Publish Track' }));
+
+    await waitFor(() => {
+      expect(mockBase44.entities.ArtPost.create).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'Night Drive',
+        is_explicit: true,
+        file_url: 'https://cdn.example.com/file.mp3',
+      }));
     });
   });
 

@@ -231,32 +231,39 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
             </div>
           </div>
 
-          <div>
-            <label id="content-rating-label" className="text-xs text-muted-foreground mb-2 block">Content Rating</label>
-            <div role="radiogroup" aria-labelledby="content-rating-label" className="flex flex-wrap gap-2">
+          <fieldset>
+            <legend className="text-xs text-muted-foreground mb-2 block">Content Rating</legend>
+            <div className="flex flex-wrap gap-2">
               {[
                 { label: "Clean", value: false },
                 { label: "Explicit", value: true },
-              ].map(option => (
-                <button
-                  key={option.label}
-                  type="button"
-                  role="radio"
-                  aria-checked={form.is_explicit === option.value}
-                  aria-label={`Mark track as ${option.label}`}
-                  onClick={() => setForm(f => ({ ...f, is_explicit: option.value }))}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-xs font-semibold transition-colors",
-                    form.is_explicit === option.value
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {option.label}
-                </button>
-              ))}
+              ].map(option => {
+                const id = `content-rating-${option.label.toLowerCase()}`;
+                return (
+                  <label
+                    key={option.label}
+                    htmlFor={id}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer",
+                      form.is_explicit === option.value
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <input
+                      id={id}
+                      type="radio"
+                      name="content-rating"
+                      className="sr-only"
+                      checked={form.is_explicit === option.value}
+                      onChange={() => setForm(f => ({ ...f, is_explicit: option.value }))}
+                    />
+                    {option.label}
+                  </label>
+                );
+              })}
             </div>
-          </div>
+          </fieldset>
 
           <div>
             <label htmlFor="custom-tag-input" id="tags-group-label" className="text-xs text-muted-foreground mb-2 block">Tags</label>

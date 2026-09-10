@@ -67,6 +67,14 @@ describe('CoverArt explicit badge', () => {
         medium: 'original',
         image_url: 'https://cdn.example.com/sunrise.jpg',
       },
+      {
+        id: 'track-false',
+        title: 'Daylight',
+        genre: 'R&B',
+        medium: 'original',
+        image_url: 'https://cdn.example.com/daylight.jpg',
+        is_explicit: false,
+      },
     ]);
   });
 
@@ -86,6 +94,12 @@ describe('CoverArt explicit badge', () => {
     });
 
     fireEvent.click(screen.getByText('Sunrise'));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('parental-advisory-badge')).toBeNull();
+    });
+
+    fireEvent.click(screen.getByText('Daylight'));
 
     await waitFor(() => {
       expect(screen.queryByTestId('parental-advisory-badge')).toBeNull();

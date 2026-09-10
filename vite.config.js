@@ -39,6 +39,15 @@ function customManifestPlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   logLevel: 'warn',
+  test: {
+    environment: 'node',
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+  },
+  resolve: {
+    alias: {
+      '@': resolve(process.cwd(), 'src'),
+    },
+  },
   build: {
     // Split rarely-changing vendor code out of the main entry chunk. Without
     // this the entry bundle is ~950 kB, so every app deploy forces mobile users

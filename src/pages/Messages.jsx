@@ -18,6 +18,7 @@ import ModerationBanner from "@/components/messages/ModerationBanner";
 import { MessageSquare, Users, Plus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { createTempId, applySendSuccess, applySendFailure, applyRealtimeCreate } from "@/lib/messageCache";
 
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -155,18 +156,9 @@ export default function Messages() {
             if (event.type === "update") {
               return old.map(m => (m.id === event.id ? { ...m, ...event.data } : m));
             }
-            // create: the real message arrived. Retire at most ONE matching
-            // optimistic temp (same sender, same content) rather than every temp
-            // from this sender, which would strip other still-in-flight sends.
-            const idx = old.findIndex(m =>
-              m._optimistic &&
-              m.sender_id === event.data?.sender_id &&
-              (m.text || "") === (event.data?.text || "") &&
-              (m.type || "text") === (event.data?.type || "text")
-            );
-            const withoutTemp = idx >= 0 ? old.filter((_, i) => i !== idx) : old;
-            if (withoutTemp.some(m => m.id === event.id)) return withoutTemp;
-            return [...withoutTemp, event.data];
+            // create: retire at most one matching optimistic temp rather than
+            // every temp from this sender, which would strip in-flight sends.
+            return applyRealtimeCreate(old, event.data, event.id);
           });
         }
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
@@ -241,9 +233,7 @@ export default function Messages() {
       // must appear in the UI on the same tick the user hits send, with zero delay.
       queryClient.cancelQueries({ queryKey: ["messages", selectedConvId] });
       const previous = queryClient.getQueryData(["messages", selectedConvId]);
-      // Unique per send (Date.now() alone collides when two sends land in the
-      // same millisecond) so each temp can be retired individually.
-      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const tempId = createTempId();
       const tempMsg = {
         id: tempId,
         _tempId: tempId,
@@ -269,9 +259,8 @@ export default function Messages() {
     onError: (_err, _msgData, ctx) => {
       // Remove only the failed send's bubble. Restoring the whole pre-send
       // snapshot would also erase other messages still in flight.
-      if (!ctx?.tempId) return;
       queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
-        old.filter(m => m._tempId !== ctx.tempId)
+        applySendFailure(old, ctx?.tempId)
       );
     },
     onSuccess: (msg, _vars, ctx) => {
@@ -296,11 +285,9 @@ export default function Messages() {
         return;
       }
       // Swap this send's optimistic temp for the real saved message (no refetch).
-      queryClient.setQueryData(["messages", selectedConvId], (old = []) => {
-        const withoutTemp = old.filter(m => m._tempId !== ctx?.tempId);
-        if (withoutTemp.some(m => m.id === msg.id)) return withoutTemp;
-        return [...withoutTemp, msg];
-      });
+      queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+        applySendSuccess(old, msg, ctx?.tempId)
+      );
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });

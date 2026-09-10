@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, ArrowLeft, ArrowDown, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2 } from "lucide-react";
+import { MessageSquare, ArrowLeft, ArrowDown, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2, Download } from "lucide-react";
 import MediaViewerModal from "@/components/explore/MediaViewerModal";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
@@ -21,6 +21,7 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { useCall, isCallSignal } from "@/hooks/useCall";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import CallOverlay from "./CallOverlay";
+import ChatExportDialog from "./ChatExportDialog";
 import { motion, AnimatePresence } from "framer-motion";
 
 import React from "react";
@@ -33,6 +34,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [threadMessage, setThreadMessage] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [unreadSinceScroll, setUnreadSinceScroll] = useState(0);
   const scrollRef = useRef(null);
@@ -134,6 +136,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     setShowGroupInfo(false);
     setThreadMessage(null);
     setShowSearch(false);
+    setShowExport(false);
   }, [conversation?.id]);
 
   const getOtherUser = () => {
@@ -232,6 +235,9 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => startCall('video')} className="py-2.5 rounded-lg cursor-pointer" aria-label="Video Call" title="Video Call">
                   <Video className="w-4 h-4 mr-2 text-muted-foreground" /> Video Call
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowExport(true)} className="py-2.5 rounded-lg cursor-pointer">
+                  <Download className="w-4 h-4 mr-2 text-muted-foreground" /> Export Conversation
                 </DropdownMenuItem>
                 {conversation?.type === "group" && (
                   <DropdownMenuItem onClick={() => setShowGroupInfo(true)} className="py-2.5 rounded-lg cursor-pointer text-primary focus:text-primary">
@@ -404,6 +410,12 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
           users={users}
         />
       )}
+
+      <ChatExportDialog
+        open={showExport}
+        onOpenChange={setShowExport}
+        conversationId={conversation?.id}
+      />
 
       {selectedMedia && (
         <MediaViewerModal

@@ -28,6 +28,12 @@ VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
 
 Run the app: `npm run dev`
 
+Run unit/integration tests: `npm test`
+
+Run browser end-to-end tests:
+1. Install Playwright browsers: `npx playwright install --with-deps chromium`
+2. Execute e2e suite: `npm run test:e2e`
+
 **Publish your changes**
 
 Open [Base44.com](http://Base44.com) and click on Publish.

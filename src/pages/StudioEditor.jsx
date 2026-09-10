@@ -8,6 +8,7 @@ import { Play, Pause, Share2, Loader2, Wand2, Music, Zap, Radio } from "lucide-r
 import { motion } from "framer-motion";
 import CollaboratorPresence from "@/components/studio/CollaboratorPresence";
 import ExportBounce from "@/components/studio/ExportBounce";
+import { aiErrorMessage, invokeAiFunction } from "@/lib/aiUsage";
 
 export default function StudioEditor() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -44,13 +45,13 @@ export default function StudioEditor() {
     setProcessing(true);
     setError("");
     try {
-      const result = await base44.functions.invoke('aiMasterSession', {
+      const result = await invokeAiFunction('aiMasterSession', {
         audio_url: audioUrl,
         project_title: uploadTitle || 'Untitled Mix'
       });
-      setMasterAnalysis(result.data);
+      setMasterAnalysis(result);
     } catch (err) {
-      setError("Failed to process audio. Please try again.");
+      setError(aiErrorMessage(err));
       console.error('Processing failed:', err);
     }
     setProcessing(false);

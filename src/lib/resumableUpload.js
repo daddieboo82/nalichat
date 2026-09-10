@@ -4,7 +4,7 @@
  * and can resume from where it left off if interrupted.
  */
 
-import { validateUpload } from "@/lib/uploadValidation";
+import { authorizedUpload } from "@/lib/authorizedUpload";
 
 const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB chunks
 const STORAGE_KEY = "resumable_uploads";
@@ -35,10 +35,6 @@ function getFileId(file) {
  * @returns {Promise<string>} file_url
  */
 export async function resumableUpload(file, onProgress, options = {}) {
-  // Reject bad input before spending a long transfer on it.
-  const { ok, error } = validateUpload(file, options);
-  if (!ok) throw new Error(error);
-
   const fileId = getFileId(file);
   const state = getUploadState();
   const savedState = state[fileId];
@@ -57,16 +53,14 @@ export async function resumableUpload(file, onProgress, options = {}) {
   // For small files (< 1MB), upload directly without chunking
   if (file.size <= CHUNK_SIZE) {
     onProgress?.(10);
-    const { base44 } = await import("@/api/base44Client");
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const { file_url } = await authorizedUpload(file, options);
     onProgress?.(100);
     return file_url;
   }
 
   // Large files: upload the full file directly (chunking is not supported server-side for merging)
   onProgress?.(10);
-  const { base44 } = await import("@/api/base44Client");
-  const { file_url } = await base44.integrations.Core.UploadFile({ file });
+  const { file_url } = await authorizedUpload(file, options);
   clearUploadState(fileId);
   onProgress?.(100);
   return file_url;

@@ -29,12 +29,32 @@ const VALID_STATUSES = new Set([
   "incomplete",
 ]);
 const VALID_PERIODS = new Set(["monthly", "annual"]);
+const DEFAULT_LIMITS = Object.freeze({
+  ai: Object.freeze({ requestsPerUtcDay: 20 }),
+  upload: Object.freeze({ maxBytes: 2 * 1024 * 1024 * 1024 }),
+});
 
 function normalizeEntitlements(value) {
   const source = value && typeof value === "object" ? value : {};
   return Object.freeze(Object.fromEntries(
     ENTITLEMENT_KEYS.map((key) => [key, source[key] === true]),
   ));
+}
+
+function normalizeLimits(value) {
+  const source = value && typeof value === "object" ? value : {};
+  const ai = source.ai && typeof source.ai === "object" ? source.ai : {};
+  const upload = source.upload && typeof source.upload === "object" ? source.upload : {};
+  const requestsPerUtcDay = Number.isSafeInteger(ai.requestsPerUtcDay) && ai.requestsPerUtcDay > 0
+    ? ai.requestsPerUtcDay
+    : DEFAULT_LIMITS.ai.requestsPerUtcDay;
+  const maxBytes = Number.isSafeInteger(upload.maxBytes) && upload.maxBytes > 0
+    ? upload.maxBytes
+    : DEFAULT_LIMITS.upload.maxBytes;
+  return Object.freeze({
+    ai: Object.freeze({ requestsPerUtcDay }),
+    upload: Object.freeze({ maxBytes }),
+  });
 }
 
 export const FREE_SUBSCRIPTION = Object.freeze({
@@ -53,6 +73,7 @@ export const FREE_SUBSCRIPTION = Object.freeze({
   grandfathered: false,
   grandfatheredFromPlan: null,
   entitlements: normalizeEntitlements({ "chat.core": true }),
+  limits: DEFAULT_LIMITS,
   hasPaidAccess: false,
   hasPending: false,
   isTrialing: false,
@@ -63,6 +84,7 @@ export function normalizeSubscription(value) {
   const plan = VALID_PLANS.has(source.plan) ? source.plan : "free";
   const status = VALID_STATUSES.has(source.status) ? source.status : "ended";
   const entitlements = normalizeEntitlements(source.entitlements);
+  const limits = normalizeLimits(source.limits);
   const hasPaidAccess = plan !== "free" && source.hasPaidAccess === true;
 
   return Object.freeze({
@@ -85,6 +107,7 @@ export function normalizeSubscription(value) {
       ? source.grandfatheredFromPlan
       : null,
     entitlements,
+    limits,
     hasPaidAccess,
     hasPending: source.hasPending === true,
     isTrialing: status === "trialing" && hasPaidAccess,
@@ -103,4 +126,3 @@ export async function checkSubscriptionStatus() {
   }
   return normalizeSubscription(payload);
 }
-

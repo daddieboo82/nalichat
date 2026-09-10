@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { base44 } from "@/api/base44Client";
 import { renderMasteredMix } from "@/lib/autoMaster";
 import { toast } from "sonner";
+import { aiErrorMessage, invokeAiFunction } from "@/lib/aiUsage";
+import { authorizedUpload } from "@/lib/authorizedUpload";
 
 // Neutral params = straight mix with no EQ/loudness coloring (used when mastering is off)
 const FLAT_PARAMS = {
@@ -76,14 +78,13 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
       setStep(1);
       let masterParams = params;
       if (autoMaster && !showManualParams) {
-        const res = await base44.functions.invoke("aiMasterSession", {
+        const data = await invokeAiFunction("aiMasterSession", {
           project_title: bounceTitle,
           genre: project?.genre,
           bpm: project?.bpm,
           stems: validTracks.map(t => ({ name: t.name, type: t.type })),
         });
-        if (res.data?.error) throw new Error(res.data.error);
-        masterParams = res.data;
+        masterParams = data;
         setParams(masterParams);
       }
 
@@ -97,7 +98,7 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
 
       // 3. Upload + publish the finished, industry-ready song
       setStep(3);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await authorizedUpload(file, { accept: "audio" });
       const me = await base44.auth.me();
       await base44.entities.ArtPost.create({
         title: bounceTitle,
@@ -133,8 +134,7 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
         }
       }, 1400);
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : "Failed to produce song";
-      setError(errMsg);
+      setError(aiErrorMessage(err));
       console.error("Bounce failed:", err);
       setBouncing(false);
     }

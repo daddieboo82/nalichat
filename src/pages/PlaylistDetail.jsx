@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CustomMediaPlayer from "@/components/audio/CustomMediaPlayer";
 import { Slider } from "@/components/ui/slider";
+import { authorizedUpload } from "@/lib/authorizedUpload";
 
 export default function PlaylistDetail() {
   const { playlistId } = useParams();
@@ -48,7 +49,7 @@ export default function PlaylistDetail() {
 
   const uploadMutation = useMutation({
     mutationFn: async (file) => {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await authorizedUpload(file, { accept: "audio" });
       const newPost = await base44.entities.ArtPost.create({
         title: file.name,
         file_url,

@@ -20,6 +20,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { aiErrorMessage, invokeAiFunction } from "@/lib/aiUsage";
+import { authorizedUpload } from "@/lib/authorizedUpload";
 
 
 export default function CoverArt() {
@@ -107,7 +109,7 @@ export default function CoverArt() {
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
       const file = new File([blob], "edited-cover.jpg", { type: "image/jpeg" });
       
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await authorizedUpload(file, { accept: "image" });
       setGeneratedImage(file_url);
       setShowEditDialog(false);
       toast.success("Edits applied! Click 'Save to Track' to save changes.");
@@ -184,7 +186,7 @@ export default function CoverArt() {
     try {
       setIsImporting(true);
       toast.info('Uploading track...');
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await authorizedUpload(file, { accept: "audio" });
       await base44.entities.ArtPost.create({
         title: file.name.replace(/\.[^/.]+$/, ""),
         description: "Imported track",
@@ -225,16 +227,15 @@ export default function CoverArt() {
   const generateArtMutation = useMutation({
     mutationFn: async (post) => {
       setGeneratingStatus("Listening to your track...");
-      const res = await base44.functions.invoke('generate-cover-art', {
+      const data = await invokeAiFunction('generate-cover-art', {
         file_url: post.file_url,
         title: post.title,
         genre: post.genre,
         tags: post.tags,
       });
-      if (res.data?.error) throw new Error(res.data.error);
-      if (!res.data?.image_url) throw new Error("Image generation failed");
+      if (!data?.image_url) throw new Error("Image generation failed");
       setGeneratingStatus("Painting final masterpiece...");
-      return res.data.image_url;
+      return data.image_url;
     },
     onSuccess: (url) => {
       setGeneratedImage(url);
@@ -244,7 +245,7 @@ export default function CoverArt() {
     onError: (err) => {
       console.error(err);
       setGeneratingStatus("");
-      toast.error("Failed to generate cover art. Please try again.");
+      toast.error(aiErrorMessage(err));
     }
   });
 
@@ -294,7 +295,7 @@ export default function CoverArt() {
 
     try {
       setIsUploading(true);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await authorizedUpload(file, { accept: "image" });
       setGeneratedImage(file_url);
       toast.success('Image uploaded successfully! You can now save it to your track.');
     } catch (error) {

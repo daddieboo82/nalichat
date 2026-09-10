@@ -4,12 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
 import { resumableUpload } from "@/lib/resumableUpload";
 import { UploadCloud, FileText, CheckCircle2 } from "lucide-react";
 import { EntitlementGate } from "@/components/subscription/EntitlementGate";
+import { useSubscription } from "@/hooks/useSubscription";
+import { formatBytes } from "@/lib/uploadValidation";
+import { finalizeSharedFileUpload } from "@/lib/authorizedUpload";
 
-function LargeFileTransferContent({ currentUser }) {
+function LargeFileTransferContent() {
+  const { limits } = useSubscription();
   const [file, setFile] = useState(null);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -18,14 +21,14 @@ function LargeFileTransferContent({ currentUser }) {
   const [shareLink, setShareLink] = useState("");
   const fileInputRef = useRef(null);
 
-  const MAX_UPLOAD_SIZE = 20 * 1024 * 1024 * 1024; // 20GB
+  const maxUploadSize = limits.upload.maxBytes;
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    if (selectedFile.size > MAX_UPLOAD_SIZE) {
-      toast.error("File is too large. Max size is 20GB.");
+    if (selectedFile.size > maxUploadSize) {
+      toast.error(`File is too large. Your limit is ${formatBytes(maxUploadSize)}.`);
       return;
     }
 
@@ -46,16 +49,14 @@ function LargeFileTransferContent({ currentUser }) {
       // 1. Resumable Upload
       const file_url = await resumableUpload(file, (progress) => {
         setUploadProgress(progress);
-      });
+      }, { maxBytes: maxUploadSize });
 
       // 2. Create SharedFile record
-      const newFile = await base44.entities.SharedFile.create({
+      const newFile = await finalizeSharedFileUpload({
         name: file.name,
         file_url,
         file_type: file.type.startsWith("audio") ? "audio" : file.type.startsWith("video") ? "video" : "other",
         file_size: file.size,
-        uploader_id: currentUser.id,
-        uploader_name: currentUser.display_name || currentUser.full_name,
         description: message,
       });
 
@@ -83,7 +84,9 @@ function LargeFileTransferContent({ currentUser }) {
       <div className="flex-1 p-6 md:p-8 space-y-6">
         <div>
           <h2 className="text-2xl font-bold font-heading mb-1">Transfer Large Files</h2>
-          <p className="text-sm text-muted-foreground">Resume uploads anytime. Up to 20GB per file with Premium.</p>
+          <p className="text-sm text-muted-foreground">
+            Resume uploads anytime. Your per-file limit is {formatBytes(maxUploadSize)}.
+          </p>
         </div>
 
         {shareLink ? (
@@ -195,15 +198,15 @@ function LargeFileTransferContent({ currentUser }) {
   );
 }
 
-export default function LargeFileTransfer({ currentUser }) {
+export default function LargeFileTransfer() {
   return (
     <EntitlementGate
       entitlement="files.large_upload"
       title="Large file transfers are a Premium feature"
-      description="Choose Premium or Premium Plus to upload resumable files up to 20GB."
+      description="Choose Premium for uploads up to 10GB or Premium Plus for uploads up to 20GB."
       source="large_file_transfer"
     >
-      <LargeFileTransferContent currentUser={currentUser} />
+      <LargeFileTransferContent />
     </EntitlementGate>
   );
 }

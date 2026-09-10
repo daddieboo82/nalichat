@@ -1,4 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import {
+  AiQuotaError,
+  aiQuotaErrorResponse,
+  executeMeteredAiRequest,
+} from '../../shared/aiQuota.ts';
 
 // Triggered by an entity automation when a Track is created.
 // Analyzes the uploaded track and suggests a genre + BPM, then saves them
@@ -23,6 +28,9 @@ Deno.serve(async (req) => {
     if (!track) {
       return Response.json({ error: 'Track not found' }, { status: 404 });
     }
+    if (!track.uploaded_by) {
+      return Response.json({ error: 'Track uploader is required for AI metering' }, { status: 400 });
+    }
 
     // Pull project context for a better suggestion
     let project = null;
@@ -45,17 +53,23 @@ ${project?.genre ? `Project genre: ${project.genre}` : ''}
 Based on this, suggest the most likely musical genre and a typical BPM (beats per minute).
 Return realistic values. BPM must be a whole number between 60 and 200.`;
 
-    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      model: "claude_opus_4_8",
-      prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          genre: { type: 'string' },
-          bpm: { type: 'number' },
+    const { result, quota } = await executeMeteredAiRequest({
+      base44,
+      user: { id: track.uploaded_by },
+      operation: 'track_tags',
+      requestKey: `track_tags:${trackId}`,
+      dispatch: () => base44.asServiceRole.integrations.Core.InvokeLLM({
+        model: "claude_opus_4_8",
+        prompt,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            genre: { type: 'string' },
+            bpm: { type: 'number' },
+          },
+          required: ['genre', 'bpm'],
         },
-        required: ['genre', 'bpm'],
-      },
+      }),
     });
 
     const suggestedGenre = result?.genre?.trim();
@@ -81,9 +95,11 @@ Return realistic values. BPM must be a whole number between 60 and 200.`;
       }
     }
 
-    return Response.json({ success: true, suggestedGenre, suggestedBpm });
+    return Response.json({ success: true, suggestedGenre, suggestedBpm, quota });
   } catch (error) {
-    console.error('suggestTrackTags error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
+    console.error('suggestTrackTags error:', error);
+    const message = error instanceof Error ? error.message : 'Unable to suggest track tags';
+    return Response.json({ error: message }, { status: 500 });
   }
 });

@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Upload, Music, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
+import { authorizedUpload } from "@/lib/authorizedUpload";
 
 const SUPPORTED_FORMATS = {
   "audio/mpeg": ".mp3",
@@ -62,9 +63,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
           )
         );
 
-        const { file_url } = await base44.integrations.Core.UploadFile({
-          file: item.file,
-        });
+        const { file_url } = await authorizedUpload(item.file, { accept: "audio" });
 
         await base44.entities.Track.create({
           project_id: projectId,

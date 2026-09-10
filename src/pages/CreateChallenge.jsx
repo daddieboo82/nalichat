@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Image as ImageIcon, ArrowLeft, Upload, Music, X } from "lucide-react";
 import { toast } from "sonner";
 import DateField from "@/components/challenges/DateField";
+import { authorizedUpload } from "@/lib/authorizedUpload";
 
 const GENRES = ["EDM", "Hip Hop", "R&B", "Pop", "Rock", "Lo-Fi", "Ambient", "Other"];
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -43,11 +44,11 @@ export default function CreateChallenge() {
     try {
       let cover_url = "";
       if (coverFile) {
-        const res = await base44.integrations.Core.UploadFile({ file: coverFile });
+        const res = await authorizedUpload(coverFile, { accept: "image" });
         cover_url = res.file_url;
       }
 
-      const trackRes = await base44.integrations.Core.UploadFile({ file: sourceTrackFile });
+      const trackRes = await authorizedUpload(sourceTrackFile, { accept: "audio" });
       const source_track_url = trackRes.file_url;
       const source_track_name = sourceTrackName.trim() || sourceTrackFile.name.replace(/\.[^/.]+$/, "");
 

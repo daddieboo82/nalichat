@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   ENTITLEMENT_KEYS,
+  normalizePlan,
   resolveEntitlements,
+  resolveSubscriptionLimits,
 } from '../../../base44/shared/subscription.ts';
 
 const PAID_STATUSES = ['active', 'trialing'];
@@ -34,6 +36,33 @@ describe('subscription entitlement matrix', () => {
       'calls.summary': false,
       'reminders.follow_up': false,
       'privacy.locked_chats': false,
+    });
+
+    describe('subscription usage limits', () => {
+      it.each([
+        ['free', 20, 2],
+        ['premium', 200, 10],
+        ['premium_plus', 1_000, 20],
+      ])('resolves %s numeric limits', (plan, aiRequests, uploadGiB) => {
+        const limits = resolveSubscriptionLimits(plan, 'active');
+        expect(limits.ai.requestsPerUtcDay).toBe(aiRequests);
+        expect(limits.upload.maxBytes).toBe(uploadGiB * 1024 * 1024 * 1024);
+      });
+
+      it('falls back to free limits after paid access expires', () => {
+        const limits = resolveSubscriptionLimits('premium_plus', 'canceled', {
+          currentPeriodEnd: '2026-09-10T00:00:00.000Z',
+          now: '2026-09-10T00:00:00.000Z',
+        });
+        expect(limits.ai.requestsPerUtcDay).toBe(20);
+        expect(limits.upload.maxBytes).toBe(2 * 1024 * 1024 * 1024);
+      });
+
+      it.each(['pro', 'pro_filesharing'])('maps grandfathered %s accounts to Plus limits', (plan) => {
+        const limits = resolveSubscriptionLimits(normalizePlan(plan), 'active');
+        expect(limits.ai.requestsPerUtcDay).toBe(1_000);
+        expect(limits.upload.maxBytes).toBe(20 * 1024 * 1024 * 1024);
+      });
     });
   });
 

@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Download, Loader2, Award } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import AudioAnalysisPanel from "./AudioAnalysisPanel";
 import MasterPresets from "./MasterPresets";
 import { toast } from "sonner";
+import { aiErrorMessage, invokeAiFunction } from "@/lib/aiUsage";
 
 const EXPORT_FORMATS = {
   mp3: { label: "MP3", bitrate: "320kbps", size: "small", quality: "High Quality" },
@@ -42,7 +42,7 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
     setProcessing(true);
     try {
       // Call backend to bounce and master
-      const response = await base44.functions.invoke("bounceAndMaster", {
+      const data = await invokeAiFunction("bounceAndMaster", {
         audioUrl,
         loudnessTarget: loudnessStandard,
         format,
@@ -50,12 +50,12 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
         sampleRate,
       });
 
-      setAnalysis(response.data.analysis);
+      setAnalysis(data.analysis);
 
       // The current backend returns analysis only. Never label the input as a
       // mastered file; download only when a processing service provides an
       // actual output URL.
-      const exportedUrl = response.data?.audioUrl || response.data?.audio_url || response.data?.signed_url;
+      const exportedUrl = data?.audioUrl || data?.audio_url || data?.signed_url;
       if (exportedUrl) {
         const link = document.createElement("a");
         link.href = exportedUrl;
@@ -69,7 +69,7 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
       }
     } catch (error) {
       console.error("Export failed:", error);
-      toast.error("Export failed. Please try again.");
+      toast.error(aiErrorMessage(error));
     } finally {
       setExporting(false);
       setProcessing(false);

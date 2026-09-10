@@ -5,7 +5,6 @@ import ReactMarkdown from 'react-markdown';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { base44 } from "@/api/base44Client";
 import { resumableDownload } from "@/lib/resumableUpload";
 import MediaViewer from "./MediaViewer";
 import EmojiReactionPicker from "./EmojiReactionPicker";
@@ -17,6 +16,8 @@ import MessageContextMenu from "./MessageContextMenu";
 import VoiceTranscription from "./VoiceTranscription";
 import SwipeToReply from "./SwipeToReply";
 import ReportContentDialog from "@/components/ReportContentDialog";
+import { aiErrorMessage, invokeAiFunction } from "@/lib/aiUsage";
+import { toast } from "sonner";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -28,8 +29,8 @@ async function speakText(text) {
   for (const a of speakingAudios.values()) { try { a.pause(); } catch {} }
   speakingAudios.clear();
   try {
-    const res = await base44.functions.invoke("generate-speech", { text: text.slice(0, 1000), voice: "honey" });
-    const url = res?.data?.url;
+    const data = await invokeAiFunction("generate-speech", { text: text.slice(0, 1000), voice: "honey" });
+    const url = data?.url;
     if (!url) return;
     const audio = new Audio(url);
     speakingAudios.set(text, audio);
@@ -38,6 +39,7 @@ async function speakText(text) {
     await audio.play();
   } catch (e) {
     console.error("TTS error", e);
+    toast.error(aiErrorMessage(e));
   }
 }
 

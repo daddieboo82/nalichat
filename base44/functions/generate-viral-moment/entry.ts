@@ -1,126 +1,109 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import {
+  AiQuotaError,
+  aiQuotaErrorResponse,
+  executeMeteredAiRequest,
+} from '../../shared/aiQuota.ts';
 
-// Generates a viral "moment" from a chat message or voice note — either an
-// AI meme (image + caption) or a vertical reel script for TikTok / Instagram.
-// All credit-costly integration calls run server-side under asServiceRole.
+async function resolveMessageText(base44, messageText: unknown, audioUrl: unknown) {
+  if (typeof messageText === 'string' && messageText.trim()) return messageText.trim();
+  if (typeof audioUrl !== 'string' || !audioUrl) {
+    throw new Error('Message text or a voice note is required');
+  }
+  const transcript = await base44.asServiceRole.integrations.Core.TranscribeAudio({
+    audio_url: audioUrl,
+  });
+  const text = typeof transcript === 'string' ? transcript : transcript?.text || '';
+  if (!text.trim()) throw new Error('Could not transcribe the voice note.');
+  return text.trim();
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { messageText, senderName, type, audioUrl, request_key } = await req.json();
+    if (type !== 'meme' && type !== 'reel') {
+      return Response.json({ error: 'Type must be meme or reel.' }, { status: 400 });
     }
-
-    const { messageText, senderName, type, audioUrl } = await req.json();
-
-    let finalMessageText = messageText;
-
-    // If no text but an audio recording is provided, transcribe it first.
-    if ((!finalMessageText || finalMessageText.trim().length === 0) && audioUrl) {
-      try {
-        const transcript = await base44.asServiceRole.integrations.Core.TranscribeAudio({
-          audio_url: audioUrl,
-        });
-        finalMessageText = typeof transcript === 'string' ? transcript : transcript?.text || '';
-      } catch (transcribeErr) {
-        console.error('Transcription failed:', transcribeErr.message);
-        return Response.json({ error: 'Could not transcribe the voice note. Try a text message instead.' }, { status: 400 });
-      }
-    }
-
-    if (!finalMessageText || finalMessageText.trim().length === 0) {
+    if (!(typeof messageText === 'string' && messageText.trim()) && !audioUrl) {
       return Response.json({ error: 'Message text or a voice note is required' }, { status: 400 });
     }
 
-    const sourceLabel = audioUrl && !messageText ? 'a voice note' : 'a chat message';
+    const { result, quota } = await executeMeteredAiRequest({
+      base44,
+      user,
+      operation: type === 'meme' ? 'viral_meme' : 'viral_reel',
+      requestKey: request_key,
+      dispatch: async () => {
+        const finalMessageText = await resolveMessageText(base44, messageText, audioUrl);
+        const sourceLabel = audioUrl && !messageText ? 'a voice note' : 'a chat message';
 
-    if (type === "meme") {
-      const memePrompt = `You are a viral meme creator with a sharp, witty sense of humor. Turn ${sourceLabel} into a funny, shareable meme.
-
-Message: "${finalMessageText}"
-Sender: ${senderName || 'Someone'}
-
-Create:
-1. A punchy meme caption — think classic meme formats (top text / bottom text, or a single devastating one-liner). Keep it under 15 words. Make it genuinely funny, not cringe.
-2. An image generation prompt for the meme's visual — a relatable, expressive, or absurd scene that pairs with the caption. NO text in the image.
-
-Respond as JSON: { "caption": "the meme text", "image_prompt": "detailed visual prompt, no text, bold and colorful" }`;
-
-      const memeRes = await base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: memePrompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            caption: { type: "string" },
-            image_prompt: { type: "string" }
-          }
-        }
-      });
-
-      const { caption, image_prompt } = memeRes;
-
-      const imgRes = await base44.asServiceRole.integrations.Core.GenerateImage({
-        prompt: image_prompt + ". Bold, vibrant, meme-worthy, high quality, no text, no words, no typography."
-      });
-
-      if (!imgRes || !imgRes.url) throw new Error("Image generation failed");
-
-      return Response.json({
-        type: "meme",
-        caption,
-        image_url: imgRes.url,
-        source_text: finalMessageText
-      });
-    } else {
-      const reelPrompt = `You are a viral short-form video creator. Turn ${sourceLabel} into a vertical video reel script for TikTok / Instagram Reels.
+        if (type === 'meme') {
+          const memeRes = await base44.asServiceRole.integrations.Core.InvokeLLM({
+            prompt: `Turn ${sourceLabel} into a funny, shareable meme.
 
 Message: "${finalMessageText}"
 Sender: ${senderName || 'Someone'}
 
-Create a 15-30 second vertical video script:
-- 3-5 scenes, each with a vivid visual description and punchy on-screen text or voiceover
-- A catchy post caption
-- 5-8 relevant hashtags (without the # symbol)
-
-Respond as JSON: {
-  "scenes": [{ "visual": "what's shown on screen", "text": "on-screen text or voiceover", "duration": "approx seconds like '3s'" }],
-  "caption": "post caption without hashtags",
-  "hashtags": ["array", "of", "hashtag", "words"]
-}`;
-
-      const reelRes = await base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: reelPrompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            scenes: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  visual: { type: "string" },
-                  text: { type: "string" },
-                  duration: { type: "string" }
-                }
-              }
+Return JSON with a caption under 15 words and an image_prompt with no text or typography.`,
+            response_json_schema: {
+              type: 'object',
+              properties: {
+                caption: { type: 'string' },
+                image_prompt: { type: 'string' },
+              },
             },
-            caption: { type: "string" },
-            hashtags: {
-              type: "array",
-              items: { type: "string" }
-            }
-          }
+          });
+          const imgRes = await base44.asServiceRole.integrations.Core.GenerateImage({
+            prompt: `${memeRes.image_prompt}. Bold, vibrant, meme-worthy, high quality, no text, no words, no typography.`,
+          });
+          if (!imgRes?.url) throw new Error('Image generation failed');
+          return {
+            type: 'meme',
+            caption: memeRes.caption,
+            image_url: imgRes.url,
+            source_text: finalMessageText,
+          };
         }
-      });
 
-      return Response.json({
-        type: "reel",
-        ...reelRes,
-        source_text: finalMessageText
-      });
-    }
+        const reelRes = await base44.asServiceRole.integrations.Core.InvokeLLM({
+          prompt: `Turn ${sourceLabel} into a 15-30 second vertical video reel script.
+
+Message: "${finalMessageText}"
+Sender: ${senderName || 'Someone'}
+
+Return 3-5 scenes with visual, text, and duration, plus a caption and 5-8 hashtags.`,
+          response_json_schema: {
+            type: 'object',
+            properties: {
+              scenes: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    visual: { type: 'string' },
+                    text: { type: 'string' },
+                    duration: { type: 'string' },
+                  },
+                },
+              },
+              caption: { type: 'string' },
+              hashtags: { type: 'array', items: { type: 'string' } },
+            },
+          },
+        });
+        return { type: 'reel', ...reelRes, source_text: finalMessageText };
+      },
+    });
+
+    return Response.json({ ...result, quota });
   } catch (error) {
-    console.error('generate-viral-moment error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
+    console.error('generate-viral-moment error:', error);
+    const message = error instanceof Error ? error.message : 'Unable to generate viral moment';
+    return Response.json({ error: message }, { status: 500 });
   }
 });

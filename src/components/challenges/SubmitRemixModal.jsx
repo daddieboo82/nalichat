@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, UploadCloud, Music2, Link2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import { authorizedUpload } from "@/lib/authorizedUpload";
 
 function detectDevice() {
   const ua = navigator.userAgent;
@@ -48,7 +49,7 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
         source_type = "nalichat_studio";
       } else if (tab === "external") {
         if (!file) { toast.error("Choose a file to upload."); setSubmitting(false); return; }
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await authorizedUpload(file, { accept: "audio" });
         remix_file_url = file_url;
         source_type = "external_upload";
         file_format = (file.name.split(".").pop() || "").toLowerCase();

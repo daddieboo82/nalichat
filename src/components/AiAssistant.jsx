@@ -5,6 +5,12 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import TutorialTopics from "@/components/ai/TutorialTopics";
 import { toast } from "sonner";
+import {
+  AI_QUOTA_EVENT,
+  aiErrorMessage,
+  invokeAiFunction,
+  runMeteredAgentRequest,
+} from "@/lib/aiUsage";
 
 export default function AiAssistant() {
   const [open, setOpen] = useState(false);
@@ -18,6 +24,7 @@ export default function AiAssistant() {
   const [user, setUser] = useState(null);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [quota, setQuota] = useState(null);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const unsubRef = useRef(null);
@@ -26,9 +33,21 @@ export default function AiAssistant() {
   const loadingTimerRef = useRef(null);
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
+  useEffect(() => {
+    const updateQuota = (event) => setQuota(event.detail);
+    window.addEventListener(AI_QUOTA_EVENT, updateQuota);
+    return () => window.removeEventListener(AI_QUOTA_EVENT, updateQuota);
+  }, []);
 
   useEffect(() => {
-    const handleOpen = (e) => openChat(e.detail?.greeting);
+    const handleOpen = (e) => {
+      openChat(e.detail?.greeting).catch((error) => {
+        setMessages((current) => [...current, {
+          role: "assistant",
+          content: aiErrorMessage(error),
+        }]);
+      });
+    };
     const handleSendMessage = async (e) => {
       const text = e.detail?.message;
       if (!text) return;
@@ -36,7 +55,16 @@ export default function AiAssistant() {
       setMinimized(false);
       let conv = conversation;
       if (!conv) conv = await initConversation();
-      await base44.agents.addMessage(conv, { role: "user", content: text });
+      try {
+        await runMeteredAgentRequest(
+          () => base44.agents.addMessage(conv, { role: "user", content: text }),
+        );
+      } catch (error) {
+        setMessages((current) => [...current, {
+          role: "assistant",
+          content: aiErrorMessage(error),
+        }]);
+      }
     };
     window.addEventListener('open-ai-assistant', handleOpen);
     window.addEventListener('nali-send-message', handleSendMessage);
@@ -72,14 +100,15 @@ export default function AiAssistant() {
     try {
       if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; }
       setIsSpeaking(true);
-      const res = await base44.functions.invoke('generate-speech', { text: clean, voice: "honey" });
-      const audio = new Audio(res.data.url);
+      const data = await invokeAiFunction('generate-speech', { text: clean, voice: "honey" });
+      const audio = new Audio(data.url);
       currentAudioRef.current = audio;
       audio.onended = () => { setIsSpeaking(false); currentAudioRef.current = null; };
       audio.onerror = () => { setIsSpeaking(false); currentAudioRef.current = null; };
       await audio.play();
     } catch (e) {
       console.error("Nali voice error", e);
+      toast.error(aiErrorMessage(e));
       setIsSpeaking(false);
     }
   };
@@ -131,10 +160,10 @@ export default function AiAssistant() {
     if (!conversation) {
       const conv = await initConversation();
       // Send greeting — custom greeting lets onboarding prime Nali with context
-      await base44.agents.addMessage(conv, {
+      await runMeteredAgentRequest(() => base44.agents.addMessage(conv, {
         role: "user",
         content: greeting || "Hi! What can you help me with on RecordStudio?"
-      });
+      }));
     }
     setTimeout(() => inputRef.current?.focus(), 100);
   };
@@ -146,7 +175,9 @@ export default function AiAssistant() {
     let conv = conversation;
     try {
       if (!conv) conv = await initConversation();
-      await base44.agents.addMessage(conv, { role: "user", content: text.trim() });
+      await runMeteredAgentRequest(
+        () => base44.agents.addMessage(conv, { role: "user", content: text.trim() }),
+      );
       // loading is cleared by the subscription when Nali's reply arrives,
       // but set a safety timeout in case the subscription never fires
       // (agent error, WebSocket drop, or very long tool call)
@@ -170,9 +201,10 @@ export default function AiAssistant() {
       console.error("Nali send error", err);
       if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
       setLoading(false);
+      const message = aiErrorMessage(err);
       setMessages(prevMsgs => [...prevMsgs, {
         role: "assistant",
-        content: "Sorry, I couldn't process that message. Please try again.",
+        content: message,
       }]);
     }
   };
@@ -232,7 +264,11 @@ export default function AiAssistant() {
                   <div className={cn("w-[3px] bg-primary rounded-full", isSpeaking ? "waveform-bar" : "h-1")} style={{ animationDelay: "0.4s" }} />
                 </div>
               </div>
-              {!minimized && <p className="text-[10px] text-primary/80 uppercase tracking-widest font-bold mt-0.5">Studio Co-Producer</p>}
+              {!minimized && (
+                <p className="text-[10px] text-primary/80 uppercase tracking-widest font-bold mt-0.5">
+                  Studio Co-Producer{quota ? ` · ${quota.remaining}/${quota.limit} AI requests left today` : ""}
+                </p>
+              )}
             </div>
             {!minimized && (
               <button onClick={() => {

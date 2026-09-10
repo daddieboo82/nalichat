@@ -108,6 +108,68 @@ plans grant their tier. Canceled plans retain paid access only through a future
 `current_period_end`. Ended, unpaid, incomplete, and pending plans grant only
 free entitlements.
 
+## Usage limits and enforcement
+
+`base44/shared/subscription.ts` also owns all numeric plan limits:
+
+| Plan | AI requests per UTC day | Maximum upload |
+| --- | ---: | ---: |
+| Free | 20 | 2 GiB |
+| Premium | 200 | 10 GiB |
+| Premium Plus | 1,000 | 20 GiB |
+
+Legacy active `pro` and `pro_filesharing` records normalize to Premium Plus.
+Inactive or expired paid records resolve to Free limits. To change a limit,
+edit `PLAN_LIMITS` and deploy the server functions and client together.
+`checkSubscriptionStatus` exposes the normalized values for display and early
+client feedback, but server-side subscription lookup remains authoritative.
+
+End-user AI functions use `base44/shared/aiQuota.ts`. Usage is stored in
+`AIUsage` without prompts, messages, transcripts, filenames, generated content,
+or payment data. A record is first reserved, then changed to `dispatched` only
+after the provider call is made. Reservations expire after 15 minutes and
+protect the daily ceiling against ordinary concurrent requests. Stable opaque
+request keys prevent obvious retry double-counting. Base44 entities do not
+provide a transactional unique constraint, so this is the strongest available
+Base44-native design; monitor for duplicate request keys if traffic becomes
+highly concurrent.
+
+Quota days reset at `00:00:00Z`. Exhausted functions return HTTP 429 where the
+Base44 function transport preserves status, with code
+`AI_DAILY_QUOTA_EXHAUSTED` and `limit`, `used`, `remaining`, and `reset_at`
+values. Admins can call `getAiUsage` with an optional `day` (`YYYY-MM-DD`) and
+`user_id`; it returns counts by operation and account only.
+
+The embedded Base44 agent conversation API cannot be invoked through a custom
+server function. NaliChat therefore reserves and commits quota around each
+client agent dispatch. This meters the shipped UI and gives users quota
+feedback, but a caller with direct access to Base44's agent SDK could bypass
+that wrapper. All directly controlled LLM, image, speech, transcription,
+mastering, and ViralSeed calls are server-wrapped. Moderation, maintenance, and
+scheduled health/report work are intentionally excluded because they are not
+end-user AI consumption.
+
+All app uploads call `authorizeUpload` before `Core.UploadFile`. The function
+ignores client plan/limit claims and evaluates the authenticated account's
+canonical server limit. Shared-file flows additionally use
+`finalizeSharedFileUpload`, which rechecks the account limit and stamps the
+authenticated uploader rather than trusting client identity fields. Base44's
+direct `Core.UploadFile` API does not expose a server hook, signed upload policy,
+or authoritative object-size callback, so the backend cannot verify the actual
+byte count of arbitrary SDK calls. The preflight plus controlled SharedFile
+finalization is the strongest available boundary and prevents expensive
+transfer work through every shipped app path, but it is not a storage-layer
+hard cap against a custom client that bypasses the app or lies about object
+size.
+
+For monitoring, alert on 429 volume, stale `reserved` rows, duplicate
+`request_key` values for a user/day, and upload authorization failures. For an
+observe-only rollback, keep `AIUsage` and admin inspection deployed, change the
+metering wrapper to record without rejecting at the limit, and retain the
+client quota display. A full rollback may restore prior functions while
+leaving usage rows in place; they contain no user content and can support
+post-incident analysis.
+
 ## Legacy migration
 
 Run the admin-only `migrateSubscriptions` function as a dry run first:

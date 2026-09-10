@@ -1,4 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import {
+  AiQuotaError,
+  aiQuotaErrorResponse,
+  executeMeteredAiRequest,
+} from '../../shared/aiQuota.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -9,7 +14,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { audioUrl, loudnessTarget, format, bitDepth, sampleRate } = await req.json();
+    const { audioUrl, loudnessTarget, format, bitDepth, sampleRate, request_key } = await req.json();
 
     if (!audioUrl) {
       return Response.json({ error: 'Audio URL required' }, { status: 400 });
@@ -44,66 +49,59 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Audio URL host not allowed' }, { status: 400 });
     }
 
-    // Fetch audio file
-    const audioResponse = await fetch(audioUrl);
-    if (!audioResponse.ok) {
-      return Response.json({ error: 'Failed to fetch audio' }, { status: 400 });
-    }
+    const { result, quota } = await executeMeteredAiRequest({
+      base44,
+      user,
+      operation: 'bounce_master',
+      requestKey: request_key,
+      dispatch: async () => {
+        const audioResponse = await fetch(audioUrl);
+        if (!audioResponse.ok) throw new Error('Failed to fetch audio');
 
-    // Reject files larger than 50MB to prevent OOM in the Deno function
-    const contentLength = audioResponse.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > 50 * 1024 * 1024) {
-      return Response.json({ error: 'Audio file too large (max 50MB)' }, { status: 413 });
-    }
+        const contentLength = audioResponse.headers.get('content-length');
+        if (contentLength && parseInt(contentLength) > 50 * 1024 * 1024) {
+          throw new Error('Audio file too large (max 50MB)');
+        }
 
-    const arrayBuffer = await audioResponse.arrayBuffer();
-    
-    // Create simulated audio analysis from file size (since we can't decode MP3)
-    // In production, you'd use actual audio decoding library
-    const sampleCount = Math.min(44100, arrayBuffer.byteLength / 4); // Simulate sample data
-    
-    // Generate simulated audio buffer for analysis
-    const audioBuffer = new Float32Array(sampleCount);
-    const view = new DataView(arrayBuffer);
-    
-    for (let i = 0; i < sampleCount && i * 4 < arrayBuffer.byteLength; i++) {
-      try {
-        audioBuffer[i] = (view.getUint8(i * 4 % arrayBuffer.byteLength) - 128) / 128;
-      } catch {
-        audioBuffer[i] = Math.random() * 0.1; // Fallback to silence simulation
-      }
-    }
-    
-    // Analyze audio - calculate loudness metrics
-    const analysis = analyzeAudio(audioBuffer);
-    
-    // Normalize to target loudness standard
-    const targetLufs = getLufsTarget(loudnessTarget);
-    const gainAdjustment = calculateGainAdjustment(analysis.integrativeLouds, targetLufs);
-    
-    // Process audio with gain and limiting
-    const processedBuffer = processAudioBuffer(audioBuffer, gainAdjustment);
-    
-    // Apply mastering chain
-    const masteredBuffer = applyMasteringChain(processedBuffer, loudnessTarget);
-    
-    // Get final analysis
-    const finalAnalysis = analyzeAudio(masteredBuffer);
+        const arrayBuffer = await audioResponse.arrayBuffer();
+        const sampleCount = Math.min(44100, arrayBuffer.byteLength / 4);
+        const audioBuffer = new Float32Array(sampleCount);
+        const view = new DataView(arrayBuffer);
 
-    return Response.json({
-      success: true,
-      analysis: {
-        before: analysis,
-        after: finalAnalysis,
-        gainApplied: gainAdjustment,
-        format,
-        bitDepth,
-        sampleRate,
+        for (let i = 0; i < sampleCount && i * 4 < arrayBuffer.byteLength; i++) {
+          try {
+            audioBuffer[i] = (view.getUint8(i * 4 % arrayBuffer.byteLength) - 128) / 128;
+          } catch {
+            audioBuffer[i] = Math.random() * 0.1;
+          }
+        }
+
+        const analysis = analyzeAudio(audioBuffer);
+        const targetLufs = getLufsTarget(loudnessTarget);
+        const gainAdjustment = calculateGainAdjustment(analysis.integrativeLouds, targetLufs);
+        const processedBuffer = processAudioBuffer(audioBuffer, gainAdjustment);
+        const masteredBuffer = applyMasteringChain(processedBuffer, loudnessTarget);
+        const finalAnalysis = analyzeAudio(masteredBuffer);
+
+        return {
+          success: true,
+          analysis: {
+            before: analysis,
+            after: finalAnalysis,
+            gainApplied: gainAdjustment,
+            format,
+            bitDepth,
+            sampleRate,
+          },
+        };
       },
     });
+    return Response.json({ ...result, quota });
   } catch (error) {
+    if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     console.error('Bounce and master error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Unable to bounce and master audio';
+    return Response.json({ error: message }, { status: 500 });
   }
 });
 

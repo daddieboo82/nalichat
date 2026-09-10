@@ -19,6 +19,7 @@ import LargeFileTransfer from "@/components/files/LargeFileTransfer";
 import { sounds } from "@/hooks/use-sound";
 import { copyToClipboard } from "@/lib/clipboard";
 import PullToRefresh from "@/components/layout/PullToRefresh";
+import { authorizedUpload, finalizeSharedFileUpload } from "@/lib/authorizedUpload";
 
 const typeIcons = {
   audio: Music,
@@ -202,14 +203,12 @@ export default function Files() {
       setUploading(true);
       const currentFolderObj = currentFolderId ? folders.find(f => f.id === currentFolderId) : null;
       for (const file of filesArray) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        await base44.entities.SharedFile.create({
+        const { file_url } = await authorizedUpload(file);
+        await finalizeSharedFileUpload({
           name: file.name,
           file_url,
           file_type: detectFileType(file),
           file_size: file.size,
-          uploader_id: currentUser.id,
-          uploader_name: currentUser.display_name || currentUser.full_name,
           folder_id: currentFolderId,
           project_id: currentFolderObj?.project_id || null,
         });

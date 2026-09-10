@@ -18,6 +18,7 @@ import { sounds } from "@/hooks/use-sound";
 import { isValidAvatarUrl } from "@/lib/avatarValidation";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import SubscriptionSettings from "@/components/settings/SubscriptionSettings";
+import { authorizedUpload } from "@/lib/authorizedUpload";
 
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];
 
@@ -50,7 +51,7 @@ export default function Settings() {
     if (!file) return;
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await authorizedUpload(file, { accept: "image" });
       setForm(f => ({ ...f, avatar_url: file_url }));
     } finally {
       setUploading(false);

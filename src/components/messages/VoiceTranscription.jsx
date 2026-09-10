@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Loader2, FileText, Volume2 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
+import { aiErrorMessage, createAiRequestKey, invokeAiFunction } from "@/lib/aiUsage";
+import { toast } from "sonner";
 
 /**
  * Fetches and displays an AI transcription of a voice message.
@@ -16,7 +17,7 @@ export default function VoiceTranscription({ message, isOwn }) {
     transcriptionCache.get(message.id) || null
   );
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState("");
   const [speaking, setSpeaking] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const audioRef = useState(null);
@@ -28,19 +29,27 @@ export default function VoiceTranscription({ message, isOwn }) {
     let cancelled = false;
     setLoading(true);
 
-    base44.integrations.Core.TranscribeAudio({ audio_url: message.file_url })
+    invokeAiFunction(
+      "transcribeAudio",
+      { audio_url: message.file_url },
+      { requestKey: createAiRequestKey("transcription", message.id) },
+    )
       .then((res) => {
         if (cancelled) return;
-        const text = (res && res.data ? res.data : res) || "";
+        const text = res?.text || "";
         const clean = typeof text === "string" ? text.trim() : String(text).trim();
         if (clean && clean.length > 0) {
           transcriptionCache.set(message.id, clean);
           setTranscription(clean);
         } else {
-          setError(true);
+          setError("No transcription was returned.");
         }
       })
-      .catch(() => { if (!cancelled) setError(true); })
+      .catch((requestError) => {
+        if (!cancelled) {
+          setError(aiErrorMessage(requestError));
+        }
+      })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
@@ -50,17 +59,18 @@ export default function VoiceTranscription({ message, isOwn }) {
     if (!transcription) return;
     setSpeaking(true);
     try {
-      const res = await base44.functions.invoke("generate-speech", {
+      const data = await invokeAiFunction("generate-speech", {
         text: transcription,
         voice: "honey",
       });
-      const url = res?.data?.url;
+      const url = data?.url;
       if (!url) return;
       const audio = new Audio(url);
       audio.onended = () => setSpeaking(false);
       audio.onerror = () => setSpeaking(false);
       await audio.play();
-    } catch {
+    } catch (requestError) {
+      toast.error(aiErrorMessage(requestError));
       setSpeaking(false);
     }
   };
@@ -74,7 +84,10 @@ export default function VoiceTranscription({ message, isOwn }) {
     );
   }
 
-  if (error || !transcription) return null;
+  if (error) {
+    return <p className="mt-1.5 px-1 text-[11px] text-destructive">{error}</p>;
+  }
+  if (!transcription) return null;
 
   const preview = expanded ? transcription : transcription.slice(0, 120);
   const truncated = transcription.length > 120;

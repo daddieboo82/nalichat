@@ -6,6 +6,7 @@
 // the backend remains the authority.
 
 const MB = 1024 * 1024;
+const GB = 1024 * MB;
 
 export const UPLOAD_LIMITS = {
   image: { maxBytes: 15 * MB, label: 'image' },
@@ -37,6 +38,7 @@ export function detectKind(file) {
 export function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 MB';
   if (bytes < MB) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  if (bytes >= GB) return `${(bytes / GB).toFixed(1)} GB`;
   return `${(bytes / MB).toFixed(bytes < 10 * MB ? 1 : 0)} MB`;
 }
 

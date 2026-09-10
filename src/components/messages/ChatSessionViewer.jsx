@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import MultiTrackEditor from "../studio/MultiTrackEditor";
 import { Mic, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { authorizedUpload } from "@/lib/authorizedUpload";
 
 export default function ChatSessionViewer({ message, currentUser }) {
   const [tracks, setTracks] = useState([]);
@@ -41,7 +42,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
         const file = new File([blob], `track-${Date.now()}.webm`, { type: "audio/webm" });
         try {
-          const { file_url } = await base44.integrations.Core.UploadFile({ file });
+          const { file_url } = await authorizedUpload(file, { accept: "audio" });
           await base44.entities.Track.create({
             project_id: message.id,
             name: `Track by ${currentUser?.full_name || "Unknown"}`,

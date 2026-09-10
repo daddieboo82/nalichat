@@ -47,6 +47,7 @@ export function useSubscription() {
       fromPlan: subscription.grandfatheredFromPlan,
     },
     entitlements: subscription.entitlements,
+    limits: subscription.limits,
     hasEntitlement,
     hasPaidAccess: subscription.hasPaidAccess,
     isTrialActive: subscription.isTrialing,

@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { X, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { recordSquadActivity } from "@/lib/squadBonus";
+import { authorizedUpload } from "@/lib/authorizedUpload";
 
 const MEDIUMS = ["original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
 const TAGS_SUGGESTIONS = ["hip-hop", "trap", "lofi", "electronic", "ambient", "house", "techno", "synthwave", "dark", "experimental"];
@@ -53,11 +54,11 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
 
     try {
       if (imageFile) {
-        const res = await base44.integrations.Core.UploadFile({ file: imageFile });
+        const res = await authorizedUpload(imageFile, { accept: "image" });
         image_url = res.file_url;
       }
       
-      const audioRes = await base44.integrations.Core.UploadFile({ file: audioFile });
+      const audioRes = await authorizedUpload(audioFile, { accept: "audio" });
       file_url = audioRes.file_url;
 
       await base44.entities.ArtPost.create({

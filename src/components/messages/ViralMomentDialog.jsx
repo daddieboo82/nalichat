@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Copy, Download, Share2, RefreshCw, Clapperboard, Image as ImageIcon, Music } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboard";
+import { aiErrorMessage, invokeAiFunction } from "@/lib/aiUsage";
 
 export default function ViralMomentDialog({ message, isOpen, onClose }) {
   const [mode, setMode] = useState(null);
@@ -40,10 +40,10 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
       if (!message.text && message.file_url && (message.type === "audio" || message.file_type?.startsWith("audio"))) {
         payload.audioUrl = message.file_url;
       }
-      const response = await base44.functions.invoke("generate-viral-moment", payload);
-      setResult(response.data);
+      const data = await invokeAiFunction("generate-viral-moment", payload);
+      setResult(data);
     } catch (err) {
-      setError("Nali couldn't create that moment. Try again!");
+      setError(aiErrorMessage(err));
     } finally {
       setLoading(false);
     }

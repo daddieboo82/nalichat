@@ -46,6 +46,10 @@ describe("subscription client normalization", () => {
       grandfathered: true,
       grandfatheredFromPlan: "pro",
       hasPaidAccess: true,
+      limits: {
+        ai: { requestsPerUtcDay: 1_000 },
+        upload: { maxBytes: 20 * 1024 * 1024 * 1024 },
+      },
       entitlements: {
         "chat.core": true,
         "files.large_upload": true,
@@ -63,6 +67,23 @@ describe("subscription client normalization", () => {
     });
     expect(subscription.entitlements["files.large_upload"]).toBe(true);
     expect(subscription.entitlements["privacy.locked_chats"]).toBe(false);
+    expect(subscription.limits.ai.requestsPerUtcDay).toBe(1_000);
+    expect(subscription.limits.upload.maxBytes).toBe(20 * 1024 * 1024 * 1024);
+  });
+
+  it("does not derive limits from an unrecognized client plan", () => {
+    const subscription = normalizeSubscription({
+      plan: "premium_plus",
+      claimedPlan: "unlimited",
+      claimedAiLimit: Number.MAX_SAFE_INTEGER,
+      limits: {
+        ai: { requestsPerUtcDay: 1_000 },
+        upload: { maxBytes: 20 * 1024 * 1024 * 1024 },
+      },
+    });
+
+    expect(subscription.plan).toBe("premium_plus");
+    expect(subscription.limits.ai.requestsPerUtcDay).toBe(1_000);
   });
 
   it("treats an error-shaped API response as a failure", async () => {

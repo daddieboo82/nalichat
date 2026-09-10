@@ -13,6 +13,7 @@ import TopWorksGallery from "@/components/profile/TopWorksGallery";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import NaliContextHint from "@/components/nali/NaliContextHint";
 import PullToRefresh from "@/components/layout/PullToRefresh";
+import { authorizedUpload } from "@/lib/authorizedUpload";
 
 const ROLES = ["Producer", "Beatmaker", "Sound Engineer", "Mixing Engineer", "Mastering Engineer", "Vocalist", "Instrumentalist", "DJ", "Composer", "Other"];
 const GENRES = ["Hip-Hop", "Trap", "Lo-Fi", "Electronic", "House", "Techno", "Ambient", "R&B", "Indie", "Alternative"];
@@ -99,7 +100,7 @@ export default function Profile() {
     if (!file) return;
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await authorizedUpload(file, { accept: "image" });
       await base44.auth.updateMe({ avatar_url: file_url });
       const updated = await base44.auth.me();
       setCurrentUser(updated);
@@ -114,7 +115,7 @@ export default function Profile() {
     if (!file) return;
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await authorizedUpload(file, { accept: "image" });
       await base44.auth.updateMe({ cover_url: file_url });
       const updated = await base44.auth.me();
       setCurrentUser(updated);

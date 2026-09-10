@@ -67,6 +67,7 @@ describe('formatBytes', () => {
     expect(formatBytes(500 * 1024)).toBe('500 KB');
     expect(formatBytes(5 * MB)).toBe('5.0 MB');
     expect(formatBytes(200 * MB)).toBe('200 MB');
+    expect(formatBytes(2 * 1024 * MB)).toBe('2.0 GB');
   });
 
   it('does not produce NaN for junk input', () => {

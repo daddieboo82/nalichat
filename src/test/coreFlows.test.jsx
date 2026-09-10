@@ -233,6 +233,21 @@ describe('core usage flow coverage', () => {
       if (name === 'toggleLike') {
         return { data: { liked: true, likes: 1 } };
       }
+      if (name === 'checkSubscriptionStatus') {
+        return {
+          data: {
+            plan: 'free',
+            status: 'active',
+            limits: {
+              ai: { requestsPerUtcDay: 20 },
+              upload: { maxBytes: 2 * 1024 * 1024 * 1024 },
+            },
+          },
+        };
+      }
+      if (name === 'authorizeUpload') {
+        return { data: { authorized: true, limit: 2 * 1024 * 1024 * 1024 } };
+      }
       return { data: {} };
     });
     mockBase44.entities.ArtPost.list.mockResolvedValue([]);
@@ -369,7 +384,13 @@ describe('core usage flow coverage', () => {
 
   it('persists the explicit rating from the bounce dialog when publishing a song', async () => {
     mockBase44.auth.me.mockResolvedValue({ id: 'user-1', display_name: 'Fresh', full_name: 'Fresh User' });
-    mockBase44.functions.invoke.mockResolvedValue({ data: {} });
+    mockBase44.functions.invoke.mockImplementation(async (name) => {
+      if (name === 'checkSubscriptionStatus') {
+        return { data: { limits: { upload: { maxBytes: 2 * 1024 * 1024 * 1024 } } } };
+      }
+      if (name === 'authorizeUpload') return { data: { authorized: true } };
+      return { data: {} };
+    });
 
     renderWithProviders(
       <BounceDialog

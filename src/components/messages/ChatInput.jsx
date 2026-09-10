@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
 import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile, Layers, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resumableUpload } from "@/lib/resumableUpload";
@@ -11,6 +10,7 @@ import EmojiReactionPicker from "./EmojiReactionPicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { authorizedUpload } from "@/lib/authorizedUpload";
 
 export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessage, onCancelEdit, disabled, onTyping }) {
   const [text, setText] = useState("");
@@ -164,7 +164,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       const id = `voice-${Date.now()}`;
       setUploads(u => [...u, { id, name: "Voice Message", progress: 0, done: false, error: false }]);
       try {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await authorizedUpload(file, { accept: "audio" });
         setUploads(u => u.map(x => x.id === id ? { ...x, progress: 100, done: true } : x));
         setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 1200);
         

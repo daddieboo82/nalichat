@@ -1,4 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import {
+  AiQuotaError,
+  aiQuotaErrorResponse,
+  executeMeteredAiRequest,
+} from '../../shared/aiQuota.ts';
 
 // Returns concrete, numeric mastering parameters that the client applies via WebAudio
 // to automatically produce an industry-ready master from stacked stems.
@@ -10,15 +15,20 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { project_title, genre, bpm, stems } = await req.json();
+    const { project_title, genre, bpm, stems, request_key } = await req.json();
 
     const stemSummary = Array.isArray(stems)
       ? stems.map(s => `- ${s.name} (${s.type || 'unknown'})`).join('\n')
       : 'unknown';
 
-    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      model: "claude_opus_4_8",
-      prompt: `You are a world-class mastering engineer. Produce concrete, numeric processing settings to turn a multi-stem mix into an industry-ready, streaming-loud master.
+    const { result, quota } = await executeMeteredAiRequest({
+      base44,
+      user,
+      operation: 'mastering',
+      requestKey: request_key,
+      dispatch: () => base44.asServiceRole.integrations.Core.InvokeLLM({
+        model: "claude_opus_4_8",
+        prompt: `You are a world-class mastering engineer. Produce concrete, numeric processing settings to turn a multi-stem mix into an industry-ready, streaming-loud master.
 
 Project: "${project_title}"
 ${genre ? `Genre: ${genre}` : ''}
@@ -35,25 +45,28 @@ Return precise DSP parameters tailored to this genre. Target streaming loudness 
 - makeup_gain_db — overall level boost after compression
 - limiter_ceiling_db — final brickwall ceiling (negative dB, around -1)
 gain_db values should be modest (-6 to +6). ratio 1.5-4. attack 0.003-0.05. release 0.05-0.4.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          low_shelf: { type: "object", properties: { freq_hz: { type: "number" }, gain_db: { type: "number" } } },
-          low_mid: { type: "object", properties: { freq_hz: { type: "number" }, gain_db: { type: "number" }, q: { type: "number" } } },
-          presence: { type: "object", properties: { freq_hz: { type: "number" }, gain_db: { type: "number" }, q: { type: "number" } } },
-          high_shelf: { type: "object", properties: { freq_hz: { type: "number" }, gain_db: { type: "number" } } },
-          compressor: { type: "object", properties: { threshold_db: { type: "number" }, ratio: { type: "number" }, attack_s: { type: "number" }, release_s: { type: "number" }, knee_db: { type: "number" } } },
-          makeup_gain_db: { type: "number" },
-          limiter_ceiling_db: { type: "number" },
-          notes: { type: "string" }
-        },
-        required: ["low_shelf", "low_mid", "presence", "high_shelf", "compressor", "makeup_gain_db", "limiter_ceiling_db"]
-      }
+        response_json_schema: {
+          type: "object",
+          properties: {
+            low_shelf: { type: "object", properties: { freq_hz: { type: "number" }, gain_db: { type: "number" } } },
+            low_mid: { type: "object", properties: { freq_hz: { type: "number" }, gain_db: { type: "number" }, q: { type: "number" } } },
+            presence: { type: "object", properties: { freq_hz: { type: "number" }, gain_db: { type: "number" }, q: { type: "number" } } },
+            high_shelf: { type: "object", properties: { freq_hz: { type: "number" }, gain_db: { type: "number" } } },
+            compressor: { type: "object", properties: { threshold_db: { type: "number" }, ratio: { type: "number" }, attack_s: { type: "number" }, release_s: { type: "number" }, knee_db: { type: "number" } } },
+            makeup_gain_db: { type: "number" },
+            limiter_ceiling_db: { type: "number" },
+            notes: { type: "string" }
+          },
+          required: ["low_shelf", "low_mid", "presence", "high_shelf", "compressor", "makeup_gain_db", "limiter_ceiling_db"]
+        }
+      }),
     });
 
-    return Response.json(result);
+    return Response.json({ ...result, quota });
   } catch (error) {
-    console.error('aiMasterSession error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
+    console.error('aiMasterSession error:', error);
+    const message = error instanceof Error ? error.message : 'Unable to master audio';
+    return Response.json({ error: message }, { status: 500 });
   }
 });

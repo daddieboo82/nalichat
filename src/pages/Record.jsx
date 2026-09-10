@@ -10,6 +10,7 @@ import MicCheckPanel from "@/components/record/MicCheckPanel";
 import RecordingCountdown from "@/components/record/RecordingCountdown";
 import RecordingTips from "@/components/record/RecordingTips";
 import RecordingGuide from "@/components/record/RecordingGuide";
+import { authorizedUpload, finalizeSharedFileUpload } from "@/lib/authorizedUpload";
 
 const GUIDE_KEY = "nali_rec_guide_done";
 
@@ -148,14 +149,12 @@ export default function Record() {
   const saveRecording = async (rec) => {
     setSaving(rec.id);
     const file = new File([rec.blob], `${rec.name}.webm`, { type: "audio/webm" });
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.SharedFile.create({
+    const { file_url } = await authorizedUpload(file, { accept: "audio" });
+    await finalizeSharedFileUpload({
       name: rec.name,
       file_url,
       file_type: "audio",
       file_size: rec.blob.size,
-      uploader_id: currentUser.id,
-      uploader_name: currentUser.display_name || currentUser.full_name,
     });
     setSaving(null);
   };

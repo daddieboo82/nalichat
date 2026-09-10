@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, Share2, Loader2, RefreshCw, ImageIcon, AlertCircle } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { aiErrorMessage, createAiRequestKey, invokeAiFunction } from "@/lib/aiUsage";
 
 // Shared cache so we don't re-transcribe the same voice note every render.
 const transcriptionCache = new Map();
@@ -14,8 +14,12 @@ const CARD_SIZE = 1080;
 
 async function fetchTranscription(fileUrl, messageId) {
   if (transcriptionCache.has(messageId)) return transcriptionCache.get(messageId);
-  const res = await base44.integrations.Core.TranscribeAudio({ audio_url: fileUrl });
-  const text = (res && res.data ? res.data : res) || "";
+  const res = await invokeAiFunction(
+    "transcribeAudio",
+    { audio_url: fileUrl },
+    { requestKey: createAiRequestKey("transcription", messageId) },
+  );
+  const text = res?.text || "";
   const clean = typeof text === "string" ? text.trim() : String(text).trim();
   if (clean) {
     transcriptionCache.set(messageId, clean);
@@ -75,9 +79,9 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
         if (cancelled) return;
         setTranscription(text || "");
       })
-      .catch(() => {
+      .catch((requestError) => {
         if (cancelled) return;
-        setError("Couldn't transcribe this voice note. Try again!");
+        setError(aiErrorMessage(requestError));
       })
       .finally(() => {
         if (!cancelled) setLoadingTx(false);

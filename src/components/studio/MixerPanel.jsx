@@ -4,21 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Square, Settings2, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { countActiveEffects, getTrackEffects } from '@/lib/audioProcessing';
 
 /**
  * Pro Tools-style mixer panel with REAL metering.
  * Reads actual amplitude from each track's waveform data at the current
  * playback position — gives content-accurate VU levels, not random noise.
  */
-function WaveformVuMeter({ track, isPlaying, currentTimeRef, isMaster = false, masterVolume }) {
+function WaveformVuMeter({ track, isPlaying, currentTimeRef, isMaster = false, masterVolume, silenced = false }) {
   const [level, setLevel] = useState(0);
   const peakRef = useRef(0);
   const rafRef = useRef(null);
 
   useEffect(() => {
     const tick = () => {
-      if (isPlaying && !track?.muted && track?.waveform?.length > 0) {
+      if (isPlaying && !silenced && !track?.muted && track?.waveform?.length > 0) {
         const t = currentTimeRef?.current || 0;
         const trackStart = track.startTime || 0;
         const trackEnd = trackStart + (track.duration || 40);
@@ -44,7 +44,7 @@ function WaveformVuMeter({ track, isPlaying, currentTimeRef, isMaster = false, m
     };
     tick();
     return () => cancelAnimationFrame(rafRef.current);
-  }, [isPlaying, track, masterVolume, isMaster, currentTimeRef]);
+  }, [isPlaying, track, masterVolume, isMaster, currentTimeRef, silenced]);
 
   const pct = Math.round(level * 100);
   const peakPct = Math.round(peakRef.current * 100);
@@ -75,10 +75,18 @@ export default function MixerPanel({
   toggleMute,
   toggleSolo,
   onOpenFX,
+  onOpenMasterFX,
+  onCommitTrack,
+  masterFx,
+  fxTarget,
   updateTrack,
   isPlaying,
   currentTimeRef,
 }) {
+  const commit = () => onCommitTrack?.();
+  const masterFxCount = countActiveEffects(masterFx);
+  const soloActive = (tracks || []).some(t => t.solo);
+
   return (
     <AnimatePresence>
       {show && (
@@ -94,17 +102,28 @@ export default function MixerPanel({
           </div>
 
           <div className="flex sm:flex-nowrap p-4 gap-3 pt-8 pb-4 h-full items-end w-max min-w-full">
-            {tracks.map(track => (
+            {tracks.map(track => {
+              const fxCount = countActiveEffects(getTrackEffects(track));
+              const sendLevel = Math.max(0, Math.min(100, track.send1 || 0));
+              const isFxOpen = fxTarget === track.id;
+              return (
               <div key={track.id} className="w-36 h-full bg-background/50 border border-border/50 rounded-lg p-2.5 flex flex-col justify-between shrink-0 shadow-sm relative">
                 <div className="text-[10px] text-center font-bold text-foreground/90 truncate w-full mb-1" title={track.name}>{track.name}</div>
 
                 {/* Sends Routing */}
                 <div className="flex flex-col gap-1 w-full bg-black/20 p-1.5 rounded-md border border-white/5 mb-1">
                   <div className="text-[8px] text-muted-foreground font-semibold flex justify-between">
-                    <span>Send 1 (Rev)</span>
-                    <span className="font-mono text-[8px] text-primary/80">{track.send1 || 0}%</span>
+                    <span className={cn(sendLevel > 0 && 'text-primary/90')}>Send 1 (Rev)</span>
+                    <span className="font-mono text-[8px] text-primary/80">{sendLevel}%</span>
                   </div>
-                  <Slider value={[track.send1 || 0]} max={100} onValueChange={(val) => updateTrack(track.id, { send1: val[0] })} className="w-full [&_[role=slider]]:h-2.5 [&_[role=slider]]:w-2.5 [&_[role=slider]]:bg-primary/80" />
+                  <Slider
+                    value={[sendLevel]}
+                    max={100}
+                    aria-label={`Send 1 reverb level for ${track.name}`}
+                    onValueChange={(val) => updateTrack(track.id, { send1: val[0] })}
+                    onValueCommit={commit}
+                    className="w-full [&_[role=slider]]:h-2.5 [&_[role=slider]]:w-2.5 [&_[role=slider]]:bg-primary/80"
+                  />
                 </div>
 
                 {/* Panning */}
@@ -113,7 +132,15 @@ export default function MixerPanel({
                     <span>Pan</span>
                     <span className="font-mono text-[8px]">{track.pan !== undefined ? (track.pan < 50 ? `L${50 - track.pan}` : track.pan > 50 ? `R${track.pan - 50}` : 'C') : 'C'}</span>
                   </div>
-                  <Slider value={[track.pan !== undefined ? track.pan : 50]} max={100} onValueChange={(val) => updateTrack(track.id, { pan: val[0] })} className="w-full [&_[role=slider]]:h-2.5 [&_[role=slider]]:w-2.5" />
+                  <Slider
+                    value={[track.pan !== undefined ? track.pan : 50]}
+                    max={100}
+                    aria-label={`Pan for ${track.name}`}
+                    onValueChange={(val) => updateTrack(track.id, { pan: val[0] })}
+                    onValueCommit={commit}
+                    onDoubleClick={() => { updateTrack(track.id, { pan: 50 }); commit(); }}
+                    className="w-full [&_[role=slider]]:h-2.5 [&_[role=slider]]:w-2.5"
+                  />
                 </div>
 
                 {/* Volume Fader & Real VU Meter */}
@@ -124,11 +151,13 @@ export default function MixerPanel({
                       value={[track.volume]}
                       max={100}
                       step={1}
-                      onValueChange={(val) => updateVolume(track.id, val)}
-                      className="h-full"
-                    />
-                  </div>
-                  <WaveformVuMeter track={track} isPlaying={isPlaying} currentTimeRef={currentTimeRef} masterVolume={masterVolume} />
+                        aria-label={`Volume for ${track.name}`}
+                        onValueChange={(val) => updateVolume(track.id, val)}
+                        onValueCommit={commit}
+                        className="h-full"
+                      />
+                    </div>
+                  <WaveformVuMeter track={track} isPlaying={isPlaying} currentTimeRef={currentTimeRef} masterVolume={masterVolume} silenced={soloActive && !track.solo} />
                 </div>
 
                 <div className="text-[10px] font-mono text-center font-semibold mb-2">{track.volume === 0 ? '-∞' : (20 * Math.log10(track.volume / 100)).toFixed(1)} dB</div>
@@ -138,11 +167,26 @@ export default function MixerPanel({
                   <Button type="button" size="icon" variant="outline" className={cn('w-full h-7 text-[10px] font-bold border-border/50', track.solo && 'bg-yellow-500 text-white border-yellow-500')} onClick={() => toggleSolo(track.id)}>S</Button>
                 </div>
 
-                <Button type="button" variant="outline" className="w-full h-7 text-[10px] gap-1.5 border-border/50 hover:bg-secondary" onClick={() => onOpenFX ? onOpenFX(track.id) : toast.info(`FX Chain coming soon`)}>
-                  <Settings2 className="w-3.5 h-3.5 text-muted-foreground" /> FX
+                <Button
+                  type="button"
+                  variant="outline"
+                  aria-pressed={isFxOpen}
+                  title={fxCount > 0 ? `${fxCount} active insert${fxCount > 1 ? 's' : ''} — open FX chain` : 'Open FX chain'}
+                  className={cn(
+                    'w-full h-7 text-[10px] gap-1.5 border-border/50 hover:bg-secondary',
+                    isFxOpen && 'border-primary/60 bg-primary/10 text-primary',
+                    fxCount > 0 && !isFxOpen && 'border-primary/30 text-primary/90'
+                  )}
+                  onClick={() => onOpenFX?.(track.id)}
+                >
+                  <Settings2 className={cn('w-3.5 h-3.5', fxCount > 0 ? 'text-primary' : 'text-muted-foreground')} /> FX
+                  {fxCount > 0 && (
+                    <span className="ml-auto px-1 rounded bg-primary/20 text-primary font-mono text-[9px] leading-4">{fxCount}</span>
+                  )}
                 </Button>
               </div>
-            ))}
+              );
+            })}
 
             <div className="w-px h-[80%] bg-border/50 mx-2 self-center" />
 
@@ -173,8 +217,21 @@ export default function MixerPanel({
                 <Button type="button" size="icon" className="w-full h-7">M</Button>
               </div>
 
-              <Button type="button" variant="outline" className="w-full h-7 text-[10px] gap-1.5 border-primary/20 hover:bg-primary/10 text-primary/80" onClick={() => toast.info(`Master FX Chain coming soon`)}>
+              <Button
+                type="button"
+                variant="outline"
+                aria-pressed={fxTarget === 'master'}
+                title={masterFxCount > 0 ? `${masterFxCount} active master insert${masterFxCount > 1 ? 's' : ''}` : 'Open master FX chain'}
+                className={cn(
+                  'w-full h-7 text-[10px] gap-1.5 border-primary/20 hover:bg-primary/10 text-primary/80',
+                  fxTarget === 'master' && 'bg-primary/15 border-primary/60 text-primary'
+                )}
+                onClick={() => onOpenMasterFX?.()}
+              >
                 <Activity className="w-3.5 h-3.5" /> MASTER FX
+                {masterFxCount > 0 && (
+                  <span className="ml-auto px-1 rounded bg-primary/20 text-primary font-mono text-[9px] leading-4">{masterFxCount}</span>
+                )}
               </Button>
             </div>
           </div>

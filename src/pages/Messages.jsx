@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { useLocation } from "react-router-dom";
@@ -18,7 +18,24 @@ import ModerationBanner from "@/components/messages/ModerationBanner";
 import { MessageSquare, Users, Plus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { createTempId, applySendSuccess, applySendFailure, applyRealtimeCreate } from "@/lib/messageCache";
+import {
+  createClientMessageKey,
+  applyQueuedMessage,
+  applyDeliveryState,
+  applySendSuccess,
+  applySendFailure,
+  removeClientMessage,
+  applyRealtimeCreate,
+} from "@/lib/messageCache";
+import {
+  createOutboundEntry,
+  enqueueOutbound,
+  flushOutboundQueue,
+  getNextRetryAt,
+  markOutboundForRetry,
+  queueEntryToMessage,
+  readOutboundQueue,
+} from "@/lib/outboundQueue";
 
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -47,11 +64,16 @@ export default function Messages() {
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [showExternal, setShowExternal] = useState(false);
   const queryClient = useQueryClient();
+  const retryTimerRef = useRef(null);
+  const scheduleRetryRef = useRef(null);
+  const userInitiatedKeysRef = useRef(new Set());
 
   const [showInvite, setShowInvite] = useState(false);
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
+    base44.auth.me().then(setCurrentUser).catch((error) => {
+      console.error("Unable to load the current user for messaging:", error);
+    });
   }, []);
 
   useEffect(() => {
@@ -98,14 +120,24 @@ export default function Messages() {
   });
 
   const myConversations = conversations.filter(c => c.participant_ids?.includes(currentUser?.id));
+  const selectedConv = myConversations.find(c => c.id === selectedConvId);
 
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
     queryKey: ["messages", selectedConvId],
     queryFn: async () => {
       const msgs = await base44.entities.Message.filter({ conversation_id: selectedConvId }, "-created_date", 200);
-      return msgs.reverse();
+      const queued = readOutboundQueue()
+        .filter(entry =>
+          entry.conversationId === selectedConvId &&
+          entry.sender.id === currentUser.id
+        )
+        .map(queueEntryToMessage);
+      return queued.reduce(
+        (current, message) => applyQueuedMessage(current, message),
+        msgs.reverse()
+      );
     },
-    enabled: !!selectedConvId,
+    enabled: !!selectedConvId && !!currentUser?.id,
     refetchInterval: 5000,
     staleTime: 3000,
   });
@@ -156,8 +188,8 @@ export default function Messages() {
             if (event.type === "update") {
               return old.map(m => (m.id === event.id ? { ...m, ...event.data } : m));
             }
-            // create: retire at most one matching optimistic temp rather than
-            // every temp from this sender, which would strip in-flight sends.
+            // Create: reconcile by stable client key, with a one-at-a-time
+            // fallback only for older events that do not carry a key.
             return applyRealtimeCreate(old, event.data, event.id);
           });
         }
@@ -187,110 +219,174 @@ export default function Messages() {
     },
   });
 
-  const sendMessage = useMutation({
-    mutationFn: async (msgData) => {
-      // Banned users may only send to conversations that include an admin (appeals).
-      if (currentUser?.is_banned) {
-        const hasAdmin = selectedConv?.participant_ids?.some(
-          id => id !== currentUser.id && users.find(u => u.id === id)?.role === "admin"
-        );
-        if (!hasAdmin) throw new Error("banned");
-      } else if (currentUser?.timeout_until && new Date(currentUser.timeout_until) > new Date()) {
-        throw new Error("timed_out");
-      }
-      const msg = await base44.entities.Message.create({
-        ...msgData,
-        conversation_id: selectedConvId,
-        sender_id: currentUser.id,
-        sender_name: currentUser.display_name || currentUser.full_name,
-        sender_avatar: currentUser.avatar_url,
-        participant_ids: selectedConv?.participant_ids || [],
-      });
-      // Fire-and-forget: update the conversation preview in the background
-      // so it never delays the message swap in onSuccess.
-      base44.entities.Conversation.update(selectedConvId, {
-        last_message_text: msgData.text || `Sent a ${msgData.type}`,
-        last_message_at: new Date().toISOString(),
-      }).catch(() => {});
+  const showModerationRejection = useCallback((rejection) => {
+    const labels = {
+      violence: "violence",
+      racism: "racism",
+      sexual_violence: "sexual violence",
+      bullying: "bullying",
+      illegal_activity: "illegal activity",
+    };
+    if (rejection.is_banned) {
+      toast.error("You have been banned for repeated policy violations. To appeal, message an admin.");
+    } else if (rejection.action_taken === "timeout") {
+      toast.error(`Message blocked for ${labels[rejection.category] || "a policy violation"}. 2nd offence — you are timed out for 48 hours.`);
+    } else {
+      toast.error(`Message blocked for ${labels[rejection.category] || "a policy violation"}. This is your 1st warning — a 2nd offence is a 48-hour timeout.`);
+    }
+    base44.auth.me().then(setCurrentUser).catch((error) => {
+      console.error("Unable to refresh moderation status:", error);
+    });
+  }, []);
 
-      // Run content moderation on text messages (skip for banned users appealing to an admin).
-      if (msgData.text && msgData.text.trim() && !currentUser?.is_banned) {
-        try {
-          const { data } = await base44.functions.invoke("moderateContent", {
-            text: msgData.text,
-            conversation_id: selectedConvId,
-            message_id: msg.id,
-          });
-          if (data?.flagged) {
-            return { ...msg, _flagged: data };
-          }
-        } catch (e) {}
-      }
-      return msg;
-    },
-    onMutate: (msgData) => {
-      // Fire-and-forget: don't await cancelQueries — the optimistic message
-      // must appear in the UI on the same tick the user hits send, with zero delay.
-      queryClient.cancelQueries({ queryKey: ["messages", selectedConvId] });
-      const previous = queryClient.getQueryData(["messages", selectedConvId]);
-      const tempId = createTempId();
-      const tempMsg = {
-        id: tempId,
-        _tempId: tempId,
-        ...msgData,
-        conversation_id: selectedConvId,
-        sender_id: currentUser?.id,
-        sender_name: currentUser?.display_name || currentUser?.full_name,
-        sender_avatar: currentUser?.avatar_url,
-        created_date: new Date().toISOString(),
-        _optimistic: true,
-      };
-      queryClient.setQueryData(["messages", selectedConvId], (old = []) => [...old, tempMsg]);
-      queryClient.setQueryData(["conversations"], (old = []) => {
-        const updated = old.map(c => 
-          c.id === selectedConvId 
-            ? { ...c, last_message_text: msgData.text || `Sent a ${msgData.type}`, last_message_at: tempMsg.created_date } 
-            : c
+  const flushMessages = useCallback(async () => {
+    if (!currentUser?.id) return;
+    await flushOutboundQueue({
+      userId: currentUser.id,
+      send: async (entry) => {
+        const response = await base44.functions.invoke("sendMessage", {
+          conversation_id: entry.conversationId,
+          client_message_key: entry.clientMessageKey,
+          message: entry.payload,
+        });
+        return response.data;
+      },
+      onSending: (entry) => {
+        queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+          applyDeliveryState(old, entry.clientMessageKey, "sending", {
+            _optimistic: true,
+            _retryable: false,
+            _sendError: null,
+          })
         );
-        return updated.sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0));
-      });
-      return { previous, tempId };
-    },
-    onError: (_err, _msgData, ctx) => {
-      // Remove only the failed send's bubble. Restoring the whole pre-send
-      // snapshot would also erase other messages still in flight.
-      queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
-        applySendFailure(old, ctx?.tempId)
-      );
-    },
-    onSuccess: (msg, _vars, ctx) => {
-      // If the message was flagged by moderation, remove it from the cache and warn the user.
-      if (msg?._flagged) {
-        const f = msg._flagged;
-        queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
-          old.filter(m => m._tempId !== ctx?.tempId && m.id !== msg.id)
+      },
+      onSent: (entry, message) => {
+        queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+          applySendSuccess(old, message, entry.clientMessageKey)
         );
-        const labels = {
-          violence: "violence", racism: "racism", sexual_violence: "sexual violence",
-          bullying: "bullying", illegal_activity: "illegal activity",
-        };
-        if (f.is_banned) {
-          toast.error("You have been banned for repeated policy violations. To appeal, message an admin.");
-        } else if (f.action_taken === "timeout") {
-          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. 2nd offence — you are timed out for 48 hours.`);
+        userInitiatedKeysRef.current.delete(entry.clientMessageKey);
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      },
+      onRejected: (entry, rejection) => {
+        queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+          removeClientMessage(old, entry.clientMessageKey)
+        );
+        userInitiatedKeysRef.current.delete(entry.clientMessageKey);
+        if (rejection.type === "moderation") {
+          showModerationRejection(rejection);
         } else {
-          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. This is your 1st warning — a 2nd offence is a 48-hour timeout.`);
+          toast.error(rejection.message || "This message cannot be sent.");
         }
-        base44.auth.me().then(setCurrentUser).catch(() => {});
-        return;
-      }
-      // Swap this send's optimistic temp for the real saved message (no refetch).
-      queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
-        applySendSuccess(old, msg, ctx?.tempId)
+      },
+      onFailed: (entry) => {
+        queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+          applySendFailure(old, entry.clientMessageKey, entry.lastError)
+        );
+        if (userInitiatedKeysRef.current.delete(entry.clientMessageKey)) {
+          toast.error("Message not sent. Tap Retry to try again.");
+        }
+      },
+    });
+    scheduleRetryRef.current?.();
+  }, [currentUser?.id, queryClient, showModerationRejection]);
+
+  useEffect(() => {
+    const scheduleRetry = () => {
+      clearTimeout(retryTimerRef.current);
+      if (!currentUser?.id || !navigator.onLine) return;
+      const nextRetryAt = getNextRetryAt(undefined, currentUser.id);
+      if (nextRetryAt === null) return;
+      retryTimerRef.current = setTimeout(
+        () => flushMessages(),
+        Math.max(0, nextRetryAt - Date.now())
       );
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    },
-  });
+    };
+    scheduleRetryRef.current = scheduleRetry;
+
+    const handleOnline = () => flushMessages();
+    window.addEventListener("online", handleOnline);
+    flushMessages();
+    scheduleRetry();
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      clearTimeout(retryTimerRef.current);
+      scheduleRetryRef.current = null;
+    };
+  }, [currentUser?.id, flushMessages]);
+
+  const handleSendMessage = useCallback((payload) => {
+    if (!currentUser?.id || !selectedConvId) return;
+    const clientMessageKey = createClientMessageKey();
+    const entry = createOutboundEntry({
+      clientMessageKey,
+      conversationId: selectedConvId,
+      payload,
+      sender: {
+        id: currentUser.id,
+        name: currentUser.display_name || currentUser.full_name,
+        avatar: currentUser.avatar_url,
+      },
+    });
+
+    try {
+      enqueueOutbound(entry);
+    } catch (error) {
+      console.error("Unable to persist the outbound message:", error);
+      toast.error("Couldn't save this message for reliable delivery.");
+      return;
+    }
+
+    const queuedMessage = queueEntryToMessage(entry);
+    queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+      applyQueuedMessage(old, queuedMessage)
+    );
+    queryClient.setQueryData(["conversations"], (old = []) => {
+      const updated = old.map(conversation =>
+        conversation.id === selectedConvId
+          ? {
+              ...conversation,
+              last_message_text: payload.text || `Sent a ${payload.type}`,
+              last_message_at: entry.createdAt,
+            }
+          : conversation
+      );
+      return updated.sort((a, b) =>
+        new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0)
+      );
+    });
+
+    if (navigator.onLine) {
+      userInitiatedKeysRef.current.add(clientMessageKey);
+      flushMessages();
+    }
+  }, [currentUser, flushMessages, queryClient, selectedConvId]);
+
+  const retryMessage = useCallback((message) => {
+    const clientMessageKey = message?.client_message_key;
+    if (!clientMessageKey) return;
+    let entry;
+    try {
+      entry = markOutboundForRetry(clientMessageKey);
+    } catch (error) {
+      console.error("Unable to update the queued message for retry:", error);
+      toast.error("Couldn't queue this message for retry.");
+      return;
+    }
+    if (!entry) {
+      toast.error("This message is no longer in the outbound queue.");
+      return;
+    }
+    queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+      applyDeliveryState(old, clientMessageKey, navigator.onLine ? "sending" : "queued", {
+        _retryable: false,
+        _sendError: null,
+      })
+    );
+    if (navigator.onLine) {
+      userInitiatedKeysRef.current.add(clientMessageKey);
+      flushMessages();
+    }
+  }, [flushMessages, queryClient]);
 
   const isTimedOut = currentUser?.timeout_until && new Date(currentUser.timeout_until) > new Date();
 
@@ -348,7 +444,6 @@ export default function Messages() {
     }
   };
 
-  const selectedConv = myConversations.find(c => c.id === selectedConvId);
   const otherUsers = users.filter(u => u.id !== currentUser?.id);
 
   // Banned users may still message an admin (to appeal). Timed-out users are fully blocked.
@@ -476,8 +571,9 @@ export default function Messages() {
                   toast.error(currentUser?.is_banned ? "You are banned from sending messages." : "You are timed out and cannot send messages right now.");
                   return;
                 }
-                sendMessage.mutate(data);
+                handleSendMessage(data);
               }}
+              onRetryMessage={retryMessage}
               onEditMessage={(id, text) => editMessage.mutate({ id, text })}
               onReact={handleReact}
               onBack={() => setSelectedConvId(null)}

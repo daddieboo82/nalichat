@@ -39,6 +39,10 @@
     "message_id": {
       "type": "string"
     },
+    "client_message_key": {
+      "type": "string",
+      "description": "Client key of a rejected send, used to make moderation enforcement idempotent"
+    },
     "action_taken": {
       "type": "string",
       "enum": [

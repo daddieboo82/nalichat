@@ -16,6 +16,18 @@
     "sender_avatar": {
       "type": "string"
     },
+    "client_message_key": {
+      "type": "string",
+      "description": "Stable client-generated idempotency key, scoped to the authenticated sender and conversation"
+    },
+    "delivery_status": {
+      "type": "string",
+      "enum": [
+        "sent"
+      ],
+      "default": "sent",
+      "description": "Server-confirmed delivery state. Queued, sending, and failed are client-only states."
+    },
     "text": {
       "type": "string"
     },
@@ -26,6 +38,7 @@
         "file",
         "audio",
         "image",
+        "video",
         "session"
       ],
       "default": "text"

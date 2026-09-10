@@ -254,6 +254,9 @@ describe('core usage flow coverage', () => {
       if (name === 'updateUserPresence') {
         return { data: { ok: true } };
       }
+      if (name === 'sendMessage') {
+        return pending.promise;
+      }
       return { data: {} };
     });
 
@@ -269,13 +272,17 @@ describe('core usage flow coverage', () => {
     });
 
     deferredMessage.resolve({
-      id: 'msg-1',
-      text: 'hello there',
-      type: 'text',
-      conversation_id: 'conv-1',
-      sender_id: 'user-1',
-      sender_name: 'Fresh',
-      sender_avatar: undefined,
+      data: {
+        message: {
+          id: 'msg-1',
+          text: 'hello there',
+          type: 'text',
+          conversation_id: 'conv-1',
+          sender_id: 'user-1',
+          sender_name: 'Fresh',
+          sender_avatar: undefined,
+        },
+      },
     });
 
     await waitFor(() => {

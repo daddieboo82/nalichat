@@ -7,6 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, Send } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { createClientMessageKey } from "@/lib/messageCache";
+import { toast } from "sonner";
 
 export default function GlobalMessageDialog({ open, onOpenChange }) {
   const [search, setSearch] = useState("");
@@ -57,20 +59,21 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
       }
 
       // Send message
-      await base44.entities.Message.create({
+      const response = await base44.functions.invoke("sendMessage", {
         conversation_id: conversation.id,
-        sender_id: currentUser.id,
-        sender_name: currentUser.display_name || currentUser.full_name,
-        sender_avatar: currentUser.avatar_url,
-        text: message,
-        type: "text",
+        client_message_key: createClientMessageKey(),
+        message: { text: message, type: "text" },
       });
+      if (response.data?.rejection?.type === "moderation") {
+        throw new Error("This message was blocked by moderation.");
+      }
 
       setMessage("");
       setSelectedUser(null);
       onOpenChange(false);
     } catch (error) {
       console.error("Error sending message:", error);
+      toast.error(error?.message || "Message not sent. Please try again.");
     } finally {
       setSending(false);
     }

@@ -5,6 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { X, Send, MessageSquareQuote } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { createClientMessageKey } from "@/lib/messageCache";
+import { toast } from "sonner";
 
 function ThreadMessage({ msg, isOwn }) {
   return (
@@ -60,25 +62,28 @@ export default function ThreadPanel({ parentMessage, currentUser, onClose }) {
 
   const sendMutation = useMutation({
     mutationFn: async (msgText) => {
-      const reply = await base44.entities.Message.create({
+      const response = await base44.functions.invoke("sendMessage", {
         conversation_id: parentMessage.conversation_id,
-        sender_id: currentUser.id,
-        sender_name: currentUser.display_name || currentUser.full_name,
-        sender_avatar: currentUser.avatar_url || null,
-        text: msgText,
-        type: "text",
-        thread_id: parentMessage.id,
+        client_message_key: createClientMessageKey(),
+        message: {
+          text: msgText,
+          type: "text",
+          thread_id: parentMessage.id,
+        },
       });
-      // Bump reply count on parent — fetch fresh count to avoid stale closure
-      const fresh = await base44.entities.Message.filter({ thread_id: parentMessage.id }, "created_date");
-      await base44.entities.Message.update(parentMessage.id, {
-        thread_reply_count: fresh.length,
-      });
+      if (response.data?.rejection?.type === "moderation") {
+        throw new Error("This reply was blocked by moderation.");
+      }
+      const reply = response.data?.message;
+      if (!reply) throw new Error("The reply service returned no message.");
       return reply;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["thread", parentMessage.id] });
       queryClient.invalidateQueries({ queryKey: ["messages"] });
+    },
+    onError: (error) => {
+      toast.error(error?.message || "Reply not sent. Please try again.");
     },
   });
 

@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Pencil, Sparkles, Volume2, Share2, Flag } from "lucide-react";
+import { Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Pencil, Sparkles, Volume2, Share2, Flag, RotateCcw } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -42,7 +42,7 @@ async function speakText(text) {
 }
 
 function ReadReceipts({ readBy, users }) {
-  if (!readBy.length) return <span className="text-[10px] text-muted-foreground/50">✓</span>;
+  if (!readBy.length) return <span className="text-[10px] text-muted-foreground/50">Sent</span>;
   const readers = users.filter(u => readBy.includes(u.id)).slice(0, 3);
   return (
     <div className="flex items-center gap-0.5" title={readers.map(u => u.display_name || u.full_name).join(", ") + " saw this"}>
@@ -133,7 +133,7 @@ const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.l
 
 import React from "react";
 
-export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM }) {
+export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onRetry, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM }) {
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -159,10 +159,12 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
   const handleContextMenu = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (message._optimistic) return;
     showContextMenu(e.clientX, e.clientY);
   };
 
   const handleTouchStart = (e) => {
+    if (message._optimistic) return;
     const touch = e.touches[0];
     longPressTimer.current = setTimeout(() => {
       showContextMenu(touch.clientX, touch.clientY);
@@ -185,7 +187,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
   };
 
   return (
-    <SwipeToReply isOwn={isOwn} onReply={() => { if (navigator.vibrate) navigator.vibrate(20); onReply?.(message); }} disabled={!onReply}>
+    <SwipeToReply isOwn={isOwn} onReply={() => { if (navigator.vibrate) navigator.vibrate(20); onReply?.(message); }} disabled={message._optimistic || !onReply}>
     <motion.div
       id={`message-${message.id}`}
       initial={{ opacity: 0, y: 8, scale: 0.98 }}
@@ -293,9 +295,24 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
             {message.created_date && !isNaN(new Date(message.created_date).getTime()) ? format(new Date(message.created_date), "h:mm a") : "..."}
             {message.is_edited && " • Edited"}
           </p>
-          {isOwn && (
+          {isOwn && message._deliveryState === "failed" ? (
+            <button
+              type="button"
+              onClick={() => onRetry?.(message)}
+              className="flex items-center gap-1 text-[10px] font-semibold text-destructive hover:text-destructive/80"
+              title={message._sendError || "Message not sent"}
+              aria-label="Retry sending message"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Not sent · Retry
+            </button>
+          ) : isOwn && message._deliveryState === "queued" ? (
+            <span className="text-[10px] text-muted-foreground/60">Queued</span>
+          ) : isOwn && message._deliveryState === "sending" ? (
+            <span className="text-[10px] text-muted-foreground/60">Sending…</span>
+          ) : isOwn ? (
             <ReadReceipts readBy={message.read_by || []} users={users || []} />
-          )}
+          ) : null}
         </div>
         {message.thread_reply_count > 0 && (
           <button
@@ -313,6 +330,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
       {/* Hover action buttons */}
       <div className={cn(
         "hidden md:flex items-center gap-1 opacity-0 focus-within:opacity-100 transition-all self-center shrink-0 relative",
+        message._optimistic && "hidden",
         (showActions || showEmojiPicker) && "opacity-100",
         isOwn ? "flex-row mr-2" : "flex-row ml-2"
       )}>

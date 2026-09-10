@@ -27,7 +27,7 @@ import React from "react";
 
 const ADMIN_EMAILS = ["bossglop43@gmail.com"];
 
-export default React.memo(function ChatView({ conversation, messages, isLoading, currentUser, users, onSendMessage, onEditMessage, onReact, onBack, onStartDM, isBlocked, moderationBanner }) {
+export default React.memo(function ChatView({ conversation, messages, isLoading, currentUser, users, onSendMessage, onRetryMessage, onEditMessage, onReact, onBack, onStartDM, isBlocked, moderationBanner }) {
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -276,7 +276,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               key={item.id}
               message={item}
               isOwn={item.sender_id === currentUser?.id}
-              canDelete={item.sender_id === currentUser?.id || currentUser?.role === 'admin' || ADMIN_EMAILS.includes(currentUser?.email) || currentUser?.role === 'producer'}
+              canDelete={!item._optimistic && (item.sender_id === currentUser?.id || currentUser?.role === 'admin' || ADMIN_EMAILS.includes(currentUser?.email) || currentUser?.role === 'producer')}
               showAvatar={item.showAvatar}
               onReply={(msg) => {
                 setReplyTo(msg);
@@ -287,6 +287,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                 setReplyTo(null);
               }}
               onReact={onReact}
+              onRetry={onRetryMessage}
               onOpenThread={setThreadMessage}
               users={users}
               onCopy={() => copyToClipboard(item.text || "")}

@@ -9,6 +9,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
+import { createClientMessageKey } from "@/lib/messageCache";
 import { CallEngine } from "@/lib/callEngine";
 import { toast } from "sonner";
 
@@ -45,20 +46,19 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
 
   const conversationId = conversation?.id;
 
-  // Send a signaling message directly to the backend (bypasses the sendMessage
-  // mutation so signaling doesn't update conversation previews or trigger moderation).
+  // Signaling uses the authenticated send function, which recognizes the
+  // sentinel and skips both moderation and conversation preview updates.
   const sendSignal = useCallback(
     async (signal) => {
       if (!conversationId || !currentUser) return;
       try {
-        await base44.entities.Message.create({
+        await base44.functions.invoke("sendMessage", {
           conversation_id: conversationId,
-          sender_id: currentUser.id,
-          sender_name: currentUser.display_name || currentUser.full_name,
-          sender_avatar: currentUser.avatar_url,
-          participant_ids: conversation?.participant_ids || [],
-          type: "session",
-          text: JSON.stringify({ [SIGNAL_SENTINEL]: true, ...signal }),
+          client_message_key: createClientMessageKey(),
+          message: {
+            type: "session",
+            text: JSON.stringify({ [SIGNAL_SENTINEL]: true, ...signal }),
+          },
         });
       } catch (e) {
         console.error("Call signal failed:", e);

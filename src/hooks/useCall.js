@@ -65,15 +65,22 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
     if (!engineRef.current) {
       engineRef.current = new CallEngine({
         onStateChange: (state) => {
-          setCallState((prev) => (prev ? { ...prev, status: state } : null));
-          if (state === "ended") {
+          // "failed" (ICE/network drop) and engine-driven "ended" both need to tear
+          // the overlay down. Previously only the local user's explicit endCall()
+          // nulled callState, so a dropped call left a full-screen overlay stuck on
+          // screen with a blank status until the user manually pressed End.
+          if (state === "ended" || state === "failed") {
             setLocalStream(null);
             setRemoteStream(null);
             setMuted(false);
             setVideoEnabled(true);
             engineRef.current = null;
             callIdRef.current = null;
+            setCallState(null);
+            if (state === "failed") toast.error("Call disconnected");
+            return;
           }
+          setCallState((prev) => (prev ? { ...prev, status: state } : null));
         },
         onRemoteStream: setRemoteStream,
         onLocalStream: setLocalStream,

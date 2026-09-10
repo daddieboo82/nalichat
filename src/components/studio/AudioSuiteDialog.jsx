@@ -22,7 +22,7 @@ export default function AudioSuiteDialog({ open, onOpenChange, track, onProcess 
     { id: 'gain', label: 'Gain', icon: Volume2, desc: 'Adjust clip volume in dB' },
     { id: 'reverse', label: 'Reverse', icon: FlipHorizontal2, desc: 'Reverse the audio' },
     { id: 'pitch', label: 'Pitch Shift', icon: Music2, desc: 'Shift pitch in semitones' },
-    { id: 'stretch', label: 'Time Stretch', icon: Gauge, desc: 'Change duration without pitch' },
+    { id: 'stretch', label: 'Time Stretch', icon: Gauge, desc: 'Varispeed - changes duration and pitch together' },
     { id: 'silence', label: 'Silence', icon: RotateCcw, desc: 'Replace with silence' },
   ];
 
@@ -193,6 +193,7 @@ export default function AudioSuiteDialog({ open, onOpenChange, track, onProcess 
             <div className="space-y-2">
               <div className="flex justify-between text-xs"><span>Time Stretch</span><span className="font-mono text-primary">{timeStretch}%</span></div>
               <Slider value={[timeStretch]} min={50} max={200} step={5} onValueChange={v => setTimeStretch(v[0])} />
+              <p className="text-[10px] text-muted-foreground">Varispeed: pitch shifts with the tempo change, like a tape machine.</p>
             </div>
           )}
         </div>

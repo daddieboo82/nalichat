@@ -80,6 +80,7 @@ vi.mock('@/pages/ThankYou', () => ({ default: () => <div>Thank You Page</div> })
 vi.mock('@/pages/Onboarding', () => ({ default: () => <div>Onboarding Page</div> }));
 vi.mock('@/pages/Messages', () => ({ default: () => <div>Messages Page</div> }));
 vi.mock('@/pages/Studio', () => ({ default: () => <div>Studio Page</div> }));
+vi.mock('@/components/pricing/PricingPlans', () => ({ default: () => <div>Pricing Page</div> }));
 
 describe('app routing guards', () => {
   beforeEach(() => {
@@ -185,7 +186,7 @@ describe('app routing guards', () => {
 
     render(<App />);
 
-    await screen.findByText('App Layout');
+    await screen.findByText('Pricing Page');
     expect(window.location.pathname).toBe('/pricing');
   });
 });

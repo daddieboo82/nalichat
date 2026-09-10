@@ -277,6 +277,29 @@ describe('core usage flow coverage', () => {
     expect(screen.getByText(/Select a conversation from the sidebar/)).toBeTruthy();
   });
 
+  it('opens the conversation referenced by an in-app notification link', async () => {
+    const currentUser = { id: 'user-1', display_name: 'Fresh', full_name: 'Fresh User' };
+    const conversation = {
+      id: 'conv-linked',
+      name: 'Linked conversation',
+      type: 'group',
+      participant_ids: ['user-1', 'user-2'],
+    };
+    conversationStore.items = [conversation];
+    messageStore.byConversation[conversation.id] = [];
+    mockBase44.auth.me.mockResolvedValue(currentUser);
+    mockBase44.functions.invoke.mockImplementation(async (name) => {
+      if (name === 'listPublicUsers') {
+        return { data: { users: [currentUser] } };
+      }
+      return { data: {} };
+    });
+
+    renderWithProviders(<Messages />, ['/messages?id=conv-linked']);
+    await screen.findByText('Conversation: Linked conversation');
+    await screen.findByText('Conversation: Linked conversation');
+  });
+
   it('creates a DM, sends an optimistic message, and swaps in the saved message', async () => {
     const currentUser = { id: 'user-1', display_name: 'Fresh', full_name: 'Fresh User' };
     const otherUser = { id: 'user-2', display_name: 'Producer Two', full_name: 'Producer Two' };

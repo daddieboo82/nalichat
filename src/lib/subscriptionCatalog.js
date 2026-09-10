@@ -61,6 +61,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
     }),
     features: Object.freeze([
       "Everything in Premium",
+      "Smart follow-up reminders",
       "More Premium Plus capabilities coming later",
     ]),
   }),

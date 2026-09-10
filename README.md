@@ -38,6 +38,9 @@ Run the app: `npm run dev`
 
 Run unit/integration tests: `npm test`
 
+Follow-up reminder scheduler deployment and operations:
+[`FOLLOW_UP_REMINDERS.md`](./FOLLOW_UP_REMINDERS.md)
+
 Run browser end-to-end tests:
 1. Install Playwright browsers: `npx playwright install --with-deps chromium`
 2. Execute e2e suite: `npm run test:e2e`

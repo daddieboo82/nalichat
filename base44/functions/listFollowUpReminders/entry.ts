@@ -1,0 +1,20 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
+import {
+  followUpReminderErrorResponse,
+  listFollowUpReminders,
+} from '../../shared/followUpReminders.ts';
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    const reminders = await listFollowUpReminders({
+      entities: base44.asServiceRole.entities,
+      user,
+    });
+    return Response.json({ reminders });
+  } catch (error) {
+    console.error('listFollowUpReminders error:', error);
+    return followUpReminderErrorResponse(error);
+  }
+});

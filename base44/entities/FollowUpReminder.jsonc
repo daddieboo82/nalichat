@@ -1,0 +1,120 @@
+{
+  "name": "FollowUpReminder",
+  "type": "object",
+  "description": "Server-owned follow-up reminder state. Clients must use authenticated reminder functions.",
+  "properties": {
+    "owner_id": {
+      "type": "string",
+      "description": "User who created and receives the reminder"
+    },
+    "conversation_id": {
+      "type": "string",
+      "description": "Conversation containing the tracked message"
+    },
+    "source_message_id": {
+      "type": "string",
+      "description": "Owned sent message being tracked"
+    },
+    "source_message_created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Immutable server timestamp used for strict later-message comparisons"
+    },
+    "remind_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC notification deadline"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "completed",
+        "canceled",
+        "triggered",
+        "failed"
+      ]
+    },
+    "resolution_reason": {
+      "type": "string",
+      "enum": [
+        "recipient_reply",
+        "user_canceled",
+        "source_deleted",
+        "conversation_deleted",
+        "membership_removed",
+        "owner_blocked",
+        "owner_ineligible",
+        "notification_failed"
+      ]
+    },
+    "client_request_key": {
+      "type": "string",
+      "description": "Stable owner-scoped idempotency key"
+    },
+    "scheduled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "canceled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "triggered_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "failed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_attempt_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "delivery_claim_key": {
+      "type": "string",
+      "description": "Ephemeral server claim used to reject overlapping scheduler workers"
+    },
+    "delivery_notification_id": {
+      "type": "string",
+      "description": "Created in-app notification confirming delivery"
+    }
+  },
+  "required": [
+    "owner_id",
+    "conversation_id",
+    "source_message_id",
+    "source_message_created_at",
+    "remind_at",
+    "status",
+    "client_request_key",
+    "scheduled_at"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, ArrowLeft, ArrowDown, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2 } from "lucide-react";
+import { AlarmClock, MessageSquare, ArrowLeft, ArrowDown, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2 } from "lucide-react";
 import MediaViewerModal from "@/components/explore/MediaViewerModal";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
@@ -22,6 +22,7 @@ import { useCall, isCallSignal } from "@/hooks/useCall";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import CallOverlay from "./CallOverlay";
 import { motion, AnimatePresence } from "framer-motion";
+import FollowUpReminderDialog from "./FollowUpReminderDialog";
 
 import React from "react";
 
@@ -41,6 +42,8 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const markedRef = useRef(new Set());
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [followUpMessage, setFollowUpMessage] = useState(null);
+  const [showFollowUps, setShowFollowUps] = useState(false);
 
   // Real typing presence: broadcasts our own keystrokes (throttled) and reports
   // which other participants are currently typing.
@@ -134,6 +137,8 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     setShowGroupInfo(false);
     setThreadMessage(null);
     setShowSearch(false);
+    setFollowUpMessage(null);
+    setShowFollowUps(false);
   }, [conversation?.id]);
 
   const getOtherUser = () => {
@@ -238,6 +243,15 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                     <Info className="w-4 h-4 mr-2" /> Group Info
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem
+                  onClick={() => {
+                    setFollowUpMessage(null);
+                    setShowFollowUps(true);
+                  }}
+                  className="py-2.5 rounded-lg cursor-pointer"
+                >
+                  <AlarmClock className="w-4 h-4 mr-2" /> Follow-up reminders
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -308,6 +322,10 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               }}
               currentUser={currentUser}
               onStartDM={onStartDM}
+              onFollowUp={(message) => {
+                setFollowUpMessage(message);
+                setShowFollowUps(true);
+              }}
               onPlayAudio={(msg) => {
                 setSelectedMedia({
                   id: msg.id,
@@ -413,6 +431,13 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
           currentUser={currentUser}
         />
       )}
+
+      <FollowUpReminderDialog
+        open={showFollowUps}
+        onOpenChange={setShowFollowUps}
+        conversation={conversation}
+        sourceMessage={followUpMessage}
+      />
 
       {/* WebRTC Call Overlay — real audio/video engine */}
       <CallOverlay

@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Pencil, Sparkles, Volume2, Share2, Flag } from "lucide-react";
+import { AlarmClock, Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Pencil, Sparkles, Volume2, Share2, Flag } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -135,7 +135,7 @@ const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.l
 
 import React from "react";
 
-export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM }) {
+export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM, onFollowUp }) {
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -426,6 +426,17 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           </button>
         )}
 
+        {isOwn && !message._optimistic && (
+          <button
+            onClick={() => onFollowUp?.(message)}
+            className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-primary/15 hover:border-primary/40 hover:text-primary transition-all shadow-sm"
+            title="Remind me if no reply"
+            aria-label="Remind me if no reply"
+          >
+            <AlarmClock className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
+          </button>
+        )}
+
         {(canDelete !== undefined ? canDelete : isOwn) && (
           <button
             onClick={() => onDelete?.(message.id)}
@@ -467,6 +478,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           { icon: MessageSquareQuote, label: "Open Thread", onClick: () => onOpenThread?.(message) },
           ...(message.text ? [{ icon: Copy, label: "Copy", onClick: () => onCopy?.(message) }] : []),
           ...(message.text ? [{ icon: Volume2, label: "Read Aloud", onClick: () => speakText(message.text) }] : []),
+          ...(isOwn && !message._optimistic ? [{ icon: AlarmClock, label: "Remind me if no reply", onClick: () => onFollowUp?.(message), highlight: true }] : []),
           ...(isOwn && message.type === "text" ? [{ icon: Pencil, label: "Edit", onClick: () => onEdit?.(message) }] : []),
           ...((canDelete !== undefined ? canDelete : isOwn) ? [{ icon: Trash2, label: "Delete", onClick: () => { if (navigator.vibrate) navigator.vibrate(40); onDelete?.(message.id); }, destructive: true }] : []),
           { icon: Flag, label: "Report", onClick: () => setReportOpen(true), destructive: true },

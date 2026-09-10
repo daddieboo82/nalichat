@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import ConversationList from "@/components/messages/ConversationList";
@@ -23,6 +23,7 @@ import { createTempId, applySendSuccess, applySendFailure, applyRealtimeCreate }
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [sidebarTab, setSidebarTab] = useState("chats");
 
@@ -35,6 +36,7 @@ export default function Messages() {
   const handleSelectConv = (convId) => {
     setSelectedConvId(convId);
     markConversationRead(convId);
+    navigate(`/messages?id=${encodeURIComponent(convId)}`, { replace: true });
   };
 
   useEffect(() => {
@@ -98,6 +100,18 @@ export default function Messages() {
   });
 
   const myConversations = conversations.filter(c => c.participant_ids?.includes(currentUser?.id));
+
+  useEffect(() => {
+    const requestedConversationId = new URLSearchParams(location.search).get("id");
+    if (
+      requestedConversationId
+      && myConversations.some((conversation) => conversation.id === requestedConversationId)
+      && selectedConvId !== requestedConversationId
+    ) {
+      setSelectedConvId(requestedConversationId);
+      markConversationRead(requestedConversationId);
+    }
+  }, [location.search, myConversations, selectedConvId]);
 
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
     queryKey: ["messages", selectedConvId],
@@ -480,7 +494,10 @@ export default function Messages() {
               }}
               onEditMessage={(id, text) => editMessage.mutate({ id, text })}
               onReact={handleReact}
-              onBack={() => setSelectedConvId(null)}
+              onBack={() => {
+                setSelectedConvId(null);
+                navigate("/messages", { replace: true });
+              }}
               onStartDM={startDM}
             />
           ) : (

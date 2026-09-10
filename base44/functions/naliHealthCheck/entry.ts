@@ -39,12 +39,14 @@ Deno.serve(async (req) => {
     const filesNoUrl = sharedFiles.filter(f => !f.file_url);
     if (filesNoUrl.length) issues.push(`${filesNoUrl.length} SharedFile(s) are missing a file_url.`);
 
-    // Subscriptions whose trial has already ended but are still marked 'trial'
+    // Subscriptions whose trial has already ended but still have a trial status
     const now = Date.now();
     const staleTrials = subscriptions.filter(s =>
-      s.status === 'trial' && s.trial_end_date && new Date(s.trial_end_date).getTime() < now
+      (s.status === 'trial' || s.status === 'trialing')
+        && s.trial_end_date
+        && new Date(s.trial_end_date).getTime() < now
     );
-    if (staleTrials.length) issues.push(`${staleTrials.length} Subscription(s) are still 'trial' but the trial end date has passed.`);
+    if (staleTrials.length) issues.push(`${staleTrials.length} Subscription(s) still have a trial status but the trial end date has passed.`);
 
     const usersNoOnboarding = users.filter(u => !u.onboarding_completed);
     if (usersNoOnboarding.length) issues.push(`${usersNoOnboarding.length} user(s) have not completed onboarding.`);

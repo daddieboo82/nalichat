@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
     const users = await base44.asServiceRole.entities.User.filter({});
 
     const activeSubs = subscriptions.filter(s => s.status === 'active').length;
-    const trialSubs = subscriptions.filter(s => s.status === 'trial').length;
+    const trialSubs = subscriptions.filter(s => s.status === 'trial' || s.status === 'trialing').length;
     const canceledSubs = subscriptions.filter(s => s.status === 'canceled' || s.status === 'ended').length;
 
     return Response.json({

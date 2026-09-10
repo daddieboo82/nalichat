@@ -128,6 +128,25 @@
       "default": "proactive",
       "description": "How omnipresent Nali is across the app: proactive (auto hints), minimal (on-demand), or off (hidden)"
     },
+    "chat_theme_id": {
+      "type": "string",
+      "enum": [
+        "default",
+        "midnight",
+        "aurora",
+        "sunset"
+      ],
+      "default": "default",
+      "description": "Server-managed chat appearance preference. Premium IDs are written through setChatTheme after entitlement verification.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
     "stripe_customer_id": {
       "type": "string",
       "description": "Server-managed Stripe Customer ID for this NaliChat account",

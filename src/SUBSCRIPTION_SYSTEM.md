@@ -108,6 +108,22 @@ plans grant their tier. Canceled plans retain paid access only through a future
 `current_period_end`. Ended, unpaid, incomplete, and pending plans grant only
 free entitlements.
 
+### Premium chat themes
+
+`appearance.premium_themes` authorizes the bundled chat-theme catalog for both
+Premium tiers. The selected ID is stored on the user as `chat_theme_id`, so it
+applies across conversations without changing shared conversation data.
+`setChatTheme` validates catalog membership and the server-resolved entitlement
+before updating that field. Unknown IDs are rejected, and no URLs or arbitrary
+CSS values are accepted. Field-level rules permit reads but reserve direct
+writes for admins/service-role functions, preventing `auth.updateMe()` from
+bypassing entitlement enforcement.
+
+If paid access ends, the saved Premium ID is retained while the client resolves
+the effective theme to the Free `default`. Restoring the entitlement restores
+the saved choice automatically. Theme tokens are scoped to chat surfaces and
+include explicit foreground, link, reaction, delivery-state, and focus colors.
+
 ## Usage limits and enforcement
 
 `base44/shared/subscription.ts` also owns all numeric plan limits:

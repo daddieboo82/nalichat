@@ -234,3 +234,221 @@
 .low-power-mode * {
   box-shadow: none !important; /* Disable heavy glow shadows */
 }
+
+/* Curated chat themes. Values are fixed in the catalog; user input never reaches CSS. */
+.chat-theme {
+  --chat-background: #09090b;
+  --chat-surface: #141416;
+  --chat-surface-raised: #27272a;
+  --chat-foreground: #f4f4f5;
+  --chat-muted: #a1a1aa;
+  --chat-own-bubble: #7c3aed;
+  --chat-own-foreground: #ffffff;
+  --chat-other-bubble: #18181b;
+  --chat-other-foreground: #f4f4f5;
+  --chat-link: #c4b5fd;
+  --chat-reaction: #27272a;
+  --chat-delivery: #a1a1aa;
+  --chat-focus: #fbbf24;
+  --chat-border: #3f3f46;
+  color: var(--chat-foreground);
+  background-color: var(--chat-background);
+}
+
+.chat-theme--default {
+  --chat-background: #09090b;
+  --chat-surface: #141416;
+  --chat-surface-raised: #27272a;
+  --chat-foreground: #f4f4f5;
+  --chat-muted: #a1a1aa;
+  --chat-own-bubble: #7c3aed;
+  --chat-own-foreground: #ffffff;
+  --chat-other-bubble: #18181b;
+  --chat-other-foreground: #f4f4f5;
+  --chat-link: #c4b5fd;
+  --chat-reaction: #27272a;
+  --chat-delivery: #a1a1aa;
+  --chat-focus: #fbbf24;
+  --chat-border: #3f3f46;
+}
+
+.chat-theme--midnight {
+  --chat-background: #07111f;
+  --chat-surface: #0f2033;
+  --chat-surface-raised: #20435e;
+  --chat-foreground: #f8fafc;
+  --chat-muted: #b9d6e8;
+  --chat-own-bubble: #075985;
+  --chat-own-foreground: #ffffff;
+  --chat-other-bubble: #16324a;
+  --chat-other-foreground: #f8fafc;
+  --chat-link: #67e8f9;
+  --chat-reaction: #20435e;
+  --chat-delivery: #b9d6e8;
+  --chat-focus: #fbbf24;
+  --chat-border: #35617e;
+}
+
+.chat-theme--aurora {
+  --chat-background: #071611;
+  --chat-surface: #10251d;
+  --chat-surface-raised: #244c3e;
+  --chat-foreground: #f8fafc;
+  --chat-muted: #b7d9ca;
+  --chat-own-bubble: #166534;
+  --chat-own-foreground: #ffffff;
+  --chat-other-bubble: #183b30;
+  --chat-other-foreground: #f8fafc;
+  --chat-link: #86efac;
+  --chat-reaction: #244c3e;
+  --chat-delivery: #b7d9ca;
+  --chat-focus: #facc15;
+  --chat-border: #3a6958;
+}
+
+.chat-theme--sunset {
+  --chat-background: #1c0d18;
+  --chat-surface: #321426;
+  --chat-surface-raised: #5a2942;
+  --chat-foreground: #fff7ed;
+  --chat-muted: #e8b8c9;
+  --chat-own-bubble: #9f1239;
+  --chat-own-foreground: #ffffff;
+  --chat-other-bubble: #492037;
+  --chat-other-foreground: #fff7ed;
+  --chat-link: #fda4af;
+  --chat-reaction: #5a2942;
+  --chat-delivery: #e8b8c9;
+  --chat-focus: #fbbf24;
+  --chat-border: #75405d;
+}
+
+.chat-theme-messages {
+  color: var(--chat-foreground);
+  background:
+    radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--chat-own-bubble) 22%, transparent), transparent 38%),
+    radial-gradient(circle at 90% 100%, color-mix(in srgb, var(--chat-link) 12%, transparent), transparent 42%),
+    var(--chat-background);
+}
+
+.chat-theme-header,
+.chat-theme-composer,
+.chat-theme-chip {
+  color: var(--chat-foreground) !important;
+  background: color-mix(in srgb, var(--chat-surface) 92%, transparent) !important;
+  border-color: var(--chat-border) !important;
+}
+
+.chat-theme .chat-message-own {
+  color: var(--chat-own-foreground) !important;
+  background: var(--chat-own-bubble) !important;
+  border-color: color-mix(in srgb, var(--chat-own-foreground) 25%, transparent) !important;
+}
+
+.chat-theme .chat-message-other {
+  color: var(--chat-other-foreground) !important;
+  background: var(--chat-other-bubble) !important;
+  border-color: var(--chat-border) !important;
+}
+
+.chat-theme .chat-message-text,
+.chat-theme .chat-message-own .chat-message-text,
+.chat-theme .chat-message-other .chat-message-text {
+  color: inherit !important;
+}
+
+.chat-theme .chat-message-other a {
+  color: var(--chat-link);
+}
+
+.chat-theme .chat-message-own a {
+  color: var(--chat-own-foreground);
+}
+
+.chat-theme .chat-reply-preview--own {
+  color: var(--chat-own-foreground) !important;
+  background: var(--chat-own-bubble) !important;
+  border-color: var(--chat-own-foreground) !important;
+}
+
+.chat-theme .chat-reply-preview--other {
+  color: var(--chat-other-foreground) !important;
+  background: var(--chat-other-bubble) !important;
+  border-color: var(--chat-link) !important;
+}
+
+.chat-theme .chat-reply-sender {
+  color: inherit !important;
+}
+
+.chat-theme .chat-message-meta,
+.chat-theme .chat-delivery-state {
+  color: var(--chat-delivery) !important;
+  opacity: 1 !important;
+}
+
+.chat-theme .chat-reaction {
+  color: var(--chat-foreground) !important;
+  background: var(--chat-reaction) !important;
+  border-color: var(--chat-border) !important;
+}
+
+.chat-theme .chat-reaction[aria-pressed="true"] {
+  border-color: var(--chat-focus) !important;
+  box-shadow: 0 0 0 1px var(--chat-focus);
+}
+
+.chat-theme .chat-theme-unread {
+  color: var(--chat-link) !important;
+  background: var(--chat-surface-raised) !important;
+  border-color: var(--chat-border) !important;
+}
+
+.chat-theme :focus-visible {
+  outline: 3px solid var(--chat-focus) !important;
+  outline-offset: 2px !important;
+}
+
+.chat-theme-preview {
+  background:
+    radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--chat-own-bubble) 35%, transparent), transparent 40%),
+    var(--chat-background);
+  border-color: var(--chat-border) !important;
+}
+
+.chat-theme-preview-header {
+  height: 1.5rem;
+  background: var(--chat-surface);
+  border-bottom: 1px solid var(--chat-border);
+}
+
+.chat-theme-preview-bubble {
+  position: absolute;
+  width: 42%;
+  height: 1.25rem;
+  border-radius: 999px;
+}
+
+.chat-theme-preview-bubble--other {
+  left: 0.75rem;
+  top: 2.75rem;
+  background: var(--chat-other-bubble);
+  border: 1px solid var(--chat-border);
+}
+
+.chat-theme-preview-bubble--own {
+  right: 0.75rem;
+  bottom: 0.75rem;
+  background: var(--chat-own-bubble);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-theme *,
+  .chat-theme *::before,
+  .chat-theme *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

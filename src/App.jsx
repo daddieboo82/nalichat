@@ -158,7 +158,7 @@ const AuthenticatedApp = () => {
   // from Terms/Privacy and cannot complete a password reset.
   const ONBOARDING_EXEMPT_PATHS = new Set([
     '/onboarding', '/login', '/register', '/forgot-password', '/reset-password',
-    '/privacy', '/terms', '/download',
+    '/privacy', '/terms', '/download', '/thankyou',
   ]);
   const currentPath = location.pathname.toLowerCase();
 
@@ -200,6 +200,7 @@ const AuthenticatedApp = () => {
         <Route path="/challenge/:challengeId/submission/:submissionId" element={<SubmissionPlayer />} />
         <Route path="/squad/join/:inviteCode" element={<SquadJoin />} />
       <Route path="/viral-seed" element={<ViralSeed />} />
+        <Route path="/ThankYou" element={<ThankYou />} />
       </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/studio" element={<Studio />} />
@@ -214,7 +215,6 @@ const AuthenticatedApp = () => {
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/playlist/:playlistId" element={<PlaylistDetail />} />
           <Route path="/analytics" element={<Analytics />} />
-          <Route path="/ThankYou" element={<ThankYou />} />
           <Route path="/cover-art" element={<CoverArt />} />
           <Route path="/webhook-test" element={<WebhookTest />} />
           <Route path="/WebhookTest" element={<Navigate to="/webhook-test" replace />} />

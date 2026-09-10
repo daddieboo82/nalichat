@@ -199,7 +199,14 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                      <Button 
                        size="lg"
                        type="button"
-                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(post); }}
+                       onClick={(e) => {
+                         e.preventDefault();
+                         e.stopPropagation();
+                         addToCart({
+                           ...post,
+                           type: 'stem_license',
+                         });
+                       }}
                        disabled={inCart}
                        className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 gap-2 h-14 px-6 sm:px-8 text-base rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
                      >

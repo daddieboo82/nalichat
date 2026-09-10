@@ -15,7 +15,6 @@ import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import DeviceSelector from "@/components/audio/DeviceSelector";
 import NaliProactivitySettings from "@/components/nali/NaliProactivitySettings";
 import { sounds } from "@/hooks/use-sound";
-import { useSubscription } from "@/hooks/useSubscription";
 import { isValidAvatarUrl } from "@/lib/avatarValidation";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 
@@ -30,7 +29,6 @@ export default function Settings() {
   const [genreInput, setGenreInput] = useState("");
   const fileRef = useRef(null);
   const [showWizard, setShowWizard] = useState(false);
-  const { subscription, isPro, isProFilesharing, isTrialActive, isLoading: subLoading } = useSubscription();
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -247,52 +245,33 @@ export default function Settings() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">
-          <h2 className="text-xl font-heading font-bold mb-6">Subscription & Billing</h2>
-          
-          {!subLoading && (
-              <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06] mb-4">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h3 className="font-heading font-semibold text-lg text-foreground">Current Status</h3>
-                    {isProFilesharing ? (
-                      <Badge className="bg-primary/20 text-primary hover:bg-primary/20">Pro + 20GB Sharing Active</Badge>
-                    ) : isPro ? (
-                      <Badge className="bg-primary/20 text-primary hover:bg-primary/20">Pro Active</Badge>
-                    ) : isTrialActive || subscription?.hasAccess ? (
-                      <Badge className="bg-accent/20 text-accent hover:bg-accent/20">Free Trial - Full Access</Badge>
-                    ) : (
-                      <Badge variant="outline">Free Plan</Badge>
-                    )}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-2 space-y-1">
-                    <p>Account created: {new Date(user.created_date).toLocaleDateString()}</p>
-                    
-                    {subscription?.hasAccess && !isPro && (
-                      <p className="text-accent font-medium">
-                        You are currently in your 7-day free trial period with <strong className="font-bold text-primary">free access</strong> to all Pro features.
-                      </p>
-                    )}
-                    
-                    {subscription?.trialEndsAt && isTrialActive && (
-                      <p>Trial ends on: {new Date(subscription.trialEndsAt).toLocaleDateString()}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+          <h2 className="text-xl font-heading font-bold mb-6">Access & Support</h2>
 
-            <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06]">
-              <div>
-                <h3 className="font-heading font-semibold text-lg text-foreground">{isPro ? "Manage Your Plan" : "Upgrade to Pro"}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{isPro ? "View all plans, compare features, or change your subscription." : "Unlock all studio features, unlimited tracks, and advanced collaboration tools."}</p>
+          <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06] mb-4">
+            <div>
+              <div className="flex items-center gap-3">
+                <h3 className="font-heading font-semibold text-lg text-foreground">Current Access</h3>
+                <Badge className="bg-accent/20 text-accent hover:bg-accent/20">Free for Everyone</Badge>
               </div>
-              <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white border-0 gap-2 font-semibold" asChild>
-                <Link to="/pricing">
-                  <CreditCard className="w-4 h-4" />
-                  View Plans
-                </Link>
-                </Button>
+              <div className="text-sm text-muted-foreground mt-2 space-y-1">
+                <p>Account created: {new Date(user.created_date).toLocaleDateString()}</p>
+                <p>All core app features are unlocked with no subscription or trial required.</p>
+              </div>
             </div>
+          </div>
+
+          <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06]">
+            <div>
+              <h3 className="font-heading font-semibold text-lg text-foreground">Support NaliChat</h3>
+              <p className="text-sm text-muted-foreground mt-1">View the free access overview and optional ways to support track purchases, downloads, and donations.</p>
+            </div>
+            <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white border-0 gap-2 font-semibold" asChild>
+              <Link to="/pricing">
+                <CreditCard className="w-4 h-4" />
+                View Pricing
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">

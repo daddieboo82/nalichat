@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,11 +6,9 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { resumableUpload } from "@/lib/resumableUpload";
-import { UploadCloud, FileText, CheckCircle2, Lock } from "lucide-react";
-import { Link } from "react-router-dom";
+import { UploadCloud, FileText, CheckCircle2 } from "lucide-react";
 
 export default function LargeFileTransfer({ currentUser }) {
-  const { isPro } = useSubscription();
   const [file, setFile] = useState(null);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -20,16 +17,14 @@ export default function LargeFileTransfer({ currentUser }) {
   const [shareLink, setShareLink] = useState("");
   const fileInputRef = useRef(null);
 
-  const MAX_FREE_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
-  const MAX_PRO_SIZE = 20 * 1024 * 1024 * 1024; // 20GB
+  const MAX_UPLOAD_SIZE = 20 * 1024 * 1024 * 1024; // 20GB
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    const maxSize = isPro ? MAX_PRO_SIZE : MAX_FREE_SIZE;
-    if (selectedFile.size > maxSize) {
-      toast.error(`File is too large. Max size is ${isPro ? "20GB" : "2GB"}.`);
+    if (selectedFile.size > MAX_UPLOAD_SIZE) {
+      toast.error("File is too large. Max size is 20GB.");
       return;
     }
 
@@ -87,23 +82,8 @@ export default function LargeFileTransfer({ currentUser }) {
       <div className="flex-1 p-6 md:p-8 space-y-6">
         <div>
           <h2 className="text-2xl font-bold font-heading mb-1">Transfer Large Files</h2>
-          <p className="text-sm text-muted-foreground">Resume uploads anytime. {isPro ? "Up to 20GB limit." : "Up to 2GB limit."}</p>
+          <p className="text-sm text-muted-foreground">Resume uploads anytime. Up to 20GB per file for everyone.</p>
         </div>
-
-        {!isPro && (
-          <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Lock className="w-5 h-5 text-primary" />
-              <div className="text-sm">
-                <p className="font-semibold text-primary">Need more space?</p>
-                <p className="text-muted-foreground text-xs">Send up to 20GB per file with Pro</p>
-              </div>
-            </div>
-            <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-white">
-              <Link to="/pricing">Upgrade</Link>
-            </Button>
-          </div>
-        )}
 
         {shareLink ? (
           <div className="space-y-6 text-center py-8">

@@ -3,46 +3,6 @@ import { stripeRequest } from '../../shared/stripe.ts';
 
 // Server-side price catalog — never trust client-supplied prices
 const DONATION_PRESETS = [5, 10, 25, 50];
-const EXPORT_PRICES: Record<string, number> = { wav: 1.99, mp3: 0.99 };
-const BONUS_MULTIPLIER = 1.5;
-const APK_PRICE = 1.99;
-
-function getWeekKey(date = new Date()): string {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(d.setDate(diff));
-  return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
-}
-
-async function isSquadBonusActive(base44: any, userId: string): Promise<boolean> {
-  try {
-    const [asA, asB] = await Promise.all([
-      base44.asServiceRole.entities.Squad.filter({ member_a_id: userId, status: 'active' }),
-      base44.asServiceRole.entities.Squad.filter({ member_b_id: userId, status: 'active' }),
-    ]);
-    const squad = asA[0] || asB[0];
-    if (!squad) return false;
-
-    const weekKey = getWeekKey();
-    const progress = await base44.asServiceRole.entities.SquadProgress.filter({
-      squad_id: squad.id,
-      week_key: weekKey,
-    });
-    const p = progress[0];
-    if (!p?.bonus_unlocked) return false;
-
-    const now = new Date();
-    return !!(
-      p.bonus_starts_at &&
-      p.bonus_expires_at &&
-      now >= new Date(p.bonus_starts_at) &&
-      now <= new Date(p.bonus_expires_at)
-    );
-  } catch {
-    return false;
-  }
-}
 
 Deno.serve(async (req) => {
   try {
@@ -82,19 +42,12 @@ Deno.serve(async (req) => {
       const quantity = Math.min(Math.max(Math.floor(Number(item.quantity)) || 1, 1), 99);
 
       if (item.id) {
-        // Entity-backed item (ArtPost or SharedFile) — look up price from DB
+        // Entity-backed item (ArtPost) — look up price from DB
         let record;
         try {
           record = await base44.asServiceRole.entities.ArtPost.get(item.id);
         } catch (_e) {
-          // Not an ArtPost, try SharedFile
-        }
-        if (!record) {
-          try {
-            record = await base44.asServiceRole.entities.SharedFile.get(item.id);
-          } catch (_e) {
-            // Not found in either entity
-          }
+          // Not found
         }
         if (!record) {
           return Response.json(
@@ -115,27 +68,6 @@ Deno.serve(async (req) => {
         }
         unitPrice = amount;
         name = 'Donation to NaliChat';
-      } else if (item.type === 'apk_download') {
-        unitPrice = APK_PRICE;
-        name = 'NaliChat Android App (APK)';
-      } else if (item.type === 'studio_export') {
-        // Studio export — use fixed server-side price table
-        const format = String(item.format).toLowerCase();
-        if (!(format in EXPORT_PRICES)) {
-          return Response.json(
-            { error: 'Invalid export format' },
-            { status: 400 }
-          );
-        }
-        const basePrice = EXPORT_PRICES[format];
-        // Check squad bonus server-side instead of trusting client
-        const bonusActive = user?.id
-          ? await isSquadBonusActive(base44, user.id)
-          : false;
-        unitPrice = bonusActive
-          ? Math.round((basePrice / BONUS_MULTIPLIER) * 100) / 100
-          : basePrice;
-        name = `Studio Export - ${format.toUpperCase()} Download`;
       } else {
         return Response.json(
           { error: 'Item must have an id or a valid type' },
@@ -156,7 +88,7 @@ Deno.serve(async (req) => {
         name,
         price: unitPrice.toFixed(2),
         quantity,
-        ...(item.id ? { id: item.id } : {}),
+        ...(item.id ? { id: item.id, type: 'stem_license' } : {}),
         ...(item.type ? { type: item.type } : {}),
       });
     }

@@ -12,7 +12,6 @@ import BounceDialog from '@/components/studio/BounceDialog';
 import Metronome from '@/components/studio/Metronome';
 import MarkersBar from '@/components/studio/MarkersBar';
 import { sounds } from '@/hooks/use-sound';
-import { useSubscription } from '@/hooks/useSubscription';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePerformance } from '@/hooks/use-performance';
 
@@ -124,7 +123,7 @@ export default function Studio() {
   const [newTrackMidiChannel, setNewTrackMidiChannel] = useState('1');
   const [selectedTrackIds, setSelectedTrackIds] = useState([]);
 
-  const [maxTracks, setMaxTracks] = useState(2); // Free tier default
+  const [maxTracks] = useState(999); // Shared frontend limit for all users
   const [recordingStartTime, setRecordingStartTime] = useState(null);
   
   const [editMode, setEditMode] = useState('slip'); // slip, grid, shuffle
@@ -192,8 +191,6 @@ export default function Studio() {
   const [jamVideoActive, setJamVideoActive] = useState(false);
   const [defaultRole, setDefaultRole] = useState("editor");
   const [isProcessing, setIsProcessing] = useState(null); // 'separate' | 'generate' | null
-
-  const { isPro } = useSubscription();
 
   // Real-time collaborator presence
   const { peers: livePeers, setActivity } = useStudioPresence('studio-main');
@@ -416,11 +413,6 @@ export default function Studio() {
       return next;
     });
   };
-
-  // Pro & admin users get unlimited tracks. Free trial users keep the default limit.
-  useEffect(() => {
-    setMaxTracks(isPro ? 999 : 2);
-  }, [isPro]);
 
   // Smooth playback via RAF - Optimized to bypass React render cycle for award-winning performance
   useEffect(() => {
@@ -1053,7 +1045,7 @@ export default function Studio() {
     sounds.success();
     
     if (tracks.length + selectedTrackIds.length > maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      toast.error(`Track limit reached (${maxTracks}). You have reached the current 999-track studio limit.`);
       return;
     }
 
@@ -1090,7 +1082,7 @@ export default function Studio() {
     toast.success("Track deleted");
   };
   const duplicateTrack = (track) => {
-    if (tracks.length >= maxTracks) return toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+    if (tracks.length >= maxTracks) return toast.error(`Track limit reached (${maxTracks}). You have reached the current 999-track studio limit.`);
     const nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
     setTracksWithHistory(prev => [...prev, { ...track, id: nextId, name: `${track.name} (Copy)` }]); toast.success("Track duplicated");
   };
@@ -1122,7 +1114,7 @@ export default function Studio() {
   // Pro Tools-style Repeat Clip: duplicate a clip N times to the right, end-to-end.
   const handleRepeatClip = (track, count) => {
     if (tracks.length + count - 1 > maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      toast.error(`Track limit reached (${maxTracks}). You have reached the current 999-track studio limit.`);
       return;
     }
     const clipDur = track.duration || 40;
@@ -1234,7 +1226,7 @@ export default function Studio() {
     sounds.click();
     
     if (tracks.length + selectedTrackIds.length > maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      toast.error(`Track limit reached (${maxTracks}). You have reached the current 999-track studio limit.`);
       return;
     }
 
@@ -1290,7 +1282,7 @@ export default function Studio() {
     sounds.click();
     setActivity("Adding a track ➕");
     if (tracks.length >= maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      toast.error(`Track limit reached (${maxTracks}). You have reached the current 999-track studio limit.`);
       return;
     }
     const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
@@ -1382,7 +1374,7 @@ export default function Studio() {
       return;
     }
     if (tracks.length + 2 > maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      toast.error(`Track limit reached (${maxTracks}). You have reached the current 999-track studio limit.`);
       return;
     }
     setIsProcessing('separate');
@@ -1419,7 +1411,7 @@ export default function Studio() {
 
   const handleGenerateMelody = async () => {
     if (tracks.length >= maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      toast.error(`Track limit reached (${maxTracks}). You have reached the current 999-track studio limit.`);
       return;
     }
     setIsProcessing('generate');
@@ -1502,7 +1494,7 @@ export default function Studio() {
     const file = e.target.files && e.target.files[0];
     if (file) {
       if (tracks.length >= maxTracks) {
-        toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+        toast.error(`Track limit reached (${maxTracks}). You have reached the current 999-track studio limit.`);
         e.target.value = null;
         return;
       }

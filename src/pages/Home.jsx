@@ -37,7 +37,7 @@ const features = [
     path: "/studio",
     description: "Real-time multiplayer Studio co-editing with live audio and video.",
     gradient: "from-accent to-cyan-500",
-    badge: "Pro",
+    badge: "Included",
   },
   {
     icon: Layers,
@@ -53,7 +53,7 @@ const features = [
     path: "/studio",
     description: "Automatically master your tracks to industry-standard loudness and clarity.",
     gradient: "from-orange-500 to-red-500",
-    badge: "Pro",
+    badge: "Included",
   },
   {
     icon: FolderKanban,
@@ -110,7 +110,7 @@ const features = [
     path: "/analytics",
     description: "Track plays, reach, audience growth & listener engagement",
     gradient: "from-cyan-500 to-blue-500",
-    badge: "Pro",
+    badge: "Included",
   },
 ];
 
@@ -282,7 +282,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mt-5 text-sm text-muted-foreground">
-             ✅ Unlimited Messages · 🚀 High-Res Sharing · 💯 Always Free
+             ✅ Unlimited Messages · 🚀 Full Creative Toolkit · 💯 Always Free
             </p>
           )}
         </motion.div>
@@ -662,7 +662,7 @@ export default function Home() {
               </div>
               {!user && (
                 <p className="mt-8 text-sm font-bold text-muted-foreground tracking-wide uppercase">
-                  ✨ Completely free messaging · No credit card required · No trials ✨
+                  ✨ Completely free to use · No credit card required · No trials ✨
                 </p>
               )}
             </div>

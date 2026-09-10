@@ -46,16 +46,16 @@ function DownloadButton({ url, fileName, label }) {
   if (available) {
     return (
       <>
-        <div className="flex items-center gap-2 text-sm text-green-500">
-          <CheckCircle className="w-4 h-4" />
-          <span>Latest build is ready to download</span>
+        <div className="flex items-center gap-2 text-sm text-amber-500">
+          <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
+          <span>Latest build is not available right now</span>
         </div>
-        <a href={finalUrl} download={fileName} className="block">
-          <Button className="w-full h-14 text-base font-semibold" size="lg">
+        <div className="block">
+          <Button className="w-full h-14 text-base font-semibold" size="lg" disabled>
             <DownloadIcon className="w-5 h-5" />
-            {label}
+            Build Unavailable
           </Button>
-        </a>
+        </div>
       </>
     );
   }

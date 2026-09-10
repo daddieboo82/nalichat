@@ -67,6 +67,7 @@ vi.mock('@/pages/Home', () => ({ default: () => <div>Home Page</div> }));
 vi.mock('@/pages/Terms', () => ({ default: () => <div>Terms Page</div> }));
 vi.mock('@/pages/Privacy', () => ({ default: () => <div>Privacy Page</div> }));
 vi.mock('@/pages/Download', () => ({ default: () => <div>Download Page</div> }));
+vi.mock('@/pages/ThankYou', () => ({ default: () => <div>Thank You Page</div> }));
 vi.mock('@/pages/Onboarding', () => ({ default: () => <div>Onboarding Page</div> }));
 vi.mock('@/pages/Messages', () => ({ default: () => <div>Messages Page</div> }));
 vi.mock('@/pages/Studio', () => ({ default: () => <div>Studio Page</div> }));
@@ -132,5 +133,14 @@ describe('app routing guards', () => {
     window.history.pushState({}, '', '/download');
     render(<App />);
     await screen.findByText('Download Page');
+  });
+
+  it('keeps the thank-you page reachable after checkout even without auth', async () => {
+    window.history.pushState({}, '', '/ThankYou?checkout_id=cs_test_123');
+
+    render(<App />);
+
+    await screen.findByText('Thank You Page');
+    expect(window.location.pathname).toBe('/ThankYou');
   });
 });

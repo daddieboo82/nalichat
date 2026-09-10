@@ -1,5 +1,4 @@
-// Stripe API helper — uses the REST API directly to avoid SDK version issues in Deno.
-// Shared by createCheckout, createSubscriptionCheckout, and stripeWebhook.
+// Stripe API helper that uses REST directly to avoid SDK runtime drift in Deno.
 
 const STRIPE_API_BASE = 'https://api.stripe.com/v1';
 
@@ -9,24 +8,24 @@ export function getStripeKey(): string {
   return key;
 }
 
-// Flatten a nested object into Stripe's x-www-form-urlencoded param format.
-// e.g. { line_items: [{ price_data: { currency: 'usd' } }] }
-//   -> line_items[0][price_data][currency]=usd
-function flattenParams(obj: Record<string, any>, prefix: string = ''): string[] {
+function flattenParams(obj: Record<string, unknown>, prefix = ''): string[] {
   const params: string[] = [];
   for (const [key, value] of Object.entries(obj)) {
     if (value === null || value === undefined) continue;
     const paramKey = prefix ? `${prefix}[${key}]` : key;
     if (Array.isArray(value)) {
-      value.forEach((item: any, index: number) => {
-        if (typeof item === 'object' && !Array.isArray(item)) {
-          params.push(...flattenParams(item, `${paramKey}[${index}]`));
+      value.forEach((item, index) => {
+        if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+          params.push(...flattenParams(
+            item as Record<string, unknown>,
+            `${paramKey}[${index}]`,
+          ));
         } else {
           params.push(`${paramKey}[${index}]=${encodeURIComponent(String(item))}`);
         }
       });
     } else if (typeof value === 'object') {
-      params.push(...flattenParams(value, paramKey));
+      params.push(...flattenParams(value as Record<string, unknown>, paramKey));
     } else {
       params.push(`${paramKey}=${encodeURIComponent(String(value))}`);
     }
@@ -36,8 +35,9 @@ function flattenParams(obj: Record<string, any>, prefix: string = ''): string[] 
 
 export async function stripeRequest(
   path: string,
-  params: Record<string, any> = {},
-  method: string = 'POST'
+  params: Record<string, unknown> = {},
+  method = 'POST',
+  options: { idempotencyKey?: string } = {},
 ): Promise<any> {
   const key = getStripeKey();
   let url = `${STRIPE_API_BASE}${path}`;
@@ -50,49 +50,49 @@ export async function stripeRequest(
     body = flattenParams(params).join('&');
   }
 
-  const res = await fetch(url, {
+  const response = await fetch(url, {
     method,
     headers: {
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/x-www-form-urlencoded',
+      ...(options.idempotencyKey
+        ? { 'Idempotency-Key': options.idempotencyKey }
+        : {}),
     },
     body,
   });
 
-  const data = await res.json();
-  if (!res.ok) {
+  const data = await response.json();
+  if (!response.ok) {
     console.error(`Stripe API error (${path}):`, JSON.stringify(data));
-    throw new Error(data.error?.message || `Stripe API error: ${res.status}`);
+    throw new Error(data.error?.message || `Stripe API error: ${response.status}`);
   }
   return data;
 }
 
-// Verify a Stripe webhook signature and return the parsed event.
 export async function verifyStripeSignature(
   rawBody: string,
   signatureHeader: string,
-  secret: string
+  secret: string,
 ): Promise<any> {
-  const parts: Record<string, string> = {};
+  let timestamp = '';
+  const signatures: string[] = [];
   for (const part of signatureHeader.split(',')) {
     const [key, value] = part.split('=');
-    if (key && value) parts[key.trim()] = value.trim();
+    if (key?.trim() === 't' && value) timestamp = value.trim();
+    if (key?.trim() === 'v1' && value) signatures.push(value.trim());
   }
 
-  const timestamp = parts.t;
-  const signature = parts.v1;
-
-  if (!timestamp || !signature) {
+  if (!timestamp || signatures.length === 0) {
     throw new Error('Invalid Stripe signature header');
   }
 
-  // Reject replays older than 5 minutes
-  const age = Math.floor(Date.now() / 1000) - parseInt(timestamp, 10);
-  if (age > 300) {
+  const parsedTimestamp = Number.parseInt(timestamp, 10);
+  const age = Math.abs(Math.floor(Date.now() / 1000) - parsedTimestamp);
+  if (!Number.isFinite(parsedTimestamp) || age > 300) {
     throw new Error('Stripe webhook timestamp outside tolerance');
   }
 
-  // HMAC-SHA256 of "{timestamp}.{rawBody}" must match v1
   const signedPayload = `${timestamp}.${rawBody}`;
   const encoder = new TextEncoder();
   const cryptoKey = await crypto.subtle.importKey(
@@ -100,14 +100,28 @@ export async function verifyStripeSignature(
     encoder.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
-    ['sign']
+    ['sign'],
   );
-  const sig = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(signedPayload));
-  const expectedSignature = Array.from(new Uint8Array(sig))
-    .map((b) => b.toString(16).padStart(2, '0'))
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    cryptoKey,
+    encoder.encode(signedPayload),
+  );
+  const expectedSignature = Array.from(new Uint8Array(signature))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
+  const expectedBytes = encoder.encode(expectedSignature);
+  const matches = signatures.some((candidate) => {
+    const candidateBytes = encoder.encode(candidate);
+    if (candidateBytes.length !== expectedBytes.length) return false;
+    let difference = 0;
+    for (let index = 0; index < expectedBytes.length; index += 1) {
+      difference |= expectedBytes[index] ^ candidateBytes[index];
+    }
+    return difference === 0;
+  });
 
-  if (expectedSignature !== signature) {
+  if (!matches) {
     throw new Error('Stripe signature verification failed');
   }
 

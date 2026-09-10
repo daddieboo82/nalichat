@@ -1,9 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import jwt from 'npm:jsonwebtoken';
 
+// Legacy compatibility only. New subscription checkout is Stripe-only.
 Deno.serve(async (req) => {
   try {
-    console.error("HANDLER START ERROR LOG");
     // Security: Only POST allowed
     if (req.method !== 'POST') {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
@@ -85,6 +85,10 @@ Deno.serve(async (req) => {
         }
 
         const sub = subs[0];
+        if (sub.provider && sub.provider !== 'wix') {
+          console.warn('Ignoring Wix event for non-Wix subscription:', checkoutId);
+          return Response.json({ success: true });
+        }
 
         // Idempotency: if already activated, ack and return — Wix redelivers
         if (sub.status === 'active') {
@@ -115,7 +119,11 @@ Deno.serve(async (req) => {
         });
 
         for (const oldSub of oldSubs) {
-          if (oldSub.id !== sub.id && (oldSub.status === 'active' || oldSub.status === 'pending')) {
+          if (
+            oldSub.id !== sub.id
+            && (!oldSub.provider || oldSub.provider === 'wix')
+            && (oldSub.status === 'active' || oldSub.status === 'pending')
+          ) {
             if (oldSub.status === 'active' && oldSub.subscription_id && WIX_API_KEY && WIX_SITE_ID) {
               try {
                 const cancelRes = await fetch(`https://www.wixapis.com/payments/base44/v1/subscriptions/${oldSub.subscription_id}/cancel`, {
@@ -144,6 +152,7 @@ Deno.serve(async (req) => {
         // Update subscription to active
         await base44.asServiceRole.entities.Subscription.update(sub.id, {
           status: 'active',
+          provider: 'wix',
           subscription_id: subscriptionId || null,
         });
 
@@ -200,8 +209,13 @@ Deno.serve(async (req) => {
         }
 
         if (subs.length > 0) {
+          if (subs[0].provider && subs[0].provider !== 'wix') {
+            console.warn('Ignoring Wix cancellation for non-Wix subscription:', subscriptionId);
+            return Response.json({ success: true });
+          }
           await base44.asServiceRole.entities.Subscription.update(subs[0].id, {
             status: 'canceled',
+            provider: 'wix',
           });
           console.log('Subscription canceled:', subscriptionId);
         } else {
@@ -211,7 +225,7 @@ Deno.serve(async (req) => {
         return Response.json({ success: true });
       } catch (err) {
         console.error('Subscription cancel handler error:', err);
-        return Response.json({ success: true });
+        return Response.json({ error: err.message }, { status: 500 });
       }
     }
 
@@ -241,8 +255,13 @@ Deno.serve(async (req) => {
         }
 
         if (subs.length > 0) {
+          if (subs[0].provider && subs[0].provider !== 'wix') {
+            console.warn('Ignoring Wix expiration for non-Wix subscription:', subscriptionId);
+            return Response.json({ success: true });
+          }
           await base44.asServiceRole.entities.Subscription.update(subs[0].id, {
             status: 'ended',
+            provider: 'wix',
           });
           console.log('Subscription ended:', subscriptionId);
         }
@@ -250,7 +269,7 @@ Deno.serve(async (req) => {
         return Response.json({ success: true });
       } catch (err) {
         console.error('Subscription expire handler error:', err);
-        return Response.json({ success: true });
+        return Response.json({ error: err.message }, { status: 500 });
       }
     }
 

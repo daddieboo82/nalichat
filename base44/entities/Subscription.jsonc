@@ -72,6 +72,75 @@
       "type": "string",
       "description": "Stripe Price ID used by the external subscription"
     },
+    "sku": {
+      "type": "string",
+      "enum": [
+        "premium_monthly",
+        "premium_yearly",
+        "premium_plus_monthly",
+        "premium_plus_yearly"
+      ],
+      "description": "Server-owned Stripe catalog SKU"
+    },
+    "stripe_environment": {
+      "type": "string",
+      "description": "Deployment environment stamped into Stripe metadata"
+    },
+    "stripe_subscription_status": {
+      "type": "string",
+      "enum": [
+        "trialing",
+        "active",
+        "past_due",
+        "unpaid",
+        "canceled",
+        "incomplete",
+        "incomplete_expired",
+        "paused"
+      ],
+      "description": "Last raw Stripe subscription lifecycle status"
+    },
+    "checkout_request_key": {
+      "type": "string",
+      "description": "Validated client retry key scoped to this user"
+    },
+    "checkout_success_destination": {
+      "type": "string",
+      "enum": [
+        "subscription_thank_you"
+      ],
+      "description": "Server-approved success destination used by this checkout"
+    },
+    "checkout_cancel_destination": {
+      "type": "string",
+      "enum": [
+        "pricing",
+        "download"
+      ],
+      "description": "Server-approved cancellation destination used by this checkout"
+    },
+    "checkout_url": {
+      "type": "string",
+      "description": "Stripe-hosted checkout URL returned for safe retries"
+    },
+    "checkout_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Expiration time of the Stripe-hosted checkout session"
+    },
+    "checkout_error": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Last checkout creation error; never grants entitlement"
+    },
+    "stripe_event_created": {
+      "type": "number",
+      "description": "Creation time of the latest Stripe event applied to this record"
+    },
+    "stripe_event_id": {
+      "type": "string",
+      "description": "Latest Stripe event applied to this record"
+    },
     "trial_target_plan": {
       "type": "string",
       "enum": [

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Download as DownloadIcon, Shield, Smartphone, Monitor, Laptop, CheckCircle, Loader2, Share, PlusSquare, Apple } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -146,6 +146,7 @@ export default function Download() {
   const { isAuthenticated } = useAuth();
   const { hasAccess } = useSubscription();
   const [startingCheckout, setStartingCheckout] = useState(false);
+  const checkoutRequestKey = useRef(null);
 
   const handleSubscribe = async () => {
     if (!isAuthenticated) {
@@ -155,12 +156,13 @@ export default function Download() {
 
     setStartingCheckout(true);
     try {
-      const appUrl = window.location.origin;
+      checkoutRequestKey.current ||= crypto.randomUUID();
       const response = await base44.functions.invoke("createSubscriptionCheckout", {
-        plan: "pro",
-        callbackUrls: {
-          thankYouPageUrl: `${appUrl}/ThankYou`,
-          postFlowUrl: window.location.href,
+        sku: "premium_plus_monthly",
+        idempotencyKey: checkoutRequestKey.current,
+        callbackDestinations: {
+          success: "subscription_thank_you",
+          cancel: "download",
         },
       });
       const checkoutUrl = response?.data?.checkoutUrl || response?.checkoutUrl;

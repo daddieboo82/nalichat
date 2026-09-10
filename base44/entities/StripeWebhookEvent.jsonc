@@ -1,0 +1,65 @@
+{
+  "name": "StripeWebhookEvent",
+  "type": "object",
+  "properties": {
+    "stripe_event_id": {
+      "type": "string",
+      "description": "Stripe event ID used as the durable idempotency key"
+    },
+    "event_type": {
+      "type": "string"
+    },
+    "event_created": {
+      "type": "number"
+    },
+    "processing_state": {
+      "type": "string",
+      "enum": [
+        "processing",
+        "processed",
+        "failed",
+        "ignored"
+      ]
+    },
+    "attempt_count": {
+      "type": "number",
+      "default": 1
+    },
+    "last_error": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "processed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "stripe_event_id",
+    "event_type",
+    "event_created",
+    "processing_state"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

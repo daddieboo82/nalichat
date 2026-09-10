@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 const features = [
@@ -21,6 +21,7 @@ export default function PricingPlans() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [startingCheckout, setStartingCheckout] = useState(false);
+  const checkoutRequestKey = useRef(null);
 
   const startCheckout = async () => {
     if (!isAuthenticated) {
@@ -30,12 +31,13 @@ export default function PricingPlans() {
 
     setStartingCheckout(true);
     try {
-      const appUrl = window.location.origin;
+      checkoutRequestKey.current ||= crypto.randomUUID();
       const response = await base44.functions.invoke("createSubscriptionCheckout", {
-        plan: "pro",
-        callbackUrls: {
-          thankYouPageUrl: `${appUrl}/ThankYou`,
-          postFlowUrl: window.location.href,
+        sku: "premium_plus_monthly",
+        idempotencyKey: checkoutRequestKey.current,
+        callbackDestinations: {
+          success: "subscription_thank_you",
+          cancel: "pricing",
         },
       });
       const checkoutUrl = response?.data?.checkoutUrl || response?.checkoutUrl;

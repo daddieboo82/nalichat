@@ -126,13 +126,13 @@ export default function MobileHeader() {
         className="lg:hidden sticky top-0 z-40 border-b border-white/[0.06] bg-card/70 backdrop-blur-md select-none"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="px-2 h-12 flex items-center justify-between gap-2">
+        <div className="px-2 h-14 flex items-center justify-between gap-2">
           {/* Left Section */}
           <div className="flex items-center gap-1 min-w-0">
             {isSubPage ? (
               <button
                 onClick={handleBack}
-                className="p-1.5 -ml-1 rounded-lg text-foreground hover:bg-primary/10 active:bg-primary/20 transition-colors select-none"
+                className="w-11 h-11 -ml-1 rounded-lg flex items-center justify-center text-foreground hover:bg-primary/10 active:bg-primary/20 transition-colors select-none"
                 aria-label="Back"
               >
                 <ChevronLeft className="w-6 h-6" />
@@ -140,7 +140,7 @@ export default function MobileHeader() {
             ) : (
               <button
                 onClick={() => setMenuOpen(true)}
-                className="p-1.5 -ml-1 rounded-lg text-foreground hover:bg-primary/10 active:bg-primary/20 transition-colors select-none"
+                className="w-11 h-11 -ml-1 rounded-lg flex items-center justify-center text-foreground hover:bg-primary/10 active:bg-primary/20 transition-colors select-none"
                 aria-label="Open menu"
               >
                 <Menu className="w-6 h-6" />
@@ -156,11 +156,11 @@ export default function MobileHeader() {
               onClick={() => setIsOpen(true)}
               title={items.length > 0 ? `Cart (${items.length})` : 'Cart'}
               aria-label={items.length > 0 ? `Cart, ${items.length} item${items.length > 1 ? 's' : ''}` : 'Cart'}
-              className="relative p-1.5 rounded-lg hover:bg-primary/10 transition-all text-muted-foreground hover:text-foreground"
+              className="relative w-11 h-11 flex items-center justify-center rounded-lg hover:bg-primary/10 transition-all text-muted-foreground hover:text-foreground"
             >
               <ShoppingCart className="w-5 h-5" />
               {items.length > 0 && (
-                <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-[8px] font-bold text-white flex items-center justify-center border border-background">
+                <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-primary text-[8px] font-bold text-white flex items-center justify-center border border-background">
                   {items.length}
                 </span>
               )}
@@ -169,7 +169,7 @@ export default function MobileHeader() {
             {!isAuthenticated && (
               <button
                 onClick={() => navigate("/login")}
-                className="h-7 px-3 rounded-full flex items-center gap-1 text-[11px] font-bold bg-primary/15 text-primary active:scale-95 transition-all"
+                className="h-11 px-3 rounded-full flex items-center gap-1 text-[11px] font-bold bg-primary/15 text-primary active:scale-95 transition-all"
               >
                 <LogIn className="w-3.5 h-3.5" /> Log in
               </button>
@@ -178,7 +178,7 @@ export default function MobileHeader() {
               onClick={() => window.dispatchEvent(new Event("open-ai-assistant"))}
               title="Ask Nali"
               aria-label="Ask Nali, the AI assistant"
-              className="relative p-1.5 ml-1 rounded-lg flex items-center justify-center text-white bg-gradient-to-r from-primary to-accent shadow-lg shadow-primary/20 transition-all active:scale-95"
+              className="relative w-11 h-11 ml-1 rounded-lg flex items-center justify-center text-white bg-gradient-to-r from-primary to-accent shadow-lg shadow-primary/20 transition-all active:scale-95"
             >
               <AudioLines className="w-4 h-4 animate-pulse" />
             </button>

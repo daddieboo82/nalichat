@@ -212,28 +212,28 @@ export default function ThankYou() {
 
           {exportState === "done" && (
             <div className="flex gap-4 justify-center flex-wrap">
-              <Link to="/studio">
-                <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90">
+              <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90" asChild>
+                <Link to="/studio">
                   <Music className="w-5 h-5 mr-2" />
                   Back to Studio
                   <ArrowRight className="w-5 h-5 ml-2" />
+                </Link>
                 </Button>
-              </Link>
-              <Link to="/explore">
-                <Button size="lg" variant="outline" className="rounded-xl">
+              <Button size="lg" variant="outline" className="rounded-xl" asChild>
+                <Link to="/explore">
                   Explore Tracks
+                </Link>
                 </Button>
-              </Link>
             </div>
           )}
 
           {exportState === "error" && (
-            <Link to="/studio">
-              <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90">
+            <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90" asChild>
+              <Link to="/studio">
                 <Music className="w-5 h-5 mr-2" />
                 Back to Studio
+              </Link>
               </Button>
-            </Link>
           )}
         </motion.div>
       </div>
@@ -314,18 +314,18 @@ export default function ThankYou() {
 
         {!processing && (
           <div className="flex gap-4 justify-center flex-wrap">
-            <Link to="/studio">
-              <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90">
+            <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90" asChild>
+              <Link to="/studio">
                 <Music className="w-5 h-5 mr-2" />
                 Open Studio
                 <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
               </Button>
-            </Link>
-            <Link to="/explore">
-              <Button size="lg" variant="outline" className="rounded-xl">
+            <Button size="lg" variant="outline" className="rounded-xl" asChild>
+              <Link to="/explore">
                 Explore Tracks
+              </Link>
               </Button>
-            </Link>
           </div>
         )}
       </motion.div>

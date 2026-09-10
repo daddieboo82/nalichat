@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAudioPlayer } from '@/lib/AudioPlayerContext';
+import { useAudioPlayer, useAudioPlayerTime } from '@/lib/AudioPlayerContext';
 import { Play, Pause, X, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -8,8 +8,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function GlobalAudioPlayer() {
   const player = useAudioPlayer();
+  const { currentTime, duration } = useAudioPlayerTime();
   if (!player || !player.currentTrack) return null;
-  const { currentTrack, isPlaying, currentTime, duration, volume, setVolume, togglePlay, seek, closePlayer } = player;
+  const { currentTrack, isPlaying, volume, setVolume, togglePlay, seek, closePlayer } = player;
   
   const displayDuration = duration || currentTrack?.duration || 0;
 

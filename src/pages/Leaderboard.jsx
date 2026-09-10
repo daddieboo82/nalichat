@@ -275,7 +275,7 @@ export default function Leaderboard() {
                     {contentTab === "songs" ? (
                       <div className="w-12 h-12 rounded-md bg-secondary shrink-0 overflow-hidden relative border border-border/50">
                         {item.image_url ? (
-                          <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                          <img src={item.image_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary"><Music className="w-6 h-6" /></div>
                         )}
@@ -283,7 +283,7 @@ export default function Leaderboard() {
                     ) : contentTab === "pics" ? (
                       <div className="w-14 h-14 rounded-md bg-secondary shrink-0 overflow-hidden relative border border-border/50">
                         {item.file_url ? (
-                          <img src={item.file_url} alt="" className="w-full h-full object-cover" />
+                          <img src={item.file_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary"><ImageIcon className="w-6 h-6" /></div>
                         )}

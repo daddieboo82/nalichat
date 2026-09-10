@@ -5,6 +5,9 @@ export function usePerformance() {
 
   useEffect(() => {
     let lowEnd = false;
+    let batteryRef = null;
+    let batteryHandler = null;
+    let cancelled = false;
     
     // Check device memory (RAM <= 4GB often struggles with heavy WebGL/Animations)
     if (navigator.deviceMemory && navigator.deviceMemory <= 4) {
@@ -26,6 +29,7 @@ export function usePerformance() {
     // Check battery API if available
     if (navigator.getBattery) {
       navigator.getBattery().then(battery => {
+        if (cancelled) return;
         const updateBattery = () => {
           // If battery is extremely low or charging is false and level < 20%
           if (!battery.charging && battery.level <= 0.2) {
@@ -36,7 +40,9 @@ export function usePerformance() {
             if (!lowEnd) document.documentElement.classList.remove('low-power-mode');
           }
         };
-        
+
+        batteryRef = battery;
+        batteryHandler = updateBattery;
         updateBattery();
         battery.addEventListener('levelchange', updateBattery);
         battery.addEventListener('chargingchange', updateBattery);
@@ -51,6 +57,13 @@ export function usePerformance() {
     }
     
     return () => {
+      cancelled = true;
+      // The battery object outlives this hook, so its listeners have to be
+      // detached explicitly or they keep firing setState on an unmounted tree.
+      if (batteryRef && batteryHandler) {
+        batteryRef.removeEventListener('levelchange', batteryHandler);
+        batteryRef.removeEventListener('chargingchange', batteryHandler);
+      }
       document.documentElement.classList.remove('low-power-mode');
     };
   }, []);

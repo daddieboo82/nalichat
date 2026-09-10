@@ -108,13 +108,13 @@ export default function StudioTutorial() {
             </ul>
           </div>
 
-          <Link to="/studio" className="block">
-            <Button className="w-full rounded-xl h-14 text-base font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary shimmer-hover">
+          <Button className="w-full rounded-xl h-14 text-base font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary shimmer-hover" asChild>
+            <Link to="/studio" className="block">
               <Wand2 className="w-5 h-5 mr-2" />
               Try the Studio
               <ArrowRight className="w-4 h-4 ml-2" />
+            </Link>
             </Button>
-          </Link>
         </div>
       </div>
     </motion.div>

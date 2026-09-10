@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 /**
  * Detects when a new version of the service worker is waiting to activate
@@ -10,6 +10,8 @@ import { useState, useEffect, useCallback } from 'react';
 export function usePwaUpdate() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState(null);
+  const updateAppliedRef = useRef(false);
+  const reloadedRef = useRef(false);
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
@@ -65,8 +67,14 @@ export function usePwaUpdate() {
       })
       .catch(() => {});
 
-    // When a new SW takes control, reload to get fresh content.
+    // When a new SW takes control *because the user applied an update*, reload
+    // to get fresh content. The first-ever install also fires controllerchange
+    // (sw.js calls clients.claim() on activate), and reloading there threw
+    // first-time visitors out of whatever they were doing, so it is ignored.
     const handleControllerChange = () => {
+      if (!updateAppliedRef.current) return;
+      if (reloadedRef.current) return;
+      reloadedRef.current = true;
       window.location.reload();
     };
 
@@ -83,6 +91,7 @@ export function usePwaUpdate() {
 
   const applyUpdate = useCallback(() => {
     if (waitingWorker) {
+      updateAppliedRef.current = true;
       waitingWorker.postMessage({ action: 'skipWaiting' });
     }
   }, [waitingWorker]);

@@ -88,12 +88,15 @@ export default function NotificationBell({ direction = "down" }) {
     <div className="relative" ref={panelRef}>
       <button
         onClick={toggle}
-        className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-all"
+        className="relative w-11 h-11 lg:w-10 lg:h-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-all"
         title="Notifications"
+        aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+        aria-expanded={open}
+        aria-haspopup="true"
       >
-        <Bell className="w-4 h-4" />
+          <Bell className="w-4 h-4" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+          <span className="absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
             {unread > 9 ? "9+" : unread}
           </span>
         )}

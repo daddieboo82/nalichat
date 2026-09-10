@@ -44,6 +44,8 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
             <img
               src={post.image_url || "https://images.unsplash.com/photo-1614149162883-504ce4d13909?q=80&w=600&auto=format&fit=crop"}
               alt={post.title}
+              loading="lazy"
+              decoding="async"
               className="w-full object-cover transition-transform duration-500 group-hover:scale-105 bg-secondary"
               style={{ maxHeight: large ? 280 : 220 }}
               onError={(e) => {

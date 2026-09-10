@@ -24,10 +24,14 @@ import ResetPassword from '@/pages/ResetPassword';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Home from '@/pages/Home';
-import AiAssistant from '@/components/AiAssistant';
 import AskNaliHint from '@/components/AskNaliHint';
 import PwaUpdatePrompt from '@/components/PwaUpdatePrompt';
 import { base44 } from '@/api/base44Client';
+
+// The assistant pulls in the whole react-markdown/unified stack, which added
+// ~150 kB to the entry chunk even though the panel only renders once the user
+// opens it. Load it after first paint instead.
+const AiAssistant = lazy(() => import('@/components/AiAssistant'));
 
 // Lazily-loaded routes — each downloads on demand so initial load & tab-switching are fastest.
 const Messages = lazy(() => import('@/pages/Messages'));
@@ -244,6 +248,24 @@ function App() {
   });
   const { isLowEnd } = usePerformance();
 
+  // The assistant is code-split, so an "open" event fired while its chunk is
+  // still downloading would be lost. Queue those events and let the assistant
+  // replay them once it mounts.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    window.__naliAiQueue = window.__naliAiQueue || [];
+    const queue = (e) => {
+      if (window.__naliAiReady) return;
+      window.__naliAiQueue.push({ type: e.type, detail: e.detail });
+    };
+    window.addEventListener('open-ai-assistant', queue);
+    window.addEventListener('nali-send-message', queue);
+    return () => {
+      window.removeEventListener('open-ai-assistant', queue);
+      window.removeEventListener('nali-send-message', queue);
+    };
+  }, []);
+
   const handleSplashDone = () => {
     try { sessionStorage.setItem('nali_splash_shown', '1'); } catch {}
     setLoaded(true);
@@ -295,7 +317,11 @@ function App() {
                   <Router>
                     <AuthenticatedApp />
                   </Router>
-                  {loaded && <AiAssistant />}
+                  {loaded && (
+                    <Suspense fallback={null}>
+                      <AiAssistant />
+                    </Suspense>
+                  )}
                   <PwaUpdatePrompt />
                   <Toaster />
                   <SonnerToaster />

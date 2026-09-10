@@ -37,7 +37,7 @@ export default function Explore() {
   const [commentTrack, setCommentTrack] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: posts = [], isLoading } = useQuery({
+  const { data: posts = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["artposts", filter],
     queryFn: () => filter === "all"
       ? base44.entities.ArtPost.list("-created_date", 100)
@@ -186,6 +186,18 @@ export default function Explore() {
           {isLoading ? (
             <div className="flex justify-center py-20">
               <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            </div>
+          ) : isError ? (
+            <div className="text-center py-20 text-muted-foreground" role="alert">
+              <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-heading font-semibold text-foreground">Couldn&apos;t load tracks</p>
+              <p className="text-sm mt-1">Check your connection and try again.</p>
+              <button
+                onClick={() => refetch()}
+                className="mt-4 bg-primary text-primary-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+              >
+                Retry
+              </button>
             </div>
           ) : recent.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">

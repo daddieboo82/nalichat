@@ -205,11 +205,11 @@ export default function Settings() {
                 <h3 className="font-heading font-semibold text-lg text-foreground">Profile Setup & Onboarding</h3>
                 <p className="text-sm text-muted-foreground mt-1">Revisit the initial onboarding process to set up your profile and complete the tutorial.</p>
               </div>
-              <Link to="/onboarding">
-                <Button variant="outline" className="w-full sm:w-auto border-primary/50 text-primary hover:bg-primary/10 font-semibold">
+              <Button variant="outline" className="w-full sm:w-auto border-primary/50 text-primary hover:bg-primary/10 font-semibold" asChild>
+                <Link to="/onboarding">
                   Restart Onboarding
+                </Link>
                 </Button>
-              </Link>
             </div>
           </div>
         </div>
@@ -221,12 +221,12 @@ export default function Settings() {
               <h3 className="font-heading font-semibold text-lg text-foreground">Analytics Dashboard</h3>
               <p className="text-sm text-muted-foreground mt-1">Track plays, reach, audience growth & listener engagement.</p>
             </div>
-            <Link to="/analytics">
-              <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-0 gap-2 font-semibold">
+            <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-0 gap-2 font-semibold" asChild>
+              <Link to="/analytics">
                 <BarChart3 className="w-4 h-4" />
                 View Analytics
+              </Link>
               </Button>
-            </Link>
           </div>
         </div>
 
@@ -237,12 +237,12 @@ export default function Settings() {
               <h3 className="font-heading font-semibold text-lg text-foreground">Link Up With a Partner</h3>
               <p className="text-sm text-muted-foreground mt-1">Team up with a friend — hit your weekly chat or task goals together and unlock a 1.5x weekend bonus.</p>
             </div>
-            <Link to="/squad">
-              <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent text-white border-0 gap-2 font-semibold">
+            <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent text-white border-0 gap-2 font-semibold" asChild>
+              <Link to="/squad">
                 <Users className="w-4 h-4" />
                 Open Squad & Scale
+              </Link>
               </Button>
-            </Link>
           </div>
         </div>
 
@@ -286,12 +286,12 @@ export default function Settings() {
                 <h3 className="font-heading font-semibold text-lg text-foreground">{isPro ? "Manage Your Plan" : "Upgrade to Pro"}</h3>
                 <p className="text-sm text-muted-foreground mt-1">{isPro ? "View all plans, compare features, or change your subscription." : "Unlock all studio features, unlimited tracks, and advanced collaboration tools."}</p>
               </div>
-              <Link to="/pricing">
-                <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white border-0 gap-2 font-semibold">
+              <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white border-0 gap-2 font-semibold" asChild>
+                <Link to="/pricing">
                   <CreditCard className="w-4 h-4" />
                   View Plans
+                </Link>
                 </Button>
-              </Link>
             </div>
         </div>
 
@@ -309,11 +309,11 @@ export default function Settings() {
                 Use these tools to manually trigger backend webhooks and simulate server-side events for automated testing.
               </p>
               <div className="flex gap-4">
-                <Link to="/webhook-test">
-                  <Button variant="outline" className="border-orange-500/50 text-orange-500 hover:bg-orange-500/20">
+                <Button variant="outline" className="border-orange-500/50 text-orange-500 hover:bg-orange-500/20" asChild>
+                  <Link to="/webhook-test">
                     Open Webhook Testing Interface
+                  </Link>
                   </Button>
-                </Link>
               </div>
             </div>
           </div>

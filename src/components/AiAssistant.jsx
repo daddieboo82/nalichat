@@ -40,7 +40,15 @@ export default function AiAssistant() {
     };
     window.addEventListener('open-ai-assistant', handleOpen);
     window.addEventListener('nali-send-message', handleSendMessage);
+    // Replay anything dispatched while this code-split chunk was loading.
+    window.__naliAiReady = true;
+    const queued = window.__naliAiQueue || [];
+    window.__naliAiQueue = [];
+    queued.forEach(({ type, detail }) => {
+      window.dispatchEvent(new CustomEvent(type, { detail }));
+    });
     return () => {
+      window.__naliAiReady = false;
       window.removeEventListener('open-ai-assistant', handleOpen);
       window.removeEventListener('nali-send-message', handleSendMessage);
     };

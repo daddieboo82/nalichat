@@ -200,9 +200,9 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
                 </Select>
               </div>
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Content Rating</p>
+                <label htmlFor="bounce-content-rating" className="text-xs text-muted-foreground block">Content Rating</label>
                 <Select value={isExplicit ? "explicit" : "clean"} onValueChange={(value) => setIsExplicit(value === "explicit")} disabled={bouncing}>
-                  <SelectTrigger className="rounded-xl">
+                  <SelectTrigger id="bounce-content-rating" aria-label="Content Rating" className="rounded-xl">
                     <SelectValue placeholder="Content Rating" />
                   </SelectTrigger>
                   <SelectContent>

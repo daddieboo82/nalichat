@@ -14,8 +14,9 @@ Any change pushed to the repo will also be reflected in the Base44 Builder.
 
 1. Clone the repository using the project's Git URL 
 2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
+3. Use Node.js `>=20.19.0`
+4. Install dependencies: `npm install`
+5. Create an `.env.local` file and set the right environment variables
 
 ```
 VITE_BASE44_APP_ID=your_app_id
@@ -27,6 +28,12 @@ VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
 ```
 
 Run the app: `npm run dev`
+
+Run unit/integration tests: `npm test`
+
+Run browser end-to-end tests:
+1. Install Playwright browsers: `npx playwright install --with-deps chromium`
+2. Execute e2e suite: `npm run test:e2e`
 
 **Publish your changes**
 

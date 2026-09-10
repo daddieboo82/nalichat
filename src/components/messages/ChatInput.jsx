@@ -34,6 +34,13 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
   const timerRef = useRef(null);
   const textareaRef = useRef(null);
 
+  useEffect(() => () => {
+    clearInterval(timerRef.current);
+    const recorder = mediaRecorderRef.current;
+    if (recorder?.state === "recording") recorder.stop();
+    recorder?.stream?.getTracks().forEach(track => track.stop());
+  }, []);
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -110,6 +117,10 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
 
   const startRecording = async () => {
     sounds.recStart();
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      sounds.error();
+      return;
+    }
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -117,7 +128,17 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       sounds.error();
       return;
     }
-    const recorder = new MediaRecorder(stream);
+    const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"];
+    const mimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported?.(type)) || "";
+    let recorder;
+    try {
+      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    } catch (error) {
+      stream.getTracks().forEach(track => track.stop());
+      sounds.error();
+      console.error("Unable to start voice recording:", error);
+      return;
+    }
     chunksRef.current = [];
     recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
     recorder.onstop = async () => {

@@ -199,6 +199,13 @@ export default function Studio() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [hasAutosave, setHasAutosave] = useState(false);
   const [showPluginRack, setShowPluginRack] = useState(false);
+  const selectedPluginTrack = tracks.find(t => selectedTrackIds.includes(t.id));
+  const handlePluginsChange = (plugins) => {
+    if (!selectedPluginTrack) return;
+    setTracksWithHistory(prev => prev.map(t => (
+      t.id === selectedPluginTrack.id ? { ...t, plugins } : t
+    )));
+  };
   useEffect(() => {
     try {
       const saved = localStorage.getItem('nalistudio_project_autosave');
@@ -2250,8 +2257,10 @@ export default function Studio() {
       <PluginRack
         open={showPluginRack}
         onToggle={() => setShowPluginRack(!showPluginRack)}
-        trackName={tracks.find(t => selectedTrackIds.includes(t.id))?.name}
+        trackName={selectedPluginTrack?.name}
         tracks={tracks}
+        plugins={selectedPluginTrack?.plugins}
+        onPluginsChange={handlePluginsChange}
       />
       </Suspense>
 

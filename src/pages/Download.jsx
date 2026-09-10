@@ -43,7 +43,7 @@ function DownloadButton({ url, fileName, label }) {
       </div>
     );
   }
-  if (available) {
+  if (!available) {
     return (
       <>
         <div className="flex items-center gap-2 text-sm text-amber-500">

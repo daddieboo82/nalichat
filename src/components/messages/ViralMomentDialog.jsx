@@ -36,9 +36,9 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
         senderName: message.sender_name,
         type,
       };
-      // For voice notes with no text, pass the audio URL for server-side transcription
+      // The server resolves and authorizes the stored voice note from its message ID.
       if (!message.text && message.file_url && (message.type === "audio" || message.file_type?.startsWith("audio"))) {
-        payload.audioUrl = message.file_url;
+        payload.message_id = message.id;
       }
       const data = await invokeAiFunction("generate-viral-moment", payload);
       setResult(data);

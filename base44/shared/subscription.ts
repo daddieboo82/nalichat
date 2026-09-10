@@ -78,11 +78,11 @@ const PREMIUM_ENTITLEMENTS = [
   'files.large_upload',
   'chat.export',
   'appearance.premium_themes',
-  'voice.transcription',
 ] as const satisfies readonly EntitlementKey[];
 
 const PREMIUM_PLUS_ENTITLEMENTS = [
   ...PREMIUM_ENTITLEMENTS,
+  'voice.transcription',
   'ai.high_limits',
   'ai.best_model',
   'calls.summary',

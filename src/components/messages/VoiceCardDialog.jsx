@@ -1,32 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Share2, Loader2, RefreshCw, ImageIcon, AlertCircle } from "lucide-react";
+import { Download, Share2, Loader2, RefreshCw, ImageIcon, AlertCircle, LockKeyhole } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { aiErrorMessage, createAiRequestKey, invokeAiFunction } from "@/lib/aiUsage";
-
-// Shared cache so we don't re-transcribe the same voice note every render.
-const transcriptionCache = new Map();
+import {
+  createTranscriptionRequestKey,
+  requestVoiceTranscription,
+  transcriptionErrorDetails,
+} from "@/lib/voiceTranscription";
+import { useSubscription } from "@/hooks/useSubscription";
+import { Link } from "react-router-dom";
 
 const APP_URL = "nalichat.base44.app";
 const CARD_SIZE = 1080;
-
-async function fetchTranscription(fileUrl, messageId) {
-  if (transcriptionCache.has(messageId)) return transcriptionCache.get(messageId);
-  const res = await invokeAiFunction(
-    "transcribeAudio",
-    { audio_url: fileUrl },
-    { requestKey: createAiRequestKey("transcription", messageId) },
-  );
-  const text = res?.text || "";
-  const clean = typeof text === "string" ? text.trim() : String(text).trim();
-  if (clean) {
-    transcriptionCache.set(messageId, clean);
-    return clean;
-  }
-  return "";
-}
 
 // Wrap text to a max character width for canvas rendering.
 function wrapText(ctx, text, maxWidth) {
@@ -47,12 +34,25 @@ function wrapText(ctx, text, maxWidth) {
 }
 
 export default function VoiceCardDialog({ message, isOpen, onClose }) {
+  const {
+    plan,
+    hasEntitlement,
+    isLoading: subscriptionLoading,
+    isError: subscriptionError,
+    refetch,
+  } = useSubscription();
+  const isEntitled = hasEntitlement("voice.transcription");
+  const canRequest = isEntitled || subscriptionError;
   const canvasRef = useRef(null);
   const [transcription, setTranscription] = useState(null);
   const [loadingTx, setLoadingTx] = useState(false);
   const [rendering, setRendering] = useState(false);
   const [cardUrl, setCardUrl] = useState(null);
   const [error, setError] = useState(null);
+  const [errorDetails, setErrorDetails] = useState(null);
+  const [consented, setConsented] = useState(false);
+  const [pollVersion, setPollVersion] = useState(0);
+  const requestKeyRef = useRef(createTranscriptionRequestKey(message?.id || "unknown"));
 
   const reset = () => {
     setTranscription(null);
@@ -60,6 +60,10 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
     setRendering(false);
     setCardUrl(null);
     setError(null);
+    setErrorDetails(null);
+    setConsented(false);
+    setPollVersion(0);
+    requestKeyRef.current = createTranscriptionRequestKey(message?.id || "unknown");
   };
 
   const handleClose = () => {
@@ -67,27 +71,44 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
     onClose();
   };
 
-  // Fetch transcription when dialog opens
+  // Transcription starts only after the user accepts the processing disclosure.
   useEffect(() => {
-    if (!isOpen || !message?.file_url || !message?.id) return;
+    if (!isOpen || !consented || !canRequest || !message?.id) return;
     if (transcription !== null) return;
     let cancelled = false;
     setLoadingTx(true);
     setError(null);
-    fetchTranscription(message.file_url, message.id)
-      .then((text) => {
+    setErrorDetails(null);
+    requestVoiceTranscription(message.id, requestKeyRef.current)
+      .then((next) => {
         if (cancelled) return;
-        setTranscription(text || "");
+        if (next.status === "completed") {
+          setTranscription(next.text);
+          return;
+        }
+        if (next.status === "pending") {
+          setTimeout(() => {
+            if (!cancelled) setPollVersion((version) => version + 1);
+          }, 1500);
+          return;
+        }
+        if (next.status === "failed") {
+          const details = transcriptionErrorDetails({ data: { code: next.errorCode } });
+          setError(details.message);
+          setErrorDetails(details);
+        }
       })
       .catch((requestError) => {
         if (cancelled) return;
-        setError(aiErrorMessage(requestError));
+        const details = transcriptionErrorDetails(requestError);
+        setError(details.message);
+        setErrorDetails(details);
       })
       .finally(() => {
         if (!cancelled) setLoadingTx(false);
       });
     return () => { cancelled = true; };
-  }, [isOpen, message?.file_url, message?.id, transcription]);
+  }, [canRequest, consented, isOpen, message?.id, pollVersion, transcription]);
 
   // Render the branded card onto the canvas
   const renderCard = useCallback(async () => {
@@ -305,8 +326,14 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
   };
 
   const handleRetry = () => {
-    transcriptionCache.delete(message?.id);
-    reset();
+    requestKeyRef.current = createTranscriptionRequestKey(message?.id, crypto.randomUUID());
+    setTranscription(null);
+    setLoadingTx(false);
+    setRendering(false);
+    setCardUrl(null);
+    setError(null);
+    setErrorDetails(null);
+    setPollVersion((version) => version + 1);
   };
 
   return (
@@ -324,8 +351,45 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
 
         <div className="px-5 pb-5">
           <AnimatePresence mode="wait">
+            {subscriptionLoading && (
+              <motion.div key="checking-access" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Checking transcription access...
+              </motion.div>
+            )}
+
+            {!subscriptionLoading && !isEntitled && !subscriptionError && (
+              <motion.div key="upgrade" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                <LockKeyhole className="h-8 w-8 text-primary" />
+                <p className="text-sm">
+                  {plan === "free"
+                    ? "Voice playback is free. Premium Plus adds transcription and voice cards."
+                    : "Voice-note transcription and voice cards require Premium Plus."}
+                </p>
+                <Button asChild size="sm"><Link to="/pricing">View Premium Plus</Link></Button>
+              </motion.div>
+            )}
+
+            {!subscriptionLoading && canRequest && !consented && (
+              <motion.div key="consent" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4 py-6">
+                <p className="text-sm text-muted-foreground">
+                  {subscriptionError && "Subscription status could not be loaded; the server will verify access. "}
+                  Creating a voice card sends this audio to our AI transcription provider.
+                  The saved transcript can be viewed by conversation participants who have Premium Plus.
+                </p>
+                {subscriptionError && (
+                  <Button variant="outline" size="sm" onClick={() => refetch()}>
+                    Refresh subscription status
+                  </Button>
+                )}
+                <Button onClick={() => setConsented(true)}>
+                  Transcribe and create card
+                </Button>
+              </motion.div>
+            )}
+
             {/* Loading transcription */}
-            {loadingTx && (
+            {canRequest && consented && loadingTx && (
               <motion.div key="loading-tx" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-12 gap-4">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
                 <p className="text-sm text-muted-foreground font-medium">Transcribing voice note…</p>
@@ -333,18 +397,25 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
             )}
 
             {/* Error */}
-            {error && !loadingTx && (
+            {canRequest && consented && error && !loadingTx && (
               <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-8 gap-4">
                 <AlertCircle className="w-8 h-8 text-destructive" />
                 <p className="text-sm text-destructive text-center">{error}</p>
-                <Button onClick={handleRetry} variant="outline" size="sm">
-                  <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Try Again
-                </Button>
+                <div className="flex gap-2">
+                  {errorDetails?.retryable && (
+                    <Button onClick={handleRetry} variant="outline" size="sm">
+                      <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Try a new attempt
+                    </Button>
+                  )}
+                  {errorDetails?.isQuotaExhausted && (
+                    <Button asChild size="sm"><Link to="/pricing">View plans</Link></Button>
+                  )}
+                </div>
               </motion.div>
             )}
 
             {/* Rendering or result */}
-            {!loadingTx && !error && (
+            {canRequest && consented && !loadingTx && !error && (
               <motion.div key="card" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-3">
                 {/* Hidden render canvas */}
                 <canvas ref={canvasRef} style={{ display: "none" }} />

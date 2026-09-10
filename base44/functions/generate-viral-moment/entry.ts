@@ -4,18 +4,49 @@ import {
   aiQuotaErrorResponse,
   executeMeteredAiRequest,
 } from '../../shared/aiQuota.ts';
+import { resolveUserSubscription } from '../../shared/subscriptionAccess.ts';
+import {
+  VOICE_TRANSCRIPTION_ENTITLEMENT,
+  VoiceTranscriptionError,
+  probeAudioResource,
+  validateVoiceMessage,
+  voiceTranscriptionErrorResponse,
+} from '../../shared/voiceTranscription.ts';
 
-async function resolveMessageText(base44, messageText: unknown, audioUrl: unknown) {
-  if (typeof messageText === 'string' && messageText.trim()) return messageText.trim();
-  if (typeof audioUrl !== 'string' || !audioUrl) {
+async function resolveMessageSource(base44, user, messageText: unknown, messageId: unknown) {
+  if (typeof messageText === 'string' && messageText.trim()) {
+    return { text: messageText.trim(), audioUrl: null };
+  }
+  if (typeof messageId !== 'string' || !messageId) {
     throw new Error('Message text or a voice note is required');
   }
-  const transcript = await base44.asServiceRole.integrations.Core.TranscribeAudio({
-    audio_url: audioUrl,
-  });
-  const text = typeof transcript === 'string' ? transcript : transcript?.text || '';
-  if (!text.trim()) throw new Error('Could not transcribe the voice note.');
-  return text.trim();
+  const message = await base44.asServiceRole.entities.Message.get(messageId);
+  if (!message) {
+    throw new VoiceTranscriptionError(404, 'MESSAGE_NOT_FOUND', 'The voice note was not found.');
+  }
+  const conversation = await base44.asServiceRole.entities.Conversation.get(message.conversation_id);
+  if (!conversation) {
+    throw new VoiceTranscriptionError(404, 'CONVERSATION_NOT_FOUND', 'The conversation was not found.');
+  }
+  const validated = validateVoiceMessage(message, conversation, user.id);
+  const access = await resolveUserSubscription(
+    base44.asServiceRole.entities.Subscription,
+    user.id,
+  );
+  if (access.entitlements[VOICE_TRANSCRIPTION_ENTITLEMENT] !== true) {
+    throw new VoiceTranscriptionError(
+      403,
+      'VOICE_TRANSCRIPTION_ENTITLEMENT_REQUIRED',
+      'Voice-note transcription requires Premium Plus.',
+    );
+  }
+  await probeAudioResource(
+    validated.audioUrl,
+    fetch,
+    10_000,
+    validated.hasStoredFileSize,
+  );
+  return { text: null, audioUrl: validated.audioUrl };
 }
 
 Deno.serve(async (req) => {
@@ -24,13 +55,14 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { messageText, senderName, type, audioUrl, request_key } = await req.json();
+    const { messageText, senderName, type, message_id, request_key } = await req.json();
     if (type !== 'meme' && type !== 'reel') {
       return Response.json({ error: 'Type must be meme or reel.' }, { status: 400 });
     }
-    if (!(typeof messageText === 'string' && messageText.trim()) && !audioUrl) {
+    if (!(typeof messageText === 'string' && messageText.trim()) && !message_id) {
       return Response.json({ error: 'Message text or a voice note is required' }, { status: 400 });
     }
+    const source = await resolveMessageSource(base44, user, messageText, message_id);
 
     const { result, quota } = await executeMeteredAiRequest({
       base44,
@@ -38,8 +70,16 @@ Deno.serve(async (req) => {
       operation: type === 'meme' ? 'viral_meme' : 'viral_reel',
       requestKey: request_key,
       dispatch: async () => {
-        const finalMessageText = await resolveMessageText(base44, messageText, audioUrl);
-        const sourceLabel = audioUrl && !messageText ? 'a voice note' : 'a chat message';
+        let finalMessageText = source.text;
+        if (!finalMessageText && source.audioUrl) {
+          const transcript = await base44.asServiceRole.integrations.Core.TranscribeAudio({
+            audio_url: source.audioUrl,
+          });
+          finalMessageText = typeof transcript === 'string' ? transcript : transcript?.text || '';
+        }
+        if (!finalMessageText?.trim()) throw new Error('Could not transcribe the voice note.');
+        finalMessageText = finalMessageText.trim();
+        const sourceLabel = source.audioUrl ? 'a voice note' : 'a chat message';
 
         if (type === 'meme') {
           const memeRes = await base44.asServiceRole.integrations.Core.InvokeLLM({
@@ -102,6 +142,7 @@ Return 3-5 scenes with visual, text, and duration, plus a caption and 5-8 hashta
     return Response.json({ ...result, quota });
   } catch (error) {
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
+    if (error instanceof VoiceTranscriptionError) return voiceTranscriptionErrorResponse(error);
     console.error('generate-viral-moment error:', error);
     const message = error instanceof Error ? error.message : 'Unable to generate viral moment';
     return Response.json({ error: message }, { status: 500 });

@@ -385,118 +385,21 @@ workflows:
       - ./app/build/outputs/apk/release/*.apk
       - android.keystore
 
-  # ─────────────────────────────────────────────────────────────────────
-  # macOS DMG — builds on a macOS instance via Electron + electron-builder
-  # ─────────────────────────────────────────────────────────────────────
-  macos-dmg:
-    name: NaliChat macOS DMG
-    max_build_duration: 30
-    instance_type: mac_mini_m2
-    environment:
-      vars:
-        PACKAGE_ID: com.nalichat
-      node: 20
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
-          source: false
-      cancel_previous_builds: true
-    scripts:
-      - name: Download app icon
-        script: |
-          curl -fsSL -o ./electron/icon.png \
-            "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/da0cb6e0c_generated_image.png" \
-            || echo "⚠️  Icon download failed — electron-builder will use a default icon"
-      - name: Install Electron dependencies
-        script: |
-          cd ./electron
-          npm install
-      - name: Build macOS DMG
-        script: |
-          cd ./electron
-          npx electron-builder --mac dmg
-          echo "=== DMG output ==="
-          ls -lh ./dist/*.dmg 2>/dev/null || echo "No DMG found"
-      - name: Publish DMG to GitHub Releases
-        script: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "⚠️  GH_TOKEN not set — skipping GitHub Release upload"
-            exit 0
-          fi
-          DMG_FILE=$(find ./electron/dist -name "*.dmg" -type f 2>/dev/null | head -1)
-          if [ -z "$DMG_FILE" ]; then
-            echo "❌ DMG not found — build may have failed"
-            exit 1
-          fi
-          TAG="v$(date +%Y%m%d-%H%M%S)"
-          gh release create "$TAG" "$DMG_FILE" \
-            --title "NaliChat macOS $TAG" \
-            --notes "Direct DMG download for macOS" \
-            || echo "⚠️  gh release create failed — DMG is still available as a build artifact"
-          echo "✅ DMG published to GitHub Releases: $TAG"
-    artifacts:
-      - electron/dist/*.dmg
-
-  # ─────────────────────────────────────────────────────────────────────
-  # Windows EXE — cross-compiles on macOS via Wine + electron-builder
-  # ─────────────────────────────────────────────────────────────────────
-  windows-exe:
-    name: NaliChat Windows EXE
-    max_build_duration: 30
-    instance_type: mac_mini_m2
-    environment:
-      vars:
-        PACKAGE_ID: com.nalichat
-      node: 20
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
-          source: false
-      cancel_previous_builds: true
-    scripts:
-      - name: Download app icon
-        script: |
-          curl -fsSL -o ./electron/icon.png \
-            "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/da0cb6e0c_generated_image.png" \
-            || echo "⚠️  Icon download failed — electron-builder will use a default icon"
-      - name: Install Wine (for Windows cross-compilation)
-        script: |
-          if ! command -v wine &>/dev/null; then
-            brew install --cask wine-stable || echo "⚠️  Wine install failed — trying wine64"
-          fi
-          echo "✅ Wine available: $(which wine || which wine64 || echo 'not found')"
-      - name: Install Electron dependencies
-        script: |
-          cd ./electron
-          npm install
-      - name: Build Windows EXE (NSIS installer)
-        script: |
-          cd ./electron
-          npx electron-builder --win nsis
-          echo "=== EXE output ==="
-          ls -lh ./dist/*.exe 2>/dev/null || echo "No EXE found"
-      - name: Publish EXE to GitHub Releases
-        script: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "⚠️  GH_TOKEN not set — skipping GitHub Release upload"
-            exit 0
-          fi
-          EXE_FILE=$(find ./electron/dist -name "*.exe" -type f 2>/dev/null | head -1)
-          if [ -z "$EXE_FILE" ]; then
-            echo "❌ EXE not found — build may have failed"
-            exit 1
-          fi
-          TAG="v$(date +%Y%m%d-%H%M%S)"
-          gh release create "$TAG" "$EXE_FILE" \
-            --title "NaliChat Windows $TAG" \
-            --notes "Direct EXE download for Windows (sideload install)" \
-            || echo "⚠️  gh release create failed — EXE is still available as a build artifact"
-          echo "✅ EXE published to GitHub Releases: $TAG"
-    artifacts:
-      - electron/dist/*.exe
+  # NOTE: the macOS DMG and Windows EXE builds that used to live here were
+  # moved to .github/workflows/desktop-builds.yml.
+  #
+  # The Windows job cross-compiled via Wine on a macOS instance, which
+  # produced an installer whose bundled NSIS "System" plugin crashed with an
+  # access violation (0xC0000005) the moment a real Windows machine ran it —
+  # confirmed by installing the published .exe and inspecting the Windows
+  # Error Reporting event log. Wine's Win32 API emulation is not reliable
+  # enough for NSIS's System plugin; the fix is building natively on a real
+  # Windows machine, which Codemagic does not provide (mobile-focused CI —
+  # only macOS/Linux instance types).
+  #
+  # Both jobs also used to `gh release create` a brand-new, uniquely-tagged
+  # release on every run instead of updating the existing one. Since GitHub's
+  # "latest" release is whichever is newest, a fresh single-platform release
+  # would immediately break the download links for whichever platform didn't
+  # just build. The GitHub Actions workflow instead uploads with `--clobber`
+  # to one fixed release tag shared by all three platforms.

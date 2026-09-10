@@ -324,6 +324,7 @@ export default function Leaderboard() {
         post={selectedItem}
         open={isViewerOpen}
         onOpenChange={setIsViewerOpen}
+        currentUser={currentUser}
       />
       </PullToRefresh>
       </div>

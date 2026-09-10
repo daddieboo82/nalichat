@@ -1,0 +1,112 @@
+name: Desktop Builds
+
+# Builds the Electron desktop wrapper for Windows and macOS and publishes the
+# installers to the existing GitHub release used by the in-app Download page.
+#
+# Windows was previously built by cross-compiling via Wine on a macOS CI
+# machine (see the removed windows-exe job in codemagic.yaml). That produced
+# an installer whose bundled NSIS "System" plugin crashed with an access
+# violation (0xC0000005) on real Windows the moment the installer ran,
+# before installing anything. Building natively on windows-latest avoids
+# Wine's incomplete Win32 API emulation entirely.
+#
+# Both jobs upload to the SAME existing tag with `--clobber` rather than
+# creating a new release per run. The prior pipeline had each platform create
+# its own brand-new timestamped release, and since "latest" on GitHub is
+# whichever release is newest, every new build silently broke the download
+# links for the platform that didn't just build (a fresh windows-only release
+# would become "latest" and 404 the macOS/Android links, and vice versa).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'electron/**'
+      - '.github/workflows/desktop-builds.yml'
+  workflow_dispatch:
+
+env:
+  RELEASE_TAG: '1.0.0'
+
+jobs:
+  windows-exe:
+    name: Build Windows EXE
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Electron dependencies
+        working-directory: electron
+        run: npm install
+
+      - name: Build Windows installer (NSIS)
+        working-directory: electron
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --win nsis
+
+      - name: Verify the installer actually installs
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem electron/dist -Filter "*.exe" | Select-Object -First 1
+          if (-not $exe) { throw "No .exe produced" }
+          $proc = Start-Process -FilePath $exe.FullName -ArgumentList "/S" -Wait -PassThru -NoNewWindow
+          if ($proc.ExitCode -ne 0) { throw "Installer exited with code $($proc.ExitCode)" }
+          if (-not (Test-Path "$env:LOCALAPPDATA\Programs\NaliChat\NaliChat.exe")) { throw "App was not installed" }
+          Write-Host "Installer verified OK"
+
+      - name: Publish EXE to GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          EXE_FILE=$(find ./electron/dist -maxdepth 1 -name "*.exe" -type f | head -1)
+          if [ -z "$EXE_FILE" ]; then
+            echo "No EXE found"
+            exit 1
+          fi
+          gh release upload "$RELEASE_TAG" "$EXE_FILE" --clobber --repo "${{ github.repository }}"
+          echo "Published $EXE_FILE to release $RELEASE_TAG"
+
+  macos-dmg:
+    name: Build macOS DMG
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Electron dependencies
+        working-directory: electron
+        run: npm install
+
+      - name: Build macOS DMG
+        working-directory: electron
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --mac dmg
+
+      - name: Publish DMG to GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DMG_FILE=$(find ./electron/dist -maxdepth 1 -name "*.dmg" -type f | head -1)
+          if [ -z "$DMG_FILE" ]; then
+            echo "No DMG found"
+            exit 1
+          fi
+          gh release upload "$RELEASE_TAG" "$DMG_FILE" --clobber --repo "${{ github.repository }}"
+          echo "Published $DMG_FILE to release $RELEASE_TAG"
+          echo "NOTE: this DMG is unsigned and not notarized by Apple (no Apple"
+          echo "Developer Program account is configured). Gatekeeper will show"
+          echo "an 'unidentified developer' warning on first launch; users must"
+          echo "right-click > Open to bypass it, as already documented on the"
+          echo "in-app Download page. Full Gatekeeper compliance requires a paid"
+          echo "Apple Developer account (\$99/yr) plus a Developer ID Application"
+          echo "certificate and notarization, which this pipeline does not have."

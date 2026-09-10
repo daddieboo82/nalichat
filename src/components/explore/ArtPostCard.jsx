@@ -194,7 +194,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
       </div>
       </div>
 
-      <MediaViewerModal post={post} open={showMedia} onOpenChange={setShowMedia} onAddToPlaylist={onAddToPlaylist} />
+      <MediaViewerModal post={post} open={showMedia} onOpenChange={setShowMedia} onAddToPlaylist={onAddToPlaylist} currentUser={currentUser} />
     </>
   );
 });

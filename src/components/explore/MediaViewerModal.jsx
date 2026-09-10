@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Play, Pause, X, Music, Rewind, FastForward, Square, ShoppingCart, Minimize2, Download, Share2, Flag } from "lucide-react";
+import { Play, Pause, X, Music, Rewind, FastForward, Square, ShoppingCart, Minimize2, Download, Share2, Flag, Lock } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
 import { toast } from "sonner";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
@@ -10,8 +10,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import ReportContentDialog from "@/components/ReportContentDialog";
 import { copyToClipboard } from "@/lib/clipboard";
+import { base44 } from "@/api/base44Client";
 
-export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlaylist }) {
+export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlaylist, currentUser }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -21,6 +22,35 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
   const audioPlayer = useAudioPlayer();
   const playTrack = audioPlayer?.playTrack;
   const [reportOpen, setReportOpen] = useState(false);
+
+  // A priced track's Download button used to render unconditionally for every
+  // visitor — free or paying — so buying a "license" delivered nothing you
+  // couldn't already get for free. Gate the actual download behind ownership
+  // (creator) or a confirmed Base44Purchase for this exact post; the inline
+  // preview player above is left untouched (streaming a preview before buying
+  // is normal marketplace behavior, unlike an unrestricted full download).
+  const isPriced = Number(post?.price) > 0;
+  const isOwner = !!currentUser && post?.creator_id === currentUser.id;
+  const [purchasedIds, setPurchasedIds] = useState(() => new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!open || !isPriced || !currentUser?.id) {
+      setPurchasedIds(new Set());
+      return;
+    }
+    base44.entities.Base44Purchase.filter({ user_id: currentUser.id, status: "paid" })
+      .then((purchases) => {
+        if (cancelled) return;
+        const ids = new Set();
+        (purchases || []).forEach((p) => (p.items || []).forEach((item) => { if (item.id) ids.add(item.id); }));
+        setPurchasedIds(ids);
+      })
+      .catch(() => { if (!cancelled) setPurchasedIds(new Set()); });
+    return () => { cancelled = true; };
+  }, [open, isPriced, currentUser?.id]);
+
+  const canDownload = !isPriced || isOwner || purchasedIds.has(post?.id);
 
   useEffect(() => {
     if (!open) {
@@ -196,7 +226,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                      </Button>
                    )}
                    
-                   {post.file_url && (
+                   {post.file_url && canDownload && (
                      <Button
                        size="lg"
                        type="button"
@@ -223,6 +253,16 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                        <Download className="w-5 h-5" />
                        Download
                      </Button>
+                   )}
+
+                   {post.file_url && !canDownload && (
+                     <div
+                       title="Purchase this track to unlock the full download"
+                       className="flex items-center gap-2 h-14 px-6 rounded-full border border-white/10 text-white/50 text-sm flex-shrink-0"
+                     >
+                       <Lock className="w-4 h-4" />
+                       Buy to unlock download
+                     </div>
                    )}
                    
                    <Button

@@ -23,7 +23,15 @@
     "mac": {
       "target": "dmg",
       "icon": "icon.png",
-      "category": "public.app-category.music"
+      "category": "public.app-category.music",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "NaliChat needs microphone access to record audio in the Studio.",
+        "NSCameraUsageDescription": "NaliChat needs camera access for video in Jam Rooms."
+      }
     },
     "win": {
       "target": "nsis",

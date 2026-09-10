@@ -1,0 +1,138 @@
+name: Desktop Builds
+
+# Builds the Electron desktop wrapper for Windows and macOS and publishes the
+# installers to the existing GitHub release used by the in-app Download page.
+#
+# Windows was previously built by cross-compiling via Wine on a macOS CI
+# machine (see the removed windows-exe job in codemagic.yaml). That produced
+# an installer whose bundled NSIS "System" plugin crashed with an access
+# violation (0xC0000005) on real Windows the moment the installer ran,
+# before installing anything. Building natively on windows-latest avoids
+# Wine's incomplete Win32 API emulation entirely.
+#
+# Both jobs upload to the SAME existing tag with `--clobber` rather than
+# creating a new release per run. The prior pipeline had each platform create
+# its own brand-new timestamped release, and since "latest" on GitHub is
+# whichever release is newest, every new build silently broke the download
+# links for the platform that didn't just build (a fresh windows-only release
+# would become "latest" and 404 the macOS/Android links, and vice versa).
+#
+# macOS signing + notarization are optional and off by default. See
+# electron/CODESIGNING.md for what secrets to add to enable them - without
+# those secrets this job builds exactly as it does today (unsigned).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'electron/**'
+      - '.github/workflows/desktop-builds.yml'
+  workflow_dispatch:
+
+env:
+  RELEASE_TAG: '1.0.0'
+
+jobs:
+  windows-exe:
+    name: Build Windows EXE
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Electron dependencies
+        working-directory: electron
+        run: npm install
+
+      - name: Build Windows installer (NSIS)
+        working-directory: electron
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --win nsis
+
+      - name: Verify the installer actually installs
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem electron/dist -Filter "*.exe" | Select-Object -First 1
+          if (-not $exe) { throw "No .exe produced" }
+          $proc = Start-Process -FilePath $exe.FullName -ArgumentList "/S" -Wait -PassThru -NoNewWindow
+          if ($proc.ExitCode -ne 0) { throw "Installer exited with code $($proc.ExitCode)" }
+          if (-not (Test-Path "$env:LOCALAPPDATA\Programs\NaliChat\NaliChat.exe")) { throw "App was not installed" }
+          Write-Host "Installer verified OK"
+
+      - name: Publish EXE to GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          EXE_FILE=$(find ./electron/dist -maxdepth 1 -name "*.exe" -type f | head -1)
+          if [ -z "$EXE_FILE" ]; then
+            echo "No EXE found"
+            exit 1
+          fi
+          gh release upload "$RELEASE_TAG" "$EXE_FILE" --clobber --repo "${{ github.repository }}"
+          echo "Published $EXE_FILE to release $RELEASE_TAG"
+
+  macos-dmg:
+    name: Build macOS DMG
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Electron dependencies
+        working-directory: electron
+        run: npm install
+
+      # Signing + notarization are OPT-IN via repo secrets, so this job
+      # behaves exactly as before (unsigned, still installable via
+      # right-click > Open) until the required secrets exist. See
+      # electron/CODESIGNING.md for exactly what to add and how to get it.
+      #
+      # electron-builder auto-detects and runs both steps from these env
+      # vars alone - CSC_LINK/CSC_KEY_PASSWORD trigger codesigning, and
+      # APPLE_ID/APPLE_APP_SPECIFIC_PASSWORD/APPLE_TEAM_ID trigger
+      # notarization via @electron/notarize afterwards. Nothing here ever
+      # prints or logs the secret values themselves.
+      - name: Build macOS DMG (signed + notarized if secrets are configured)
+        working-directory: electron
+        env:
+          CSC_LINK: ${{ secrets.MAC_CERTIFICATE_P12_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$CSC_LINK" ]; then
+            echo "MAC_CERTIFICATE_P12_BASE64 secret not set - building unsigned, as before."
+            echo "See electron/CODESIGNING.md to enable signing + notarization."
+            export CSC_IDENTITY_AUTO_DISCOVERY=false
+          else
+            echo "Signing certificate found - building signed."
+            if [ -n "$APPLE_ID" ] && [ -n "$APPLE_APP_SPECIFIC_PASSWORD" ] && [ -n "$APPLE_TEAM_ID" ]; then
+              echo "Notarization credentials found - electron-builder will notarize after signing."
+            else
+              echo "Notarization credentials incomplete - app will be signed but NOT notarized."
+              echo "Gatekeeper will still warn on first launch until all three of"
+              echo "APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID are set."
+            fi
+          fi
+          npx electron-builder --mac dmg
+
+      - name: Publish DMG to GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DMG_FILE=$(find ./electron/dist -maxdepth 1 -name "*.dmg" -type f | head -1)
+          if [ -z "$DMG_FILE" ]; then
+            echo "No DMG found"
+            exit 1
+          fi
+          gh release upload "$RELEASE_TAG" "$DMG_FILE" --clobber --repo "${{ github.repository }}"
+          echo "Published $DMG_FILE to release $RELEASE_TAG"

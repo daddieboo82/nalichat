@@ -410,6 +410,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
           post={selectedMedia}
           open={!!selectedMedia}
           onOpenChange={(isOpen) => !isOpen && setSelectedMedia(null)}
+          currentUser={currentUser}
         />
       )}
 

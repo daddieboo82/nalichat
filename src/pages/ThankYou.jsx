@@ -13,6 +13,12 @@ export default function ThankYou() {
   const [processing, setProcessing] = useState(true);
   const [exportState, setExportState] = useState(null); // null | downloading | done | error
   const [exportInfo, setExportInfo] = useState(null);
+  // Purchased licensed tracks resolved from verifyCheckoutPayment's item list —
+  // the standard cart flow used to confirm payment and then discard this data,
+  // so a buyer got a generic "your items are now available" message with no
+  // actual delivery of what they paid for.
+  const [purchasedTracks, setPurchasedTracks] = useState([]);
+  const [hadDonationOnly, setHadDonationOnly] = useState(false);
 
   const urlParams = new URLSearchParams(window.location.search);
   const isExport = urlParams.get("export") === "download";
@@ -41,10 +47,15 @@ export default function ThankYou() {
       } catch (e) {}
 
       // Verify payment via backend fallback — ensures the purchase is fulfilled
-      // even if the Stripe webhook hasn't fired yet.
+      // even if the Stripe webhook hasn't fired yet. The response's `items`
+      // list is what the buyer actually paid for; resolve any stem/track
+      // licenses so we can hand over a real download instead of a vague
+      // "your items are now available" message.
+      let purchasedItems = [];
       if (checkoutId) {
         try {
-          await base44.functions.invoke('verifyCheckoutPayment', { checkoutId });
+          const res = await base44.functions.invoke('verifyCheckoutPayment', { checkoutId });
+          purchasedItems = res?.data?.items || [];
         } catch (err) {
           console.error("Payment verification failed:", err);
         }
@@ -90,8 +101,26 @@ export default function ThankYou() {
           }
           setProcessing(false);
         } else {
-          // Standard cart purchase flow
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Standard cart purchase flow — resolve any purchased track/stem
+          // licenses to real ArtPost records so we can deliver a download,
+          // instead of silently discarding what was actually bought.
+          const licenseItems = purchasedItems.filter((it) => it.type === "stem_license" && it.id);
+          if (licenseItems.length > 0) {
+            const resolved = await Promise.all(
+              licenseItems.map(async (it) => {
+                try {
+                  const track = await base44.entities.ArtPost.get(it.id);
+                  return track ? { id: it.id, title: track.title, file_url: track.file_url } : null;
+                } catch (err) {
+                  console.error("Failed to resolve purchased track", it.id, err);
+                  return null;
+                }
+              })
+            );
+            setPurchasedTracks(resolved.filter(Boolean));
+          } else if (purchasedItems.some((it) => it.type === "donation")) {
+            setHadDonationOnly(true);
+          }
           await queryClient.invalidateQueries({ queryKey: ["subscription"] });
           clearCart();
           setProcessing(false);
@@ -239,21 +268,49 @@ export default function ThankYou() {
         <p className="text-xl text-muted-foreground mb-8">
           {processing
             ? "Confirming your payment. This takes just a moment..."
-            : "Your purchase is complete. Your items are now available."}
+            : purchasedTracks.length > 0
+              ? "Your license purchase is confirmed. Download your track below."
+              : hadDonationOnly
+                ? "Thank you for supporting NaliChat — your donation keeps the app free for everyone."
+                : "Your purchase is complete. Your items are now available."}
         </p>
 
-        <div className="bg-card border border-primary/30 rounded-2xl p-8 mb-8">
-          <h2 className="font-heading font-bold text-2xl mb-4 flex items-center justify-center gap-2">
-            <Music className="w-6 h-6 text-primary" />
-            What's Next?
-          </h2>
-          <ul className="text-left space-y-3 text-muted-foreground mb-6">
-            <li>✓ Create your first project in the Studio</li>
-            <li>✓ Upload your tracks and collaborate</li>
-            <li>✓ Connect with other artists in Network</li>
-            <li>✓ Use AI Mastering on your tracks</li>
-          </ul>
-        </div>
+        {!processing && purchasedTracks.length > 0 && (
+          <div className="bg-card border border-primary/30 rounded-2xl p-6 mb-8 text-left space-y-3">
+            {purchasedTracks.map((track) => (
+              <div key={track.id} className="flex items-center justify-between gap-4 bg-secondary/30 rounded-xl p-4">
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">{track.title || "Purchased track"}</p>
+                  <p className="text-xs text-muted-foreground">License purchased</p>
+                </div>
+                {track.file_url ? (
+                  <a href={track.file_url} download className="shrink-0">
+                    <Button size="sm" className="rounded-xl bg-primary hover:bg-primary/90 gap-2">
+                      <Download className="w-4 h-4" /> Download
+                    </Button>
+                  </a>
+                ) : (
+                  <span className="text-xs text-muted-foreground shrink-0">File unavailable</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!processing && purchasedTracks.length === 0 && (
+          <div className="bg-card border border-primary/30 rounded-2xl p-8 mb-8">
+            <h2 className="font-heading font-bold text-2xl mb-4 flex items-center justify-center gap-2">
+              <Music className="w-6 h-6 text-primary" />
+              What's Next?
+            </h2>
+            <ul className="text-left space-y-3 text-muted-foreground mb-6">
+              <li>✓ Create your first project in the Studio</li>
+              <li>✓ Upload your tracks and collaborate</li>
+              <li>✓ Connect with other artists in Network</li>
+              <li>✓ Use AI Mastering on your tracks</li>
+            </ul>
+          </div>
+        )}
 
         {!processing && (
           <div className="flex gap-4 justify-center flex-wrap">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download as DownloadIcon, Shield, Smartphone, Monitor, Laptop, CheckCircle, Loader2 } from 'lucide-react';
+import { Download as DownloadIcon, Shield, Smartphone, Monitor, Laptop, CheckCircle, Loader2, Share, PlusSquare, Apple } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,12 +7,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // ┌──────────────────────────────────────────────────────────────────────┐
 // │  DOWNLOAD URLs                                                        │
 // │  Update these to your GitHub Releases URLs after the first builds.     │
-// │  APK: https://github.com/<owner>/<repo>/releases/latest/download/app-release.apk
-// │  IPA: https://github.com/<owner>/<repo>/releases/latest/download/nalichat.ipa
 // └──────────────────────────────────────────────────────────────────────┘
 const APK_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat.apk';
 const EXE_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat-Setup.exe';
 const DMG_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat.dmg';
+// iOS does not allow installing an arbitrary downloaded .ipa the way Android
+// allows sideloading an APK — it requires the App Store, TestFlight, or a
+// paid Apple Developer Enterprise/Ad-Hoc distribution setup. None of that
+// exists for this project, and building an .ipa at all requires Xcode on
+// macOS, which isn't available here either. Rather than link to a file that
+// wouldn't install on a real iPhone, the iOS tab below uses "Add to Home
+// Screen" — this app is already a fully configured PWA (manifest.json,
+// apple-mobile-web-app meta tags, and a registered service worker), so this
+// genuinely installs a full-screen, app-like icon today with no extra build.
+const PWA_URL = 'https://nalichat.base44.app';
 
 function useAvailability(url) {
   const [state, setState] = useState({ checking: true, available: false, finalUrl: url });
@@ -94,10 +102,14 @@ export default function Download() {
         </div>
 
         <Tabs value={platform} onValueChange={setPlatform}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="android" className="text-sm">
               <Smartphone className="w-4 h-4 mr-1.5" />
               Android
+            </TabsTrigger>
+            <TabsTrigger value="ios" className="text-sm">
+              <Apple className="w-4 h-4 mr-1.5" />
+              iPhone
             </TabsTrigger>
             <TabsTrigger value="windows" className="text-sm">
               <Monitor className="w-4 h-4 mr-1.5" />
@@ -132,6 +144,42 @@ export default function Download() {
                 <Step n={2}>Open the downloaded file. If prompted, allow <strong className="text-foreground">"Install from unknown sources"</strong> in your browser or file manager settings.</Step>
                 <Step n={3}>Tap <strong className="text-foreground">Install</strong> and wait for the installation to complete.</Step>
                 <Step n={4}>Open <strong className="text-foreground">NaliChat</strong> from your app drawer and start creating!</Step>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* iPhone / iOS Tab — real App Store apps require Apple review and a
+              signed .ipa can't be installed from a plain download link the way
+              an Android APK can, so this uses the PWA "Add to Home Screen"
+              install path instead, which genuinely works today. */}
+          <TabsContent value="ios" className="space-y-6 mt-6">
+            <Card className="border-primary/20">
+              <CardContent className="pt-6 space-y-4">
+                <a href={PWA_URL} target="_blank" rel="noopener noreferrer" className="block">
+                  <Button className="w-full h-14 text-base font-semibold" size="lg">
+                    <Share className="w-5 h-5" />
+                    Open NaliChat in Safari
+                  </Button>
+                </a>
+                <p className="text-xs text-muted-foreground text-center">
+                  Installs as a full-screen app icon · No App Store required · Free
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <PlusSquare className="w-5 h-5 text-primary" />
+                  Add to Home Screen
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <Step n={1}>Open <strong className="text-foreground">nalichat.base44.app</strong> in <strong className="text-foreground">Safari</strong> (this must be Safari — other browsers on iOS don't support this).</Step>
+                <Step n={2}>Tap the <strong className="text-foreground">Share</strong> icon (the square with an arrow) in the toolbar.</Step>
+                <Step n={3}>Scroll down and tap <strong className="text-foreground">Add to Home Screen</strong>.</Step>
+                <Step n={4}>Tap <strong className="text-foreground">Add</strong> in the top right corner.</Step>
+                <Step n={5}>Open <strong className="text-foreground">NaliChat</strong> from your Home Screen — it launches full-screen with its own icon, just like an installed app.</Step>
               </CardContent>
             </Card>
           </TabsContent>

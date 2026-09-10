@@ -17,6 +17,9 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
         {footer && (
           <p className="text-center text-sm text-muted-foreground mt-6">{footer}</p>
         )}
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          Copyright © 2026 nalibase. All rights reserved. All content, code, design, and other parts of this application are copyrighted. Copyright holder reference: b5hoWSbAnVafZZgu.
+        </p>
       </div>
     </div>
   );

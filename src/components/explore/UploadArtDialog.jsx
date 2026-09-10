@@ -10,7 +10,7 @@ const TAGS_SUGGESTIONS = ["hip-hop", "trap", "lofi", "electronic", "ambient", "h
 import { Music } from "lucide-react";
 
 export default function UploadArtDialog({ open, onClose, currentUser, onSuccess }) {
-  const [form, setForm] = useState({ title: "", description: "", medium: "original", tags: [], price: "", is_explicit: false });
+  const [form, setForm] = useState({ title: "", description: "", medium: "original", tags: [], is_explicit: false });
   const [imageFile, setImageFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -60,11 +60,8 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
       const audioRes = await base44.integrations.Core.UploadFile({ file: audioFile });
       file_url = audioRes.file_url;
 
-      const parsedPrice = Math.max(0, parseFloat(form.price) || 0);
-
       await base44.entities.ArtPost.create({
         ...form,
-        price: parsedPrice,
         is_explicit: form.is_explicit,
         image_url,
         file_url,
@@ -94,7 +91,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
 
     setLoading(false);
     onSuccess();
-    setForm({ title: "", description: "", medium: "original", tags: [], price: "", is_explicit: false });
+    setForm({ title: "", description: "", medium: "original", tags: [], is_explicit: false });
     setPreview(null);
     setImageFile(null);
     setAudioFile(null);
@@ -314,24 +311,6 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
                 </button>
               ))}
             </div>
-          </div>
-
-          <div>
-            <label htmlFor="price-input" className="text-xs text-muted-foreground mb-2 block">Price (USD)</label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">$</span>
-              <input
-                id="price-input"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.price}
-                onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
-                placeholder="0 for free"
-                className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
-              />
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-1">Leave at 0 or empty for free downloads</p>
           </div>
 
         </div>

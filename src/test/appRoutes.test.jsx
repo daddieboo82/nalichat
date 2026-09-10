@@ -16,6 +16,12 @@ const mockAuthState = vi.hoisted(() => ({
     navigateToLogin: vi.fn(),
   },
 }));
+const mockSubscriptionState = vi.hoisted(() => ({
+  current: {
+    hasAccess: true,
+    isLoading: false,
+  },
+}));
 
 vi.mock('@/lib/AuthContext', async () => {
   const React = await import('react');
@@ -24,6 +30,9 @@ vi.mock('@/lib/AuthContext', async () => {
     useAuth: () => mockAuthState.current,
   };
 });
+vi.mock('@/hooks/useSubscription', () => ({
+  useSubscription: () => mockSubscriptionState.current,
+}));
 vi.mock('@/components/ui/toaster', () => ({ Toaster: () => null }));
 vi.mock('@/components/ui/sonner', () => ({ Toaster: () => null }));
 vi.mock('@/components/layout/AppLoader', () => ({ default: () => null }));
@@ -67,9 +76,11 @@ vi.mock('@/pages/Home', () => ({ default: () => <div>Home Page</div> }));
 vi.mock('@/pages/Terms', () => ({ default: () => <div>Terms Page</div> }));
 vi.mock('@/pages/Privacy', () => ({ default: () => <div>Privacy Page</div> }));
 vi.mock('@/pages/Download', () => ({ default: () => <div>Download Page</div> }));
+vi.mock('@/pages/ThankYou', () => ({ default: () => <div>Thank You Page</div> }));
 vi.mock('@/pages/Onboarding', () => ({ default: () => <div>Onboarding Page</div> }));
 vi.mock('@/pages/Messages', () => ({ default: () => <div>Messages Page</div> }));
 vi.mock('@/pages/Studio', () => ({ default: () => <div>Studio Page</div> }));
+vi.mock('@/components/pricing/PricingPlans', () => ({ default: () => <div>Pricing Page</div> }));
 
 describe('app routing guards', () => {
   beforeEach(() => {
@@ -85,6 +96,10 @@ describe('app routing guards', () => {
       authError: null,
       checkUserAuth: vi.fn(),
       navigateToLogin: vi.fn(),
+    };
+    mockSubscriptionState.current = {
+      hasAccess: true,
+      isLoading: false,
     };
   });
 
@@ -132,5 +147,46 @@ describe('app routing guards', () => {
     window.history.pushState({}, '', '/download');
     render(<App />);
     await screen.findByText('Download Page');
+  });
+
+  it('keeps the thank-you page reachable after checkout even without auth', async () => {
+    window.history.pushState({}, '', '/ThankYou?checkout_id=cs_test_123');
+
+    render(<App />);
+
+    await screen.findByText('Thank You Page');
+    expect(window.location.pathname).toBe('/ThankYou');
+  });
+
+  it('keeps the lowercase thankyou route reachable mid-onboarding', async () => {
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      isAuthenticated: true,
+      user: { id: 'u1', onboarding_completed: false, role: 'artist' },
+    };
+    window.history.pushState({}, '', '/thankyou?checkout_id=cs_test_123');
+
+    render(<App />);
+
+    await screen.findByText('Thank You Page');
+    expect(window.location.pathname).toBe('/thankyou');
+  });
+
+  it('redirects authenticated users without app access to pricing', async () => {
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      isAuthenticated: true,
+      user: { id: 'u1', onboarding_completed: true, role: 'artist' },
+    };
+    mockSubscriptionState.current = {
+      hasAccess: false,
+      isLoading: false,
+    };
+    window.history.pushState({}, '', '/messages');
+
+    render(<App />);
+
+    await screen.findByText('Pricing Page');
+    expect(window.location.pathname).toBe('/pricing');
   });
 });

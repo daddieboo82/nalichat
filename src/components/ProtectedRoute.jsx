@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const DefaultFallback = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -9,9 +10,10 @@ const DefaultFallback = () => (
   </div>
 );
 
-export default function ProtectedRoute({ children, fallback = <DefaultFallback />, unauthenticatedElement }) {
+export default function ProtectedRoute({ children, fallback = <DefaultFallback />, unauthenticatedElement, requireSubscription = false }) {
   const { isAuthenticated, isLoadingAuth, authChecked, authError, checkUserAuth, user } = useAuth();
   const location = useLocation();
+  const { hasAccess, isLoading: isLoadingSubscription } = useSubscription();
 
   useEffect(() => {
     if (!authChecked && !isLoadingAuth) {
@@ -34,6 +36,10 @@ export default function ProtectedRoute({ children, fallback = <DefaultFallback /
     return unauthenticatedElement;
   }
 
+  if (requireSubscription && isLoadingSubscription) {
+    return fallback;
+  }
+
   if (user?.is_banned) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-6">
@@ -44,6 +50,10 @@ export default function ProtectedRoute({ children, fallback = <DefaultFallback /
         </div>
       </div>
     );
+  }
+
+  if (requireSubscription && !hasAccess) {
+    return <Navigate to="/pricing" replace state={{ from: location.pathname + location.search }} />;
   }
 
   return children ? children : <Outlet />;

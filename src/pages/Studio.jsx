@@ -12,7 +12,6 @@ import BounceDialog from '@/components/studio/BounceDialog';
 import Metronome from '@/components/studio/Metronome';
 import MarkersBar from '@/components/studio/MarkersBar';
 import { sounds } from '@/hooks/use-sound';
-import { useSubscription } from '@/hooks/useSubscription';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePerformance } from '@/hooks/use-performance';
 
@@ -54,6 +53,7 @@ import VcaTrackHeader from '@/components/studio/VcaTrackHeader';
 import FolderTrackHeader from '@/components/studio/FolderTrackHeader';
 import { createStudioKeyHandler } from '@/lib/studioKeyHandler';
 
+const MAX_TRACKS = 999;
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
 export default function Studio() {
@@ -124,7 +124,7 @@ export default function Studio() {
   const [newTrackMidiChannel, setNewTrackMidiChannel] = useState('1');
   const [selectedTrackIds, setSelectedTrackIds] = useState([]);
 
-  const [maxTracks, setMaxTracks] = useState(2); // Free tier default
+  const maxTracks = MAX_TRACKS;
   const [recordingStartTime, setRecordingStartTime] = useState(null);
   
   const [editMode, setEditMode] = useState('slip'); // slip, grid, shuffle
@@ -192,8 +192,6 @@ export default function Studio() {
   const [jamVideoActive, setJamVideoActive] = useState(false);
   const [defaultRole, setDefaultRole] = useState("editor");
   const [isProcessing, setIsProcessing] = useState(null); // 'separate' | 'generate' | null
-
-  const { isPro } = useSubscription();
 
   // Real-time collaborator presence
   const { peers: livePeers, setActivity } = useStudioPresence('studio-main');
@@ -416,11 +414,6 @@ export default function Studio() {
       return next;
     });
   };
-
-  // Pro & admin users get unlimited tracks. Free trial users keep the default limit.
-  useEffect(() => {
-    setMaxTracks(isPro ? 999 : 2);
-  }, [isPro]);
 
   // Smooth playback via RAF - Optimized to bypass React render cycle for award-winning performance
   useEffect(() => {
@@ -1053,7 +1046,7 @@ export default function Studio() {
     sounds.success();
     
     if (tracks.length + selectedTrackIds.length > maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
       return;
     }
 
@@ -1090,7 +1083,7 @@ export default function Studio() {
     toast.success("Track deleted");
   };
   const duplicateTrack = (track) => {
-    if (tracks.length >= maxTracks) return toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+    if (tracks.length >= maxTracks) return toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
     const nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
     setTracksWithHistory(prev => [...prev, { ...track, id: nextId, name: `${track.name} (Copy)` }]); toast.success("Track duplicated");
   };
@@ -1122,7 +1115,7 @@ export default function Studio() {
   // Pro Tools-style Repeat Clip: duplicate a clip N times to the right, end-to-end.
   const handleRepeatClip = (track, count) => {
     if (tracks.length + count - 1 > maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
       return;
     }
     const clipDur = track.duration || 40;
@@ -1234,7 +1227,7 @@ export default function Studio() {
     sounds.click();
     
     if (tracks.length + selectedTrackIds.length > maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
       return;
     }
 
@@ -1290,7 +1283,7 @@ export default function Studio() {
     sounds.click();
     setActivity("Adding a track ➕");
     if (tracks.length >= maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
       return;
     }
     const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
@@ -1382,7 +1375,7 @@ export default function Studio() {
       return;
     }
     if (tracks.length + 2 > maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
       return;
     }
     setIsProcessing('separate');
@@ -1419,7 +1412,7 @@ export default function Studio() {
 
   const handleGenerateMelody = async () => {
     if (tracks.length >= maxTracks) {
-      toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+      toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
       return;
     }
     setIsProcessing('generate');
@@ -1502,7 +1495,7 @@ export default function Studio() {
     const file = e.target.files && e.target.files[0];
     if (file) {
       if (tracks.length >= maxTracks) {
-        toast.error(`Track limit reached (${maxTracks}). Upgrade your plan to add more tracks.`);
+        toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
         e.target.value = null;
         return;
       }
@@ -1711,7 +1704,7 @@ export default function Studio() {
                   { sr: "48 kHz", bd: "24-bit", desc: "Video Standard (Moderate CPU)" },
                   { sr: "88.2 kHz", bd: "24-bit", desc: "High Res (High CPU)" },
                   { sr: "96 kHz", bd: "24-bit", desc: "High Res / Video (High CPU)" },
-                  { sr: "96 kHz", bd: "32-bit float", desc: "Pro High Res (Very High CPU/Storage)" },
+                  { sr: "96 kHz", bd: "32-bit float", desc: "Float High Res (Very High CPU/Storage)" },
                   { sr: "192 kHz", bd: "32-bit float", desc: "Audiophile (Extreme CPU/Storage)" }
                 ].map((s, i) => {
                   const isActive = audioSettings.sampleRate === s.sr && audioSettings.bitDepth === s.bd;

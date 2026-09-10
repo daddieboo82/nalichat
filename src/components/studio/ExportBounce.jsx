@@ -175,7 +175,7 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
                 <SelectContent>
                   <SelectItem value="16bit">16-bit (CD)</SelectItem>
                   <SelectItem value="24bit">24-bit (Studio)</SelectItem>
-                  <SelectItem value="32bit">32-bit (Pro)</SelectItem>
+                  <SelectItem value="32bit">32-bit (High Res)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

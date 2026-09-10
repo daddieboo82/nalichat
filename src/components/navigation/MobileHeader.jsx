@@ -1,13 +1,12 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  ChevronLeft, Music, ShoppingCart, AudioLines, LogIn, Menu,
+  ChevronLeft, Music, AudioLines, LogIn, Menu,
   Mic, Wand2, FileText, Trophy, Settings, Gem, BarChart3,
   Home, Compass, MessageSquare, Users, Radio, Swords, Rocket, Smartphone
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useEffect, useState } from "react";
 import NotificationBell from "@/components/notifications/NotificationBell";
-import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { sounds } from "@/hooks/use-sound";
@@ -78,7 +77,6 @@ export default function MobileHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
-  const { items, setIsOpen } = useCart();
   const { isAuthenticated } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -152,19 +150,6 @@ export default function MobileHeader() {
 
           {/* Right Section */}
           <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={() => setIsOpen(true)}
-              title={items.length > 0 ? `Cart (${items.length})` : 'Cart'}
-              aria-label={items.length > 0 ? `Cart, ${items.length} item${items.length > 1 ? 's' : ''}` : 'Cart'}
-              className="relative w-11 h-11 flex items-center justify-center rounded-lg hover:bg-primary/10 transition-all text-muted-foreground hover:text-foreground"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              {items.length > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-primary text-[8px] font-bold text-white flex items-center justify-center border border-background">
-                  {items.length}
-                </span>
-              )}
-            </button>
             <NotificationBell />
             {!isAuthenticated && (
               <button

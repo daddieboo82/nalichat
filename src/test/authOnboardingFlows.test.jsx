@@ -72,6 +72,23 @@ vi.mock('@/lib/AuthContext', () => ({
   AuthProvider: ({ children }) => children,
   useAuth: () => mockAuthState.current,
 }));
+vi.mock('@/hooks/useSubscription', () => ({
+  useSubscription: () => ({
+    subscription: {
+      plan: 'free',
+      status: 'inactive',
+      hasAccess: false,
+      hasPending: false,
+      currentPeriodEnd: null,
+    },
+    hasAccess: false,
+    isLoading: false,
+    isPro: false,
+    isProFilesharing: false,
+    isTrialActive: false,
+    refetch: vi.fn(),
+  }),
+}));
 
 const renderInRouter = (ui, initialEntries = ['/']) =>
   render(<MemoryRouter initialEntries={initialEntries}>{ui}</MemoryRouter>);

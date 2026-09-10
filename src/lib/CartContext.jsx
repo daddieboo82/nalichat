@@ -13,22 +13,32 @@ export function CartProvider({ children }) {
   });
   const [isOpen, setIsOpen] = useState(false);
 
+  const getCartIdentity = (product) => [
+    product?.type || 'item',
+    product?.id || product?.title || product?.name || 'unknown',
+  ].join(':');
+
   useEffect(() => {
     localStorage.setItem('shopping_cart', JSON.stringify(items));
   }, [items]);
 
   const addToCart = (product) => {
+    const normalizedProduct = {
+      ...product,
+      ...(product?.id && !product?.type ? { type: 'stem_license' } : {}),
+    };
+    const nextIdentity = getCartIdentity(normalizedProduct);
     setItems(prev => {
-      const existing = prev.find(item => item.id === product.id);
+      const existing = prev.find(item => getCartIdentity(item) === nextIdentity);
       if (existing) {
         return prev;
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...normalizedProduct, quantity: 1 }];
     });
     setIsOpen(true);
     if (typeof window !== 'undefined' && window.gtag) {
       const convParams = { send_to: 'AW-18416125487/YZpUCNfY5OkcEK-Mv81E' };
-      if (product.price > 0) { convParams.value = product.price; convParams.currency = 'USD'; }
+      if (normalizedProduct.price > 0) { convParams.value = normalizedProduct.price; convParams.currency = 'USD'; }
       window.gtag('event', 'conversion', convParams);
     }
   };

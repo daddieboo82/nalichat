@@ -158,7 +158,7 @@ const AuthenticatedApp = () => {
   // from Terms/Privacy and cannot complete a password reset.
   const ONBOARDING_EXEMPT_PATHS = new Set([
     '/onboarding', '/login', '/register', '/forgot-password', '/reset-password',
-    '/privacy', '/terms', '/download',
+    '/privacy', '/terms', '/download', '/thankyou',
   ]);
   const currentPath = location.pathname.toLowerCase();
 
@@ -172,8 +172,8 @@ const AuthenticatedApp = () => {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // The app is completely free — no paywall. All users have full access.
-  // Monetization is through per-item sales (tracks, files) via the cart/checkout flow.
+  // Public marketing pages stay open, but authenticated app surfaces require
+  // an active subscription for full access.
 
   return (
     <>
@@ -200,8 +200,10 @@ const AuthenticatedApp = () => {
         <Route path="/challenge/:challengeId/submission/:submissionId" element={<SubmissionPlayer />} />
         <Route path="/squad/join/:inviteCode" element={<SquadJoin />} />
       <Route path="/viral-seed" element={<ViralSeed />} />
+        <Route path="/ThankYou" element={<ThankYou />} />
+        <Route path="/thankyou" element={<ThankYou />} />
       </Route>
-      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} requireSubscription />}>
         <Route path="/studio" element={<Studio />} />
         <Route element={<AppLayout />}>
           <Route path="/messages" element={<Messages />} />
@@ -214,7 +216,6 @@ const AuthenticatedApp = () => {
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/playlist/:playlistId" element={<PlaylistDetail />} />
           <Route path="/analytics" element={<Analytics />} />
-          <Route path="/ThankYou" element={<ThankYou />} />
           <Route path="/cover-art" element={<CoverArt />} />
           <Route path="/webhook-test" element={<WebhookTest />} />
           <Route path="/WebhookTest" element={<Navigate to="/webhook-test" replace />} />

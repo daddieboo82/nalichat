@@ -1,14 +1,40 @@
-// The app is completely free — all features are unlocked for all users.
-// Monetization is through per-item sales (tracks, files) via the cart/checkout flow,
-// not through subscriptions or trials.
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+
 export function useSubscription() {
+  const { isAuthenticated } = useAuth();
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("checkSubscriptionStatus");
+      return res?.data || {
+        plan: "free",
+        status: "inactive",
+        hasAccess: false,
+        hasPending: false,
+        currentPeriodEnd: null,
+      };
+    },
+    enabled: !!isAuthenticated,
+    retry: false,
+  });
+
+  const subscription = data || {
+    plan: "free",
+    status: "inactive",
+    hasAccess: false,
+    hasPending: false,
+    currentPeriodEnd: null,
+  };
+
   return {
-    subscription: { plan: 'free', status: 'active', hasAccess: true },
-    isPro: true,
-    isProFilesharing: true,
+    subscription,
+    isPro: !!subscription.hasAccess,
+    isProFilesharing: !!subscription.hasAccess,
     isTrialActive: false,
-    hasAccess: true,
-    isLoading: false,
-    refetch: async () => {},
+    hasAccess: !!subscription.hasAccess,
+    isLoading,
+    refetch,
   };
 }

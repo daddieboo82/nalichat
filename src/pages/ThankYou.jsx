@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Music, ArrowRight, Loader2, Download, AlertCircle } from "lucide-react";
+import { CheckCircle, Music, ArrowRight, Loader2, Download } from "lucide-react";
 import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -11,19 +11,17 @@ export default function ThankYou() {
   const queryClient = useQueryClient();
   const { clearCart } = useCart();
   const [processing, setProcessing] = useState(true);
-  const [exportState, setExportState] = useState(null); // null | downloading | done | error
-  const [exportInfo, setExportInfo] = useState(null);
   // Purchased licensed tracks resolved from verifyCheckoutPayment's item list —
   // the standard cart flow used to confirm payment and then discard this data,
   // so a buyer got a generic "your items are now available" message with no
   // actual delivery of what they paid for.
   const [purchasedTracks, setPurchasedTracks] = useState([]);
   const [hadDonationOnly, setHadDonationOnly] = useState(false);
+  const [hasOtherPurchase, setHasOtherPurchase] = useState(false);
 
   const urlParams = new URLSearchParams(window.location.search);
-  const isExport = urlParams.get("export") === "download";
-  const isApk = urlParams.get("apk") === "1";
   const checkoutId = urlParams.get("checkout_id");
+  const isSubscriptionCheckout = urlParams.get("subscription") === "1";
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -46,6 +44,13 @@ export default function ThankYou() {
         }
       } catch (e) {}
 
+      if (isSubscriptionCheckout) {
+        await queryClient.invalidateQueries({ queryKey: ["subscription"] });
+        clearCart();
+        setProcessing(false);
+        return;
+      }
+
       // Verify payment via backend fallback — ensures the purchase is fulfilled
       // even if the Stripe webhook hasn't fired yet. The response's `items`
       // list is what the buyer actually paid for; resolve any stem/track
@@ -62,69 +67,38 @@ export default function ThankYou() {
       }
 
       try {
-        if (isApk) {
-          // APK purchase — mark paid so the Download page reveals the link
-          try { sessionStorage.setItem('apk_paid', '1'); } catch {}
-          setExportState("done");
-          setExportInfo({ fileName: "NaliChat.apk" });
-          setProcessing(false);
-        } else if (isExport) {
-          // Studio export download flow — deliver the rendered file
-          setExportState("downloading");
-          const pending = localStorage.getItem("pending_studio_export");
-          if (!pending) {
-            setExportState("error");
-            setProcessing(false);
-            return;
-          }
-
-          const { fileUri, fileName } = JSON.parse(pending);
-          try {
-            const signedRes = await base44.functions.invoke('get-studio-export-url', { fileUri });
-            const signedUrl = signedRes.data.signed_url;
-
-            // Trigger the download
-            const a = document.createElement("a");
-            a.href = signedUrl;
-            a.download = fileName || "NaliStudio Mix.wav";
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-
-            // Clean up the pending marker
-            localStorage.removeItem("pending_studio_export");
-            setExportInfo({ fileName });
-            setExportState("done");
-          } catch (err) {
-            console.error("Export delivery error:", err);
-            setExportState("error");
-          }
-          setProcessing(false);
-        } else {
-          // Standard cart purchase flow — resolve any purchased track/stem
-          // licenses to real ArtPost records so we can deliver a download,
-          // instead of silently discarding what was actually bought.
-          const licenseItems = purchasedItems.filter((it) => it.type === "stem_license" && it.id);
-          if (licenseItems.length > 0) {
-            const resolved = await Promise.all(
-              licenseItems.map(async (it) => {
-                try {
-                  const track = await base44.entities.ArtPost.get(it.id);
-                  return track ? { id: it.id, title: track.title, file_url: track.file_url } : null;
-                } catch (err) {
-                  console.error("Failed to resolve purchased track", it.id, err);
-                  return null;
-                }
-              })
-            );
-            setPurchasedTracks(resolved.filter(Boolean));
-          } else if (purchasedItems.some((it) => it.type === "donation")) {
-            setHadDonationOnly(true);
-          }
-          await queryClient.invalidateQueries({ queryKey: ["subscription"] });
-          clearCart();
-          setProcessing(false);
+        // Standard cart purchase flow — resolve any purchased track/stem
+        // licenses to real ArtPost records so we can deliver a download,
+        // instead of silently discarding what was actually bought.
+        const licenseItems = purchasedItems.filter((it) => it.type === "stem_license" && it.id);
+        const donationOnly = purchasedItems.some((it) => it.type === "donation");
+        const handledTypes = new Set([
+          "donation",
+          "stem_license",
+        ]);
+        if (licenseItems.length > 0) {
+          const resolved = await Promise.all(
+            licenseItems.map(async (it) => {
+              try {
+                const track = await base44.entities.ArtPost.get(it.id);
+                return track ? { id: it.id, title: track.title, file_url: track.file_url } : null;
+              } catch (err) {
+                console.error("Failed to resolve purchased track", it.id, err);
+                return null;
+              }
+            })
+          );
+          setPurchasedTracks(resolved.filter(Boolean));
         }
+        if (donationOnly) {
+          setHadDonationOnly(true);
+        }
+        if (purchasedItems.length > 0 && purchasedItems.some((it) => !handledTypes.has(it.type))) {
+          setHasOtherPurchase(true);
+        }
+        await queryClient.invalidateQueries({ queryKey: ["subscription"] });
+        clearCart();
+        setProcessing(false);
       } catch (error) {
         console.error("Error processing thank you:", error);
         setProcessing(false);
@@ -132,11 +106,9 @@ export default function ThankYou() {
     };
 
     processThankYou();
-  }, [queryClient, isExport, clearCart, checkoutId]);
+  }, [queryClient, clearCart, checkoutId, isSubscriptionCheckout]);
 
-  // ── APK purchase view ──
-  if (isApk) {
-    const APK_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat.apk';
+  if (isSubscriptionCheckout) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
         <motion.div
@@ -146,6 +118,8 @@ export default function ThankYou() {
           className="text-center max-w-2xl"
         >
           <motion.div
+            animate={{ rotate: processing ? 360 : 0 }}
+            transition={{ duration: processing ? 2 : 0.8 }}
             className="mb-6 inline-block"
           >
             {processing ? (
@@ -156,84 +130,27 @@ export default function ThankYou() {
           </motion.div>
 
           <h1 className="font-heading font-black text-5xl mb-4">
-            {processing ? "Confirming Purchase..." : "Thank You!"}
+            {processing ? "Confirming Purchase..." : "Subscription Active!"}
           </h1>
 
           <p className="text-xl text-muted-foreground mb-8">
             {processing
               ? "Confirming your payment. This takes just a moment..."
-              : "Your purchase is complete. Download the NaliChat app below."}
+              : "Your 30-day app access is ready. Open the app, export tracks, and download stems with no separate charges."}
           </p>
 
           {!processing && (
-            <a href={APK_DOWNLOAD_URL} download="NaliChat.apk">
-              <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 h-14 px-8 text-lg font-bold">
-                <Download className="w-5 h-5 mr-2" />
-                Download APK
-              </Button>
-            </a>
-          )}
-        </motion.div>
-      </div>
-    );
-  }
-
-  // ── Export download view ──
-  if (isExport) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-center max-w-2xl"
-        >
-          <motion.div
-            animate={{ rotate: exportState === "downloading" ? 360 : 0 }}
-            transition={{ duration: exportState === "downloading" ? 2 : 0.8 }}
-            className="mb-6 inline-block"
-          >
-            {exportState === "downloading" && <Loader2 className="w-20 h-20 text-primary animate-spin" />}
-            {exportState === "done" && <CheckCircle className="w-20 h-20 text-accent" />}
-            {exportState === "error" && <AlertCircle className="w-20 h-20 text-destructive" />}
-          </motion.div>
-
-          <h1 className="font-heading font-black text-5xl mb-4">
-            {exportState === "downloading" && "Preparing Your Download…"}
-            {exportState === "done" && "Export Ready!"}
-            {exportState === "error" && "Download Unavailable"}
-          </h1>
-
-          <p className="text-xl text-muted-foreground mb-8">
-            {exportState === "downloading" && "Your payment was confirmed. Your file is being prepared for download."}
-            {exportState === "done" && `Your ${exportInfo?.fileName || "mix"} has been downloaded. Check your downloads folder!`}
-            {exportState === "error" && "We couldn't deliver your file. This may be because the session expired. Please try exporting again from the Studio."}
-          </p>
-
-          {exportState === "done" && (
             <div className="flex gap-4 justify-center flex-wrap">
-              <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90" asChild>
+              <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 h-14 px-8 text-lg font-bold" asChild>
                 <Link to="/studio">
                   <Music className="w-5 h-5 mr-2" />
-                  Back to Studio
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  Open Studio
                 </Link>
-                </Button>
-              <Button size="lg" variant="outline" className="rounded-xl" asChild>
-                <Link to="/explore">
-                  Explore Tracks
-                </Link>
-                </Button>
-            </div>
-          )}
-
-          {exportState === "error" && (
-            <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90" asChild>
-              <Link to="/studio">
-                <Music className="w-5 h-5 mr-2" />
-                Back to Studio
-              </Link>
               </Button>
+              <Button size="lg" variant="outline" className="rounded-xl" asChild>
+                <Link to="/download">Desktop Downloads</Link>
+              </Button>
+            </div>
           )}
         </motion.div>
       </div>
@@ -271,8 +188,10 @@ export default function ThankYou() {
             : purchasedTracks.length > 0
               ? "Your license purchase is confirmed. Download your track below."
               : hadDonationOnly
-                ? "Thank you for supporting NaliChat — your donation keeps the app free for everyone."
-                : "Your purchase is complete. Your items are now available."}
+                ? "Thank you for supporting NaliChat — your donation helps fund ongoing app development."
+                : hasOtherPurchase
+                  ? "Your purchase is complete. Check the relevant area of the app to access what you bought."
+                  : "Your purchase is complete. Your items are now available."}
         </p>
 
         {!processing && purchasedTracks.length > 0 && (

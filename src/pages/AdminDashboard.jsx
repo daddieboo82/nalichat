@@ -126,14 +126,14 @@ export default function AdminDashboard() {
         </h2>
         <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-secondary/20 mb-8">
           <div>
-            <h3 className="font-bold">Admin Pro Recognition</h3>
-            <p className="text-sm text-muted-foreground">Automatically recognize all admin users as having a Pro plan, regardless of their actual subscription status.</p>
+            <h3 className="font-bold">Admin Access Recognition</h3>
+            <p className="text-sm text-muted-foreground">Automatically recognize all admin users as having app access, regardless of their actual subscription status.</p>
           </div>
           <Switch 
             checked={adminProRecognition} 
             onCheckedChange={(val) => {
               setAdminProRecognition(val);
-              toast.success(val ? "Admin users will now automatically receive Pro plan access." : "Admin Pro recognition disabled.");
+              toast.success(val ? "Admin users will now automatically receive app access." : "Admin access recognition disabled.");
             }} 
           />
         </div>
@@ -179,7 +179,7 @@ export default function AdminDashboard() {
 
         <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center justify-center text-center">
           <Activity className="w-10 h-10 text-accent mb-4" />
-          <h3 className="text-lg font-bold text-muted-foreground">Pro / Pro+ Sharing</h3>
+          <h3 className="text-lg font-bold text-muted-foreground">Paid Access / File Sharing</h3>
           <p className="text-4xl font-black mt-2">
             {proSubs.length} <span className="text-xl text-muted-foreground">/</span> {proFilesharingSubs.length}
           </p>
@@ -187,7 +187,7 @@ export default function AdminDashboard() {
 
         <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center justify-center text-center">
           <Activity className="w-10 h-10 text-yellow-500 mb-4" />
-          <h3 className="text-lg font-bold text-muted-foreground">Active Free Trials</h3>
+          <h3 className="text-lg font-bold text-muted-foreground">Trial / Pending Access</h3>
           <p className="text-4xl font-black mt-2 text-yellow-500">{trialUsers.length}</p>
         </div>
       </div>

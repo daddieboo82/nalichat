@@ -179,7 +179,7 @@ describe('home, navigation, and recovery flows', () => {
   });
 
   it('restores the last mobile tab path when switching tabs', async () => {
-    renderWithProviders(<MobileNavHarness />);
+    const firstRender = renderWithProviders(<MobileNavHarness />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Profile' }));
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/profile'));
@@ -190,6 +190,12 @@ describe('home, navigation, and recovery flows', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Explore' }));
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/explore'));
 
+    fireEvent.click(screen.getByRole('button', { name: 'Profile' }));
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/profile?id=42'));
+
+    firstRender.unmount();
+
+    renderWithProviders(<MobileNavHarness />);
     fireEvent.click(screen.getByRole('button', { name: 'Profile' }));
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/profile?id=42'));
   });

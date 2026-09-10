@@ -46,7 +46,20 @@ vi.mock('@/lib/NaliPresenceContext', () => ({ NaliPresenceProvider: ({ children 
 vi.mock('@/hooks/use-performance', () => ({ usePerformance: () => ({ isLowEnd: true }) }));
 vi.mock('@/api/base44Client', () => ({ base44: { auth: { logout: vi.fn() } } }));
 
-vi.mock('@/pages/Login', () => ({ default: () => <div>Login Page</div> }));
+vi.mock('@/pages/Login', async () => {
+  const { useLocation } = await import('react-router-dom');
+  return {
+    default: () => {
+      const location = useLocation();
+      return (
+        <div>
+          <div>Login Page</div>
+          <div data-testid="login-state">{JSON.stringify(location.state ?? null)}</div>
+        </div>
+      );
+    },
+  };
+});
 vi.mock('@/pages/Register', () => ({ default: () => <div>Register Page</div> }));
 vi.mock('@/pages/ForgotPassword', () => ({ default: () => <div>Forgot Password Page</div> }));
 vi.mock('@/pages/ResetPassword', () => ({ default: () => <div>Reset Password Page</div> }));
@@ -87,6 +100,7 @@ describe('app routing guards', () => {
     await screen.findByText('Login Page');
     expect(window.location.pathname).toBe('/login');
     expect(window.location.search).toBe('');
+    expect(screen.getByTestId('login-state').textContent).toBe('null');
   });
 
   it('forces incomplete authenticated users through onboarding before protected pages', async () => {

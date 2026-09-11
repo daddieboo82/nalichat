@@ -1,6 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { claimModerationStrike } from '../../shared/moderationStrikes.ts';
+import {
+  acquireMessageMutationLock,
+  releaseMessageMutationLock,
+} from '../../shared/messageMutationLock.ts';
 
 const TIMEOUT_48H_MINUTES = 48 * 60;
 const ALLOWED_TYPES = new Set(['text', 'file', 'audio', 'image', 'video', 'session']);
@@ -381,17 +385,41 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
       messageData.reply_to_sender = replyTarget.sender_name || 'User';
     }
 
+    if (body?.thread_id != null && typeof body.thread_id !== 'string') {
+      return Response.json({ error: 'thread_id must be a string' }, { status: 400 });
+    }
+    let threadLockId: string | null = null;
     if (typeof body?.thread_id === 'string' && body.thread_id) {
-      const threadTarget = await base44.asServiceRole.entities.Message.get(body.thread_id).catch(() => null);
+      const threadId = body.thread_id.trim();
+      if (!threadId || threadId.length > 200) {
+        return Response.json({ error: 'Invalid thread_id' }, { status: 400 });
+      }
+      threadLockId = await acquireMessageMutationLock(
+        base44.asServiceRole.entities,
+        threadId,
+      );
+      if (!threadLockId) {
+        return Response.json(
+          { error: 'Thread is being updated. Please retry.' },
+          { status: 409 },
+        );
+      }
+
+      const threadTarget = await base44.asServiceRole.entities.Message.get(threadId).catch(() => null);
       if (!threadTarget || threadTarget.conversation_id !== conversationId) {
+        await releaseMessageMutationLock(base44.asServiceRole.entities, threadLockId);
+        threadLockId = null;
         return Response.json({ error: 'Thread target is not in this conversation' }, { status: 400 });
       }
       if (threadTarget.thread_id) {
+        await releaseMessageMutationLock(base44.asServiceRole.entities, threadLockId);
+        threadLockId = null;
         return Response.json({ error: 'Thread replies must target a top-level message' }, { status: 400 });
       }
       messageData.thread_id = threadTarget.id;
     }
 
+  try {
   let message;
   let createdNew = true;
   if (clientMessageKey) {
@@ -437,6 +465,9 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
     }
 
   return Response.json({ success: true, message, duplicate: !createdNew });
+  } finally {
+    await releaseMessageMutationLock(base44.asServiceRole.entities, threadLockId);
+  }
 }
 
 Deno.serve(async (req) => {

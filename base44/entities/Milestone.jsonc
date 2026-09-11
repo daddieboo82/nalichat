@@ -28,11 +28,27 @@
     },
     "completed": {
       "type": "boolean",
-      "default": false
+      "default": false,
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "completed_at": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "priority": {
       "type": "string",

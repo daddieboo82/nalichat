@@ -147,9 +147,15 @@ describe('release configuration', () => {
     expect(signer).toContain("user.role !== 'admin'");
   });
 
-  it('builds SMS invite links on the server instead of trusting client URLs', async () => {
+  it('builds invite links from server-configured origins only', async () => {
     const smsInvite = await readText('base44/functions/sendSmsInvite/entry.ts');
-    expect(smsInvite).toContain("X-Base44-App-Url");
+    const emailInvite = await readText('base44/functions/send-invite-email/entry.ts');
+    const reengage = await readText('base44/functions/reengageStalledUsers/entry.ts');
+
+    for (const source of [smsInvite, emailInvite, reengage]) {
+      expect(source).toContain("Deno.env.get('APP_BASE_URL')");
+      expect(source).not.toContain("req.headers.get('X-Base44-App-Url')");
+    }
     expect(smsInvite).toContain("/register");
     expect(smsInvite).not.toContain("const { phone, link }");
   });

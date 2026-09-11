@@ -21,8 +21,13 @@ export default function InviteTab() {
 
   const inviteLink = `${getOrigin()}/register`;
 
-  const copyLink = () => {
-    copyToClipboard(inviteLink);
+  const copyLink = async () => {
+    const copiedSuccessfully = await copyToClipboard(inviteLink);
+    if (!copiedSuccessfully) {
+      setCopied(false);
+      toast.error("Couldn't copy the invite link. Please copy it manually.");
+      return;
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

@@ -30,21 +30,16 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
   const handleSaveSnapshot = async () => {
     if (!track) return;
     setSaving(true);
-    const nextNum = (versions[0]?.version_number || 0) + 1;
-    await base44.entities.TrackVersion.create({
+    const created = await base44.functions.invoke("createTrackVersion", {
       track_id: track.id,
       project_id: track.project_id,
-      version_number: nextNum,
-      label: label.trim() || `Version ${nextNum}`,
-      file_url: track.file_url,
+      label: label.trim() || undefined,
       volume: track.volume,
       pan: track.pan,
       muted: track.muted,
       solo: track.solo,
-      saved_by_id: currentUser?.id,
-      saved_by_name: currentUser?.full_name || "Unknown",
-      access_user_ids: track.access_user_ids || [track.uploaded_by, currentUser?.id].filter(Boolean),
     });
+    if (created?.data?.error) throw new Error(created.data.error);
     setLabel("");
     setSaving(false);
     queryClient.invalidateQueries({ queryKey: ["track-versions", track?.id] });

@@ -51,21 +51,12 @@ export default function MilestonesPanel({ projectId, canEdit }) {
 
   const addMilestone = useMutation({
     mutationFn: async () => {
-      const [me, project] = await Promise.all([
-        base44.auth.me(),
-        base44.entities.Project.get(projectId),
-      ]);
-      const accessUserIds = Array.from(new Set([
-        me?.id,
-        project?.owner_id,
-        ...(project?.collaborator_ids || []),
-      ].filter(Boolean)));
-      return base44.entities.Milestone.create({
+      const res = await base44.functions.invoke("createProjectMilestone", {
         ...form,
         project_id: projectId,
-        created_by_id: me.id,
-        access_user_ids: accessUserIds,
       });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.milestone;
     },
     onSuccess: () => { invalidate(); setShowAdd(false); setForm({ title: "", description: "", due_date: "", priority: "medium" }); },
   });
@@ -78,7 +69,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
     onSuccess: (_, m) => {
       invalidate();
       if (!m.completed) {
-        base44.auth.me().then((u) => recordSquadActivity(u.id, "task"));
+        recordSquadActivity("milestone", m.id);
       }
     },
   });

@@ -11,7 +11,7 @@
     },
     "member_b_id": {
       "type": "string",
-      "description": "User ID of the invited partner \u2014 empty until they accept"
+      "description": "User ID of the invited partner — empty until they accept"
     },
     "member_b_name": {
       "type": "string"
@@ -41,7 +41,9 @@
   ],
   "rls": {
     "create": {
-      "data.member_a_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "$or": [
@@ -54,26 +56,14 @@
       ]
     },
     "update": {
-      "$or": [
-        {
-          "data.member_a_id": "{{user.id}}"
-        },
-        {
-          "data.member_b_id": "{{user.id}}"
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "$or": [
-        {
-          "data.member_a_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

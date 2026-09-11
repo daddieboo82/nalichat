@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Users, Copy, Check, Sparkles, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import SquadMemberProgress from "@/components/squad/SquadMemberProgress";
-import { getSquadBonusStatus, generateInviteCode, BONUS_MULTIPLIER, CREDITS_REWARD } from "@/lib/squadBonus";
+import { getSquadBonusStatus, BONUS_MULTIPLIER, CREDITS_REWARD } from "@/lib/squadBonus";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import LoadError from "@/components/layout/LoadError";
 
@@ -36,7 +36,7 @@ export default function Squad() {
       setSquad(mine);
 
       if (mine && mine.status === "active") {
-        const status = await getSquadBonusStatus(user);
+        const status = await getSquadBonusStatus();
         setProgress(status.progress);
         setBonusActive(status.active);
         const fresh = await base44.auth.me();
@@ -60,13 +60,9 @@ export default function Squad() {
     if (!user) return;
     setCreating(true);
     try {
-      const created = await base44.entities.Squad.create({
-        member_a_id: user.id,
-        member_a_name: user.full_name || user.email,
-        invite_code: generateInviteCode(),
-        status: "pending",
-      });
-      setSquad(created);
+      const res = await base44.functions.invoke("createSquadInvite", {});
+      if (res?.data?.error) throw new Error(res.data.error);
+      setSquad(res?.data?.squad);
       toast.success("Squad invite created! Share your link.");
     } catch (err) {
       toast.error("Couldn't create a squad invite.");
@@ -96,7 +92,8 @@ export default function Squad() {
   const handleLeave = async () => {
     if (!squad) return;
     try {
-      await base44.entities.Squad.update(squad.id, { status: "ended" });
+      const res = await base44.functions.invoke("leaveSquad", { squadId: squad.id });
+      if (res?.data?.error) throw new Error(res.data.error);
       setSquad(null);
       setProgress(null);
       setBonusActive(false);

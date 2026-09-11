@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -11,6 +11,7 @@ const DefaultFallback = () => (
 
 export default function ProtectedRoute({ children, fallback = <DefaultFallback />, unauthenticatedElement }) {
   const { isAuthenticated, isLoadingAuth, authChecked, authError, checkUserAuth, user } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
     if (!authChecked && !isLoadingAuth) {
@@ -33,7 +34,7 @@ export default function ProtectedRoute({ children, fallback = <DefaultFallback /
     return unauthenticatedElement;
   }
 
-  if (user?.is_banned) {
+  if (user?.is_banned && location.pathname !== '/messages') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-6">
         <div className="text-center max-w-md">

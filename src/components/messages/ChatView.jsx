@@ -12,7 +12,6 @@ import TypingIndicator from "./TypingIndicator";
 import ThreadPanel from "./ThreadPanel";
 import MessageSearch from "./MessageSearch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { recordSquadActivity } from "@/lib/squadBonus";
 import { queryClientInstance as queryClient } from "@/lib/query-client";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import NaliContextHint from "@/components/nali/NaliContextHint";
@@ -276,7 +275,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               key={item.id}
               message={item}
               isOwn={item.sender_id === currentUser?.id}
-              canDelete={item.sender_id === currentUser?.id || currentUser?.role === 'admin' || ADMIN_EMAILS.includes(currentUser?.email) || currentUser?.role === 'producer'}
+              canDelete={item.sender_id === currentUser?.id || currentUser?.role === 'admin' || ADMIN_EMAILS.includes(currentUser?.email)}
               showAvatar={item.showAvatar}
               onReply={(msg) => {
                 setReplyTo(msg);
@@ -300,7 +299,11 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                   old.filter(m => m.id !== id)
                 );
                 try {
-                  await base44.entities.Message.delete(id);
+                  const res = await base44.functions.invoke("mutateConversationMessage", {
+                    action: "delete",
+                    message_id: id,
+                  });
+                  if (res?.data?.error) throw new Error(res.data.error);
                 } catch (e) {
                   // Restore the message if the server delete failed.
                   if (previous) queryClient.setQueryData(["messages", conversation?.id], previous);
@@ -369,7 +372,6 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                 setEditingMessage(null);
               } else {
                 onSendMessage(payload);
-                if (currentUser) recordSquadActivity(currentUser.id, "message");
               }
             }}
             replyTo={replyTo}

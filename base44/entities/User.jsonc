@@ -106,7 +106,15 @@
     "squad_credits": {
       "type": "number",
       "default": 0,
-      "description": "Squad & Scale co-op credits earned from hitting weekly squad goals"
+      "description": "Squad & Scale co-op credits earned from hitting weekly squad goals",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "xp": {
       "type": "number",

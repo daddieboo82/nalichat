@@ -1,0 +1,26 @@
+{
+  "name": "SquadActivity",
+  "type": "object",
+  "properties": {
+    "user_id": { "type": "string" },
+    "squad_id": { "type": "string" },
+    "week_key": { "type": "string" },
+    "source_type": {
+      "type": "string",
+      "enum": ["message", "art_post", "milestone"]
+    },
+    "source_id": { "type": "string" }
+  },
+  "required": ["user_id", "squad_id", "week_key", "source_type", "source_id"],
+  "rls": {
+    "create": { "user_condition": { "role": "admin" } },
+    "read": {
+      "$or": [
+        { "data.user_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}

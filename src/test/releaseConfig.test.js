@@ -513,6 +513,13 @@ describe('release configuration', () => {
     expect(submitRemix).toContain("uploadedUrl.protocol !== 'https:'");
   });
 
+  it('rejects collaborative tracks whose project or session parent does not exist', async () => {
+    const createTrack = await readText('base44/functions/createCollaborativeTrack/entry.ts');
+    expect(createTrack).toContain('const project = await entities.Project.get(projectId).catch(() => null)');
+    expect(createTrack).toContain('const message = await entities.Message.get(projectId).catch(() => null)');
+    expect(createTrack).toContain("error: 'Project/session not found'");
+  });
+
 
   it('derives playlist ownership on the server and protects owner identity', async () => {
     const playlist = await readJson('base44/entities/Playlist.jsonc');

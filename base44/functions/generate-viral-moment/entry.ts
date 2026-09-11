@@ -3,6 +3,35 @@ import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 
+const MAX_TRANSCRIBE_BYTES = 50 * 1024 * 1024;
+
+async function storedMediaSize(url: string): Promise<number | null> {
+  try {
+    const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+    if (head.ok) {
+      const length = Number(head.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0) return length;
+    }
+  } catch {}
+
+  try {
+    const probe = await fetch(url, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-0' },
+      redirect: 'manual',
+    });
+    if (probe.ok || probe.status === 206) {
+      const range = probe.headers.get('content-range') || '';
+      const match = range.match(/\/(\d+)$/);
+      if (match) return Number(match[1]);
+      const length = Number(probe.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0 && probe.status !== 206) return length;
+    }
+    try { await probe.body?.cancel(); } catch {}
+  } catch {}
+  return null;
+}
+
 // Generates a viral "moment" from a chat message or voice note — either an
 // AI meme (image + caption) or a vertical reel script for TikTok / Instagram.
 // All credit-costly integration calls run server-side under asServiceRole.
@@ -73,6 +102,14 @@ Deno.serve(async (req) => {
     if (isVoiceNote) {
       if (!isTrustedStoredMediaUrl(message.file_url)) {
         return Response.json({ error: 'Stored voice-note host is not allowed' }, { status: 400 });
+      }
+
+      const mediaSize = await storedMediaSize(message.file_url);
+      if (mediaSize === null) {
+        return Response.json({ error: 'Could not verify stored voice-note size' }, { status: 400 });
+      }
+      if (mediaSize <= 0 || mediaSize > MAX_TRANSCRIBE_BYTES) {
+        return Response.json({ error: 'Viral Moment transcription supports voice notes up to 50MB' }, { status: 413 });
       }
       const voiceAccess = await requireEntitlement(
         base44.asServiceRole.entities,

@@ -33,6 +33,16 @@ Deno.serve(async (req) => {
     if (!uploaderId) {
       return Response.json({ success: true, skipped: true, reason: 'missing_uploader' });
     }
+    const uploader = await base44.asServiceRole.entities.User.get(uploaderId).catch(() => null);
+    if (!uploader) {
+      return Response.json({ success: true, skipped: true, reason: 'missing_uploader_user' });
+    }
+    if (uploader.is_banned) {
+      return Response.json({ success: true, skipped: true, reason: 'uploader_banned' });
+    }
+    if (uploader.timeout_until && new Date(uploader.timeout_until).getTime() > Date.now()) {
+      return Response.json({ success: true, skipped: true, reason: 'uploader_timed_out' });
+    }
     const { allowed, entitlements } = await requireEntitlement(
       base44.asServiceRole.entities,
       uploaderId,

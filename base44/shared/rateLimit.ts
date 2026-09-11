@@ -36,17 +36,19 @@ export async function consumeHourlyLimit(
     });
     return { allowed: true, count: 1, limit };
   } catch {
-    const rows = await entities.UsageRateLimit.filter({ id });
-    const row = rows[0] || await entities.UsageRateLimit.get(id);
-    const current = Number(row?.count || 0);
-    if (current >= limit) {
-      return { allowed: false, count: current, limit };
-    }
-
-    await entities.UsageRateLimit.updateMany(
-      { id },
+    // Atomically claim one remaining slot. A read-then-increment sequence lets
+    // concurrent requests all observe the same count and overshoot the cap.
+    const update = await entities.UsageRateLimit.updateMany(
+      { id, count: { $lt: limit } },
       { $inc: { count: 1 } },
     );
-    return { allowed: true, count: current + 1, limit };
+
+    if (Number(update?.updated || 0) > 0) {
+      const row = await entities.UsageRateLimit.get(id);
+      return { allowed: true, count: Number(row?.count || 0), limit };
+    }
+
+    const row = await entities.UsageRateLimit.get(id);
+    return { allowed: false, count: Number(row?.count || limit), limit };
   }
 }

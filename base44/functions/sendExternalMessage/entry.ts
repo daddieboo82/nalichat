@@ -64,58 +64,13 @@ Deno.serve(async (req) => {
     }
 
     if (type === 'sms') {
-      // Prevent open SMS relay: only allow sending to a registered app user's phone,
-      // mirroring the email path's "registered user" restriction.
-      const cleanPhone = destination.replace(/[\r\n]/g, '').trim();
-      const smsUsers = await base44.asServiceRole.entities.User.filter({ phone: cleanPhone });
-      const isRegisteredPhone = smsUsers.length > 0;
-      if (!isRegisteredPhone) {
-        // Do not disclose whether a phone number is registered.
-        return Response.json({ success: true, method: 'sms', accepted: true });
-      }
-
-      // SMS via Twilio
-      const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-      const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-      const fromNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
-
-      if (!accountSid || !authToken || !fromNumber) {
-        return Response.json({ 
-          error: 'SMS is not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in settings.',
-          needs_setup: true
-        }, { status: 503 });
-      }
-
-      const cleanMessage = String(message)
-        .replace(/[\r\n]{2,}/g, '\n\n')
-        .replace(/[\r\n]/g, '\n')
-        .slice(0, 320);
-      const body = `${name} sent you a message via NaliChat:\n\n"${cleanMessage}"\n\nJoin NaliChat to reply directly.`;
-
-      const formData = new URLSearchParams();
-      formData.append('To', cleanPhone);
-      formData.append('From', fromNumber);
-      formData.append('Body', body);
-
-      const response = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: formData.toString(),
-        }
+      // External SMS-to-user messaging is disabled until NaliChat has a
+      // verified-phone ownership flow. A self-entered profile phone number is
+      // not sufficient proof that the destination belongs to an app user.
+      return Response.json(
+        { error: 'External SMS messaging is temporarily unavailable', needs_setup: true },
+        { status: 503 },
       );
-
-      const result = await response.json();
-      if (!response.ok) {
-        console.error('Twilio error:', result);
-        return Response.json({ error: result.message || 'Failed to send SMS' }, { status: 500 });
-      }
-
-      return Response.json({ success: true, method: 'sms', sid: result.sid });
     }
 
     return Response.json({ error: 'Invalid type. Use "email" or "sms"' }, { status: 400 });

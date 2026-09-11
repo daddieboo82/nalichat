@@ -1294,6 +1294,18 @@ describe('release configuration', () => {
     expect(contact.rls.read?.['data.user_id']).toBe('{{user.id}}');
   });
 
+  it('keeps push delivery metadata non-readable to clients and bounds typing heartbeats', async () => {
+    const push = await readJson('base44/entities/PushSubscription.jsonc');
+    const typing = await readText('base44/functions/updateTypingStatus/entry.ts');
+
+    expect(push.rls.read?.user_condition?.role).toBe('admin');
+    expect(push.properties.user_id.rls?.read?.user_condition?.role).toBe('admin');
+    expect(typing).toContain('consumeHourlyLimit');
+    expect(typing).toContain("'typing_status'");
+    expect(typing).toMatch(/'typing_status',\s*1800/);
+    expect(typing).toContain('Typing status rate limit exceeded');
+  });
+
   it('keeps remote push subscriptions server-authoritative and safe on account changes', async () => {
     const push = await readJson('base44/entities/PushSubscription.jsonc');
     const register = await readText('base44/functions/registerPushSubscription/entry.ts');

@@ -72,8 +72,7 @@
     {
       "entity_name": "User",
       "allowed_operations": [
-        "read",
-        "update"
+        "read"
       ]
     },
     {
@@ -150,6 +149,10 @@
     {
       "function_name": "deleteFolder",
       "description": "Safely delete a folder and detach contained files"
+    },
+    {
+      "function_name": "updateMyProfile",
+      "description": "Safely update the current user's public profile and preference fields"
     },
     {
       "entity_name": "StudioPresence",

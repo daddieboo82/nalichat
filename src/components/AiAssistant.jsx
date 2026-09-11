@@ -252,14 +252,14 @@ export default function AiAssistant() {
               </button>
             )}
             {!minimized && (
-              <button onClick={() => setExpanded(v => !v)} className="text-muted-foreground hover:text-foreground p-2 sm:p-1" title={expanded ? "Shrink" : "Expand"}>
+              <button onClick={() => setExpanded(v => !v)} aria-label={expanded ? "Shrink" : "Expand"} className="text-muted-foreground hover:text-foreground p-2 sm:p-1" title={expanded ? "Shrink" : "Expand"}>
                 {expanded ? <Shrink className="w-5 h-5 sm:w-4 sm:h-4" /> : <Expand className="w-5 h-5 sm:w-4 sm:h-4" />}
               </button>
             )}
-            <button onClick={() => setMinimized(v => !v)} title={minimized ? "Restore" : "Minimize"} className="text-muted-foreground hover:text-foreground p-2 sm:p-1">
+            <button onClick={() => setMinimized(v => !v)} aria-label={minimized ? "Restore" : "Minimize"} title={minimized ? "Restore" : "Minimize"} className="text-muted-foreground hover:text-foreground p-2 sm:p-1">
               {minimized ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />}
             </button>
-            <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-2 sm:p-1 mr-[-4px]">
+            <button onClick={() => setOpen(false)} aria-label="Close" title="Close" className="text-muted-foreground hover:text-foreground p-2 sm:p-1 mr-[-4px]">
               <X className="w-6 h-6 sm:w-4 sm:h-4" />
             </button>
           </div>

@@ -1,10 +1,21 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const discoveryRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'public_user_discovery',
+      120,
+    );
+    if (!discoveryRate.allowed) {
+      return Response.json({ error: 'Discovery rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
 
     const [allUsers, achievements, contacts, inboundContacts, conversations] = await Promise.all([
       base44.asServiceRole.entities.User.list(),

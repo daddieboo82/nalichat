@@ -4,6 +4,7 @@ import {
   messageIdFromEntityEvent,
   resolveFollowUpRemindersForMessage,
 } from '../../shared/followUpReminders.ts';
+import { workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -25,6 +26,9 @@ Deno.serve(async (req) => {
     const message = matches[0];
     if (!message) {
       return Response.json({ success: true, completed: 0, skipped: 'message_not_found' });
+    }
+    if (!workflowRecordIsFresh(message, 'create')) {
+      return Response.json({ success: true, completed: 0, skipped: 'stale_workflow_record' });
     }
     const completed = await resolveFollowUpRemindersForMessage({
       entities: base44.asServiceRole.entities,

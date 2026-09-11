@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
           muted: body.muted ?? track.muted,
           solo: body.solo ?? track.solo,
           saved_by_id: user.id,
-          saved_by_name: user.display_name || user.full_name || user.email || 'User',
+          saved_by_name: user.display_name || user.full_name || 'User',
           access_user_ids: Array.from(new Set([
             project.owner_id,
             ...(project.collaborator_ids || []),

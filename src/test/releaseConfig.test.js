@@ -10,10 +10,6 @@ async function readJson(path) {
   return JSON.parse(await readText(path));
 }
 
-async function readText(path) {
-  return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
-}
-
 describe('release configuration', () => {
   it('keeps workflow backend function references valid', async () => {
     const workflowDir = new URL('../../base44/workflows/', import.meta.url);
@@ -1000,6 +996,13 @@ describe('release configuration', () => {
     expect(list).toContain('Join public room');
     expect(list).not.toContain('% 8000 + 1200');
     expect(list).not.toContain('active members');
+  });
+
+  it('rate-limits message reaction writes', async () => {
+    const mutate = await readText('base44/functions/mutateConversationMessage/entry.ts');
+    expect(mutate).toContain("'message_reaction'");
+    expect(mutate).toMatch(/'message_reaction',\s*600/);
+    expect(mutate).toContain('Reaction rate limit exceeded');
   });
 
   it('enforces moderation state and cost bounds on outbound messaging', async () => {

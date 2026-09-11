@@ -24,7 +24,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import React from "react";
 
-const ADMIN_EMAILS = ["bossglop43@gmail.com"];
 
 export default React.memo(function ChatView({ conversation, messages, isLoading, currentUser, users, onSendMessage, onEditMessage, onReact, onBack, onStartDM, isBlocked, moderationBanner }) {
   const [replyTo, setReplyTo] = useState(null);
@@ -275,7 +274,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               key={item.id}
               message={item}
               isOwn={item.sender_id === currentUser?.id}
-              canDelete={item.sender_id === currentUser?.id || currentUser?.role === 'admin' || ADMIN_EMAILS.includes(currentUser?.email)}
+              canDelete={item.sender_id === currentUser?.id || currentUser?.role === 'admin'}
               showAvatar={item.showAvatar}
               onReply={(msg) => {
                 setReplyTo(msg);

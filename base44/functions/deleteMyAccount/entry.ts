@@ -42,6 +42,25 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Remove private uploads. Project-linked files are retained for remaining
+    // collaborators, but the departed uploader identity is anonymized.
+    const uploadedFiles = await entities.SharedFile.filter({ uploader_id: user.id });
+    for (const file of uploadedFiles) {
+      if (file.project_id) {
+        const remainingAccess = Array.isArray(file.access_user_ids)
+          ? file.access_user_ids.filter((id: string) => id !== user.id)
+          : [];
+        await entities.SharedFile.update(file.id, {
+          uploader_id: tombstoneId,
+          uploader_name: 'Deleted User',
+          access_user_ids: remainingAccess,
+          share_token_hash: null,
+        });
+      } else {
+        await entities.SharedFile.delete(file.id);
+      }
+    }
+
     // Preserve shared chat history for remaining participants, but remove
     // personal identity from messages authored by the deleted account.
     const authoredMessages = await entities.Message.filter({ sender_id: user.id });

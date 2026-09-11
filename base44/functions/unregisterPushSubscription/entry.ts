@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+const DELETE_BATCH_SIZE = 200;
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -24,12 +26,22 @@ Deno.serve(async (req) => {
     }
 
     const entity = base44.asServiceRole.entities.PushSubscription;
-    const rows = await entity.filter({ user_id: user.id, endpoint });
-    for (const row of rows) {
-      await entity.delete(row.id);
+    let removed = 0;
+    while (true) {
+      const rows = await entity.filter(
+        { user_id: user.id, endpoint },
+        '-created_date',
+        DELETE_BATCH_SIZE,
+      );
+      if (rows.length === 0) break;
+      for (const row of rows) {
+        await entity.delete(row.id);
+        removed += 1;
+      }
+      if (rows.length < DELETE_BATCH_SIZE) break;
     }
 
-    return Response.json({ success: true, removed: rows.length });
+    return Response.json({ success: true, removed });
   } catch (error) {
     console.error('unregisterPushSubscription error:', error);
     return Response.json({ error: error?.message || 'Could not unregister push subscription' }, { status: 500 });

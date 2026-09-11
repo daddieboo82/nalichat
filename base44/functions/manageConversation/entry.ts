@@ -135,8 +135,19 @@ Deno.serve(async (req) => {
     if (action === 'leave') {
       const participantIds = (conversation.participant_ids || []).filter((id: string) => id !== user.id);
       if (participantIds.length === 0) {
+        const [messages, typingRows] = await Promise.all([
+          entities.Message.filter({ conversation_id: conversation.id }),
+          entities.TypingStatus.filter({ conversation_id: conversation.id }),
+        ]);
+        for (const message of messages) await entities.Message.delete(message.id);
+        for (const typing of typingRows) await entities.TypingStatus.delete(typing.id);
         await entities.Conversation.delete(conversation.id);
-        return Response.json({ success: true, deleted: true });
+        return Response.json({
+          success: true,
+          deleted: true,
+          deleted_messages: messages.length,
+          deleted_typing_rows: typingRows.length,
+        });
       }
       const updated = await entities.Conversation.update(conversation.id, { participant_ids: participantIds });
       return Response.json({ success: true, conversation: updated });

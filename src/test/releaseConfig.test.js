@@ -417,6 +417,18 @@ describe('release configuration', () => {
     expect(acceptInvite).toContain('(project.collaborator_ids || []).includes(user.id)');
   });
 
+  it('claims project invite usage atomically before granting membership', async () => {
+    const acceptInvite = await readText('base44/functions/acceptProjectInvite/entry.ts');
+    expect(acceptInvite).toContain('used_count: { $lt: maxUses }');
+    expect(acceptInvite).toContain('{ $inc: { used_count: 1 } }');
+    expect(acceptInvite).toContain('Number(claim?.updated || 0) !== 1');
+    expect(acceptInvite.indexOf('used_count: { $lt: maxUses }')).toBeLessThan(
+      acceptInvite.indexOf('Project.update(project.id'),
+    );
+    expect(acceptInvite).toContain('membershipGranted = true');
+    expect(acceptInvite).toContain('{ $inc: { used_count: -1 } }');
+  });
+
 
   it('keeps shared-file edit access synchronized with project collaborator roles', async () => {
     const collaborator = await readText('base44/functions/manageProjectCollaborator/entry.ts');

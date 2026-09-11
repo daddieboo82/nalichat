@@ -14,31 +14,30 @@ const FILTERS = [
 export default function ChallengeLeaderboard() {
   const { challengeId } = useParams();
   const [challenge, setChallenge] = useState(null);
-  const [submissions, setSubmissions] = useState([]);
-  const [votes, setVotes] = useState([]);
+  const [rows, setRows] = useState([]);
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-    base44.entities.Challenge.get(challengeId).then(setChallenge);
-    base44.entities.ChallengeSubmission.filter({ challenge_id: challengeId, status: "approved" }).then(setSubmissions);
-    base44.entities.ChallengeVote.filter({ challenge_id: challengeId }).then(setVotes).catch(() => setVotes([]));
+    base44.functions.invoke("getChallengeLeaderboard", { challenge_id: challengeId })
+      .then((res) => {
+        setChallenge(res.data?.challenge || null);
+        setRows(res.data?.rows || []);
+      })
+      .catch(() => {
+        setChallenge(null);
+        setRows([]);
+      });
   }, [challengeId]);
 
   const ranked = useMemo(() => {
-    if (filter === "all") {
-      return [...submissions].sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
-    }
-    const cutoff = new Date();
-    if (filter === "week") cutoff.setDate(cutoff.getDate() - 7);
-    else cutoff.setHours(0, 0, 0, 0);
-    const counts = {};
-    votes.forEach((v) => {
-      if (new Date(v.created_date) >= cutoff) counts[v.submission_id] = (counts[v.submission_id] || 0) + 1;
-    });
-    return [...submissions].sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0)).map((s) => ({ ...s, _count: counts[s.id] || 0 }));
-  }, [submissions, votes, filter]);
+    const key = filter === "all" ? "all_time" : filter;
+    return [...rows].sort((a, b) => (b.counts?.[key] || 0) - (a.counts?.[key] || 0));
+  }, [rows, filter]);
 
-  const getCount = (s) => (filter === "all" ? s.vote_count || 0 : s._count || 0);
+  const getCount = (s) => {
+    const key = filter === "all" ? "all_time" : filter;
+    return s.counts?.[key] || 0;
+  };
 
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-5">

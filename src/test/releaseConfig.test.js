@@ -282,6 +282,21 @@ describe('release configuration', () => {
   });
 
 
+  it('cancels Stripe billing before destructive account deletion', async () => {
+    const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
+    expect(deletion).toContain("'/subscriptions/'");
+    expect(deletion).toContain("'DELETE'");
+    expect(deletion).toContain('const subscriptions = await entities.Subscription.filter');
+    expect(deletion.indexOf("'/subscriptions/'")).toBeLessThan(deletion.indexOf("await entities.User.delete(user.id)"));
+  });
+
+  it('authorizes purchase verification before calling Stripe', async () => {
+    const verify = await readText('base44/functions/verifyCheckoutPayment/entry.ts');
+    expect(verify).toContain('Invalid purchase verifier');
+    expect(verify.indexOf('Invalid purchase verifier')).toBeLessThan(verify.indexOf("stripeRequest(`/checkout/sessions/"));
+  });
+
+
   it('preserves collaboration integrity when deleting an account', async () => {
     const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
 

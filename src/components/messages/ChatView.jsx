@@ -12,7 +12,6 @@ import TypingIndicator from "./TypingIndicator";
 import ThreadPanel from "./ThreadPanel";
 import MessageSearch from "./MessageSearch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { recordSquadActivity } from "@/lib/squadBonus";
 import { queryClientInstance as queryClient } from "@/lib/query-client";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import NaliContextHint from "@/components/nali/NaliContextHint";
@@ -369,7 +368,6 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                 setEditingMessage(null);
               } else {
                 onSendMessage(payload);
-                if (currentUser) recordSquadActivity(currentUser.id, "message");
               }
             }}
             replyTo={replyTo}

@@ -5,6 +5,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
 
     const body = await req.json();
     const name = String(body?.name || '').trim().slice(0, 120);
@@ -27,7 +28,7 @@ Deno.serve(async (req) => {
       name,
       description,
       owner_id: user.id,
-      owner_name: user.display_name || user.full_name || user.email || 'User',
+      owner_name: user.display_name || user.full_name || 'User',
       track_ids: trackIds,
       is_public: Boolean(body?.is_public),
     });

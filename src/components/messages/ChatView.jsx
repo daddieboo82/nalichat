@@ -22,6 +22,7 @@ import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import CallOverlay from "./CallOverlay";
 import { motion, AnimatePresence } from "framer-motion";
 import { getChatTheme } from "@/lib/chatThemes";
+import { toast } from "sonner";
 
 import React from "react";
 
@@ -322,6 +323,8 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               users={users}
               onCopy={() => copyToClipboard(item.text || "")}
               onDelete={async (id) => {
+                const previousEditingMessage = editingMessage;
+                const previousReplyTo = replyTo;
                 if (editingMessage?.id === id) setEditingMessage(null);
                 if (replyTo?.id === id) setReplyTo(null);
                 // Instant optimistic delete: remove from the cache immediately so the
@@ -337,8 +340,11 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                   });
                   if (res?.data?.error) throw new Error(res.data.error);
                 } catch (e) {
-                  // Restore the message if the server delete failed.
+                  // Restore the message and any composer context if the server delete failed.
                   if (previous) queryClient.setQueryData(["messages", conversation?.id], previous);
+                  if (previousEditingMessage?.id === id) setEditingMessage(previousEditingMessage);
+                  if (previousReplyTo?.id === id) setReplyTo(previousReplyTo);
+                  toast.error("Couldn't delete the message. Please try again.");
                 }
               }}
               currentUser={currentUser}

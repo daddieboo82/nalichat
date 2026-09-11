@@ -13,6 +13,7 @@ function weekKey(date = new Date()): string {
   d.setHours(0, 0, 0, 0);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
+
 function weekendWindow(key: string) {
   const monday = new Date(`${key}T00:00:00`);
   const saturday = new Date(monday);
@@ -22,6 +23,7 @@ function weekendWindow(key: string) {
   sunday.setHours(23, 59, 59, 999);
   return { starts_at: saturday.toISOString(), expires_at: sunday.toISOString() };
 }
+
 function goalMet(progress: any, member: 'a' | 'b') {
   return (progress[`member_${member}_messages`] || 0) >= GOAL_MESSAGES ||
     (progress[`member_${member}_tasks`] || 0) >= GOAL_TASKS;
@@ -41,7 +43,7 @@ async function getOrCreateProgress(entities: any, squad: any) {
   try {
     const existing = await entities.SquadProgress.get(id);
     if (existing) return existing;
-  } catch (_) {}
+  } catch {}
 
   try {
     return await entities.SquadProgress.create({
@@ -51,7 +53,7 @@ async function getOrCreateProgress(entities: any, squad: any) {
       member_b_id: squad.member_b_id,
       week_key: key,
     });
-  } catch (_) {
+  } catch {
     return await entities.SquadProgress.get(id);
   }
 }
@@ -67,11 +69,43 @@ async function awardOnce(entities: any, userId: string, squad: any, progress: an
       credits: CREDITS_REWARD,
       week_key: progress.week_key,
     });
-  } catch (_) {
+  } catch {
     return false;
   }
   await entities.User.updateMany({ id: userId }, { $inc: { squad_credits: CREDITS_REWARD } });
   return true;
+}
+
+async function validateSource(entities: any, user: any, sourceType: string, sourceId: string) {
+  if (sourceType === 'message') {
+    const message = await entities.Message.get(sourceId);
+    if (!message || message.sender_id !== user.id || message.type === 'session') return false;
+    return true;
+  }
+
+  if (sourceType === 'art_post') {
+    const post = await entities.ArtPost.get(sourceId);
+    return Boolean(post && post.creator_id === user.id);
+  }
+
+  if (sourceType === 'milestone') {
+    const milestone = await entities.Milestone.get(sourceId);
+    if (!milestone || !milestone.completed) return false;
+    return milestone.created_by_id === user.id ||
+      (milestone.edit_user_ids || []).includes(user.id);
+  }
+
+  return false;
+}
+
+async function activityId(userId: string, sourceType: string, sourceId: string) {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`${userId}:${sourceType}:${sourceId}`),
+  );
+  return 'squad_activity_' + Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 Deno.serve(async (req) => {
@@ -80,18 +114,37 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { type } = await req.json();
-    if (!['message', 'task'].includes(type)) {
-      return Response.json({ error: 'Invalid activity type' }, { status: 400 });
+    const { sourceType, sourceId } = await req.json();
+    if (!['message', 'art_post', 'milestone'].includes(sourceType) || !sourceId) {
+      return Response.json({ error: 'Valid sourceType and sourceId are required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
+    if (!(await validateSource(entities, user, sourceType, String(sourceId)))) {
+      return Response.json({ error: 'Activity source is not valid for this user' }, { status: 403 });
+    }
+
     const squad = await activeSquad(entities, user.id);
     if (!squad) return Response.json({ success: true, tracked: false });
 
     const progress = await getOrCreateProgress(entities, squad);
+    const ledgerId = await activityId(user.id, sourceType, String(sourceId));
+
+    try {
+      await entities.SquadActivity.create({
+        id: ledgerId,
+        user_id: user.id,
+        squad_id: squad.id,
+        week_key: progress.week_key,
+        source_type: sourceType,
+        source_id: String(sourceId),
+      });
+    } catch {
+      return Response.json({ success: true, tracked: false, duplicate: true, progress });
+    }
+
     const member = squad.member_a_id === user.id ? 'a' : 'b';
-    const field = type === 'message'
+    const field = sourceType === 'message'
       ? `member_${member}_messages`
       : `member_${member}_tasks`;
 

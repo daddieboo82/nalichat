@@ -334,7 +334,6 @@ Deno.serve(async (req) => {
     // Subscription and purchase records are intentionally retained as billing
     // history; remove direct account identity where possible while retaining
     // Stripe reconciliation IDs.
-    const subscriptions = await entities.Subscription.filter({ user_id: user.id });
     for (const subscription of subscriptions) {
       await entities.Subscription.update(subscription.id, { user_id: tombstoneId });
     }

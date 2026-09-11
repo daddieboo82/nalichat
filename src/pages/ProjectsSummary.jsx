@@ -163,7 +163,7 @@ export default function ProjectsSummary() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline" className="capitalize">
-                          {project.status.replace('_', ' ')}
+                          {String(project.status || 'draft').replace('_', ' ')}
                         </Badge>
                         <Badge className="bg-primary/20 text-primary">
                           <Users className="w-3 h-3 mr-1" />
@@ -275,7 +275,7 @@ export default function ProjectsSummary() {
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium truncate">{f.name}</p>
                                   <p className="text-xs text-muted-foreground truncate">
-                                    by {f.uploader_name || 'Unknown'} • {(f.file_size / 1024 / 1024).toFixed(2)} MB
+                                    by {f.uploader_name || 'Unknown'} • {Number.isFinite(Number(f.file_size)) ? `${(Number(f.file_size) / 1024 / 1024).toFixed(2)} MB` : 'Size unavailable'}
                                   </p>
                                 </div>
                                 <a 

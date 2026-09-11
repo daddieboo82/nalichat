@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const ALLOWED_MEDIA = new Set(['original','remix','cover','beat','production','mixing','mastering','collab']);
 
@@ -39,6 +40,15 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const creationRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'art_post_create',
+      60,
+    );
+    if (!creationRate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
     if (user.is_banned) {
       return Response.json({ error: 'banned' }, { status: 403 });
     }

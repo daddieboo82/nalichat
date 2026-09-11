@@ -25,8 +25,19 @@ Deno.serve(async (req) => {
     if (!canEdit) return Response.json({ error: 'Viewer access cannot modify this track' }, { status: 403 });
 
     if (action === 'delete') {
+      const [versions, comments] = await Promise.all([
+        entities.TrackVersion.filter({ track_id: track.id }),
+        entities.TrackComment.filter({ track_id: track.id, parent_type: 'track' }),
+      ]);
+      for (const version of versions) await entities.TrackVersion.delete(version.id);
+      for (const comment of comments) await entities.TrackComment.delete(comment.id);
       await entities.Track.delete(track.id);
-      return Response.json({ success: true, deleted: true });
+      return Response.json({
+        success: true,
+        deleted: true,
+        deleted_versions: versions.length,
+        deleted_comments: comments.length,
+      });
     }
 
     const input = body?.data || {};

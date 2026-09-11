@@ -10,7 +10,7 @@ import PullToRefresh from "@/components/layout/PullToRefresh";
 import { useQueryClient } from "@tanstack/react-query";
 
 const USER_TABS = ["xp", "likes", "posts", "achievements", "viral"];
-const CONTENT_TABS = ["songs", "pics", "videos"];
+const CONTENT_TABS = ["songs"];
 
 export default function Leaderboard() {
   const navigate = useNavigate();
@@ -26,7 +26,10 @@ export default function Leaderboard() {
 
   const { data: users = [] } = useQuery({
     queryKey: ["leaderboard-users"],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const res = await base44.functions.invoke("listPublicUsers", {});
+      return res?.data?.users || [];
+    },
   });
 
   const { data: posts = [] } = useQuery({
@@ -34,15 +37,7 @@ export default function Leaderboard() {
     queryFn: () => base44.entities.ArtPost.list("-likes", 200),
   });
 
-  const { data: achievements = [] } = useQuery({
-    queryKey: ["all-achievements"],
-    queryFn: () => base44.entities.Achievement.list(),
-  });
 
-  const { data: sharedFiles = [] } = useQuery({
-    queryKey: ["leaderboard-files"],
-    queryFn: () => base44.entities.SharedFile.list("-created_date", 200),
-  });
 
   const postCountByUser = {};
   const likesCountByUser = {};
@@ -60,7 +55,7 @@ export default function Leaderboard() {
     if (userTab === "xp") return (b.xp || 0) - (a.xp || 0);
     if (userTab === "likes") return (likesCountByUser[b.id] || 0) - (likesCountByUser[a.id] || 0);
     if (userTab === "posts") return (postCountByUser[b.id] || 0) - (postCountByUser[a.id] || 0);
-    if (userTab === "achievements") return (achievementCountByUser[b.id] || 0) - (achievementCountByUser[a.id] || 0);
+    if (userTab === "achievements") return (b.achievement_count || 0) - (a.achievement_count || 0);
     if (userTab === "viral") return (b.viral_concepts_generated || 0) - (a.viral_concepts_generated || 0);
     return 0;
   }).slice(0, 50);
@@ -69,18 +64,14 @@ export default function Leaderboard() {
     if (userTab === "xp") return `${user.xp || 0} XP`;
     if (userTab === "likes") return `${likesCountByUser[user.id] || 0} ❤️`;
     if (userTab === "posts") return `${postCountByUser[user.id] || 0} posts`;
-    if (userTab === "achievements") return `${achievementCountByUser[user.id] || 0} 🏆`;
+    if (userTab === "achievements") return `${user.achievement_count || 0} 🏆`;
     if (userTab === "viral") return `${user.viral_concepts_generated || 0} 🚀`;
   };
 
   const topSongs = [...posts].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 20);
-  const topPics = sharedFiles.filter(f => f.file_type === 'image').sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 20);
-  const topVideos = sharedFiles.filter(f => f.file_type === 'video').sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 20);
 
   const getCurrentContentList = () => {
     if (contentTab === "songs") return topSongs;
-    if (contentTab === "pics") return topPics;
-    if (contentTab === "videos") return topVideos;
     return [];
   };
 
@@ -109,8 +100,6 @@ export default function Leaderboard() {
   const handleRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ["leaderboard-users"] });
     await queryClient.invalidateQueries({ queryKey: ["leaderboard-posts"] });
-    await queryClient.invalidateQueries({ queryKey: ["all-achievements"] });
-    await queryClient.invalidateQueries({ queryKey: ["leaderboard-files"] });
   };
 
   return (

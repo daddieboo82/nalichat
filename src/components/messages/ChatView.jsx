@@ -20,6 +20,8 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { useCall, isCallSignal } from "@/hooks/useCall";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import CallOverlay from "./CallOverlay";
+import CallSummaryPanel from "./CallSummaryPanel";
+import { useCallSummary } from "@/hooks/useCallSummary";
 import { motion, AnimatePresence } from "framer-motion";
 import { getChatTheme } from "@/lib/chatThemes";
 
@@ -177,6 +179,18 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
 
   // --- WebRTC call engine (audio + video) ---
   const callActions = useCall({ conversation, messages, currentUser, otherUser: other });
+  const summaryEligibleCall = conversation?.type === "dm"
+    && new Set(conversation?.participant_ids || []).size === 2;
+  const callParticipants = (conversation?.participant_ids || [])
+    .map((id) => users?.find((user) => user.id === id) || { id });
+  const summaryActions = useCallSummary({
+    callState: callActions.callState,
+    callEndReason: callActions.callEndReason,
+    localStream: callActions.localStream,
+    conversation,
+    currentUser,
+    enabled: summaryEligibleCall,
+  });
 
   const displayName = conversation?.type === "group" ? conversation.name : (other?.display_name || other?.full_name || "Unknown");
   const avatarSrc = conversation?.type === "group" ? conversation?.avatar_url : other?.avatar_url;
@@ -464,7 +478,15 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
         onEnd={callActions.endCall}
         onToggleMute={callActions.toggleMute}
         onToggleVideo={callActions.toggleVideo}
+        summaryActions={summaryEligibleCall ? summaryActions : null}
+        participants={callParticipants}
       />
+      {summaryEligibleCall && !callActions.callState && (
+        <CallSummaryPanel
+          summaryActions={summaryActions}
+          participants={callParticipants}
+        />
+      )}
     </div>
   );
 });

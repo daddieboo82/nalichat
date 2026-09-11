@@ -1449,6 +1449,26 @@ describe('release configuration', () => {
   });
 
 
+  it('moderation-gates project invites and bounds invite/challenge write paths', async () => {
+    const accept = await readText('base44/functions/acceptProjectInvite/entry.ts');
+    const revoke = await readText('base44/functions/revokeProjectInvites/entry.ts');
+    const submit = await readText('base44/functions/submitChallengeRemix/entry.ts');
+
+    expect(accept).toContain('user.is_banned');
+    expect(accept).toContain("error: 'timed_out'");
+    expect(accept).toContain("'project_invite_accept'");
+    expect(accept).toMatch(/'project_invite_accept',\s*60/);
+
+    expect(revoke).toContain('user.is_banned');
+    expect(revoke).toContain("error: 'timed_out'");
+    expect(revoke).toContain("'project_invite_revoke'");
+    expect(revoke).toMatch(/'project_invite_revoke',\s*60/);
+
+    expect(submit).toContain("'challenge_submission'");
+    expect(submit).toMatch(/'challenge_submission',\s*20/);
+    expect(submit).toContain('Challenge submission rate limit exceeded');
+  });
+
   it('enforces configured challenge voting windows server-side', async () => {
     const vote = await readText('base44/functions/castVote/entry.ts');
     expect(vote).toContain('Voting has not opened yet.');

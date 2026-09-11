@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+const PAGE_SIZE = 200;
+
 function pruneReactions(reactions: unknown, participantIds: string[]) {
   if (!reactions || typeof reactions !== 'object' || Array.isArray(reactions)) return {};
   const allowed = new Set(participantIds);
@@ -14,14 +16,17 @@ function pruneReactions(reactions: unknown, participantIds: string[]) {
 }
 
 async function syncConversationAudience(entities: any, conversationId: string, participantIds: string[]) {
-  const [messages, typingRows] = await Promise.all([
-    entities.Message.filter({ conversation_id: conversationId }),
-    entities.TypingStatus.filter({ conversation_id: conversationId }),
-  ]);
-
-  for (let i = 0; i < messages.length; i += 100) {
+  let messageCount = 0;
+  for (let skip = 0; ; skip += PAGE_SIZE) {
+    const messages = await entities.Message.filter(
+      { conversation_id: conversationId },
+      'created_date',
+      PAGE_SIZE,
+      skip,
+    );
+    if (messages.length === 0) break;
     await entities.Message.bulkUpdate(
-      messages.slice(i, i + 100).map((message: any) => ({
+      messages.map((message: any) => ({
         id: message.id,
         participant_ids: participantIds,
         read_by: Array.isArray(message.read_by)
@@ -30,6 +35,20 @@ async function syncConversationAudience(entities: any, conversationId: string, p
         reactions: pruneReactions(message.reactions, participantIds),
       })),
     );
+    messageCount += messages.length;
+    if (messages.length < PAGE_SIZE) break;
+  }
+
+  const typingRows: any[] = [];
+  for (let skip = 0; ; skip += PAGE_SIZE) {
+    const page = await entities.TypingStatus.filter(
+      { conversation_id: conversationId },
+      'created_date',
+      PAGE_SIZE,
+      skip,
+    );
+    typingRows.push(...page);
+    if (page.length < PAGE_SIZE) break;
   }
 
   const activeTypingRows = typingRows.filter((row: any) => participantIds.includes(row.user_id));
@@ -47,7 +66,24 @@ async function syncConversationAudience(entities: any, conversationId: string, p
     await entities.TypingStatus.delete(row.id);
   }
 
-  return { messages: messages.length, typingRows: activeTypingRows.length, removedTypingRows: departedTypingRows.length };
+  return { messages: messageCount, typingRows: activeTypingRows.length, removedTypingRows: departedTypingRows.length };
+}
+
+async function deleteConversationRows(entity: any, conversationId: string): Promise<number> {
+  let deleted = 0;
+  while (true) {
+    const rows = await entity.filter(
+      { conversation_id: conversationId },
+      '-created_date',
+      PAGE_SIZE,
+    );
+    if (rows.length === 0) return deleted;
+    for (const row of rows) {
+      await entity.delete(row.id);
+      deleted += 1;
+    }
+    if (rows.length < PAGE_SIZE) return deleted;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -241,18 +277,16 @@ Deno.serve(async (req) => {
     if (action === 'leave') {
       const participantIds = (conversation.participant_ids || []).filter((id: string) => id !== user.id);
       if (participantIds.length === 0) {
-        const [messages, typingRows] = await Promise.all([
-          entities.Message.filter({ conversation_id: conversation.id }),
-          entities.TypingStatus.filter({ conversation_id: conversation.id }),
+        const [deletedMessages, deletedTypingRows] = await Promise.all([
+          deleteConversationRows(entities.Message, conversation.id),
+          deleteConversationRows(entities.TypingStatus, conversation.id),
         ]);
-        for (const message of messages) await entities.Message.delete(message.id);
-        for (const typing of typingRows) await entities.TypingStatus.delete(typing.id);
         await entities.Conversation.delete(conversation.id);
         return Response.json({
           success: true,
           deleted: true,
-          deleted_messages: messages.length,
-          deleted_typing_rows: typingRows.length,
+          deleted_messages: deletedMessages,
+          deleted_typing_rows: deletedTypingRows,
         });
       }
       const updated = await entities.Conversation.update(conversation.id, { participant_ids: participantIds });

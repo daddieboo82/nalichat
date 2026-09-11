@@ -10,6 +10,60 @@ Deno.serve(async (req) => {
     const action = body?.action;
     const entities = base44.asServiceRole.entities;
 
+    if (action === 'create_dm' || action === 'create_group') {
+      const rawParticipantIds = Array.isArray(body?.participant_ids) ? body.participant_ids : [];
+      const requestedIds = rawParticipantIds
+        .map((id: unknown) => String(id || '').trim())
+        .filter(Boolean);
+      const participantIds = Array.from(new Set([user.id, ...requestedIds]));
+
+      if (action === 'create_dm') {
+        if (participantIds.length !== 2) {
+          return Response.json({ error: 'A DM requires exactly two participants' }, { status: 400 });
+        }
+        const otherUserId = participantIds.find((id: string) => id !== user.id);
+        const otherUser = otherUserId ? await entities.User.get(otherUserId).catch(() => null) : null;
+        if (!otherUser) return Response.json({ error: 'Recipient not found' }, { status: 404 });
+
+        const candidates = await entities.Conversation.filter({ type: 'dm' });
+        const existing = candidates.find((conversation: any) => {
+          const ids = Array.isArray(conversation.participant_ids) ? conversation.participant_ids : [];
+          return ids.length === 2 && ids.includes(user.id) && ids.includes(otherUserId);
+        });
+        if (existing) return Response.json({ success: true, conversation: existing });
+
+        const conversation = await entities.Conversation.create({
+          type: 'dm',
+          is_public: false,
+          participant_ids: participantIds,
+        });
+        return Response.json({ success: true, conversation });
+      }
+
+      if (participantIds.length < 2 || participantIds.length > 100) {
+        return Response.json({ error: 'Groups require 2 to 100 participants' }, { status: 400 });
+      }
+
+      const name = String(body?.name || '').trim().slice(0, 120);
+      if (!name) return Response.json({ error: 'Group name is required' }, { status: 400 });
+
+      const uniqueOtherIds = participantIds.filter((id: string) => id !== user.id);
+      const resolvedUsers = await Promise.all(
+        uniqueOtherIds.map((id: string) => entities.User.get(id).catch(() => null)),
+      );
+      if (resolvedUsers.some((candidate: any) => !candidate)) {
+        return Response.json({ error: 'One or more participants were not found' }, { status: 400 });
+      }
+
+      const conversation = await entities.Conversation.create({
+        type: 'group',
+        name,
+        is_public: false,
+        participant_ids: participantIds,
+      });
+      return Response.json({ success: true, conversation });
+    }
+
     if (action === 'create_public') {
       const name = String(body?.name || '').trim().slice(0, 120);
       if (!name.startsWith('#') || name.length < 2) {

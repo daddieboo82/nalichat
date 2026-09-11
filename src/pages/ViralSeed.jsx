@@ -61,7 +61,7 @@ export default function ViralSeed() {
           </p>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20">
             <Zap className="w-3.5 h-3.5 text-yellow-400" />
-            <span className="text-[11px] font-semibold text-yellow-400">Earn +50 XP per generation</span>
+            <span className="text-[11px] font-semibold text-yellow-400">Earn +50 XP on your first generation</span>
           </div>
         </div>
       </div>

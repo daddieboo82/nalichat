@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
     const submission = await entities.ChallengeSubmission.create({
       challenge_id: challenge.id,
       producer_id: user.id,
-      producer_name: user.display_name || user.full_name || user.email || 'User',
+      producer_name: user.display_name || user.full_name || 'User',
       producer_avatar: user.avatar_url || null,
       remix_file_url: remixFileUrl,
       remix_name: remixName,

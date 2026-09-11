@@ -710,6 +710,19 @@ describe('release configuration', () => {
     expect(listUsers).toContain('presenceVisibleTo.add(contact.contact_user_id)');
   });
 
+  it('declares and expires server-managed presence with an active heartbeat', async () => {
+    const user = await readJson('base44/entities/User.jsonc');
+    const listUsers = await readText('base44/functions/listPublicUsers/entry.ts');
+    const messages = await readText('src/pages/Messages.jsx');
+
+    expect(user.properties.is_online?.rls?.write?.user_condition?.role).toBe('admin');
+    expect(user.properties.last_seen?.rls?.write?.user_condition?.role).toBe('admin');
+    expect(listUsers).toContain("Date.now() - Date.parse(u.last_seen) < 2 * 60 * 1000");
+    expect(messages).toContain('window.setInterval');
+    expect(messages).toContain('60_000');
+    expect(messages).toContain('sendPresence(false)');
+  });
+
   it('enforces moderation state and cost bounds on outbound messaging', async () => {
     const external = await readText('base44/functions/sendExternalMessage/entry.ts');
     const invite = await readText('base44/functions/sendSmsInvite/entry.ts');

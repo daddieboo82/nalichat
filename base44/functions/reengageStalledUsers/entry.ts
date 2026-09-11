@@ -1,6 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+const SCHEDULE_WINDOW_MINUTE = 20;
+
+function isScheduledReengagementWindow(now = new Date()) {
+  return now.getUTCHours() === 9 && now.getUTCMinutes() <= SCHEDULE_WINDOW_MINUTE;
+}
+
 // Re-engages users who registered but never completed onboarding.
 // Sends a friendly reminder email with a direct link to the onboarding page.
 // Tracks delivery via `reengagement_sent_at` so each user gets at most one email.
@@ -10,20 +16,44 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
-    const caller = await base44.auth.me();
-    if (!caller?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    if (caller.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
-    }
+    const caller = await base44.auth.me().catch(() => null);
 
-    const adminRate = await consumeHourlyLimit(
-      base44.asServiceRole.entities,
-      caller.id,
-      'admin_reengagement',
-      4,
-    );
-    if (!adminRate.allowed) {
-      return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
+    // Manual runs require an authenticated admin. The daily workflow does not
+    // carry a user identity, so only allow that path during the configured
+    // 09:00 UTC window and grant the scheduler one claim for the hour.
+    if (caller) {
+      if (caller.role !== 'admin') {
+        return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
+      }
+      if (caller.is_banned) {
+        return Response.json({ error: 'Forbidden: banned account' }, { status: 403 });
+      }
+      if (caller.timeout_until && Date.parse(caller.timeout_until) > Date.now()) {
+        return Response.json({ error: 'Forbidden: timed out account' }, { status: 403 });
+      }
+
+      const adminRate = await consumeHourlyLimit(
+        base44.asServiceRole.entities,
+        caller.id,
+        'admin_reengagement',
+        4,
+      );
+      if (!adminRate.allowed) {
+        return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+    } else {
+      if (!isScheduledReengagementWindow()) {
+        return Response.json({ error: 'Forbidden: scheduled re-engagement window required' }, { status: 403 });
+      }
+      const scheduledRate = await consumeHourlyLimit(
+        base44.asServiceRole.entities,
+        'nali-reengagement-scheduler',
+        'scheduled_reengagement',
+        1,
+      );
+      if (!scheduledRate.allowed) {
+        return Response.json({ error: 'Scheduled re-engagement already claimed for this hour.' }, { status: 429 });
+      }
     }
 
     // App URL for the onboarding link comes only from server configuration.

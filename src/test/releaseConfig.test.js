@@ -723,6 +723,18 @@ describe('release configuration', () => {
     expect(messages).toContain('sendPresence(false)');
   });
 
+  it('keeps DM and group targets aligned with public-user eligibility', async () => {
+    const manage = await readText('base44/functions/manageConversation/entry.ts');
+
+    expect(manage).toContain('otherUser.onboarding_completed');
+    expect(manage).toContain('!otherUser.is_banned');
+    expect(manage).toContain("String(otherUser.display_name || '').trim()");
+    expect(manage).toContain("error: 'Recipient unavailable'");
+    expect(manage).toContain("candidate.role !== 'admin'");
+    expect(manage).toContain("error: 'One or more participants are unavailable'");
+    expect(manage).toContain('if (user.is_banned && !otherIsAdmin)');
+  });
+
   it('enforces moderation state and cost bounds on outbound messaging', async () => {
     const external = await readText('base44/functions/sendExternalMessage/entry.ts');
     const invite = await readText('base44/functions/sendSmsInvite/entry.ts');

@@ -78,9 +78,13 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
           } catch {}
         }
         await navigator.share({ text });
-      } catch {}
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          toast.error("Couldn't share this Viral Moment. Please try again.");
+        }
+      }
     } else {
-      handleCopy();
+      await handleCopy();
     }
   };
 

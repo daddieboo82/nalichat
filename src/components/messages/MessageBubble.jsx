@@ -43,10 +43,10 @@ async function speakText(text) {
 }
 
 function ReadReceipts({ readBy, users }) {
-  if (!readBy.length) return <span className="text-[10px] text-muted-foreground/50">✓</span>;
+  if (!readBy.length) return <span className="chat-delivery-state text-[10px] text-muted-foreground/50">✓</span>;
   const readers = users.filter(u => readBy.includes(u.id)).slice(0, 3);
   return (
-    <div className="flex items-center gap-0.5" title={readers.map(u => u.display_name || u.full_name).join(", ") + " saw this"}>
+    <div className="chat-delivery-state flex items-center gap-0.5" title={readers.map(u => u.display_name || u.full_name).join(", ") + " saw this"}>
       {readers.map(u => (
         <Avatar key={u.id} className="w-3.5 h-3.5 border border-background">
           <AvatarImage src={u.avatar_url} />
@@ -225,13 +225,13 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
 
       <div className={cn("max-w-[72%] sm:max-w-[65%] flex flex-col", isOwn && "items-end", message.type === "session" && "max-w-[90%] sm:max-w-[85%]")}>
         {showAvatar && !isOwn && (
-          <p className="text-[11px] text-muted-foreground/70 mb-1 ml-1 font-semibold">{message.sender_name}</p>
+          <p className="chat-message-meta text-[11px] text-muted-foreground/70 mb-1 ml-1 font-semibold">{message.sender_name}</p>
         )}
 
         {/* Reply-to preview */}
         {message.reply_to_text && (
-          <div className={cn("px-3 py-1.5 rounded-xl mb-1.5 border-l-2 text-xs max-w-full backdrop-blur-sm", isOwn ? "bg-white/10 border-white/30 text-right" : "bg-secondary/60 border-primary/50")}>
-            <p className="font-semibold text-[10px] mb-0.5 text-primary">{message.reply_to_sender}</p>
+          <div className={cn("px-3 py-1.5 rounded-xl mb-1.5 border-l-2 text-xs max-w-full backdrop-blur-sm", isOwn ? "chat-reply-preview--own bg-white/10 border-white/30 text-right" : "chat-reply-preview--other bg-secondary/60 border-primary/50")}>
+            <p className="chat-reply-sender font-semibold text-[10px] mb-0.5 text-primary">{message.reply_to_sender}</p>
             <p className="truncate opacity-70">{message.reply_to_text}</p>
           </div>
         )}
@@ -240,8 +240,8 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         <div className={cn(
           "relative rounded-2xl min-w-[60px] transition-all",
           isOwn
-            ? "bg-gradient-to-br from-primary via-primary to-pink-500 text-white rounded-br-sm shadow-xl shadow-primary/20"
-            : "bg-card/80 border border-border/60 rounded-bl-sm shadow-sm backdrop-blur-sm",
+            ? "chat-message-own bg-gradient-to-br from-primary via-primary to-pink-500 text-white rounded-br-sm shadow-xl shadow-primary/20"
+            : "chat-message-other bg-card/80 border border-border/60 rounded-bl-sm shadow-sm backdrop-blur-sm",
           (hasFile && message.type !== "audio") || message.type === "session" ? "p-2" : "px-4 py-2.5",
           message.type === "session" && isOwn && "from-transparent to-transparent bg-transparent text-foreground shadow-none border border-primary/30"
         )}>
@@ -256,7 +256,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
               }
             }} />
           ) : (
-            <div className={cn("text-[15px] leading-relaxed break-words whitespace-pre-wrap [overflow-wrap:anywhere]", isOwn ? "text-white" : "text-foreground")}>
+            <div className={cn("chat-message-text text-[15px] leading-relaxed break-words whitespace-pre-wrap [overflow-wrap:anywhere]", isOwn ? "text-white" : "text-foreground")}>
               <ReactMarkdown
                 components={{
                   a: ({node, ...props}) => <a {...props} target="_blank" rel="noreferrer" className="underline font-semibold hover:opacity-80 break-all" />,
@@ -292,7 +292,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
                 return (
                   <button key={emoji} onClick={() => handleReact(emoji)}
                     className={cn(
-                      "border rounded-full px-2.5 py-0.5 text-xs transition-all hover:scale-105 active:scale-95 shadow-sm",
+                      "chat-reaction border rounded-full px-2.5 py-0.5 text-xs transition-all hover:scale-105 active:scale-95 shadow-sm",
                       hasReacted ? "bg-primary/20 border-primary/50 text-primary" : "bg-secondary/80 border-border/60 hover:bg-primary/15 hover:border-primary/30"
                     )}>
                     {emoji} {count > 1 && <span className="opacity-60 font-medium ml-1">{count}</span>}
@@ -304,7 +304,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         })()}
 
         <div className={cn("flex items-center gap-1.5 mt-1", isOwn ? "justify-end mr-1" : "ml-1")}>
-          <p className="text-[11px] text-muted-foreground/50 font-medium">
+          <p className="chat-delivery-state text-[11px] text-muted-foreground/50 font-medium">
             {message.created_date && !isNaN(new Date(message.created_date).getTime()) ? format(new Date(message.created_date), "h:mm a") : "..."}
             {message.is_edited && " • Edited"}
           </p>

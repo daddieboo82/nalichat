@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { normalizePlan, normalizeStatus, resolveEntitlements } from '../../shared/subscription.ts';
 
 // Returns concrete, numeric mastering parameters that the client applies via WebAudio
 // to automatically produce an industry-ready master from stacked stems.
@@ -10,14 +11,33 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const subscriptions = await base44.asServiceRole.entities.Subscription.filter({ user_id: user.id });
+    const entitlements = subscriptions.reduce((granted: Record<string, boolean>, subscription: any) => {
+      const current = resolveEntitlements(
+        normalizePlan(subscription.plan),
+        normalizeStatus(subscription.status),
+        {
+          currentPeriodEnd: subscription.current_period_end,
+          trialEndDate: subscription.trial_end_date,
+        },
+      );
+      for (const [key, value] of Object.entries(current)) {
+        granted[key] = granted[key] === true || value === true;
+      }
+      return granted;
+    }, {});
+
+    if (entitlements['ai.standard'] !== true) {
+      return Response.json({ error: 'Premium AI access is required.' }, { status: 403 });
+    }
+
     const { project_title, genre, bpm, stems } = await req.json();
 
     const stemSummary = Array.isArray(stems)
       ? stems.map(s => `- ${s.name} (${s.type || 'unknown'})`).join('\n')
       : 'unknown';
 
-    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      model: "claude_opus_4_8",
+    const llmRequest: Record<string, unknown> = {
       prompt: `You are a world-class mastering engineer. Produce concrete, numeric processing settings to turn a multi-stem mix into an industry-ready, streaming-loud master.
 
 Project: "${project_title}"
@@ -49,7 +69,12 @@ gain_db values should be modest (-6 to +6). ratio 1.5-4. attack 0.003-0.05. rele
         },
         required: ["low_shelf", "low_mid", "presence", "high_shelf", "compressor", "makeup_gain_db", "limiter_ceiling_db"]
       }
-    });
+    };
+    if (entitlements['ai.best_model'] === true) {
+      llmRequest.model = "claude_opus_4_8";
+    }
+
+    const result = await base44.asServiceRole.integrations.Core.InvokeLLM(llmRequest);
 
     return Response.json(result);
   } catch (error) {

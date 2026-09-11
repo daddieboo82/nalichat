@@ -52,13 +52,12 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
 
   const createAndAddMutation = useMutation({
     mutationFn: async () => {
-      const newPlaylist = await base44.entities.Playlist.create({
+      const created = await base44.functions.invoke("createPlaylist", {
         name: newPlaylistName,
-        owner_id: currentUser.id,
-        owner_name: currentUser.full_name,
         track_ids: [trackId],
       });
-      return newPlaylist;
+      if (created?.data?.error) throw new Error(created.data.error);
+      return created?.data?.playlist;
     },
     onSuccess: (newPlaylist) => {
       queryClient.invalidateQueries({ queryKey: ["userPlaylists"] });

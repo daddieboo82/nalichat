@@ -101,10 +101,14 @@
       "data.participant_ids": "{{user.id}}"
     },
     "update": {
-      "data.sender_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "data.sender_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

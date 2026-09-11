@@ -143,6 +143,55 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
           }}
           className="relative"
         >
+          <Button
+            size="sm"
+            className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 font-semibold shadow-md shadow-primary/20 transition-all hover:scale-105"
+            onClick={() => setOpen(true)}
+          >
+            <Upload className="w-3.5 h-3.5 mr-1.5" />
+            Import Tracks
+          </Button>
+        </div>
+
+        <DialogContent className="bg-card border-border shadow-2xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-lg">Import Audio Tracks</DialogTitle>
+          </DialogHeader>
+
+          {queue.length === 0 ? (
+            <div
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={(e) => {
+                handleDrag(e);
+                handleFiles(e.dataTransfer.files);
+              }}
+              className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
+                dragActive
+                  ? "border-primary/60 bg-primary/10"
+                  : "border-border/50 hover:border-primary/40 bg-secondary/20"
+              }`}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
+                <Music className="w-7 h-7 text-primary/70" />
+              </div>
+              <p className="font-medium mb-1">Drag tracks here or click to browse</p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Supports: MP3, WAV, FLAC, OGG, AAC, M4A, WebM
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+              >
+                Select Files
+              </Button>
+              
             </div>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">

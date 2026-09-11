@@ -38,12 +38,13 @@ export default function ProjectsSummary() {
     if (!newProjectTitle.trim()) return toast.error("Project title is required");
     setIsCreating(true);
     try {
-      const project = await base44.entities.Project.create({
+      const created = await base44.functions.invoke("createProject", {
         title: newProjectTitle.trim(),
         description: newProjectDescription.trim(),
-        owner_id: user.id,
-        status: "draft"
       });
+      if (created?.data?.error) throw new Error(created.data.error);
+      const project = created?.data?.project;
+      if (!project?.id) throw new Error("Project was not created");
       setData(prev => ({ ...prev, projects: [project, ...prev.projects] }));
       setShowNewProject(false);
       setNewProjectTitle("");

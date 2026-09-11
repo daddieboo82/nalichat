@@ -60,37 +60,33 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
     applyRows();
   }, [applyRows, currentUser]);
 
-  // Subscribe to other participants' typing rows.
+  // Poll only the scoped conversation rows rather than subscribing to raw
+  // TypingStatus events. This keeps all received payloads behind the entity's
+  // normal read filter/RLS path.
   useEffect(() => {
     if (!conversationId || !currentUser || !supportedRef.current) return;
-    let unsub = null;
     let cancelled = false;
 
-    (async () => {
+    const refreshTyping = async () => {
       try {
         const existing = await base44.entities.TypingStatus.filter({ conversation_id: conversationId });
         if (cancelled) return;
+        rowsRef.current = new Map();
         (existing || []).forEach(ingest);
-      } catch {
-        // Entity not available - degrade to no indicator rather than breaking chat.
-        supportedRef.current = false;
-        return;
-      }
-      if (cancelled) return;
-      try {
-        unsub = base44.entities.TypingStatus.subscribe((event) => {
-          if (event?.data) ingest(event.data);
-        });
+        applyRows();
       } catch {
         supportedRef.current = false;
       }
-    })();
+    };
+
+    refreshTyping();
+    const poll = setInterval(refreshTyping, SWEEP_MS);
 
     return () => {
       cancelled = true;
-      try { unsub?.(); } catch { /* already gone */ }
+      clearInterval(poll);
     };
-  }, [conversationId, currentUser, ingest]);
+  }, [conversationId, currentUser, ingest, applyRows]);
 
   // Locally expire stale rows even when no new events arrive.
   useEffect(() => {

@@ -166,7 +166,7 @@ Deno.serve(async (req) => {
       file_type: fileType,
       file_size: fileSize,
       uploader_id: user.id,
-      uploader_name: user.display_name || user.full_name || user.email || 'User',
+      uploader_name: user.display_name || user.full_name || 'User',
       description: typeof body.description === 'string' ? body.description.slice(0, 1000) : '',
       folder_id: folderId,
       project_id: projectId,

@@ -47,6 +47,7 @@ Deno.serve(async (req) => {
       created_by_id: user.id,
       expires_at: expiresAt,
       used_count: 0,
+      max_uses: 25,
     });
 
     return Response.json({
@@ -55,7 +56,8 @@ Deno.serve(async (req) => {
       projectId: project.id,
       role,
       expiresAt,
-    });
+      maxUses: 25,
+    }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not create project invite' }, { status: 500 });
   }

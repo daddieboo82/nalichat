@@ -712,16 +712,18 @@ export async function processDueFollowUpReminders({
   now?: string | Date;
 }) {
   const clock = currentDate(now);
-  const scheduled = await loadAll(entities.FollowUpReminder, {
-    status: 'scheduled',
-    remind_at: { $lte: clock.toISOString() },
-  });
-  const claimed = await loadAll(entities.FollowUpReminder, { status: 'triggered' });
-  const staleClaimCutoff = clock.getTime() - 5 * 60 * 1000;
-  const recoverableClaims = claimed.filter((reminder) => (
-    !reminder.triggered_at
-    && Date.parse(reminder.last_attempt_at || '') <= staleClaimCutoff
-  ));
+  const staleClaimCutoff = new Date(clock.getTime() - 5 * 60 * 1000).toISOString();
+  const [scheduled, recoverableClaims] = await Promise.all([
+    loadAll(entities.FollowUpReminder, {
+      status: 'scheduled',
+      remind_at: { $lte: clock.toISOString() },
+    }),
+    loadAll(entities.FollowUpReminder, {
+      status: 'triggered',
+      triggered_at: null,
+      last_attempt_at: { $lte: staleClaimCutoff },
+    }),
+  ]);
   for (const reminder of recoverableClaims) {
     const notifications = await entities.Notification.filter({
       follow_up_reminder_id: reminder.id,

@@ -26,7 +26,7 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
   };
 
   // Fetch contacts for the current user
-  const { data: contacts = [], isLoading: contactsLoading } = useQuery({
+  const { data: contacts = [], isLoading: contactsLoading, isError: contactsError } = useQuery({
     queryKey: ["contacts", currentUserId],
     queryFn: () => base44.entities.Contact.filter({ user_id: currentUserId }, "-created_date", 500),
     enabled: open && !!currentUserId,
@@ -78,6 +78,12 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
           {contactsLoading && (
             <div className="flex justify-center py-8">
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {contactsError && !contactsLoading && (
+            <div className="mx-2 mb-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive" role="alert">
+              Couldn't load your contacts. You can still search all available users below.
             </div>
           )}
 

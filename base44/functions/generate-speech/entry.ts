@@ -42,16 +42,19 @@ Deno.serve(async (req) => {
     }
 
     const { text, voice } = await req.json();
-    if (!text || !text.trim()) {
+    if (typeof text !== 'string' || !text.trim()) {
       return Response.json({ error: 'Text is required' }, { status: 400 });
     }
-
-    // Enforce the 5000-char limit from the integration docs
-    const truncated = text.slice(0, 5000);
+    if (text.length > 5000) {
+      return Response.json({ error: 'Text must be 5000 characters or fewer' }, { status: 413 });
+    }
+    if (voice != null && voice !== 'honey') {
+      return Response.json({ error: 'Unsupported voice' }, { status: 400 });
+    }
 
     const result = await base44.asServiceRole.integrations.Core.GenerateSpeech({
-      text: truncated,
-      voice: voice || 'honey',
+      text,
+      voice: 'honey',
     });
 
     return Response.json(result);

@@ -25,8 +25,10 @@ export default async function(req) {
       avatar_url: u.avatar_url,
       cover_url: u.cover_url,
       bio: u.bio,
-      role: u.role,
-      artist_role: u.artist_role,
+      role: u.role === 'admin' ? 'admin' : 'user',
+      artist_role: u.artist_role || (
+        ['artist', 'producer', 'engineer', 'ar'].includes(u.role) ? u.role : 'artist'
+      ),
       location: u.location,
       genres: u.genres || u.genre || [],
       xp: Number(u.xp || 0),

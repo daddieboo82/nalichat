@@ -59,7 +59,9 @@ export class CallEngine {
 
     this.pc.onicecandidate = (event) => {
       if (event.candidate) {
-        this.onSignal?.({ type: "ice", callId: this.callId, payload: event.candidate });
+        Promise.resolve(
+          this.onSignal?.({ type: "ice", callId: this.callId, payload: event.candidate })
+        ).catch(() => this._setState("failed"));
       }
     };
 
@@ -92,7 +94,7 @@ export class CallEngine {
     await this.pc.setLocalDescription(offer);
 
     this._setState("ringing");
-    this.onSignal?.({ type: "offer", callId, callType: type, payload: offer });
+    await this.onSignal?.({ type: "offer", callId, callType: type, payload: offer });
   }
 
   async acceptCall({ callId, type, offer }) {
@@ -116,7 +118,7 @@ export class CallEngine {
     await this.pc.setLocalDescription(answer);
 
     this._setState("connecting");
-    this.onSignal?.({ type: "answer", callId, payload: answer });
+    await this.onSignal?.({ type: "answer", callId, payload: answer });
   }
 
   async handleSignal(signal) {

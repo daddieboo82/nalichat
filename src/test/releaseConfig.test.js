@@ -794,6 +794,19 @@ describe('release configuration', () => {
     expect(studioPresence).toContain('setInterval(refresh, 5000)');
   });
 
+  it('avoids raw realtime subscriptions for tracks and notifications', async () => {
+    const session = await readText('src/components/messages/ChatSessionViewer.jsx');
+    const bell = await readText('src/components/notifications/NotificationBell.jsx');
+
+    expect(session).not.toContain('entities.Track.subscribe');
+    expect(session).toContain('Track.filter({ project_id: message.id })');
+    expect(session).toContain('setInterval(refreshTracks, 5000)');
+
+    expect(bell).not.toContain('entities.Notification.subscribe');
+    expect(bell).toContain('Notification.filter({ recipient_id: user.id }');
+    expect(bell).toContain('setInterval(refreshNotifications, 15000)');
+  });
+
   it('counts only current-week squad activity and blocks moderated reward claims', async () => {
     const activity = await readText('base44/functions/recordSquadActivity/entry.ts');
 

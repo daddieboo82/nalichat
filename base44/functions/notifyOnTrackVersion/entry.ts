@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { sendPushToUser } from '../../shared/webPush.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -37,6 +38,13 @@ Deno.serve(async (req) => {
 
     if (notifications.length > 0) {
       await base44.asServiceRole.entities.Notification.bulkCreate(notifications);
+      await Promise.all(notifications.map((notification) =>
+        sendPushToUser(base44.asServiceRole.entities, notification.recipient_id, {
+          title: notification.actor_name || 'NaliChat',
+          body: notification.message,
+          url: notification.link,
+        })
+      ));
     }
 
     return Response.json({ success: true, count: notifications.length });

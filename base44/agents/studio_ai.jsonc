@@ -18,8 +18,7 @@
     {
       "entity_name": "ArtPost",
       "allowed_operations": [
-        "read",
-        "update"
+        "read"
       ]
     },
     {
@@ -199,6 +198,10 @@
     {
       "function_name": "createTrackVersion",
       "description": "Create an authorized track version with trusted stored media"
+    },
+    {
+      "function_name": "mutateArtPost",
+      "description": "Safely update an owned ArtPost's editable metadata and trusted cover art"
     }
   ],
   "context_files": [],

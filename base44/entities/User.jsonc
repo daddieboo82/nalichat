@@ -135,7 +135,15 @@
     "reengagement_sent_at": {
       "type": "string",
       "format": "date-time",
-      "description": "Timestamp of the last onboarding re-engagement email sent to this user (null = never sent)"
+      "description": "Server-managed timestamp of the last onboarding re-engagement email sent to this user (null = never sent). Locked so users cannot suppress the reminder workflow by marking themselves as already contacted.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "violation_count": {
       "type": "number",

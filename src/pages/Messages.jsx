@@ -12,14 +12,13 @@ import NewChatDialog from "@/components/messages/NewChatDialog";
 import GroupChatDialog from "@/components/messages/GroupChatDialog";
 import ExternalMessageDialog from "@/components/messages/ExternalMessageDialog";
 import GlobalInviteDialog from "@/components/GlobalInviteDialog";
-import { sounds } from "@/hooks/use-sound";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import { toast } from "sonner";
 import ModerationBanner from "@/components/messages/ModerationBanner";
 import { MessageSquare, Users, Plus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { createClientMessageKey, createTempId, applySendSuccess, applySendFailure, applyRealtimeCreate } from "@/lib/messageCache";
+import { createClientMessageKey, applySendSuccess, applySendFailure } from "@/lib/messageCache";
 import { useSubscription } from "@/hooks/useSubscription";
 import { CHAT_THEME_ENTITLEMENT, getChatTheme, resolveEffectiveChatThemeId } from "@/lib/chatThemes";
 

@@ -72,7 +72,13 @@ async function awardOnce(entities: any, userId: string, squad: any, progress: an
   } catch {
     return false;
   }
-  await entities.User.updateMany({ id: userId }, { $inc: { squad_credits: CREDITS_REWARD } });
+  try {
+    await entities.User.updateMany({ id: userId }, { $inc: { squad_credits: CREDITS_REWARD } });
+  } catch (creditError) {
+    // Keep the reward retryable if the protected user-credit update fails.
+    await entities.SquadReward.delete(rewardId).catch(() => {});
+    throw creditError;
+  }
   return true;
 }
 

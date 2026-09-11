@@ -429,6 +429,16 @@ describe('release configuration', () => {
     expect(acceptInvite).toContain('{ $inc: { used_count: -1 } }');
   });
 
+  it('lets project owners revoke outstanding invite links', async () => {
+    const revoke = await readText('base44/functions/revokeProjectInvites/entry.ts');
+    const jamRoom = await readText('src/components/studio/JamRoomOverlay.jsx');
+    expect(revoke).toContain('project.owner_id !== user.id');
+    expect(revoke).toContain('entities.ProjectInvite.filter(filters)');
+    expect(revoke).toContain('entities.ProjectInvite.delete(invite.id)');
+    expect(jamRoom).toContain('functions.invoke("revokeProjectInvites"');
+    expect(jamRoom).toContain('Revoke All Invite Links');
+  });
+
 
   it('keeps shared-file edit access synchronized with project collaborator roles', async () => {
     const collaborator = await readText('base44/functions/manageProjectCollaborator/entry.ts');

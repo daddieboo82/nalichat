@@ -117,7 +117,18 @@ Deno.serve(async (req) => {
       if (!post || post.creator_id !== user.id || !post.file_url) {
         return Response.json({ error: 'Selected track is not available to submit' }, { status: 403 });
       }
-      remixFileUrl = post.file_url;
+      let storedPostUrl;
+      try { storedPostUrl = new URL(String(post.file_url)); } catch {
+        return Response.json({ error: 'Selected track media URL is invalid' }, { status: 400 });
+      }
+      const storedPostHost = storedPostUrl.hostname.toLowerCase();
+      const trustedStoredPost = storedPostUrl.protocol === 'https:' && TRUSTED_MEDIA_HOSTS.some(
+        (host) => storedPostHost === host || storedPostHost.endsWith('.' + host),
+      );
+      if (!trustedStoredPost) {
+        return Response.json({ error: 'Selected track media is not on trusted storage' }, { status: 400 });
+      }
+      remixFileUrl = storedPostUrl.toString();
     } else if (sourceType === 'external_upload') {
       fileFormat = String(body?.file_format || '').toLowerCase();
       if (!FILE_FORMATS.has(fileFormat)) {

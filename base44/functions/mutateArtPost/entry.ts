@@ -1,14 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
 const ALLOWED_MEDIA = new Set(['original','remix','cover','beat','production','mixing','mastering','collab']);
-const TRUSTED_MEDIA_HOSTS = [
-  'storage.googleapis.com',
-  'base44-user-files.s3.amazonaws.com',
-  'base44-user-files.s3.us-east-1.amazonaws.com',
-  'files.base44.com',
-  'cdn.base44.com',
-];
-
 function cleanCoverUrl(value: unknown) {
   const raw = String(value || '').trim();
   if (!raw) return '';

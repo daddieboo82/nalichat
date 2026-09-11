@@ -32,9 +32,25 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { file_url, title, genre, tags } = await req.json();
+    const { post_id } = await req.json();
+    if (!post_id) {
+      return Response.json({ error: 'post_id is required' }, { status: 400 });
+    }
 
-    // Step 1: Transcribe audio if available
+    const post = await base44.asServiceRole.entities.ArtPost.get(post_id);
+    if (!post) {
+      return Response.json({ error: 'Track not found' }, { status: 404 });
+    }
+    if (post.creator_id !== user.id) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const file_url = post.file_url || '';
+    const title = post.title || 'Untitled';
+    const genre = post.genre || 'Unknown';
+    const tags = Array.isArray(post.tags) ? post.tags : [];
+
+    // Step 1: Transcribe only the media URL stored on the authorized track.
     let transcript = "No lyrics available.";
     if (file_url) {
       try {

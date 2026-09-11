@@ -268,6 +268,14 @@ describe('release configuration', () => {
     expect(manageConversation).toContain('message.read_by.filter((readerId: string) => participantIds.includes(readerId))');
   });
 
+  it('prunes departed users from message reactions and typing rows', async () => {
+    const manageConversation = await readText('base44/functions/manageConversation/entry.ts');
+    expect(manageConversation).toContain('function pruneReactions');
+    expect(manageConversation).toContain('reactions: pruneReactions(message.reactions, participantIds)');
+    expect(manageConversation).toContain('departedTypingRows');
+    expect(manageConversation).toContain('await entities.TypingStatus.delete(row.id)');
+  });
+
 
   it('repairs message caches on delete and rate-limits moderated edits', async () => {
     const mutate = await readText('base44/functions/mutateConversationMessage/entry.ts');

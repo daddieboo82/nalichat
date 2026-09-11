@@ -6,6 +6,10 @@ async function readJson(path) {
   return JSON.parse(await readFile(new URL(`../../${path}`, import.meta.url), 'utf8'));
 }
 
+async function readText(path) {
+  return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
+}
+
 describe('release configuration', () => {
   it('targets the current Android API required by the release pipeline', async () => {
     const manifest = await readJson('src/twa-manifest.json');
@@ -97,6 +101,17 @@ describe('release configuration', () => {
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
     expect(submission.properties.vote_count.rls?.write?.user_condition?.role).toBe('admin');
     expect(submission.properties.status.rls?.write?.user_condition?.role).toBe('admin');
+  });
+
+
+  it('keeps ViralSeed behind authentication and privacy copy accurate', async () => {
+    const app = await readText('src/App.jsx');
+    expect(app).toContain('path="/viral-seed" element={<ProtectedRoute');
+    expect(app).toContain('/login?returnTo=%2Fviral-seed');
+
+    const privacy = await readText('src/pages/Privacy.jsx');
+    expect(privacy).not.toContain('per your settings');
+    expect(privacy).toContain('Project files and collaboration content are limited to users who have been granted access');
   });
 
   it('keeps the PWA manifest scoped to the serving origin', async () => {

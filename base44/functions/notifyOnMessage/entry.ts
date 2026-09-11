@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendPushToUser } from '../../shared/webPush.ts';
 import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
+import { createNotificationIdempotently } from '../../shared/workflowNotifications.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -55,16 +56,17 @@ Deno.serve(async (req) => {
             : `${message.text ? message.text.substring(0, 60) + (message.text.length > 60 ? '...' : '') : 'Sent you an attachment'}`,
         link: `/messages?id=${conversation.id}`,
       };
+      const result = await createNotificationIdempotently(entities.Notification, notification);
+      if (!result.created) continue;
+      created += 1;
       try {
-        await entities.Notification.create(notification);
-        created += 1;
         await sendPushToUser(entities, recipientId, {
           title: notification.actor_name || 'NaliChat',
           body: notification.message,
           url: notification.link,
         });
-      } catch {
-        // Deterministic ID makes repeated workflow/manual invocations idempotent.
+      } catch (pushError) {
+        console.error('Message push delivery failed:', pushError);
       }
     }
 

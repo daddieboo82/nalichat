@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendPushToUser } from '../../shared/webPush.ts';
 import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
+import { createNotificationIdempotently } from '../../shared/workflowNotifications.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -52,15 +53,18 @@ Deno.serve(async (req) => {
         message: `Milestone "${milestone.title}" was updated in project "${project.title}"`,
         link: '/projects-summary',
       };
+      const result = await createNotificationIdempotently(entities.Notification, notification);
+      if (!result.created) continue;
+      created += 1;
       try {
-        await entities.Notification.create(notification);
-        created += 1;
         await sendPushToUser(entities, recipientId, {
           title: notification.actor_name,
           body: notification.message,
           url: notification.link,
         });
-      } catch {}
+      } catch (pushError) {
+        console.error('Milestone push delivery failed:', pushError);
+      }
     }
 
     return Response.json({ success: true, count: created });

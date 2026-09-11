@@ -41,7 +41,7 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
 
   const { data: replies = [] } = useQuery({
     queryKey: ["thread", parentMessage.id],
-    queryFn: () => base44.entities.Message.filter({ thread_id: parentMessage.id }, "created_date"),
+    queryFn: () => base44.entities.Message.filter({ thread_id: parentMessage.id }, "created_date", 500),
     refetchInterval: 3000,
   });
 

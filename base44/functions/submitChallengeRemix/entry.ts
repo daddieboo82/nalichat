@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const SOURCE_TYPES = new Set(['nalichat_studio', 'external_upload', 'link_import']);
 const DEVICE_TYPES = new Set(['desktop', 'mobile', 'tablet']);
@@ -66,6 +67,16 @@ Deno.serve(async (req) => {
     }
     if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
+    const submissionRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'challenge_submission',
+      20,
+    );
+    if (!submissionRate.allowed) {
+      return Response.json({ error: 'Challenge submission rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     const body = await req.json();

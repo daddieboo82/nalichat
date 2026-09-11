@@ -190,6 +190,17 @@ describe('release configuration', () => {
   });
 
 
+  it('rate-limits chat sends and conversation creation on the server', async () => {
+    const sendMessage = await readText('base44/functions/sendConversationMessage/entry.ts');
+    const manageConversation = await readText('base44/functions/manageConversation/entry.ts');
+
+    expect(sendMessage).toContain("'conversation_message'");
+    expect(sendMessage).toContain('status: 429');
+    expect(manageConversation).toContain("'conversation_create'");
+    expect(manageConversation).toContain('status: 429');
+  });
+
+
   it('keeps workflow notifications authoritative and idempotent', async () => {
     const messageNotify = await readText('base44/functions/notifyOnMessage/entry.ts');
     const fileNotify = await readText('base44/functions/notifyOnFileUpload/entry.ts');

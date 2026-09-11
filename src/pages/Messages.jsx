@@ -277,6 +277,7 @@ export default function Messages() {
       handleSelectConv(conv.id);
     } catch (err) {
       toast.error("Couldn't start the conversation. Please try again.");
+      throw err;
     }
   };
 
@@ -471,7 +472,7 @@ export default function Messages() {
         open={showNewDM}
         onOpenChange={setShowNewDM}
         users={otherUsers}
-        onSelectUser={(u) => { startDM(u); setShowNewDM(false); }}
+        onSelectUser={startDM}
         currentUserId={currentUser?.id}
       />
       <GroupChatDialog

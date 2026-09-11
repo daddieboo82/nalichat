@@ -9,6 +9,21 @@ import { Search, Loader2 } from "lucide-react";
 
 export default function NewChatDialog({ open, onOpenChange, users, onSelectUser, currentUserId }) {
   const [search, setSearch] = useState("");
+  const [pendingUserId, setPendingUserId] = useState(null);
+
+  const selectUser = async (user) => {
+    if (!user?.id || pendingUserId) return;
+    setPendingUserId(user.id);
+    try {
+      await onSelectUser(user);
+      onOpenChange(false);
+      setSearch("");
+    } catch {
+      // Parent surfaces the user-facing error. Keep the dialog open.
+    } finally {
+      setPendingUserId(null);
+    }
+  };
 
   // Fetch contacts for the current user
   const { data: contacts = [], isLoading: contactsLoading } = useQuery({
@@ -72,8 +87,9 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
               {contactUsers.map(user => (
                 <button
                   key={user.id}
-                  onClick={() => { onSelectUser(user); onOpenChange(false); }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-primary/10 transition-colors text-left"
+                  onClick={() => selectUser(user)}
+                  disabled={!!pendingUserId}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl disabled:opacity-60 hover:bg-primary/10 transition-colors text-left"
                   title={`Start chat with ${user.display_name || user.full_name}`}
                   aria-label={`Start chat with ${user.display_name || user.full_name}`}
                 >
@@ -99,8 +115,9 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
           {filtered.map(user => (
             <button
               key={user.id}
-              onClick={() => { onSelectUser(user); onOpenChange(false); }}
-              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors text-left"
+              onClick={() => selectUser(user)}
+              disabled={!!pendingUserId}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl disabled:opacity-60 hover:bg-secondary/50 transition-colors text-left"
               title={`Start chat with ${user.display_name || user.full_name}`}
               aria-label={`Start chat with ${user.display_name || user.full_name}`}
             >

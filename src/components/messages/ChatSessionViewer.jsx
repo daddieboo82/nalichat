@@ -16,7 +16,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
 
     const refreshTracks = async () => {
       try {
-        const next = await base44.entities.Track.filter({ project_id: message.id });
+        const next = await base44.entities.Track.filter({ project_id: message.id }, "created_date", 500);
         if (!cancelled) setTracks(next || []);
       } catch {
         // Session track refresh is non-critical; retry on the next poll.

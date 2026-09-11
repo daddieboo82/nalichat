@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
+import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -65,24 +66,39 @@ Deno.serve(async (req) => {
       if (tracks.length === 0) break;
 
       for (const track of tracks) {
-        while (true) {
-          const comments = await entities.TrackComment.filter(
-            {
-              track_id: track.id,
-              parent_type: 'track',
-            },
-            '-created_date',
-            200,
+        const trackLockId = await acquireTrackLifecycleLock(entities, track.id);
+        if (!trackLockId) {
+          return Response.json(
+            { error: 'A track in this project is being updated. Please retry.' },
+            { status: 409 },
           );
-          if (comments.length === 0) break;
-          for (const comment of comments) {
-            await entities.TrackComment.delete(comment.id);
-            deletedComments += 1;
-          }
-          if (comments.length < 200) break;
         }
-        await entities.Track.delete(track.id);
-        deletedTracks += 1;
+
+        try {
+          const currentTrack = await entities.Track.get(track.id).catch(() => null);
+          if (!currentTrack || currentTrack.project_id !== project.id) continue;
+
+          while (true) {
+            const comments = await entities.TrackComment.filter(
+              {
+                track_id: track.id,
+                parent_type: 'track',
+              },
+              '-created_date',
+              200,
+            );
+            if (comments.length === 0) break;
+            for (const comment of comments) {
+              await entities.TrackComment.delete(comment.id);
+              deletedComments += 1;
+            }
+            if (comments.length < 200) break;
+          }
+          await entities.Track.delete(track.id);
+          deletedTracks += 1;
+        } finally {
+          await releaseTrackLifecycleLock(entities, trackLockId);
+        }
       }
 
       if (tracks.length < 100) break;

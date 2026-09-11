@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 function isSafePushEndpoint(value: string) {
   try {
@@ -23,6 +24,16 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const writeRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'push_register',
+      120,
+    );
+    if (!writeRate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
 
     const body = await req.json();
     const endpoint = String(body?.endpoint || '');

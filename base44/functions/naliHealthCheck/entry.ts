@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 // Weekly app health & enhancement scan run by Nali.
 // Scans app data for issues (broken/incomplete records, stale content) and
@@ -12,6 +13,16 @@ Deno.serve(async (req) => {
     const caller = await base44.auth.me();
     if (!caller || caller.role !== 'admin') {
       return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
+    }
+
+    const adminRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      caller.id,
+      'admin_health_check',
+      4,
+    );
+    if (!adminRate.allowed) {
+      return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     // --- Gather a lightweight snapshot of app data ---

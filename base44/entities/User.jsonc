@@ -52,7 +52,16 @@
     },
     "onboarding_completed": {
       "type": "boolean",
-      "default": false
+      "default": false,
+      "description": "Server-managed flag set after required onboarding profile fields are validated.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "welcome_tour_completed": {
       "type": "boolean",

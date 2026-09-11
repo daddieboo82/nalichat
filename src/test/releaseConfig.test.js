@@ -309,6 +309,27 @@ describe('release configuration', () => {
     expect(signer).toContain("error: 'timed_out'");
   });
 
+  it('bounds Viral Moment transcription and validates premium automation/download media', async () => {
+    const viral = await readText('base44/functions/generate-viral-moment/entry.ts');
+    const tags = await readText('base44/functions/suggestTrackTags/entry.ts');
+    const messageDownload = await readText('base44/functions/authorizeMessageDownload/entry.ts');
+    const postDownload = await readText('base44/functions/authorizeArtPostDownload/entry.ts');
+
+    expect(viral).toContain('MAX_TRANSCRIBE_BYTES = 50 * 1024 * 1024');
+    expect(viral).toContain('storedMediaSize(message.file_url)');
+    expect(viral).toContain('Viral Moment transcription supports voice notes up to 50MB');
+    expect(viral.indexOf('storedMediaSize(message.file_url)')).toBeLessThan(
+      viral.indexOf('integrations.Core.TranscribeAudio'),
+    );
+
+    expect(tags).toContain('entities.User.get(uploaderId)');
+    expect(tags).toContain("reason: 'uploader_banned'");
+    expect(tags).toContain("reason: 'uploader_timed_out'");
+
+    expect(messageDownload).toContain('isTrustedStoredMediaUrl(message.file_url)');
+    expect(postDownload).toContain('isTrustedStoredMediaUrl(post.file_url)');
+  });
+
   it('moderation-gates AI speech and bounds message transcription media', async () => {
     const speech = await readText('base44/functions/generate-speech/entry.ts');
     const transcribe = await readText('base44/functions/transcribeMessageAudio/entry.ts');

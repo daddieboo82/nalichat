@@ -238,6 +238,20 @@ describe('release configuration', () => {
   });
 
 
+  it('scopes read receipts to conversation participants and updates them atomically', async () => {
+    const readReceipt = await readText('base44/functions/markMessageRead/entry.ts');
+    expect(readReceipt).toContain('message.participant_ids.includes(user.id)');
+    expect(readReceipt).toContain('$addToSet');
+    expect(readReceipt).toContain('status: 403');
+  });
+
+  it('rate-limits server-authoritative comment creation', async () => {
+    const comments = await readText('base44/functions/trackComments/entry.ts');
+    expect(comments).toContain("'track_comment'");
+    expect(comments).toContain('status: 429');
+  });
+
+
   it('rate-limits chat sends and conversation creation on the server', async () => {
     const sendMessage = await readText('base44/functions/sendConversationMessage/entry.ts');
     const manageConversation = await readText('base44/functions/manageConversation/entry.ts');

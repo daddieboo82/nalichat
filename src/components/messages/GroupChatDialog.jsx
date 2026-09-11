@@ -10,6 +10,7 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
   const [name, setName] = useState("");
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   const filtered = users.filter(u =>
     (u.display_name || u.full_name || "").toLowerCase().includes(search.toLowerCase())
@@ -17,11 +18,20 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
 
   const toggle = (id) => setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
 
-  const handleCreate = () => {
-    if (!name.trim() || selected.length < 1) return;
-    onCreate({ name: name.trim(), participant_ids: selected });
-    setName(""); setSelected([]); setSearch("");
-    onOpenChange(false);
+  const handleCreate = async () => {
+    if (!name.trim() || selected.length < 1 || isCreating) return;
+    setIsCreating(true);
+    try {
+      await onCreate({ name: name.trim(), participant_ids: selected });
+      setName("");
+      setSelected([]);
+      setSearch("");
+      onOpenChange(false);
+    } catch {
+      // Parent surfaces the user-facing error. Keep the dialog state intact.
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -53,8 +63,8 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
               </button>
             ))}
           </div>
-          <Button onClick={handleCreate} disabled={!name.trim() || selected.length < 1} className="w-full rounded-xl bg-primary hover:bg-primary/90" aria-label="Create Group Submit" title="Create Group Submit">
-            Create Group {selected.length > 0 && `(${selected.length} people)`}
+          <Button onClick={handleCreate} disabled={!name.trim() || selected.length < 1 || isCreating} className="w-full rounded-xl bg-primary hover:bg-primary/90" aria-label="Create Group Submit" title="Create Group Submit">
+            {isCreating ? "Creating..." : <>Create Group {selected.length > 0 && `(${selected.length} people)`}</>}
           </Button>
         </div>
       </DialogContent>

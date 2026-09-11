@@ -133,10 +133,7 @@
     {
       "entity_name": "StudioPresence",
       "allowed_operations": [
-        "create",
-        "read",
-        "update",
-        "delete"
+        "read"
       ]
     },
     {
@@ -202,6 +199,10 @@
     {
       "function_name": "mutateArtPost",
       "description": "Safely update an owned ArtPost's editable metadata and trusted cover art"
+    },
+    {
+      "function_name": "updateStudioPresence",
+      "description": "Safely update or clear the current user's authorized studio presence"
     }
   ],
   "context_files": [],

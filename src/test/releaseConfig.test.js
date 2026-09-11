@@ -748,6 +748,12 @@ describe('release configuration', () => {
     expect(tags).toContain('suggestedBpm < 60');
     expect(tags).toContain('suggestedBpm > 200');
     expect(tags).toContain("slice(0, 100)");
+
+    const viral = await readText('base44/functions/generate-viral-moment/entry.ts');
+    expect(viral).toContain('slice(0, 12000)');
+    expect(viral).toContain('slice(0, 4000)');
+    expect(viral).toContain('slice(0, 300)');
+    expect(viral).toContain("error: 'AI returned an invalid meme concept'");
   });
 
   it('prevents contact spoofing and email/phone account enumeration', async () => {

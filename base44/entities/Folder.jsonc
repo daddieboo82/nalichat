@@ -31,6 +31,14 @@
       },
       "default": [],
       "description": "Project members allowed to read and organize this folder"
+    },
+    "edit_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Project members allowed to modify this record. Viewer-only collaborators are excluded."
     }
   },
   "required": [
@@ -62,7 +70,7 @@
           "data.owner_id": "{{user.id}}"
         },
         {
-          "data.access_user_ids": "{{user.id}}"
+          "data.edit_user_ids": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -72,7 +80,19 @@
       ]
     },
     "delete": {
-      "data.owner_id": "{{user.id}}"
+      "$or": [
+        {
+          "data.owner_id": "{{user.id}}"
+        },
+        {
+          "data.edit_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     }
   }
 }

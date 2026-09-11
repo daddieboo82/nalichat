@@ -1,6 +1,33 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+async function syncConversationAudience(entities: any, conversationId: string, participantIds: string[]) {
+  const [messages, typingRows] = await Promise.all([
+    entities.Message.filter({ conversation_id: conversationId }),
+    entities.TypingStatus.filter({ conversation_id: conversationId }),
+  ]);
+
+  for (let i = 0; i < messages.length; i += 100) {
+    await entities.Message.bulkUpdate(
+      messages.slice(i, i + 100).map((message: any) => ({
+        id: message.id,
+        participant_ids: participantIds,
+      })),
+    );
+  }
+
+  for (let i = 0; i < typingRows.length; i += 100) {
+    await entities.TypingStatus.bulkUpdate(
+      typingRows.slice(i, i + 100).map((row: any) => ({
+        id: row.id,
+        participant_ids: participantIds,
+      })),
+    );
+  }
+
+  return { messages: messages.length, typingRows: typingRows.length };
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -99,6 +126,7 @@ Deno.serve(async (req) => {
         const participants = Array.from(new Set([...(room.participant_ids || []), user.id]));
         if (!(room.participant_ids || []).includes(user.id)) {
           await entities.Conversation.update(room.id, { participant_ids: participants });
+          await syncConversationAudience(entities, room.id, participants);
         }
         return Response.json({ success: true, conversation: { ...room, participant_ids: participants } });
       }
@@ -129,6 +157,7 @@ Deno.serve(async (req) => {
       }
       const participantIds = Array.from(new Set([...(conversation.participant_ids || []), user.id]));
       const updated = await entities.Conversation.update(conversation.id, { participant_ids: participantIds });
+      await syncConversationAudience(entities, conversation.id, participantIds);
       return Response.json({ success: true, conversation: updated });
     }
 
@@ -165,6 +194,7 @@ Deno.serve(async (req) => {
         });
       }
       const updated = await entities.Conversation.update(conversation.id, { participant_ids: participantIds });
+      await syncConversationAudience(entities, conversation.id, participantIds);
       return Response.json({ success: true, conversation: updated });
     }
 

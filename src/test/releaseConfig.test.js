@@ -565,6 +565,25 @@ describe('release configuration', () => {
     expect(addToPlaylist).not.toContain('entities.Playlist.create');
   });
 
+  it('routes playlist and track-version deletion through server authorization', async () => {
+    const playlist = await readJson('base44/entities/Playlist.jsonc');
+    const playlistMutation = await readText('base44/functions/mutatePlaylist/entry.ts');
+    const playlistsPage = await readText('src/pages/Playlists.jsx');
+    const version = await readJson('base44/entities/TrackVersion.jsonc');
+    const versionDelete = await readText('base44/functions/deleteTrackVersion/entry.ts');
+    const versionHistory = await readText('src/components/studio/TrackVersionHistory.jsx');
+
+    expect(playlist.rls.delete?.user_condition?.role).toBe('admin');
+    expect(playlistMutation).toContain("action === 'delete'");
+    expect(playlistsPage).toContain('functions.invoke("mutatePlaylist"');
+    expect(playlistsPage).not.toContain('entities.Playlist.delete');
+
+    expect(version.rls.delete?.user_condition?.role).toBe('admin');
+    expect(versionDelete).toContain('project.editor_ids');
+    expect(versionHistory).toContain('functions.invoke("deleteTrackVersion"');
+    expect(versionHistory).not.toContain('entities.TrackVersion.delete');
+  });
+
 
   it('enforces configured challenge voting windows server-side', async () => {
     const vote = await readText('base44/functions/castVote/entry.ts');

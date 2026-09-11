@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -34,18 +35,32 @@ Deno.serve(async (req) => {
     const version = await entities.TrackVersion.get(versionId);
     if (!version) return Response.json({ error: 'Track version not found' }, { status: 404 });
 
-    const project = await entities.Project.get(version.project_id).catch(() => null);
-    if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
-
-    const canEdit = user.role === 'admin'
-      || project.owner_id === user.id
-      || (project.editor_ids || []).includes(user.id);
-    if (!canEdit) {
-      return Response.json({ error: 'Viewer access cannot delete track versions' }, { status: 403 });
+    const lockId = await acquireTrackLifecycleLock(entities, version.track_id);
+    if (!lockId) {
+      return Response.json({ error: 'Track is being updated. Please retry.' }, { status: 409 });
     }
 
-    await entities.TrackVersion.delete(version.id);
-    return Response.json({ success: true, deleted: true });
+    try {
+      const currentVersion = await entities.TrackVersion.get(version.id).catch(() => null);
+      if (!currentVersion) {
+        return Response.json({ error: 'Track version not found' }, { status: 404 });
+      }
+
+      const project = await entities.Project.get(currentVersion.project_id).catch(() => null);
+      if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
+
+      const canEdit = user.role === 'admin'
+        || project.owner_id === user.id
+        || (project.editor_ids || []).includes(user.id);
+      if (!canEdit) {
+        return Response.json({ error: 'Viewer access cannot delete track versions' }, { status: 403 });
+      }
+
+      await entities.TrackVersion.delete(currentVersion.id);
+      return Response.json({ success: true, deleted: true });
+    } finally {
+      await releaseTrackLifecycleLock(entities, lockId);
+    }
   } catch (error) {
     console.error('deleteTrackVersion error:', error);
     return Response.json({ error: error?.message || 'Track version deletion failed' }, { status: 500 });

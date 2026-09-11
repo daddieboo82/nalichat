@@ -11,11 +11,30 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { messageText, senderName, type, audioUrl } = await req.json();
+    const { message_id, type } = await req.json();
+    if (!message_id) {
+      return Response.json({ error: 'message_id is required' }, { status: 400 });
+    }
+    if (!['meme', 'reel'].includes(type)) {
+      return Response.json({ error: 'type must be meme or reel' }, { status: 400 });
+    }
 
-    let finalMessageText = messageText;
+    const message = await base44.asServiceRole.entities.Message.get(message_id);
+    if (!message) {
+      return Response.json({ error: 'Message not found' }, { status: 404 });
+    }
+    const participants = Array.isArray(message.participant_ids) ? message.participant_ids : [];
+    if (!participants.includes(user.id) && user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
-    // If no text but an audio recording is provided, transcribe it first.
+    let finalMessageText = typeof message.text === 'string' ? message.text : '';
+    const audioUrl = message.type === 'audio' || message.file_type?.startsWith('audio')
+      ? message.file_url
+      : null;
+    const senderName = message.sender_name || 'Someone';
+
+    // If no text but an authorized audio recording is present, transcribe it.
     if ((!finalMessageText || finalMessageText.trim().length === 0) && audioUrl) {
       try {
         const transcript = await base44.asServiceRole.integrations.Core.TranscribeAudio({

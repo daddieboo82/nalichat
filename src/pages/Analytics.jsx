@@ -6,6 +6,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { Card } from "@/components/ui/card";
 import { TrendingUp, Eye, Heart, Music } from "lucide-react";
 import { motion } from "framer-motion";
+import { getLikeCount } from "@/lib/engagement";
 export default function Analytics() {
   const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
@@ -26,7 +27,7 @@ export default function Analytics() {
   // Calculate aggregate stats
   const { totalViews, totalLikes, avgLikesPerTrack, trackData, growthData } = React.useMemo(() => {
     const views = userPosts.reduce((sum, p) => sum + (p.views || 0), 0);
-    const likes = userPosts.reduce((sum, p) => sum + (p.likes || 0), 0);
+    const likes = userPosts.reduce((sum, p) => sum + getLikeCount(p), 0);
     const avgLikes = userPosts.length > 0 ? (likes / userPosts.length).toFixed(1) : 0;
 
     const tData = [...userPosts]
@@ -35,7 +36,7 @@ export default function Analytics() {
       .map(p => ({
         name: p.title?.substring(0, 15) || "Untitled",
         views: p.views || 0,
-        likes: p.likes || 0,
+        likes: getLikeCount(p),
       }));
 
     const gData = [...userPosts]
@@ -49,7 +50,7 @@ export default function Analytics() {
         acc.push({
           track: idx + 1,
           views: lastEntry.views + (post.views || 0),
-          likes: lastEntry.likes + (post.likes || 0),
+          likes: lastEntry.likes + getLikeCount(post),
         });
         return acc;
       }, [])

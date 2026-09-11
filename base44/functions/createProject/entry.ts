@@ -3,9 +3,20 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
     const creationRate = await consumeHourlyLimit(
       base44.asServiceRole.entities,
       user.id,
@@ -15,18 +26,24 @@ Deno.serve(async (req) => {
     if (!creationRate.allowed) {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
-    if (user.is_banned) {
-      return Response.json({ error: 'banned' }, { status: 403 });
-    }
-    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
-      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
-    }
 
     const body = await req.json();
-    const title = String(body?.title || '').trim().slice(0, 200);
-    const description = String(body?.description || '').trim().slice(0, 3000);
+    if (body?.title != null && typeof body.title !== 'string') {
+      return Response.json({ error: 'Project title must be a string' }, { status: 400 });
+    }
+    if (body?.description != null && typeof body.description !== 'string') {
+      return Response.json({ error: 'Project description must be a string' }, { status: 400 });
+    }
+    const title = String(body?.title || '').trim();
+    const description = String(body?.description || '').trim();
 
     if (!title) return Response.json({ error: 'Project title is required' }, { status: 400 });
+    if (title.length > 200) {
+      return Response.json({ error: 'Project title must be 200 characters or fewer' }, { status: 413 });
+    }
+    if (description.length > 3000) {
+      return Response.json({ error: 'Project description must be 3000 characters or fewer' }, { status: 413 });
+    }
 
     const project = await base44.asServiceRole.entities.Project.create({
       title,

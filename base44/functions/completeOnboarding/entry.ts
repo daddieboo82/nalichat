@@ -34,8 +34,8 @@ Deno.serve(async (req) => {
       onboarding_completed: true,
     };
 
-    const updated = await base44.asServiceRole.entities.User.update(user.id, patch);
-    return Response.json({ success: true, user: updated });
+    await base44.asServiceRole.entities.User.update(user.id, patch);
+    return Response.json({ success: true });
   } catch (error) {
     console.error('completeOnboarding error:', error);
     return Response.json({ error: error?.message || 'Could not complete onboarding' }, { status: 500 });

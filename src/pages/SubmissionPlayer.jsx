@@ -66,7 +66,7 @@ export default function SubmissionPlayer() {
       </Link>
 
       <div className="rounded-3xl bg-card border border-border p-6 space-y-5 text-center">
-        <audio ref={audioRef} src={submission.remix_file_url} onEnded={() => setPlaying(false)} />
+        <audio ref={audioRef} src={submission.remix_file_url} preload="none" onEnded={() => setPlaying(false)} />
         <div className="w-32 h-32 mx-auto rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
           <Button size="icon" variant="ghost" className="w-16 h-16 text-white hover:bg-white/10" onClick={togglePlay}>
             {playing ? <Pause className="w-10 h-10" /> : <Play className="w-10 h-10" />}

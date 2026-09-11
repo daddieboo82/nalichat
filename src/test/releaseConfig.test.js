@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { readFile } from 'node:fs/promises';
+import { access, readFile, readdir } from 'node:fs/promises';
 
 async function readText(path) {
   return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
@@ -11,6 +11,28 @@ async function readJson(path) {
 }
 
 describe('release configuration', () => {
+  it('keeps workflow backend function references valid', async () => {
+    const workflowDir = new URL('../../base44/workflows/', import.meta.url);
+    const workflowFiles = (await readdir(workflowDir)).filter((name) => name.endsWith('.jsonc'));
+
+    for (const name of workflowFiles) {
+      const workflow = JSON.parse(await readFile(new URL(name, workflowDir), 'utf8'));
+      for (const step of workflow?.definition?.do || []) {
+        const functionName = step?.run_function?.with?.function_name;
+        if (!functionName) continue;
+        await expect(
+          access(new URL(`../../base44/functions/${functionName}/entry.ts`, import.meta.url)),
+        ).resolves.toBeUndefined();
+      }
+    }
+  });
+
+  it('protects scheduled bulk re-engagement with admin authorization', async () => {
+    const reengage = await readText('base44/functions/reengageStalledUsers/entry.ts');
+    expect(reengage).toContain("caller.role !== 'admin'");
+    expect(reengage).toContain('Forbidden: admin role required');
+  });
+
   it('targets the current Android API required by the release pipeline', async () => {
     const manifest = await readJson('src/twa-manifest.json');
     expect(manifest.packageId).toBe('com.nalichat');

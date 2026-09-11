@@ -68,7 +68,7 @@
     },
     "thread_id": {
       "type": "string",
-      "description": "Parent message ID \u2014 set for thread replies"
+      "description": "Parent message ID — set for thread replies"
     },
     "thread_reply_count": {
       "type": "number",
@@ -84,7 +84,7 @@
       "items": {
         "type": "string"
       },
-      "description": "User IDs of the conversation's participants at send time, copied from the Conversation \u2014 used to scope reads"
+      "description": "User IDs of the conversation's participants at send time, copied from the Conversation — used to scope reads"
     }
   },
   "required": [
@@ -93,7 +93,9 @@
   ],
   "rls": {
     "create": {
-      "data.sender_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "data.participant_ids": "{{user.id}}"

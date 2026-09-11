@@ -16,6 +16,7 @@ export default async function(req) {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'You must be logged in to vote.' }, { status: 401 });
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
 
     const { submission_id } = await req.json();
     if (!submission_id) return Response.json({ error: 'submission_id is required' }, { status: 400 });

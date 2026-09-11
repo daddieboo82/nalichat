@@ -404,7 +404,7 @@ export default function Messages() {
                 <motion.div key="contacts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col pt-2 bg-background/40">
                   <ContactsTab 
                     currentUserId={currentUser?.id} 
-                    onMessageContact={(u) => { startDM(u); setSidebarTab("chats"); }} 
+                    onMessageContact={async (u) => {\n                      try {\n                        await startDM(u);\n                        setSidebarTab("chats");\n                      } catch {}\n                    }} 
                   />
                 </motion.div>
               )}

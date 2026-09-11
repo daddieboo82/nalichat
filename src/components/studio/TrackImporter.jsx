@@ -52,6 +52,17 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
 
   const uploadTracks = async () => {
     setUploading(true);
+    let accessUserIds = [currentUser.id];
+    try {
+      const project = await base44.entities.Project.get(projectId);
+      accessUserIds = Array.from(new Set([
+        project?.owner_id,
+        ...(project?.collaborator_ids || []),
+        currentUser.id,
+      ].filter(Boolean)));
+    } catch {
+      // Keep the uploader-only fallback if the project cannot be loaded.
+    }
     const pendingItems = queue.filter(item => item.status === "pending");
 
     for (const item of pendingItems) {
@@ -76,6 +87,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
           muted: false,
           solo: false,
           uploaded_by: currentUser.id,
+          access_user_ids: accessUserIds,
         });
 
         setQueue(prev =>

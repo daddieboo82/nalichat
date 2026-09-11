@@ -315,6 +315,18 @@ describe('release configuration', () => {
   });
 
 
+  it('validates live reminder membership and source context before reschedule or cancel', async () => {
+    const reminders = await readText('base44/shared/followUpReminders.ts');
+    const membershipCheck = reminders.indexOf("if (!conversation.participant_ids?.includes(ownerId))");
+    const sourceCheck = reminders.indexOf("const source = await findById(entities.Message, reminder.source_message_id)");
+    const returnConversation = reminders.indexOf('return conversation;', membershipCheck);
+    expect(membershipCheck).toBeGreaterThan(-1);
+    expect(sourceCheck).toBeGreaterThan(membershipCheck);
+    expect(returnConversation).toBeGreaterThan(sourceCheck);
+    expect(reminders).toContain("'NOT_A_PARTICIPANT'");
+    expect(reminders).toContain("'SOURCE_MESSAGE_NOT_FOUND'");
+  });
+
   it('bounds locked-chat preference scans without moderation blocking', async () => {
     const vault = await readText('base44/functions/lockedChatVault/entry.ts');
     expect(vault).toContain("'locked_chat_state'");

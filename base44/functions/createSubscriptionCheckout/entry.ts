@@ -13,6 +13,7 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const TRIAL_DAYS = 7;
 const CHECKOUT_LEASE_MS = 24 * 60 * 60 * 1000;
+const MAX_SUBSCRIPTION_HISTORY = 500;
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Failed to create subscription checkout';
@@ -94,15 +95,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    const subscriptions = await base44.asServiceRole.entities.Subscription.filter({
-      user_id: user.id,
-    });
-    const existingAttempts = subscriptions.filter(
-      (subscription: Record<string, unknown>) => (
-        subscription.checkout_request_key === requestKey
-        && subscription.provider === 'stripe'
+    const [existingAttempts, subscriptions] = await Promise.all([
+      base44.asServiceRole.entities.Subscription.filter(
+        {
+          user_id: user.id,
+          checkout_request_key: requestKey,
+          provider: 'stripe',
+        },
+        '-created_date',
+        2,
       ),
-    );
+      base44.asServiceRole.entities.Subscription.filter(
+        { user_id: user.id },
+        '-created_date',
+        MAX_SUBSCRIPTION_HISTORY,
+      ),
+    ]);
     if (existingAttempts.length > 1) {
       throw new Error('Duplicate checkout request records require operator reconciliation');
     }

@@ -60,20 +60,15 @@ export default function StudioEditor() {
     if (!audioUrl || !uploadTitle || !currentUser) return;
     
     try {
-      await base44.entities.ArtPost.create({
+      const published = await base44.functions.invoke("createArtPost", {
         title: uploadTitle,
         description: masterAnalysis?.recommendations || 'AI-mastered session',
         file_url: audioUrl,
         medium: 'production',
         is_explicit: false,
-        creator_id: currentUser.id,
-        creator_name: currentUser.full_name,
-        creator_avatar: currentUser.avatar_url,
-        featured: false,
-        likes: 0,
-        views: 0,
         genre: 'Electronic'
       });
+      if (published?.data?.error) throw new Error(published.data.error);
       setShareDialog(false);
       setAudioUrl("");
       setUploadTitle("");

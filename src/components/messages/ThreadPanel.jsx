@@ -6,6 +6,7 @@ import { X, Send, MessageSquareQuote } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { createClientMessageKey } from "@/lib/messageCache";
+import { toast } from "sonner";
 
 function ThreadMessage({ msg, isOwn }) {
   return (
@@ -91,6 +92,17 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
       setText("");
       queryClient.invalidateQueries({ queryKey: ["thread", parentMessage.id] });
       queryClient.invalidateQueries({ queryKey: ["messages"] });
+    },
+    onError: (error) => {
+      if (error?.message === "moderated") {
+        toast.error("Thread reply blocked by content moderation. Your draft was kept.");
+      } else if (error?.message === "timed_out") {
+        toast.error("You are timed out and cannot reply right now. Your draft was kept.");
+      } else if (error?.message === "banned") {
+        toast.error("You cannot reply in this thread while your account is banned.");
+      } else {
+        toast.error("Thread reply failed. Your draft was kept so you can retry.");
+      }
     },
   });
 

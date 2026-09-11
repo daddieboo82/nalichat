@@ -63,6 +63,10 @@ async function resolveStoredFileSize(url: string): Promise<number | null> {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -84,13 +88,50 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const title = String(body?.title || '').trim().slice(0, 200);
-    const description = String(body?.description || '').trim().slice(0, 3000);
+    for (const field of [
+      'title',
+      'description',
+      'source_track_url',
+      'source_track_name',
+      'genre',
+      'key',
+      'rules',
+      'prize_description',
+      'cover_url',
+    ]) {
+      if (body?.[field] != null && typeof body[field] !== 'string') {
+        return Response.json({ error: `${field} must be a string` }, { status: 400 });
+      }
+    }
+
+    const title = (body?.title || '').trim();
+    const description = (body?.description || '').trim();
     const sourceTrackUrl = cleanUploadedUrl(body?.source_track_url);
-    const sourceTrackName = String(body?.source_track_name || '').trim().slice(0, 255);
+    const sourceTrackName = (body?.source_track_name || '').trim();
 
     if (!title || !description || !sourceTrackUrl) {
       return Response.json({ error: 'Title, description, and a trusted uploaded source track are required' }, { status: 400 });
+    }
+    if (title.length > 200) {
+      return Response.json({ error: 'Title must be 200 characters or fewer' }, { status: 413 });
+    }
+    if (description.length > 3000) {
+      return Response.json({ error: 'Description must be 3000 characters or fewer' }, { status: 413 });
+    }
+    if (sourceTrackName.length > 255) {
+      return Response.json({ error: 'Source track name must be 255 characters or fewer' }, { status: 413 });
+    }
+    if (typeof body?.genre === 'string' && body.genre.length > 100) {
+      return Response.json({ error: 'Genre must be 100 characters or fewer' }, { status: 413 });
+    }
+    if (typeof body?.key === 'string' && body.key.length > 50) {
+      return Response.json({ error: 'Key must be 50 characters or fewer' }, { status: 413 });
+    }
+    if (typeof body?.rules === 'string' && body.rules.length > 3000) {
+      return Response.json({ error: 'Rules must be 3000 characters or fewer' }, { status: 413 });
+    }
+    if (typeof body?.prize_description === 'string' && body.prize_description.length > 2000) {
+      return Response.json({ error: 'Prize description must be 2000 characters or fewer' }, { status: 413 });
     }
 
     const sourceTrackSize = await resolveStoredFileSize(sourceTrackUrl);
@@ -143,11 +184,11 @@ Deno.serve(async (req) => {
       host_artist_name: user.display_name || user.full_name || 'Artist',
       source_track_url: sourceTrackUrl,
       source_track_name: sourceTrackName || 'Challenge Source',
-      genre: body?.genre ? String(body.genre).slice(0, 100) : undefined,
+      genre: body?.genre || undefined,
       bpm: Number.isFinite(bpm) && bpm > 0 && bpm <= 400 ? bpm : undefined,
-      key: body?.key ? String(body.key).slice(0, 50) : undefined,
-      rules: body?.rules ? String(body.rules).slice(0, 3000) : undefined,
-      prize_description: body?.prize_description ? String(body.prize_description).slice(0, 2000) : undefined,
+      key: body?.key || undefined,
+      rules: body?.rules || undefined,
+      prize_description: body?.prize_description || undefined,
       cover_url: cleanUploadedUrl(body?.cover_url) || undefined,
       status,
       start_date: start ? new Date(start).toISOString() : undefined,

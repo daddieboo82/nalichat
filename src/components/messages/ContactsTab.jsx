@@ -42,18 +42,23 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
   });
 
   const deleteContactMutation = useMutation({
-    mutationFn: (contactId) => base44.entities.Contact.delete(contactId),
+    mutationFn: async (contactId) => {
+      const res = await base44.functions.invoke("mutateContact", { action: "delete", contactId });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["contacts", currentUserId] }),
   });
 
   const addContactMutation = useMutation({
-    mutationFn: (user) =>
-      base44.entities.Contact.create({
-        user_id: currentUserId,
-        contact_user_id: user.id,
-        contact_name: user.display_name || user.full_name,
-        contact_avatar: user.avatar_url,
-      }),
+    mutationFn: async (user) => {
+      const res = await base44.functions.invoke("mutateContact", {
+        action: "add",
+        targetUserId: user.id,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contacts", currentUserId] });
     },

@@ -843,6 +843,15 @@ describe('release configuration', () => {
     expect(deletion).toContain('id: squad.member_a_id, squad_membership_id: squad.id');
   });
 
+  it('repairs legacy squad membership claims without guessing duplicate memberships', async () => {
+    const maintenance = await readText('base44/functions/nali-maintenance/entry.ts');
+
+    expect(maintenance).toContain("if (wants('User') || wants('Squad'))");
+    expect(maintenance).toContain("if (activeIds.length > 1)");
+    expect(maintenance).toContain('manual review required');
+    expect(maintenance).toContain('await s.User.update(user.id, { squad_membership_id: expected })');
+  });
+
   it('hides public-room latest message text from nonmembers', async () => {
     const conversation = await readJson('base44/entities/Conversation.jsonc');
     const rule = conversation.properties.last_message_text.rls?.read;

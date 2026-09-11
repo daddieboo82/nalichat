@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireEntitlement, preferredAiModel } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
 
 // Triggered by an entity automation when a Track is created.
 // Analyzes the uploaded track and suggests a genre + BPM, then saves them
@@ -14,17 +15,29 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const caller = await base44.auth.me().catch(() => null);
 
-    const eventTrackId = body?.event?.entity_id;
-    const directTrackId = body?.trackId || body?.track_id;
+    const eventTrackId = typeof body?.event?.entity_id === 'string' ? body.event.entity_id.trim() : '';
+    const directTrackId = typeof body?.trackId === 'string'
+      ? body.trackId.trim()
+      : (typeof body?.track_id === 'string' ? body.track_id.trim() : '');
     const trackId = eventTrackId || directTrackId;
 
-    if (!trackId) {
+    if (!trackId || trackId.length > 200) {
       return Response.json({ error: 'trackId is required' }, { status: 400 });
     }
 
+    const entities = base44.asServiceRole.entities;
+    const lockId = await acquireTrackLifecycleLock(entities, trackId);
+    if (!lockId) {
+      return Response.json(
+        { error: 'Track metadata is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
     // Never trust automation payload record fields. Resolve the authoritative
     // Track before checking entitlements or performing service-role writes.
-    const track = await base44.asServiceRole.entities.Track.get(trackId);
+    const track = await entities.Track.get(trackId);
     if (!track) {
       return Response.json({ error: 'Track not found' }, { status: 404 });
     }
@@ -61,7 +74,7 @@ Deno.serve(async (req) => {
     if (!uploaderId) {
       return Response.json({ success: true, skipped: true, reason: 'missing_uploader' });
     }
-    const uploader = await base44.asServiceRole.entities.User.get(uploaderId).catch(() => null);
+    const uploader = await entities.User.get(uploaderId).catch(() => null);
     if (!uploader) {
       return Response.json({ success: true, skipped: true, reason: 'missing_uploader_user' });
     }
@@ -96,7 +109,7 @@ Deno.serve(async (req) => {
     let project = null;
     if (track.project_id) {
       try {
-        project = await base44.asServiceRole.entities.Project.get(track.project_id);
+        project = await entities.Project.get(track.project_id);
       } catch (_e) {
         project = null;
       }
@@ -139,7 +152,7 @@ Return realistic values. BPM must be a whole number between 60 and 200.`;
       return Response.json({ error: 'Invalid suggestion from LLM' }, { status: 502 });
     }
 
-    await base44.asServiceRole.entities.Track.update(trackId, {
+    await entities.Track.update(trackId, {
       suggested_genre: suggestedGenre,
       suggested_bpm: suggestedBpm,
     });
@@ -150,11 +163,14 @@ Return realistic values. BPM must be a whole number between 60 and 200.`;
       if (!project.genre) projectUpdate.genre = suggestedGenre;
       if (!project.bpm) projectUpdate.bpm = suggestedBpm;
       if (Object.keys(projectUpdate).length > 0) {
-        await base44.asServiceRole.entities.Project.update(project.id, projectUpdate);
+        await entities.Project.update(project.id, projectUpdate);
       }
     }
 
     return Response.json({ success: true, suggestedGenre, suggestedBpm });
+    } finally {
+      await releaseTrackLifecycleLock(entities, lockId);
+    }
   } catch (error) {
     console.error('suggestTrackTags error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

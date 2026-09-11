@@ -6,7 +6,7 @@ const STALE_MS = 45000; // a peer is considered gone if no heartbeat in this win
 
 // Tracks who else is live in the same studio room, in real time.
 // Returns { peers, setActivity } where peers excludes the current user.
-export function useStudioPresence(roomId = 'studio-main') {
+export function useStudioPresence(roomId = 'local_studio') {
   const [peers, setPeers] = useState([]);
   const meRef = useRef(null);
   const activityRef = useRef('In the studio');

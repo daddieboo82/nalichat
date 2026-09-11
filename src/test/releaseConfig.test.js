@@ -808,6 +808,21 @@ describe('release configuration', () => {
     expect(leave).toContain('$set: { squad_membership_id: null }');
   });
 
+  it('routes challenge lifecycle changes and deletion through server functions', async () => {
+    const challenge = await readJson('base44/entities/Challenge.jsonc');
+    const detail = await readText('src/pages/ChallengeDetail.jsx');
+    const deleteChallenge = await readText('base44/functions/deleteChallenge/entry.ts');
+
+    expect(challenge.rls.update?.user_condition?.role).toBe('admin');
+    expect(challenge.rls.delete?.user_condition?.role).toBe('admin');
+    expect(detail).toContain('functions.invoke("updateChallengeStatus"');
+    expect(detail).not.toContain('entities.Challenge.update');
+    expect(deleteChallenge).toContain('ChallengeSubmission.filter({ challenge_id: challenge.id })');
+    expect(deleteChallenge).toContain('ChallengeVote.filter({ challenge_id: challenge.id })');
+    expect(deleteChallenge).toContain("parent_type: 'challenge_submission'");
+    expect(deleteChallenge).toContain('await entities.Challenge.delete(challenge.id)');
+  });
+
   it('blocks banned or timed-out users from squad creation and joining', async () => {
     const createInvite = await readText('base44/functions/createSquadInvite/entry.ts');
     const join = await readText('base44/functions/joinSquad/entry.ts');

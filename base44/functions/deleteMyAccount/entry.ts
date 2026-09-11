@@ -244,12 +244,24 @@ Deno.serve(async (req) => {
         : [];
 
       if (collaborators.length === 0) {
-        for (const entityName of ['TrackVersion', 'Track', 'SharedFile', 'Folder', 'Milestone']) {
+        const tracks = await entities.Track.filter({ project_id: project.id });
+        const trackIds = tracks.map((track: any) => track.id);
+
+        for (const trackId of trackIds) {
+          const comments = await entities.TrackComment.filter({ track_id: trackId, parent_type: 'track' });
+          for (const comment of comments) await entities.TrackComment.delete(comment.id);
+        }
+
+        for (const entityName of ['TrackVersion', 'Track', 'SharedFile', 'Folder', 'Milestone', 'ProjectInvite']) {
           const entity = entities[entityName];
           if (!entity) continue;
           const rows = await entity.filter({ project_id: project.id });
           for (const row of rows) await entity.delete(row.id);
         }
+
+        const presenceRows = await entities.StudioPresence.filter({ room_id: project.id });
+        for (const presence of presenceRows) await entities.StudioPresence.delete(presence.id);
+
         await entities.Project.delete(project.id);
         continue;
       }

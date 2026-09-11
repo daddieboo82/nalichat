@@ -1477,6 +1477,27 @@ describe('release configuration', () => {
     }
   });
 
+  it('bounds public lookup work before service-role reads', async () => {
+    const leaderboard = await readText('base44/functions/getChallengeLeaderboard/entry.ts');
+    const squadInvite = await readText('base44/functions/getSquadInvite/entry.ts');
+    const sharedFile = await readText('base44/functions/getSharedFileByToken/entry.ts');
+
+    expect(leaderboard).toContain("created_date: { $gte: weekStart.toISOString() }");
+    expect(leaderboard).toContain("'Cache-Control': 'public, max-age=15'");
+    expect(leaderboard).toContain('challengeId.length > 200');
+
+    expect(squadInvite).toContain('/^[0-9A-F]{24}$/');
+    expect(squadInvite.indexOf('/^[0-9A-F]{24}$/')).toBeLessThan(
+      squadInvite.indexOf('asServiceRole.entities.Squad.filter'),
+    );
+
+    expect(sharedFile).toContain('/^[0-9a-f]{64}$/');
+    expect(sharedFile).toContain('normalizedFileId.length > 256');
+    expect(sharedFile.indexOf('/^[0-9a-f]{64}$/')).toBeLessThan(
+      sharedFile.indexOf('asServiceRole.entities.SharedFile.get'),
+    );
+  });
+
   it('bounds authenticated squad mutation paths', async () => {
     const cases = [
       ['base44/functions/createSquadInvite/entry.ts', "'squad_invite_create'", 30],

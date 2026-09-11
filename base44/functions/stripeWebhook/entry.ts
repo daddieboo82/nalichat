@@ -36,6 +36,15 @@ function oneRecord(records: any[], description: string): any | null {
   return records[0] || null;
 }
 
+function matchesRecordUser(recordUserId: unknown, metadataUserId: string): boolean {
+  return recordUserId === metadataUserId
+    || recordUserId === `deleted:${metadataUserId}`;
+}
+
+function isDeletedUserId(value: unknown): value is string {
+  return typeof value === 'string' && value.startsWith('deleted:');
+}
+
 async function findSubscription(
   entities: any,
   {
@@ -106,11 +115,11 @@ function canonicalIdentity(
     if (metadata.environment !== expectedEnvironment || sku.priceId !== priceId) {
       throw new Error(`Stripe metadata or price mismatch for ${stripeSubscription.id}`);
     }
-    if (record?.user_id && record.user_id !== metadata.userId) {
+    if (record?.user_id && !matchesRecordUser(record.user_id, metadata.userId)) {
       throw new Error(`Stripe metadata ownership mismatch for ${stripeSubscription.id}`);
     }
     return {
-      userId: metadata.userId,
+      userId: isDeletedUserId(record?.user_id) ? record.user_id : metadata.userId,
       plan: metadata.plan,
       billingPeriod: metadata.billingPeriod,
       sku: metadata.sku,
@@ -147,9 +156,15 @@ async function persistUserStripeState(
   customerId: string,
   trialUsedAt?: string,
 ): Promise<void> {
+  if (isDeletedUserId(userId)) return;
+
   const users = await entities.User.filter({ id: userId });
   const user = oneRecord(users, 'user');
-  if (!user) throw new Error(`No NaliChat user found for ${userId}`);
+  if (!user) {
+    // A Stripe event can race with account deletion. Retained billing records
+    // remain reconcilable even after the application User record is gone.
+    return;
+  }
   if (user.stripe_customer_id && user.stripe_customer_id !== customerId) {
     throw new Error(`Stripe customer ownership conflict for user ${userId}`);
   }

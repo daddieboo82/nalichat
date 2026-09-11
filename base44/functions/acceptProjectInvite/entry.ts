@@ -29,6 +29,17 @@ Deno.serve(async (req) => {
     const project = await base44.asServiceRole.entities.Project.get(projectId);
     if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
 
+    if (project.owner_id === user.id) {
+      return Response.json({ success: true, role: 'owner', already_member: true });
+    }
+    if ((project.collaborator_ids || []).includes(user.id)) {
+      return Response.json({
+        success: true,
+        role: project.collaborator_roles?.[user.id] || 'viewer',
+        already_member: true,
+      });
+    }
+
     if (project.owner_id !== user.id) {
       const collaboratorIds = Array.from(new Set([...(project.collaborator_ids || []), user.id]));
       const roles = { ...(project.collaborator_roles || {}), [user.id]: invite.role };

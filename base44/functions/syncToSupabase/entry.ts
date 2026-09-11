@@ -1,5 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.44";
 import { supabaseUpsert } from "../../shared/supabase.ts";
+import { consumeHourlyLimit } from "../../shared/rateLimit.ts";
 
 const ENTITY_TABLE_MAP = {
   User: "users",
@@ -42,6 +43,16 @@ export default async function (req) {
     const user = await base44.auth.me();
     if (!user || user.role !== "admin") {
       return Response.json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    const adminRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'admin_supabase_sync',
+      12,
+    );
+    if (!adminRate.allowed) {
+      return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     let body = {};

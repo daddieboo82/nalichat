@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 // Re-engages users who registered but never completed onboarding.
 // Sends a friendly reminder email with a direct link to the onboarding page.
@@ -13,6 +14,16 @@ export default async function(req) {
     if (!caller?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     if (caller.role !== 'admin') {
       return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
+    }
+
+    const adminRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      caller.id,
+      'admin_reengagement',
+      4,
+    );
+    if (!adminRate.allowed) {
+      return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     // App URL for the onboarding link comes only from server configuration.

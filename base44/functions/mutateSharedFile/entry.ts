@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireSharedFileMutationLock, releaseSharedFileMutationLock } from '../../shared/sharedFileMutationLock.ts';
+import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -43,8 +44,35 @@ Deno.serve(async (req) => {
     }
 
     try {
-    const file = await entities.SharedFile.get(fileId);
+    let file = await entities.SharedFile.get(fileId);
     if (!file) return Response.json({ error: 'File not found' }, { status: 404 });
+
+    const projectLockIds: string[] = [];
+    const acquireProjectLock = async (projectId: string | null | undefined) => {
+      if (!projectId) return true;
+      if (projectLockIds.some((id) => id === `project_membership_lock_${projectId}`)) return true;
+      const projectLockId = await acquireProjectMembershipLock(entities, projectId);
+      if (!projectLockId) return false;
+      projectLockIds.push(projectLockId);
+      return true;
+    };
+
+    try {
+      if (file.project_id) {
+        const locked = await acquireProjectLock(file.project_id);
+        if (!locked) {
+          return Response.json(
+            { error: 'Project is being updated. Please retry.' },
+            { status: 409 },
+          );
+        }
+        const currentFile = await entities.SharedFile.get(fileId).catch(() => null);
+        if (!currentFile) return Response.json({ error: 'File not found' }, { status: 404 });
+        if (currentFile.project_id !== file.project_id) {
+          return Response.json({ error: 'File project changed. Please retry.' }, { status: 409 });
+        }
+        file = currentFile;
+      }
 
     let canEdit = user.role === 'admin';
     if (!canEdit && file.project_id) {
@@ -120,8 +148,24 @@ Deno.serve(async (req) => {
     let editUserIds = [file.uploader_id].filter(Boolean);
 
     if (folderId) {
-      const folder = await entities.Folder.get(folderId);
+      let folder = await entities.Folder.get(folderId);
       if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
+
+      if (folder.project_id && folder.project_id !== file.project_id) {
+        const locked = await acquireProjectLock(folder.project_id);
+        if (!locked) {
+          return Response.json(
+            { error: 'Destination project is being updated. Please retry.' },
+            { status: 409 },
+          );
+        }
+        const currentFolder = await entities.Folder.get(folderId).catch(() => null);
+        if (!currentFolder) return Response.json({ error: 'Folder not found' }, { status: 404 });
+        if (currentFolder.project_id !== folder.project_id) {
+          return Response.json({ error: 'Folder destination changed. Please retry.' }, { status: 409 });
+        }
+        folder = currentFolder;
+      }
 
       let canUseFolder = user.role === 'admin';
       if (!canUseFolder && folder.project_id) {
@@ -155,6 +199,11 @@ Deno.serve(async (req) => {
       share_token_expires_at: null,
     });
     return Response.json({ success: true, file: updated });
+    } finally {
+      for (const projectLockId of projectLockIds.reverse()) {
+        await releaseProjectMembershipLock(entities, projectLockId);
+      }
+    }
     } finally {
       await releaseSharedFileMutationLock(entities, lockId);
     }

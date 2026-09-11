@@ -615,6 +615,20 @@ describe('release configuration', () => {
     expect(sharedFile.rls.delete?.user_condition?.role).toBe('admin');
   });
 
+  it('keeps playlist and ArtPost updates server-authoritative', async () => {
+    const playlist = await readJson('base44/entities/Playlist.jsonc');
+    const artPost = await readJson('base44/entities/ArtPost.jsonc');
+    const playlistDetail = await readText('src/pages/PlaylistDetail.jsx');
+    const addToPlaylist = await readText('src/components/explore/AddToPlaylistDialog.jsx');
+    const coverArt = await readText('src/pages/CoverArt.jsx');
+
+    expect(playlist.rls.update?.user_condition?.role).toBe('admin');
+    expect(artPost.rls.update?.user_condition?.role).toBe('admin');
+    expect(playlistDetail).not.toContain('entities.Playlist.update');
+    expect(addToPlaylist).not.toContain('entities.Playlist.update');
+    expect(coverArt).not.toContain('entities.ArtPost.update');
+  });
+
 
   it('enforces configured challenge voting windows server-side', async () => {
     const vote = await readText('base44/functions/castVote/entry.ts');

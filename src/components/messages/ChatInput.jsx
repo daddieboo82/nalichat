@@ -168,7 +168,15 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
         setUploads(u => u.map(x => x.id === id ? { ...x, progress: 100, done: true } : x));
         setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 1200);
         
-        const payload = { text: "", type: "audio", file_url, file_name: "Voice Message", file_type: mimeType, duration: recordingTimeRef.current };
+        const payload = {
+          text: "",
+          type: "audio",
+          file_url,
+          file_name: "Voice Message",
+          file_size: file.size,
+          file_type: mimeType,
+          duration: recordingTimeRef.current,
+        };
         if (replyTo) {
           payload.reply_to_text = replyTo.text || `[${replyTo.type}]`;
           payload.reply_to_sender = replyTo.sender_name;

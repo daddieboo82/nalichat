@@ -2,8 +2,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import {
   AiQuotaError,
   aiQuotaErrorResponse,
-  executeMeteredAiRequest,
 } from '../../shared/aiQuota.ts';
+import {
+  VoiceTranscriptionError,
+  requestVoiceTranscription,
+  voiceTranscriptionErrorResponse,
+} from '../../shared/voiceTranscription.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -11,31 +15,23 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { audio_url, request_key } = await req.json();
-    let parsedUrl: URL;
-    try {
-      parsedUrl = new URL(audio_url);
-    } catch {
-      return Response.json({ error: 'A valid audio URL is required.' }, { status: 400 });
-    }
-    if (parsedUrl.protocol !== 'https:') {
-      return Response.json({ error: 'Audio URL must use HTTPS.' }, { status: 400 });
-    }
-
-    const { result, quota } = await executeMeteredAiRequest({
+    const { message_id, request_key } = await req.json();
+    const result = await requestVoiceTranscription({
       base44,
       user,
-      operation: 'transcription',
+      messageId: message_id,
       requestKey: request_key,
-      dispatch: () => base44.asServiceRole.integrations.Core.TranscribeAudio({ audio_url }),
     });
-    const text = typeof result === 'string' ? result : result?.text || result?.data || '';
-
-    return Response.json({ text, quota });
+    return Response.json(result);
   } catch (error) {
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
+    if (error instanceof VoiceTranscriptionError) {
+      return voiceTranscriptionErrorResponse(error);
+    }
     console.error('transcribeAudio error:', error);
-    const message = error instanceof Error ? error.message : 'Unable to transcribe audio';
-    return Response.json({ error: message }, { status: 500 });
+    return Response.json({
+      error: 'Unable to transcribe this voice note.',
+      code: 'TRANSCRIPTION_ERROR',
+    }, { status: 500 });
   }
 });

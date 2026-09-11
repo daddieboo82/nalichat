@@ -1,0 +1,86 @@
+{
+  "name": "VoiceTranscription",
+  "type": "object",
+  "properties": {
+    "message_id": {
+      "type": "string",
+      "description": "Voice message this transcript belongs to"
+    },
+    "conversation_id": {
+      "type": "string",
+      "description": "Conversation used for authorization"
+    },
+    "participant_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Conversation participants when transcription was requested"
+    },
+    "requested_by": {
+      "type": "string",
+      "description": "Account that requested and was charged for this attempt"
+    },
+    "request_key": {
+      "type": "string",
+      "maxLength": 128,
+      "description": "Opaque idempotency key; never contains audio or transcript content"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "failed"
+      ]
+    },
+    "transcript": {
+      "type": "string",
+      "description": "Provider transcript, visible only through the authorized server function"
+    },
+    "error_code": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "Non-content failure category for support and retry decisions"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "message_id",
+    "conversation_id",
+    "participant_ids",
+    "requested_by",
+    "request_key",
+    "status",
+    "started_at"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

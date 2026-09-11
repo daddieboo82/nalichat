@@ -30,7 +30,7 @@ describe('subscription entitlement matrix', () => {
       'files.large_upload': true,
       'chat.export': true,
       'appearance.premium_themes': true,
-      'voice.transcription': true,
+      'voice.transcription': false,
       'ai.high_limits': false,
       'ai.best_model': false,
       'calls.summary': false,

@@ -56,6 +56,27 @@ describe('release configuration', () => {
     expect(stats).toContain('Admin operation rate limit exceeded');
   });
 
+  it('moderation-gates and bounds privileged maintenance utilities', async () => {
+    const backfill = await readText('base44/functions/backfillTrackAccess/entry.ts');
+    const seed = await readText('base44/functions/seedGroupChatWelcome/entry.ts');
+    const maintenance = await readText('base44/functions/nali-maintenance/entry.ts');
+
+    expect(backfill).toContain('consumeHourlyLimit');
+    expect(backfill).toContain("'admin_access_backfill'");
+    expect(backfill).toMatch(/'admin_access_backfill',\s*2/);
+    expect(backfill).toContain('user.is_banned');
+    expect(backfill).toContain('user.timeout_until');
+
+    expect(seed).toContain('consumeHourlyLimit');
+    expect(seed).toContain("'admin_seed_group_welcome'");
+    expect(seed).toMatch(/'admin_seed_group_welcome',\s*2/);
+    expect(seed).toContain('user.is_banned');
+    expect(seed).toContain('user.timeout_until');
+
+    expect(maintenance).toContain('caller.is_banned');
+    expect(maintenance).toContain('caller.timeout_until');
+  });
+
   it('rate-limits expensive admin fan-out and full-scan operations', async () => {
     const cases = [
       ['base44/functions/naliHealthCheck/entry.ts', "'admin_health_check'", 4],

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 export default async function(req) {
   try {
@@ -6,6 +7,20 @@ export default async function(req) {
     const user = await base44.auth.me();
     if (!user || user.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
+    const adminRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'admin_seed_group_welcome',
+      2,
+    );
+    if (!adminRate.allowed) {
+      return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     const messages = [

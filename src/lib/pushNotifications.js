@@ -107,3 +107,28 @@ export async function subscribeToRemotePush() {
 
   return { subscribed: true };
 }
+
+
+export async function unsubscribeFromRemotePush() {
+  if (!isPushSupported()) return { unsubscribed: false, reason: 'unsupported' };
+
+  try {
+    const reg = await navigator.serviceWorker.getRegistration('/sw.js');
+    const subscription = await reg?.pushManager?.getSubscription();
+    if (!subscription) return { unsubscribed: false, reason: 'not_subscribed' };
+
+    const endpoint = subscription.endpoint;
+    try {
+      const { base44 } = await import('@/api/base44Client');
+      await base44.functions.invoke('unregisterPushSubscription', { endpoint });
+    } catch (error) {
+      console.warn('Could not unregister push subscription on server:', error);
+    }
+
+    await subscription.unsubscribe();
+    return { unsubscribed: true };
+  } catch (error) {
+    console.warn('Could not unsubscribe from push:', error);
+    return { unsubscribed: false, reason: 'error' };
+  }
+}

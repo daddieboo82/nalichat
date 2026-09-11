@@ -63,8 +63,14 @@ const getRuntimeConfigValue = (paramName, defaultValue) => {
 };
 
 const getAppParams = () => {
-  if (getAppParamValue("clear_access_token") === 'true') {
+  const clearAccessToken = getAppParamValue("clear_access_token", { removeFromUrl: true });
+  // clear_access_token is a one-shot command, never persistent configuration.
+  // getAppParamValue stores URL parameters by default, so remove its storage
+  // key immediately or every future app load would keep clearing the session.
+  storage.removeItem('base44_clear_access_token');
+  if (clearAccessToken === 'true') {
     storage.removeItem('base44_access_token');
+    storage.removeItem('base44_token');
     storage.removeItem('token');
   }
   return {

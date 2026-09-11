@@ -79,32 +79,43 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
-    const priorCount = Number(user.viral_concepts_generated || 0);
+    const achievementId = `achievement_viral_seed_${user.id}`;
+    let firstGeneration = false;
 
-    await entities.User.updateMany(
-      { id: user.id },
-      { $inc: { xp: 50, viral_concepts_generated: concepts.length } },
-    );
-
-    if (priorCount === 0) {
-      const achievementId = `achievement_viral_seed_${user.id}`;
-      try {
-        await entities.Achievement.create({
-          id: achievementId,
-          user_id: user.id,
-          key: 'viral_seed',
-          title: 'Viral Seed',
-          description: 'Generated your first viral content concepts with ViralSeed AI',
-          icon: 'rocket',
-          xp: 50,
-          category: 'creative',
-        });
-      } catch {
-        // Deterministic ID makes the first-generation achievement idempotent.
-      }
+    try {
+      await entities.Achievement.create({
+        id: achievementId,
+        user_id: user.id,
+        key: 'viral_seed',
+        title: 'Viral Seed',
+        description: 'Generated your first viral content concepts with ViralSeed AI',
+        icon: 'rocket',
+        xp: 50,
+        category: 'creative',
+      });
+      firstGeneration = true;
+    } catch {
+      // Deterministic ID makes the first-generation reward idempotent.
     }
 
-    return Response.json({ concepts, xp_awarded: 50 });
+    try {
+      await entities.User.updateMany(
+        { id: user.id },
+        { $inc: {
+          viral_concepts_generated: concepts.length,
+          ...(firstGeneration ? { xp: 50 } : {}),
+        } },
+      );
+    } catch (updateError) {
+      // If the first award failed to reach the user record, remove the
+      // achievement claim so a retry can award it correctly.
+      if (firstGeneration) {
+        await entities.Achievement.delete(achievementId).catch(() => {});
+      }
+      throw updateError;
+    }
+
+    return Response.json({ concepts, xp_awarded: firstGeneration ? 50 : 0 });
   } catch (error) {
     console.error('generateViralConcepts error:', error);
     return Response.json({ error: error?.message || 'Viral generation failed' }, { status: 500 });

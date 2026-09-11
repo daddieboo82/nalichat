@@ -6,7 +6,14 @@
       "type": "string"
     },
     "file_url": {
-      "type": "string"
+      "type": "string"      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "file_type": {
       "type": "string",

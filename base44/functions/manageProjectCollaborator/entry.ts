@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 async function syncChildren(entities: any, project: any, userId: string, role: string | null) {
   for (const entityName of ['Track', 'TrackVersion', 'SharedFile', 'Folder', 'Milestone']) {
@@ -35,6 +36,11 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const owner = await base44.auth.me();
     if (!owner?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (owner.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (owner.timeout_until && new Date(owner.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: owner.timeout_until }, { status: 403 });
+    }
+
 
     const { projectId, userId, action, role } = await req.json();
     if (!projectId || !userId || !['set_role', 'remove'].includes(action)) {
@@ -45,6 +51,10 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const rate = await consumeHourlyLimit(entities, owner.id, 'project_collaborator_mutate', 60);
+    if (!rate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
     const project = await entities.Project.get(projectId);
     if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
     if (project.owner_id !== owner.id) {

@@ -18,12 +18,48 @@ import ModerationBanner from "@/components/messages/ModerationBanner";
 import { MessageSquare, Users, Plus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { createClientMessageKey, applyQueuedMessage, applySendSuccess, applySendFailure } from "@/lib/messageCache";
+import { createClientMessageKey, applyQueuedMessage, applySendSuccess, applySendFailure, removeClientMessage } from "@/lib/messageCache";
+import {
+  createOutboundEntry,
+  enqueueOutbound,
+  flushOutboundQueue,
+  getBackoffDelay,
+  getNextRetryAt,
+  markOutboundForRetry,
+  queueEntryToMessage,
+} from "@/lib/outboundQueue";
 import { useSubscription } from "@/hooks/useSubscription";
 import { CHAT_THEME_ENTITLEMENT, getChatTheme, resolveEffectiveChatThemeId } from "@/lib/chatThemes";
 import { useLockedChats } from "@/lib/LockedChatsContext";
 import { partitionUserConversations, resolveRequestedConversation } from "@/lib/lockedChatPolicy";
 import LockedChatAccessDialog from "@/components/messages/LockedChatAccessDialog";
+
+function inferSendErrorStatus(errorMessage, response) {
+  const explicit = Number(response?.status || response?.data?.status);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  const text = String(errorMessage || "").toLowerCase();
+  if (text === "timed_out" || text === "banned" || text.includes("forbidden")) return 403;
+  if (text.includes("rate limit")) return 429;
+  if (
+    text.includes("required")
+    || text.includes("invalid")
+    || text.includes("must ")
+    || text.includes("not in this conversation")
+    || text.includes("not found")
+    || text.includes("too large")
+    || text.includes("characters or fewer")
+    || text.includes("unsupported")
+  ) return 400;
+  return 500;
+}
+
+function sendErrorFromResponse(response) {
+  const message = response?.data?.error;
+  const error = new Error(message || "Message send failed");
+  error.status = inferSendErrorStatus(message, response);
+  error.code = response?.data?.code;
+  return error;
+}
 
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -216,7 +252,7 @@ export default function Messages() {
         return { _flagged: res.data.moderation };
       }
       if (res?.data?.error) {
-        throw new Error(res.data.error);
+        throw sendErrorFromResponse(res);
       }
       return res?.data?.message;
     },
@@ -255,12 +291,35 @@ export default function Messages() {
         );
         return updated.sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0));
       });
-      return { previous, previousConversations, tempId, clientMessageKey, conversationId };
+      const outboundEntry = createOutboundEntry({
+        clientMessageKey,
+        conversationId,
+        payload: msgData,
+        sender: {
+          id: currentUser?.id,
+          name: currentUser?.display_name || currentUser?.full_name,
+          avatar: currentUser?.avatar_url,
+        },
+      });
+      return { previous, previousConversations, tempId, clientMessageKey, conversationId, outboundEntry };
     },
     onError: (err, _msgData, ctx) => {
+      const status = Number(err?.status);
+      const retryable = !Number.isFinite(status) || status === 429 || status >= 500;
       queryClient.setQueryData(["messages", ctx?.conversationId], (old = []) =>
-        applySendFailure(old, ctx?.clientMessageKey, err?.message)
+        applySendFailure(old, ctx?.clientMessageKey, err?.message, retryable)
       );
+      if (retryable && ctx?.outboundEntry) {
+        const failedEntry = {
+          ...ctx.outboundEntry,
+          state: "failed",
+          attemptCount: 1,
+          nextAttemptAt: Date.now() + getBackoffDelay(1),
+          lastError: err?.message || "Message could not be sent.",
+        };
+        enqueueOutbound(failedEntry);
+        window.dispatchEvent(new Event("nalichat:outbound-queue"));
+      }
       if (ctx?.previousConversations) {
         queryClient.setQueryData(["conversations"], ctx.previousConversations);
       }
@@ -304,6 +363,79 @@ export default function Messages() {
       }
     },
   });
+
+  useEffect(() => {
+    if (!currentUser?.id) return undefined;
+    let cancelled = false;
+    let retryTimer = null;
+
+    const sendQueuedEntry = async (entry) => {
+      const res = await base44.functions.invoke("sendConversationMessage", {
+        ...entry.payload,
+        conversation_id: entry.conversationId,
+        client_message_key: entry.clientMessageKey,
+      });
+      if (res?.data?.moderation) {
+        return { rejection: { type: "moderation", details: res.data.moderation } };
+      }
+      if (res?.data?.error) throw sendErrorFromResponse(res);
+      if (!res?.data?.message) throw new Error("The message service returned no message.");
+      return { message: res.data.message };
+    };
+
+    const scheduleNext = () => {
+      if (cancelled) return;
+      if (retryTimer) window.clearTimeout(retryTimer);
+      const nextRetryAt = getNextRetryAt(undefined, currentUser.id);
+      if (nextRetryAt == null) return;
+      retryTimer = window.setTimeout(
+        () => { void flushQueue(); },
+        Math.max(250, nextRetryAt - Date.now()),
+      );
+    };
+
+    const flushQueue = async () => {
+      await flushOutboundQueue({
+        userId: currentUser.id,
+        send: sendQueuedEntry,
+        onSending: (entry) => {
+          queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+            applyQueuedMessage(old, queueEntryToMessage(entry))
+          );
+        },
+        onSent: (entry, message) => {
+          queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+            applySendSuccess(old, message, entry.clientMessageKey, `temp-${entry.clientMessageKey}`)
+          );
+          queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        },
+        onRejected: (entry, rejection) => {
+          queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+            removeClientMessage(old, entry.clientMessageKey)
+          );
+          toast.error(rejection?.message || "A queued message could not be sent.");
+        },
+        onFailed: (entry, error) => {
+          queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+            applySendFailure(old, entry.clientMessageKey, error?.message, true)
+          );
+        },
+      });
+      scheduleNext();
+    };
+
+    const handleQueueSignal = () => { void flushQueue(); };
+    window.addEventListener("online", handleQueueSignal);
+    window.addEventListener("nalichat:outbound-queue", handleQueueSignal);
+    void flushQueue();
+
+    return () => {
+      cancelled = true;
+      if (retryTimer) window.clearTimeout(retryTimer);
+      window.removeEventListener("online", handleQueueSignal);
+      window.removeEventListener("nalichat:outbound-queue", handleQueueSignal);
+    };
+  }, [currentUser?.id, queryClient]);
 
   const isTimedOut = currentUser?.timeout_until && new Date(currentUser.timeout_until) > new Date();
 
@@ -547,7 +679,12 @@ export default function Messages() {
               }}
               onReact={handleReact}
               onRetryMessage={(message) => {
-                if (!message?.client_message_key || sendMessage.isPending) return;
+                if (!message?.client_message_key) return;
+                const queued = markOutboundForRetry(message.client_message_key);
+                if (queued) {
+                  window.dispatchEvent(new Event("nalichat:outbound-queue"));
+                  return;
+                }
                 sendMessage.mutate({
                   text: message.text || "",
                   type: message.type || "text",

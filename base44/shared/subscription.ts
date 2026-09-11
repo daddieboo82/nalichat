@@ -42,6 +42,28 @@ export interface ResolveEntitlementLimits {
   now?: string | Date;
 }
 
+const GIB = 1024 * 1024 * 1024;
+
+export interface SubscriptionLimits {
+  ai: { requestsPerUtcDay: number };
+  upload: { maxBytes: number };
+}
+
+export const PLAN_LIMITS: Readonly<Record<SubscriptionPlan, SubscriptionLimits>> = {
+  free: {
+    ai: { requestsPerUtcDay: 20 },
+    upload: { maxBytes: 2 * GIB },
+  },
+  premium: {
+    ai: { requestsPerUtcDay: 200 },
+    upload: { maxBytes: 10 * GIB },
+  },
+  premium_plus: {
+    ai: { requestsPerUtcDay: 1_000 },
+    upload: { maxBytes: 20 * GIB },
+  },
+};
+
 const FREE_ENTITLEMENTS = ['chat.core'] as const satisfies readonly EntitlementKey[];
 
 const PREMIUM_ENTITLEMENTS = [
@@ -155,5 +177,20 @@ export function resolveEntitlements(
     'calls.summary': granted.has('calls.summary'),
     'reminders.follow_up': granted.has('reminders.follow_up'),
     'privacy.locked_chats': granted.has('privacy.locked_chats'),
+  };
+}
+
+export function resolveSubscriptionLimits(
+  plan: SubscriptionPlan,
+  status: SubscriptionStatus,
+  accessLimits: ResolveEntitlementLimits = {},
+): SubscriptionLimits {
+  const effectivePlan = plan !== 'free' && hasPaidTierAccess(status, accessLimits)
+    ? plan
+    : 'free';
+  const limits = PLAN_LIMITS[effectivePlan];
+  return {
+    ai: { requestsPerUtcDay: limits.ai.requestsPerUtcDay },
+    upload: { maxBytes: limits.upload.maxBytes },
   };
 }

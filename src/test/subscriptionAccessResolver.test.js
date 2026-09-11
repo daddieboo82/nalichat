@@ -31,5 +31,6 @@ describe('shared subscription access resolver', () => {
     expect(access.plan).toBe('premium_plus');
     expect(access.hasPaidAccess).toBe(true);
     expect(access.entitlements['privacy.locked_chats']).toBe(true);
+    expect(access.limits.ai.requestsPerUtcDay).toBe(1000);
   });
 });

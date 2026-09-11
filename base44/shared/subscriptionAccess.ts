@@ -3,6 +3,7 @@ import {
   normalizePlan,
   normalizeStatus,
   resolveEntitlements,
+  resolveSubscriptionLimits,
 } from './subscription.ts';
 
 const PAGE_SIZE = 500;
@@ -93,6 +94,11 @@ export async function resolveUserSubscription(
     trialEndDate,
     hasPaidAccess,
     entitlements: resolveEntitlements(plan, status, {
+      currentPeriodEnd,
+      trialEndDate,
+      now,
+    }),
+    limits: resolveSubscriptionLimits(plan, status, {
       currentPeriodEnd,
       trialEndDate,
       now,

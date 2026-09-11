@@ -14,7 +14,12 @@ import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import NaliContextHint from "@/components/nali/NaliContextHint";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 
-const ROLES = ["Producer", "Beatmaker", "Sound Engineer", "Mixing Engineer", "Mastering Engineer", "Vocalist", "Instrumentalist", "DJ", "Composer", "Other"];
+const ROLES = [
+  { value: "artist", label: "Artist" },
+  { value: "producer", label: "Producer" },
+  { value: "engineer", label: "Engineer" },
+  { value: "ar", label: "A&R" },
+];
 const GENRES = ["Hip-Hop", "Trap", "Lo-Fi", "Electronic", "House", "Techno", "Ambient", "R&B", "Indie", "Alternative"];
 
 export default function Profile() {
@@ -74,14 +79,16 @@ export default function Profile() {
 
   const save = async () => {
     setSaving(true);
-    try { await base44.auth.updateMe({
-      display_name: form.display_name,
-      bio: form.bio,
-      artist_role: form.artist_role,
-      location: form.location,
-      website: form.website,
-      genres: form.genres || [],
-    });
+    try {
+      const res = await base44.functions.invoke("updateMyProfile", {
+        display_name: form.display_name,
+        bio: form.bio,
+        artist_role: form.artist_role,
+        location: form.location,
+        website: form.website,
+        genres: form.genres || [],
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
     const updated = await base44.auth.me();
     setCurrentUser(updated);
     setForm(updated);
@@ -98,7 +105,8 @@ export default function Profile() {
     setUploading(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.auth.updateMe({ avatar_url: file_url });
+      const res = await base44.functions.invoke("updateMyProfile", { avatar_url: file_url });
+      if (res?.data?.error) throw new Error(res.data.error);
       const updated = await base44.auth.me();
       setCurrentUser(updated);
     } finally {
@@ -113,7 +121,8 @@ export default function Profile() {
     setUploading(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.auth.updateMe({ cover_url: file_url });
+      const res = await base44.functions.invoke("updateMyProfile", { cover_url: file_url });
+      if (res?.data?.error) throw new Error(res.data.error);
       const updated = await base44.auth.me();
       setCurrentUser(updated);
     } finally {
@@ -230,8 +239,14 @@ export default function Profile() {
             <div>
               <label className="text-xs text-muted-foreground mb-2 block">Role</label>
               <div className="flex flex-wrap gap-2">
-                {ROLES.map(r => (
-                  <button key={r} onClick={() => setForm(f => ({ ...f, artist_role: r }))} className={cn("px-3 py-1 rounded-full text-xs font-semibold transition-colors", form.artist_role === r ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}>{r}</button>
+                {ROLES.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setForm(f => ({ ...f, artist_role: value }))}
+                    className={cn("px-3 py-1 rounded-full text-xs font-semibold transition-colors", form.artist_role === value ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}
+                  >
+                    {label}
+                  </button>
                 ))}
               </div>
             </div>

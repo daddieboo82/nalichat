@@ -8,9 +8,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { phone, link } = await req.json();
-    if (!phone || !link) {
-      return Response.json({ error: 'Missing phone or link' }, { status: 400 });
+    const { phone } = await req.json();
+    if (!phone) {
+      return Response.json({ error: 'Missing phone' }, { status: 400 });
     }
 
     // Validate E.164 phone format to prevent SMS abuse
@@ -23,9 +23,25 @@ Deno.serve(async (req) => {
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const fromNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
+    if (!accountSid || !authToken || !fromNumber) {
+      return Response.json({ error: 'SMS is not configured' }, { status: 503 });
+    }
+
+    const appUrl = Deno.env.get('APP_BASE_URL') || req.headers.get('X-Base44-App-Url') || '';
+    let inviteLink = '';
+    try {
+      const parsed = new URL(appUrl);
+      if (parsed.protocol !== 'https:') throw new Error('invalid protocol');
+      parsed.pathname = '/register';
+      parsed.search = '';
+      parsed.hash = '';
+      inviteLink = parsed.toString();
+    } catch {
+      return Response.json({ error: 'Invite URL is not configured' }, { status: 500 });
+    }
 
     const inviterName = user.display_name || user.full_name || 'A friend';
-    const body = `${inviterName} invited you to collaborate on NaliChat. Join here: ${link}`;
+    const body = `${inviterName} invited you to collaborate on NaliChat. Join here: ${inviteLink}`;
 
     const params = new URLSearchParams();
     params.append('To', cleanPhone);

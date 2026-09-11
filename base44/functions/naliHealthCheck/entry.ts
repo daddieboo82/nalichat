@@ -1,6 +1,23 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+const SCHEDULE_TIME_ZONE = 'America/New_York';
+const SCHEDULE_WINDOW_MINUTE = 20;
+
+function isScheduledHealthCheckWindow(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: SCHEDULE_TIME_ZONE,
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return values.weekday === 'Sun'
+    && Number(values.hour) === 4
+    && Number(values.minute) <= SCHEDULE_WINDOW_MINUTE;
+}
+
 // Weekly app health & enhancement scan run by Nali.
 // Scans app data for issues (broken/incomplete records, stale content) and
 // surfaces improvement opportunities, then notifies all admins via in-app
@@ -9,20 +26,43 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Security: this is an admin/maintenance task — only an admin may trigger it.
-    const caller = await base44.auth.me();
-    if (!caller || caller.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
-    }
+    // Manual runs require an authenticated admin. Scheduled workflow runs do
+    // not carry a user identity, so only permit those during the configured
+    // Sunday 4am Eastern window and give the scheduler a single hourly claim.
+    const caller = await base44.auth.me().catch(() => null);
+    if (caller) {
+      if (caller.role !== 'admin') {
+        return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
+      }
+      if (caller.is_banned) {
+        return Response.json({ error: 'Forbidden: banned account' }, { status: 403 });
+      }
+      if (caller.timeout_until && Date.parse(caller.timeout_until) > Date.now()) {
+        return Response.json({ error: 'Forbidden: timed out account' }, { status: 403 });
+      }
 
-    const adminRate = await consumeHourlyLimit(
-      base44.asServiceRole.entities,
-      caller.id,
-      'admin_health_check',
-      4,
-    );
-    if (!adminRate.allowed) {
-      return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
+      const adminRate = await consumeHourlyLimit(
+        base44.asServiceRole.entities,
+        caller.id,
+        'admin_health_check',
+        4,
+      );
+      if (!adminRate.allowed) {
+        return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+    } else {
+      if (!isScheduledHealthCheckWindow()) {
+        return Response.json({ error: 'Forbidden: scheduled health-check window required' }, { status: 403 });
+      }
+      const scheduledRate = await consumeHourlyLimit(
+        base44.asServiceRole.entities,
+        'nali-health-scheduler',
+        'scheduled_health_check',
+        1,
+      );
+      if (!scheduledRate.allowed) {
+        return Response.json({ error: 'Scheduled health check already claimed for this hour.' }, { status: 429 });
+      }
     }
 
     // --- Gather a lightweight snapshot of app data ---

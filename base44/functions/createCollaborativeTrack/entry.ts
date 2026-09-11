@@ -31,8 +31,22 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const projectId = String(body?.project_id || '');
-    if (!projectId || !body?.name) {
-      return Response.json({ error: 'project_id and name are required' }, { status: 400 });
+    const name = String(body?.name || '').trim().slice(0, 200);
+    if (!projectId || !name) {
+      return Response.json({ error: 'project_id and a non-empty name are required' }, { status: 400 });
+    }
+
+    const volume = Number(body?.volume ?? 75);
+    const pan = Number(body?.pan ?? 50);
+    const duration = body?.duration == null ? undefined : Number(body.duration);
+    if (!Number.isFinite(volume) || volume < 0 || volume > 100) {
+      return Response.json({ error: 'Track volume must be between 0 and 100' }, { status: 400 });
+    }
+    if (!Number.isFinite(pan) || pan < 0 || pan > 100) {
+      return Response.json({ error: 'Track pan must be between 0 and 100' }, { status: 400 });
+    }
+    if (duration !== undefined && (!Number.isFinite(duration) || duration < 0 || duration > 24 * 60 * 60)) {
+      return Response.json({ error: 'Invalid track duration' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
@@ -77,16 +91,21 @@ Deno.serve(async (req) => {
     const allowedTypes = new Set(['vocal', 'instrument', 'beat', 'sample', 'fx', 'master']);
     const track = await entities.Track.create({
       project_id: projectId,
-      name: String(body.name).slice(0, 200),
+      name,
       file_url: fileUrl,
       type: allowedTypes.has(body.type) ? body.type : 'vocal',
-      color: typeof body.color === 'string' ? body.color : undefined,
-      volume: Number.isFinite(Number(body.volume)) ? Number(body.volume) : 75,
-      pan: Number.isFinite(Number(body.pan)) ? Number(body.pan) : 0,
+      color: typeof body.color === 'string' ? body.color.slice(0, 100) : undefined,
+      volume,
+      pan,
       muted: Boolean(body.muted),
       solo: Boolean(body.solo),
-      duration: Number.isFinite(Number(body.duration)) ? Number(body.duration) : undefined,
-      waveform_data: Array.isArray(body.waveform_data) ? body.waveform_data.slice(0, 2000) : undefined,
+      duration,
+      waveform_data: Array.isArray(body.waveform_data)
+        ? body.waveform_data
+            .map((point: unknown) => Number(point))
+            .filter((point: number) => Number.isFinite(point) && point >= -1 && point <= 1)
+            .slice(0, 2000)
+        : undefined,
       uploaded_by: user.id,
       access_user_ids: accessUserIds,
       edit_user_ids: editUserIds,

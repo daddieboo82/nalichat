@@ -34,6 +34,11 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!open || !post?.id || !currentUser?.id || post.creator_id === currentUser.id) return;
+    base44.functions.invoke("recordArtPostView", { postId: post.id }).catch(() => {});
+  }, [open, post?.id, post?.creator_id, currentUser?.id]);
+
   const togglePlay = () => {
     if (audioRef.current) {
       if (isPlaying) {

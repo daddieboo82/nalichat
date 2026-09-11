@@ -685,6 +685,14 @@ describe('release configuration', () => {
     expect(reset).not.toContain('useSearchParams');
   });
 
+  it('treats clear_access_token as a one-shot command and clears all token keys', async () => {
+    const appParams = await readText('src/lib/app-params.js');
+    expect(appParams).toContain('getAppParamValue("clear_access_token", { removeFromUrl: true })');
+    expect(appParams).toContain("storage.removeItem('base44_clear_access_token')");
+    expect(appParams).toContain("storage.removeItem('base44_access_token')");
+    expect(appParams).toContain("storage.removeItem('base44_token')");
+  });
+
   it('prevents contact ownership reassignment', async () => {
     const contact = await readJson('base44/entities/Contact.jsonc');
     expect(contact.properties.user_id.rls?.write?.user_condition?.role).toBe('admin');

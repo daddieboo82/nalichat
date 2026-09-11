@@ -2,7 +2,7 @@ export default function Privacy() {
   return (
     <div className="min-h-screen bg-background text-foreground px-6 py-12 max-w-3xl mx-auto">
       <h1 className="text-3xl font-heading font-bold mb-2">Privacy Policy</h1>
-      <p className="text-muted-foreground text-sm mb-8">Last updated: June 3, 2026</p>
+      <p className="text-muted-foreground text-sm mb-8">Last updated: September 11, 2026</p>
 
       <section className="space-y-6 text-sm leading-relaxed text-foreground/80">
 
@@ -36,7 +36,7 @@ export default function Privacy() {
           <h2 className="text-lg font-semibold text-foreground mb-2">4. Sharing Your Information</h2>
           <p>We do not sell your personal data. We may share information with:</p>
           <ul className="list-disc pl-5 space-y-1 mt-2">
-            <li><strong>Other Users:</strong> Your profile, posts, and shared files are visible to other NaliChat users per your settings.</li>
+            <li><strong>Other Users:</strong> Information you publish to public profile and Explore surfaces may be visible to other NaliChat users. Project files and collaboration content are limited to users who have been granted access, except when you intentionally create a public share link.</li>
             <li><strong>Service Providers:</strong> Third-party services that help us operate the platform (e.g., cloud storage, analytics).</li>
             <li><strong>Legal Requirements:</strong> When required by law or to protect our rights.</li>
           </ul>

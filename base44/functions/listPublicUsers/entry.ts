@@ -56,6 +56,7 @@ export default async function(req) {
 
     const body = await req.json().catch(() => ({}));
     const requestedUserId = String(body?.userId || '').trim();
+    const includeAchievementCounts = body?.includeAchievementCounts === true;
     if (requestedUserId.length > 256) {
       return Response.json({ error: 'Invalid userId' }, { status: 400 });
     }
@@ -63,11 +64,13 @@ export default async function(req) {
     if (requestedUserId) {
       const [target, targetAchievements, contacts, inboundContacts, conversations] = await Promise.all([
         base44.asServiceRole.entities.User.get(requestedUserId).catch(() => null),
-        base44.asServiceRole.entities.Achievement.filter(
-          { user_id: requestedUserId },
-          '-created_date',
-          500,
-        ),
+        includeAchievementCounts
+          ? base44.asServiceRole.entities.Achievement.filter(
+              { user_id: requestedUserId },
+              '-created_date',
+              500,
+            )
+          : Promise.resolve([]),
         base44.asServiceRole.entities.Contact.filter(
           { user_id: user.id },
           '-created_date',
@@ -113,14 +116,16 @@ export default async function(req) {
         users: [publicUserProjection(target, targetAchievements.length, presenceVisibleTo)],
         truncated: {
           users: false,
-          achievements: targetAchievements.length >= 500,
+          achievements: includeAchievementCounts && targetAchievements.length >= 500,
         },
       });
     }
 
     const [allUsers, achievements, contacts, inboundContacts, conversations] = await Promise.all([
       base44.asServiceRole.entities.User.list('-created_date', MAX_DISCOVERY_USERS),
-      base44.asServiceRole.entities.Achievement.list('-created_date', MAX_DISCOVERY_ACHIEVEMENTS),
+      includeAchievementCounts
+        ? base44.asServiceRole.entities.Achievement.list('-created_date', MAX_DISCOVERY_ACHIEVEMENTS)
+        : Promise.resolve([]),
       base44.asServiceRole.entities.Contact.filter(
         { user_id: user.id },
         '-created_date',
@@ -175,7 +180,8 @@ export default async function(req) {
       users: publicUsers,
       truncated: {
         users: allUsers.length >= MAX_DISCOVERY_USERS,
-        achievements: achievements.length >= MAX_DISCOVERY_ACHIEVEMENTS,
+        achievements: includeAchievementCounts
+          && achievements.length >= MAX_DISCOVERY_ACHIEVEMENTS,
       },
     });
   } catch (error) {

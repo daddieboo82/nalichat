@@ -17,7 +17,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Liked-post lookup rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const posts = await base44.asServiceRole.entities.ArtPost.filter({ liked_by: user.id });
+    const posts = await base44.asServiceRole.entities.ArtPost.filter(
+      { liked_by: user.id },
+      '-created_date',
+      1000,
+    );
     return Response.json({
       post_ids: posts.map((post: any) => post.id).filter(Boolean),
     }, { headers: { 'Cache-Control': 'no-store' } });

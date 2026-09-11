@@ -4,6 +4,8 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 const TIMEOUT_48H_MINUTES = 48 * 60;
 const ALLOWED_TYPES = new Set(['text', 'file', 'audio', 'image', 'video', 'session']);
 const MAX_FILE_BYTES = 20 * 1024 * 1024 * 1024;
+const CLIENT_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/;
+const inFlightCreates = new Map<string, Promise<Response>>();
 
 const TRUSTED_MEDIA_HOSTS = [
   'storage.googleapis.com',
@@ -59,7 +61,7 @@ async function resolveStoredFileSize(url: string): Promise<number | null> {
   return null;
 }
 
-async function moderateText(base44: any, user: any, text: string, conversationId: string) {
+async function moderateText(base44: any, user: any, text: string, conversationId: string, clientMessageKey = '') {
   const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
     prompt: `You are a strict content moderation system for a music collaboration platform. Analyze the user message delimited by XML tags below and determine if it violates community policy.
 
@@ -117,6 +119,7 @@ ${text}
     action_taken,
     explanation: result.explanation || '',
     review_status: 'reviewed',
+    ...(clientMessageKey ? { client_message_key: clientMessageKey } : {}),
   });
 
   await base44.asServiceRole.entities.User.update(user.id, {
@@ -137,24 +140,71 @@ ${text}
   };
 }
 
-Deno.serve(async (req) => {
-  try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+async function findExistingMessage(base44: any, userId: string, conversationId: string, clientMessageKey: string) {
+  if (!clientMessageKey) return null;
+  const matches = await base44.asServiceRole.entities.Message.filter({
+    sender_id: userId,
+    conversation_id: conversationId,
+    client_message_key: clientMessageKey,
+  });
+  if (!matches?.length) return null;
+  return [...matches].sort((a: any, b: any) => {
+    const byDate = new Date(a.created_date || 0).getTime() - new Date(b.created_date || 0).getTime();
+    return byDate || String(a.id).localeCompare(String(b.id));
+  })[0];
+}
 
-    const body = await req.json();
-    const conversationId = String(body?.conversation_id || '');
-    if (!conversationId) {
-      return Response.json({ error: 'conversation_id is required' }, { status: 400 });
+async function findModerationReplay(base44: any, user: any, conversationId: string, clientMessageKey: string) {
+  if (!clientMessageKey) return null;
+  const matches = await base44.asServiceRole.entities.Violation.filter({
+    user_id: user.id,
+    conversation_id: conversationId,
+    client_message_key: clientMessageKey,
+  });
+  const violation = matches?.[0];
+  if (!violation) return null;
+  return {
+    flagged: true,
+    category: violation.category,
+    severity: violation.severity,
+    action_taken: violation.action_taken,
+    timeout_until: user.timeout_until || null,
+    is_banned: user.is_banned || violation.action_taken === 'ban',
+    explanation: violation.explanation || '',
+    violation_count: user.violation_count || 0,
+  };
+}
+
+async function sendAuthenticated(base44: any, user: any, body: any) {
+  const conversationId = String(body?.conversation_id || '');
+  if (!conversationId) {
+    return Response.json({ error: 'conversation_id is required' }, { status: 400 });
+  }
+
+  const clientMessageKey = typeof body?.client_message_key === 'string'
+    ? body.client_message_key.trim()
+    : '';
+  if (clientMessageKey && !CLIENT_KEY_PATTERN.test(clientMessageKey)) {
+    return Response.json({ error: 'Invalid client_message_key' }, { status: 400 });
+  }
+
+  const conversation = await base44.asServiceRole.entities.Conversation.get(conversationId);
+  if (!conversation || !Array.isArray(conversation.participant_ids) || !conversation.participant_ids.includes(user.id)) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  if (clientMessageKey) {
+    const existing = await findExistingMessage(base44, user.id, conversationId, clientMessageKey);
+    if (existing) {
+      return Response.json({ success: true, message: existing, duplicate: true });
     }
-
-    const conversation = await base44.asServiceRole.entities.Conversation.get(conversationId);
-    if (!conversation || !Array.isArray(conversation.participant_ids) || !conversation.participant_ids.includes(user.id)) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const priorModeration = await findModerationReplay(base44, user, conversationId, clientMessageKey);
+    if (priorModeration) {
+      return Response.json({ success: false, moderation: priorModeration, duplicate: true });
     }
+  }
 
-    const otherParticipantIds = conversation.participant_ids.filter((id: string) => id !== user.id);
+  const otherParticipantIds = conversation.participant_ids.filter((id: string) => id !== user.id);
     if (user.is_banned) {
       // Appeals are intentionally limited to a direct 1:1 conversation with an
       // administrator. Merely including an admin in a group must not turn that
@@ -224,7 +274,7 @@ Deno.serve(async (req) => {
       }
 
       if (text.trim() && !user.is_banned) {
-        const moderation = await moderateText(base44, user, text, conversationId);
+        const moderation = await moderateText(base44, user, text, conversationId, clientMessageKey);
         if (moderation) {
           return Response.json({ success: false, moderation }, { status: 200 });
         }
@@ -239,6 +289,8 @@ Deno.serve(async (req) => {
       participant_ids: conversation.participant_ids,
       type,
       text,
+      ...(clientMessageKey ? { client_message_key: clientMessageKey } : {}),
+      delivery_status: 'sent',
     };
 
     if (typeof body?.file_url === 'string' && body.file_url) {
@@ -295,9 +347,20 @@ Deno.serve(async (req) => {
       messageData.thread_id = threadTarget.id;
     }
 
-    const message = await base44.asServiceRole.entities.Message.create(messageData);
+  const created = await base44.asServiceRole.entities.Message.create(messageData);
+  let message = created;
 
-    if (messageData.thread_id) {
+  if (clientMessageKey) {
+    const canonical = await findExistingMessage(base44, user.id, conversationId, clientMessageKey);
+    if (canonical) {
+      message = canonical;
+      if (canonical.id !== created.id) {
+        await base44.asServiceRole.entities.Message.delete(created.id).catch(() => {});
+      }
+    }
+  }
+
+  if (messageData.thread_id) {
       const replies = await base44.asServiceRole.entities.Message.filter({
         thread_id: messageData.thread_id,
         conversation_id: conversationId,
@@ -318,7 +381,31 @@ Deno.serve(async (req) => {
       } catch (_) {}
     }
 
-    return Response.json({ success: true, message });
+  return Response.json({ success: true, message, duplicate: message.id !== created.id });
+}
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const body = await req.json();
+    const conversationId = String(body?.conversation_id || '');
+    const clientMessageKey = typeof body?.client_message_key === 'string'
+      ? body.client_message_key.trim()
+      : '';
+    const lockKey = clientMessageKey ? `${user.id}:${conversationId}:${clientMessageKey}` : '';
+
+    if (!lockKey) return await sendAuthenticated(base44, user, body);
+
+    const existing = inFlightCreates.get(lockKey);
+    if (existing) return (await existing).clone();
+
+    const operation = sendAuthenticated(base44, user, body)
+      .finally(() => inFlightCreates.delete(lockKey));
+    inFlightCreates.set(lockKey, operation);
+    return (await operation).clone();
   } catch (error) {
     console.error('sendConversationMessage error:', error);
     return Response.json({ error: error?.message || 'Message send failed' }, { status: 500 });

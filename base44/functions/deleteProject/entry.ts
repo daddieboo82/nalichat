@@ -1,8 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,12 +27,26 @@ Deno.serve(async (req) => {
     }
 
     const { projectId, confirmation } = await req.json();
-    if (!projectId || confirmation !== 'DELETE') {
+    if (
+      typeof projectId !== 'string'
+      || !projectId.trim()
+      || projectId.length > 200
+      || confirmation !== 'DELETE'
+    ) {
       return Response.json({ error: 'projectId and DELETE confirmation are required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
-    const project = await entities.Project.get(String(projectId));
+    const lockId = await acquireProjectMembershipLock(entities, projectId);
+    if (!lockId) {
+      return Response.json(
+        { error: 'Project membership is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
+    const project = await entities.Project.get(projectId);
     if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
     if (project.owner_id !== user.id && user.role !== 'admin') {
       return Response.json({ error: 'Only the project owner can delete this project' }, { status: 403 });
@@ -120,6 +139,9 @@ Deno.serve(async (req) => {
       project_id: project.id,
       deleted,
     });
+    } finally {
+      await releaseProjectMembershipLock(entities, lockId);
+    }
   } catch (error) {
     console.error('deleteProject error:', error);
     return Response.json({ error: error?.message || 'Project deletion failed' }, { status: 500 });

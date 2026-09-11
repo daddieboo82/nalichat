@@ -56,15 +56,13 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
         });
       }
 
-      // Send message
-      await base44.entities.Message.create({
+      const send = await base44.functions.invoke("sendConversationMessage", {
         conversation_id: conversation.id,
-        sender_id: currentUser.id,
-        sender_name: currentUser.display_name || currentUser.full_name,
-        sender_avatar: currentUser.avatar_url,
         text: message,
         type: "text",
       });
+      if (send?.data?.moderation) throw new Error("moderated");
+      if (send?.data?.error) throw new Error(send.data.error);
 
       setMessage("");
       setSelectedUser(null);

@@ -52,38 +52,33 @@ async function processPagedRows(
   }
 }
 
-async function syncConversationAudience(entities: any, conversationId: string, participantIds: string[]) {
-  const [messages, typingRows] = await Promise.all([
-    entities.Message.filter({ conversation_id: conversationId }),
-    entities.TypingStatus.filter({ conversation_id: conversationId }),
-  ]);
-
-  for (let i = 0; i < messages.length; i += 100) {
-    await entities.Message.bulkUpdate(
-      messages.slice(i, i + 100).map((message: any) => ({
-        id: message.id,
-        participant_ids: participantIds,
-        read_by: Array.isArray(message.read_by)
-          ? message.read_by.filter((readerId: string) => participantIds.includes(readerId))
-          : [],
-        reactions: pruneConversationReactions(message.reactions, participantIds),
-      })),
-    );
-  }
-
-  const activeTypingRows = typingRows.filter((row: any) => participantIds.includes(row.user_id));
-  const departedTypingRows = typingRows.filter((row: any) => !participantIds.includes(row.user_id));
-  for (let i = 0; i < activeTypingRows.length; i += 100) {
-    await entities.TypingStatus.bulkUpdate(
-      activeTypingRows.slice(i, i + 100).map((row: any) => ({
-        id: row.id,
-        participant_ids: participantIds,
-      })),
-    );
-  }
-  for (const row of departedTypingRows) {
-    await entities.TypingStatus.delete(row.id);
-  }
+async function syncConversationAudience(
+  entities: any,
+  conversationId: string,
+  participantIds: string[],
+  departedUserId: string,
+) {
+  await processPagedRows(
+    entities.Message,
+    { conversation_id: conversationId },
+    (message) => entities.Message.update(message.id, {
+      participant_ids: participantIds,
+      read_by: Array.isArray(message.read_by)
+        ? message.read_by.filter((readerId: string) => participantIds.includes(readerId))
+        : [],
+      reactions: pruneConversationReactions(message.reactions, participantIds),
+    }),
+  );
+  await processMatchingBatches(
+    entities.TypingStatus,
+    { conversation_id: conversationId, user_id: departedUserId },
+    (row) => entities.TypingStatus.delete(row.id),
+  );
+  await processPagedRows(
+    entities.TypingStatus,
+    { conversation_id: conversationId },
+    (row) => entities.TypingStatus.update(row.id, { participant_ids: participantIds }),
+  );
 }
 
 Deno.serve(async (req) => {
@@ -353,24 +348,31 @@ Deno.serve(async (req) => {
 
     // Remove the account from conversation membership without deleting the
     // conversation for other participants.
-    const conversations = await entities.Conversation.filter({ participant_ids: user.id });
-    for (const conversation of conversations) {
-      const participantIds = Array.isArray(conversation.participant_ids)
-        ? conversation.participant_ids.filter((id: string) => id !== user.id)
-        : [];
-      if (participantIds.length === 0) {
-        const [messages, typingRows] = await Promise.all([
-          entities.Message.filter({ conversation_id: conversation.id }),
-          entities.TypingStatus.filter({ conversation_id: conversation.id }),
-        ]);
-        for (const message of messages) await entities.Message.delete(message.id);
-        for (const typing of typingRows) await entities.TypingStatus.delete(typing.id);
-        await entities.Conversation.delete(conversation.id);
-      } else {
-        await entities.Conversation.update(conversation.id, { participant_ids: participantIds });
-        await syncConversationAudience(entities, conversation.id, participantIds);
-      }
-    }
+    await processMatchingBatches(
+      entities.Conversation,
+      { participant_ids: user.id },
+      async (conversation) => {
+        const participantIds = Array.isArray(conversation.participant_ids)
+          ? conversation.participant_ids.filter((id: string) => id !== user.id)
+          : [];
+        if (participantIds.length === 0) {
+          await processMatchingBatches(
+            entities.Message,
+            { conversation_id: conversation.id },
+            (message) => entities.Message.delete(message.id),
+          );
+          await processMatchingBatches(
+            entities.TypingStatus,
+            { conversation_id: conversation.id },
+            (typing) => entities.TypingStatus.delete(typing.id),
+          );
+          await entities.Conversation.delete(conversation.id);
+        } else {
+          await entities.Conversation.update(conversation.id, { participant_ids: participantIds });
+          await syncConversationAudience(entities, conversation.id, participantIds, user.id);
+        }
+      },
+    );
 
     // Collaborative projects stay manageable by transferring ownership to a
     // real remaining collaborator (prefer an existing editor). Solo projects

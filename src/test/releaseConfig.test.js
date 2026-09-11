@@ -6,6 +6,10 @@ async function readJson(path) {
   return JSON.parse(await readFile(new URL(`../../${path}`, import.meta.url), 'utf8'));
 }
 
+async function readText(path) {
+  return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
+}
+
 describe('release configuration', () => {
   it('targets the current Android API required by the release pipeline', async () => {
     const manifest = await readJson('src/twa-manifest.json');
@@ -97,6 +101,29 @@ describe('release configuration', () => {
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
     expect(submission.properties.vote_count.rls?.write?.user_condition?.role).toBe('admin');
     expect(submission.properties.status.rls?.write?.user_condition?.role).toBe('admin');
+  });
+
+
+  it('resolves AI media inputs from authorized application records', async () => {
+    const cover = await readText('base44/functions/generate-cover-art/entry.ts');
+    expect(cover).toContain("const { post_id }");
+    expect(cover).toContain('post.creator_id !== user.id');
+    expect(cover).not.toContain('const { file_url, title, genre, tags }');
+
+    const coverUi = await readText('src/pages/CoverArt.jsx');
+    expect(coverUi).toContain('post_id: post.id');
+    expect(coverUi).not.toContain('file_url: post.file_url');
+
+    const viral = await readText('base44/functions/generate-viral-moment/entry.ts');
+    expect(viral).toContain("const { message_id, type }");
+    expect(viral).toContain('participants.includes(user.id)');
+    expect(viral).toContain("const senderName = message.sender_name");
+    expect(viral).not.toContain('messageText, senderName, type, audioUrl');
+
+    const viralUi = await readText('src/components/messages/ViralMomentDialog.jsx');
+    expect(viralUi).toContain('message_id: message.id');
+    expect(viralUi).not.toContain('audioUrl');
+    expect(viralUi).not.toContain('senderName');
   });
 
   it('keeps the PWA manifest scoped to the serving origin', async () => {

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
 
 const MAX_TRACK_VERSION_BYTES = 100 * 1024 * 1024;
 
@@ -115,6 +116,12 @@ Deno.serve(async (req) => {
     const trackId = body.track_id.trim();
     const projectId = body.project_id.trim();
     const entities = base44.asServiceRole.entities;
+    const lockId = await acquireTrackLifecycleLock(entities, trackId);
+    if (!lockId) {
+      return Response.json({ error: 'Track is being updated. Please retry.' }, { status: 409 });
+    }
+
+    try {
     const rate = await consumeHourlyLimit(entities, user.id, 'track_version_create', 120);
     if (!rate.allowed) {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
@@ -199,6 +206,9 @@ Deno.serve(async (req) => {
     }
 
     return Response.json({ success: true, version });
+    } finally {
+      await releaseTrackLifecycleLock(entities, lockId);
+    }
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not save track version' }, { status: 500 });
   }

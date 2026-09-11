@@ -416,9 +416,12 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
 
         {!isOwn && onStartDM && (
           <button
-            onClick={() => {
+            onClick={async () => {
               const otherUser = users?.find(u => u.id === message.sender_id);
-              if (otherUser) onStartDM(otherUser);
+              if (!otherUser) return;
+              try {
+                await onStartDM(otherUser);
+              } catch {}
             }}
             className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
             title="Message privately"

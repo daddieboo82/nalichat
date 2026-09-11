@@ -47,7 +47,7 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{u.display_name || u.full_name}</p>
-                  <p className="text-[10px] text-muted-foreground capitalize">{u.role}</p>
+                  <p className="text-[10px] text-muted-foreground capitalize">{u.artist_role || "artist"}</p>
                 </div>
                 {selected.includes(u.id) && <Check className="w-4 h-4 text-primary shrink-0" />}
               </button>

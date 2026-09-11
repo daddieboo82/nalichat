@@ -3,9 +3,24 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const body = await req.json();
+    const conversationId = String(body?.conversationId || '').trim();
+    const action = String(body?.action || 'heartbeat');
+    if (
+      !conversationId
+      || conversationId.length > 256
+      || !['heartbeat', 'clear'].includes(action)
+    ) {
+      return Response.json({ error: 'Valid conversationId and action are required' }, { status: 400 });
+    }
 
     const typingRate = await consumeHourlyLimit(
       base44.asServiceRole.entities,
@@ -15,13 +30,6 @@ Deno.serve(async (req) => {
     );
     if (!typingRate.allowed) {
       return Response.json({ error: 'Typing status rate limit exceeded. Please try again later.' }, { status: 429 });
-    }
-
-    const body = await req.json();
-    const conversationId = String(body?.conversationId || '');
-    const action = String(body?.action || 'heartbeat');
-    if (!conversationId || !['heartbeat', 'clear'].includes(action)) {
-      return Response.json({ error: 'Valid conversationId and action are required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;

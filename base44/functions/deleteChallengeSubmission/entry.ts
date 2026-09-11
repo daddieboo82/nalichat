@@ -34,27 +34,49 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const [votes, comments] = await Promise.all([
-      entities.ChallengeVote.filter({ submission_id: submission.id }),
-      entities.TrackComment.filter({
-        track_id: submission.id,
-        parent_type: 'challenge_submission',
-      }),
-    ]);
+    let deletedVotes = 0;
+    while (true) {
+      const votes = await entities.ChallengeVote.filter(
+        { submission_id: submission.id },
+        '-created_date',
+        200,
+      );
+      if (votes.length === 0) break;
 
-    for (const vote of votes) {
-      await entities.ChallengeVote.delete(vote.id);
+      for (const vote of votes) {
+        await entities.ChallengeVote.delete(vote.id);
+        deletedVotes += 1;
+      }
+
+      if (votes.length < 200) break;
     }
-    for (const comment of comments) {
-      await entities.TrackComment.delete(comment.id);
+
+    let deletedComments = 0;
+    while (true) {
+      const comments = await entities.TrackComment.filter(
+        {
+          track_id: submission.id,
+          parent_type: 'challenge_submission',
+        },
+        '-created_date',
+        200,
+      );
+      if (comments.length === 0) break;
+
+      for (const comment of comments) {
+        await entities.TrackComment.delete(comment.id);
+        deletedComments += 1;
+      }
+
+      if (comments.length < 200) break;
     }
 
     await entities.ChallengeSubmission.delete(submission.id);
 
     return Response.json({
       success: true,
-      deleted_votes: votes.length,
-      deleted_comments: comments.length,
+      deleted_votes: deletedVotes,
+      deleted_comments: deletedComments,
     });
   } catch (error) {
     console.error('deleteChallengeSubmission error:', error);

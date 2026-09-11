@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 export default async function(req) {
   try {
@@ -8,6 +9,16 @@ export default async function(req) {
     if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
     if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
+    const writeRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'artpost_like',
+      600,
+    );
+    if (!writeRate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     const body = await req.json();

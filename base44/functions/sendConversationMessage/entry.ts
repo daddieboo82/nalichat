@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const TIMEOUT_48H_MINUTES = 48 * 60;
 const ALLOWED_TYPES = new Set(['text', 'file', 'audio', 'image', 'session']);
@@ -124,6 +125,18 @@ Deno.serve(async (req) => {
 
     const type = ALLOWED_TYPES.has(body?.type) ? body.type : 'text';
     const text = typeof body?.text === 'string' ? body.text.slice(0, 20000) : '';
+
+    if (type !== 'session') {
+      const rate = await consumeHourlyLimit(
+        base44.asServiceRole.entities,
+        user.id,
+        'conversation_message',
+        300,
+      );
+      if (!rate.allowed) {
+        return Response.json({ error: 'Message rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+    }
 
     // Call/WebRTC signaling is transport data rather than user-generated chat
     // content, so it bypasses text moderation but still requires membership and

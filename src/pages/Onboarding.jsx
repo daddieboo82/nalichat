@@ -15,8 +15,7 @@ export default function Onboarding() {
     display_name: "",
     birthdate: "",
     bio: "",
-    location: "",
-    onboarding_completed: true
+    location: ""
   });
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);

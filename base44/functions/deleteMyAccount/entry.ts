@@ -523,53 +523,61 @@ Deno.serve(async (req) => {
 
     // Public challenge records may have other users' submissions/votes, so keep
     // them but anonymize the departed host identity.
-    const hostedChallenges = await entities.Challenge.filter({ host_artist_id: user.id });
-    for (const challenge of hostedChallenges) {
-      await entities.Challenge.update(challenge.id, {
+    await processMatchingBatches(
+      entities.Challenge,
+      { host_artist_id: user.id },
+      (challenge) => entities.Challenge.update(challenge.id, {
         host_artist_id: tombstoneId,
         host_artist_name: 'Deleted User',
-      });
-    }
+      }),
+    );
 
     // Preserve public submissions for challenge integrity while removing PII.
-    const submissions = await entities.ChallengeSubmission.filter({ producer_id: user.id });
-    for (const submission of submissions) {
-      await entities.ChallengeSubmission.update(submission.id, {
+    await processMatchingBatches(
+      entities.ChallengeSubmission,
+      { producer_id: user.id },
+      (submission) => entities.ChallengeSubmission.update(submission.id, {
         producer_id: tombstoneId,
         producer_name: 'Deleted User',
         producer_avatar: null,
-      });
-    }
+      }),
+    );
 
     // Squads are shared records: end them instead of deleting a partner's data.
-    const squadsAsA = await entities.Squad.filter({ member_a_id: user.id });
-    for (const squad of squadsAsA) {
-      await entities.Squad.update(squad.id, {
+    await processMatchingBatches(
+      entities.Squad,
+      { member_a_id: user.id },
+      async (squad) => {
+        await entities.Squad.update(squad.id, {
         member_a_id: tombstoneId,
         member_a_name: 'Deleted User',
         status: 'ended',
-      });
-      if (squad.member_b_id) {
-        await entities.User.updateMany(
-          { id: squad.member_b_id, squad_membership_id: squad.id },
-          { $set: { squad_membership_id: null } },
-        ).catch(() => {});
-      }
-    }
-    const squadsAsB = await entities.Squad.filter({ member_b_id: user.id });
-    for (const squad of squadsAsB) {
-      await entities.Squad.update(squad.id, {
+        });
+        if (squad.member_b_id) {
+          await entities.User.updateMany(
+            { id: squad.member_b_id, squad_membership_id: squad.id },
+            { $set: { squad_membership_id: null } },
+          ).catch(() => {});
+        }
+      },
+    );
+    await processMatchingBatches(
+      entities.Squad,
+      { member_b_id: user.id },
+      async (squad) => {
+        await entities.Squad.update(squad.id, {
         member_b_id: tombstoneId,
         member_b_name: 'Deleted User',
         status: 'ended',
-      });
-      if (squad.member_a_id) {
-        await entities.User.updateMany(
-          { id: squad.member_a_id, squad_membership_id: squad.id },
-          { $set: { squad_membership_id: null } },
-        ).catch(() => {});
-      }
-    }
+        });
+        if (squad.member_a_id) {
+          await entities.User.updateMany(
+            { id: squad.member_a_id, squad_membership_id: squad.id },
+            { $set: { squad_membership_id: null } },
+          ).catch(() => {});
+        }
+      },
+    );
 
     // Subscription and purchase records are intentionally retained as billing
     // history; remove direct account identity where possible while retaining
@@ -577,13 +585,14 @@ Deno.serve(async (req) => {
     for (const subscription of subscriptions) {
       await entities.Subscription.update(subscription.id, { user_id: tombstoneId });
     }
-    const purchases = await entities.Base44Purchase.filter({ user_id: user.id });
-    for (const purchase of purchases) {
-      await entities.Base44Purchase.update(purchase.id, {
+    await processMatchingBatches(
+      entities.Base44Purchase,
+      { user_id: user.id },
+      (purchase) => entities.Base44Purchase.update(purchase.id, {
         user_id: tombstoneId,
         user_email: null,
-      });
-    }
+      }),
+    );
 
     await entities.User.delete(user.id);
     return Response.json({ success: true });

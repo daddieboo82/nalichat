@@ -28,7 +28,14 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, awarded: false, duplicate: true });
     }
 
-    await entities.User.updateMany({ id: user.id }, { $inc: { xp: 50 } });
+    try {
+      await entities.User.updateMany({ id: user.id }, { $inc: { xp: 50 } });
+    } catch (xpError) {
+      // Compensate the deterministic dedupe record so a transient user-update
+      // failure does not permanently consume an unawarded reward.
+      await entities.UserActivityReward.delete(rewardId).catch(() => {});
+      throw xpError;
+    }
     return Response.json({ success: true, awarded: true, xp: 50 });
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not award post XP' }, { status: 500 });

@@ -63,8 +63,20 @@ export default function Profile() {
   }, [user, isMe]);
 
   const { data: myPosts = [] } = useQuery({
-    queryKey: ["my-posts", user?.id],
-    queryFn: () => base44.entities.ArtPost.filter({ creator_id: user.id }, "-created_date"),
+    queryKey: ["my-posts", user?.id, currentUser?.id],
+    queryFn: async () => {
+      const [rows, likedRes] = await Promise.all([
+        base44.entities.ArtPost.filter({ creator_id: user.id }, "-created_date"),
+        currentUser
+          ? base44.functions.invoke("listMyLikedPostIds", {})
+          : Promise.resolve({ data: { post_ids: [] } }),
+      ]);
+      const likedIds = new Set(likedRes?.data?.post_ids || []);
+      return rows.map((post) => ({
+        ...post,
+        liked_by: currentUser && likedIds.has(post.id) ? [currentUser.id] : [],
+      }));
+    },
     enabled: !!user?.id,
   });
 

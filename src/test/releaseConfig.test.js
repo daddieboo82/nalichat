@@ -276,6 +276,23 @@ describe('release configuration', () => {
     expect(manageConversation).toContain('status: 429');
   });
 
+  it('restricts banned appeals to direct admin conversations', async () => {
+    const sendMessage = await readText('base44/functions/sendConversationMessage/entry.ts');
+    const manageConversation = await readText('base44/functions/manageConversation/entry.ts');
+
+    expect(sendMessage).toContain("conversation.type !== 'dm'");
+    expect(sendMessage).toContain('conversation.participant_ids.length !== 2');
+    expect(sendMessage).toContain("appealAdmin?.role !== 'admin'");
+    expect(manageConversation).toContain("user.is_banned && ['create_group', 'create_public', 'join_public', 'rename'].includes(action)");
+    expect(manageConversation).toContain("user.is_banned && otherUser.role !== 'admin'");
+  });
+
+  it('prevents timed-out users from creating or joining conversations', async () => {
+    const manageConversation = await readText('base44/functions/manageConversation/entry.ts');
+    expect(manageConversation).toContain("timeoutActive && ['create_dm', 'create_group', 'create_public', 'join_public', 'rename'].includes(action)");
+    expect(manageConversation).toContain("error: 'timed_out'");
+  });
+
 
   it('keeps workflow notifications authoritative and idempotent', async () => {
     const messageNotify = await readText('base44/functions/notifyOnMessage/entry.ts');

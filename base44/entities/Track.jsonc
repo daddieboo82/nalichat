@@ -93,7 +93,15 @@
     },
     "suggested_bpm": {
       "type": "number",
-      "description": "AI-suggested BPM based on the uploaded track"
+      "description": "AI-suggested BPM based on the uploaded track",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "description": {
       "type": "string",

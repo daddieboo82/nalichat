@@ -5,7 +5,7 @@ import { resumableDownload } from "@/lib/resumableUpload";
 import CustomMediaPlayer from "../audio/CustomMediaPlayer";
 import { base44 } from "@/api/base44Client";
 
-export default function MediaViewer({ media, isOpen, onClose }) {
+export default function MediaViewer({ media, isOpen, onClose, canDownload = false }) {
   const [zoom, setZoom] = useState(100);
   const [downloading, setDownloading] = useState(false);
 
@@ -115,12 +115,13 @@ export default function MediaViewer({ media, isOpen, onClose }) {
               : ""}
           </p>
           <button
-            onClick={handleDownload}
-            disabled={downloading}
-            className="flex items-center gap-2 bg-white text-black px-5 py-2 rounded-full text-sm font-bold hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:opacity-50 disabled:hover:scale-100"
+            onClick={canDownload ? handleDownload : undefined}
+            disabled={downloading || !canDownload}
+            className="flex items-center gap-2 bg-white text-black px-5 py-2 rounded-full text-sm font-bold hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+            title={canDownload ? "Download" : "Premium is required to download this attachment"}
           >
             <Download className="w-4 h-4" />
-            {downloading ? "Downloading..." : "Download"}
+            {downloading ? "Downloading..." : canDownload ? "Download" : "Download Locked"}
           </button>
         </div>
       </div>

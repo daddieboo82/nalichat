@@ -6,7 +6,9 @@
       "type": "string"
     },
     "file_url": {
-      "type": "string"      "rls": {
+      "type": "string",
+      "description": "Shared file URL. Server-managed after trusted upload validation.",
+      "rls": {
         "read": true,
         "write": {
           "user_condition": {

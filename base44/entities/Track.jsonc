@@ -81,7 +81,15 @@
     },
     "suggested_genre": {
       "type": "string",
-      "description": "AI-suggested genre based on the uploaded track"
+      "description": "AI-suggested genre based on the uploaded track",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "suggested_bpm": {
       "type": "number",

@@ -1227,8 +1227,8 @@ describe('release configuration', () => {
     expect(challenge.rls.delete?.user_condition?.role).toBe('admin');
     expect(detail).toContain('functions.invoke("updateChallengeStatus"');
     expect(detail).not.toContain('entities.Challenge.update');
-    expect(deleteChallenge).toContain('ChallengeSubmission.filter({ challenge_id: challenge.id })');
-    expect(deleteChallenge).toContain('ChallengeVote.filter({ challenge_id: challenge.id })');
+    expect(deleteChallenge).toMatch(/ChallengeSubmission\.filter\([\s\S]*challenge_id: challenge\.id[\s\S]*DELETE_BATCH_SIZE/);
+    expect(deleteChallenge).toMatch(/ChallengeVote\.filter\([\s\S]*challenge_id: challenge\.id[\s\S]*DELETE_BATCH_SIZE/);
     expect(deleteChallenge).toContain("parent_type: 'challenge_submission'");
     expect(deleteChallenge).toContain('await entities.Challenge.delete(challenge.id)');
   });

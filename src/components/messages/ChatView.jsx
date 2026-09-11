@@ -122,15 +122,24 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     if (!currentUser || !messages.length) return;
     const unread = messages.filter(m => m.sender_id !== currentUser.id && !m.read_by?.includes(currentUser.id) && !markedRef.current.has(m.id));
     if (!unread.length) return;
-    unread.forEach(m => markedRef.current.add(m.id));
-    // Read receipts require updating another user's message, which RLS blocks.
-    // Fire-and-forget — the 403 is expected and harmless; the UI still shows the message.
+    // Read receipts require a server-side mutation. Track successful/in-flight
+    // attempts locally, but release the marker on failure so polling can retry.
     unread.forEach(m => {
-      base44.functions.invoke('markMessageRead', { message_id: m.id }).catch(() => {});
+      markedRef.current.add(m.id);
+      base44.functions.invoke('markMessageRead', { message_id: m.id })
+        .then((res) => {
+          if (res?.data?.error) {
+            markedRef.current.delete(m.id);
+          }
+        })
+        .catch(() => {
+          markedRef.current.delete(m.id);
+        });
     });
   }, [messages, currentUser]);
 
   useEffect(() => {
+    markedRef.current.clear();
     setReplyTo(null);
     setEditingMessage(null);
     setShowGroupInfo(false);

@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import MultiTrackEditor from "../studio/MultiTrackEditor";
 import { Mic, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function ChatSessionViewer({ message, currentUser }) {
   const [tracks, setTracks] = useState([]);
@@ -51,16 +52,25 @@ export default function ChatSessionViewer({ message, currentUser }) {
             type: "vocal",
           });
           if (created?.data?.error) throw new Error(created.data.error);
+          const track = created?.data?.track;
+          if (!track?.id) throw new Error("Track was not created");
+          setTracks((current) => [
+            ...current.filter((existing) => existing.id !== track.id),
+            track,
+          ]);
         } catch (e) {
           console.error(e);
+          toast.error("Couldn't add the recorded track. Please try again.");
+        } finally {
+          setUploading(false);
         }
-        setUploading(false);
       };
       mediaRecorderRef.current = recorder;
       recorder.start();
       setIsRecording(true);
     } catch (e) {
       console.error(e);
+      toast.error("Couldn't start recording. Check microphone access and try again.");
     }
   };
 
@@ -91,14 +101,30 @@ export default function ChatSessionViewer({ message, currentUser }) {
           tracks={tracks}
           selectedProject={{ id: message.id, title: message.text || "Live Session" }}
           onTrackUpdate={async (id, data) => {
-            const res = await base44.functions.invoke("mutateTrack", { action: "update", trackId: id, data });
-            if (res?.data?.error) throw new Error(res.data.error);
-            return res?.data?.track;
+            try {
+              const res = await base44.functions.invoke("mutateTrack", { action: "update", trackId: id, data });
+              if (res?.data?.error) throw new Error(res.data.error);
+              const updated = res?.data?.track;
+              if (!updated?.id) throw new Error("Track was not updated");
+              setTracks((current) => current.map((track) => (
+                track.id === id ? { ...track, ...updated } : track
+              )));
+              return updated;
+            } catch (error) {
+              toast.error("Couldn't update the track. Please try again.");
+              return null;
+            }
           }}
           onTrackDelete={async (id) => {
-            const res = await base44.functions.invoke("mutateTrack", { action: "delete", trackId: id });
-            if (res?.data?.error) throw new Error(res.data.error);
-            return res?.data;
+            try {
+              const res = await base44.functions.invoke("mutateTrack", { action: "delete", trackId: id });
+              if (res?.data?.error) throw new Error(res.data.error);
+              setTracks((current) => current.filter((track) => track.id !== id));
+              return res?.data;
+            } catch (error) {
+              toast.error("Couldn't delete the track. Please try again.");
+              return null;
+            }
           }}
           canEdit={true}
           currentUser={currentUser}

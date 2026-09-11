@@ -1,5 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
+function isInviteExpired(squad: any) {
+  const raw = squad?.invite_expires_at || squad?.created_date;
+  if (!raw) return false;
+  const base = Date.parse(raw);
+  if (Number.isNaN(base)) return false;
+  const expiry = squad?.invite_expires_at ? base : base + 7 * 24 * 60 * 60 * 1000;
+  return expiry <= Date.now();
+}
+
 function inviteCode(): string {
   // 12 random bytes = 96 bits of entropy. Hex keeps URLs simple and avoids
   // ambiguous characters while remaining compatible with case normalization.
@@ -28,7 +37,14 @@ Deno.serve(async (req) => {
       entities.Squad.filter({ member_a_id: user.id }),
       entities.Squad.filter({ member_b_id: user.id }),
     ]);
-    const existing = [...asA, ...asB].find((s) => s.status !== 'ended');
+    for (const stale of [...asA, ...asB].filter((s) => s.status === 'pending' && isInviteExpired(s))) {
+      await entities.Squad.update(stale.id, { status: 'ended' });
+      await entities.User.updateMany(
+        { id: user.id, squad_membership_id: stale.id },
+        { $set: { squad_membership_id: null } },
+      ).catch(() => {});
+    }
+    const existing = [...asA, ...asB].find((s) => s.status !== 'ended' && !isInviteExpired(s));
     if (existing) {
       return Response.json({ error: 'You already have an active or pending squad.' }, { status: 409 });
     }
@@ -46,6 +62,7 @@ Deno.serve(async (req) => {
       member_a_id: user.id,
       member_a_name: user.display_name || user.full_name || 'Artist',
       invite_code: code,
+      invite_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       status: 'pending',
     });
 

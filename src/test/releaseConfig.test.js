@@ -707,6 +707,14 @@ describe('release configuration', () => {
     expect(invite).toContain(".replace(/[\r\n]/g, ' ')");
   });
 
+  it('rate-limits and moderation-gates email invites', async () => {
+    const inviteEmail = await readText('base44/functions/send-invite-email/entry.ts');
+    expect(inviteEmail).toContain('if (user.is_banned)');
+    expect(inviteEmail).toContain("error: 'timed_out'");
+    expect(inviteEmail).toContain("'email_invite'");
+    expect(inviteEmail).toMatch(/'email_invite',\s*10/);
+  });
+
   it('prevents contact spoofing and email/phone account enumeration', async () => {
     const contact = await readJson('base44/entities/Contact.jsonc');
     const mutateContact = await readText('base44/functions/mutateContact/entry.ts');
@@ -792,6 +800,7 @@ describe('release configuration', () => {
       'base44/functions/reportContent/entry.ts',
       'base44/functions/createChallenge/entry.ts',
       'base44/functions/submitChallengeRemix/entry.ts',
+      'base44/functions/createArtPost/entry.ts',
     ]) {
       const source = await readText(path);
       expect(source).not.toMatch(/(?:user|reporter)\.email\s*\|\|/);

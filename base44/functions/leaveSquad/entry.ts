@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -13,6 +14,10 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const squadRate = await consumeHourlyLimit(entities, user.id, 'squad_leave', 60);
+    if (!squadRate.allowed) {
+      return Response.json({ error: 'Squad action rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
     await entities.Squad.update(squad.id, { status: 'ended' });
     for (const memberId of [squad.member_a_id, squad.member_b_id].filter(Boolean)) {
       await entities.User.updateMany(

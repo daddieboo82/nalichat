@@ -52,8 +52,10 @@ function dependencies({
         get: vi.fn(async () => memberConversation),
       },
       messageEntity: { filter },
-      subscriptionEntity: {
-        filter: vi.fn(async () => [{ plan, status }]),
+      entities: {
+        Subscription: {
+          filter: vi.fn(async () => [{ plan, status }]),
+        },
       },
     },
     filter,

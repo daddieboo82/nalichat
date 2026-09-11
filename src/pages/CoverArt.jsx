@@ -151,17 +151,16 @@ export default function CoverArt() {
       setIsImporting(true);
       setShowFilesDialog(false);
       toast.info('Importing track from Files...');
-      await base44.entities.ArtPost.create({
+      const published = await base44.functions.invoke("createArtPost", {
         title: file.name.replace(/\.[^/.]+$/, ""),
         description: "Imported from Files",
         medium: "original",
         is_explicit: false,
-        creator_id: currentUser.id,
-        creator_name: currentUser.display_name || currentUser.full_name || "Unknown Artist",
         file_url: file.file_url,
         genre: "Unknown",
-        tags: ["imported"]
+        tags: ["imported"],
       });
+      if (published?.data?.error) throw new Error(published.data.error);
       queryClient.invalidateQueries({ queryKey: ["myArtPosts"] });
       toast.success("Track imported successfully!");
     } catch (error) {
@@ -185,17 +184,16 @@ export default function CoverArt() {
       setIsImporting(true);
       toast.info('Uploading track...');
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.entities.ArtPost.create({
+      const published = await base44.functions.invoke("createArtPost", {
         title: file.name.replace(/\.[^/.]+$/, ""),
         description: "Imported track",
         medium: "original",
         is_explicit: false,
-        creator_id: currentUser.id,
-        creator_name: currentUser.display_name || currentUser.full_name || "Unknown Artist",
-        file_url: file_url,
+        file_url,
         genre: "Unknown",
-        tags: ["imported"]
+        tags: ["imported"],
       });
+      if (published?.data?.error) throw new Error(published.data.error);
       queryClient.invalidateQueries({ queryKey: ["myArtPosts"] });
       toast.success("Track imported successfully!");
     } catch (error) {

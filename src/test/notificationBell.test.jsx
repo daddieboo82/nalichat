@@ -19,6 +19,7 @@ const base44 = vi.hoisted(() => ({
 const push = vi.hoisted(() => ({
   registerServiceWorker: vi.fn(),
   requestPushPermission: vi.fn(),
+  subscribeToRemotePush: vi.fn(),
   showPushNotification: vi.fn(),
   getPermissionStatus: vi.fn(),
 }));
@@ -36,6 +37,7 @@ describe('NotificationBell push permission', () => {
     base44.entities.Notification.subscribe.mockReturnValue(() => {});
     push.registerServiceWorker.mockResolvedValue({});
     push.requestPushPermission.mockResolvedValue(true);
+    push.subscribeToRemotePush.mockResolvedValue({ subscribed: true });
     push.getPermissionStatus.mockReturnValue('default');
   });
 
@@ -63,6 +65,7 @@ describe('NotificationBell push permission', () => {
 
     await waitFor(() => {
       expect(push.requestPushPermission).toHaveBeenCalledTimes(1);
+      expect(push.subscribeToRemotePush).toHaveBeenCalledTimes(1);
     });
   });
 });

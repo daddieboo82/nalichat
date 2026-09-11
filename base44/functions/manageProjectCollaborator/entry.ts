@@ -18,6 +18,13 @@ async function syncChildren(entities: any, project: any, userId: string, role: s
         access_user_ids: Array.from(accessUserIds),
         edit_user_ids: Array.from(editUserIds),
       };
+      if (entityName === 'SharedFile') {
+        // Any collaborator access change invalidates outstanding public links.
+        // This prevents a removed or downgraded editor from retaining access via
+        // a token they created while they still had edit permission.
+        patch.share_token_hash = null;
+        patch.share_token_expires_at = null;
+      }
       await entity.update(row.id, patch);
     }
   }

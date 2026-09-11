@@ -1,12 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
 function inviteCode(): string {
-  const bytes = new Uint8Array(9);
+  // 12 random bytes = 96 bits of entropy. Hex keeps URLs simple and avoids
+  // ambiguous characters while remaining compatible with case normalization.
+  const bytes = new Uint8Array(12);
   crypto.getRandomValues(bytes);
   return Array.from(bytes)
-    .map((b) => b.toString(36).padStart(2, '0'))
+    .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
-    .slice(0, 12)
     .toUpperCase();
 }
 

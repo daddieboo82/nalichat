@@ -20,6 +20,8 @@ import { MessageSquare, Users, Plus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { createClientMessageKey, createTempId, applySendSuccess, applySendFailure, applyRealtimeCreate } from "@/lib/messageCache";
+import { useSubscription } from "@/hooks/useSubscription";
+import { CHAT_THEME_ENTITLEMENT, getChatTheme, resolveEffectiveChatThemeId } from "@/lib/chatThemes";
 
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);

@@ -103,8 +103,11 @@ Deno.serve(async (req) => {
         category: 'creative',
       });
       firstGeneration = true;
-    } catch {
-      // Deterministic ID makes the first-generation reward idempotent.
+    } catch (createError) {
+      const existing = await entities.Achievement.get(achievementId).catch(() => null);
+      if (!(existing?.user_id === user.id && existing?.key === 'viral_seed')) {
+        throw createError;
+      }
     }
 
     try {

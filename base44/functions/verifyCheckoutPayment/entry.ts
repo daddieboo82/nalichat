@@ -1,11 +1,16 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { stripeRequest } from '../../shared/stripe.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 // Client-side payment verification fallback — called from the ThankYou page.
 // If the Stripe webhook already marked the purchase as paid, this is a no-op.
 // If the webhook missed it, this fulfills the payment so the buyer gets access.
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const { checkoutId, purchaseToken } = await req.json();
 
     const normalizedCheckoutId = String(checkoutId || '').trim();
@@ -41,6 +46,19 @@ Deno.serve(async (req) => {
       .join('');
     if (!purchase.purchase_verifier_hash || purchase.purchase_verifier_hash !== verifierHash) {
       return Response.json({ error: 'Invalid purchase verifier' }, { status: 403 });
+    }
+
+    const verifyRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      `purchase:${purchase.id}`,
+      'checkout_verification',
+      60,
+    );
+    if (!verifyRate.allowed) {
+      return Response.json(
+        { error: 'Checkout verification rate limit exceeded. Please try again later.' },
+        { status: 429 },
+      );
     }
 
     const session = await stripeRequest(`/checkout/sessions/${encodeURIComponent(normalizedCheckoutId)}`, {}, 'GET');

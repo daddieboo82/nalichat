@@ -870,6 +870,35 @@ describe('release configuration', () => {
     }
   });
 
+  it('enforces app-wide bans on public and collaborative write endpoints', async () => {
+    for (const path of [
+      'base44/functions/createArtPost/entry.ts',
+      'base44/functions/createProject/entry.ts',
+      'base44/functions/createCollaborativeTrack/entry.ts',
+      'base44/functions/createSharedFileRecord/entry.ts',
+      'base44/functions/createProjectFolder/entry.ts',
+      'base44/functions/createProjectMilestone/entry.ts',
+      'base44/functions/createTrackVersion/entry.ts',
+      'base44/functions/createChallenge/entry.ts',
+      'base44/functions/submitChallengeRemix/entry.ts',
+      'base44/functions/toggleLike/entry.ts',
+      'base44/functions/castVote/entry.ts',
+      'base44/functions/createPlaylist/entry.ts',
+      'base44/functions/mutatePlaylist/entry.ts',
+    ]) {
+      const source = await readText(path);
+      expect(source).toContain('user.is_banned');
+      expect(source).toContain("error: 'banned'");
+    }
+
+    const comments = await readText('base44/functions/trackComments/entry.ts');
+    expect(comments).toContain("if (action === 'create')");
+    expect(comments).toContain('user.is_banned');
+
+    const playlist = await readText('base44/functions/createPlaylist/entry.ts');
+    expect(playlist).not.toContain('user.email');
+  });
+
   it('prevents contact ownership reassignment', async () => {
     const contact = await readJson('base44/entities/Contact.jsonc');
     expect(contact.properties.user_id.rls?.write?.user_condition?.role).toBe('admin');

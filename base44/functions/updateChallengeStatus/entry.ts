@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   upcoming: ['active'],
@@ -12,6 +13,20 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
+    const challengeRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'challenge_status_mutation',
+      120,
+    );
+    if (!challengeRate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
 
     const { challengeId, status } = await req.json();
     const nextStatus = String(status || '');

@@ -5,13 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Mail, Send, CheckCircle, AlertCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { cn } from "@/lib/utils";
 
 export default function ExternalMessageDialog({ open, onOpenChange }) {
   const [destination, setDestination] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
-  const [status, setStatus] = useState(null); // null | "success" | "error" | "needs_setup"
+  const [status, setStatus] = useState(null); // null | "success" | "error"
   const [errorMsg, setErrorMsg] = useState("");
 
   const reset = () => {
@@ -31,10 +30,7 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
         destination: destination.trim(),
         message: message.trim(),
       });
-      if (res.data?.needs_setup) {
-        setStatus("needs_setup");
-        setErrorMsg(res.data.error);
-      } else if (res.data?.success) {
+      if (res.data?.success) {
         setStatus("success");
       } else {
         setStatus("error");
@@ -62,9 +58,9 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
         {status === "success" ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <CheckCircle className="w-12 h-12 text-green-500" />
-            <p className="font-heading font-semibold text-lg">Message Sent!</p>
+            <p className="font-heading font-semibold text-lg">Request Accepted</p>
             <p className="text-sm text-muted-foreground">
-              Your message was delivered to {destination}
+              If that address can receive NaliChat messages, it will be delivered.
             </p>
             <Button onClick={reset} variant="outline" className="mt-2">Send Another</Button>
           </div>

@@ -26,9 +26,9 @@ export function memberGoalMet(progress, member) {
   return messages >= GOAL_MESSAGES || tasks >= GOAL_TASKS;
 }
 
-export async function recordSquadActivity(_userId, type) {
+export async function recordSquadActivity(sourceType, sourceId) {
   try {
-    await base44.functions.invoke("recordSquadActivity", { type });
+    await base44.functions.invoke("recordSquadActivity", { sourceType, sourceId });
   } catch (err) {
     console.error("Failed to record squad activity:", err);
   }

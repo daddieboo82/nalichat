@@ -10,11 +10,11 @@ export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
 
-    // App URL for the onboarding link — from trusted header, not client input
+    // App URL for the onboarding link comes only from server configuration.
     const appUrl =
-      req.headers.get('X-Base44-App-Url') ||
+      Deno.env.get('APP_BASE_URL') ||
       Deno.env.get('WIX_CHECKOUT_APP_URL') ||
-      'https://nalichat.base44.app';
+      'https://nalichat.org';
     if (!appUrl) {
       return Response.json(
         { error: 'Server is not configured with an app URL' },

@@ -5,6 +5,52 @@ function deletedIdentity(userId: string): string {
   return `deleted:${userId}`;
 }
 
+function pruneConversationReactions(reactions: unknown, participantIds: string[]) {
+  if (!reactions || typeof reactions !== 'object' || Array.isArray(reactions)) return {};
+  const allowed = new Set(participantIds);
+  return Object.fromEntries(
+    Object.entries(reactions as Record<string, unknown>).filter(([key]) => {
+      const separator = key.lastIndexOf('__');
+      if (separator < 0) return false;
+      return allowed.has(key.slice(separator + 2));
+    }),
+  );
+}
+
+async function syncConversationAudience(entities: any, conversationId: string, participantIds: string[]) {
+  const [messages, typingRows] = await Promise.all([
+    entities.Message.filter({ conversation_id: conversationId }),
+    entities.TypingStatus.filter({ conversation_id: conversationId }),
+  ]);
+
+  for (let i = 0; i < messages.length; i += 100) {
+    await entities.Message.bulkUpdate(
+      messages.slice(i, i + 100).map((message: any) => ({
+        id: message.id,
+        participant_ids: participantIds,
+        read_by: Array.isArray(message.read_by)
+          ? message.read_by.filter((readerId: string) => participantIds.includes(readerId))
+          : [],
+        reactions: pruneConversationReactions(message.reactions, participantIds),
+      })),
+    );
+  }
+
+  const activeTypingRows = typingRows.filter((row: any) => participantIds.includes(row.user_id));
+  const departedTypingRows = typingRows.filter((row: any) => !participantIds.includes(row.user_id));
+  for (let i = 0; i < activeTypingRows.length; i += 100) {
+    await entities.TypingStatus.bulkUpdate(
+      activeTypingRows.slice(i, i + 100).map((row: any) => ({
+        id: row.id,
+        participant_ids: participantIds,
+      })),
+    );
+  }
+  for (const row of departedTypingRows) {
+    await entities.TypingStatus.delete(row.id);
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -234,6 +280,7 @@ Deno.serve(async (req) => {
         await entities.Conversation.delete(conversation.id);
       } else {
         await entities.Conversation.update(conversation.id, { participant_ids: participantIds });
+        await syncConversationAudience(entities, conversation.id, participantIds);
       }
     }
 

@@ -40,11 +40,15 @@ export default async function(req) {
         play_day: day,
       });
     } catch (error) {
-      const existing = await entities.ArtPostPlay.filter({
-        post_id: postId,
-        listener_id: user.id,
-        play_day: day,
-      });
+      const existing = await entities.ArtPostPlay.filter(
+        {
+          post_id: postId,
+          listener_id: user.id,
+          play_day: day,
+        },
+        '-created_date',
+        1,
+      );
       if (existing.length > 0) {
         return Response.json({ counted: false, reason: 'already_counted_today', views: Number(post.views || 0) });
       }

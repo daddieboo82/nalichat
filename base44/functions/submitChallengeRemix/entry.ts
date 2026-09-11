@@ -59,6 +59,10 @@ async function resolveStoredFileSize(url: string): Promise<number | null> {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -80,12 +84,31 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const challengeId = String(body?.challenge_id || '');
-    const remixName = String(body?.remix_name || '').trim().slice(0, 200);
-    const sourceType = String(body?.source_type || '');
-
-    if (!challengeId || !remixName || !SOURCE_TYPES.has(sourceType)) {
+    if (
+      typeof body?.challenge_id !== 'string'
+      || typeof body?.remix_name !== 'string'
+      || typeof body?.source_type !== 'string'
+    ) {
       return Response.json({ error: 'Invalid challenge submission' }, { status: 400 });
+    }
+    const challengeId = body.challenge_id.trim();
+    const remixName = body.remix_name.trim();
+    const sourceType = body.source_type;
+
+    if (
+      !challengeId
+      || challengeId.length > 200
+      || !remixName
+      || remixName.length > 200
+      || !SOURCE_TYPES.has(sourceType)
+    ) {
+      return Response.json({ error: 'Invalid challenge submission' }, { status: 400 });
+    }
+    if (body?.description != null && typeof body.description !== 'string') {
+      return Response.json({ error: 'Description must be a string' }, { status: 400 });
+    }
+    if (typeof body?.description === 'string' && body.description.length > 2000) {
+      return Response.json({ error: 'Description must be 2000 characters or fewer' }, { status: 413 });
     }
 
     const entities = base44.asServiceRole.entities;
@@ -129,6 +152,13 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Selected track media is not on trusted storage' }, { status: 400 });
       }
       remixFileUrl = storedPostUrl.toString();
+      const storedSize = await resolveStoredFileSize(remixFileUrl);
+      if (storedSize === null) {
+        return Response.json({ error: 'Could not verify selected track size' }, { status: 400 });
+      }
+      if (storedSize <= 0 || storedSize > MAX_UPLOAD_BYTES) {
+        return Response.json({ error: 'Selected track must be 100MB or smaller' }, { status: 413 });
+      }
     } else if (sourceType === 'external_upload') {
       fileFormat = String(body?.file_format || '').toLowerCase();
       if (!FILE_FORMATS.has(fileFormat)) {
@@ -176,7 +206,7 @@ Deno.serve(async (req) => {
       producer_avatar: user.avatar_url || null,
       remix_file_url: remixFileUrl,
       remix_name: remixName,
-      description: String(body?.description || '').slice(0, 2000),
+      description: typeof body?.description === 'string' ? body.description : '',
       source_type: sourceType,
       external_url: externalUrl || undefined,
       file_format: fileFormat || undefined,

@@ -3,6 +3,7 @@ import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/
 
 const FREE_FILE_LIMIT = 250 * 1024 * 1024;
 const PREMIUM_FILE_LIMIT = 20 * 1024 * 1024 * 1024;
+const FILE_TYPES = new Set(['audio', 'image', 'video', 'session', 'document', 'other']);
 
 async function hasLargeUploadAccess(entities: any, userId: string): Promise<boolean> {
   const subscriptions = await entities.Subscription.filter({ user_id: userId });
@@ -41,6 +42,37 @@ function cleanUploadedMediaUrl(value: unknown) {
   }
 }
 
+async function resolveStoredFileSize(url: string): Promise<number | null> {
+  try {
+    const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+    if (head.ok) {
+      const length = Number(head.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0) return length;
+    }
+  } catch {}
+
+  try {
+    const probe = await fetch(url, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-0' },
+      redirect: 'manual',
+    });
+    if (probe.ok || probe.status === 206) {
+      const range = probe.headers.get('content-range') || '';
+      const match = range.match(/\/(\d+)$/);
+      if (match) {
+        const total = Number(match[1]);
+        if (Number.isFinite(total) && total >= 0) return total;
+      }
+      const length = Number(probe.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0 && probe.status !== 206) return length;
+    }
+    try { await probe.body?.cancel(); } catch {}
+  } catch {}
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -54,15 +86,27 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
-    const fileSize = Number(body.file_size || 0);
-    if (!Number.isFinite(fileSize) || fileSize < 0) {
+    const claimedFileSize = Number(body.file_size || 0);
+    if (!Number.isFinite(claimedFileSize) || claimedFileSize < 0) {
       return Response.json({ error: 'file_size must be a non-negative number' }, { status: 400 });
     }
+
+    const storedFileSize = await resolveStoredFileSize(fileUrl);
+    if (storedFileSize === null) {
+      return Response.json({ error: 'Could not verify uploaded file size' }, { status: 400 });
+    }
+    const fileSize = storedFileSize;
+
     if (fileSize > PREMIUM_FILE_LIMIT) {
       return Response.json({ error: 'Files larger than 20GB are not supported' }, { status: 413 });
     }
     if (fileSize > FREE_FILE_LIMIT && !(await hasLargeUploadAccess(entities, user.id))) {
       return Response.json({ error: 'Premium is required for files larger than 250MB' }, { status: 403 });
+    }
+
+    const fileType = String(body.file_type || 'other').trim();
+    if (!FILE_TYPES.has(fileType)) {
+      return Response.json({ error: 'Invalid file type' }, { status: 400 });
     }
 
     let projectId = body?.project_id ? String(body.project_id) : null;
@@ -119,8 +163,8 @@ Deno.serve(async (req) => {
     const file = await entities.SharedFile.create({
       name: String(body.name).trim().slice(0, 255),
       file_url: fileUrl,
-      file_type: String(body.file_type || 'other').trim().slice(0, 50),
-      file_size: fileSize || undefined,
+      file_type: fileType,
+      file_size: fileSize,
       uploader_id: user.id,
       uploader_name: user.display_name || user.full_name || user.email || 'User',
       description: typeof body.description === 'string' ? body.description.slice(0, 1000) : '',

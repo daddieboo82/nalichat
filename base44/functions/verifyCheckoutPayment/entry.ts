@@ -6,10 +6,10 @@ import { stripeRequest } from '../../shared/stripe.ts';
 // If the webhook missed it, this fulfills the payment so the buyer gets access.
 Deno.serve(async (req) => {
   try {
-    const { checkoutId } = await req.json();
+    const { checkoutId, purchaseToken } = await req.json();
 
-    if (!checkoutId) {
-      return Response.json({ error: 'checkoutId is required' }, { status: 400 });
+    if (!checkoutId || !purchaseToken) {
+      return Response.json({ error: 'checkoutId and purchaseToken are required' }, { status: 400 });
     }
 
     const base44 = createClientFromRequest(req);
@@ -31,6 +31,17 @@ Deno.serve(async (req) => {
     }
 
     const purchase = purchases[0];
+
+    const digest = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(String(purchaseToken)),
+    );
+    const verifierHash = Array.from(new Uint8Array(digest))
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join('');
+    if (!purchase.purchase_verifier_hash || purchase.purchase_verifier_hash !== verifierHash) {
+      return Response.json({ error: 'Invalid purchase verifier' }, { status: 403 });
+    }
 
     // 3. If Stripe says paid but our record is still pending, fulfill it now
     // (webhook may not have fired yet — this is the fallback path)

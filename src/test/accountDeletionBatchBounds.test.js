@@ -93,4 +93,16 @@ describe('account deletion batch bounds', () => {
     expect(source).not.toContain('const conversations = await entities.Conversation.filter');
     expect(source).not.toContain('const [messages, typingRows] = await Promise.all');
   });
+
+  it('pages billing cancellation before batching subscription anonymization', async () => {
+    const source = await readFile(
+      new URL('../../base44/functions/deleteMyAccount/entry.ts', import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain('for (let subscriptionSkip = 0; ; subscriptionSkip += CLEANUP_BATCH_SIZE)');
+    expect(source).toContain('subscriptionSkip,');
+    expect(source).toContain('if (subscriptions.length < CLEANUP_BATCH_SIZE) break;');
+    expect(source).toContain('(subscription) => entities.Subscription.update(subscription.id, { user_id: tombstoneId })');
+  });
 });

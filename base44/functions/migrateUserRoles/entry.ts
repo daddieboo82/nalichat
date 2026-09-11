@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const LEGACY_ARTIST_ROLES = new Set(['artist', 'producer', 'engineer', 'ar']);
 
@@ -8,6 +9,20 @@ Deno.serve(async (req) => {
     const caller = await base44.auth.me();
     if (!caller || caller.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (caller.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (caller.timeout_until && new Date(caller.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: caller.timeout_until }, { status: 403 });
+    }
+
+    const migrationRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      caller.id,
+      'admin_role_migration',
+      2,
+    );
+    if (!migrationRate.allowed) {
+      return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     const users = await base44.asServiceRole.entities.User.list();

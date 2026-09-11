@@ -781,6 +781,8 @@ describe('release configuration', () => {
       'base44/functions/createTrackVersion/entry.ts',
       'base44/functions/publishStudioBounce/entry.ts',
       'base44/functions/reportContent/entry.ts',
+      'base44/functions/createChallenge/entry.ts',
+      'base44/functions/submitChallengeRemix/entry.ts',
     ]) {
       const source = await readText(path);
       expect(source).not.toMatch(/(?:user|reporter)\.email\s*\|\|/);

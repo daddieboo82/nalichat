@@ -68,9 +68,20 @@ async function resolveStoredFileSize(url: string): Promise<number | null> {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
     const creationRate = await consumeHourlyLimit(
       base44.asServiceRole.entities,
       user.id,
@@ -80,21 +91,42 @@ Deno.serve(async (req) => {
     if (!creationRate.allowed) {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
-    if (user.is_banned) {
-      return Response.json({ error: 'banned' }, { status: 403 });
-    }
-    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
-      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
-    }
 
     const body = await req.json();
-    const fileUrl = cleanUploadedMediaUrl(body?.file_url);
-    if (!body?.name || !fileUrl) {
+    if (typeof body?.name !== 'string' || typeof body?.file_url !== 'string') {
       return Response.json({ error: 'name and a trusted uploaded file are required' }, { status: 400 });
+    }
+    if (body?.description != null && typeof body.description !== 'string') {
+      return Response.json({ error: 'description must be a string' }, { status: 400 });
+    }
+    if (body?.file_type != null && typeof body.file_type !== 'string') {
+      return Response.json({ error: 'file_type must be a string' }, { status: 400 });
+    }
+    if (body?.project_id != null && typeof body.project_id !== 'string') {
+      return Response.json({ error: 'project_id must be a string or null' }, { status: 400 });
+    }
+    if (body?.folder_id != null && typeof body.folder_id !== 'string') {
+      return Response.json({ error: 'folder_id must be a string or null' }, { status: 400 });
+    }
+    if (body?.file_size != null && typeof body.file_size !== 'number') {
+      return Response.json({ error: 'file_size must be a non-negative number' }, { status: 400 });
+    }
+
+    const name = body.name.trim();
+    const description = typeof body.description === 'string' ? body.description : '';
+    const fileUrl = cleanUploadedMediaUrl(body.file_url);
+    if (!name || !fileUrl) {
+      return Response.json({ error: 'name and a trusted uploaded file are required' }, { status: 400 });
+    }
+    if (name.length > 255) {
+      return Response.json({ error: 'name must be 255 characters or fewer' }, { status: 413 });
+    }
+    if (description.length > 1000) {
+      return Response.json({ error: 'description must be 1000 characters or fewer' }, { status: 413 });
     }
 
     const entities = base44.asServiceRole.entities;
-    const claimedFileSize = Number(body.file_size || 0);
+    const claimedFileSize = body.file_size == null ? 0 : body.file_size;
     if (!Number.isFinite(claimedFileSize) || claimedFileSize < 0) {
       return Response.json({ error: 'file_size must be a non-negative number' }, { status: 400 });
     }
@@ -112,13 +144,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Premium is required for files larger than 250MB' }, { status: 403 });
     }
 
-    const fileType = String(body.file_type || 'other').trim();
+    const fileType = typeof body.file_type === 'string' ? body.file_type.trim() : 'other';
     if (!FILE_TYPES.has(fileType)) {
       return Response.json({ error: 'Invalid file type' }, { status: 400 });
     }
 
-    let projectId = body?.project_id ? String(body.project_id) : null;
-    let folderId = body?.folder_id ? String(body.folder_id) : null;
+    let projectId = typeof body?.project_id === 'string' ? body.project_id.trim() : null;
+    let folderId = typeof body?.folder_id === 'string' ? body.folder_id.trim() : null;
+    if (projectId && projectId.length > 200) {
+      return Response.json({ error: 'project_id is too long' }, { status: 400 });
+    }
+    if (folderId && folderId.length > 200) {
+      return Response.json({ error: 'folder_id is too long' }, { status: 400 });
+    }
     let accessUserIds = [user.id];
     let editUserIds = [user.id];
 
@@ -176,13 +214,13 @@ Deno.serve(async (req) => {
     }
 
     const file = await entities.SharedFile.create({
-      name: String(body.name).trim().slice(0, 255),
+      name,
       file_url: fileUrl,
       file_type: fileType,
       file_size: fileSize,
       uploader_id: user.id,
       uploader_name: user.display_name || user.full_name || 'User',
-      description: typeof body.description === 'string' ? body.description.slice(0, 1000) : '',
+      description,
       folder_id: folderId,
       project_id: projectId,
       access_user_ids: accessUserIds,

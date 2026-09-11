@@ -100,6 +100,13 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'react') {
+      if (user.is_banned) {
+        return Response.json({ error: 'banned' }, { status: 403 });
+      }
+      if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+        return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+      }
+
       const emoji = String(body?.emoji || '').trim().slice(0, 32);
       if (!emoji) return Response.json({ error: 'emoji is required' }, { status: 400 });
 

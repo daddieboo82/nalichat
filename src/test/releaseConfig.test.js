@@ -327,6 +327,14 @@ describe('release configuration', () => {
     expect(reminders).toContain("'SOURCE_MESSAGE_NOT_FOUND'");
   });
 
+  it('bounds locked-chat reset email requests', async () => {
+    const vault = await readText('base44/functions/lockedChatVault/entry.ts');
+    expect(vault).toContain("'locked_chat_reset_email'");
+    expect(vault).toMatch(/'locked_chat_reset_email',\s*10/);
+    expect(vault).toContain('Too many reset-code requests. Try again later.');
+    expect(vault).toContain("Date.now() - Date.parse(recent[0].created_date) < 60_000");
+  });
+
   it('bounds locked-chat preference scans without moderation blocking', async () => {
     const vault = await readText('base44/functions/lockedChatVault/entry.ts');
     expect(vault).toContain("'locked_chat_state'");

@@ -6,6 +6,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user?.id) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const body = await req.json();
 
     const trackId = body?.event?.entity_id;
@@ -22,6 +26,13 @@ Deno.serve(async (req) => {
 
     if (!track) {
       return Response.json({ error: 'Track not found' }, { status: 404 });
+    }
+
+    const canEditTrack = user.role === 'admin'
+      || track.uploaded_by === user.id
+      || (Array.isArray(track.edit_user_ids) && track.edit_user_ids.includes(user.id));
+    if (!canEditTrack) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Pull project context for a better suggestion

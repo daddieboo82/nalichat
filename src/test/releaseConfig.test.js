@@ -493,6 +493,20 @@ describe('release configuration', () => {
     expect(deletion).not.toContain("|| folder.owner_id === user.id\n      || (folder.edit_user_ids || []).includes(user.id)");
   });
 
+  it('authorizes project-linked shared files from current project roles', async () => {
+    const mutate = await readText('base44/functions/mutateSharedFile/entry.ts');
+    const share = await readText('base44/functions/createFileShareLink/entry.ts');
+
+    expect(mutate).toContain('if (!canEdit && file.project_id)');
+    expect(mutate).toContain('project.owner_id === user.id');
+    expect(mutate).toContain('(project.editor_ids || []).includes(user.id)');
+    expect(mutate).toContain('if (!canUseFolder && folder.project_id)');
+    expect(share).toContain('if (!canShare && file.project_id)');
+    expect(share).toContain('project.owner_id === user.id');
+    expect(share).toContain('(project.editor_ids || []).includes(user.id)');
+    expect(share).not.toContain('|| file.uploader_id === user.id\n      || (file.edit_user_ids || []).includes(user.id)');
+  });
+
   it('keeps shared-file edit access synchronized with project collaborator roles', async () => {
     const collaborator = await readText('base44/functions/manageProjectCollaborator/entry.ts');
     expect(collaborator).toContain('edit_user_ids: Array.from(editUserIds)');

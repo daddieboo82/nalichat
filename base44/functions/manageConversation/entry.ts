@@ -12,6 +12,9 @@ async function syncConversationAudience(entities: any, conversationId: string, p
       messages.slice(i, i + 100).map((message: any) => ({
         id: message.id,
         participant_ids: participantIds,
+        read_by: Array.isArray(message.read_by)
+          ? message.read_by.filter((readerId: string) => participantIds.includes(readerId))
+          : [],
       })),
     );
   }

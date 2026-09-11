@@ -37,7 +37,14 @@
         "type": "string"
       },
       "description": "Array of ArtPost IDs in the playlist",
-      "default": []
+      "default": []      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "cover_url": {
       "type": "string",

@@ -5,37 +5,68 @@ import { Input } from "@/components/ui/input";
 import { X, Users, Pencil, Check, LogOut } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { MessageSquare } from "lucide-react";
 
 export default function GroupInfoPanel({ conversation, users, currentUser, onClose, onStartDM }) {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(conversation?.name || "");
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [pendingDmUserId, setPendingDmUserId] = useState(null);
   const queryClient = useQueryClient();
 
   const members = users.filter(u => conversation?.participant_ids?.includes(u.id));
 
   const saveName = async () => {
-    if (!nameValue.trim()) return;
-    const res = await base44.functions.invoke("manageConversation", {
-      action: "rename",
-      conversationId: conversation.id,
-      name: nameValue.trim(),
-    });
-    if (res?.data?.error) throw new Error(res.data.error);
-    queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    setEditingName(false);
+    if (!nameValue.trim() || isSavingName) return;
+    setIsSavingName(true);
+    try {
+      const res = await base44.functions.invoke("manageConversation", {
+        action: "rename",
+        conversationId: conversation.id,
+        name: nameValue.trim(),
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      setEditingName(false);
+    } catch {
+      toast.error("Couldn't rename the group. Please try again.");
+    } finally {
+      setIsSavingName(false);
+    }
   };
 
   const leaveGroup = async () => {
-    if (!currentUser) return;
-    const res = await base44.functions.invoke("manageConversation", {
-      action: "leave",
-      conversationId: conversation.id,
-    });
-    if (res?.data?.error) throw new Error(res.data.error);
-    queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    onClose();
+    if (!currentUser || isLeaving) return;
+    setIsLeaving(true);
+    try {
+      const res = await base44.functions.invoke("manageConversation", {
+        action: "leave",
+        conversationId: conversation.id,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      onClose();
+    } catch {
+      toast.error("Couldn't leave the group. Please try again.");
+    } finally {
+      setIsLeaving(false);
+    }
+  };
+
+  const messageMember = async (user) => {
+    if (!onStartDM || !user?.id || pendingDmUserId) return;
+    setPendingDmUserId(user.id);
+    try {
+      await onStartDM(user);
+      onClose();
+    } catch {
+      // Parent startDM already shows the user-facing error toast.
+    } finally {
+      setPendingDmUserId(null);
+    }
   };
 
   return (
@@ -63,7 +94,7 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
                 className="bg-secondary/50 border-0 rounded-xl h-8 text-sm text-center font-semibold"
                 autoFocus
               />
-              <button onClick={saveName} title="Save Group Name" aria-label="Save Group Name" className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors shrink-0">
+              <button onClick={saveName} disabled={isSavingName} title="Save Group Name" aria-label="Save Group Name" className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors shrink-0 disabled:opacity-60">
                 <Check className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -101,10 +132,8 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
                 </div>
                 {u.id !== currentUser?.id && onStartDM && (
                   <button
-                    onClick={() => {
-                      onStartDM(u);
-                      onClose();
-                    }}
+                    onClick={() => messageMember(u)}
+                    disabled={!!pendingDmUserId}
                     className="w-11 h-11 rounded-full bg-secondary hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-colors shrink-0"
                     title="Message privately"
                     aria-label="Message privately"
@@ -123,9 +152,10 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
           variant="outline" 
           className="w-full text-red-500 hover:text-red-600 hover:bg-red-500/10 border-red-500/20"
           onClick={leaveGroup}
+          disabled={isLeaving}
         >
           <LogOut className="w-4 h-4 mr-2" />
-          Leave Group
+          {isLeaving ? "Leaving..." : "Leave Group"}
         </Button>
       </div>
     </div>

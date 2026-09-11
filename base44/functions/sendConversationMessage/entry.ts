@@ -361,14 +361,11 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
   }
 
   if (messageData.thread_id) {
-      const replies = await base44.asServiceRole.entities.Message.filter({
-        thread_id: messageData.thread_id,
-        conversation_id: conversationId,
-      });
       try {
-        await base44.asServiceRole.entities.Message.update(messageData.thread_id, {
-          thread_reply_count: replies.length,
-        });
+        await base44.asServiceRole.entities.Message.updateMany(
+          { id: messageData.thread_id },
+          { $inc: { thread_reply_count: 1 } },
+        );
       } catch (_) {}
     }
 

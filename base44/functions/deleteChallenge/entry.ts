@@ -1,10 +1,18 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import {
+  acquireChallengeLifecycleLock,
+  releaseChallengeLifecycleLock,
+} from '../../shared/challengeLifecycleLock.ts';
 
 const DELETE_BATCH_SIZE = 200;
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -24,12 +32,21 @@ Deno.serve(async (req) => {
     }
 
     const { challengeId } = await req.json();
-    if (!challengeId) {
+    if (typeof challengeId !== 'string' || !challengeId.trim() || challengeId.length > 200) {
       return Response.json({ error: 'challengeId is required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
-    const challenge = await entities.Challenge.get(String(challengeId)).catch(() => null);
+    const challengeLockId = await acquireChallengeLifecycleLock(entities, challengeId);
+    if (!challengeLockId) {
+      return Response.json(
+        { error: 'Challenge is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
+    const challenge = await entities.Challenge.get(challengeId).catch(() => null);
     if (!challenge) return Response.json({ error: 'Challenge not found' }, { status: 404 });
 
     if (challenge.host_artist_id !== user.id && user.role !== 'admin') {
@@ -90,6 +107,9 @@ Deno.serve(async (req) => {
       deleted_votes: deletedVotes,
       deleted_comments: deletedComments,
     });
+    } finally {
+      await releaseChallengeLifecycleLock(entities, challengeLockId);
+    }
   } catch (error) {
     console.error('deleteChallenge error:', error);
     return Response.json({ error: error?.message || 'Could not delete challenge' }, { status: 500 });

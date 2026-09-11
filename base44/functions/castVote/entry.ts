@@ -3,6 +3,10 @@ import {
   acquireChallengeSubmissionLock,
   releaseChallengeSubmissionLock,
 } from '../../shared/challengeSubmissionLock.ts';
+import {
+  acquireChallengeLifecycleLock,
+  releaseChallengeLifecycleLock,
+} from '../../shared/challengeLifecycleLock.ts';
 
 async function voteId(submissionId: string, userId: string): Promise<string> {
   const digest = await crypto.subtle.digest(
@@ -50,6 +54,15 @@ export default async function(req) {
       return Response.json({ error: 'This submission is not eligible for voting.' }, { status: 409 });
     }
 
+    const challengeLockId = await acquireChallengeLifecycleLock(entities, submission.challenge_id);
+    if (!challengeLockId) {
+      return Response.json(
+        { error: 'Challenge is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
     const challenge = await entities.Challenge.get(submission.challenge_id);
     if (!challenge) return Response.json({ error: 'Challenge not found' }, { status: 404 });
     if (challenge.status !== 'voting') {
@@ -115,6 +128,9 @@ export default async function(req) {
 
     const updated = await entities.ChallengeSubmission.get(submission_id);
     return Response.json({ success: true, vote_count: updated.vote_count });
+    } finally {
+      await releaseChallengeLifecycleLock(entities, challengeLockId);
+    }
     } finally {
       await releaseChallengeSubmissionLock(entities, lockId);
     }

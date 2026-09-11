@@ -1,5 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import {
+  acquireChallengeLifecycleLock,
+  releaseChallengeLifecycleLock,
+} from '../../shared/challengeLifecycleLock.ts';
 
 const SOURCE_TYPES = new Set(['nalichat_studio', 'external_upload', 'link_import']);
 const DEVICE_TYPES = new Set(['desktop', 'mobile', 'tablet']);
@@ -112,6 +116,15 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const challengeLockId = await acquireChallengeLifecycleLock(entities, challengeId);
+    if (!challengeLockId) {
+      return Response.json(
+        { error: 'Challenge is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
     const challenge = await entities.Challenge.get(challengeId);
     if (!challenge) return Response.json({ error: 'Challenge not found' }, { status: 404 });
 
@@ -216,6 +229,9 @@ Deno.serve(async (req) => {
     });
 
     return Response.json({ success: true, submission });
+    } finally {
+      await releaseChallengeLifecycleLock(entities, challengeLockId);
+    }
   } catch (error) {
     console.error('submitChallengeRemix error:', error);
     return Response.json({ error: error?.message || 'Could not submit remix' }, { status: 500 });

@@ -9,11 +9,14 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
+    const caller = await base44.auth.me().catch(() => null);
 
-    const trackId = body?.event?.entity_id;
+    const eventTrackId = body?.event?.entity_id;
+    const directTrackId = body?.trackId || body?.track_id;
+    const trackId = eventTrackId || directTrackId;
 
     if (!trackId) {
-      return Response.json({ error: 'No track id in payload' }, { status: 400 });
+      return Response.json({ error: 'trackId is required' }, { status: 400 });
     }
 
     // Never trust automation payload record fields. Resolve the authoritative
@@ -21,6 +24,28 @@ Deno.serve(async (req) => {
     const track = await base44.asServiceRole.entities.Track.get(trackId);
     if (!track) {
       return Response.json({ error: 'Track not found' }, { status: 404 });
+    }
+
+    if (caller) {
+      if (caller.is_banned) {
+        return Response.json({ error: 'Forbidden: banned account' }, { status: 403 });
+      }
+      if (caller.timeout_until && Date.parse(caller.timeout_until) > Date.now()) {
+        return Response.json({ error: 'Forbidden: timed out account' }, { status: 403 });
+      }
+      const canEdit = caller.role === 'admin'
+        || track.uploaded_by === caller.id
+        || (track.edit_user_ids || []).includes(caller.id);
+      if (!canEdit) {
+        return Response.json({ error: 'Forbidden: track edit access required' }, { status: 403 });
+      }
+    } else {
+      const isCreateAutomation = body?.event?.type === 'create' && eventTrackId === track.id;
+      const createdAt = Date.parse(track.created_date || '');
+      const isFresh = Number.isFinite(createdAt) && Date.now() - createdAt <= 10 * 60 * 1000;
+      if (!isCreateAutomation || !isFresh) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
     }
 
     // Entity-create automations can be retried. Keep AI work idempotent so a
@@ -43,9 +68,11 @@ Deno.serve(async (req) => {
     if (uploader.timeout_until && new Date(uploader.timeout_until).getTime() > Date.now()) {
       return Response.json({ success: true, skipped: true, reason: 'uploader_timed_out' });
     }
+
+    const entitlementUserId = caller?.id || uploaderId;
     const { allowed, entitlements } = await requireEntitlement(
       base44.asServiceRole.entities,
-      uploaderId,
+      entitlementUserId,
       'ai.standard',
     );
     if (!allowed) {
@@ -54,7 +81,7 @@ Deno.serve(async (req) => {
 
     const rate = await consumeHourlyLimit(
       base44.asServiceRole.entities,
-      uploaderId,
+      entitlementUserId,
       'ai_track_tag_suggestion',
       20,
     );

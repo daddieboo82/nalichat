@@ -58,13 +58,21 @@ export default function PlaylistDetail() {
       if (published?.data?.error) throw new Error(published.data.error);
       const newPost = published?.data?.post;
       if (!newPost?.id) throw new Error("Track was not created");
-      const res = await base44.functions.invoke("mutatePlaylist", {
-        action: "add_track",
-        playlistId,
-        trackId: newPost.id,
-      });
-      if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.playlist;
+      try {
+        const res = await base44.functions.invoke("mutatePlaylist", {
+          action: "add_track",
+          playlistId,
+          trackId: newPost.id,
+        });
+        if (res?.data?.error) throw new Error(res.data.error);
+        return res?.data?.playlist;
+      } catch (playlistError) {
+        // Avoid leaving a newly-published orphan if playlist membership fails.
+        try {
+          await base44.functions.invoke("deleteArtPost", { postId: newPost.id });
+        } catch {}
+        throw playlistError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });

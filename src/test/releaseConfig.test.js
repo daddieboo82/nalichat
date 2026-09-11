@@ -298,6 +298,22 @@ describe('release configuration', () => {
   });
 
 
+  it('derives playlist ownership on the server and protects owner identity', async () => {
+    const playlist = await readJson('base44/entities/Playlist.jsonc');
+    const createPlaylist = await readText('base44/functions/createPlaylist/entry.ts');
+    const playlistsPage = await readText('src/pages/Playlists.jsx');
+    const addToPlaylist = await readText('src/components/explore/AddToPlaylistDialog.jsx');
+
+    expect(playlist.rls.create?.user_condition?.role).toBe('admin');
+    expect(playlist.properties.owner_id.rls?.write?.user_condition?.role).toBe('admin');
+    expect(playlist.properties.owner_name.rls?.write?.user_condition?.role).toBe('admin');
+    expect(createPlaylist).toContain('owner_id: user.id');
+    expect(createPlaylist).toContain('One or more playlist tracks were not found');
+    expect(playlistsPage).not.toContain('entities.Playlist.create');
+    expect(addToPlaylist).not.toContain('entities.Playlist.create');
+  });
+
+
   it('keeps ArtPost views server-counted and challenge submissions immutable by entrants', async () => {
     const artPost = await readJson('base44/entities/ArtPost.jsonc');
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');

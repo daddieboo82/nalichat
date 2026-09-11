@@ -107,3 +107,23 @@ export async function subscribeToRemotePush() {
 
   return { subscribed: true };
 }
+
+
+export async function unsubscribeFromRemotePush() {
+  if (!('serviceWorker' in navigator)) return { unsubscribed: false, reason: 'unsupported' };
+
+  const reg = await navigator.serviceWorker.getRegistration('/sw.js');
+  const subscription = await reg?.pushManager?.getSubscription();
+  if (!subscription) return { unsubscribed: false, reason: 'none' };
+
+  const { base44 } = await import('@/api/base44Client');
+  try {
+    await base44.functions.invoke('unregisterPushSubscription', {
+      endpoint: subscription.endpoint,
+    });
+  } finally {
+    try { await subscription.unsubscribe(); } catch {}
+  }
+
+  return { unsubscribed: true };
+}

@@ -14,6 +14,7 @@ Deno.serve(async (req) => {
     let updatedVersions = 0;
     let updatedFiles = 0;
     let updatedFolders = 0;
+    let updatedMilestones = 0;
 
     for (const track of tracks) {
       if (Array.isArray(track.access_user_ids) && track.access_user_ids.length > 0) continue;
@@ -87,7 +88,32 @@ Deno.serve(async (req) => {
       updatedFolders += 1;
     }
 
-    return Response.json({ success: true, updatedTracks, updatedVersions, updatedFiles, updatedFolders });
+    const milestones = await entities.Milestone.filter({});
+    for (const milestone of milestones) {
+      if (Array.isArray(milestone.access_user_ids) && milestone.access_user_ids.length > 0) continue;
+      let accessUserIds = [milestone.created_by_id].filter(Boolean);
+      try {
+        const project = await entities.Project.get(milestone.project_id);
+        if (project) {
+          accessUserIds = Array.from(new Set([
+            project.owner_id,
+            ...(project.collaborator_ids || []),
+            milestone.created_by_id,
+          ].filter(Boolean)));
+        }
+      } catch {}
+      await entities.Milestone.update(milestone.id, { access_user_ids: accessUserIds });
+      updatedMilestones += 1;
+    }
+
+    return Response.json({
+      success: true,
+      updatedTracks,
+      updatedVersions,
+      updatedFiles,
+      updatedFolders,
+      updatedMilestones,
+    });
   } catch (error) {
     console.error('backfillTrackAccess failed:', error);
     return Response.json({ error: error?.message || 'Backfill failed' }, { status: 500 });

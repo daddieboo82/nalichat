@@ -150,7 +150,9 @@ Deno.serve(async (req) => {
 
     const session = await stripeRequest('/checkout/sessions', sessionParams);
 
-    // Persist the Stripe session ID so the webhook can correlate the payment
+    // Persist the Stripe session ID before redirecting the buyer. If this fails,
+    // expire the Stripe session so we never accept a payment that cannot be
+    // correlated and fulfilled by our webhook/return flow.
     try {
       await base44.asServiceRole.entities.Base44Purchase.create({
         checkoutSessionId: session.id,
@@ -160,8 +162,14 @@ Deno.serve(async (req) => {
         items: persistedItems,
         purchase_verifier_hash: purchaseVerifierHash,
       });
-    } catch (e) {
-      console.error('Failed to persist Base44Purchase:', e);
+    } catch (error) {
+      console.error('Failed to persist Base44Purchase:', error);
+      try {
+        await stripeRequest(`/checkout/sessions/${encodeURIComponent(session.id)}/expire`, {}, 'POST');
+      } catch (expireError) {
+        console.error('Failed to expire orphaned checkout session:', expireError);
+      }
+      throw new Error('Unable to initialize purchase record');
     }
 
     return Response.json({

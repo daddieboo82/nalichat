@@ -586,6 +586,16 @@ describe('release configuration', () => {
     expect(submission.rls.update?.user_condition?.role).toBe('admin');
   });
 
+  it('routes ArtPost deletion through cleanup-aware server logic', async () => {
+    const artPost = await readJson('base44/entities/ArtPost.jsonc');
+    const deletion = await readText('base44/functions/deleteArtPost/entry.ts');
+    const explore = await readText('src/pages/Explore.jsx');
+    expect(artPost.rls.delete?.user_condition?.role).toBe('admin');
+    expect(deletion).toContain("parent_type: 'art_post'");
+    expect(deletion).toContain('track_ids: trackIds.filter');
+    expect(explore).toContain('base44.functions.invoke("deleteArtPost"');
+  });
+
 
   it('requires challenge submissions to pass the server challenge window checks', async () => {
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');

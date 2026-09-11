@@ -1,0 +1,67 @@
+{
+  "name": "LockedChatSecurity",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "kdf": {
+      "type": "string",
+      "enum": [
+        "PBKDF2-SHA-256"
+      ]
+    },
+    "salt": {
+      "type": "string",
+      "description": "Random salt; not a secret"
+    },
+    "pin_verifier": {
+      "type": "string",
+      "description": "PBKDF2 verifier; never exposed by the state API"
+    },
+    "iterations": {
+      "type": "number"
+    },
+    "failed_attempts": {
+      "type": "number",
+      "default": 0
+    },
+    "locked_until": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "kdf",
+    "salt",
+    "pin_verifier",
+    "iterations"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

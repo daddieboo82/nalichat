@@ -8,6 +8,8 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { sounds } from "@/hooks/use-sound";
+import { useLockedChats } from "@/lib/LockedChatsContext";
+import { countVisibleUnreadConversations } from "@/lib/lockedChatPolicy";
 
 const QUICK_ITEMS = [
   { icon: MessageSquare, label: "Messages", path: "/messages", gradient: "from-primary to-pink-500", desc: "Chat & collaborate" },
@@ -22,24 +24,30 @@ const QUICK_ITEMS = [
 
 export default function QuickAccessGrid() {
   const { user } = useAuth();
+  const { isReady, lockedConversationIds } = useLockedChats();
 
   // Fetch unread message count for badge
   const { data: unreadCount } = useQuery({
-    queryKey: ["quick-access-unread"],
+    queryKey: ["quick-access-unread", user?.id, ...lockedConversationIds],
     queryFn: async () => {
       try {
         const conversations = await base44.entities.Conversation.list();
-        let count = 0;
-        for (const conv of conversations) {
-          if (!conv.last_message_at) continue;
+        return countVisibleUnreadConversations(
+          conversations,
+          user?.id,
+          lockedConversationIds,
+          (conversationId) => {
           try {
-            const lastRead = localStorage.getItem(`lastReadAt:${conv.id}`);
-            if (!lastRead || new Date(conv.last_message_at).getTime() > parseInt(lastRead)) count++;
-          } catch {}
-        }
-        return count;
+              const value = localStorage.getItem(`lastReadAt:${conversationId}`);
+              return value ? parseInt(value, 10) : 0;
+            } catch {
+              return 0;
+            }
+          },
+        );
       } catch { return 0; }
     },
+    enabled: !!user?.id && isReady,
     staleTime: 30000,
   });
 
@@ -59,7 +67,7 @@ export default function QuickAccessGrid() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {QUICK_ITEMS.map((item, i) => {
           const Icon = item.icon;
-          const showBadge = item.path === "/messages" && unreadCount > 0;
+          const showBadge = isReady && item.path === "/messages" && unreadCount > 0;
           return (
             <motion.div
               key={item.path}

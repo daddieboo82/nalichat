@@ -61,7 +61,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
     }),
     features: Object.freeze([
       "Everything in Premium",
-      "More Premium Plus capabilities coming later",
+      "App-level locked chats with local PIN access",
     ]),
   }),
 });

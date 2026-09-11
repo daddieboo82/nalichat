@@ -18,6 +18,7 @@ import { sounds } from "@/hooks/use-sound";
 import { isValidAvatarUrl } from "@/lib/avatarValidation";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import SubscriptionSettings from "@/components/settings/SubscriptionSettings";
+import LockedChatSettings from "@/components/settings/LockedChatSettings";
 import { authorizedUpload } from "@/lib/authorizedUpload";
 
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];
@@ -244,6 +245,11 @@ export default function Settings() {
               </Link>
               </Button>
           </div>
+        </div>
+
+        <div className="mt-12 pt-8 border-t border-border">
+          <h2 className="text-xl font-heading font-bold mb-6">Privacy</h2>
+          <LockedChatSettings />
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">

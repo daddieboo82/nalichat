@@ -109,6 +109,25 @@ vi.mock('@/lib/AuthContext', () => ({
 vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => mockSubscription.current,
 }));
+vi.mock('@/lib/LockedChatsContext', () => ({
+  useLockedChats: () => ({
+    status: 'ready',
+    error: null,
+    isReady: true,
+    isUnlocked: false,
+    isEntitled: false,
+    security: null,
+    hasLockedChats: false,
+    lockedConversationIds: [],
+    isConversationLocked: () => false,
+    canAccessConversation: () => true,
+    updateConversationLock: vi.fn(),
+    lockNow: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+vi.mock('@/components/messages/LockedChatAccessDialog', () => ({ default: () => null }));
+vi.mock('@/components/settings/LockedChatSettings', () => ({ default: () => null }));
 vi.mock('@/components/layout/PullToRefresh', () => ({
   default: ({ children }) => <div>{children}</div>,
 }));

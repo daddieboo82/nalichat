@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, ArrowLeft, ArrowDown, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2 } from "lucide-react";
+import { MessageSquare, ArrowLeft, ArrowDown, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2, LockKeyhole, LockOpen } from "lucide-react";
 import MediaViewerModal from "@/components/explore/MediaViewerModal";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
@@ -27,7 +27,24 @@ import React from "react";
 
 const ADMIN_EMAILS = ["bossglop43@gmail.com"];
 
-export default React.memo(function ChatView({ conversation, messages, isLoading, currentUser, users, onSendMessage, onEditMessage, onReact, onBack, onStartDM, isBlocked, moderationBanner }) {
+export default React.memo(function ChatView({
+  conversation,
+  messages,
+  isLoading,
+  currentUser,
+  users,
+  onSendMessage,
+  onEditMessage,
+  onReact,
+  onBack,
+  onStartDM,
+  isBlocked,
+  moderationBanner,
+  isConversationLocked = false,
+  canManageLockedChats = false,
+  onToggleLocked,
+  onLockNow,
+}) {
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -236,6 +253,22 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                 {conversation?.type === "group" && (
                   <DropdownMenuItem onClick={() => setShowGroupInfo(true)} className="py-2.5 rounded-lg cursor-pointer text-primary focus:text-primary">
                     <Info className="w-4 h-4 mr-2" /> Group Info
+                  </DropdownMenuItem>
+                )}
+                {canManageLockedChats && (
+                  <DropdownMenuItem
+                    onClick={() => onToggleLocked?.(!isConversationLocked)}
+                    className="py-2.5 rounded-lg cursor-pointer"
+                  >
+                    {isConversationLocked
+                      ? <LockOpen className="w-4 h-4 mr-2" />
+                      : <LockKeyhole className="w-4 h-4 mr-2" />}
+                    {isConversationLocked ? "Remove from locked chats" : "Lock this chat"}
+                  </DropdownMenuItem>
+                )}
+                {isConversationLocked && (
+                  <DropdownMenuItem onClick={onLockNow} className="py-2.5 rounded-lg cursor-pointer">
+                    <LockKeyhole className="w-4 h-4 mr-2" /> Lock now
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>

@@ -8,6 +8,8 @@ import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { registerServiceWorker, requestPushPermission, showPushNotification, getPermissionStatus } from "@/lib/pushNotifications";
 import { sounds } from "@/hooks/use-sound";
+import { useLockedChats } from "@/lib/LockedChatsContext";
+import { redactLockedChatNotification } from "@/lib/lockedChatPolicy";
 
 const typeIcon = {
   comment: MessageCircle,
@@ -24,6 +26,11 @@ export default function NotificationBell({ direction = "down" }) {
   const { toast } = useToast();
   const panelRef = useRef(null);
   const userRef = useRef(null);
+  const loadVersionRef = useRef(0);
+  const { isReady: lockedChatsReady, lockedConversationIds } = useLockedChats();
+  const lockedIdsKey = lockedConversationIds.join(",");
+  const redactLockedNotification = (notification) =>
+    redactLockedChatNotification(notification, lockedConversationIds, !lockedChatsReady);
 
   useEffect(() => {
     base44.auth.me().then((u) => { setUser(u); userRef.current = u; }).catch(() => {});
@@ -37,8 +44,11 @@ export default function NotificationBell({ direction = "down" }) {
   }, []);
 
   const load = async (uid) => {
+    const version = ++loadVersionRef.current;
     const list = await base44.entities.Notification.filter({ recipient_id: uid }, "-created_date", 30);
-    setItems(list);
+    if (version === loadVersionRef.current) {
+      setItems(list);
+    }
   };
 
   useEffect(() => {
@@ -49,18 +59,19 @@ export default function NotificationBell({ direction = "down" }) {
       if (!me) return;
       if (event.data?.recipient_id !== me.id) return;
       if (event.type === "create") {
+        const notification = redactLockedNotification(event.data);
         sounds.notification();
-        toast({ title: event.data.actor_name || "New activity", description: event.data.message });
+        toast({ title: notification.actor_name || "New activity", description: notification.message });
         showPushNotification({
-          title: event.data.actor_name || "NaliChat",
-          body: event.data.message || "You have a new notification",
-          url: event.data.link || "/",
+          title: notification.actor_name || "NaliChat",
+          body: notification.message || "You have a new notification",
+          url: notification.link || "/",
         });
       }
       load(me.id);
     });
     return unsub;
-  }, [user]);
+  }, [user, lockedIdsKey, lockedChatsReady]);
 
   useEffect(() => {
     const onClick = (e) => {
@@ -70,7 +81,8 @@ export default function NotificationBell({ direction = "down" }) {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  const unread = items.filter((n) => !n.read).length;
+  const displayedItems = items.map(redactLockedNotification);
+  const unread = displayedItems.filter((n) => !n.read).length;
 
   const markAllRead = async () => {
     const unreadItems = items.filter((n) => !n.read);
@@ -111,13 +123,13 @@ export default function NotificationBell({ direction = "down" }) {
             <p className="font-heading font-bold text-sm">Notifications</p>
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {items.length === 0 ? (
+            {displayedItems.length === 0 ? (
               <div className="py-10 text-center text-muted-foreground">
                 <Bell className="w-8 h-8 mx-auto mb-2 opacity-30" />
                 <p className="text-sm">No notifications yet</p>
               </div>
             ) : (
-              items.map((n) => {
+              displayedItems.map((n) => {
                 const Icon = typeIcon[n.type] || Bell;
                 const inner = (
                   <div className={cn(

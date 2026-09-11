@@ -1,14 +1,28 @@
 import { useState, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Search, Users, Hash, UserPlus, MessageSquare } from "lucide-react";
+import { Search, Users, Hash, UserPlus, MessageSquare, LockKeyhole } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { base44 } from "@/api/base44Client";
 
 import React from "react";
 
-export default React.memo(function ConversationList({ conversations, myConversations, selectedId, onSelect, users, currentUserId, onStartDM }) {
+export default React.memo(function ConversationList({
+  conversations,
+  myConversations,
+  lockedConversations = [],
+  showLocked = false,
+  onShowLocked,
+  vaultUnlocked = false,
+  hasLockedChats = false,
+  onLockNow,
+  selectedId,
+  onSelect,
+  users,
+  currentUserId,
+  onStartDM,
+}) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all"); // all, unread, groups
 
@@ -36,7 +50,8 @@ export default React.memo(function ConversationList({ conversations, myConversat
     const term = search.toLowerCase();
     
     // Filter existing chats
-    let filteredChats = myConversations.filter(conv => {
+    const sourceConversations = showLocked ? lockedConversations : myConversations;
+    let filteredChats = sourceConversations.filter(conv => {
       const other = getOtherUser(conv);
       const name = conv.type === "group" ? conv.name : (other?.display_name || other?.full_name || "");
       if (!name.toLowerCase().includes(term)) return false;
@@ -69,7 +84,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
     ) : [];
 
     return { filteredChats, discoverGroups, discoverUsers };
-  }, [search, filter, myConversations, conversations, users, currentUserId]);
+  }, [search, filter, myConversations, lockedConversations, showLocked, conversations, users, currentUserId]);
 
   const gradients = [
     "from-primary to-pink-500", "from-accent to-cyan-400", "from-yellow-500 to-orange-500",
@@ -129,6 +144,29 @@ export default React.memo(function ConversationList({ conversations, myConversat
               {f}
             </button>
           ))}
+          {hasLockedChats && (
+            <button
+              onClick={() => onShowLocked?.(!showLocked)}
+              className={cn(
+                "px-4 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5",
+                showLocked
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              )}
+              aria-pressed={showLocked}
+            >
+              <LockKeyhole className="w-3 h-3" />
+              Locked
+            </button>
+          )}
+          {vaultUnlocked && hasLockedChats && (
+            <button
+              onClick={onLockNow}
+              className="px-4 py-1.5 rounded-full text-xs font-semibold bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              Lock now
+            </button>
+          )}
         </div>
       )}
 
@@ -170,11 +208,15 @@ export default React.memo(function ConversationList({ conversations, myConversat
             <div className="inline-flex w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 items-center justify-center mb-4">
               <MessageSquare className="w-7 h-7 text-primary" />
             </div>
-            <p className="font-heading font-bold text-base text-foreground mb-1">No conversations yet</p>
-            <p className="text-xs text-muted-foreground mb-4 max-w-[200px] mx-auto leading-relaxed">
-              Search for someone above or tap the + button to start your first chat.
+            <p className="font-heading font-bold text-base text-foreground mb-1">
+              {showLocked ? "No locked conversations" : "No conversations yet"}
             </p>
-            <div className="flex flex-wrap gap-2 justify-center">
+            <p className="text-xs text-muted-foreground mb-4 max-w-[200px] mx-auto leading-relaxed">
+              {showLocked
+                ? "Use the chat menu to add a conversation to locked chats."
+                : "Search for someone above or tap the + button to start your first chat."}
+            </p>
+            {!showLocked && <div className="flex flex-wrap gap-2 justify-center">
               {["#TikTokMusic", "#BeatMakers"].map(topic => (
                 <button
                   key={topic}
@@ -184,7 +226,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
                   {topic}
                 </button>
               ))}
-            </div>
+            </div>}
           </div>
         )}
 
@@ -195,7 +237,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
           const avatar = conv.type === "group" ? conv.avatar_url : other?.avatar_url;
           const isSelected = selectedId === conv.id;
           const gradient = getGradient(displayName);
-          const unread = isUnread(conv);
+          const unread = !showLocked && isUnread(conv);
 
           return (
             <button
@@ -249,7 +291,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
         })}
 
         {/* Global Search Results (People / Public Groups) */}
-        {search && (searchResults.discoverUsers.length > 0 || searchResults.discoverGroups.length > 0) && (
+        {search && !showLocked && (searchResults.discoverUsers.length > 0 || searchResults.discoverGroups.length > 0) && (
           <div className="pt-4 mt-4 border-t border-border/50">
             <h3 className="text-xs font-bold text-muted-foreground/60 uppercase tracking-wider mb-2 px-3">Discover</h3>
             

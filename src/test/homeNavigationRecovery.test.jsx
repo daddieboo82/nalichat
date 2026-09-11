@@ -11,6 +11,10 @@ import MobileHeader from '@/components/navigation/MobileHeader';
 import WelcomeTour from '@/components/onboarding/WelcomeTour';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
+vi.mock('@/lib/LockedChatsContext', () => ({
+  useLockedChats: () => ({ lockedConversationIds: [] }),
+}));
+
 const mockBase44 = vi.hoisted(() => ({
   auth: {
     me: vi.fn(),

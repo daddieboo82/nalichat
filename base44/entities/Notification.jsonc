@@ -35,6 +35,15 @@
       "type": "string",
       "description": "In-app path to navigate to"
     },
+    "conversation_id": {
+      "type": "string",
+      "description": "Conversation target for message notifications"
+    },
+    "locked_chat": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether all identifying preview fields were redacted for the recipient"
+    },
     "read": {
       "type": "boolean",
       "default": false

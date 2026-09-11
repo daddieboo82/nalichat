@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import ConversationList from "@/components/messages/ConversationList";
@@ -19,20 +19,54 @@ import { MessageSquare, Users, Plus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { createTempId, applySendSuccess, applySendFailure, applyRealtimeCreate } from "@/lib/messageCache";
+import LockedChatAccessDialog from "@/components/messages/LockedChatAccessDialog";
+import { useLockedChats } from "@/lib/LockedChatsContext";
+import { partitionUserConversations, resolveRequestedConversation } from "@/lib/lockedChatPolicy";
 
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [sidebarTab, setSidebarTab] = useState("chats");
+  const [showLockedChats, setShowLockedChats] = useState(false);
+  const [showVaultDialog, setShowVaultDialog] = useState(false);
+  const [pendingLockedId, setPendingLockedId] = useState(null);
+  const [pendingLockConversationId, setPendingLockConversationId] = useState(null);
+  const {
+    status: lockedChatStatus,
+    error: lockedChatError,
+    isReady: lockedChatsReady,
+    isUnlocked: vaultUnlocked,
+    isEntitled: canConfigureLockedChats,
+    security: lockedChatSecurity,
+    lockedConversationIds,
+    hasLockedChats,
+    isConversationLocked,
+    canAccessConversation,
+    updateConversationLock,
+    lockNow,
+    refresh: refreshLockedChats,
+  } = useLockedChats();
 
-  // Mark a conversation as read (stores timestamp in localStorage for the unread badge).
+  // Locked-chat identifiers are not persisted in browser storage.
   const markConversationRead = (convId) => {
-    if (!convId) return;
+    if (!convId || isConversationLocked(convId)) return;
     try { localStorage.setItem(`lastReadAt:${convId}`, Date.now().toString()); } catch {}
   };
 
+  useEffect(() => {
+    for (const conversationId of lockedConversationIds) {
+      try { localStorage.removeItem(`lastReadAt:${conversationId}`); } catch {}
+    }
+  }, [lockedConversationIds]);
+
   const handleSelectConv = (convId) => {
+    if (!canAccessConversation(convId)) {
+      setPendingLockedId(convId);
+      setShowVaultDialog(true);
+      return;
+    }
     setSelectedConvId(convId);
     markConversationRead(convId);
   };
@@ -97,7 +131,59 @@ export default function Messages() {
     staleTime: 3000,
   });
 
-  const myConversations = conversations.filter(c => c.participant_ids?.includes(currentUser?.id));
+  const conversationPartitions = useMemo(
+    () => partitionUserConversations(
+      conversations,
+      currentUser?.id,
+      lockedConversationIds,
+    ),
+    [conversations, currentUser?.id, lockedConversationIds],
+  );
+  const allMyConversations = useMemo(
+    () => [...conversationPartitions.visible, ...conversationPartitions.locked],
+    [conversationPartitions],
+  );
+  const lockedConversations = conversationPartitions.locked;
+  const myConversations = conversationPartitions.visible;
+
+  useEffect(() => {
+    if (!lockedChatsReady || !currentUser?.id) return;
+    const requestedId = new URLSearchParams(location.search).get("id");
+    if (!requestedId) return;
+    const requested = resolveRequestedConversation(
+      allMyConversations,
+      requestedId,
+      lockedConversationIds,
+      vaultUnlocked,
+    );
+    if (requested.status === "missing") {
+      setSelectedConvId(null);
+      return;
+    }
+    if (requested.status === "locked") {
+      setSelectedConvId(null);
+      setPendingLockedId(requestedId);
+      setShowVaultDialog(true);
+      return;
+    }
+    handleSelectConv(requestedId);
+  }, [
+    allMyConversations,
+    canAccessConversation,
+    currentUser?.id,
+    location.search,
+    lockedChatsReady,
+    vaultUnlocked,
+  ]);
+
+  useEffect(() => {
+    if (vaultUnlocked) return;
+    setShowLockedChats(false);
+    if (selectedConvId && isConversationLocked(selectedConvId)) {
+      setSelectedConvId(null);
+      if (location.search) navigate("/messages", { replace: true });
+    }
+  }, [isConversationLocked, location.search, navigate, selectedConvId, vaultUnlocked]);
 
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
     queryKey: ["messages", selectedConvId],
@@ -105,7 +191,7 @@ export default function Messages() {
       const msgs = await base44.entities.Message.filter({ conversation_id: selectedConvId }, "-created_date", 200);
       return msgs.reverse();
     },
-    enabled: !!selectedConvId,
+    enabled: !!selectedConvId && lockedChatsReady && canAccessConversation(selectedConvId),
     refetchInterval: 5000,
     staleTime: 3000,
   });
@@ -318,7 +404,7 @@ export default function Messages() {
   const startDM = async (otherUser) => {
     if (!otherUser?.id || !currentUser?.id) return;
     try {
-      const existing = myConversations.find(c =>
+      const existing = allMyConversations.find(c =>
         c.type === "dm" && c.participant_ids?.includes(otherUser.id) && c.participant_ids?.length === 2
       );
       if (existing) { handleSelectConv(existing.id); return; }
@@ -348,7 +434,10 @@ export default function Messages() {
     }
   };
 
-  const selectedConv = myConversations.find(c => c.id === selectedConvId);
+  const selectedConv = allMyConversations.find(c => c.id === selectedConvId)
+    && canAccessConversation(selectedConvId)
+    ? allMyConversations.find(c => c.id === selectedConvId)
+    : null;
   const otherUsers = users.filter(u => u.id !== currentUser?.id);
 
   // Banned users may still message an admin (to appeal). Timed-out users are fully blocked.
@@ -358,6 +447,74 @@ export default function Messages() {
   const isBlocked = currentUser?.is_banned
     ? !convHasAdmin
     : isTimedOut;
+
+  const handleToggleConversationLock = async (locked) => {
+    if (!selectedConvId) return;
+    if (!canConfigureLockedChats) {
+      toast.error("Premium Plus is required to change locked-chat settings.");
+      return;
+    }
+    if (!lockedChatSecurity?.configured || !vaultUnlocked) {
+      setPendingLockConversationId(selectedConvId);
+      setShowVaultDialog(true);
+      return;
+    }
+    await updateConversationLock(selectedConvId, locked);
+    if (locked) {
+      lockNow();
+      setSelectedConvId(null);
+      setShowLockedChats(false);
+      if (location.search) navigate("/messages", { replace: true });
+      toast.success("Chat locked.");
+    } else {
+      toast.success("Chat removed from locked chats.");
+    }
+  };
+
+  const handleVaultUnlocked = async () => {
+    if (pendingLockConversationId) {
+      const conversationId = pendingLockConversationId;
+      setPendingLockConversationId(null);
+      await updateConversationLock(conversationId, true);
+      lockNow();
+      setSelectedConvId(null);
+      setShowLockedChats(false);
+      if (location.search) navigate("/messages", { replace: true });
+      toast.success("Chat locked.");
+      return;
+    }
+    if (pendingLockedId) {
+      const conversationId = pendingLockedId;
+      setPendingLockedId(null);
+      setShowLockedChats(true);
+      setSelectedConvId(conversationId);
+      markConversationRead(conversationId);
+    } else {
+      setShowLockedChats(true);
+    }
+  };
+
+  if (lockedChatStatus === "loading") {
+    return (
+      <div className="h-full flex items-center justify-center" aria-live="polite">
+        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin motion-reduce:animate-none" />
+        <span className="sr-only">Loading chat privacy settings</span>
+      </div>
+    );
+  }
+
+  if (lockedChatStatus === "error") {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-center p-6">
+        <h1 className="font-heading font-bold text-xl">Chats are locked for safety</h1>
+        <p className="text-sm text-muted-foreground mt-2 max-w-md">
+          Privacy settings could not be verified, so conversation details are hidden.
+        </p>
+        <Button className="mt-4" onClick={refreshLockedChats}>Try again</Button>
+        <span className="sr-only">{lockedChatError?.message}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="absolute inset-0 sm:relative sm:inset-auto sm:h-[calc(100vh-80px)] p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden">
@@ -437,6 +594,24 @@ export default function Messages() {
                     <ConversationList
                       conversations={conversations}
                       myConversations={myConversations}
+                      lockedConversations={vaultUnlocked ? lockedConversations : []}
+                      showLocked={showLockedChats && vaultUnlocked}
+                      onShowLocked={(show) => {
+                        if (show && !vaultUnlocked) {
+                          setPendingLockedId(null);
+                          setShowVaultDialog(true);
+                          return;
+                        }
+                        setShowLockedChats(show);
+                      }}
+                      vaultUnlocked={vaultUnlocked}
+                      hasLockedChats={hasLockedChats}
+                      onLockNow={() => {
+                        lockNow();
+                        setSelectedConvId(null);
+                        setShowLockedChats(false);
+                        if (location.search) navigate("/messages", { replace: true });
+                      }}
                       selectedId={selectedConvId}
                       onSelect={handleSelectConv}
                       users={users}
@@ -480,8 +655,20 @@ export default function Messages() {
               }}
               onEditMessage={(id, text) => editMessage.mutate({ id, text })}
               onReact={handleReact}
-              onBack={() => setSelectedConvId(null)}
+              onBack={() => {
+                setSelectedConvId(null);
+                if (location.search) navigate("/messages", { replace: true });
+              }}
               onStartDM={startDM}
+              isConversationLocked={isConversationLocked(selectedConv.id)}
+              canManageLockedChats={canConfigureLockedChats}
+              onToggleLocked={handleToggleConversationLock}
+              onLockNow={() => {
+                lockNow();
+                setSelectedConvId(null);
+                setShowLockedChats(false);
+                if (location.search) navigate("/messages", { replace: true });
+              }}
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 relative overflow-hidden">
@@ -531,6 +718,21 @@ export default function Messages() {
       <GlobalInviteDialog 
         open={showInvite}
         onOpenChange={setShowInvite}
+      />
+      <LockedChatAccessDialog
+        open={showVaultDialog}
+        onOpenChange={(open) => {
+          setShowVaultDialog(open);
+          if (!open) {
+            setPendingLockedId(null);
+            setPendingLockConversationId(null);
+          }
+        }}
+        onCancel={() => {
+          if (pendingLockedId && location.search) navigate("/messages", { replace: true });
+        }}
+        onUnlocked={handleVaultUnlocked}
+        initialMode={lockedChatSecurity?.configured ? "unlock" : "setup"}
       />
     </div>
   );

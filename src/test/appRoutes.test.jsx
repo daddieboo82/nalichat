@@ -52,6 +52,7 @@ vi.mock('@/components/AiAssistant', () => ({ default: () => null }));
 vi.mock('@/lib/AudioPlayerContext', () => ({ AudioPlayerProvider: ({ children }) => children }));
 vi.mock('@/lib/CartContext', () => ({ CartProvider: ({ children }) => children }));
 vi.mock('@/lib/NaliPresenceContext', () => ({ NaliPresenceProvider: ({ children }) => children }));
+vi.mock('@/lib/LockedChatsContext', () => ({ LockedChatsProvider: ({ children }) => children }));
 vi.mock('@/hooks/use-performance', () => ({ usePerformance: () => ({ isLowEnd: true }) }));
 vi.mock('@/api/base44Client', () => ({ base44: { auth: { logout: vi.fn() } } }));
 

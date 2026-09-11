@@ -16,6 +16,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { AudioPlayerProvider } from '@/lib/AudioPlayerContext';
 import { CartProvider } from '@/lib/CartContext';
 import { NaliPresenceProvider } from '@/lib/NaliPresenceContext';
+import { LockedChatsProvider } from '@/lib/LockedChatsContext';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -110,6 +111,7 @@ const AuthenticatedApp = () => {
     const checkActivity = () => {
       const lastActive = localStorage.getItem('last_activity');
       if (lastActive && Date.now() - parseInt(lastActive, 10) > 24 * 60 * 60 * 1000) {
+        window.dispatchEvent(new Event('nali-lock-vault'));
         base44.auth.logout();
       }
     };
@@ -309,27 +311,29 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClientInstance}>
         <AuthProvider>
-          <NaliPresenceProvider>
-            <AudioPlayerProvider>
-              <CartProvider>
-                <MotionConfig reducedMotion={isLowEnd ? "always" : "user"}>
-                  {!loaded && <AppLoader onDone={handleSplashDone} />}
-                  {!isLowEnd && <NavRipple />}
-                  <Router>
-                    <AuthenticatedApp />
-                  </Router>
-                  {loaded && (
-                    <Suspense fallback={null}>
-                      <AiAssistant />
-                    </Suspense>
-                  )}
-                  <PwaUpdatePrompt />
-                  <Toaster />
-                  <SonnerToaster />
-                </MotionConfig>
-              </CartProvider>
-            </AudioPlayerProvider>
-          </NaliPresenceProvider>
+          <LockedChatsProvider>
+            <NaliPresenceProvider>
+              <AudioPlayerProvider>
+                <CartProvider>
+                  <MotionConfig reducedMotion={isLowEnd ? "always" : "user"}>
+                    {!loaded && <AppLoader onDone={handleSplashDone} />}
+                    {!isLowEnd && <NavRipple />}
+                    <Router>
+                      <AuthenticatedApp />
+                    </Router>
+                    {loaded && (
+                      <Suspense fallback={null}>
+                        <AiAssistant />
+                      </Suspense>
+                    )}
+                    <PwaUpdatePrompt />
+                    <Toaster />
+                    <SonnerToaster />
+                  </MotionConfig>
+                </CartProvider>
+              </AudioPlayerProvider>
+            </NaliPresenceProvider>
+          </LockedChatsProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

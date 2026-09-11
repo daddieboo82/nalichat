@@ -123,6 +123,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    window.dispatchEvent(new Event('nali-lock-vault'));
     // Clear the token locally without triggering a full-page hard reload (which
     // causes a multi-second blank screen while the whole app re-boots).
     try {

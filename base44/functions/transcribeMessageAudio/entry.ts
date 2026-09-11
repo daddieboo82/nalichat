@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -29,6 +30,9 @@ Deno.serve(async (req) => {
     }
     if (!message.file_url || !['audio', 'file'].includes(message.type)) {
       return Response.json({ error: 'Message has no transcribable audio' }, { status: 400 });
+    }
+    if (!isTrustedStoredMediaUrl(message.file_url)) {
+      return Response.json({ error: 'Stored audio host is not allowed' }, { status: 400 });
     }
 
     const { allowed } = await requireEntitlement(entities, user.id, 'voice.transcription');

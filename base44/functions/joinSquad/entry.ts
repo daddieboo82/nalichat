@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
       {
         $set: {
           member_b_id: user.id,
-          member_b_name: user.display_name || user.full_name || user.email || 'Artist',
+          member_b_name: user.display_name || user.full_name || 'Artist',
           status: 'active',
         },
       },

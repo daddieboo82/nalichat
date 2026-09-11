@@ -20,18 +20,25 @@ Deno.serve(async (req) => {
     const { fileId } = await req.json();
     if (!fileId) return Response.json({ error: 'fileId is required' }, { status: 400 });
 
-    const file = await base44.asServiceRole.entities.SharedFile.get(fileId);
+    const entities = base44.asServiceRole.entities;
+    const file = await entities.SharedFile.get(fileId);
     if (!file) return Response.json({ error: 'File not found' }, { status: 404 });
-    const canShare = user.role === 'admin'
-      || file.uploader_id === user.id
-      || (file.edit_user_ids || []).includes(user.id);
+
+    let canShare = user.role === 'admin';
+    if (!canShare && file.project_id) {
+      const project = await entities.Project.get(file.project_id).catch(() => null);
+      if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
+      canShare = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
+    } else if (!canShare) {
+      canShare = file.uploader_id === user.id || (file.edit_user_ids || []).includes(user.id);
+    }
     if (!canShare) {
       return Response.json({ error: 'You do not have permission to share this file' }, { status: 403 });
     }
 
     const token = randomToken();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    await base44.asServiceRole.entities.SharedFile.update(fileId, {
+    await entities.SharedFile.update(fileId, {
       share_token_hash: await sha256Hex(token),
       share_token_expires_at: expiresAt,
     });

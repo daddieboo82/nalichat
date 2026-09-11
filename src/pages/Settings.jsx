@@ -19,6 +19,7 @@ import { isValidAvatarUrl } from "@/lib/avatarValidation";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import SubscriptionSettings from "@/components/settings/SubscriptionSettings";
 import ChatThemeSettings from "@/components/settings/ChatThemeSettings";
+import LockedChatSettings from "@/components/settings/LockedChatSettings";
 import { Switch } from "@/components/ui/switch";
 import { useReducedMotionPreference } from "@/hooks/useReducedMotionPreference";
 
@@ -199,6 +200,11 @@ export default function Settings() {
               await checkUserAuth();
             }}
           />
+        </div>
+
+        <div className="mt-12 pt-8 border-t border-border">
+          <h2 className="text-xl font-heading font-bold mb-6">Privacy</h2>
+          <LockedChatSettings />
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">

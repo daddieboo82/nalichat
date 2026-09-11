@@ -2,6 +2,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -30,8 +34,16 @@ Deno.serve(async (req) => {
         source_id: post.id,
         xp: 50,
       });
-    } catch {
-      return Response.json({ success: true, awarded: false, duplicate: true });
+    } catch (createError) {
+      const existing = await entities.UserActivityReward.get(rewardId).catch(() => null);
+      if (
+        existing?.user_id === user.id
+        && existing?.source_type === 'art_post'
+        && existing?.source_id === post.id
+      ) {
+        return Response.json({ success: true, awarded: false, duplicate: true });
+      }
+      throw createError;
     }
 
     try {

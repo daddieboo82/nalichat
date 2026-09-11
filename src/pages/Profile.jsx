@@ -47,8 +47,8 @@ export default function Profile() {
     queryKey: ["user", targetUserId],
     queryFn: async () => {
       if (!targetUserId) return null;
-      const res = await base44.functions.invoke("listPublicUsers", {});
-      return (res?.data?.users || []).find((u) => u.id === targetUserId) || null;
+      const res = await base44.functions.invoke("listPublicUsers", { userId: targetUserId });
+      return (res?.data?.users || [])[0] || null;
     },
     enabled: !!targetUserId,
   });

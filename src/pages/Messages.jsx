@@ -115,72 +115,9 @@ export default function Messages() {
     staleTime: 3000,
   });
 
-  useEffect(() => {
-    if (!currentUser?.id) return;
-
-    const unsubMsg = base44.entities.Message.subscribe(async (event) => {
-      // For delete events, event.data may be null (the record is gone) —
-      // remove by ID from the active conversation without requiring conversation_id.
-      if (event.type === "delete") {
-        queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
-          old.filter(m => m.id !== event.id)
-        );
-        queryClient.invalidateQueries({ queryKey: ["conversations"] });
-        return;
-      }
-
-      if (!event.data?.conversation_id) return;
-
-      let convs = queryClient.getQueryData(["conversations"]) || [];
-      let isMyConv = convs.some(c => c.id === event.data.conversation_id && c.participant_ids?.includes(currentUser.id));
-
-      if (!isMyConv) {
-         try {
-           const conv = await base44.entities.Conversation.get(event.data.conversation_id);
-           if (conv && conv.participant_ids?.includes(currentUser.id)) {
-             isMyConv = true;
-           }
-         } catch(e) {}
-      }
-
-      if (isMyConv) {
-        if (event.type === "create" && event.data?.sender_id !== currentUser.id) {
-          sounds.notification();
-        }
-        // If the user is viewing this conversation, mark it as read immediately
-        if (event.data?.conversation_id === selectedConvId && document.visibilityState === "visible") {
-          markConversationRead(selectedConvId);
-        }
-        // Apply the change directly to the cache for instant, lag-free updates
-        // instead of refetching all messages from the server.
-        if (event.data?.conversation_id === selectedConvId) {
-          queryClient.setQueryData(["messages", selectedConvId], (old = []) => {
-            if (event.type === "delete") {
-              return old.filter(m => m.id !== event.id);
-            }
-            if (event.type === "update") {
-              return old.map(m => (m.id === event.id ? { ...m, ...event.data } : m));
-            }
-            // create: retire at most one matching optimistic temp rather than
-            // every temp from this sender, which would strip in-flight sends.
-            return applyRealtimeCreate(old, event.data, event.id);
-          });
-        }
-        queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      }
-    });
-
-    const unsubConv = base44.entities.Conversation.subscribe((event) => {
-      if (event.data?.participant_ids?.includes(currentUser.id)) {
-        queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      }
-    });
-
-    return () => {
-      unsubMsg();
-      unsubConv();
-    };
-  }, [selectedConvId, queryClient, currentUser]);
+  // Message and conversation lists already poll every five seconds above.
+  // Avoid raw realtime entity subscriptions so the client never receives an
+  // event payload outside the normal scoped read query path.
 
   const editMessage = useMutation({
     mutationFn: async ({ id, text }) => {

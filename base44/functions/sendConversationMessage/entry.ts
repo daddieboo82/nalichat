@@ -136,9 +136,48 @@ Deno.serve(async (req) => {
     }
 
     const type = ALLOWED_TYPES.has(body?.type) ? body.type : 'text';
-    const text = typeof body?.text === 'string' ? body.text.slice(0, 20000) : '';
+    let text = typeof body?.text === 'string' ? body.text.slice(0, 20000) : '';
 
-    if (type !== 'session') {
+    let callSignal: any = null;
+    if (type === 'session' && text.trim()) {
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed?.__nalichat_call__ === true) callSignal = parsed;
+      } catch {
+        // Plain-text session names are legitimate and handled as user content.
+      }
+    }
+
+    if (callSignal) {
+      const signalType = String(callSignal.type || '');
+      const callId = String(callSignal.callId || '').trim();
+      if (!['offer', 'answer', 'ice', 'end'].includes(signalType) || !callId || callId.length > 200) {
+        return Response.json({ error: 'Invalid call signaling envelope' }, { status: 400 });
+      }
+      if (signalType === 'offer' && !['audio', 'video'].includes(String(callSignal.callType || ''))) {
+        return Response.json({ error: 'Invalid call type' }, { status: 400 });
+      }
+      if (signalType !== 'end' && callSignal.payload == null) {
+        return Response.json({ error: 'Call signal payload is required' }, { status: 400 });
+      }
+
+      const rate = await consumeHourlyLimit(
+        base44.asServiceRole.entities,
+        user.id,
+        'conversation_call_signal',
+        2000,
+      );
+      if (!rate.allowed) {
+        return Response.json({ error: 'Call signaling rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+    } else {
+      if (type === 'session') {
+        text = text.trim().slice(0, 200);
+        if (!text) {
+          return Response.json({ error: 'Session name is required' }, { status: 400 });
+        }
+      }
+
       const rate = await consumeHourlyLimit(
         base44.asServiceRole.entities,
         user.id,
@@ -148,15 +187,12 @@ Deno.serve(async (req) => {
       if (!rate.allowed) {
         return Response.json({ error: 'Message rate limit exceeded. Please try again later.' }, { status: 429 });
       }
-    }
 
-    // Call/WebRTC signaling is transport data rather than user-generated chat
-    // content, so it bypasses text moderation but still requires membership and
-    // moderation-state authorization.
-    if (type !== 'session' && text.trim() && !user.is_banned) {
-      const moderation = await moderateText(base44, user, text, conversationId);
-      if (moderation) {
-        return Response.json({ success: false, moderation }, { status: 200 });
+      if (text.trim() && !user.is_banned) {
+        const moderation = await moderateText(base44, user, text, conversationId);
+        if (moderation) {
+          return Response.json({ success: false, moderation }, { status: 200 });
+        }
       }
     }
 
@@ -217,6 +253,9 @@ Deno.serve(async (req) => {
       const threadTarget = await base44.asServiceRole.entities.Message.get(body.thread_id).catch(() => null);
       if (!threadTarget || threadTarget.conversation_id !== conversationId) {
         return Response.json({ error: 'Thread target is not in this conversation' }, { status: 400 });
+      }
+      if (threadTarget.thread_id) {
+        return Response.json({ error: 'Thread replies must target a top-level message' }, { status: 400 });
       }
       messageData.thread_id = threadTarget.id;
     }

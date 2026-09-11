@@ -11,9 +11,25 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { file_url, title, genre, tags } = await req.json();
+    const { post_id } = await req.json();
+    if (!post_id) {
+      return Response.json({ error: 'post_id is required' }, { status: 400 });
+    }
 
-    // Step 1: Transcribe audio if available
+    const post = await base44.asServiceRole.entities.ArtPost.get(post_id);
+    if (!post) {
+      return Response.json({ error: 'Track not found' }, { status: 404 });
+    }
+    if (post.creator_id !== user.id && user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const file_url = post.file_url;
+    const title = post.title;
+    const genre = post.genre;
+    const tags = post.tags;
+
+    // Step 1: Transcribe the authenticated user's stored track if available
     let transcript = "No lyrics available.";
     if (file_url) {
       try {

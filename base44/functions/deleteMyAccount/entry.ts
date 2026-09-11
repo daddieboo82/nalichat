@@ -101,54 +101,60 @@ Deno.serve(async (req) => {
     // Cancel live Stripe billing before deleting account access. If cancellation
     // fails, abort deletion so the user is never stranded without a billing
     // portal while an external subscription can continue charging.
-    const subscriptions = await entities.Subscription.filter({ user_id: user.id });
-    for (const subscription of subscriptions) {
-      if (
-        subscription.provider === 'stripe'
-        && subscription.subscription_id
-        && !['canceled', 'ended'].includes(String(subscription.status || ''))
-      ) {
-        await stripeRequest(
-          `/subscriptions/${encodeURIComponent(subscription.subscription_id)}`,
-          {},
-          'DELETE',
-          { idempotencyKey: `delete_account_cancel_${subscription.id}`.slice(0, 255) },
-        );
-        await entities.Subscription.update(subscription.id, {
-          status: 'canceled',
-          cancel_at_period_end: false,
-          current_period_end: new Date().toISOString(),
-        });
-      } else if (
-        subscription.provider === 'stripe'
-        && subscription.checkout_id
-        && ['pending', 'incomplete'].includes(String(subscription.status || ''))
-      ) {
-        try {
+    for (let subscriptionSkip = 0; ; subscriptionSkip += CLEANUP_BATCH_SIZE) {
+      const subscriptions = await entities.Subscription.filter(
+        { user_id: user.id },
+        '-created_date',
+        CLEANUP_BATCH_SIZE,
+        subscriptionSkip,
+      );
+      for (const subscription of subscriptions) {
+        if (
+          subscription.provider === 'stripe'
+          && subscription.subscription_id
+          && !['canceled', 'ended'].includes(String(subscription.status || ''))
+        ) {
           await stripeRequest(
-            `/checkout/sessions/${encodeURIComponent(subscription.checkout_id)}/expire`,
+            `/subscriptions/${encodeURIComponent(subscription.subscription_id)}`,
             {},
-            'POST',
-            { idempotencyKey: `delete_account_expire_${subscription.id}`.slice(0, 255) },
+            'DELETE',
+            { idempotencyKey: `delete_account_cancel_${subscription.id}`.slice(0, 255) },
           );
-        } catch (error) {
-          console.warn('Could not expire pending checkout during account deletion:', error);
-        }
-      } else if (
-        subscription.provider === 'wix'
-        && subscription.subscription_id
-        && !['canceled', 'ended'].includes(String(subscription.status || ''))
-      ) {
-        const wixApiKey = Deno.env.get('WIX_PAYMENTS_API_KEY');
-        const wixSiteId = Deno.env.get('WIX_PAYMENTS_SITE_ID');
-        if (!wixApiKey || !wixSiteId) {
-          return Response.json(
-            { error: 'Legacy Wix billing must be canceled before account deletion. Please contact support.' },
-            { status: 409 },
-          );
-        }
+          await entities.Subscription.update(subscription.id, {
+            status: 'canceled',
+            cancel_at_period_end: false,
+            current_period_end: new Date().toISOString(),
+          });
+        } else if (
+          subscription.provider === 'stripe'
+          && subscription.checkout_id
+          && ['pending', 'incomplete'].includes(String(subscription.status || ''))
+        ) {
+          try {
+            await stripeRequest(
+              `/checkout/sessions/${encodeURIComponent(subscription.checkout_id)}/expire`,
+              {},
+              'POST',
+              { idempotencyKey: `delete_account_expire_${subscription.id}`.slice(0, 255) },
+            );
+          } catch (error) {
+            console.warn('Could not expire pending checkout during account deletion:', error);
+          }
+        } else if (
+          subscription.provider === 'wix'
+          && subscription.subscription_id
+          && !['canceled', 'ended'].includes(String(subscription.status || ''))
+        ) {
+          const wixApiKey = Deno.env.get('WIX_PAYMENTS_API_KEY');
+          const wixSiteId = Deno.env.get('WIX_PAYMENTS_SITE_ID');
+          if (!wixApiKey || !wixSiteId) {
+            return Response.json(
+              { error: 'Legacy Wix billing must be canceled before account deletion. Please contact support.' },
+              { status: 409 },
+            );
+          }
 
-        const cancelRes = await fetch(
+          const cancelRes = await fetch(
           `https://www.wixapis.com/payments/base44/v1/subscriptions/${encodeURIComponent(subscription.subscription_id)}/cancel`,
           {
             method: 'POST',
@@ -163,19 +169,21 @@ Deno.serve(async (req) => {
             }),
           },
         );
-        if (!cancelRes.ok) {
-          console.error('Failed to cancel legacy Wix subscription:', await cancelRes.text());
-          return Response.json(
-            { error: 'Legacy Wix billing could not be canceled. Account deletion was stopped.' },
-            { status: 502 },
-          );
+          if (!cancelRes.ok) {
+            console.error('Failed to cancel legacy Wix subscription:', await cancelRes.text());
+            return Response.json(
+              { error: 'Legacy Wix billing could not be canceled. Account deletion was stopped.' },
+              { status: 502 },
+            );
+          }
+          await entities.Subscription.update(subscription.id, {
+            status: 'canceled',
+            cancel_at_period_end: false,
+            current_period_end: new Date().toISOString(),
+          });
         }
-        await entities.Subscription.update(subscription.id, {
-          status: 'canceled',
-          cancel_at_period_end: false,
-          current_period_end: new Date().toISOString(),
-        });
       }
+      if (subscriptions.length < CLEANUP_BATCH_SIZE) break;
     }
 
     // Delete records that are private to this account and safe to remove.
@@ -584,9 +592,11 @@ Deno.serve(async (req) => {
     // Subscription and purchase records are intentionally retained as billing
     // history; remove direct account identity where possible while retaining
     // Stripe reconciliation IDs.
-    for (const subscription of subscriptions) {
-      await entities.Subscription.update(subscription.id, { user_id: tombstoneId });
-    }
+    await processMatchingBatches(
+      entities.Subscription,
+      { user_id: user.id },
+      (subscription) => entities.Subscription.update(subscription.id, { user_id: tombstoneId }),
+    );
     await processMatchingBatches(
       entities.Base44Purchase,
       { user_id: user.id },

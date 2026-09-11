@@ -771,10 +771,12 @@ describe('release configuration', () => {
 
   it('cancels Stripe billing before destructive account deletion', async () => {
     const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
-    expect(deletion).toContain("'/subscriptions/'");
+    expect(deletion).toContain('`/subscriptions/${encodeURIComponent(subscription.subscription_id)}`');
     expect(deletion).toContain("'DELETE'");
-    expect(deletion).toContain('const subscriptions = await entities.Subscription.filter');
-    expect(deletion.indexOf("'/subscriptions/'")).toBeLessThan(deletion.indexOf("await entities.User.delete(user.id)"));
+    expect(deletion).toContain('const subscriptions = await entities.Subscription.filter(');
+    expect(deletion.indexOf('`/subscriptions/${encodeURIComponent(subscription.subscription_id)}`')).toBeLessThan(
+      deletion.indexOf("await entities.User.delete(user.id)"),
+    );
   });
 
   it('authorizes purchase verification before calling Stripe', async () => {
@@ -791,7 +793,7 @@ describe('release configuration', () => {
 
     expect(verify.indexOf('Base44Purchase.filter')).toBeLessThan(verify.indexOf("stripeRequest(`/checkout/sessions/"));
     expect(verify.indexOf('Invalid purchase verifier')).toBeLessThan(verify.indexOf("stripeRequest(`/checkout/sessions/"));
-    expect(deletion).toContain("'/subscriptions/${encodeURIComponent(subscription.subscription_id)}'");
+    expect(deletion).toContain('`/subscriptions/${encodeURIComponent(subscription.subscription_id)}`');
     expect(deletion).toContain('Legacy Wix billing must be canceled before account deletion');
     expect(webhook).toContain('deleted:${metadataUserId}');
     expect(webhook).toContain('if (isDeletedUserId(userId)) return');

@@ -725,6 +725,14 @@ describe('release configuration', () => {
     expect(deletion).toContain("reported_by_name: 'Deleted User'");
   });
 
+  it('anonymizes reply sender snapshots for deleted users', async () => {
+    const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
+    expect(deletion).toContain('const authoredMessageIds = new Set');
+    expect(deletion).toContain('entities.Message.filter({ reply_to_id: parentId })');
+    expect(deletion).toContain("reply_to_sender: 'Deleted User'");
+    expect(deletion).not.toContain("Message.list('-created_date', 5000)");
+  });
+
 
   it('enforces configured challenge voting windows server-side', async () => {
     const vote = await readText('base44/functions/castVote/entry.ts');

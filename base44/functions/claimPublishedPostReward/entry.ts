@@ -5,6 +5,12 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
 
     const { postId } = await req.json();
     if (!postId) return Response.json({ error: 'postId is required' }, { status: 400 });
@@ -28,7 +34,14 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, awarded: false, duplicate: true });
     }
 
-    await entities.User.updateMany({ id: user.id }, { $inc: { xp: 50 } });
+    try {
+      await entities.User.updateMany({ id: user.id }, { $inc: { xp: 50 } });
+    } catch (xpError) {
+      // Compensate the deterministic dedupe record so a transient user-update
+      // failure does not permanently consume an unawarded reward.
+      await entities.UserActivityReward.delete(rewardId).catch(() => {});
+      throw xpError;
+    }
     return Response.json({ success: true, awarded: true, xp: 50 });
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not award post XP' }, { status: 500 });

@@ -27,9 +27,20 @@ Deno.serve(async (req) => {
 
     if (action === 'update') {
       const patch: Record<string, any> = {};
-      if (typeof body?.name === 'string') patch.name = body.name.slice(0, 255);
+      if (typeof body?.name === 'string') {
+        const name = body.name.trim().slice(0, 255);
+        if (!name) return Response.json({ error: 'File name cannot be empty' }, { status: 400 });
+        patch.name = name;
+      }
       if (typeof body?.description === 'string') patch.description = body.description.slice(0, 1000);
-      if (Array.isArray(body?.tags)) patch.tags = body.tags.map((t) => String(t).slice(0, 64)).slice(0, 50);
+      if (Array.isArray(body?.tags)) {
+        patch.tags = Array.from(new Set(
+          body.tags.map((t) => String(t).trim().slice(0, 64)).filter(Boolean),
+        )).slice(0, 50);
+      }
+      if (Object.keys(patch).length === 0) {
+        return Response.json({ error: 'No supported file fields supplied' }, { status: 400 });
+      }
       const updated = await entities.SharedFile.update(file.id, patch);
       return Response.json({ success: true, file: updated });
     }
@@ -41,12 +52,18 @@ Deno.serve(async (req) => {
 
     if (folderId) {
       const folder = await entities.Folder.get(folderId);
-      if (!folder || !(folder.edit_user_ids || []).includes(user.id) && user.role !== 'admin') {
+      if (!folder || (!(folder.edit_user_ids || []).includes(user.id) && user.role !== 'admin')) {
         return Response.json({ error: 'You cannot move files into this folder' }, { status: 403 });
       }
       projectId = folder.project_id || null;
       accessUserIds = Array.from(new Set(folder.access_user_ids || []));
       editUserIds = Array.from(new Set(folder.edit_user_ids || []));
+    }
+
+    if (file.project_id && projectId !== file.project_id && user.role !== 'admin') {
+      return Response.json({
+        error: 'Project files cannot be moved outside their current project. Copy or share the file instead.',
+      }, { status: 403 });
     }
 
     const updated = await entities.SharedFile.update(file.id, {
@@ -55,6 +72,7 @@ Deno.serve(async (req) => {
       access_user_ids: accessUserIds,
       edit_user_ids: editUserIds,
       share_token_hash: null,
+      share_token_expires_at: null,
     });
     return Response.json({ success: true, file: updated });
   } catch (error) {

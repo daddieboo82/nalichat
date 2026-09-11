@@ -38,16 +38,34 @@ export default function Explore() {
   const queryClient = useQueryClient();
 
   const { data: posts = [], isLoading, isError, refetch } = useQuery({
-    queryKey: ["artposts", filter],
-    queryFn: () => filter === "all"
-      ? base44.entities.ArtPost.list("-created_date", 100)
-      : base44.entities.ArtPost.filter({ medium: filter }, "-created_date", 100),
+    queryKey: ["artposts", filter, currentUser?.id],
+    queryFn: async () => {
+      const [rows, likedRes] = await Promise.all([
+        filter === "all"
+          ? base44.entities.ArtPost.list("-created_date", 100)
+          : base44.entities.ArtPost.filter({ medium: filter }, "-created_date", 100),
+        currentUser
+          ? base44.functions.invoke("listMyLikedPostIds", {})
+          : Promise.resolve({ data: { post_ids: [] } }),
+      ]);
+      const likedIds = new Set(likedRes?.data?.post_ids || []);
+      return rows.map((post) => ({
+        ...post,
+        liked_by: currentUser && likedIds.has(post.id) ? [currentUser.id] : [],
+      }));
+    },
   });
 
   const deletePost = useMutation({
-    mutationFn: async (post) => base44.entities.ArtPost.delete(post.id),
+    mutationFn: async (post) => {
+      const res = await base44.functions.invoke("deleteArtPost", { postId: post.id });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["artposts"] });
+      queryClient.invalidateQueries({ queryKey: ["playlistTracks"] });
+      queryClient.invalidateQueries({ queryKey: ["myPlaylists"] });
       toast.success("Track deleted");
     },
     onError: () => toast.error("Failed to delete track"),
@@ -61,8 +79,8 @@ export default function Explore() {
     // Optimistic update so the heart + count flip instantly
     onMutate: async (post) => {
       if (!currentUser) return;
-      await queryClient.cancelQueries({ queryKey: ["artposts", filter] });
-      const previous = queryClient.getQueryData(["artposts", filter]);
+      await queryClient.cancelQueries({ queryKey: ["artposts", filter, currentUser?.id] });
+      const previous = queryClient.getQueryData(["artposts", filter, currentUser?.id]);
       const update = (old = []) => old.map(p => {
         if (p.id !== post.id) return p;
         const liked = p.liked_by?.includes(currentUser.id);
@@ -72,7 +90,7 @@ export default function Explore() {
         const likes = Math.max(0, (p.likes || 0) + (liked ? -1 : 1));
         return { ...p, liked_by, likes };
       });
-      queryClient.setQueryData(["artposts", filter], update);
+      queryClient.setQueryData(["artposts", filter, currentUser?.id], update);
       return { previous, filter };
     },
     onError: (_err, _post, ctx) => {

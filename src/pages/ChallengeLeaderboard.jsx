@@ -15,30 +15,30 @@ export default function ChallengeLeaderboard() {
   const { challengeId } = useParams();
   const [challenge, setChallenge] = useState(null);
   const [submissions, setSubmissions] = useState([]);
-  const [votes, setVotes] = useState([]);
+  const [voteCounts, setVoteCounts] = useState({});
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     base44.entities.Challenge.get(challengeId).then(setChallenge);
     base44.entities.ChallengeSubmission.filter({ challenge_id: challengeId, status: "approved" }).then(setSubmissions);
-    base44.entities.ChallengeVote.filter({ challenge_id: challengeId }).then(setVotes).catch(() => setVotes([]));
+    base44.functions.invoke("getChallengeLeaderboard", { challengeId })
+      .then((res) => setVoteCounts(res?.data?.counts || {}))
+      .catch(() => setVoteCounts({}));
   }, [challengeId]);
 
   const ranked = useMemo(() => {
-    if (filter === "all") {
-      return [...submissions].sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
-    }
-    const cutoff = new Date();
-    if (filter === "week") cutoff.setDate(cutoff.getDate() - 7);
-    else cutoff.setHours(0, 0, 0, 0);
-    const counts = {};
-    votes.forEach((v) => {
-      if (new Date(v.created_date) >= cutoff) counts[v.submission_id] = (counts[v.submission_id] || 0) + 1;
+    const key = filter === "today" ? "today" : filter === "week" ? "week" : "all";
+    return [...submissions].sort((a, b) => {
+      const aCount = voteCounts[a.id]?.[key] ?? (key === "all" ? a.vote_count || 0 : 0);
+      const bCount = voteCounts[b.id]?.[key] ?? (key === "all" ? b.vote_count || 0 : 0);
+      return bCount - aCount;
     });
-    return [...submissions].sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0)).map((s) => ({ ...s, _count: counts[s.id] || 0 }));
-  }, [submissions, votes, filter]);
+  }, [submissions, voteCounts, filter]);
 
-  const getCount = (s) => (filter === "all" ? s.vote_count || 0 : s._count || 0);
+  const getCount = (s) => {
+    const key = filter === "today" ? "today" : filter === "week" ? "week" : "all";
+    return voteCounts[s.id]?.[key] ?? (key === "all" ? s.vote_count || 0 : 0);
+  };
 
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-5">

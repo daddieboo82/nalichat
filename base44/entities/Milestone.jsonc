@@ -28,11 +28,27 @@
     },
     "completed": {
       "type": "boolean",
-      "default": false
+      "default": false,
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "completed_at": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "priority": {
       "type": "string",
@@ -85,6 +101,18 @@
           }
         }
       }
+    },
+    "completed_by_id": {
+      "type": "string",
+      "description": "Server-managed ID of the user who most recently completed the milestone.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [
@@ -113,28 +141,14 @@
       ]
     },
     "update": {
-      "$or": [
-        {
-          "data.edit_user_ids": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "$or": [
-        {
-          "data.edit_user_ids": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

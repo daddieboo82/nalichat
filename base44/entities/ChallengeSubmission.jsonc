@@ -93,11 +93,15 @@
   ],
   "rls": {
     "create": {
-      "data.producer_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
-    "read": {},
-    "update": {
+    "read": {
       "$or": [
+        {
+          "data.status": "approved"
+        },
         {
           "data.producer_id": "{{user.id}}"
         },
@@ -107,18 +111,16 @@
           }
         }
       ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "$or": [
-        {
-          "data.producer_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

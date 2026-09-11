@@ -1,5 +1,29 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
+const TRUSTED_MEDIA_HOSTS = [
+  'storage.googleapis.com',
+  'base44-user-files.s3.amazonaws.com',
+  'base44-user-files.s3.us-east-1.amazonaws.com',
+  'files.base44.com',
+  'cdn.base44.com',
+];
+
+function cleanUploadedMediaUrl(value: unknown) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'https:') return '';
+    const hostname = parsed.hostname.toLowerCase();
+    const trusted = TRUSTED_MEDIA_HOSTS.some(
+      (host) => hostname === host || hostname.endsWith('.' + host),
+    );
+    return trusted ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -17,21 +41,22 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (!body?.title || !body?.file_url) {
-      return Response.json({ error: 'title and file_url are required' }, { status: 400 });
+    const fileUrl = cleanUploadedMediaUrl(body?.file_url);
+    if (!body?.title || !fileUrl) {
+      return Response.json({ error: 'title and a trusted uploaded file are required' }, { status: 400 });
     }
 
     const post = await base44.asServiceRole.entities.ArtPost.create({
       title: String(body.title).slice(0, 200),
       description: String(body.description || '').slice(0, 2000),
-      file_url: String(body.file_url),
+      file_url: fileUrl,
       medium: String(body.medium || 'original').slice(0, 50),
       genre: String(body.genre || '').slice(0, 100),
       tags: Array.isArray(body.tags) ? body.tags.map((t) => String(t).slice(0, 64)).slice(0, 30) : [],
       is_explicit: Boolean(body.is_explicit),
       bpm: Number.isFinite(Number(body.bpm)) ? Number(body.bpm) : undefined,
       creator_id: user.id,
-      creator_name: user.display_name || user.full_name || user.email || 'User',
+      creator_name: user.display_name || user.full_name || 'User',
       creator_avatar: user.avatar_url || null,
       featured: false,
       likes: 0,

@@ -6,7 +6,16 @@
       "type": "string"
     },
     "file_url": {
-      "type": "string"
+      "type": "string",
+      "description": "Shared file URL. Server-managed after trusted upload validation.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "file_type": {
       "type": "string",
@@ -18,10 +27,28 @@
         "document",
         "other"
       ],
-      "default": "other"
+      "default": "other",
+      "description": "Server-managed media classification established when the file is created.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "file_size": {
-      "type": "number"
+      "type": "number",
+      "description": "Server-managed uploaded file size in bytes.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "uploader_id": {
       "type": "string",
@@ -35,7 +62,15 @@
       }
     },
     "uploader_name": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "project_id": {
       "type": "string",
@@ -72,11 +107,29 @@
     },
     "likes": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "System-managed engagement counter.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "views": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "System-managed engagement counter.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "access_user_ids": {
       "type": "array",
@@ -97,6 +150,19 @@
     "share_token_hash": {
       "type": "string",
       "description": "SHA-256 hash of the current opaque public share token",
+      "rls": {
+        "read": false,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "share_token_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Expiry timestamp for the current public share token",
       "rls": {
         "read": false,
         "write": {
@@ -150,28 +216,14 @@
       ]
     },
     "update": {
-      "$or": [
-        {
-          "data.edit_user_ids": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "$or": [
-        {
-          "data.edit_user_ids": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

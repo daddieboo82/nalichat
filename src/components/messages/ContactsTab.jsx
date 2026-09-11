@@ -42,18 +42,23 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
   });
 
   const deleteContactMutation = useMutation({
-    mutationFn: (contactId) => base44.entities.Contact.delete(contactId),
+    mutationFn: async (contactId) => {
+      const res = await base44.functions.invoke("mutateContact", { action: "delete", contactId });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["contacts", currentUserId] }),
   });
 
   const addContactMutation = useMutation({
-    mutationFn: (user) =>
-      base44.entities.Contact.create({
-        user_id: currentUserId,
-        contact_user_id: user.id,
-        contact_name: user.display_name || user.full_name,
-        contact_avatar: user.avatar_url,
-      }),
+    mutationFn: async (user) => {
+      const res = await base44.functions.invoke("mutateContact", {
+        action: "add",
+        targetUserId: user.id,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contacts", currentUserId] });
     },
@@ -66,7 +71,8 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
     : allUsers.filter(u => u.id !== currentUserId && !contactUserIds.has(u.id));
 
   const filtered = listToShow.filter(u => {
-    if (roleFilter !== "all" && u.role !== roleFilter) return false;
+    const publicRole = u.artist_role || (["artist", "producer", "engineer", "ar"].includes(u.role) ? u.role : "artist");
+    if (roleFilter !== "all" && publicRole !== roleFilter) return false;
     const q = search.toLowerCase();
     return (u.display_name || u.full_name || "").toLowerCase().includes(q) ||
            (u.genres || []).some(g => g.toLowerCase().includes(q)) ||
@@ -132,7 +138,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="font-heading font-semibold text-sm truncate">{user.display_name || user.full_name}</p>
-                        <span className="text-xs">{roleIcons[user.role]}</span>
+                        <span className="text-xs">{roleIcons[user.artist_role]}</span>
                       </div>
                       <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
                         {user.location && <><MapPin className="w-3 h-3" /> {user.location}</>}

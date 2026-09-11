@@ -25,8 +25,19 @@ Deno.serve(async (req) => {
     if (!canEdit) return Response.json({ error: 'Viewer access cannot modify this track' }, { status: 403 });
 
     if (action === 'delete') {
+      const [versions, comments] = await Promise.all([
+        entities.TrackVersion.filter({ track_id: track.id }),
+        entities.TrackComment.filter({ track_id: track.id, parent_type: 'track' }),
+      ]);
+      for (const version of versions) await entities.TrackVersion.delete(version.id);
+      for (const comment of comments) await entities.TrackComment.delete(comment.id);
       await entities.Track.delete(track.id);
-      return Response.json({ success: true, deleted: true });
+      return Response.json({
+        success: true,
+        deleted: true,
+        deleted_versions: versions.length,
+        deleted_comments: comments.length,
+      });
     }
 
     const input = body?.data || {};
@@ -34,9 +45,51 @@ Deno.serve(async (req) => {
     for (const [key, value] of Object.entries(input)) {
       if (MUTABLE_KEYS.has(key)) patch[key] = value;
     }
-    if (typeof patch.name === 'string') patch.name = patch.name.slice(0, 200);
-    if (typeof patch.description === 'string') patch.description = patch.description.slice(0, 1000);
-    if (Array.isArray(patch.waveform_data)) patch.waveform_data = patch.waveform_data.slice(0, 2000);
+
+    if (patch.name !== undefined) {
+      const name = String(patch.name || '').trim().slice(0, 200);
+      if (!name) return Response.json({ error: 'Track name cannot be empty' }, { status: 400 });
+      patch.name = name;
+    }
+    if (patch.description !== undefined) patch.description = String(patch.description || '').slice(0, 1000);
+    if (patch.color !== undefined) patch.color = String(patch.color || '').slice(0, 100);
+
+    if (patch.volume !== undefined) {
+      const volume = Number(patch.volume);
+      if (!Number.isFinite(volume) || volume < 0 || volume > 100) {
+        return Response.json({ error: 'Track volume must be between 0 and 100' }, { status: 400 });
+      }
+      patch.volume = volume;
+    }
+    if (patch.pan !== undefined) {
+      const pan = Number(patch.pan);
+      if (!Number.isFinite(pan) || pan < 0 || pan > 100) {
+        return Response.json({ error: 'Track pan must be between 0 and 100' }, { status: 400 });
+      }
+      patch.pan = pan;
+    }
+    if (patch.duration !== undefined) {
+      const duration = Number(patch.duration);
+      if (!Number.isFinite(duration) || duration < 0 || duration > 24 * 60 * 60) {
+        return Response.json({ error: 'Invalid track duration' }, { status: 400 });
+      }
+      patch.duration = duration;
+    }
+    if (patch.muted !== undefined) patch.muted = Boolean(patch.muted);
+    if (patch.solo !== undefined) patch.solo = Boolean(patch.solo);
+    if (patch.waveform_data !== undefined) {
+      if (!Array.isArray(patch.waveform_data)) {
+        return Response.json({ error: 'waveform_data must be an array' }, { status: 400 });
+      }
+      patch.waveform_data = patch.waveform_data
+        .map((point: unknown) => Number(point))
+        .filter((point: number) => Number.isFinite(point) && point >= -1 && point <= 1)
+        .slice(0, 2000);
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return Response.json({ error: 'No supported track fields supplied' }, { status: 400 });
+    }
 
     const updated = await entities.Track.update(track.id, patch);
     return Response.json({ success: true, track: updated });

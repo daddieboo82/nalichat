@@ -23,7 +23,6 @@ const SWEEP_MS = 2000;    // how often we re-evaluate staleness locally
 
 export function useTypingIndicator(conversationId, currentUser, participantIds = []) {
   const [typingUsers, setTypingUsers] = useState([]);
-  const rowIdRef = useRef(null);
   const lastSentRef = useRef(0);
   const rowsRef = useRef(new Map()); // user_id -> { user_name, at }
   const supportedRef = useRef(true);
@@ -35,7 +34,6 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
   useEffect(() => {
     rowsRef.current = new Map();
     setTypingUsers([]);
-    rowIdRef.current = null;
     lastSentRef.current = 0;
   }, [conversationId]);
 
@@ -62,39 +60,33 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
     applyRows();
   }, [applyRows, currentUser]);
 
-  // Subscribe to other participants' typing rows.
+  // Poll only the scoped conversation rows rather than subscribing to raw
+  // TypingStatus events. This keeps all received payloads behind the entity's
+  // normal read filter/RLS path.
   useEffect(() => {
     if (!conversationId || !currentUser || !supportedRef.current) return;
-    let unsub = null;
     let cancelled = false;
 
-    (async () => {
+    const refreshTyping = async () => {
       try {
         const existing = await base44.entities.TypingStatus.filter({ conversation_id: conversationId });
         if (cancelled) return;
+        rowsRef.current = new Map();
         (existing || []).forEach(ingest);
-        const mine = (existing || []).find(r => r.user_id === currentUser.id);
-        if (mine) rowIdRef.current = mine.id;
-      } catch {
-        // Entity not available - degrade to no indicator rather than breaking chat.
-        supportedRef.current = false;
-        return;
-      }
-      if (cancelled) return;
-      try {
-        unsub = base44.entities.TypingStatus.subscribe((event) => {
-          if (event?.data) ingest(event.data);
-        });
+        applyRows();
       } catch {
         supportedRef.current = false;
       }
-    })();
+    };
+
+    refreshTyping();
+    const poll = setInterval(refreshTyping, SWEEP_MS);
 
     return () => {
       cancelled = true;
-      try { unsub?.(); } catch { /* already gone */ }
+      clearInterval(poll);
     };
-  }, [conversationId, currentUser, ingest]);
+  }, [conversationId, currentUser, ingest, applyRows]);
 
   // Locally expire stale rows even when no new events arrive.
   useEffect(() => {
@@ -109,22 +101,14 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
     if (now - lastSentRef.current < THROTTLE_MS) return;
     lastSentRef.current = now;
 
-    const payload = {
-      conversation_id: conversationId,
-      user_id: currentUser.id,
-      user_name: currentUser.display_name || currentUser.full_name || 'Someone',
-      participant_ids: participantIds,
-      last_typed_at: new Date().toISOString(),
-    };
-
-    const write = rowIdRef.current
-      ? base44.entities.TypingStatus.update(rowIdRef.current, payload)
-      : base44.entities.TypingStatus.create(payload).then(row => { rowIdRef.current = row?.id || null; });
+    const write = base44.functions.invoke("updateTypingStatus", {
+      action: "heartbeat",
+      conversationId,
+    });
 
     Promise.resolve(write).catch(() => {
       // A failed heartbeat is not worth interrupting the user over; retry on the
-      // next keystroke, and drop the cached row id in case it was deleted.
-      rowIdRef.current = null;
+      // next keystroke.
       lastSentRef.current = 0;
     });
   }, [conversationId, currentUser, participantIds]);
@@ -132,10 +116,13 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
   // Clear our row when leaving the conversation so we don't appear stuck typing.
   useEffect(() => {
     return () => {
-      const id = rowIdRef.current;
-      if (!id) return;
-      rowIdRef.current = null;
-      try { base44.entities.TypingStatus.delete(id).catch(() => {}); } catch { /* ignore */ }
+      if (!conversationId) return;
+      try {
+        base44.functions.invoke("updateTypingStatus", {
+          action: "clear",
+          conversationId,
+        }).catch(() => {});
+      } catch { /* ignore */ }
     };
   }, [conversationId]);
 

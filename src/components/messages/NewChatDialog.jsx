@@ -26,9 +26,10 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
     const query = search.toLowerCase();
     return (
       (u.display_name || u.full_name || "").toLowerCase().includes(query) ||
-      (u.email || "").toLowerCase().includes(query) ||
-      (u.phone || "").toLowerCase().includes(query) ||
-      (u.role || "").toLowerCase().includes(query)
+      (u.bio || "").toLowerCase().includes(query) ||
+      (u.location || "").toLowerCase().includes(query) ||
+      (u.genres || []).some((genre) => String(genre).toLowerCase().includes(query)) ||
+      (u.artist_role || (["artist", "producer", "engineer", "ar"].includes(u.role) ? u.role : "")).toLowerCase().includes(query)
     );
   });
 
@@ -49,11 +50,11 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, email, or phone..."
+            placeholder="Search by name, role, genre, or location..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            title="Search by name, email, or phone"
-            aria-label="Search by name, email, or phone"
+            title="Search public profiles"
+            aria-label="Search public profiles"
             className="pl-9 bg-secondary/50 border-0 rounded-xl"
             autoFocus
           />
@@ -84,10 +85,10 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{user.display_name || user.full_name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user.bio || user.email || "No bio"}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user.bio || "No bio"}</p>
                   </div>
-                  <Badge className={`text-[10px] ${roleColors[user.role] || "bg-secondary text-secondary-foreground"} border-0`}>
-                    {user.role?.toUpperCase()}
+                  <Badge className={`text-[10px] ${roleColors[user.artist_role] || "bg-secondary text-secondary-foreground"} border-0`}>
+                    {user.artist_role?.toUpperCase()}
                   </Badge>
                 </button>
               ))}
@@ -113,8 +114,8 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
                 <p className="font-medium text-sm">{user.display_name || user.full_name}</p>
                 <p className="text-xs text-muted-foreground truncate">{user.bio || user.email || "No bio"}</p>
               </div>
-              <Badge className={`text-[10px] ${roleColors[user.role] || "bg-secondary text-secondary-foreground"} border-0`}>
-                {user.role?.toUpperCase()}
+              <Badge className={`text-[10px] ${roleColors[user.artist_role] || "bg-secondary text-secondary-foreground"} border-0`}>
+                {user.artist_role?.toUpperCase()}
               </Badge>
             </button>
           ))}
@@ -122,7 +123,7 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
           {filtered.length === 0 && search && (
             <div className="text-center py-8">
               <p className="text-sm text-muted-foreground mb-3">No users found matching "{search}"</p>
-              <p className="text-xs text-muted-foreground/60">Try searching by username, email, or phone number</p>
+              <p className="text-xs text-muted-foreground/60">Try searching by name, role, genre, or location</p>
             </div>
           )}
           {!search && users.length === 0 && (

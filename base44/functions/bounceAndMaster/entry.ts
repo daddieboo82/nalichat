@@ -1,23 +1,97 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { requireEntitlement } from '../../shared/entitlementAccess.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+
+const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
+
+async function storedAudioSize(url: string): Promise<number | null> {
+  try {
+    const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+    if (head.ok) {
+      const length = Number(head.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0) return length;
+    }
+  } catch {}
+
+  try {
+    const probe = await fetch(url, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-0' },
+      redirect: 'manual',
+    });
+    if (probe.ok || probe.status === 206) {
+      const range = probe.headers.get('content-range') || '';
+      const match = range.match(/\/(\d+)$/);
+      if (match) {
+        const total = Number(match[1]);
+        if (Number.isFinite(total) && total >= 0) return total;
+      }
+      const length = Number(probe.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0 && probe.status !== 206) return length;
+    }
+    try { await probe.body?.cancel(); } catch {}
+  } catch {}
+  return null;
+}
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    // Require authentication — this endpoint fetches arbitrary URLs server-side
+    // Require authentication before resolving any stored media.
     const user = await base44.auth.me();
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const { audioUrl, loudnessTarget, format, bitDepth, sampleRate } = await req.json();
-
-    if (!audioUrl) {
-      return Response.json({ error: 'Audio URL required' }, { status: 400 });
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
     }
 
-    // Validate audioUrl to prevent SSRF — only allow https URLs from trusted storage hosts
+    const { allowed } = await requireEntitlement(
+      base44.asServiceRole.entities,
+      user.id,
+      'ai.standard',
+    );
+    if (!allowed) {
+      return Response.json({ error: 'Premium is required for mastering export' }, { status: 403 });
+    }
+
+    const rate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'mastering_export',
+      30,
+    );
+    if (!rate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
+
+    const { postId, loudnessTarget, format, bitDepth, sampleRate } = await req.json();
+
+    if (!postId) {
+      return Response.json({ error: 'postId is required' }, { status: 400 });
+    }
+
+    const post = await base44.asServiceRole.entities.ArtPost.get(postId);
+    if (!post) {
+      return Response.json({ error: 'Track not found' }, { status: 404 });
+    }
+    if (post.creator_id !== user.id) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const audioUrl = String(post.file_url || '').trim();
+    if (!audioUrl) {
+      return Response.json({ error: 'Track has no audio file' }, { status: 400 });
+    }
+
+    // Fetch only the URL stored on the authorized ArtPost record. New posts are
+    // restricted to trusted storage hosts by createArtPost, and legacy records
+    // still receive a strict host check here before any server-side request.
     const ALLOWED_HOSTS = [
-      'storage.googleapis.com',        // Base44 file storage
+      'storage.googleapis.com',
       'base44-user-files.s3.amazonaws.com',
       'base44-user-files.s3.us-east-1.amazonaws.com',
       'files.base44.com',
@@ -27,36 +101,32 @@ Deno.serve(async (req) => {
     try {
       parsedUrl = new URL(audioUrl);
     } catch {
-      return Response.json({ error: 'Invalid audio URL' }, { status: 400 });
+      return Response.json({ error: 'Stored audio URL is invalid' }, { status: 400 });
     }
-    if (parsedUrl.protocol !== 'https:') {
-      return Response.json({ error: 'Audio URL must use https' }, { status: 400 });
-    }
-    // Block internal/private IP literals and metadata endpoints
     const hostname = parsedUrl.hostname.toLowerCase();
-    if (hostname === 'localhost' || hostname === 'metadata.google.internal' ||
-        /^(10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|127\.|0\.)/.test(hostname) ||
-        hostname.endsWith('.internal') || hostname.endsWith('.local')) {
-      return Response.json({ error: 'Audio URL host not allowed' }, { status: 400 });
-    }
-    const isAllowed = ALLOWED_HOSTS.some(h => hostname === h || hostname.endsWith('.' + h));
+    const isAllowed = parsedUrl.protocol === 'https:' &&
+      ALLOWED_HOSTS.some((host) => hostname === host || hostname.endsWith('.' + host));
     if (!isAllowed) {
-      return Response.json({ error: 'Audio URL host not allowed' }, { status: 400 });
+      return Response.json({ error: 'Stored audio host is not allowed' }, { status: 400 });
     }
 
-    // Fetch audio file
-    const audioResponse = await fetch(audioUrl);
-    if (!audioResponse.ok) {
-      return Response.json({ error: 'Failed to fetch audio' }, { status: 400 });
+    const storedSize = await storedAudioSize(audioUrl);
+    if (storedSize === null) {
+      return Response.json({ error: 'Could not verify stored audio size' }, { status: 400 });
     }
-
-    // Reject files larger than 50MB to prevent OOM in the Deno function
-    const contentLength = audioResponse.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > 50 * 1024 * 1024) {
+    if (storedSize <= 0 || storedSize > MAX_AUDIO_BYTES) {
       return Response.json({ error: 'Audio file too large (max 50MB)' }, { status: 413 });
     }
 
+    // Fetch only after the trusted storage object size has been verified.
+    const audioResponse = await fetch(audioUrl, { redirect: 'manual' });
+    if (!audioResponse.ok) {
+      return Response.json({ error: 'Failed to fetch audio' }, { status: 400 });
+    }
     const arrayBuffer = await audioResponse.arrayBuffer();
+    if (arrayBuffer.byteLength !== storedSize || arrayBuffer.byteLength > MAX_AUDIO_BYTES) {
+      return Response.json({ error: 'Stored audio size changed during processing' }, { status: 409 });
+    }
     
     // Create simulated audio analysis from file size (since we can't decode MP3)
     // In production, you'd use actual audio decoding library

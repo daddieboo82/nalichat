@@ -14,8 +14,17 @@ async function syncChildren(entities: any, project: any, userId: string, role: s
       if (role === 'editor') editUserIds.add(userId);
       else editUserIds.delete(userId);
 
-      const patch: Record<string, any> = { access_user_ids: Array.from(accessUserIds) };
-      if (entityName !== 'SharedFile') patch.edit_user_ids = Array.from(editUserIds);
+      const patch: Record<string, any> = {
+        access_user_ids: Array.from(accessUserIds),
+        edit_user_ids: Array.from(editUserIds),
+      };
+      if (entityName === 'SharedFile') {
+        // Any collaborator access change invalidates outstanding public links.
+        // This prevents a removed or downgraded editor from retaining access via
+        // a token they created while they still had edit permission.
+        patch.share_token_hash = null;
+        patch.share_token_expires_at = null;
+      }
       await entity.update(row.id, patch);
     }
   }
@@ -48,6 +57,12 @@ Deno.serve(async (req) => {
     const collaboratorIds = new Set(project.collaborator_ids || []);
     const editorIds = new Set(project.editor_ids || []);
     const roles = { ...(project.collaborator_roles || {}) };
+
+    // This endpoint manages existing collaborators only. New collaborators must
+    // join through an invite/consent flow rather than being added by arbitrary ID.
+    if (action === 'set_role' && !collaboratorIds.has(userId)) {
+      return Response.json({ error: 'User is not an existing collaborator' }, { status: 409 });
+    }
 
     if (action === 'remove') {
       collaboratorIds.delete(userId);

@@ -5,9 +5,13 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
 
     const { name, project_id } = await req.json();
-    if (!name?.trim()) return Response.json({ error: 'name is required' }, { status: 400 });
+    const folderName = String(name || '').trim().slice(0, 200);
+    if (!folderName) return Response.json({ error: 'name is required' }, { status: 400 });
 
     const entities = base44.asServiceRole.entities;
     let accessUserIds = [user.id];
@@ -23,7 +27,7 @@ Deno.serve(async (req) => {
     }
 
     const folder = await entities.Folder.create({
-      name: String(name).slice(0, 200),
+      name: folderName,
       owner_id: user.id,
       project_id: project_id || null,
       access_user_ids: accessUserIds,

@@ -1,4 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { requireEntitlement, preferredAiModel } from '../../shared/entitlementAccess.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const MOODS = new Set(['all', 'humor', 'shock', 'curiosity', 'relatable', 'controversy', 'awe']);
 
@@ -42,11 +44,37 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
+    const { allowed, entitlements } = await requireEntitlement(
+      base44.asServiceRole.entities,
+      user.id,
+      'ai.standard',
+    );
+    if (!allowed) {
+      return Response.json({ error: 'Premium is required for ViralSeed AI' }, { status: 403 });
+    }
+
+    const rate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'viral_seed',
+      20,
+    );
+    if (!rate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
 
     const body = await req.json().catch(() => ({}));
     const mood = MOODS.has(body?.mood) ? body.mood : 'all';
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      ...(preferredAiModel(entitlements) ? { model: preferredAiModel(entitlements) } : {}),
       prompt: buildPrompt(mood),
       response_json_schema: RESPONSE_SCHEMA,
     });
@@ -57,32 +85,43 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
-    const priorCount = Number(user.viral_concepts_generated || 0);
+    const achievementId = `achievement_viral_seed_${user.id}`;
+    let firstGeneration = false;
 
-    await entities.User.updateMany(
-      { id: user.id },
-      { $inc: { xp: 50, viral_concepts_generated: concepts.length } },
-    );
-
-    if (priorCount === 0) {
-      const achievementId = `achievement_viral_seed_${user.id}`;
-      try {
-        await entities.Achievement.create({
-          id: achievementId,
-          user_id: user.id,
-          key: 'viral_seed',
-          title: 'Viral Seed',
-          description: 'Generated your first viral content concepts with ViralSeed AI',
-          icon: 'rocket',
-          xp: 50,
-          category: 'creative',
-        });
-      } catch {
-        // Deterministic ID makes the first-generation achievement idempotent.
-      }
+    try {
+      await entities.Achievement.create({
+        id: achievementId,
+        user_id: user.id,
+        key: 'viral_seed',
+        title: 'Viral Seed',
+        description: 'Generated your first viral content concepts with ViralSeed AI',
+        icon: 'rocket',
+        xp: 50,
+        category: 'creative',
+      });
+      firstGeneration = true;
+    } catch {
+      // Deterministic ID makes the first-generation reward idempotent.
     }
 
-    return Response.json({ concepts, xp_awarded: 50 });
+    try {
+      await entities.User.updateMany(
+        { id: user.id },
+        { $inc: {
+          viral_concepts_generated: concepts.length,
+          ...(firstGeneration ? { xp: 50 } : {}),
+        } },
+      );
+    } catch (updateError) {
+      // If the first award failed to reach the user record, remove the
+      // achievement claim so a retry can award it correctly.
+      if (firstGeneration) {
+        await entities.Achievement.delete(achievementId).catch(() => {});
+      }
+      throw updateError;
+    }
+
+    return Response.json({ concepts, xp_awarded: firstGeneration ? 50 : 0 });
   } catch (error) {
     console.error('generateViralConcepts error:', error);
     return Response.json({ error: error?.message || 'Viral generation failed' }, { status: 500 });

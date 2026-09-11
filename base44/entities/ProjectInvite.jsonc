@@ -17,7 +17,8 @@
     },
     "created_by_id": { "type": "string" },
     "expires_at": { "type": "string", "format": "date-time" },
-    "used_count": { "type": "number", "default": 0 }
+    "used_count": { "type": "number", "default": 0 },
+    "max_uses": { "type": "number", "default": 25 }
   },
   "required": ["project_id", "token_hash", "role", "created_by_id", "expires_at"],
   "rls": {

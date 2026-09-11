@@ -5,44 +5,47 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const { event, data, changed_fields } = await req.json();
-    
-    if (event.type !== 'update') return Response.json({ success: true });
-    if (!data.project_id) return Response.json({ success: true });
-    
-    // We only care if relevant fields changed
-    if (!changed_fields || (!changed_fields.includes('completed') && !changed_fields.includes('due_date') && !changed_fields.includes('title'))) {
+    if (event?.type !== 'update' || !data?.id) return Response.json({ success: true });
+    if (!Array.isArray(changed_fields) || !changed_fields.some((f) => ['completed','due_date','title'].includes(f))) {
       return Response.json({ success: true, message: 'No relevant fields changed' });
     }
-    
-    const project = await base44.asServiceRole.entities.Project.get(data.project_id);
+
+    const entities = base44.asServiceRole.entities;
+    const milestone = await entities.Milestone.get(data.id);
+    if (!milestone?.project_id) return Response.json({ success: true });
+    const project = await entities.Project.get(milestone.project_id);
     if (!project) return Response.json({ success: true });
-    
-    const recipients = new Set();
-    if (project.owner_id) recipients.add(project.owner_id);
-    if (project.collaborator_ids) {
-      project.collaborator_ids.forEach(id => recipients.add(id));
-    }
-    
-    const notifications = Array.from(recipients).map(recipient_id => ({
-      recipient_id,
-      type: "milestone",
-      actor_name: "Project Update",
-      message: `Milestone "${data.title}" was updated in project "${project.title}"`,
-      link: `/projects-summary`
-    }));
-    
-    if (notifications.length > 0) {
-      await base44.asServiceRole.entities.Notification.bulkCreate(notifications);
-      await Promise.all(notifications.map((notification) =>
-        sendPushToUser(base44.asServiceRole.entities, notification.recipient_id, {
-          title: notification.actor_name || 'NaliChat',
+
+    const versionKey = String(milestone.updated_date || milestone.completed_at || milestone.due_date || 'update')
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 80);
+    const recipients = new Set<string>([
+      ...(project.owner_id ? [project.owner_id] : []),
+      ...(project.collaborator_ids || []),
+    ]);
+
+    let created = 0;
+    for (const recipientId of recipients) {
+      const notification = {
+        id: `notification_milestone_${milestone.id}_${versionKey}_${recipientId}`,
+        recipient_id: recipientId,
+        type: 'milestone',
+        actor_name: 'Project Update',
+        message: `Milestone "${milestone.title}" was updated in project "${project.title}"`,
+        link: '/projects-summary',
+      };
+      try {
+        await entities.Notification.create(notification);
+        created += 1;
+        await sendPushToUser(entities, recipientId, {
+          title: notification.actor_name,
           body: notification.message,
           url: notification.link,
-        })
-      ));
+        });
+      } catch {}
     }
-    
-    return Response.json({ success: true, count: notifications.length });
+
+    return Response.json({ success: true, count: created });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

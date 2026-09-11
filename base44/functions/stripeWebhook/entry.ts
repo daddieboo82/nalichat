@@ -36,6 +36,15 @@ function oneRecord(records: any[], description: string): any | null {
   return records[0] || null;
 }
 
+function matchesRecordUser(recordUserId: unknown, metadataUserId: string): boolean {
+  return recordUserId === metadataUserId
+    || recordUserId === `deleted:${metadataUserId}`;
+}
+
+function isDeletedUserId(value: unknown): value is string {
+  return typeof value === 'string' && value.startsWith('deleted:');
+}
+
 async function findSubscription(
   entities: any,
   {
@@ -106,11 +115,11 @@ function canonicalIdentity(
     if (metadata.environment !== expectedEnvironment || sku.priceId !== priceId) {
       throw new Error(`Stripe metadata or price mismatch for ${stripeSubscription.id}`);
     }
-    if (record?.user_id && record.user_id !== metadata.userId) {
+    if (record?.user_id && !matchesRecordUser(record.user_id, metadata.userId)) {
       throw new Error(`Stripe metadata ownership mismatch for ${stripeSubscription.id}`);
     }
     return {
-      userId: metadata.userId,
+      userId: isDeletedUserId(record?.user_id) ? record.user_id : metadata.userId,
       plan: metadata.plan,
       billingPeriod: metadata.billingPeriod,
       sku: metadata.sku,
@@ -147,15 +156,26 @@ async function persistUserStripeState(
   customerId: string,
   trialUsedAt?: string,
 ): Promise<void> {
+  if (isDeletedUserId(userId)) return;
+
   const users = await entities.User.filter({ id: userId });
   const user = oneRecord(users, 'user');
-  if (!user) throw new Error(`No NaliChat user found for ${userId}`);
+  if (!user) {
+    // A Stripe event can race with account deletion. Retained billing records
+    // remain reconcilable even after the application User record is gone.
+    return;
+  }
   if (user.stripe_customer_id && user.stripe_customer_id !== customerId) {
     throw new Error(`Stripe customer ownership conflict for user ${userId}`);
   }
   await entities.User.update(userId, {
     stripe_customer_id: customerId,
-    ...(trialUsedAt && !user.trial_used_at ? { trial_used_at: trialUsedAt } : {}),
+    stripe_checkout_claim_id: null,
+    stripe_checkout_claimed_at: null,
+    ...(trialUsedAt && !user.trial_used_at ? {
+      trial_used_at: trialUsedAt,
+      trial_claim_id: null,
+    } : {}),
   });
 }
 
@@ -198,6 +218,26 @@ async function reconcileSubscription(
     stripe_event_id: event.id,
     ...(checkoutId ? { checkout_id: checkoutId } : {}),
   };
+
+  // Deleted accounts retain tombstoned billing history for reconciliation.
+  // Stripe can deliver cancellation/invoice events after account deletion; do
+  // not require a now-deleted User record or restore the original user_id.
+  if (typeof record?.user_id === 'string' && record.user_id.startsWith('deleted:')) {
+    if (record.stripe_customer_id && record.stripe_customer_id !== customerId) {
+      throw new Error(`Deleted-account customer ownership mismatch for ${subscriptionId}`);
+    }
+    await entities.Subscription.updateMany(
+      {
+        id: record.id,
+        $or: [
+          { stripe_event_created: null },
+          { stripe_event_created: { $lte: event.created } },
+        ],
+      },
+      { $set: baseUpdate },
+    );
+    return 'applied';
+  }
 
   if (record?.grandfathered === true) {
     if (record.stripe_customer_id && record.stripe_customer_id !== customerId) {

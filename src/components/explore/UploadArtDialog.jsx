@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { X, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { recordSquadActivity } from "@/lib/squadBonus";
+import { toast } from "sonner";
 
 const MEDIUMS = ["original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
 const TAGS_SUGGESTIONS = ["hip-hop", "trap", "lofi", "electronic", "ambient", "house", "techno", "synthwave", "dark", "experimental"];
@@ -61,18 +62,14 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
       const audioRes = await base44.integrations.Core.UploadFile({ file: audioFile });
       file_url = audioRes.file_url;
 
-      createdPost = await base44.entities.ArtPost.create({
+      const published = await base44.functions.invoke("createArtPost", {
         ...form,
         is_explicit: form.is_explicit,
         image_url,
         file_url,
-        creator_id: currentUser.id,
-        creator_name: currentUser.display_name || currentUser.full_name,
-        creator_avatar: currentUser.avatar_url,
-        likes: 0,
-        liked_by: [],
-        views: 0,
       });
+      if (published?.data?.error) throw new Error(published.data.error);
+      createdPost = published?.data?.post;
     } catch (err) {
       console.error("Track release failed:", err);
       toast.error(err?.message || "Track release failed. Your selections are still here so you can retry.");

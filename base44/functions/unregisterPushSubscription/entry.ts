@@ -1,0 +1,26 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const body = await req.json().catch(() => ({}));
+    const endpoint = String(body?.endpoint || '');
+    if (!endpoint) {
+      return Response.json({ error: 'endpoint is required' }, { status: 400 });
+    }
+
+    const entity = base44.asServiceRole.entities.PushSubscription;
+    const rows = await entity.filter({ user_id: user.id, endpoint });
+    for (const row of rows) {
+      await entity.delete(row.id);
+    }
+
+    return Response.json({ success: true, removed: rows.length });
+  } catch (error) {
+    console.error('unregisterPushSubscription error:', error);
+    return Response.json({ error: error?.message || 'Could not unregister push subscription' }, { status: 500 });
+  }
+});

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -7,14 +8,33 @@ Deno.serve(async (req) => {
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
 
-    const { type, destination, message, senderName } = await req.json();
+    const rate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'external_message',
+      40,
+    );
+    if (!rate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
+
+    const { type, destination, message } = await req.json();
 
     if (!destination || !message) {
       return Response.json({ error: 'destination and message are required' }, { status: 400 });
     }
 
-    const name = senderName || user.full_name || 'Someone on NaliChat';
+    const name = String(user.display_name || user.full_name || 'Someone on NaliChat')
+      .replace(/[\r\n]/g, ' ')
+      .trim()
+      .slice(0, 80) || 'Someone on NaliChat';
 
     if (type === 'email') {
       // Prevent open email relay: only allow sending to registered app users.
@@ -27,10 +47,14 @@ Deno.serve(async (req) => {
       const users = await base44.asServiceRole.entities.User.filter({ email: cleanDestination });
       const isRegistered = users.length > 0;
       if (!isRegistered) {
-        return Response.json({ error: 'Recipient is not a registered NaliChat user' }, { status: 403 });
+        // Do not disclose whether an email address is registered.
+        return Response.json({ success: true, method: 'email' });
       }
       // Sanitize the message body to remove CRLF sequences
-      const cleanMessage = message.replace(/[\r\n]{2,}/g, '\n\n').replace(/[\r\n]/g, '\n');
+      const cleanMessage = String(message)
+        .replace(/[\r\n]{2,}/g, '\n\n')
+        .replace(/[\r\n]/g, '\n')
+        .slice(0, 5000);
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: cleanDestination,
         subject: `Message from ${name} via NaliChat`,
@@ -40,54 +64,13 @@ Deno.serve(async (req) => {
     }
 
     if (type === 'sms') {
-      // Prevent open SMS relay: only allow sending to a registered app user's phone,
-      // mirroring the email path's "registered user" restriction.
-      const cleanPhone = destination.replace(/[\r\n]/g, '').trim();
-      const smsUsers = await base44.asServiceRole.entities.User.filter({ phone: cleanPhone });
-      const isRegisteredPhone = smsUsers.length > 0;
-      if (!isRegisteredPhone) {
-        return Response.json({ error: 'Recipient is not a registered NaliChat user' }, { status: 403 });
-      }
-
-      // SMS via Twilio
-      const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-      const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-      const fromNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
-
-      if (!accountSid || !authToken || !fromNumber) {
-        return Response.json({ 
-          error: 'SMS is not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in settings.',
-          needs_setup: true
-        }, { status: 503 });
-      }
-
-      const cleanMessage = message.replace(/[\r\n]{2,}/g, '\n\n').replace(/[\r\n]/g, '\n');
-      const body = `${name} sent you a message via NaliChat:\n\n"${cleanMessage}"\n\nJoin NaliChat to reply directly.`;
-
-      const formData = new URLSearchParams();
-      formData.append('To', cleanPhone);
-      formData.append('From', fromNumber);
-      formData.append('Body', body);
-
-      const response = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: formData.toString(),
-        }
+      // External SMS-to-user messaging is disabled until NaliChat has a
+      // verified-phone ownership flow. A self-entered profile phone number is
+      // not sufficient proof that the destination belongs to an app user.
+      return Response.json(
+        { error: 'External SMS messaging is temporarily unavailable', needs_setup: true },
+        { status: 503 },
       );
-
-      const result = await response.json();
-      if (!response.ok) {
-        console.error('Twilio error:', result);
-        return Response.json({ error: result.message || 'Failed to send SMS' }, { status: 500 });
-      }
-
-      return Response.json({ success: true, method: 'sms', sid: result.sid });
     }
 
     return Response.json({ error: 'Invalid type. Use "email" or "sms"' }, { status: 400 });

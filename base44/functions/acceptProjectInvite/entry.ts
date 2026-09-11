@@ -25,11 +25,36 @@ Deno.serve(async (req) => {
     if (!invite || new Date(invite.expires_at).getTime() < Date.now()) {
       return Response.json({ error: 'Invite is invalid or expired' }, { status: 403 });
     }
+    const maxUses = Number(invite.max_uses || 25);
 
     const project = await base44.asServiceRole.entities.Project.get(projectId);
     if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
 
-    if (project.owner_id !== user.id) {
+    if (project.owner_id === user.id) {
+      return Response.json({ success: true, role: 'owner', already_member: true }, { headers: { 'Cache-Control': 'no-store' } });
+    }
+    if ((project.collaborator_ids || []).includes(user.id)) {
+      return Response.json({
+        success: true,
+        role: project.collaborator_roles?.[user.id] || 'viewer',
+        already_member: true,
+      }, { headers: { 'Cache-Control': 'no-store' } });
+    }
+
+    const claim = await base44.asServiceRole.entities.ProjectInvite.updateMany(
+      {
+        id: invite.id,
+        used_count: { $lt: maxUses },
+      },
+      { $inc: { used_count: 1 } },
+    );
+    if (Number(claim?.updated || 0) !== 1) {
+      return Response.json({ error: 'Invite usage limit reached' }, { status: 410 });
+    }
+
+    let membershipGranted = false;
+    try {
+      if (project.owner_id !== user.id) {
       const collaboratorIds = Array.from(new Set([...(project.collaborator_ids || []), user.id]));
       const roles = { ...(project.collaborator_roles || {}), [user.id]: invite.role };
       const editorIds = new Set(project.editor_ids || []);
@@ -41,6 +66,9 @@ Deno.serve(async (req) => {
         collaborator_roles: roles,
         editor_ids: Array.from(editorIds),
       });
+      // Project membership is the authoritative grant. Once this succeeds the
+      // invite use must remain consumed even if a later child-sync repair fails.
+      membershipGranted = true;
 
       // Keep child-record access in sync for already-existing collaborative data.
       for (const entityName of ['Track', 'TrackVersion', 'SharedFile', 'Folder', 'Milestone']) {
@@ -61,11 +89,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    await base44.asServiceRole.entities.ProjectInvite.update(invite.id, {
-      used_count: (invite.used_count || 0) + 1,
-    });
-
-    return Response.json({ success: true, role: invite.role });
+    return Response.json(
+      { success: true, role: invite.role },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
+    } catch (grantError) {
+      if (!membershipGranted) {
+        await base44.asServiceRole.entities.ProjectInvite.updateMany(
+          { id: invite.id, used_count: { $gt: 0 } },
+          { $inc: { used_count: -1 } },
+        ).catch(() => {});
+      }
+      throw grantError;
+    }
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not accept project invite' }, { status: 500 });
   }

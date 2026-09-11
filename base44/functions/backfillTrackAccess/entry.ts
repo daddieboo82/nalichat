@@ -9,6 +9,13 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    let updatedTracks = 0;
+    let updatedVersions = 0;
+    let updatedFiles = 0;
+    let updatedFolders = 0;
+    let updatedMilestones = 0;
+    let updatedProjects = 0;
+
     const projects = await entities.Project.filter({});
     for (const project of projects) {
       const expectedEditors = Array.from(new Set(
@@ -24,12 +31,6 @@ Deno.serve(async (req) => {
     }
 
     const tracks = await entities.Track.filter({});
-    let updatedTracks = 0;
-    let updatedVersions = 0;
-    let updatedFiles = 0;
-    let updatedFolders = 0;
-    let updatedMilestones = 0;
-    let updatedProjects = 0;
 
     for (const track of tracks) {
       if (Array.isArray(track.access_user_ids) && track.access_user_ids.length > 0) continue;
@@ -93,7 +94,11 @@ Deno.serve(async (req) => {
         }
       }
 
-      await entities.SharedFile.update(file.id, { access_user_ids: accessUserIds });
+      await entities.SharedFile.update(file.id, {
+        access_user_ids: accessUserIds,
+        share_token_hash: null,
+        share_token_expires_at: null,
+      });
       updatedFiles += 1;
     }
 

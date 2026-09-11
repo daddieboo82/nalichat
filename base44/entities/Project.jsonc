@@ -4,26 +4,35 @@
   "properties": {
     "title": {
       "type": "string",
-      "description": "Project/song title"
+      "description": "Project/song title",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "description": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "owner_id": {
       "type": "string",
       "rls": {
         "read": true,
         "write": {
-          "$or": [
-            {
-              "data.owner_id": "{{user.id}}"
-            },
-            {
-              "user_condition": {
-                "role": "admin"
-              }
-            }
-          ]
+          "user_condition": {
+            "role": "admin"
+          }
         }
       }
     },
@@ -35,16 +44,9 @@
       "rls": {
         "read": true,
         "write": {
-          "$or": [
-            {
-              "data.owner_id": "{{user.id}}"
-            },
-            {
-              "user_condition": {
-                "role": "admin"
-              }
-            }
-          ]
+          "user_condition": {
+            "role": "admin"
+          }
         }
       }
     },
@@ -55,27 +57,44 @@
       "rls": {
         "read": true,
         "write": {
-          "$or": [
-            {
-              "data.owner_id": "{{user.id}}"
-            },
-            {
-              "user_condition": {
-                "role": "admin"
-              }
-            }
-          ]
+          "user_condition": {
+            "role": "admin"
+          }
         }
       }
     },
     "genre": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "bpm": {
-      "type": "number"
+      "type": "number",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "key": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "status": {
       "type": "string",
@@ -86,7 +105,15 @@
         "mastering",
         "complete"
       ],
-      "default": "draft"
+      "default": "draft",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "cover_url": {
       "type": "string"
@@ -94,12 +121,28 @@
     "master_fx": {
       "type": "object",
       "description": "Master bus FX chain (insert id -> { enabled, params }) so mixes travel with the project",
-      "default": {}
+      "default": {},
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "studio_state": {
       "type": "object",
       "description": "Portable NaliStudio editor state for this collaborative project, including track arrangement and remote audio URLs",
-      "default": {}
+      "default": {},
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "editor_ids": {
       "type": "array",
@@ -111,16 +154,9 @@
       "rls": {
         "read": true,
         "write": {
-          "$or": [
-            {
-              "data.owner_id": "{{user.id}}"
-            },
-            {
-              "user_condition": {
-                "role": "admin"
-              }
-            }
-          ]
+          "user_condition": {
+            "role": "admin"
+          }
         }
       }
     }
@@ -131,7 +167,9 @@
   ],
   "rls": {
     "create": {
-      "data.owner_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "$or": [
@@ -144,22 +182,14 @@
       ]
     },
     "update": {
-      "$or": [
-        {
-          "data.owner_id": "{{user.id}}"
-        },
-        {
-          "data.editor_ids": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "data.owner_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

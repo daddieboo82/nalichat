@@ -20,7 +20,7 @@ export default function SubmissionCard({ submission, challengeId, hasVoted, isOw
 
   return (
     <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
-      <audio ref={audioRef} src={submission.remix_file_url} onEnded={() => setPlaying(false)} />
+      <audio ref={audioRef} src={submission.remix_file_url} preload="none" onEnded={() => setPlaying(false)} />
       <div className="flex items-center gap-3">
         <Avatar className="w-9 h-9">
           <AvatarImage src={submission.producer_avatar} />

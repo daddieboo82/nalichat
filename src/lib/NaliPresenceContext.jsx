@@ -27,7 +27,7 @@ export function NaliPresenceProvider({ children }) {
     if (!VALID_LEVELS.includes(newLevel)) return;
     setLevelState(newLevel);
     try { localStorage.setItem(STORAGE_KEY, newLevel); } catch {}
-    base44.auth.updateMe({ nali_presence_level: newLevel }).catch(() => {});
+    base44.functions.invoke("updateMyProfile", { nali_presence_level: newLevel }).catch(() => {});
   }, []);
 
   const value = useMemo(() => ({

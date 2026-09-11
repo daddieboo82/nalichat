@@ -1,5 +1,23 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
+function isSafePushEndpoint(value: string) {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== 'https:') return false;
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === 'localhost' ||
+      hostname === 'metadata.google.internal' ||
+      hostname.endsWith('.internal') ||
+      hostname.endsWith('.local') ||
+      /^(10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.)/.test(hostname)
+    ) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -11,12 +29,27 @@ Deno.serve(async (req) => {
     const p256dh = String(body?.keys?.p256dh || '');
     const auth = String(body?.keys?.auth || '');
 
-    if (!endpoint || !p256dh || !auth || !endpoint.startsWith('https://')) {
+    if (!endpoint || !p256dh || !auth || !isSafePushEndpoint(endpoint)) {
       return Response.json({ error: 'Invalid push subscription' }, { status: 400 });
     }
 
     const entity = base44.asServiceRole.entities.PushSubscription;
-    const existing = await entity.filter({ user_id: user.id, endpoint });
+    const endpointRows = await entity.filter({ endpoint });
+
+    // A browser PushManager subscription is device/browser scoped rather than
+    // account scoped. Reusing the same subscription after sign-out must transfer
+    // it to the newly authenticated account instead of delivering both users'
+    // notifications to the same browser. Require the browser keys to match so a
+    // caller cannot steal an endpoint by knowing its URL alone.
+    for (const row of endpointRows) {
+      if (row.user_id === user.id) continue;
+      if (row.p256dh !== p256dh || row.auth !== auth) {
+        return Response.json({ error: 'Push endpoint is already registered to another account' }, { status: 409 });
+      }
+      await entity.delete(row.id);
+    }
+
+    const existing = endpointRows.filter((row: any) => row.user_id === user.id);
     const data = {
       user_id: user.id,
       endpoint,

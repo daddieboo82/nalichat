@@ -41,7 +41,15 @@ export default async function(req) {
     if (wants('Conversation')) loads.conversations = s.Conversation.list('-created_date', 500);
     if (wants('Message')) loads.messages = s.Message.list('-created_date', 500);
     if (wants('TrackVersion')) loads.trackVersions = s.TrackVersion.list('-created_date', 500);
-    if (wants('User')) loads.users = s.User.list();
+    if (wants('Playlist')) {
+      loads.playlists = s.Playlist.list('-created_date', 500);
+      if (!loads.artPosts) loads.artPosts = s.ArtPost.list('-created_date', 500);
+    }
+    if (wants('UsageRateLimit')) loads.usageRateLimits = s.UsageRateLimit.list('-created_date', 1000);
+    if (wants('User') || wants('Squad')) {
+      loads.users = s.User.list();
+      loads.squads = s.Squad.list('-created_date', 1000);
+    }
 
     const data = {};
     const keys = Object.keys(loads);
@@ -290,6 +298,109 @@ export default async function(req) {
       if (mode === 'repair' && avatarFixes.length) {
         await s.User.bulkUpdate(avatarFixes);
         avatarFixes.forEach(u => fixed.push({ entity: 'User', id: u.id, change: 'avatar_url cleared (was not an image URL)' }));
+      }
+    }
+
+
+    // =====================================================
+    // 13. PLAYLIST — remove references to deleted ArtPosts
+    // =====================================================
+    if (data.playlists && data.artPosts) {
+      const validPostIds = new Set(data.artPosts.map((post) => post.id));
+      const playlistFixes = [];
+      data.playlists.forEach((playlist) => {
+        const currentIds = Array.isArray(playlist.track_ids) ? playlist.track_ids : [];
+        const validIds = currentIds.filter((id) => validPostIds.has(id));
+        if (validIds.length !== currentIds.length) {
+          issues.push({
+            entity: 'Playlist',
+            id: playlist.id,
+            field: 'track_ids',
+            issue: `${currentIds.length - validIds.length} deleted track reference(s)`,
+          });
+          if (mode === 'repair') playlistFixes.push({ id: playlist.id, track_ids: validIds });
+        }
+      });
+      if (mode === 'repair' && playlistFixes.length) {
+        await s.Playlist.bulkUpdate(playlistFixes);
+        playlistFixes.forEach((u) => fixed.push({
+          entity: 'Playlist',
+          id: u.id,
+          change: 'removed deleted track references',
+        }));
+      }
+    }
+
+    // =====================================================
+    // 14. USAGE RATE LIMIT — delete expired ledger rows
+    // =====================================================
+    if (data.usageRateLimits) {
+      const expired = data.usageRateLimits.filter((row) =>
+        row.expires_at && new Date(row.expires_at).getTime() < now
+      );
+      expired.forEach((row) => {
+        issues.push({
+          entity: 'UsageRateLimit',
+          id: row.id,
+          field: 'expires_at',
+          issue: 'Expired rate-limit ledger row',
+        });
+      });
+      if (mode === 'repair') {
+        for (const row of expired) {
+          await s.UsageRateLimit.delete(row.id);
+          fixed.push({
+            entity: 'UsageRateLimit',
+            id: row.id,
+            change: 'expired row deleted',
+          });
+        }
+      }
+    }
+
+    // =====================================================
+    // 15. USER/SQUAD — repair atomic squad membership claims
+    // =====================================================
+    if (data.users && data.squads) {
+      const memberships = new Map();
+      for (const squad of data.squads) {
+        if (squad.status === 'ended') continue;
+        for (const memberId of [squad.member_a_id, squad.member_b_id].filter(Boolean)) {
+          if (!memberships.has(memberId)) memberships.set(memberId, []);
+          memberships.get(memberId).push(squad.id);
+        }
+      }
+
+      for (const user of data.users) {
+        const activeIds = memberships.get(user.id) || [];
+        if (activeIds.length > 1) {
+          issues.push({
+            entity: 'User',
+            id: user.id,
+            field: 'squad_membership_id',
+            issue: `User belongs to ${activeIds.length} non-ended squads; manual review required`,
+          });
+          continue;
+        }
+
+        const expected = activeIds[0] || null;
+        const current = user.squad_membership_id || null;
+        if (current !== expected) {
+          issues.push({
+            entity: 'User',
+            id: user.id,
+            field: 'squad_membership_id',
+            issue: `Squad membership claim "${current || ''}" should be "${expected || ''}"`,
+          });
+          if (mode === 'repair') {
+            await s.User.update(user.id, { squad_membership_id: expected });
+            fixed.push({
+              entity: 'User',
+              id: user.id,
+              change: `squad_membership_id → ${expected || 'null'}`,
+            });
+          }
+        }
       }
     }
 

@@ -19,10 +19,48 @@
       "items": {
         "type": "string"
       },
-      "description": "User IDs of participants"
+      "description": "User IDs of participants. Hidden from nonmembers of public rooms to prevent membership enumeration.",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "data.participant_ids": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        },
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "last_message_text": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "data.participant_ids": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        },
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "last_message_at": {
       "type": "string",
@@ -48,10 +86,8 @@
   ],
   "rls": {
     "create": {
-      "data.participant_ids": {
-        "$in": [
-          "{{user.id}}"
-        ]
+      "user_condition": {
+        "role": "admin"
       }
     },
     "read": {

@@ -12,7 +12,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await base44.asServiceRole.entities.Squad.update(squad.id, { status: 'ended' });
+    const entities = base44.asServiceRole.entities;
+    await entities.Squad.update(squad.id, { status: 'ended' });
+    for (const memberId of [squad.member_a_id, squad.member_b_id].filter(Boolean)) {
+      await entities.User.updateMany(
+        { id: memberId, squad_membership_id: squad.id },
+        { $set: { squad_membership_id: null } },
+      ).catch(() => {});
+    }
     return Response.json({ success: true });
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not leave squad' }, { status: 500 });

@@ -29,6 +29,14 @@ function goalMet(progress: any, member: 'a' | 'b') {
     (progress[`member_${member}_tasks`] || 0) >= GOAL_TASKS;
 }
 
+function happenedThisWeek(value: unknown) {
+  const raw = String(value || '').trim();
+  if (!raw) return false;
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return false;
+  return weekKey(date) === weekKey();
+}
+
 async function activeSquad(entities: any, userId: string) {
   const [asA, asB] = await Promise.all([
     entities.Squad.filter({ member_a_id: userId, status: 'active' }),
@@ -72,27 +80,36 @@ async function awardOnce(entities: any, userId: string, squad: any, progress: an
   } catch {
     return false;
   }
-  await entities.User.updateMany({ id: userId }, { $inc: { squad_credits: CREDITS_REWARD } });
+  try {
+    await entities.User.updateMany({ id: userId }, { $inc: { squad_credits: CREDITS_REWARD } });
+  } catch (creditError) {
+    // Keep the reward retryable if the protected user-credit update fails.
+    await entities.SquadReward.delete(rewardId).catch(() => {});
+    throw creditError;
+  }
   return true;
 }
 
 async function validateSource(entities: any, user: any, sourceType: string, sourceId: string) {
   if (sourceType === 'message') {
-    const message = await entities.Message.get(sourceId);
+    const message = await entities.Message.get(sourceId).catch(() => null);
     if (!message || message.sender_id !== user.id || message.type === 'session') return false;
-    return true;
+    return happenedThisWeek(message.created_date);
   }
 
   if (sourceType === 'art_post') {
-    const post = await entities.ArtPost.get(sourceId);
-    return Boolean(post && post.creator_id === user.id);
+    const post = await entities.ArtPost.get(sourceId).catch(() => null);
+    return Boolean(
+      post
+      && post.creator_id === user.id
+      && happenedThisWeek(post.created_date)
+    );
   }
 
   if (sourceType === 'milestone') {
-    const milestone = await entities.Milestone.get(sourceId);
-    if (!milestone || !milestone.completed) return false;
-    return milestone.created_by_id === user.id ||
-      (milestone.edit_user_ids || []).includes(user.id);
+    const milestone = await entities.Milestone.get(sourceId).catch(() => null);
+    if (!milestone || !milestone.completed || milestone.completed_by_id !== user.id) return false;
+    return happenedThisWeek(milestone.completed_at);
   }
 
   return false;
@@ -113,6 +130,12 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
 
     const { sourceType, sourceId } = await req.json();
     if (!['message', 'art_post', 'milestone'].includes(sourceType) || !sourceId) {
@@ -130,6 +153,7 @@ Deno.serve(async (req) => {
     const progress = await getOrCreateProgress(entities, squad);
     const ledgerId = await activityId(user.id, sourceType, String(sourceId));
 
+    let duplicate = false;
     try {
       await entities.SquadActivity.create({
         id: ledgerId,
@@ -140,7 +164,7 @@ Deno.serve(async (req) => {
         source_id: String(sourceId),
       });
     } catch {
-      return Response.json({ success: true, tracked: false, duplicate: true, progress });
+      duplicate = true;
     }
 
     const member = squad.member_a_id === user.id ? 'a' : 'b';
@@ -148,13 +172,24 @@ Deno.serve(async (req) => {
       ? `member_${member}_messages`
       : `member_${member}_tasks`;
 
-    await entities.SquadProgress.updateMany(
-      { id: progress.id },
-      { $inc: { [field]: 1 } },
-    );
+    if (!duplicate) {
+      try {
+        await entities.SquadProgress.updateMany(
+          { id: progress.id },
+          { $inc: { [field]: 1 } },
+        );
+      } catch (progressError) {
+        // Keep the activity retryable if its progress increment did not land.
+        await entities.SquadActivity.delete(ledgerId).catch(() => {});
+        throw progressError;
+      }
+    }
 
     let updated = await entities.SquadProgress.get(progress.id);
 
+    // Re-evaluate bonus state even for duplicate retries. This lets a retry
+    // recover if the original request incremented progress but failed while
+    // unlocking or awarding the weekly bonus.
     if (!updated.bonus_unlocked && goalMet(updated, 'a') && goalMet(updated, 'b')) {
       const window = weekendWindow(updated.week_key);
       await entities.SquadProgress.update(updated.id, {
@@ -163,14 +198,21 @@ Deno.serve(async (req) => {
         bonus_expires_at: window.expires_at,
       });
       updated = await entities.SquadProgress.get(updated.id);
+    }
 
+    if (updated.bonus_unlocked && goalMet(updated, 'a') && goalMet(updated, 'b')) {
       await Promise.all([
         awardOnce(entities, squad.member_a_id, squad, updated),
         awardOnce(entities, squad.member_b_id, squad, updated),
       ]);
     }
 
-    return Response.json({ success: true, tracked: true, progress: updated });
+    return Response.json({
+      success: true,
+      tracked: !duplicate,
+      duplicate,
+      progress: updated,
+    });
   } catch (error) {
     console.error('recordSquadActivity error:', error);
     return Response.json({ error: error?.message || 'Could not record squad activity' }, { status: 500 });

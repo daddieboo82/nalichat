@@ -22,16 +22,24 @@ Deno.serve(async (req) => {
 
     const file = await base44.asServiceRole.entities.SharedFile.get(fileId);
     if (!file) return Response.json({ error: 'File not found' }, { status: 404 });
-    if (file.uploader_id !== user.id && user.role !== 'admin') {
-      return Response.json({ error: 'Only the uploader can create a public share link' }, { status: 403 });
+    const canShare = user.role === 'admin'
+      || file.uploader_id === user.id
+      || (file.edit_user_ids || []).includes(user.id);
+    if (!canShare) {
+      return Response.json({ error: 'You do not have permission to share this file' }, { status: 403 });
     }
 
     const token = randomToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     await base44.asServiceRole.entities.SharedFile.update(fileId, {
       share_token_hash: await sha256Hex(token),
+      share_token_expires_at: expiresAt,
     });
 
-    return Response.json({ success: true, fileId, token });
+    return Response.json(
+      { success: true, fileId, token, expires_at: expiresAt },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not create share link' }, { status: 500 });
   }

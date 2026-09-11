@@ -16,6 +16,10 @@ export default async function(req) {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'You must be logged in to vote.' }, { status: 401 });
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
 
     const { submission_id } = await req.json();
     if (!submission_id) return Response.json({ error: 'submission_id is required' }, { status: 400 });
@@ -33,6 +37,20 @@ export default async function(req) {
       return Response.json({ error: 'Voting is not open for this challenge.' }, { status: 409 });
     }
 
+    const now = Date.now();
+    const submissionEnd = challenge.submission_end_date
+      ? new Date(challenge.submission_end_date).getTime()
+      : null;
+    const votingEnd = challenge.voting_end_date
+      ? new Date(challenge.voting_end_date).getTime()
+      : null;
+    if (submissionEnd && Number.isFinite(submissionEnd) && submissionEnd > now) {
+      return Response.json({ error: 'Voting has not opened yet.' }, { status: 409 });
+    }
+    if (votingEnd && Number.isFinite(votingEnd) && votingEnd < now) {
+      return Response.json({ error: 'Voting has ended.' }, { status: 409 });
+    }
+
     if (submission.producer_id === user.id) {
       return Response.json({ error: "You can't vote on your own submission." }, { status: 403 });
     }
@@ -44,7 +62,7 @@ export default async function(req) {
         submission_id,
         challenge_id: submission.challenge_id,
         voter_id: user.id,
-        voter_name: user.display_name || user.full_name || user.email,
+        voter_name: user.display_name || user.full_name || 'User',
       });
     } catch (error) {
       // Deterministic vote IDs make concurrent duplicate requests collide at
@@ -60,10 +78,17 @@ export default async function(req) {
     }
 
     // Increment only after the unique vote record was created successfully.
-    await entities.ChallengeSubmission.updateMany(
-      { id: submission_id },
-      { $inc: { vote_count: 1 } },
-    );
+    // If the counter update fails, remove the vote ledger so the voter can
+    // retry instead of being permanently recorded without a counted vote.
+    try {
+      await entities.ChallengeSubmission.updateMany(
+        { id: submission_id },
+        { $inc: { vote_count: 1 } },
+      );
+    } catch (countError) {
+      await entities.ChallengeVote.delete(id).catch(() => {});
+      throw countError;
+    }
 
     const updated = await entities.ChallengeSubmission.get(submission_id);
     return Response.json({ success: true, vote_count: updated.vote_count });

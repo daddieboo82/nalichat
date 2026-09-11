@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 async function canAccessParent(entities: any, user: any, parentType: string, parentId: string) {
   if (parentType === 'art_post') {
@@ -8,7 +9,11 @@ async function canAccessParent(entities: any, user: any, parentType: string, par
 
   if (parentType === 'challenge_submission') {
     const parent = await entities.ChallengeSubmission.get(parentId);
-    return parent ? { allowed: true, parent } : { allowed: false, parent: null };
+    if (!parent) return { allowed: false, parent: null };
+    const allowed = parent.status === 'approved'
+      || user?.role === 'admin'
+      || parent.producer_id === user?.id;
+    return { allowed, parent };
   }
 
   if (parentType === 'track') {
@@ -62,6 +67,18 @@ Deno.serve(async (req) => {
 
     if (action === 'create') {
       if (!user?.id) return Response.json({ error: 'Sign in to comment' }, { status: 401 });
+      if (user.is_banned) {
+        return Response.json({ error: 'banned' }, { status: 403 });
+      }
+      if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+        return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+      }
+
+      const rate = await consumeHourlyLimit(entities, user.id, 'track_comment', 120);
+      if (!rate.allowed) {
+        return Response.json({ error: 'Comment rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+
       const text = String(body?.text || '').trim().slice(0, 2000);
       if (!text) return Response.json({ error: 'Comment text is required' }, { status: 400 });
 
@@ -70,7 +87,7 @@ Deno.serve(async (req) => {
         track_id: parentId,
         parent_type: parentType,
         author_id: user.id,
-        author_name: user.display_name || user.full_name || user.email || 'User',
+        author_name: user.display_name || user.full_name || 'User',
         author_avatar: user.avatar_url || null,
         text,
         ...(Number.isFinite(timestamp) && timestamp >= 0 ? { timestamp } : {}),

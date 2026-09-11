@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
     const updated = await entities.Milestone.update(milestone.id, {
       completed,
       completed_at: completed ? new Date().toISOString() : null,
+      completed_by_id: completed ? user.id : null,
     });
     return Response.json({ success: true, milestone: updated });
   } catch (error) {

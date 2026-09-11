@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import { unsubscribeFromRemotePush } from '@/lib/pushNotifications';
 
 const AuthContext = createContext();
 
@@ -122,17 +123,30 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    // Clear the token locally without triggering a full-page hard reload (which
-    // causes a multi-second blank screen while the whole app re-boots).
+  const logout = async () => {
+    // Remove this browser's remote push capability while the authenticated
+    // session still exists, then terminate the server/cookie-backed session.
     try {
-      localStorage.removeItem('base44_access_token');
-      localStorage.removeItem('base44_token');
-      sessionStorage.removeItem('base44_access_token');
-      sessionStorage.removeItem('base44_token');
-    } catch (e) {}
-    setUser(null);
-    setIsAuthenticated(false);
+      await unsubscribeFromRemotePush();
+    } catch (error) {
+      console.error('Push unsubscribe failed:', error);
+    }
+
+    try {
+      await base44.auth.logout();
+    } catch (error) {
+      console.error('Server logout failed:', error);
+    } finally {
+      try {
+        localStorage.removeItem('base44_access_token');
+        localStorage.removeItem('base44_token');
+        sessionStorage.removeItem('base44_access_token');
+        sessionStorage.removeItem('base44_token');
+      } catch (e) {}
+      setUser(null);
+      setIsAuthenticated(false);
+      setAuthChecked(true);
+    }
   };
 
   const navigateToLogin = () => {

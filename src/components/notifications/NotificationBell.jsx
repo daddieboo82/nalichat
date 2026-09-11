@@ -17,6 +17,18 @@ const typeIcon = {
   message: MessageCircle,
 };
 
+function safeNotificationPath(value) {
+  if (!value || typeof value !== "string") return null;
+  try {
+    const parsed = new URL(value, window.location.origin);
+    if (parsed.origin !== window.location.origin) return null;
+    if (!["http:", "https:"].includes(parsed.protocol)) return null;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function NotificationBell({ direction = "down" }) {
   const [user, setUser] = useState(null);
   const [items, setItems] = useState([]);
@@ -24,10 +36,9 @@ export default function NotificationBell({ direction = "down" }) {
   const [pushPermission, setPushPermission] = useState(() => getPermissionStatus());
   const { toast } = useToast();
   const panelRef = useRef(null);
-  const userRef = useRef(null);
 
   useEffect(() => {
-    base44.auth.me().then((u) => { setUser(u); userRef.current = u; }).catch(() => {});
+    base44.auth.me().then(setUser).catch(() => {});
     // Register the service worker, but only request notification permission
     // from an explicit user gesture. Browsers may block permission prompts
     // triggered from timers or page load.
@@ -43,23 +54,41 @@ export default function NotificationBell({ direction = "down" }) {
 
   useEffect(() => {
     if (!user?.id) return;
-    load(user.id);
-    const unsub = base44.entities.Notification.subscribe((event) => {
-      const me = userRef.current;
-      if (!me) return;
-      if (event.data?.recipient_id !== me.id) return;
-      if (event.type === "create") {
-        sounds.notification();
-        toast({ title: event.data.actor_name || "New activity", description: event.data.message });
-        showPushNotification({
-          title: event.data.actor_name || "NaliChat",
-          body: event.data.message || "You have a new notification",
-          url: event.data.link || "/",
-        });
+    let cancelled = false;
+    let previousIds = new Set();
+
+    const refreshNotifications = async () => {
+      try {
+        const list = await base44.entities.Notification.filter({ recipient_id: user.id }, "-created_date", 30);
+        if (cancelled) return;
+        const nextIds = new Set((list || []).map((n) => n.id));
+
+        if (previousIds.size > 0) {
+          const newest = (list || []).find((n) => !previousIds.has(n.id));
+          if (newest) {
+            sounds.notification();
+            toast({ title: newest.actor_name || "New activity", description: newest.message });
+            showPushNotification({
+              title: newest.actor_name || "NaliChat",
+              body: newest.message || "You have a new notification",
+              url: newest.link || "/",
+            });
+          }
+        }
+
+        previousIds = nextIds;
+        setItems(list || []);
+      } catch {
+        // Notifications are non-critical; retry on the next poll.
       }
-      load(me.id);
-    });
-    return unsub;
+    };
+
+    refreshNotifications();
+    const poll = window.setInterval(refreshNotifications, 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(poll);
+    };
   }, [user]);
 
   useEffect(() => {
@@ -166,8 +195,9 @@ export default function NotificationBell({ direction = "down" }) {
                     </div>
                   </div>
                 );
-                return n.link ? (
-                  <Link key={n.id} to={n.link} onClick={() => setOpen(false)}>{inner}</Link>
+                const safeLink = safeNotificationPath(n.link);
+                return safeLink ? (
+                  <Link key={n.id} to={safeLink} onClick={() => setOpen(false)}>{inner}</Link>
                 ) : (
                   <div key={n.id}>{inner}</div>
                 );

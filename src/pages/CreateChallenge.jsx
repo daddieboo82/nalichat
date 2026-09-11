@@ -41,6 +41,16 @@ export default function CreateChallenge() {
     if (!user || !canSubmit) return;
     setSubmitting(true);
     try {
+      const sourceExt = (sourceTrackFile.name.split(".").pop() || "").toLowerCase();
+      if (!["mp3", "wav"].includes(sourceExt)) {
+        toast.error("Challenge source tracks must be MP3 or WAV.");
+        return;
+      }
+      if (sourceTrackFile.size > 100 * 1024 * 1024) {
+        toast.error("Challenge source tracks must be 100MB or smaller.");
+        return;
+      }
+
       let cover_url = "";
       if (coverFile) {
         const res = await base44.integrations.Core.UploadFile({ file: coverFile });
@@ -51,14 +61,9 @@ export default function CreateChallenge() {
       const source_track_url = trackRes.file_url;
       const source_track_name = sourceTrackName.trim() || sourceTrackFile.name.replace(/\.[^/.]+$/, "");
 
-      const now = new Date();
-      const status = form.start_date && new Date(form.start_date) > now ? "upcoming" : "active";
-
-      const challenge = await base44.entities.Challenge.create({
+      const res = await base44.functions.invoke("createChallenge", {
         title: form.title.trim(),
         description: form.description.trim(),
-        host_artist_id: user.id,
-        host_artist_name: user.full_name || user.display_name || user.email,
         genre: form.genre || undefined,
         bpm: form.bpm ? Number(form.bpm) : undefined,
         key: form.key || undefined,
@@ -67,17 +72,18 @@ export default function CreateChallenge() {
         cover_url: cover_url || undefined,
         source_track_url,
         source_track_name,
-        status,
         start_date: form.start_date || undefined,
         submission_end_date: form.submission_end_date || undefined,
         voting_end_date: form.voting_end_date || undefined,
       });
+      if (res?.data?.error) throw new Error(res.data.error);
+      const challenge = res?.data?.challenge;
 
       toast.success("Challenge created!");
       navigate(`/challenge/${challenge.id}`);
     } catch (err) {
       console.error(err);
-      toast.error("Couldn't create challenge. Please try again.");
+      toast.error(err?.message || "Couldn't create challenge. Please try again.");
     } finally {
       setSubmitting(false);
     }

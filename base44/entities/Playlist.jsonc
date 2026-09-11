@@ -10,10 +10,26 @@
       "type": "string"
     },
     "owner_id": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "owner_name": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "track_ids": {
       "type": "array",
@@ -21,7 +37,15 @@
         "type": "string"
       },
       "description": "Array of ArtPost IDs in the playlist",
-      "default": []
+      "default": [],
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "cover_url": {
       "type": "string",
@@ -38,7 +62,9 @@
   ],
   "rls": {
     "create": {
-      "data.owner_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "$or": [
@@ -51,10 +77,14 @@
       ]
     },
     "update": {
-      "data.owner_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "data.owner_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

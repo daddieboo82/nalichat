@@ -9,19 +9,19 @@ Deno.serve(async (req) => {
     const { userId } = await req.json();
     if (!userId) return Response.json({ error: 'userId is required' }, { status: 400 });
 
-    const rows = await base44.asServiceRole.entities.Achievement.filter({ user_id: userId });
+    const target = await base44.asServiceRole.entities.User.get(String(userId)).catch(() => null);
+    if (
+      !target
+      || !target.onboarding_completed
+      || target.is_banned
+      || !String(target.display_name || '').trim()
+    ) {
+      return Response.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
+    const rows = await base44.asServiceRole.entities.Achievement.filter({ user_id: target.id });
     return Response.json({
-      achievements: rows.map((a) => ({
-        id: a.id,
-        user_id: a.user_id,
-        key: a.key,
-        title: a.title,
-        description: a.description,
-        icon: a.icon,
-        xp: a.xp,
-        category: a.category,
-        created_date: a.created_date,
-      })),
+      achievements: rows.map((a) => ({ key: a.key })),
     });
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not load achievements' }, { status: 500 });

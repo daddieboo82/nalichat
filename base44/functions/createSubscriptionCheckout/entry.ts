@@ -9,6 +9,7 @@ import {
 } from '../../shared/stripeBilling.ts';
 import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
 import { stripeRequest } from '../../shared/stripe.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const TRIAL_DAYS = 7;
 const CHECKOUT_LEASE_MS = 24 * 60 * 60 * 1000;
@@ -50,7 +51,6 @@ Deno.serve(async (req) => {
   let cleanupBase44: any = null;
   let cleanupUserId = '';
   let cleanupRequestKey = '';
-  let cleanupPendingSubscriptionId = '';
   let cleanupTrialClaimed = false;
   let cleanupSessionCreated = false;
 
@@ -80,6 +80,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Authentication required for subscriptions' }, { status: 401 });
     }
     cleanupUserId = user.id;
+
+    const checkoutRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'subscription_checkout',
+      12,
+    );
+    if (!checkoutRate.allowed) {
+      return Response.json(
+        { error: 'Too many subscription checkout attempts. Please try again later.' },
+        { status: 429 },
+      );
+    }
 
     const subscriptions = await base44.asServiceRole.entities.Subscription.filter({
       user_id: user.id,
@@ -117,7 +130,9 @@ Deno.serve(async (req) => {
       return Response.json({
         checkoutUrl: pendingSubscription.checkout_url,
         checkoutId: pendingSubscription.checkout_id,
-        trialApplied: Boolean(pendingSubscription.trial_used_at),
+        trialApplied: Boolean(
+          !user.trial_used_at && user.trial_claim_id === requestKey
+        ),
         reused: true,
       });
     }
@@ -195,24 +210,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    let trialApplied = Boolean(pendingSubscription?.trial_used_at);
+    let trialApplied = Boolean(
+      !user.trial_used_at && user.trial_claim_id === requestKey
+    );
     if (!pendingSubscription) {
       const eligibility = trialEligibility(user.trial_used_at, subscriptions);
       if (eligibility.eligible) {
+        // The checkout lease above guarantees only this requestKey owns the
+        // active checkout slot. If an older abandoned checkout left a stale
+        // trial_claim_id behind, the new lease holder may safely replace it.
         await base44.asServiceRole.entities.User.updateMany(
           {
             id: user.id,
             trial_used_at: null,
+            stripe_checkout_claim_id: requestKey,
           },
           {
             $set: {
-              trial_used_at: now,
               trial_claim_id: requestKey,
             },
           },
         );
         const refreshedUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
         trialApplied = refreshedUsers.length === 1
+          && !refreshedUsers[0].trial_used_at
           && refreshedUsers[0].trial_claim_id === requestKey;
         cleanupTrialClaimed = trialApplied;
       }
@@ -234,7 +255,6 @@ Deno.serve(async (req) => {
           checkout_success_destination: body.callbackDestinations.success,
           checkout_cancel_destination: body.callbackDestinations.cancel,
           trial_target_plan: sku.plan,
-          ...(trialApplied ? { trial_used_at: now } : {}),
         });
       } catch (createError) {
         const concurrentAttempts = await base44.asServiceRole.entities.Subscription.filter({
@@ -244,11 +264,12 @@ Deno.serve(async (req) => {
         });
         if (concurrentAttempts.length !== 1) throw createError;
         pendingSubscription = concurrentAttempts[0];
-        trialApplied = Boolean(pendingSubscription.trial_used_at);
+        const refreshedUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
+        trialApplied = refreshedUsers.length === 1
+          && !refreshedUsers[0].trial_used_at
+          && refreshedUsers[0].trial_claim_id === requestKey;
       }
     }
-
-    cleanupPendingSubscriptionId = pendingSubscription?.id || '';
 
     let session;
     try {
@@ -319,21 +340,12 @@ Deno.serve(async (req) => {
               stripe_checkout_claim_id: null,
               stripe_checkout_claimed_at: null,
               ...(cleanupTrialClaimed ? {
-                trial_used_at: null,
                 trial_claim_id: null,
               } : {}),
             },
           },
         );
 
-        if (cleanupTrialClaimed && cleanupPendingSubscriptionId) {
-          await cleanupBase44.asServiceRole.entities.Subscription.update(
-            cleanupPendingSubscriptionId,
-            {
-              trial_used_at: null,
-            },
-          );
-        }
       } catch (cleanupError) {
         console.error('Subscription checkout cleanup failed:', cleanupError);
       }

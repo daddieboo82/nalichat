@@ -9,32 +9,80 @@
       "type": "string"
     },
     "host_artist_name": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "host_artist_id": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "source_track_url": {
       "type": "string",
-      "description": "URL of the single uploaded source track (MP3/WAV) that producers remix from"
+      "description": "URL of the single uploaded source track (MP3/WAV) that producers remix from",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "source_track_name": {
       "type": "string",
-      "description": "Name of the source track"
+      "description": "Name of the source track",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "stem_file_urls": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Legacy multi-stem uploads \u2014 kept for backward compatibility, no longer used by the UI"
+      "description": "Legacy multi-stem uploads — kept for backward compatibility, no longer used by the UI",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "stem_names": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Legacy stem names \u2014 kept for backward compatibility, no longer used by the UI"
+      "description": "Legacy stem names — kept for backward compatibility, no longer used by the UI",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "genre": {
       "type": "string"
@@ -52,7 +100,16 @@
       "type": "string"
     },
     "cover_url": {
-      "type": "string"
+      "type": "string",
+      "description": "Server-managed trusted cover image URL",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "status": {
       "type": "string",
@@ -62,19 +119,55 @@
         "voting",
         "completed"
       ],
-      "default": "upcoming"
+      "default": "upcoming",
+      "description": "Server-managed challenge lifecycle state",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "start_date": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "Server-managed challenge schedule",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "submission_end_date": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "Server-managed challenge schedule",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "voting_end_date": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "Server-managed challenge schedule",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [
@@ -83,32 +176,20 @@
   ],
   "rls": {
     "create": {
-      "data.host_artist_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {},
     "update": {
-      "$or": [
-        {
-          "data.host_artist_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "$or": [
-        {
-          "data.host_artist_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

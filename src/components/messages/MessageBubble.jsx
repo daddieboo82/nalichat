@@ -17,6 +17,7 @@ import MessageContextMenu from "./MessageContextMenu";
 import VoiceTranscription from "./VoiceTranscription";
 import SwipeToReply from "./SwipeToReply";
 import ReportContentDialog from "@/components/ReportContentDialog";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -61,7 +62,7 @@ function ReadReceipts({ readBy, users }) {
 
 
 
-function FileAttachment({ message, isOwn, onOpenViewer }) {
+function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownload }) {
   const [dlProgress, setDlProgress] = useState(null); // null = idle, 0-100 = downloading
   const isImage = message.type === "image" || message.file_type?.startsWith("image");
   const isAudio = message.type === "audio" || message.file_type?.startsWith("audio") || !!message.file_name?.match(/\.(mp3|wav|ogg|m4a|aac)$/i) || !!message.file_url?.match(/\.(mp3|wav|ogg|m4a|aac)(\?.*)?$/i);
@@ -71,8 +72,15 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
     e.preventDefault();
     if (dlProgress !== null) return;
     setDlProgress(0);
-    await resumableDownload(message.file_url, message.file_name || "file", (pct) => setDlProgress(pct));
-    setDlProgress(null);
+    try {
+      const auth = await base44.functions.invoke("authorizeMessageDownload", { messageId: message.id });
+      if (auth?.data?.error) throw new Error(auth.data.error);
+      const downloadUrl = auth?.data?.file_url;
+      if (!downloadUrl) throw new Error("Download URL unavailable");
+      await resumableDownload(downloadUrl, auth?.data?.file_name || message.file_name || "file", (pct) => setDlProgress(pct));
+    } finally {
+      setDlProgress(null);
+    }
   };
 
   if (isImage) {
@@ -91,7 +99,7 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
     return (
       <div className="flex flex-col gap-2 min-w-[200px] sm:min-w-[240px]">
         <CustomMediaPlayer src={message.file_url} title={message.file_name || "Audio Message"} className="shadow-md" />
-        <VoiceTranscription message={message} isOwn={isOwn} />
+        {canTranscribe && <VoiceTranscription message={message} isOwn={isOwn} />}
         <button onClick={() => onOpenViewer(message)} className="text-[10px] text-muted-foreground hover:text-foreground flex items-center justify-end gap-1 transition-colors mt-1 font-medium px-1">
           <Maximize2 className="w-3 h-3" /> Open full viewer
         </button>
@@ -104,7 +112,7 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
 
   return (
     <div className="min-w-[180px] sm:min-w-[220px]">
-      <button onClick={handleDownload} className="w-full flex items-center gap-3 hover:opacity-80 transition-opacity group text-left" title="Download File" aria-label="Download File">
+      <button onClick={canDownload ? handleDownload : undefined} disabled={!canDownload} className="w-full flex items-center gap-3 hover:opacity-80 transition-opacity group text-left disabled:opacity-50 disabled:cursor-not-allowed" title={canDownload ? "Download File" : "Premium is required to download this attachment"} aria-label={canDownload ? "Download File" : "Download locked"}>
         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", isOwn ? "bg-white/20" : "bg-primary/20")}>
           <Icon className={cn("w-5 h-5", isOwn ? "text-white" : "text-primary")} />
         </div>
@@ -134,6 +142,10 @@ const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.l
 import React from "react";
 
 export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM }) {
+  const { hasEntitlement } = useSubscription();
+  const canUseAi = hasEntitlement("ai.standard");
+  const canTranscribe = hasEntitlement("voice.transcription");
+  const canDownload = isOwn || hasEntitlement("chat.export");
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -145,8 +157,8 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
 
   const hasFile = message.file_url && message.type !== "text";
   const isAudioMessage = !!(message.file_url && (message.type === "audio" || message.file_type?.startsWith("audio") || message.file_name?.match(/\.(mp3|wav|ogg|m4a|aac)$/i)));
-  const canGoViral = !!(message.text || isAudioMessage);
-  const canShareVoiceCard = !!isAudioMessage;
+  const canGoViral = canUseAi && !!(message.text || isAudioMessage);
+  const canShareVoiceCard = canTranscribe && !!isAudioMessage;
 
   const showContextMenu = (x, y) => {
     const menuW = 200, menuH = 320;
@@ -236,7 +248,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           {message.type === "session" ? (
             <ChatSessionViewer message={message} currentUser={currentUser} />
           ) : hasFile ? (
-            <FileAttachment message={message} isOwn={isOwn} onOpenViewer={() => {
+            <FileAttachment message={message} isOwn={isOwn} canTranscribe={canTranscribe} canDownload={canDownload} onOpenViewer={() => {
               if (message.type === "audio" || message.file_type?.startsWith("audio")) {
                 onPlayAudio?.(message);
               } else {
@@ -264,8 +276,11 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         {/* Reactions display */}
         {(() => {
           const counts = {};
-          const userReaction = currentUser ? (message.reactions || {})[currentUser.id] : null;
-          for (const emoji of Object.values(message.reactions || {})) {
+          const reactionEntries = Object.entries(message.reactions || {});
+          const userReaction = currentUser
+            ? reactionEntries.find(([key]) => key.endsWith(`__${currentUser.id}`))?.[1] || null
+            : null;
+          for (const [, emoji] of reactionEntries) {
             counts[emoji] = (counts[emoji] || 0) + 1;
           }
           const entries = Object.entries(counts);
@@ -368,7 +383,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           </button>
         )}
 
-        {message.text && message.type === "text" && (
+        {canUseAi && message.text && message.type === "text" && (
           <button
             onClick={() => speakText(message.text)}
             className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-primary/15 hover:border-primary/40 hover:text-primary transition-all shadow-sm"
@@ -441,6 +456,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         media={hasFile ? message : null}
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
+        canDownload={canDownload}
       />
 
       <ViralMomentDialog
@@ -459,12 +475,12 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         position={contextMenuPos}
         onClose={() => setContextMenuPos(null)}
         items={[
-          { icon: Sparkles, label: "Create Viral Moment", onClick: () => setViralOpen(true), highlight: true },
+          ...(canGoViral ? [{ icon: Sparkles, label: "Create Viral Moment", onClick: () => setViralOpen(true), highlight: true }] : []),
           ...(canShareVoiceCard ? [{ icon: Share2, label: "Share Voice Card", onClick: () => setVoiceCardOpen(true), highlight: true }] : []),
           { icon: Reply, label: "Reply", onClick: () => { if (navigator.vibrate) navigator.vibrate(20); onReply?.(message); } },
           { icon: MessageSquareQuote, label: "Open Thread", onClick: () => onOpenThread?.(message) },
           ...(message.text ? [{ icon: Copy, label: "Copy", onClick: () => onCopy?.(message) }] : []),
-          ...(message.text ? [{ icon: Volume2, label: "Read Aloud", onClick: () => speakText(message.text) }] : []),
+          ...(canUseAi && message.text ? [{ icon: Volume2, label: "Read Aloud", onClick: () => speakText(message.text) }] : []),
           ...(isOwn && message.type === "text" ? [{ icon: Pencil, label: "Edit", onClick: () => onEdit?.(message) }] : []),
           ...((canDelete !== undefined ? canDelete : isOwn) ? [{ icon: Trash2, label: "Delete", onClick: () => { if (navigator.vibrate) navigator.vibrate(40); onDelete?.(message.id); }, destructive: true }] : []),
           { icon: Flag, label: "Report", onClick: () => setReportOpen(true), destructive: true },

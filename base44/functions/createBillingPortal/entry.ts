@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { resolvePortalReturnUrl } from '../../shared/stripeBilling.ts';
 import { stripeRequest } from '../../shared/stripe.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -22,6 +23,19 @@ Deno.serve(async (req) => {
     }
     if (!user?.id) {
       return Response.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const portalRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'billing_portal',
+      20,
+    );
+    if (!portalRate.allowed) {
+      return Response.json(
+        { error: 'Too many billing portal requests. Please try again later.' },
+        { status: 429 },
+      );
     }
 
     const subscriptions = await base44.asServiceRole.entities.Subscription.filter({

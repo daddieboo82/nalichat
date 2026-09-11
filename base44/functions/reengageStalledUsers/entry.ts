@@ -9,12 +9,17 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
+    const caller = await base44.auth.me();
+    if (!caller?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (caller.role !== 'admin') {
+      return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
+    }
 
-    // App URL for the onboarding link — from trusted header, not client input
+    // App URL for the onboarding link comes only from server configuration.
     const appUrl =
-      req.headers.get('X-Base44-App-Url') ||
+      Deno.env.get('APP_BASE_URL') ||
       Deno.env.get('WIX_CHECKOUT_APP_URL') ||
-      'https://nalichat.base44.app';
+      'https://nalichat.org';
     if (!appUrl) {
       return Response.json(
         { error: 'Server is not configured with an app URL' },

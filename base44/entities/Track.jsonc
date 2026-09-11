@@ -17,7 +17,16 @@
       "type": "string"
     },
     "file_url": {
-      "type": "string"
+      "type": "string",
+      "description": "Track media URL. Server-managed after trusted upload validation.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "type": {
       "type": "string",
@@ -72,11 +81,27 @@
     },
     "suggested_genre": {
       "type": "string",
-      "description": "AI-suggested genre based on the uploaded track"
+      "description": "AI-suggested genre based on the uploaded track",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "suggested_bpm": {
       "type": "number",
-      "description": "AI-suggested BPM based on the uploaded track"
+      "description": "AI-suggested BPM based on the uploaded track",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "description": {
       "type": "string",
@@ -142,28 +167,14 @@
       ]
     },
     "update": {
-      "$or": [
-        {
-          "data.edit_user_ids": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "$or": [
-        {
-          "data.edit_user_ids": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

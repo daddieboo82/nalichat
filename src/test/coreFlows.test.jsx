@@ -85,6 +85,7 @@ const mockSubscription = vi.hoisted(() => ({
       grandfathered: false,
       hasPaidAccess: false,
     },
+    hasEntitlement: vi.fn(() => true),
     isPro: false,
     isProFilesharing: false,
     isTrialActive: false,
@@ -164,7 +165,11 @@ vi.mock('@/components/ui/responsive-select', () => ({
 vi.mock('@/hooks/use-sound', () => ({ sounds: { click: vi.fn(), nav: vi.fn(), success: vi.fn(), notification: vi.fn() } }));
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
 vi.mock('sonner', () => ({ toast: mockToast }));
-vi.mock('@/lib/squadBonus', () => ({ recordSquadActivity: vi.fn() }));
+vi.mock('@/lib/squadBonus', () => ({
+  recordSquadActivity: vi.fn((sourceType, sourceId) =>
+    mockBase44.functions.invoke('recordSquadActivity', { sourceType, sourceId })
+  ),
+}));
 vi.mock('@/lib/avatarValidation', () => ({ isValidAvatarUrl: vi.fn(() => true) }));
 vi.mock('@/lib/autoMaster', () => ({
   renderMasteredMix: vi.fn(async () => new Uint8Array([1, 2, 3])),
@@ -215,6 +220,7 @@ describe('core usage flow coverage', () => {
         grandfathered: false,
         hasPaidAccess: false,
       },
+      hasEntitlement: vi.fn(() => true),
       isPro: false,
       isProFilesharing: false,
       isTrialActive: false,
@@ -233,11 +239,29 @@ describe('core usage flow coverage', () => {
       if (name === 'toggleLike') {
         return { data: { liked: true, likes: 1 } };
       }
+      if (name === 'createArtPost') {
+        return { data: { success: true, post: { id: 'post-1', ...payload } } };
+      }
+      if (name === 'publishStudioBounce') {
+        return { data: { success: true, post: { id: 'post-1', ...payload } } };
+      }
       if (name === 'claimPublishedPostReward') {
         return { data: { success: true, awarded: true, xp: 50 } };
       }
       if (name === 'recordSquadActivity') {
         return { data: { success: true, tracked: true } };
+      }
+      if (name === 'manageConversation' && payload?.action === 'create_dm') {
+        const created = {
+          id: `conv-${conversationStore.items.length + 1}`,
+          type: 'dm',
+          participant_ids: ['user-1', ...(payload.participant_ids || [])],
+          last_message_at: null,
+          last_message_text: '',
+        };
+        conversationStore.items = [...conversationStore.items, created];
+        messageStore.byConversation[created.id] = [];
+        return { data: { success: true, conversation: created } };
       }
       if (name === 'sendConversationMessage') {
         return { data: { message: { id: 'msg-1', ...payload } } };
@@ -246,7 +270,6 @@ describe('core usage flow coverage', () => {
     });
     mockBase44.entities.ArtPost.list.mockResolvedValue([]);
     mockBase44.entities.ArtPost.filter.mockResolvedValue([]);
-    mockBase44.entities.ArtPost.create.mockResolvedValue({ id: 'post-1' });
     mockBase44.integrations.Core.UploadFile.mockResolvedValue({ file_url: 'https://cdn.example.com/file.mp3' });
     mockBase44.auth.updateMe.mockResolvedValue(undefined);
   });
@@ -287,6 +310,18 @@ describe('core usage flow coverage', () => {
       if (name === 'recordSquadActivity') {
         return { data: { success: true, tracked: true } };
       }
+      if (name === 'manageConversation' && payload?.action === 'create_dm') {
+        const created = {
+          id: 'conv-1',
+          type: 'dm',
+          participant_ids: [currentUser.id, ...payload.participant_ids],
+          last_message_at: null,
+          last_message_text: '',
+        };
+        conversationStore.items = [created];
+        messageStore.byConversation[created.id] = [];
+        return { data: { success: true, conversation: created } };
+      }
       if (name === 'sendConversationMessage') {
         const result = await pending.promise;
         return { data: { message: result } };
@@ -318,9 +353,9 @@ describe('core usage flow coverage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('message-list').textContent).toContain('msg-1:hello there:real');
     });
-    expect(mockBase44.entities.Conversation.create).toHaveBeenCalledWith({
-      type: 'dm',
-      participant_ids: ['user-1', 'user-2'],
+    expect(mockBase44.functions.invoke).toHaveBeenCalledWith('manageConversation', {
+      action: 'create_dm',
+      participant_ids: ['user-2'],
     });
     expect(mockBase44.functions.invoke).toHaveBeenCalledWith('sendConversationMessage', {
       type: 'text',
@@ -371,12 +406,10 @@ describe('core usage flow coverage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Publish Track' }));
 
     await waitFor(() => {
-      expect(mockBase44.entities.ArtPost.create).toHaveBeenCalledWith(expect.objectContaining({
+      expect(mockBase44.functions.invoke).toHaveBeenCalledWith('createArtPost', expect.objectContaining({
         title: 'first-track',
         file_url: 'https://cdn.example.com/file.mp3',
         is_explicit: true,
-        creator_id: 'user-1',
-        creator_name: 'Fresh',
       }));
       expect(mockBase44.functions.invoke).toHaveBeenCalledWith('claimPublishedPostReward', { postId: 'post-1' });
       expect(mockBase44.functions.invoke).toHaveBeenCalledWith('recordSquadActivity', {
@@ -406,7 +439,7 @@ describe('core usage flow coverage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Export & Publish Track' }));
 
     await waitFor(() => {
-      expect(mockBase44.entities.ArtPost.create).toHaveBeenCalledWith(expect.objectContaining({
+      expect(mockBase44.functions.invoke).toHaveBeenCalledWith('publishStudioBounce', expect.objectContaining({
         title: 'Night Drive',
         is_explicit: true,
         file_url: 'https://cdn.example.com/file.mp3',
@@ -417,7 +450,11 @@ describe('core usage flow coverage', () => {
   it('keeps the upload dialog open when publish fails so the user can retry', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     try {
-      mockBase44.entities.ArtPost.create.mockRejectedValueOnce(new Error('upload failed'));
+      mockBase44.functions.invoke.mockImplementation(async (name, payload) => {
+        if (name === 'createArtPost') throw new Error('upload failed');
+        if (name === 'listPublicUsers') return { data: { users: [] } };
+        return { data: {} };
+      });
       const onSuccess = vi.fn();
       const { container } = renderWithProviders(
         <UploadArtDialog
@@ -450,7 +487,8 @@ describe('core usage flow coverage', () => {
       display_name: 'Old Name',
       full_name: 'Old Name',
       bio: 'Original bio',
-      role: 'artist',
+      role: 'user',
+      artist_role: 'artist',
       location: 'Old Town',
       genres: ['Hip-Hop'],
       avatar_url: 'https://cdn.example.com/avatar.png',
@@ -471,7 +509,7 @@ describe('core usage flow coverage', () => {
       expect(mockBase44.auth.updateMe).toHaveBeenCalledWith(expect.objectContaining({
         display_name: 'New Alias',
         bio: 'Original bio',
-        role: 'artist',
+        artist_role: 'artist',
         location: 'Old Town',
         genres: ['Hip-Hop'],
         avatar_url: 'https://cdn.example.com/avatar.png',

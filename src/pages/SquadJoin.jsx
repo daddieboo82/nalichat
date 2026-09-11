@@ -69,7 +69,7 @@ export default function SquadJoin() {
     );
   }
 
-  if (user && squad.member_a_id === user.id) {
+  if (user && squad.is_own_invite) {
     return (
       <div className="max-w-md mx-auto p-6 text-center space-y-3">
         <h1 className="font-heading text-xl font-bold">This is your own invite</h1>

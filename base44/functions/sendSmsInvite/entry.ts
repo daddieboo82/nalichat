@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -7,10 +8,26 @@ Deno.serve(async (req) => {
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
 
-    const { phone, link } = await req.json();
-    if (!phone || !link) {
-      return Response.json({ error: 'Missing phone or link' }, { status: 400 });
+    const rate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'sms_invite',
+      10,
+    );
+    if (!rate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
+
+    const { phone } = await req.json();
+    if (!phone) {
+      return Response.json({ error: 'Missing phone' }, { status: 400 });
     }
 
     // Validate E.164 phone format to prevent SMS abuse
@@ -23,9 +40,24 @@ Deno.serve(async (req) => {
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const fromNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
+    if (!accountSid || !authToken || !fromNumber) {
+      return Response.json({ error: 'SMS is not configured', needs_setup: true }, { status: 503 });
+    }
 
-    const inviterName = user.display_name || user.full_name || 'A friend';
-    const body = `${inviterName} invited you to collaborate on NaliChat. Join here: ${link}`;
+    const appUrl =
+      Deno.env.get('APP_BASE_URL')
+      || Deno.env.get('WIX_CHECKOUT_APP_URL')
+      || 'https://nalichat.org';
+    if (!appUrl) {
+      return Response.json({ error: 'Server is not configured with an app URL' }, { status: 500 });
+    }
+    const inviteLink = `${appUrl.replace(/\/$/, "")}/register`;
+
+    const inviterName = String(user.display_name || user.full_name || 'A friend')
+      .replace(/[\r\n]/g, ' ')
+      .trim()
+      .slice(0, 80) || 'A friend';
+    const body = `${inviterName} invited you to collaborate on NaliChat. Join here: ${inviteLink}`;
 
     const params = new URLSearchParams();
     params.append('To', cleanPhone);

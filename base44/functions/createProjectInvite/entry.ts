@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 function randomToken(): string {
   const bytes = new Uint8Array(32);
@@ -27,6 +28,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Only the project owner can create invite links' }, { status: 403 });
     }
 
+    const rate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'project_invite_create',
+      30,
+    );
+    if (!rate.allowed) {
+      return Response.json({ error: 'Invite creation rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
+
     const token = randomToken();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     await base44.asServiceRole.entities.ProjectInvite.create({
@@ -36,6 +47,7 @@ Deno.serve(async (req) => {
       created_by_id: user.id,
       expires_at: expiresAt,
       used_count: 0,
+      max_uses: 25,
     });
 
     return Response.json({
@@ -44,7 +56,8 @@ Deno.serve(async (req) => {
       projectId: project.id,
       role,
       expiresAt,
-    });
+      maxUses: 25,
+    }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not create project invite' }, { status: 500 });
   }

@@ -107,10 +107,21 @@ self.addEventListener('message', (event) => {
 });
 
 
-// Open the relevant in-app destination when a notification is clicked.
+function safeNotificationTarget(value) {
+  try {
+    const parsed = new URL(value || '/', self.location.origin);
+    if (parsed.origin !== self.location.origin) return self.location.origin + '/';
+    if (!['http:', 'https:'].includes(parsed.protocol)) return self.location.origin + '/';
+    return parsed.href;
+  } catch (_) {
+    return self.location.origin + '/';
+  }
+}
+
+// Open only same-origin in-app destinations when a notification is clicked.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = new URL(event.notification?.data?.url || '/', self.location.origin).href;
+  const targetUrl = safeNotificationTarget(event.notification?.data?.url);
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {

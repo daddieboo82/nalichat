@@ -6,13 +6,11 @@ const STALE_MS = 45000; // a peer is considered gone if no heartbeat in this win
 
 // Tracks who else is live in the same studio room, in real time.
 // Returns { peers, setActivity } where peers excludes the current user.
-export function useStudioPresence(roomId = 'studio-main') {
+export function useStudioPresence(roomId = 'local_studio') {
   const [peers, setPeers] = useState([]);
   const meRef = useRef(null);
-  const recordRef = useRef(null);
   const activityRef = useRef('In the studio');
   const cancelledRef = useRef(false);
-  const accessRef = useRef([]);
 
   const filterActive = useCallback((rows) => {
     const now = Date.now();
@@ -40,26 +38,15 @@ export function useStudioPresence(roomId = 'studio-main') {
     if (cancelledRef.current) return;
     const me = meRef.current;
     if (!me) return;
-    const currentId = recordRef.current;
-    const payload = {
-      room_id: roomId,
-      user_id: me.id,
-      user_name: me.full_name || 'Artist',
-      user_avatar: me.avatar_url || '',
-      activity: activityRef.current,
-      last_heartbeat: new Date().toISOString(),
-      access_user_ids: accessRef.current,
-    };
     try {
-      if (currentId) {
-        await base44.entities.StudioPresence.update(currentId, payload);
-      } else {
-        const created = await base44.entities.StudioPresence.create(payload);
-        if (!cancelledRef.current) recordRef.current = created.id;
-      }
+      const res = await base44.functions.invoke("updateStudioPresence", {
+        action: "heartbeat",
+        roomId,
+        activity: activityRef.current,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
     } catch (e) {
-      // If update failed (record gone), recreate next tick
-      recordRef.current = null;
+      // Presence is non-critical; retry on the next heartbeat.
     }
   }, [roomId]);
 
@@ -70,35 +57,21 @@ export function useStudioPresence(roomId = 'studio-main') {
 
   useEffect(() => {
     let interval;
-    let unsubscribe;
+    let refreshInterval;
     let cancelled = false;
+
+    cancelledRef.current = false;
 
     (async () => {
       try {
         const me = await base44.auth.me();
         if (cancelled || !me) return;
         meRef.current = me;
-        let accessUserIds = [me.id];
-        try {
-          const project = await base44.entities.Project.get(roomId);
-          accessUserIds = Array.from(new Set([
-            project?.owner_id,
-            ...(project?.collaborator_ids || []),
-            me.id,
-          ].filter(Boolean)));
-        } catch {
-          // Local/private rooms remain visible only to the current user.
-        }
-        accessRef.current = accessUserIds;
-
         await writeHeartbeat();
         await refresh();
 
         interval = setInterval(writeHeartbeat, HEARTBEAT_MS);
-
-        unsubscribe = base44.entities.StudioPresence.subscribe(() => {
-          refresh();
-        });
+        refreshInterval = setInterval(refresh, 5000);
       } catch (e) {
         // not logged in — no presence
       }
@@ -108,16 +81,13 @@ export function useStudioPresence(roomId = 'studio-main') {
       cancelled = true;
       cancelledRef.current = true;
       if (interval) clearInterval(interval);
-      if (unsubscribe) unsubscribe();
-      // Clear the ref first so no in-flight heartbeat can update a stale record,
-      // then delete with a short delay to let any in-flight update settle first.
-      const idToDelete = recordRef.current;
-      recordRef.current = null;
-      if (idToDelete) {
-        setTimeout(() => {
-          base44.entities.StudioPresence.delete(idToDelete).catch(() => {});
-        }, 2000);
-      }
+      if (refreshInterval) clearInterval(refreshInterval);
+      setTimeout(() => {
+        base44.functions.invoke("updateStudioPresence", {
+          action: "clear",
+          roomId,
+        }).catch(() => {});
+      }, 2000);
     };
   }, [roomId, writeHeartbeat, refresh]);
 

@@ -12,8 +12,8 @@
         "engineer",
         "ar"
       ],
-      "default": "artist",
-      "description": "Field-level security: anyone may read a role, but only an existing admin may write one. This is what actually stops privilege escalation - auth.updateMe() is a self-write, so without this rule any signed-in user could promote themselves to admin. Admin promotion is expected to go through the makeAdmin function, which verifies the caller is already an admin and then writes via asServiceRole (service role bypasses FLS).",
+      "default": "user",
+      "description": "Authorization role. 'admin' grants administrative privileges; all non-admin users should use 'user'. Legacy profession values remain accepted during migration.",
       "rls": {
         "read": true,
         "write": {
@@ -24,50 +24,131 @@
       }
     },
     "display_name": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "birthdate": {
       "type": "string",
       "format": "date",
-      "description": "User's date of birth"
+      "description": "User's date of birth",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "bio": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "location": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "avatar_url": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "genres": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "default": []
+      "default": [],
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "phone": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "onboarding_completed": {
       "type": "boolean",
-      "default": false
+      "default": false,
+      "description": "Server-managed flag set after required onboarding profile fields are validated.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "welcome_tour_completed": {
       "type": "boolean",
       "default": false,
-      "description": "Whether the user has completed or dismissed the guided welcome tour"
+      "description": "Whether the user has completed or dismissed the guided welcome tour",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "reengagement_sent_at": {
       "type": "string",
       "format": "date-time",
-      "description": "Timestamp of the last onboarding re-engagement email sent to this user (null = never sent)"
+      "description": "Server-managed timestamp of the last onboarding re-engagement email sent to this user (null = never sent). Locked so users cannot suppress the reminder workflow by marking themselves as already contacted.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "violation_count": {
       "type": "number",
       "default": 0,
-      "description": "Total number of content policy violations recorded for this user. Written only by the moderateContent function via asServiceRole; locked here so a user cannot reset their own strike count.",
+      "description": "Total number of content policy violations recorded for this user. Written only by server-side moderation via service role; locked here so a user cannot reset their own strike count.",
       "rls": {
         "read": true,
         "write": {
@@ -150,7 +231,15 @@
         "off"
       ],
       "default": "proactive",
-      "description": "How omnipresent Nali is across the app: proactive (auto hints), minimal (on-demand), or off (hidden)"
+      "description": "How omnipresent Nali is across the app: proactive (auto hints), minimal (on-demand), or off (hidden)",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "stripe_customer_id": {
       "type": "string",
@@ -212,6 +301,116 @@
             "role": "admin"
           }
         }
+      }
+    },
+    "artist_role": {
+      "type": "string",
+      "enum": [
+        "artist",
+        "producer",
+        "engineer",
+        "ar"
+      ],
+      "default": "artist",
+      "description": "Public music-industry role shown on the profile. This is separate from the protected authorization role.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "website": {
+      "type": "string",
+      "description": "Optional public creator website URL",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "cover_url": {
+      "type": "string",
+      "description": "Public profile cover image URL",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "is_online": {
+      "type": "boolean",
+      "default": false,
+      "description": "Server-managed realtime presence hint.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "last_seen": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Server-managed timestamp of the latest presence heartbeat.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "squad_membership_id": {
+      "type": "string",
+      "description": "Server-managed ID of the user's current pending or active squad, used as an atomic membership claim.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    }
+  },
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
       }
     }
   }

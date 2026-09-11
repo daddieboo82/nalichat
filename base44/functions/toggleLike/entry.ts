@@ -5,6 +5,10 @@ export default async function(req) {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
 
     const body = await req.json();
     const postId = body.postId;
@@ -28,7 +32,7 @@ export default async function(req) {
     const likes = liked_by.length;
     await base44.asServiceRole.entities.ArtPost.update(postId, { likes });
 
-    return Response.json({ liked: !alreadyLiked, likes, liked_by });
+    return Response.json({ liked: !alreadyLiked, likes });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

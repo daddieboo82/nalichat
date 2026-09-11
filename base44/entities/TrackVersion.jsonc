@@ -15,18 +15,43 @@
       }
     },
     "project_id": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "version_number": {
       "type": "number",
-      "description": "Incrementing version number"
+      "description": "Incrementing version number",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "label": {
       "type": "string",
       "description": "Optional user-given label, e.g. 'First mix', 'After vocal tuning'"
     },
     "file_url": {
-      "type": "string"
+      "type": "string",
+      "description": "Immutable media URL captured when the version is created.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "volume": {
       "type": "number"
@@ -52,7 +77,15 @@
       }
     },
     "saved_by_name": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "description": {
       "type": "string",
@@ -120,28 +153,14 @@
       ]
     },
     "update": {
-      "$or": [
-        {
-          "data.edit_user_ids": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "$or": [
-        {
-          "data.edit_user_ids": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

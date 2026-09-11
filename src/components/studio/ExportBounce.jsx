@@ -7,6 +7,7 @@ import { base44 } from "@/api/base44Client";
 import AudioAnalysisPanel from "./AudioAnalysisPanel";
 import MasterPresets from "./MasterPresets";
 import { toast } from "sonner";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const EXPORT_FORMATS = {
   mp3: { label: "MP3", bitrate: "320kbps", size: "small", quality: "High Quality" },
@@ -25,7 +26,9 @@ const LOUDNESS_STANDARDS = {
   streaming: { platform: "Universal Streaming", lufs: "-14 LUFS", tp: "-1.0 dBFS" },
 };
 
-export default function ExportBounce({ audioUrl, title, disabled }) {
+export default function ExportBounce({ postId, title, disabled }) {
+  const { hasEntitlement } = useSubscription();
+  const canMaster = hasEntitlement("ai.standard");
   const [open, setOpen] = useState(false);
   const [format, setFormat] = useState("mp3");
   const [loudnessStandard, setLoudnessStandard] = useState("streaming");
@@ -36,14 +39,18 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
   const [processing, setProcessing] = useState(false);
 
   const handleExport = async () => {
-    if (!audioUrl) return;
+    if (!canMaster) {
+      toast.error("Premium is required for mastering export.");
+      return;
+    }
+    if (!postId) return;
 
     setExporting(true);
     setProcessing(true);
     try {
       // Call backend to bounce and master
       const response = await base44.functions.invoke("bounceAndMaster", {
-        audioUrl,
+        postId,
         loudnessTarget: loudnessStandard,
         format,
         bitDepth,
@@ -90,11 +97,11 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
         <Button
           variant="outline"
           className="rounded-xl"
-          disabled={disabled || !audioUrl}
-          title="Export/Bounce track in various formats"
+          disabled={disabled || !postId || !canMaster}
+          title={canMaster ? "Export/Bounce track in various formats" : "Premium is required for mastering export"}
         >
           <Download className="w-4 h-4 mr-2" />
-          Export & Bounce
+          {canMaster ? "Export & Bounce" : "Premium Export"}
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-card border-border shadow-2xl max-w-md">
@@ -214,7 +221,7 @@ export default function ExportBounce({ audioUrl, title, disabled }) {
           {/* Export Button */}
           <Button
             onClick={handleExport}
-            disabled={exporting || !audioUrl}
+            disabled={exporting || !postId}
             className="w-full rounded-xl bg-primary hover:bg-primary/90 font-semibold"
           >
             {exporting ? (

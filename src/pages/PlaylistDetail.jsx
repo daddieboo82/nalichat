@@ -49,23 +49,30 @@ export default function PlaylistDetail() {
   const uploadMutation = useMutation({
     mutationFn: async (file) => {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const newPost = await base44.entities.ArtPost.create({
+      const published = await base44.functions.invoke("createArtPost", {
         title: file.name,
         file_url,
-        creator_id: currentUser.id,
-        creator_name: currentUser.display_name || currentUser.full_name,
-        creator_avatar: currentUser.avatar_url,
         medium: "original",
-        is_explicit: false
+        is_explicit: false,
       });
-      const updated = {
-        ...playlist,
-        track_ids: [...(playlist.track_ids || []), newPost.id]
-      };
-      await base44.entities.Playlist.update(playlistId, {
-        track_ids: updated.track_ids
-      });
-      return updated;
+      if (published?.data?.error) throw new Error(published.data.error);
+      const newPost = published?.data?.post;
+      if (!newPost?.id) throw new Error("Track was not created");
+      try {
+        const res = await base44.functions.invoke("mutatePlaylist", {
+          action: "add_track",
+          playlistId,
+          trackId: newPost.id,
+        });
+        if (res?.data?.error) throw new Error(res.data.error);
+        return res?.data?.playlist;
+      } catch (playlistError) {
+        // Avoid leaving a newly-published orphan if playlist membership fails.
+        try {
+          await base44.functions.invoke("deleteArtPost", { postId: newPost.id });
+        } catch {}
+        throw playlistError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
@@ -83,14 +90,13 @@ export default function PlaylistDetail() {
 
   const removeTrackMutation = useMutation({
     mutationFn: async (trackId) => {
-      const updated = {
-        ...playlist,
-        track_ids: playlist.track_ids.filter((id) => id !== trackId),
-      };
-      await base44.entities.Playlist.update(playlistId, {
-        track_ids: updated.track_ids,
+      const res = await base44.functions.invoke("mutatePlaylist", {
+        action: "remove_track",
+        playlistId,
+        trackId,
       });
-      return updated;
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.playlist;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
@@ -182,7 +188,7 @@ export default function PlaylistDetail() {
           <h1 className="text-xl font-heading font-bold">{playlist.name}</h1>
           <p className="text-xs text-muted-foreground">{tracks.length} tracks</p>
         </div>
-        {currentUser && (
+        {currentUser?.id === playlist.owner_id && (
           <div className="flex items-center gap-2">
             {uploadMutation.isPending && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
             <Input 
@@ -347,15 +353,17 @@ export default function PlaylistDetail() {
                         <CustomMediaPlayer src={track.file_url} className="mt-2" />
                       )}
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeTrackMutation.mutate(track.id);
-                      }}
-                      className="ml-2 p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    {currentUser?.id === playlist.owner_id && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeTrackMutation.mutate(track.id);
+                        }}
+                        className="ml-2 p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

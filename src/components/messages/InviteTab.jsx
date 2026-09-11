@@ -8,7 +8,6 @@ import { copyToClipboard } from '@/lib/clipboard';
 
 export default function InviteTab() {
   const [copied, setCopied] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState('');
   const [sendingSms, setSendingSms] = useState(false);
   const [smsStatus, setSmsStatus] = useState(null); // { type: 'success' | 'error', message }
@@ -43,7 +42,7 @@ export default function InviteTab() {
     }
     setSendingSms(true);
     try {
-      const res = await base44.functions.invoke('sendSmsInvite', { phone: trimmed, link: inviteLink });
+      const res = await base44.functions.invoke('sendSmsInvite', { phone: trimmed });
       if (res.data?.success) {
         toast.success('Invite sent via SMS!');
         setSmsStatus({ type: 'success', message: `Invite sent to ${trimmed}!` });
@@ -56,17 +55,6 @@ export default function InviteTab() {
       setSmsStatus({ type: 'error', message: 'Failed to send SMS. Please try again.' });
     } finally {
       setSendingSms(false);
-    }
-  };
-
-  const shareViaEmail = async () => {
-    setLoading(true);
-    try {
-      await base44.functions.invoke('send-invite-email', { to: 'recipient@example.com' });
-    } catch (err) {
-      console.error('Failed to send invite:', err);
-    } finally {
-      setLoading(false);
     }
   };
 

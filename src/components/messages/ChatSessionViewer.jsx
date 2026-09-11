@@ -12,21 +12,23 @@ export default function ChatSessionViewer({ message, currentUser }) {
   const chunksRef = useRef([]);
 
   useEffect(() => {
-    // Fetch initial tracks
-    base44.entities.Track.filter({ project_id: message.id }).then(setTracks);
+    let cancelled = false;
 
-    // Subscribe to track changes
-    const unsubscribe = base44.entities.Track.subscribe((event) => {
-      if (event.data?.project_id !== message.id) return;
-      if (event.type === 'create') {
-        setTracks(prev => [...prev, event.data]);
-      } else if (event.type === 'update') {
-        setTracks(prev => prev.map(t => t.id === event.id ? event.data : t));
-      } else if (event.type === 'delete') {
-        setTracks(prev => prev.filter(t => t.id !== event.id));
+    const refreshTracks = async () => {
+      try {
+        const next = await base44.entities.Track.filter({ project_id: message.id });
+        if (!cancelled) setTracks(next || []);
+      } catch {
+        // Session track refresh is non-critical; retry on the next poll.
       }
-    });
-    return unsubscribe;
+    };
+
+    refreshTracks();
+    const poll = window.setInterval(refreshTracks, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(poll);
+    };
   }, [message.id]);
 
   const startRecording = async () => {

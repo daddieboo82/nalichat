@@ -39,7 +39,7 @@ export default function WelcomeTour({ open, onClose }) {
   const Icon = current.icon;
 
   const complete = async () => {
-    try { await base44.auth.updateMe({ welcome_tour_completed: true }); } catch {}
+    try { await base44.functions.invoke("updateMyProfile", { welcome_tour_completed: true }); } catch {}
   };
 
   const handleAction = async (action, path) => {

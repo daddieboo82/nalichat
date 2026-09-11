@@ -86,11 +86,15 @@ export default function ChallengeDetail() {
 
   const changeStatus = async (newStatus) => {
     try {
-      await base44.entities.Challenge.update(challengeId, { status: newStatus });
-      setChallenge((c) => ({ ...c, status: newStatus }));
+      const res = await base44.functions.invoke("updateChallengeStatus", {
+        challengeId,
+        status: newStatus,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      setChallenge(res?.data?.challenge || ((c) => ({ ...c, status: newStatus })));
       toast.success(newStatus === "voting" ? "Submissions closed — voting is now open." : "Voting closed — challenge completed.");
     } catch (err) {
-      toast.error("Couldn't update challenge status.");
+      toast.error(err?.message || "Couldn't update challenge status.");
     }
   };
 

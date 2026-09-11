@@ -50,10 +50,13 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
       );
 
       if (!conversation) {
-        conversation = await base44.entities.Conversation.create({
-          type: "dm",
-          participant_ids: [currentUser.id, selectedUser.id],
+        const created = await base44.functions.invoke("manageConversation", {
+          action: "create_dm",
+          participant_ids: [selectedUser.id],
         });
+        if (created?.data?.error) throw new Error(created.data.error);
+        conversation = created?.data?.conversation;
+        if (!conversation?.id) throw new Error("Conversation was not created");
       }
 
       const send = await base44.functions.invoke("sendConversationMessage", {
@@ -130,10 +133,10 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{user.display_name || user.full_name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user.location || user.role || "NaliChat member"}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.location || user.artist_role || "NaliChat member"}</p>
                     </div>
-                    <Badge className={`text-[10px] ${roleColors[user.role] || "bg-secondary text-secondary-foreground"} border-0`}>
-                      {user.role?.toUpperCase()}
+                    <Badge className={`text-[10px] ${roleColors[user.artist_role] || "bg-secondary text-secondary-foreground"} border-0`}>
+                      {user.artist_role?.toUpperCase()}
                     </Badge>
                   </button>
                 ))

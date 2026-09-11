@@ -4,7 +4,15 @@
   "properties": {
     "user_id": {
       "type": "string",
-      "description": "User who owns this browser push subscription"
+      "description": "User who owns this browser push subscription",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "endpoint": {
       "type": "string",
@@ -26,11 +34,30 @@
       "format": "date-time"
     }
   },
-  "required": ["user_id", "endpoint", "p256dh", "auth"],
+  "required": [
+    "user_id",
+    "endpoint",
+    "p256dh",
+    "auth"
+  ],
   "rls": {
-    "create": { "data.user_id": "{{user.id}}" },
-    "read": { "data.user_id": "{{user.id}}" },
-    "update": { "data.user_id": "{{user.id}}" },
-    "delete": { "data.user_id": "{{user.id}}" }
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
   }
 }

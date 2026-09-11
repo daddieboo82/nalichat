@@ -62,9 +62,9 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
   const [user, setUser] = useState(null);
   const { isAuthenticated, logout } = useAuth();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout();
     navigate("/", { replace: true });
-    logout();
   };
 
   useEffect(() => {

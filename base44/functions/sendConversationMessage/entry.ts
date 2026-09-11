@@ -1,7 +1,63 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const TIMEOUT_48H_MINUTES = 48 * 60;
-const ALLOWED_TYPES = new Set(['text', 'file', 'audio', 'image', 'session']);
+const ALLOWED_TYPES = new Set(['text', 'file', 'audio', 'image', 'video', 'session']);
+const MAX_FILE_BYTES = 20 * 1024 * 1024 * 1024;
+
+const TRUSTED_MEDIA_HOSTS = [
+  'storage.googleapis.com',
+  'base44-user-files.s3.amazonaws.com',
+  'base44-user-files.s3.us-east-1.amazonaws.com',
+  'files.base44.com',
+  'cdn.base44.com',
+];
+
+function cleanUploadedMediaUrl(value: unknown) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'https:') return '';
+    const hostname = parsed.hostname.toLowerCase();
+    return TRUSTED_MEDIA_HOSTS.some(
+      (host) => hostname === host || hostname.endsWith('.' + host),
+    ) ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+async function resolveStoredFileSize(url: string): Promise<number | null> {
+  try {
+    const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+    if (head.ok) {
+      const length = Number(head.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0) return length;
+    }
+  } catch {}
+
+  try {
+    const probe = await fetch(url, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-0' },
+      redirect: 'manual',
+    });
+    if (probe.ok || probe.status === 206) {
+      const range = probe.headers.get('content-range') || '';
+      const match = range.match(/\/(\d+)$/);
+      if (match) {
+        const total = Number(match[1]);
+        if (Number.isFinite(total) && total >= 0) return total;
+      }
+      const length = Number(probe.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0 && probe.status !== 206) return length;
+    }
+    try { await probe.body?.cancel(); } catch {}
+  } catch {}
+
+  return null;
+}
 
 async function moderateText(base44: any, user: any, text: string, conversationId: string) {
   const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
@@ -100,10 +156,14 @@ Deno.serve(async (req) => {
 
     const otherParticipantIds = conversation.participant_ids.filter((id: string) => id !== user.id);
     if (user.is_banned) {
-      const otherUsers = await Promise.all(
-        otherParticipantIds.map((id: string) => base44.asServiceRole.entities.User.get(id).catch(() => null)),
-      );
-      if (!otherUsers.some((candidate: any) => candidate?.role === 'admin')) {
+      // Appeals are intentionally limited to a direct 1:1 conversation with an
+      // administrator. Merely including an admin in a group must not turn that
+      // group into a moderation bypass for messaging arbitrary users.
+      if (conversation.type !== 'dm' || conversation.participant_ids.length !== 2 || otherParticipantIds.length !== 1) {
+        return Response.json({ error: 'banned' }, { status: 403 });
+      }
+      const appealAdmin = await base44.asServiceRole.entities.User.get(otherParticipantIds[0]).catch(() => null);
+      if (appealAdmin?.role !== 'admin') {
         return Response.json({ error: 'banned' }, { status: 403 });
       }
     } else if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
@@ -111,38 +171,137 @@ Deno.serve(async (req) => {
     }
 
     const type = ALLOWED_TYPES.has(body?.type) ? body.type : 'text';
-    const text = typeof body?.text === 'string' ? body.text.slice(0, 20000) : '';
+    let text = typeof body?.text === 'string' ? body.text.slice(0, 20000) : '';
 
-    // Call/WebRTC signaling is transport data rather than user-generated chat
-    // content, so it bypasses text moderation but still requires membership and
-    // moderation-state authorization.
-    if (type !== 'session' && text.trim() && !user.is_banned) {
-      const moderation = await moderateText(base44, user, text, conversationId);
-      if (moderation) {
-        return Response.json({ success: false, moderation }, { status: 200 });
+    let callSignal: any = null;
+    if (type === 'session' && text.trim()) {
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed?.__nalichat_call__ === true) callSignal = parsed;
+      } catch {
+        // Plain-text session names are legitimate and handled as user content.
+      }
+    }
+
+    if (callSignal) {
+      const signalType = String(callSignal.type || '');
+      const callId = String(callSignal.callId || '').trim();
+      if (!['offer', 'answer', 'ice', 'end'].includes(signalType) || !callId || callId.length > 200) {
+        return Response.json({ error: 'Invalid call signaling envelope' }, { status: 400 });
+      }
+      if (signalType === 'offer' && !['audio', 'video'].includes(String(callSignal.callType || ''))) {
+        return Response.json({ error: 'Invalid call type' }, { status: 400 });
+      }
+      if (signalType !== 'end' && callSignal.payload == null) {
+        return Response.json({ error: 'Call signal payload is required' }, { status: 400 });
+      }
+
+      const rate = await consumeHourlyLimit(
+        base44.asServiceRole.entities,
+        user.id,
+        'conversation_call_signal',
+        2000,
+      );
+      if (!rate.allowed) {
+        return Response.json({ error: 'Call signaling rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+    } else {
+      if (type === 'session') {
+        text = text.trim().slice(0, 200);
+        if (!text) {
+          return Response.json({ error: 'Session name is required' }, { status: 400 });
+        }
+      }
+
+      const rate = await consumeHourlyLimit(
+        base44.asServiceRole.entities,
+        user.id,
+        'conversation_message',
+        300,
+      );
+      if (!rate.allowed) {
+        return Response.json({ error: 'Message rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+
+      if (text.trim() && !user.is_banned) {
+        const moderation = await moderateText(base44, user, text, conversationId);
+        if (moderation) {
+          return Response.json({ success: false, moderation }, { status: 200 });
+        }
       }
     }
 
     const messageData: Record<string, any> = {
       conversation_id: conversationId,
       sender_id: user.id,
-      sender_name: user.display_name || user.full_name || user.email || 'User',
+      sender_name: user.display_name || user.full_name || 'User',
       sender_avatar: user.avatar_url || null,
       participant_ids: conversation.participant_ids,
       type,
       text,
     };
 
-    for (const key of ['file_url', 'file_name', 'file_type', 'reply_to_id', 'reply_to_text', 'reply_to_sender', 'thread_id']) {
-      if (typeof body?.[key] === 'string' && body[key]) messageData[key] = body[key];
+    if (typeof body?.file_url === 'string' && body.file_url) {
+      const fileUrl = cleanUploadedMediaUrl(body.file_url);
+      if (!fileUrl) {
+        return Response.json({ error: 'Message attachment must come from trusted upload storage' }, { status: 400 });
+      }
+      const storedSize = await resolveStoredFileSize(fileUrl);
+      if (storedSize === null) {
+        return Response.json({ error: 'Could not verify message attachment size' }, { status: 400 });
+      }
+      if (storedSize > MAX_FILE_BYTES) {
+        return Response.json({ error: 'Attachment is too large' }, { status: 413 });
+      }
+      messageData.file_url = fileUrl;
+      messageData.file_size = storedSize;
     }
-    if (Number.isFinite(Number(body?.file_size))) messageData.file_size = Number(body.file_size);
-    if (Number.isFinite(Number(body?.duration))) messageData.duration = Number(body.duration);
+    if (['file', 'audio', 'image', 'video'].includes(type) && !messageData.file_url) {
+      return Response.json({ error: 'Attachment messages require a file_url' }, { status: 400 });
+    }
+    if (typeof body?.file_name === 'string' && body.file_name) {
+      messageData.file_name = body.file_name.trim().slice(0, 255);
+    }
+    if (typeof body?.file_type === 'string' && body.file_type) {
+      messageData.file_type = body.file_type.trim().slice(0, 100);
+    }
+
+    const duration = Number(body?.duration);
+    if (body?.duration != null) {
+      if (!Number.isFinite(duration) || duration < 0 || duration > 24 * 60 * 60) {
+        return Response.json({ error: 'Invalid attachment duration' }, { status: 400 });
+      }
+      messageData.duration = duration;
+    }
+
+    if (typeof body?.reply_to_id === 'string' && body.reply_to_id) {
+      const replyTarget = await base44.asServiceRole.entities.Message.get(body.reply_to_id).catch(() => null);
+      if (!replyTarget || replyTarget.conversation_id !== conversationId) {
+        return Response.json({ error: 'Reply target is not in this conversation' }, { status: 400 });
+      }
+      messageData.reply_to_id = replyTarget.id;
+      messageData.reply_to_text = String(replyTarget.text || '').slice(0, 1000);
+      messageData.reply_to_sender = replyTarget.sender_name || 'User';
+    }
+
+    if (typeof body?.thread_id === 'string' && body.thread_id) {
+      const threadTarget = await base44.asServiceRole.entities.Message.get(body.thread_id).catch(() => null);
+      if (!threadTarget || threadTarget.conversation_id !== conversationId) {
+        return Response.json({ error: 'Thread target is not in this conversation' }, { status: 400 });
+      }
+      if (threadTarget.thread_id) {
+        return Response.json({ error: 'Thread replies must target a top-level message' }, { status: 400 });
+      }
+      messageData.thread_id = threadTarget.id;
+    }
 
     const message = await base44.asServiceRole.entities.Message.create(messageData);
 
     if (messageData.thread_id) {
-      const replies = await base44.asServiceRole.entities.Message.filter({ thread_id: messageData.thread_id });
+      const replies = await base44.asServiceRole.entities.Message.filter({
+        thread_id: messageData.thread_id,
+        conversation_id: conversationId,
+      });
       try {
         await base44.asServiceRole.entities.Message.update(messageData.thread_id, {
           thread_reply_count: replies.length,

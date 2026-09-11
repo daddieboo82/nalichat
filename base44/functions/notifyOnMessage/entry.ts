@@ -5,68 +5,62 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const { event, data } = await req.json();
-    
-    if (event.type !== 'create') return Response.json({ success: true });
-    if (!data.conversation_id) return Response.json({ success: true });
-    
-    // Get conversation to find participants
-    const conversation = await base44.asServiceRole.entities.Conversation.get(data.conversation_id);
-    if (!conversation) return Response.json({ success: true });
-    
-    // Notify every other participant for both DMs and group chats.
-    // The workflow triggers for all Message records, so filtering out DMs here
-    // caused one-to-one messages to produce no notification at all.
-    
-    let callSignal = null;
-    if (data.type === 'session' && typeof data.text === 'string') {
-      try {
-        const parsed = JSON.parse(data.text);
-        if (parsed?.__nalichat_call__ === true) callSignal = parsed;
-      } catch {
-        // Non-call session messages continue through the normal path.
-      }
-    }
 
-    // Ignore call negotiation chatter. Only the initial offer should surface
-    // as a user-facing notification.
+    if (event?.type !== 'create' || !data?.id) return Response.json({ success: true });
+
+    const entities = base44.asServiceRole.entities;
+    const message = await entities.Message.get(data.id);
+    if (!message?.conversation_id) return Response.json({ success: true });
+
+    const conversation = await entities.Conversation.get(message.conversation_id);
+    if (!conversation) return Response.json({ success: true });
+
+    let callSignal = null;
+    if (message.type === 'session' && typeof message.text === 'string') {
+      try {
+        const parsed = JSON.parse(message.text);
+        if (parsed?.__nalichat_call__ === true) callSignal = parsed;
+      } catch {}
+    }
     if (callSignal && callSignal.type !== 'offer') {
       return Response.json({ success: true, count: 0, signaling: true });
     }
 
-    // Determine recipients
-    const recipients = new Set();
-    if (conversation.participant_ids) {
-      conversation.participant_ids.forEach(id => {
-        if (id !== data.sender_id) recipients.add(id);
-      });
+    const recipients = new Set<string>();
+    for (const id of conversation.participant_ids || []) {
+      if (id !== message.sender_id) recipients.add(id);
     }
-    
-    const notifications = Array.from(recipients).map(recipient_id => ({
-      recipient_id,
-      type: "message",
-      actor_id: data.sender_id,
-      actor_name: data.sender_name || "Someone",
-      actor_avatar: data.sender_avatar,
-      message: callSignal
-        ? `Incoming ${callSignal.callType === 'video' ? 'video' : 'audio'} call`
-        : conversation.type === 'group'
-          ? `sent a message in ${conversation.name || 'a group'}: "${data.text ? data.text.substring(0, 30) + (data.text.length > 30 ? '...' : '') : 'an attachment'}"`
-          : `${data.text ? data.text.substring(0, 60) + (data.text.length > 60 ? '...' : '') : 'Sent you an attachment'}`,
-      link: `/messages?id=${conversation.id}`
-    }));
-    
-    if (notifications.length > 0) {
-      await base44.asServiceRole.entities.Notification.bulkCreate(notifications);
-      await Promise.all(notifications.map((notification) =>
-        sendPushToUser(base44.asServiceRole.entities, notification.recipient_id, {
+
+    let created = 0;
+    for (const recipientId of recipients) {
+      const notification = {
+        id: `notification_message_${message.id}_${recipientId}`,
+        recipient_id: recipientId,
+        type: "message",
+        actor_id: message.sender_id,
+        actor_name: message.sender_name || "Someone",
+        actor_avatar: message.sender_avatar,
+        message: callSignal
+          ? `Incoming ${callSignal.callType === 'video' ? 'video' : 'audio'} call`
+          : conversation.type === 'group'
+            ? `sent a message in ${conversation.name || 'a group'}: "${message.text ? message.text.substring(0, 30) + (message.text.length > 30 ? '...' : '') : 'an attachment'}"`
+            : `${message.text ? message.text.substring(0, 60) + (message.text.length > 60 ? '...' : '') : 'Sent you an attachment'}`,
+        link: `/messages?id=${conversation.id}`,
+      };
+      try {
+        await entities.Notification.create(notification);
+        created += 1;
+        await sendPushToUser(entities, recipientId, {
           title: notification.actor_name || 'NaliChat',
           body: notification.message,
           url: notification.link,
-        })
-      ));
+        });
+      } catch {
+        // Deterministic ID makes repeated workflow/manual invocations idempotent.
+      }
     }
-    
-    return Response.json({ success: true, count: notifications.length });
+
+    return Response.json({ success: true, count: created });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

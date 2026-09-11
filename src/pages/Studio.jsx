@@ -303,8 +303,10 @@ export default function Studio() {
         console.error('Failed to autosave master FX chain', e);
       }
       if (roomId && canEditProject) {
-        base44.entities.Project.update(roomId, { master_fx: chain })
-          .catch(err => console.error('Failed to sync master FX to project', err));
+        base44.functions.invoke("mutateProject", {
+          projectId: roomId,
+          data: { master_fx: chain },
+        }).catch(err => console.error('Failed to sync master FX to project', err));
       }
     }, 1000);
     return () => clearTimeout(timeoutId);
@@ -1576,13 +1578,17 @@ export default function Studio() {
           toast.error("This Jam Room invite is view-only. Your local changes were not saved to the shared project.", { id: toastId });
           return false;
         }
-        await base44.entities.Project.update(roomId, {
-          title: projectName,
-          bpm,
-          key: songKey,
-          master_fx: masterFx || {},
-          studio_state: studioState,
+        const saved = await base44.functions.invoke("mutateProject", {
+          projectId: roomId,
+          data: {
+            title: projectName,
+            bpm,
+            key: songKey,
+            master_fx: masterFx || {},
+            studio_state: studioState,
+          },
         });
+        if (saved?.data?.error) throw new Error(saved.data.error);
       }
 
       // Replace transient blob URLs in memory with their uploaded URLs so future

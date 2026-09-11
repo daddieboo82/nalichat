@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 // Validates email format to prevent injection of malformed recipients
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -9,6 +10,22 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
+    const rate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'email_invite',
+      10,
+    );
+    if (!rate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     const { to } = await req.json();
@@ -25,9 +42,9 @@ Deno.serve(async (req) => {
     // Construct the invite link server-side from trusted app URL — never accept
     // a client-supplied link (prevents phishing/link injection)
     const appUrl =
-      req.headers.get('X-Base44-App-Url') ||
+      Deno.env.get('APP_BASE_URL') ||
       Deno.env.get('WIX_CHECKOUT_APP_URL') ||
-      '';
+      'https://nalichat.org';
     if (!appUrl) {
       return Response.json(
         { error: 'Server is not configured with an app URL' },

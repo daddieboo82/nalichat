@@ -90,7 +90,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
           {collaborators.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
               <p className="text-sm">No collaborators yet.</p>
-              <p className="text-xs mt-1">Add collaborators from the Network page.</p>
+              <p className="text-xs mt-1">Create an invite link from the project or Jam Room to add collaborators.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -106,7 +106,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{user.display_name || user.full_name}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{user.location || user.role || "NaliChat member"}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{user.location || user.artist_role || "NaliChat member"}</p>
                     </div>
                     <Select value={role} onValueChange={(v) => handleRoleChange(user.id, v)}>
                       <SelectTrigger className={`w-28 h-8 text-xs border-0 rounded-lg ${ROLE_COLORS[role]}`}>
@@ -156,10 +156,20 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
               <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
               <AlertDialogAction
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
-                onClick={() => {
-                  onDelete?.(project.id);
-                  setShowDelete(false);
-                  onOpenChange(false);
+                onClick={async () => {
+                  try {
+                    const res = await base44.functions.invoke("deleteProject", {
+                      projectId: project.id,
+                      confirmation: "DELETE",
+                    });
+                    if (res?.data?.error) throw new Error(res.data.error);
+                    onDelete?.(project.id);
+                    queryClient.invalidateQueries({ queryKey: ["projects"] });
+                    setShowDelete(false);
+                    onOpenChange(false);
+                  } catch (error) {
+                    console.error("Project deletion failed", error);
+                  }
                 }}
               >
                 Delete

@@ -26,7 +26,6 @@ import AppLayout from '@/components/layout/AppLayout';
 import Home from '@/pages/Home';
 import AskNaliHint from '@/components/AskNaliHint';
 import PwaUpdatePrompt from '@/components/PwaUpdatePrompt';
-import { base44 } from '@/api/base44Client';
 
 // The assistant pulls in the whole react-markdown/unified stack, which added
 // ~150 kB to the entry chunk even though the panel only renders once the user
@@ -68,7 +67,7 @@ const OAuthConsent = lazy(() => import('@/pages/OAuthConsent'));
 const SharedFileDownload = lazy(() => import('@/pages/SharedFileDownload'));
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isInitialMount = useRef(true);
@@ -112,7 +111,7 @@ const AuthenticatedApp = () => {
     const checkActivity = () => {
       const lastActive = localStorage.getItem('last_activity');
       if (lastActive && Date.now() - parseInt(lastActive, 10) > 24 * 60 * 60 * 1000) {
-        base44.auth.logout();
+        logout();
       }
     };
     checkActivity();
@@ -127,7 +126,7 @@ const AuthenticatedApp = () => {
       window.removeEventListener('touchstart', updateActivity);
       window.removeEventListener('play', updateActivity);
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, logout]);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (

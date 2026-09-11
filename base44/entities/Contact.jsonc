@@ -4,7 +4,15 @@
   "properties": {
     "user_id": {
       "type": "string",
-      "description": "ID of the user who has the contact"
+      "description": "ID of the user who has the contact",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "contact_user_id": {
       "type": "string",
@@ -28,16 +36,22 @@
   ],
   "rls": {
     "create": {
-      "data.user_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "data.user_id": "{{user.id}}"
     },
     "update": {
-      "data.user_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "data.user_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

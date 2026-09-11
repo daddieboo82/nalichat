@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const TIMEOUT_48H_MINUTES = 48 * 60;
 
@@ -99,6 +100,13 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'react') {
+      if (user.is_banned) {
+        return Response.json({ error: 'banned' }, { status: 403 });
+      }
+      if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+        return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+      }
+
       const emoji = String(body?.emoji || '').trim().slice(0, 32);
       if (!emoji) return Response.json({ error: 'emoji is required' }, { status: 400 });
 
@@ -117,8 +125,64 @@ Deno.serve(async (req) => {
       if (message.sender_id !== user.id && !isAdmin) {
         return Response.json({ error: 'Only the sender or an admin can delete this message' }, { status: 403 });
       }
-      await entities.Message.delete(message.id);
-      return Response.json({ success: true, deleted: true });
+
+      const childReplies = await entities.Message.filter({
+        thread_id: message.id,
+        conversation_id: message.conversation_id,
+      });
+
+      let tombstoned = false;
+      if (childReplies.length > 0) {
+        // Keep the thread anchor so replies from other users remain reachable,
+        // but remove the deleted author's content and attachment payload.
+        await entities.Message.update(message.id, {
+          text: 'Message deleted',
+          type: 'text',
+          file_url: '',
+          file_name: '',
+          file_type: '',
+          file_size: 0,
+          reactions: {},
+          is_edited: true,
+        });
+        tombstoned = true;
+      } else {
+        await entities.Message.delete(message.id);
+      }
+
+      if (message.thread_id) {
+        const remainingReplies = await entities.Message.filter({
+          thread_id: message.thread_id,
+          conversation_id: message.conversation_id,
+        });
+        try {
+          await entities.Message.update(message.thread_id, {
+            thread_reply_count: remainingReplies.length,
+          });
+        } catch {}
+      }
+
+      if (message.type !== 'session' && message.conversation_id) {
+        try {
+          const recent = await entities.Message.filter(
+            { conversation_id: message.conversation_id },
+            '-created_date',
+            200,
+          );
+          const latest = recent.find((candidate: any) => candidate.type !== 'session') || null;
+          await entities.Conversation.update(message.conversation_id, {
+            last_message_text: latest?.text || (latest ? `Sent a ${latest.type || 'message'}` : ''),
+            last_message_at: latest?.created_date || null,
+          });
+        } catch {}
+      }
+
+      return Response.json({
+        success: true,
+        deleted: !tombstoned,
+        tombstoned,
+        preserved_replies: childReplies.length,
+      });
     }
 
     // Edit
@@ -137,6 +201,11 @@ Deno.serve(async (req) => {
 
     const text = String(body?.text || '').slice(0, 20000);
     if (!text.trim()) return Response.json({ error: 'Message text cannot be empty' }, { status: 400 });
+
+    const editRate = await consumeHourlyLimit(entities, user.id, 'message_edit', 120);
+    if (!editRate.allowed) {
+      return Response.json({ error: 'Message edit rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
 
     const moderation = await moderateEditedText(base44, user, text, message.conversation_id);
     if (moderation) return Response.json({ success: false, moderation });

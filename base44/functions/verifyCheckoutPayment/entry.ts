@@ -14,22 +14,15 @@ Deno.serve(async (req) => {
 
     const base44 = createClientFromRequest(req);
 
-    // 1. Retrieve the Stripe checkout session to check payment status
-    const session = await stripeRequest(`/checkout/sessions/${checkoutId}`, {}, 'GET');
-
-    if (!session) {
-      return Response.json({ error: 'Checkout session not found' }, { status: 404 });
-    }
-
-    // 2. Find the Base44Purchase by checkoutSessionId
+    // Authorize against the local opaque verifier before making any Stripe API
+    // request. This prevents the public fallback endpoint from becoming an
+    // unauthenticated Stripe session-enumeration / API-amplification surface.
     const purchases = await base44.asServiceRole.entities.Base44Purchase.filter({
       checkoutSessionId: checkoutId,
     });
-
-    if (purchases.length === 0) {
+    if (purchases.length !== 1) {
       return Response.json({ error: 'Purchase record not found' }, { status: 404 });
     }
-
     const purchase = purchases[0];
 
     const digest = await crypto.subtle.digest(
@@ -41,6 +34,11 @@ Deno.serve(async (req) => {
       .join('');
     if (!purchase.purchase_verifier_hash || purchase.purchase_verifier_hash !== verifierHash) {
       return Response.json({ error: 'Invalid purchase verifier' }, { status: 403 });
+    }
+
+    const session = await stripeRequest(`/checkout/sessions/${encodeURIComponent(checkoutId)}`, {}, 'GET');
+    if (!session) {
+      return Response.json({ error: 'Checkout session not found' }, { status: 404 });
     }
 
     // 3. If Stripe says paid but our record is still pending, fulfill it now

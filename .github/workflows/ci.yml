@@ -1,37 +1,54 @@
 name: CI
 
-# Nothing previously enforced lint, tests or a successful build, so a broken
-# main could ship unnoticed. This gates every push and pull request.
+# Keep each verification stage independent so failures are immediately visible
+# in the PR checks instead of being hidden inside one monolithic job.
 on:
   push:
     branches: [main]
   pull_request:
 
 jobs:
-  verify:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
 
-      - name: Install dependencies
-        run: npm ci
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test
 
-      - name: Lint
-        run: npm run lint
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
 
-      - name: Test
-        run: npm test
-
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
-
-      - name: E2E
-        run: npm run test:e2e
-
-      - name: Build
-        run: npm run build
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

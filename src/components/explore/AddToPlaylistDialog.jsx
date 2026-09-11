@@ -33,14 +33,13 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
 
   const addToPlaylistMutation = useMutation({
     mutationFn: async (playlistId) => {
-      const playlist = await base44.entities.Playlist.get(playlistId);
-      const updatedTrackIds = [
-        ...new Set([...(playlist.track_ids || []), trackId]),
-      ];
-      await base44.entities.Playlist.update(playlistId, {
-        track_ids: updatedTrackIds,
+      const res = await base44.functions.invoke("mutatePlaylist", {
+        action: "add_track",
+        playlistId,
+        trackId,
       });
-      return playlist;
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.playlist;
     },
     onSuccess: (playlist) => {
       queryClient.invalidateQueries({ queryKey: ["userPlaylists"] });

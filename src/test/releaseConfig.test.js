@@ -707,6 +707,30 @@ describe('release configuration', () => {
     expect(invite).toContain(".replace(/[\r\n]/g, ' ')");
   });
 
+  it('prevents contact spoofing and email/phone account enumeration', async () => {
+    const contact = await readJson('base44/entities/Contact.jsonc');
+    const mutateContact = await readText('base44/functions/mutateContact/entry.ts');
+    const contactsTab = await readText('src/components/messages/ContactsTab.jsx');
+    const newChat = await readText('src/components/messages/NewChatDialog.jsx');
+    const external = await readText('base44/functions/sendExternalMessage/entry.ts');
+
+    expect(contact.rls.create?.user_condition?.role).toBe('admin');
+    expect(contact.rls.update?.user_condition?.role).toBe('admin');
+    expect(contact.rls.delete?.user_condition?.role).toBe('admin');
+    expect(mutateContact).toContain('targetUserId === user.id');
+    expect(mutateContact).toContain('target.onboarding_completed');
+    expect(mutateContact).toContain('target.is_banned');
+    expect(contactsTab).toContain('functions.invoke("mutateContact"');
+    expect(contactsTab).not.toContain('entities.Contact.create');
+    expect(contactsTab).not.toContain('entities.Contact.delete');
+
+    expect(newChat).not.toContain('u.email');
+    expect(newChat).not.toContain('u.phone');
+    expect(newChat).not.toContain('email, or phone');
+    expect(external).not.toContain('Recipient is not a registered NaliChat user');
+    expect(external).toContain("accepted: true");
+  });
+
   it('prevents contact ownership reassignment', async () => {
     const contact = await readJson('base44/entities/Contact.jsonc');
     expect(contact.properties.user_id.rls?.write?.user_condition?.role).toBe('admin');

@@ -6,6 +6,10 @@ async function readJson(path) {
   return JSON.parse(await readFile(new URL(`../../${path}`, import.meta.url), 'utf8'));
 }
 
+async function readText(path) {
+  return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
+}
+
 describe('release configuration', () => {
   it('targets the current Android API required by the release pipeline', async () => {
     const manifest = await readJson('src/twa-manifest.json');
@@ -97,6 +101,19 @@ describe('release configuration', () => {
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
     expect(submission.properties.vote_count.rls?.write?.user_condition?.role).toBe('admin');
     expect(submission.properties.status.rls?.write?.user_condition?.role).toBe('admin');
+  });
+
+
+  it('keeps challenge leaderboard aggregation server-side', async () => {
+    const leaderboard = await readText('base44/functions/getChallengeLeaderboard/entry.ts');
+    expect(leaderboard).toContain("ChallengeVote.filter({ challenge_id: challengeId })");
+    expect(leaderboard).toContain("status: 'approved'");
+    expect(leaderboard).not.toContain('voter_id:');
+    expect(leaderboard).not.toContain('voter_name:');
+
+    const page = await readText('src/pages/ChallengeLeaderboard.jsx');
+    expect(page).toContain('getChallengeLeaderboard');
+    expect(page).not.toContain('ChallengeVote.filter');
   });
 
   it('keeps the PWA manifest scoped to the serving origin', async () => {

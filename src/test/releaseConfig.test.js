@@ -699,6 +699,14 @@ describe('release configuration', () => {
     expect(notification.properties.read.rls).toBeUndefined();
   });
 
+  it('keeps notification click navigation on the app origin', async () => {
+    const sw = await readText('public/sw.js');
+    expect(sw).toContain('function safeNotificationTarget');
+    expect(sw).toContain('parsed.origin !== self.location.origin');
+    expect(sw).toContain("!['http:', 'https:'].includes(parsed.protocol)");
+    expect(sw).toContain('const targetUrl = safeNotificationTarget');
+  });
+
 
   it('enforces configured challenge voting windows server-side', async () => {
     const vote = await readText('base44/functions/castVote/entry.ts');

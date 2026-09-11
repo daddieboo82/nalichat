@@ -35,7 +35,15 @@
       }
     },
     "uploader_name": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "project_id": {
       "type": "string",

@@ -35,11 +35,13 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const { fileId, token } = await req.json();
-    if (!fileId || !token) {
-      return Response.json({ error: 'fileId and token are required' }, { status: 400 });
+    const normalizedFileId = String(fileId || '').trim();
+    const normalizedToken = String(token || '').trim();
+    if (!normalizedFileId || normalizedFileId.length > 256 || !/^[0-9a-f]{64}$/.test(normalizedToken)) {
+      return Response.json({ error: 'Invalid share link' }, { status: 400 });
     }
 
-    const file = await base44.asServiceRole.entities.SharedFile.get(fileId);
+    const file = await base44.asServiceRole.entities.SharedFile.get(normalizedFileId);
     if (!file || !file.share_token_hash) {
       return Response.json({ error: 'Share link not found' }, { status: 404 });
     }
@@ -47,7 +49,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Share link expired' }, { status: 410 });
     }
 
-    const candidate = await sha256Hex(String(token));
+    const candidate = await sha256Hex(normalizedToken);
     if (!constantTimeEqual(candidate, String(file.share_token_hash))) {
       return Response.json({ error: 'Invalid share token' }, { status: 403 });
     }

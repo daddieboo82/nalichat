@@ -32,10 +32,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const existing = await entities.TypingStatus.filter({
-      conversation_id: conversation.id,
-      user_id: user.id,
-    });
+    const existing = await entities.TypingStatus.filter(
+      {
+        conversation_id: conversation.id,
+        user_id: user.id,
+      },
+      '-last_typed_at',
+      20,
+    );
     const row = existing[0] || null;
 
     if (action === 'clear') {

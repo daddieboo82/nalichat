@@ -32,15 +32,45 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { messageText, senderName, type, audioUrl } = await req.json();
+    const { messageId, type } = await req.json();
+    if (!messageId) {
+      return Response.json({ error: 'messageId is required' }, { status: 400 });
+    }
+    if (type !== 'meme' && type !== 'reel') {
+      return Response.json({ error: 'type must be "meme" or "reel"' }, { status: 400 });
+    }
 
-    let finalMessageText = messageText;
+    const message = await base44.asServiceRole.entities.Message.get(messageId);
+    if (!message) {
+      return Response.json({ error: 'Message not found' }, { status: 404 });
+    }
+    if (!Array.isArray(message.participant_ids) || !message.participant_ids.includes(user.id)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
-    // If no text but an audio recording is provided, transcribe it first.
-    if ((!finalMessageText || finalMessageText.trim().length === 0) && audioUrl) {
+    const senderName = message.sender_name || 'Someone';
+    let finalMessageText = typeof message.text === 'string' ? message.text.trim() : '';
+    const isVoiceNote =
+      !finalMessageText &&
+      !!message.file_url &&
+      (message.type === 'audio' || String(message.file_type || '').startsWith('audio'));
+
+    // Voice-note transcription only uses the media URL stored on the authorized
+    // Message record. The browser can no longer make this function fetch an
+    // arbitrary URL.
+    if (isVoiceNote) {
+      const voiceAccess = await requireEntitlement(
+        base44.asServiceRole.entities,
+        user.id,
+        'voice.transcription',
+      );
+      if (!voiceAccess.allowed) {
+        return Response.json({ error: 'Voice transcription is not available on your plan' }, { status: 403 });
+      }
+
       try {
         const transcript = await base44.asServiceRole.integrations.Core.TranscribeAudio({
-          audio_url: audioUrl,
+          audio_url: message.file_url,
         });
         finalMessageText = typeof transcript === 'string' ? transcript : transcript?.text || '';
       } catch (transcribeErr) {
@@ -53,7 +83,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Message text or a voice note is required' }, { status: 400 });
     }
 
-    const sourceLabel = audioUrl && !messageText ? 'a voice note' : 'a chat message';
+    const sourceLabel = isVoiceNote ? 'a voice note' : 'a chat message';
 
     if (type === "meme") {
       const memePrompt = `You are a viral meme creator with a sharp, witty sense of humor. Turn ${sourceLabel} into a funny, shareable meme.

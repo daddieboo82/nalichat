@@ -2841,7 +2841,7 @@ export default function Studio() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <button
-          onClick={() => { handleSave(); navigate('/'); }}
+          onClick={async () => { if (await handleSave()) navigate('/'); }}
           className="flex items-center gap-2 px-6 py-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground text-sm font-medium transition-colors min-h-[44px]"
         >
           <ChevronLeft className="w-4 h-4" /> Exit Studio

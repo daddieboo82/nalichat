@@ -303,13 +303,12 @@ export default function Messages() {
   const selectedConv = myConversations.find(c => c.id === selectedConvId);
   const otherUsers = users.filter(u => u.id !== currentUser?.id);
 
-  // Banned users may still message an admin (to appeal). Timed-out users are fully blocked.
-  const convHasAdmin = selectedConv?.participant_ids?.some(
-    id => id !== currentUser?.id && users.find(u => u.id === id)?.role === "admin"
-  );
-  const isBlocked = currentUser?.is_banned
-    ? !convHasAdmin
-    : isTimedOut;
+  // Public user discovery intentionally redacts account roles, so the client
+  // cannot reliably identify whether the other DM participant is an admin.
+  // Keep group chats blocked for banned users, but allow 1:1 DMs to reach the
+  // server where the authoritative admin-appeal policy is enforced.
+  const isBlocked = isTimedOut
+    || (currentUser?.is_banned && selectedConv?.type !== "dm");
   const activeChatTheme = getChatTheme(resolveEffectiveChatThemeId(
     currentUser?.chat_theme_id,
     hasEntitlement?.(CHAT_THEME_ENTITLEMENT) === true,

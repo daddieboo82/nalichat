@@ -1449,6 +1449,26 @@ describe('release configuration', () => {
   });
 
 
+  it('moderation-gates and bounds project collaboration mutations', async () => {
+    const cases = [
+      ['base44/functions/createProjectInvite/entry.ts', "'project_invite_create'", 30],
+      ['base44/functions/mutateTrack/entry.ts', "'track_mutation'", 600],
+      ['base44/functions/mutateMilestone/entry.ts', "'milestone_mutation'", 300],
+      ['base44/functions/mutateSharedFile/entry.ts', "'shared_file_mutation'", 300],
+      ['base44/functions/createFileShareLink/entry.ts', "'file_share_link'", 120],
+      ['base44/functions/deleteFolder/entry.ts', "'folder_delete'", 120],
+      ['base44/functions/deleteTrackVersion/entry.ts', "'track_version_delete'", 240],
+    ];
+
+    for (const [path, key, limit] of cases) {
+      const source = await readText(path);
+      expect(source).toContain('user.is_banned');
+      expect(source).toContain("error: 'timed_out'");
+      expect(source).toContain(key);
+      expect(source).toContain(`${key},\n      ${limit},`);
+    }
+  });
+
   it('moderation-gates project invites and bounds invite/challenge write paths', async () => {
     const accept = await readText('base44/functions/acceptProjectInvite/entry.ts');
     const revoke = await readText('base44/functions/revokeProjectInvites/entry.ts');

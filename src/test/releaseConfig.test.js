@@ -253,6 +253,15 @@ describe('release configuration', () => {
     expect(conversation.properties.participant_ids.rls?.write?.user_condition?.role).toBe('admin');
   });
 
+  it('synchronizes message and typing read audiences when conversation membership changes', async () => {
+    const manageConversation = await readText('base44/functions/manageConversation/entry.ts');
+    expect(manageConversation).toContain('async function syncConversationAudience');
+    expect(manageConversation).toContain('entities.Message.filter({ conversation_id: conversationId })');
+    expect(manageConversation).toContain('entities.TypingStatus.filter({ conversation_id: conversationId })');
+    expect(manageConversation).toContain('participant_ids: participantIds');
+    expect(manageConversation.match(/syncConversationAudience\(entities, .*participantIds\)/g)?.length || 0).toBeGreaterThanOrEqual(3);
+  });
+
 
   it('repairs message caches on delete and rate-limits moderated edits', async () => {
     const mutate = await readText('base44/functions/mutateConversationMessage/entry.ts');

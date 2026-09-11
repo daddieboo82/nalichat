@@ -1,11 +1,30 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+async function presenceId(roomId: string, userId: string) {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`${roomId}:${userId}`),
+  );
+  const suffix = Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+  return `studio_presence_${suffix}`;
+}
+
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
 
     const writeRate = await consumeHourlyLimit(
       base44.asServiceRole.entities,
@@ -18,10 +37,18 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const roomId = String(body?.roomId || '').trim();
-    const action = String(body?.action || 'heartbeat');
-    if (!roomId || !['heartbeat', 'clear'].includes(action)) {
+    const roomId = typeof body?.roomId === 'string' ? body.roomId.trim() : '';
+    const action = body?.action == null
+      ? 'heartbeat'
+      : (typeof body.action === 'string' ? body.action : '');
+    if (!roomId || roomId.length > 200 || !['heartbeat', 'clear'].includes(action)) {
       return Response.json({ error: 'Valid roomId and action are required' }, { status: 400 });
+    }
+    if (body?.activity != null && typeof body.activity !== 'string') {
+      return Response.json({ error: 'activity must be a string' }, { status: 400 });
+    }
+    if (typeof body?.activity === 'string' && body.activity.length > 200) {
+      return Response.json({ error: 'activity must be 200 characters or fewer' }, { status: 413 });
     }
 
     const entities = base44.asServiceRole.entities;
@@ -42,14 +69,22 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Studio room not found' }, { status: 404 });
     }
 
-    const existing = await entities.StudioPresence.filter({
+    const deterministicId = await presenceId(roomId, user.id);
+    const legacyRows = await entities.StudioPresence.filter({
       room_id: roomId,
       user_id: user.id,
-    });
+    }, '-created_date', 20);
 
     if (action === 'clear') {
-      for (const row of existing) await entities.StudioPresence.delete(row.id);
-      return Response.json({ success: true, cleared: existing.length });
+      const ids = new Set([deterministicId, ...legacyRows.map((row: any) => row.id)]);
+      let cleared = 0;
+      for (const id of ids) {
+        try {
+          await entities.StudioPresence.delete(id);
+          cleared += 1;
+        } catch {}
+      }
+      return Response.json({ success: true, cleared });
     }
 
     const payload = {
@@ -57,18 +92,30 @@ Deno.serve(async (req) => {
       user_id: user.id,
       user_name: user.display_name || user.full_name || 'Artist',
       user_avatar: user.avatar_url || '',
-      activity: String(body?.activity || 'In the studio').slice(0, 200),
+      activity: typeof body?.activity === 'string' && body.activity.trim()
+        ? body.activity.trim()
+        : 'In the studio',
       last_heartbeat: new Date().toISOString(),
       access_user_ids: accessUserIds,
     };
 
-    const row = existing[0] || null;
-    const updated = row
-      ? await entities.StudioPresence.update(row.id, payload)
-      : await entities.StudioPresence.create(payload);
+    let updated = await entities.StudioPresence.get(deterministicId).catch(() => null);
+    if (updated) {
+      updated = await entities.StudioPresence.update(deterministicId, payload);
+    } else {
+      try {
+        updated = await entities.StudioPresence.create({ id: deterministicId, ...payload });
+      } catch (createError) {
+        const raced = await entities.StudioPresence.get(deterministicId).catch(() => null);
+        if (!raced) throw createError;
+        updated = await entities.StudioPresence.update(deterministicId, payload);
+      }
+    }
 
-    for (const duplicate of existing.slice(1)) {
-      await entities.StudioPresence.delete(duplicate.id);
+    for (const duplicate of legacyRows) {
+      if (duplicate.id !== deterministicId) {
+        await entities.StudioPresence.delete(duplicate.id).catch(() => {});
+      }
     }
 
     return Response.json({ success: true, presence: updated });

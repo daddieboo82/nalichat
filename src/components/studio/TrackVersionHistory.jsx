@@ -23,7 +23,11 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
   });
 
   const deleteVersion = useMutation({
-    mutationFn: (id) => base44.entities.TrackVersion.delete(id),
+    mutationFn: async (id) => {
+      const res = await base44.functions.invoke("deleteTrackVersion", { versionId: id });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["track-versions", track?.id] }),
   });
 

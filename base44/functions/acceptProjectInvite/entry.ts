@@ -32,10 +32,14 @@ Deno.serve(async (req) => {
     }
 
     const tokenHash = await sha256Hex(String(token));
-    const invites = await base44.asServiceRole.entities.ProjectInvite.filter({
-      project_id: projectId,
-      token_hash: tokenHash,
-    });
+    const invites = await base44.asServiceRole.entities.ProjectInvite.filter(
+      {
+        project_id: projectId,
+        token_hash: tokenHash,
+      },
+      '-created_date',
+      1,
+    );
     const invite = invites[0];
     if (!invite || new Date(invite.expires_at).getTime() < Date.now()) {
       return Response.json({ error: 'Invite is invalid or expired' }, { status: 403 });

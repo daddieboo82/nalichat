@@ -27,6 +27,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'You already have an active or pending squad.' }, { status: 409 });
     }
 
+    const membershipClaim = await entities.User.updateMany(
+      {
+        id: user.id,
+        squad_membership_id: null,
+      },
+      {
+        $set: { squad_membership_id: squad.id },
+      },
+    );
+    if (Number(membershipClaim?.updated || 0) !== 1) {
+      return Response.json({ error: 'You already have an active or pending squad.' }, { status: 409 });
+    }
+
     // Atomically claim the pending slot so only one concurrent join can win.
     const claim = await entities.Squad.updateMany(
       {
@@ -43,11 +56,19 @@ Deno.serve(async (req) => {
       },
     );
     if (Number(claim?.updated || 0) !== 1) {
+      await entities.User.updateMany(
+        { id: user.id, squad_membership_id: squad.id },
+        { $set: { squad_membership_id: null } },
+      ).catch(() => {});
       return Response.json({ error: 'Invite was claimed by another user' }, { status: 409 });
     }
 
     const claimed = await entities.Squad.get(squad.id);
     if (claimed?.member_b_id !== user.id || claimed?.status !== 'active') {
+      await entities.User.updateMany(
+        { id: user.id, squad_membership_id: squad.id },
+        { $set: { squad_membership_id: null } },
+      ).catch(() => {});
       return Response.json({ error: 'Invite was claimed by another user' }, { status: 409 });
     }
 

@@ -59,9 +59,10 @@ Deno.serve(async (req) => {
     const entities = base44.asServiceRole.entities;
     const priorCount = Number(user.viral_concepts_generated || 0);
 
+    const xpAwarded = priorCount === 0 ? 50 : 0;
     await entities.User.updateMany(
       { id: user.id },
-      { $inc: { xp: 50, viral_concepts_generated: concepts.length } },
+      { $inc: { xp: xpAwarded, viral_concepts_generated: concepts.length } },
     );
 
     if (priorCount === 0) {
@@ -82,7 +83,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ concepts, xp_awarded: 50 });
+    return Response.json({ concepts, xp_awarded: xpAwarded });
   } catch (error) {
     console.error('generateViralConcepts error:', error);
     return Response.json({ error: error?.message || 'Viral generation failed' }, { status: 500 });

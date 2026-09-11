@@ -14,9 +14,12 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const viewer = await base44.auth.me().catch(() => null);
     const { inviteCode } = await req.json();
-    if (!inviteCode) return Response.json({ error: 'inviteCode is required' }, { status: 400 });
+    const normalizedCode = String(inviteCode || '').trim().toUpperCase();
+    if (!/^[0-9A-F]{24}$/.test(normalizedCode)) {
+      return Response.json({ error: 'Invalid invite code' }, { status: 400 });
+    }
 
-    const squads = await base44.asServiceRole.entities.Squad.filter({ invite_code: String(inviteCode).toUpperCase() });
+    const squads = await base44.asServiceRole.entities.Squad.filter({ invite_code: normalizedCode });
     const squad = squads[0];
     if (!squad || squad.status === 'ended' || isInviteExpired(squad)) {
       return Response.json({ error: 'Invite not found' }, { status: 404 });

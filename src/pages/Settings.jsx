@@ -24,7 +24,7 @@ const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", 
 export default function Settings() {
   const { checkUserAuth } = useAuth();
   const [user, setUser] = useState(null);
-  const [form, setForm] = useState({ display_name: "", bio: "", role: "artist", location: "", genres: [], avatar_url: "" });
+  const [form, setForm] = useState({ display_name: "", bio: "", artist_role: "artist", location: "", genres: [], avatar_url: "" });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [genreInput, setGenreInput] = useState("");

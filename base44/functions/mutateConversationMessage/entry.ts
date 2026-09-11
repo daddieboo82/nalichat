@@ -131,10 +131,14 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Only the sender or an admin can delete this message' }, { status: 403 });
       }
 
-      const childReplies = await entities.Message.filter({
-        thread_id: message.id,
-        conversation_id: message.conversation_id,
-      });
+      const childReplies = await entities.Message.filter(
+        {
+          thread_id: message.id,
+          conversation_id: message.conversation_id,
+        },
+        'created_date',
+        1,
+      );
 
       let tombstoned = false;
       if (childReplies.length > 0) {
@@ -155,15 +159,15 @@ Deno.serve(async (req) => {
         await entities.Message.delete(message.id);
       }
 
-      if (message.thread_id) {
-        const remainingReplies = await entities.Message.filter({
-          thread_id: message.thread_id,
-          conversation_id: message.conversation_id,
-        });
+      if (message.thread_id && !tombstoned) {
         try {
-          await entities.Message.update(message.thread_id, {
-            thread_reply_count: remainingReplies.length,
-          });
+          await entities.Message.updateMany(
+            {
+              id: message.thread_id,
+              thread_reply_count: { $gt: 0 },
+            },
+            { $inc: { thread_reply_count: -1 } },
+          );
         } catch {}
       }
 

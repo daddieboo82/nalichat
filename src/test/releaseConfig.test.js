@@ -1688,6 +1688,30 @@ describe('release configuration', () => {
     expect(leave).not.toContain("error: 'timed_out'");
   });
 
+  it('moderation-gates and bounds project and ArtPost lifecycle mutations', async () => {
+    const createProject = await readText('base44/functions/createProject/entry.ts');
+    const deleteProject = await readText('base44/functions/deleteProject/entry.ts');
+    const mutatePost = await readText('base44/functions/mutateArtPost/entry.ts');
+    const deletePost = await readText('base44/functions/deleteArtPost/entry.ts');
+
+    expect(createProject).toContain("error: 'timed_out'");
+
+    expect(deleteProject).toContain("'project_delete'");
+    expect(deleteProject).toMatch(/'project_delete',\s*30/);
+    expect(deleteProject).toContain('user.is_banned');
+    expect(deleteProject).toContain("error: 'timed_out'");
+
+    expect(mutatePost).toContain("'artpost_mutation'");
+    expect(mutatePost).toMatch(/'artpost_mutation',\s*300/);
+    expect(mutatePost).toContain('user.is_banned');
+    expect(mutatePost).toContain("error: 'timed_out'");
+
+    expect(deletePost).toContain("'artpost_delete'");
+    expect(deletePost).toMatch(/'artpost_delete',\s*60/);
+    expect(deletePost).toContain('user.is_banned');
+    expect(deletePost).toContain("error: 'timed_out'");
+  });
+
   it('moderation-gates project invites and bounds invite/challenge write paths', async () => {
     const accept = await readText('base44/functions/acceptProjectInvite/entry.ts');
     const revoke = await readText('base44/functions/revokeProjectInvites/entry.ts');

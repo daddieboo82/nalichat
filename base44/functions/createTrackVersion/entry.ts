@@ -48,6 +48,15 @@ Deno.serve(async (req) => {
     const versions = await entities.TrackVersion.filter({ track_id: track.id }, '-version_number', 1);
     const nextNum = (versions[0]?.version_number || 0) + 1;
 
+    const volume = Number(body?.volume ?? track.volume ?? 75);
+    const pan = Number(body?.pan ?? track.pan ?? 50);
+    if (!Number.isFinite(volume) || volume < 0 || volume > 100) {
+      return Response.json({ error: 'Version volume must be between 0 and 100' }, { status: 400 });
+    }
+    if (!Number.isFinite(pan) || pan < 0 || pan > 100) {
+      return Response.json({ error: 'Version pan must be between 0 and 100' }, { status: 400 });
+    }
+
     const inheritedFileUrl = track.file_url ? cleanUploadedMediaUrl(track.file_url) : '';
     const fallbackFileUrl = body?.file_url ? cleanUploadedMediaUrl(body.file_url) : '';
     if ((track.file_url && !inheritedFileUrl) || (body?.file_url && !fallbackFileUrl)) {
@@ -60,8 +69,8 @@ Deno.serve(async (req) => {
       version_number: nextNum,
       label: String(body.label || `Version ${nextNum}`).slice(0, 200),
       file_url: inheritedFileUrl || fallbackFileUrl,
-      volume: Number.isFinite(Number(body.volume)) ? Number(body.volume) : track.volume,
-      pan: Number.isFinite(Number(body.pan)) ? Number(body.pan) : track.pan,
+      volume,
+      pan,
       muted: body.muted ?? track.muted,
       solo: body.solo ?? track.solo,
       saved_by_id: user.id,

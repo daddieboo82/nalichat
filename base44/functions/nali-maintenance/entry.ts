@@ -17,6 +17,10 @@ export default async function(req) {
     const caller = await base44.auth.me();
     if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     if (caller.role !== 'admin') return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
+    if (caller.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (caller.timeout_until && new Date(caller.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: caller.timeout_until }, { status: 403 });
+    }
 
     const adminRate = await consumeHourlyLimit(
       base44.asServiceRole.entities,

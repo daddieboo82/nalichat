@@ -27,6 +27,7 @@ import {
   getNextRetryAt,
   markOutboundForRetry,
   queueEntryToMessage,
+  readOutboundQueue,
 } from "@/lib/outboundQueue";
 import { useSubscription } from "@/hooks/useSubscription";
 import { CHAT_THEME_ENTITLEMENT, getChatTheme, resolveEffectiveChatThemeId } from "@/lib/chatThemes";
@@ -38,7 +39,12 @@ function inferSendErrorStatus(errorMessage, response) {
   const explicit = Number(response?.status || response?.data?.status);
   if (Number.isFinite(explicit) && explicit > 0) return explicit;
   const text = String(errorMessage || "").toLowerCase();
-  if (text === "timed_out" || text === "banned" || text.includes("forbidden")) return 403;
+  if (
+    text === "timed_out"
+    || text === "banned"
+    || text.includes("forbidden")
+    || text.includes("unauthorized")
+  ) return text.includes("unauthorized") ? 401 : 403;
   if (text.includes("rate limit")) return 429;
   if (
     text.includes("required")
@@ -49,6 +55,7 @@ function inferSendErrorStatus(errorMessage, response) {
     || text.includes("too large")
     || text.includes("characters or fewer")
     || text.includes("unsupported")
+    || text.includes("could not verify message attachment size")
   ) return 400;
   return 500;
 }
@@ -423,6 +430,12 @@ export default function Messages() {
       });
       scheduleNext();
     };
+
+    for (const entry of readOutboundQueue().filter((item) => item.sender.id === currentUser.id)) {
+      queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+        applyQueuedMessage(old, queueEntryToMessage(entry))
+      );
+    }
 
     const handleQueueSignal = () => { void flushQueue(); };
     window.addEventListener("online", handleQueueSignal);

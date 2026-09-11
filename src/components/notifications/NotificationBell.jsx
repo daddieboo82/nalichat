@@ -24,10 +24,9 @@ export default function NotificationBell({ direction = "down" }) {
   const [pushPermission, setPushPermission] = useState(() => getPermissionStatus());
   const { toast } = useToast();
   const panelRef = useRef(null);
-  const userRef = useRef(null);
 
   useEffect(() => {
-    base44.auth.me().then((u) => { setUser(u); userRef.current = u; }).catch(() => {});
+    base44.auth.me().then(setUser).catch(() => {});
     // Register the service worker, but only request notification permission
     // from an explicit user gesture. Browsers may block permission prompts
     // triggered from timers or page load.

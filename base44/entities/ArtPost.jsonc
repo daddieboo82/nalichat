@@ -11,7 +11,15 @@
     },
     "image_url": {
       "type": "string",
-      "description": "Album art or cover"
+      "description": "Album art or cover. Server-managed after trusted upload validation.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "file_url": {
       "type": "string",

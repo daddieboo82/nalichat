@@ -118,7 +118,30 @@ Deno.serve(async (req) => {
       if (message.sender_id !== user.id && !isAdmin) {
         return Response.json({ error: 'Only the sender or an admin can delete this message' }, { status: 403 });
       }
-      await entities.Message.delete(message.id);
+
+      const childReplies = await entities.Message.filter({
+        thread_id: message.id,
+        conversation_id: message.conversation_id,
+      });
+
+      let tombstoned = false;
+      if (childReplies.length > 0) {
+        // Keep the thread anchor so replies from other users remain reachable,
+        // but remove the deleted author's content and attachment payload.
+        await entities.Message.update(message.id, {
+          text: 'Message deleted',
+          type: 'text',
+          file_url: '',
+          file_name: '',
+          file_type: '',
+          file_size: 0,
+          reactions: {},
+          is_edited: true,
+        });
+        tombstoned = true;
+      } else {
+        await entities.Message.delete(message.id);
+      }
 
       if (message.thread_id) {
         const remainingReplies = await entities.Message.filter({
@@ -147,7 +170,12 @@ Deno.serve(async (req) => {
         } catch {}
       }
 
-      return Response.json({ success: true, deleted: true });
+      return Response.json({
+        success: true,
+        deleted: !tombstoned,
+        tombstoned,
+        preserved_replies: childReplies.length,
+      });
     }
 
     // Edit

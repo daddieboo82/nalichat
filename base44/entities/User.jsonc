@@ -345,6 +345,32 @@
           }
         }
       }
+    },
+    "is_online": {
+      "type": "boolean",
+      "default": false,
+      "description": "Server-managed realtime presence hint.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "last_seen": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Server-managed timestamp of the latest presence heartbeat.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "rls": {

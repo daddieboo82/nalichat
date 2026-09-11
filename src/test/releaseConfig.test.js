@@ -472,6 +472,17 @@ describe('release configuration', () => {
   });
 
 
+  it('keeps collaborator role changes fail-closed across project and child records', async () => {
+    const collaborator = await readText('base44/functions/manageProjectCollaborator/entry.ts');
+    expect(collaborator).toContain('const privilegeIncrease');
+    expect(collaborator).toContain('originalProjectPatch');
+    expect(collaborator).toContain('await entities.Project.update(project.id, projectPatch)');
+    expect(collaborator).toContain('await entities.Project.update(project.id, originalProjectPatch).catch(() => {})');
+    expect(collaborator).toContain('const rollbackChildren = await syncChildren');
+    expect(collaborator).toContain('await rollbackChildren()');
+    expect(collaborator).toContain('changed.reverse()');
+  });
+
   it('keeps shared-file edit access synchronized with project collaborator roles', async () => {
     const collaborator = await readText('base44/functions/manageProjectCollaborator/entry.ts');
     expect(collaborator).toContain('edit_user_ids: Array.from(editUserIds)');

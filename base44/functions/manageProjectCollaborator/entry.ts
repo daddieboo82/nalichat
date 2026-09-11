@@ -2,33 +2,51 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 async function syncChildren(entities: any, project: any, userId: string, role: string | null) {
-  for (const entityName of ['Track', 'TrackVersion', 'SharedFile', 'Folder', 'Milestone']) {
-    const entity = entities[entityName];
-    if (!entity) continue;
-    const rows = await entity.filter({ project_id: project.id });
-    for (const row of rows) {
-      const accessUserIds = new Set(row.access_user_ids || []);
-      const editUserIds = new Set(row.edit_user_ids || []);
-      if (role) accessUserIds.add(userId);
-      else accessUserIds.delete(userId);
+  const changed: Array<{ entity: any; id: string; original: Record<string, any> }> = [];
+  try {
+    for (const entityName of ['Track', 'TrackVersion', 'SharedFile', 'Folder', 'Milestone']) {
+      const entity = entities[entityName];
+      if (!entity) continue;
+      const rows = await entity.filter({ project_id: project.id });
+      for (const row of rows) {
+        const accessUserIds = new Set(row.access_user_ids || []);
+        const editUserIds = new Set(row.edit_user_ids || []);
+        if (role) accessUserIds.add(userId);
+        else accessUserIds.delete(userId);
 
-      if (role === 'editor') editUserIds.add(userId);
-      else editUserIds.delete(userId);
+        if (role === 'editor') editUserIds.add(userId);
+        else editUserIds.delete(userId);
 
-      const patch: Record<string, any> = {
-        access_user_ids: Array.from(accessUserIds),
-        edit_user_ids: Array.from(editUserIds),
-      };
-      if (entityName === 'SharedFile') {
-        // Any collaborator access change invalidates outstanding public links.
-        // This prevents a removed or downgraded editor from retaining access via
-        // a token they created while they still had edit permission.
-        patch.share_token_hash = null;
-        patch.share_token_expires_at = null;
+        const original: Record<string, any> = {
+          access_user_ids: Array.isArray(row.access_user_ids) ? row.access_user_ids : [],
+          edit_user_ids: Array.isArray(row.edit_user_ids) ? row.edit_user_ids : [],
+        };
+        const patch: Record<string, any> = {
+          access_user_ids: Array.from(accessUserIds),
+          edit_user_ids: Array.from(editUserIds),
+        };
+        if (entityName === 'SharedFile') {
+          original.share_token_hash = row.share_token_hash || null;
+          original.share_token_expires_at = row.share_token_expires_at || null;
+          patch.share_token_hash = null;
+          patch.share_token_expires_at = null;
+        }
+        await entity.update(row.id, patch);
+        changed.push({ entity, id: row.id, original });
       }
-      await entity.update(row.id, patch);
     }
+  } catch (error) {
+    for (const change of changed.reverse()) {
+      await change.entity.update(change.id, change.original).catch(() => {});
+    }
+    throw error;
   }
+
+  return async () => {
+    for (const change of changed.reverse()) {
+      await change.entity.update(change.id, change.original).catch(() => {});
+    }
+  };
 }
 
 Deno.serve(async (req) => {
@@ -74,24 +92,52 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'User is not an existing collaborator' }, { status: 409 });
     }
 
+    const originalProjectPatch = {
+      collaborator_ids: Array.from(collaboratorIds),
+      collaborator_roles: { ...roles },
+      editor_ids: Array.from(editorIds),
+    };
+    const privilegeIncrease = action === 'set_role' && role === 'editor' && !editorIds.has(userId);
+
     if (action === 'remove') {
       collaboratorIds.delete(userId);
       editorIds.delete(userId);
       delete roles[userId];
-      await syncChildren(entities, project, userId, null);
     } else {
       collaboratorIds.add(userId);
       roles[userId] = role;
       if (role === 'editor') editorIds.add(userId);
       else editorIds.delete(userId);
-      await syncChildren(entities, project, userId, role);
     }
 
-    await entities.Project.update(project.id, {
+    const projectPatch = {
       collaborator_ids: Array.from(collaboratorIds),
       collaborator_roles: roles,
       editor_ids: Array.from(editorIds),
-    });
+    };
+
+    if (privilegeIncrease) {
+      await entities.Project.update(project.id, projectPatch);
+      try {
+        await syncChildren(entities, project, userId, role);
+      } catch (error) {
+        await entities.Project.update(project.id, originalProjectPatch).catch(() => {});
+        throw error;
+      }
+    } else {
+      const rollbackChildren = await syncChildren(
+        entities,
+        project,
+        userId,
+        action === 'remove' ? null : role,
+      );
+      try {
+        await entities.Project.update(project.id, projectPatch);
+      } catch (error) {
+        await rollbackChildren();
+        throw error;
+      }
+    }
 
     return Response.json({ success: true });
   } catch (error) {

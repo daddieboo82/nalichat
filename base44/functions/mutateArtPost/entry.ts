@@ -9,16 +9,21 @@ const TRUSTED_MEDIA_HOSTS = [
   'cdn.base44.com',
 ];
 
-function cleanTrustedUrl(value: unknown) {
+function cleanCoverUrl(value: unknown) {
   const raw = String(value || '').trim();
   if (!raw) return '';
   try {
     const parsed = new URL(raw);
     if (parsed.protocol !== 'https:') return '';
     const hostname = parsed.hostname.toLowerCase();
-    return TRUSTED_MEDIA_HOSTS.some(
-      (host) => hostname === host || hostname.endsWith('.' + host),
-    ) ? parsed.toString() : '';
+    if (
+      hostname === 'localhost' ||
+      hostname === 'metadata.google.internal' ||
+      hostname.endsWith('.internal') ||
+      hostname.endsWith('.local') ||
+      /^(10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.)/.test(hostname)
+    ) return '';
+    return parsed.toString();
   } catch {
     return '';
   }
@@ -54,9 +59,9 @@ Deno.serve(async (req) => {
     }
     if (body?.description !== undefined) patch.description = String(body.description || '').slice(0, 2000);
     if (body?.image_url !== undefined) {
-      const imageUrl = body.image_url ? cleanTrustedUrl(body.image_url) : '';
+      const imageUrl = body.image_url ? cleanCoverUrl(body.image_url) : '';
       if (body.image_url && !imageUrl) {
-        return Response.json({ error: 'Cover art must come from trusted upload storage' }, { status: 400 });
+        return Response.json({ error: 'Cover art URL must be a valid public HTTPS URL' }, { status: 400 });
       }
       patch.image_url = imageUrl || null;
     }

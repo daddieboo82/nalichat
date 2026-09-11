@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
 
     let membershipGranted = false;
     try {
-    if (project.owner_id !== user.id) {
+      if (project.owner_id !== user.id) {
       const collaboratorIds = Array.from(new Set([...(project.collaborator_ids || []), user.id]));
       const roles = { ...(project.collaborator_roles || {}), [user.id]: invite.role };
       const editorIds = new Set(project.editor_ids || []);
@@ -66,6 +66,9 @@ Deno.serve(async (req) => {
         collaborator_roles: roles,
         editor_ids: Array.from(editorIds),
       });
+      // Project membership is the authoritative grant. Once this succeeds the
+      // invite use must remain consumed even if a later child-sync repair fails.
+      membershipGranted = true;
 
       // Keep child-record access in sync for already-existing collaborative data.
       for (const entityName of ['Track', 'TrackVersion', 'SharedFile', 'Folder', 'Milestone']) {
@@ -84,7 +87,6 @@ Deno.serve(async (req) => {
           await entity.update(row.id, patch);
         }
       }
-      membershipGranted = true;
     }
 
     return Response.json(

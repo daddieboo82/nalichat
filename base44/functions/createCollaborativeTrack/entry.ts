@@ -53,34 +53,31 @@ Deno.serve(async (req) => {
     let accessUserIds = [user.id];
     let editUserIds = [user.id];
 
-    try {
-      const project = await entities.Project.get(projectId);
-      if (project) {
-        const canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
-        if (!canEdit) return Response.json({ error: 'Viewer access cannot create tracks' }, { status: 403 });
-        accessUserIds = Array.from(new Set([
-          project.owner_id,
-          ...(project.collaborator_ids || []),
-          user.id,
-        ].filter(Boolean)));
-        editUserIds = Array.from(new Set([
-          project.owner_id,
-          ...(project.editor_ids || []),
-          user.id,
-        ].filter(Boolean)));
-      }
-    } catch {
+    const project = await entities.Project.get(projectId).catch(() => null);
+    if (project) {
+      const canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
+      if (!canEdit) return Response.json({ error: 'Viewer access cannot create tracks' }, { status: 403 });
+      accessUserIds = Array.from(new Set([
+        project.owner_id,
+        ...(project.collaborator_ids || []),
+        user.id,
+      ].filter(Boolean)));
+      editUserIds = Array.from(new Set([
+        project.owner_id,
+        ...(project.editor_ids || []),
+        user.id,
+      ].filter(Boolean)));
+    } else {
       // Chat-session tracks use the parent Message ID as project_id.
-      try {
-        const message = await entities.Message.get(projectId);
-        if (!message?.participant_ids?.includes(user.id)) {
-          return Response.json({ error: 'Forbidden' }, { status: 403 });
-        }
-        accessUserIds = message.participant_ids;
-        editUserIds = message.participant_ids;
-      } catch {
+      const message = await entities.Message.get(projectId).catch(() => null);
+      if (!message) {
         return Response.json({ error: 'Project/session not found' }, { status: 404 });
       }
+      if (!message?.participant_ids?.includes(user.id)) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      accessUserIds = message.participant_ids;
+      editUserIds = message.participant_ids;
     }
 
     const fileUrl = body?.file_url ? cleanUploadedMediaUrl(body.file_url) : '';

@@ -28,7 +28,7 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
       (u.display_name || u.full_name || "").toLowerCase().includes(query) ||
       (u.email || "").toLowerCase().includes(query) ||
       (u.phone || "").toLowerCase().includes(query) ||
-      (u.role || "").toLowerCase().includes(query)
+      (u.artist_role || (["artist", "producer", "engineer", "ar"].includes(u.role) ? u.role : "")).toLowerCase().includes(query)
     );
   });
 

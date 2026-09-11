@@ -63,9 +63,12 @@ describe('release configuration', () => {
 
     expect(checkout).toContain('trial_claim_id: requestKey');
     expect(checkout).not.toContain('trial_used_at: now');
-    expect(checkout).toContain('!user.trial_used_at && user.trial_claim_id === requestKey');
+    expect(checkout).toContain('stripe_checkout_claim_id: requestKey');
     expect(webhook).toContain('trialUsedAt');
     expect(webhook).toContain('trial_used_at: trialUsedAt');
+    expect(webhook).toContain('trial_claim_id: null');
+    expect(webhook).toContain('stripe_checkout_claim_id: null');
+    expect(webhook).toContain('stripe_checkout_claimed_at: null');
   });
 
   it('does not expose Studio tracks or shared files through globally-open RLS', async () => {

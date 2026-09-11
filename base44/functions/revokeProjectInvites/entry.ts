@@ -40,15 +40,26 @@ Deno.serve(async (req) => {
 
     const filters: Record<string, unknown> = { project_id: project.id };
     if (role) filters.role = role;
-    const invites = await entities.ProjectInvite.filter(filters);
+    let revoked = 0;
+    while (true) {
+      const invites = await entities.ProjectInvite.filter(
+        filters,
+        '-created_date',
+        200,
+      );
+      if (invites.length === 0) break;
 
-    for (const invite of invites) {
-      await entities.ProjectInvite.delete(invite.id);
+      for (const invite of invites) {
+        await entities.ProjectInvite.delete(invite.id);
+        revoked += 1;
+      }
+
+      if (invites.length < 200) break;
     }
 
     return Response.json({
       success: true,
-      revoked: invites.length,
+      revoked,
       role,
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {

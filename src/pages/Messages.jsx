@@ -321,10 +321,13 @@ export default function Messages() {
         c.type === "dm" && c.participant_ids?.includes(otherUser.id) && c.participant_ids?.length === 2
       );
       if (existing) { handleSelectConv(existing.id); return; }
-      const conv = await base44.entities.Conversation.create({
-        type: "dm",
-        participant_ids: [currentUser.id, otherUser.id],
+      const created = await base44.functions.invoke("manageConversation", {
+        action: "create_dm",
+        participant_ids: [otherUser.id],
       });
+      if (created?.data?.error) throw new Error(created.data.error);
+      const conv = created?.data?.conversation;
+      if (!conv?.id) throw new Error("Conversation was not created");
       await queryClient.invalidateQueries({ queryKey: ["conversations"] });
       handleSelectConv(conv.id);
     } catch (err) {
@@ -335,11 +338,14 @@ export default function Messages() {
   const createGroup = async ({ name, participant_ids }) => {
     if (!currentUser?.id || !participant_ids?.length) return;
     try {
-      const conv = await base44.entities.Conversation.create({
-        type: "group",
+      const created = await base44.functions.invoke("manageConversation", {
+        action: "create_group",
         name,
-        participant_ids: [currentUser.id, ...participant_ids],
+        participant_ids,
       });
+      if (created?.data?.error) throw new Error(created.data.error);
+      const conv = created?.data?.conversation;
+      if (!conv?.id) throw new Error("Group was not created");
       await queryClient.invalidateQueries({ queryKey: ["conversations"] });
       handleSelectConv(conv.id);
     } catch (err) {

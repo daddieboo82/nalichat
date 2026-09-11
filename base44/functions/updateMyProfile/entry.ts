@@ -60,7 +60,6 @@ Deno.serve(async (req) => {
       if (!VALID_NALI_LEVELS.has(level)) return Response.json({ error: 'Invalid Nali presence level' }, { status: 400 });
       patch.nali_presence_level = level;
     }
-    if (body?.onboarding_completed !== undefined) patch.onboarding_completed = Boolean(body.onboarding_completed);
     if (body?.welcome_tour_completed !== undefined) patch.welcome_tour_completed = Boolean(body.welcome_tour_completed);
     if (body?.avatar_url !== undefined) {
       const avatar = body.avatar_url ? cleanUploadedAvatar(body.avatar_url) : '';

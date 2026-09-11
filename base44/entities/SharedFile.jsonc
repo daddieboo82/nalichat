@@ -73,6 +73,14 @@
           }
         }
       }
+    },
+    "edit_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Users allowed to modify or delete this file. Viewer-only collaborators are excluded."
     }
   },
   "required": [
@@ -102,10 +110,28 @@
       ]
     },
     "update": {
-      "data.uploader_id": "{{user.id}}"
+      "$or": [
+        {
+          "data.edit_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     },
     "delete": {
-      "data.uploader_id": "{{user.id}}"
+      "$or": [
+        {
+          "data.edit_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     }
   }
 }

@@ -17,7 +17,12 @@ Deno.serve(async (req) => {
     const milestone = await entities.Milestone.get(milestoneId);
     if (!milestone) return Response.json({ error: 'Milestone not found' }, { status: 404 });
 
-    const canEdit = user.role === 'admin' || (milestone.edit_user_ids || []).includes(user.id);
+    let canEdit = user.role === 'admin';
+    if (!canEdit) {
+      const project = await entities.Project.get(milestone.project_id).catch(() => null);
+      if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
+      canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
+    }
     if (!canEdit) return Response.json({ error: 'Viewer access cannot modify milestones' }, { status: 403 });
 
     if (action === 'delete') {

@@ -173,6 +173,29 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Remove references to the deleted account from other users' contact lists.
+    const inboundContacts = await entities.Contact.filter({ contact_user_id: user.id });
+    for (const contact of inboundContacts) {
+      await entities.Contact.delete(contact.id);
+    }
+
+    // Preserve moderation history while anonymizing both subject and reporter
+    // identity when the deleted account appears in a Violation record.
+    const subjectViolations = await entities.Violation.filter({ user_id: user.id });
+    for (const violation of subjectViolations) {
+      await entities.Violation.update(violation.id, {
+        user_id: tombstoneId,
+        user_name: 'Deleted User',
+      });
+    }
+    const reporterViolations = await entities.Violation.filter({ reported_by_id: user.id });
+    for (const violation of reporterViolations) {
+      await entities.Violation.update(violation.id, {
+        reported_by_id: tombstoneId,
+        reported_by_name: 'Deleted User',
+      });
+    }
+
     // Remove private uploads. Project-linked files are retained for remaining
     // collaborators, but the departed uploader identity is anonymized.
     const uploadedFiles = await entities.SharedFile.filter({ uploader_id: user.id });

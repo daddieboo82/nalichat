@@ -483,6 +483,16 @@ describe('release configuration', () => {
     expect(collaborator).toContain('changed.reverse()');
   });
 
+  it('authorizes project-folder deletion from the current project role', async () => {
+    const deletion = await readText('base44/functions/deleteFolder/entry.ts');
+    expect(deletion).toContain('if (!canEdit && folder.project_id)');
+    expect(deletion).toContain('entities.Project.get(folder.project_id)');
+    expect(deletion).toContain('project.owner_id === user.id');
+    expect(deletion).toContain('(project.editor_ids || []).includes(user.id)');
+    expect(deletion).toContain('canEdit = folder.owner_id === user.id');
+    expect(deletion).not.toContain("|| folder.owner_id === user.id\n      || (folder.edit_user_ids || []).includes(user.id)");
+  });
+
   it('keeps shared-file edit access synchronized with project collaborator roles', async () => {
     const collaborator = await readText('base44/functions/manageProjectCollaborator/entry.ts');
     expect(collaborator).toContain('edit_user_ids: Array.from(editUserIds)');

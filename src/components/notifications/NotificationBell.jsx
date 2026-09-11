@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
-import { registerServiceWorker, requestPushPermission, showPushNotification, getPermissionStatus } from "@/lib/pushNotifications";
+import { registerServiceWorker, requestPushPermission, subscribeToRemotePush, showPushNotification, getPermissionStatus } from "@/lib/pushNotifications";
 import { sounds } from "@/hooks/use-sound";
 
 const typeIcon = {
@@ -86,8 +86,15 @@ export default function NotificationBell({ direction = "down" }) {
 
   const enableNotifications = async () => {
     await registerServiceWorker();
-    await requestPushPermission();
+    const granted = await requestPushPermission();
     setPushPermission(getPermissionStatus());
+    if (granted) {
+      try {
+        await subscribeToRemotePush();
+      } catch (error) {
+        console.error('Remote push registration failed:', error);
+      }
+    }
   };
 
   return (

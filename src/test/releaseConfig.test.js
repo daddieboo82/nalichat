@@ -54,6 +54,11 @@ describe('release configuration', () => {
     expect(stats).toContain('user.is_banned');
     expect(stats).toContain('user.timeout_until');
     expect(stats).toContain('Admin operation rate limit exceeded');
+    expect(stats).toContain('const PAGE_SIZE = 500;');
+    expect(stats).toContain("User.filter({}, '-created_date', PAGE_SIZE, skip)");
+    expect(stats).toContain("Subscription.filter({}, '-created_date', PAGE_SIZE, skip)");
+    expect(stats).not.toContain('Subscription.filter({});');
+    expect(stats).not.toContain('User.filter({});');
   });
 
   it('moderation-gates and bounds privileged maintenance utilities', async () => {

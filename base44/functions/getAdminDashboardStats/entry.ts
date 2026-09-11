@@ -1,6 +1,53 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+const PAGE_SIZE = 500;
+
+async function countUsers(entities: any): Promise<number> {
+  let total = 0;
+  for (let skip = 0; ; skip += PAGE_SIZE) {
+    const page = await entities.User.filter({}, '-created_date', PAGE_SIZE, skip);
+    total += page.length;
+    if (page.length < PAGE_SIZE) return total;
+  }
+}
+
+async function aggregateSubscriptions(entities: any) {
+  const counts = {
+    totalSubscriptions: 0,
+    activeSubscriptions: 0,
+    trialSubscriptions: 0,
+    pendingSubscriptions: 0,
+    canceledSubscriptions: 0,
+    premiumSubscriptions: 0,
+    premiumPlusSubscriptions: 0,
+  };
+  for (let skip = 0; ; skip += PAGE_SIZE) {
+    const page = await entities.Subscription.filter({}, '-created_date', PAGE_SIZE, skip);
+    counts.totalSubscriptions += page.length;
+    for (const subscription of page) {
+      if (subscription.status === 'active') counts.activeSubscriptions += 1;
+      if (subscription.status === 'trial' || subscription.status === 'trialing') {
+        counts.trialSubscriptions += 1;
+      }
+      if (subscription.status === 'pending') counts.pendingSubscriptions += 1;
+      if (subscription.status === 'canceled' || subscription.status === 'ended') {
+        counts.canceledSubscriptions += 1;
+      }
+      if (subscription.status === 'active' && subscription.plan === 'premium') {
+        counts.premiumSubscriptions += 1;
+      }
+      if (
+        subscription.status === 'active'
+        && ['premium_plus', 'pro', 'pro_filesharing'].includes(subscription.plan)
+      ) {
+        counts.premiumPlusSubscriptions += 1;
+      }
+    }
+    if (page.length < PAGE_SIZE) return counts;
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -30,35 +77,15 @@ Deno.serve(async (req) => {
 
     // Aggregate only. The admin dashboard does not need raw user emails, IDs,
     // purchase rows, or subscription records to render its health metrics.
-    const subscriptions = await base44.asServiceRole.entities.Subscription.filter({});
-    const users = await base44.asServiceRole.entities.User.filter({});
-
-    const activeSubscriptions = subscriptions.filter((s) => s.status === 'active').length;
-    const trialSubscriptions = subscriptions.filter(
-      (s) => s.status === 'trial' || s.status === 'trialing',
-    ).length;
-    const pendingSubscriptions = subscriptions.filter((s) => s.status === 'pending').length;
-    const canceledSubscriptions = subscriptions.filter(
-      (s) => s.status === 'canceled' || s.status === 'ended',
-    ).length;
-    const premiumSubscriptions = subscriptions.filter(
-      (s) => s.status === 'active' && s.plan === 'premium',
-    ).length;
-    const premiumPlusSubscriptions = subscriptions.filter(
-      (s) => s.status === 'active'
-        && (s.plan === 'premium_plus' || s.plan === 'pro' || s.plan === 'pro_filesharing'),
-    ).length;
+    const [totalUsers, subscriptionStats] = await Promise.all([
+      countUsers(base44.asServiceRole.entities),
+      aggregateSubscriptions(base44.asServiceRole.entities),
+    ]);
 
     return Response.json({
       stats: {
-        totalUsers: users.length,
-        totalSubscriptions: subscriptions.length,
-        activeSubscriptions,
-        trialSubscriptions,
-        pendingSubscriptions,
-        canceledSubscriptions,
-        premiumSubscriptions,
-        premiumPlusSubscriptions,
+        totalUsers,
+        ...subscriptionStats,
       },
     });
   } catch (error) {

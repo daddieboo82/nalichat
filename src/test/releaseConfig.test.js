@@ -41,10 +41,62 @@ describe('release configuration', () => {
     expect(version.properties.access_user_ids).toBeTruthy();
     expect(sharedFile.properties.access_user_ids).toBeTruthy();
     expect(folder.properties.access_user_ids).toBeTruthy();
+    expect(track.properties.edit_user_ids).toBeTruthy();
+    expect(version.properties.edit_user_ids).toBeTruthy();
+    expect(sharedFile.properties.edit_user_ids).toBeTruthy();
+    expect(folder.properties.edit_user_ids).toBeTruthy();
     expect(track.rls.read).not.toBeNull();
     expect(version.rls.read).not.toBeNull();
     expect(sharedFile.rls.read).not.toBeNull();
     expect(folder.rls.read).not.toBeNull();
+    expect(JSON.stringify(track.rls.update)).toContain('edit_user_ids');
+    expect(JSON.stringify(version.rls.update)).toContain('edit_user_ids');
+    expect(JSON.stringify(sharedFile.rls.update)).toContain('edit_user_ids');
+    expect(JSON.stringify(folder.rls.update)).toContain('edit_user_ids');
+  });
+
+
+  it('keeps conversation, voting, notification, and comment mutations server-authoritative', async () => {
+    const conversation = await readJson('base44/entities/Conversation.jsonc');
+    const vote = await readJson('base44/entities/ChallengeVote.jsonc');
+    const notification = await readJson('base44/entities/Notification.jsonc');
+    const comment = await readJson('base44/entities/TrackComment.jsonc');
+
+    expect(conversation.properties.is_public).toBeTruthy();
+    expect(conversation.rls.update?.user_condition?.role).toBe('admin');
+    expect(conversation.rls.delete?.user_condition?.role).toBe('admin');
+    expect(vote.rls.create?.user_condition?.role).toBe('admin');
+    expect(notification.rls.create?.user_condition?.role).toBe('admin');
+    expect(comment.rls.create?.user_condition?.role).toBe('admin');
+    expect(comment.rls.read?.user_condition?.role).toBe('admin');
+  });
+
+  it('protects collaboration role fields from editor self-escalation', async () => {
+    const project = await readJson('base44/entities/Project.jsonc');
+    for (const field of ['owner_id', 'collaborator_ids', 'collaborator_roles', 'editor_ids']) {
+      expect(project.properties[field]?.rls?.write).toBeTruthy();
+    }
+
+    for (const path of [
+      'base44/entities/Track.jsonc',
+      'base44/entities/TrackVersion.jsonc',
+      'base44/entities/Folder.jsonc',
+      'base44/entities/Milestone.jsonc',
+      'base44/entities/SharedFile.jsonc',
+    ]) {
+      const schema = await readJson(path);
+      for (const field of ['access_user_ids', 'edit_user_ids']) {
+        if (schema.properties[field]) {
+          expect(schema.properties[field].rls?.write?.user_condition?.role).toBe('admin');
+        }
+      }
+    }
+  });
+
+  it('protects challenge vote totals and moderation status from submitter writes', async () => {
+    const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
+    expect(submission.properties.vote_count.rls?.write?.user_condition?.role).toBe('admin');
+    expect(submission.properties.status.rls?.write?.user_condition?.role).toBe('admin');
   });
 
   it('keeps the PWA manifest scoped to the serving origin', async () => {

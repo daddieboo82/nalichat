@@ -74,7 +74,8 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
         views: 0,
       });
     } catch (err) {
-      console.error(err);
+      console.error("Track release failed:", err);
+      toast.error(err?.message || "Track release failed. Your selections are still here so you can retry.");
       setLoading(false);
       return;
     }

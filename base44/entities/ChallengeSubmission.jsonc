@@ -28,7 +28,15 @@
     },
     "vote_count": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "source_type": {
       "type": "string",
@@ -63,7 +71,15 @@
         "approved",
         "rejected"
       ],
-      "default": "approved"
+      "default": "approved",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "share_url": {
       "type": "string"

@@ -71,7 +71,6 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
         external_url,
         file_format: file_format || undefined,
         device_type: detectDevice(),
-        status: "approved",
       });
 
       toast.success("Remix submitted! Good luck 🎧");

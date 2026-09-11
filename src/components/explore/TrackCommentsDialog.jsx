@@ -26,7 +26,15 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
 
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ["track-comments", post?.id],
-    queryFn: () => base44.entities.TrackComment.filter({ track_id: post.id }, "timestamp", 100),
+    queryFn: async () => {
+      const res = await base44.functions.invoke("trackComments", {
+        action: "list",
+        parentType: "art_post",
+        parentId: post.id,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.comments || [];
+    },
     enabled: !!post?.id && open,
   });
 
@@ -69,14 +77,14 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
       // Notifying the track creator is handled server-side by the
       // notifyOnTrackComment automation — no client-side notify() call here,
       // since a client can't create a Notification for another user (RLS).
-      await base44.entities.TrackComment.create({
-        track_id: post.id,
-        author_id: currentUser.id,
-        author_name: currentUser.display_name || currentUser.full_name,
-        author_avatar: currentUser.avatar_url,
+      const res = await base44.functions.invoke("trackComments", {
+        action: "create",
+        parentType: "art_post",
+        parentId: post.id,
         text: text.trim(),
         timestamp: currentTime,
       });
+      if (res?.data?.error) throw new Error(res.data.error);
     },
     onSuccess: () => {
       setText("");

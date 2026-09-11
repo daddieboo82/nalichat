@@ -4,7 +4,15 @@
   "properties": {
     "project_id": {
       "type": "string",
-      "description": "ID of the parent Project"
+      "description": "ID of the parent Project",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "title": {
       "type": "string",
@@ -36,7 +44,15 @@
       "default": "medium"
     },
     "created_by_id": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "access_user_ids": {
       "type": "array",
@@ -44,7 +60,15 @@
         "type": "string"
       },
       "default": [],
-      "description": "Project members allowed to read and edit this milestone"
+      "description": "Project members allowed to read and edit this milestone",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "edit_user_ids": {
       "type": "array",
@@ -52,7 +76,15 @@
         "type": "string"
       },
       "default": [],
-      "description": "Project members allowed to modify this record. Viewer-only collaborators are excluded."
+      "description": "Project members allowed to modify this record. Viewer-only collaborators are excluded.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [
@@ -83,9 +115,6 @@
     "update": {
       "$or": [
         {
-          "data.created_by_id": "{{user.id}}"
-        },
-        {
           "data.edit_user_ids": "{{user.id}}"
         },
         {
@@ -97,9 +126,6 @@
     },
     "delete": {
       "$or": [
-        {
-          "data.created_by_id": "{{user.id}}"
-        },
         {
           "data.edit_user_ids": "{{user.id}}"
         },

@@ -47,6 +47,13 @@ async function checkoutRecordId(userId: string, requestKey: string): Promise<str
 }
 
 Deno.serve(async (req) => {
+  let cleanupBase44: any = null;
+  let cleanupUserId = '';
+  let cleanupRequestKey = '';
+  let cleanupPendingSubscriptionId = '';
+  let cleanupTrialClaimed = false;
+  let cleanupSessionCreated = false;
+
   if (req.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
@@ -55,12 +62,14 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const sku = resolveStripeSku(body?.sku, (name) => Deno.env.get(name));
     const requestKey = validateCheckoutIdempotencyKey(body?.idempotencyKey);
+    cleanupRequestKey = requestKey;
     const appBaseUrl = Deno.env.get('APP_BASE_URL');
     if (!appBaseUrl) throw new Error('Missing APP_BASE_URL');
     const callbackUrls = resolveCheckoutUrls(body?.callbackDestinations, appBaseUrl);
     const environment = stripeEnvironment(Deno.env.get('STRIPE_ENVIRONMENT'));
 
     const base44 = createClientFromRequest(req);
+    cleanupBase44 = base44;
     let user;
     try {
       user = await base44.auth.me();
@@ -70,6 +79,7 @@ Deno.serve(async (req) => {
     if (!user?.id) {
       return Response.json({ error: 'Authentication required for subscriptions' }, { status: 401 });
     }
+    cleanupUserId = user.id;
 
     const subscriptions = await base44.asServiceRole.entities.Subscription.filter({
       user_id: user.id,
@@ -204,6 +214,7 @@ Deno.serve(async (req) => {
         const refreshedUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
         trialApplied = refreshedUsers.length === 1
           && refreshedUsers[0].trial_claim_id === requestKey;
+        cleanupTrialClaimed = trialApplied;
       }
 
       const recordId = await checkoutRecordId(user.id, requestKey);
@@ -237,6 +248,8 @@ Deno.serve(async (req) => {
       }
     }
 
+    cleanupPendingSubscriptionId = pendingSubscription?.id || '';
+
     let session;
     try {
       session = await stripeRequest(
@@ -262,6 +275,7 @@ Deno.serve(async (req) => {
           idempotencyKey: stripeCheckoutIdempotencyKey(user.id, requestKey),
         },
       );
+      cleanupSessionCreated = true;
     } catch (error) {
       await base44.asServiceRole.entities.Subscription.update(pendingSubscription.id, {
         status: 'incomplete',
@@ -288,6 +302,43 @@ Deno.serve(async (req) => {
       reused: false,
     });
   } catch (error) {
+    if (
+      cleanupBase44
+      && cleanupUserId
+      && cleanupRequestKey
+      && !cleanupSessionCreated
+    ) {
+      try {
+        await cleanupBase44.asServiceRole.entities.User.updateMany(
+          {
+            id: cleanupUserId,
+            stripe_checkout_claim_id: cleanupRequestKey,
+          },
+          {
+            $set: {
+              stripe_checkout_claim_id: null,
+              stripe_checkout_claimed_at: null,
+              ...(cleanupTrialClaimed ? {
+                trial_used_at: null,
+                trial_claim_id: null,
+              } : {}),
+            },
+          },
+        );
+
+        if (cleanupTrialClaimed && cleanupPendingSubscriptionId) {
+          await cleanupBase44.asServiceRole.entities.Subscription.update(
+            cleanupPendingSubscriptionId,
+            {
+              trial_used_at: null,
+            },
+          );
+        }
+      } catch (cleanupError) {
+        console.error('Subscription checkout cleanup failed:', cleanupError);
+      }
+    }
+
     const message = errorMessage(error);
     console.error('Subscription checkout error:', error);
     return Response.json(

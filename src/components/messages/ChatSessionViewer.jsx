@@ -88,8 +88,16 @@ export default function ChatSessionViewer({ message, currentUser }) {
         <MultiTrackEditor
           tracks={tracks}
           selectedProject={{ id: message.id, title: message.text || "Live Session" }}
-          onTrackUpdate={(id, data) => base44.entities.Track.update(id, data)}
-          onTrackDelete={(id) => base44.entities.Track.delete(id)}
+          onTrackUpdate={async (id, data) => {
+            const res = await base44.functions.invoke("mutateTrack", { action: "update", trackId: id, data });
+            if (res?.data?.error) throw new Error(res.data.error);
+            return res?.data?.track;
+          }}
+          onTrackDelete={async (id) => {
+            const res = await base44.functions.invoke("mutateTrack", { action: "delete", trackId: id });
+            if (res?.data?.error) throw new Error(res.data.error);
+            return res?.data;
+          }}
           canEdit={true}
           currentUser={currentUser}
         />

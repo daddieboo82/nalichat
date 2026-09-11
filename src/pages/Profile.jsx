@@ -80,7 +80,7 @@ export default function Profile() {
       artist_role: form.artist_role,
       location: form.location,
       website: form.website,
-      genres: form.genress || [],
+      genres: form.genres || [],
     });
     const updated = await base44.auth.me();
     setCurrentUser(updated);
@@ -124,7 +124,7 @@ export default function Profile() {
 
   const toggleGenre = (g) => {
     const current = form.genres || [];
-    setForm(f => ({ ...f, genre: current.includes(g) ? current.filter(x => x !== g) : [...current, g] }));
+    setForm(f => ({ ...f, genres: current.includes(g) ? current.filter(x => x !== g) : [...current, g] }));
   };
 
   const totalLikes = myPosts.reduce((sum, p) => sum + (p.likes || 0), 0);

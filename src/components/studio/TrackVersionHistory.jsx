@@ -43,6 +43,7 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
       solo: track.solo,
       saved_by_id: currentUser?.id,
       saved_by_name: currentUser?.full_name || "Unknown",
+      access_user_ids: track.access_user_ids || [track.uploaded_by, currentUser?.id].filter(Boolean),
     });
     setLabel("");
     setSaving(false);

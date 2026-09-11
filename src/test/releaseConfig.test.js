@@ -781,6 +781,12 @@ describe('release configuration', () => {
     expect(messages).toContain('refetchInterval: 30_000');
   });
 
+  it('blocks publish XP claims while banned or timed out', async () => {
+    const reward = await readText('base44/functions/claimPublishedPostReward/entry.ts');
+    expect(reward).toContain('if (user.is_banned)');
+    expect(reward).toContain("error: 'timed_out'");
+  });
+
   it('avoids raw realtime payload subscriptions for chat and presence data', async () => {
     const messages = await readText('src/pages/Messages.jsx');
     const typing = await readText('src/hooks/useTypingIndicator.js');

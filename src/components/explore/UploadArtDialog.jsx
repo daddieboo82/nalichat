@@ -79,16 +79,14 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
       return;
     }
     
-    try {
-      // Award XP
-      const xp = (currentUser.xp || 0) + 50;
-      const level = Math.floor(xp / 200) + 1;
-      await base44.auth.updateMe({ xp, level, total_posts: (currentUser.total_posts || 0) + 1 });
-    } catch (err) {
-      console.error("Failed to update XP:", err);
+    if (createdPost?.id) {
+      try {
+        await base44.functions.invoke("claimPublishedPostReward", { postId: createdPost.id });
+      } catch (err) {
+        console.error("Failed to award publish XP:", err);
+      }
+      recordSquadActivity("art_post", createdPost.id);
     }
-
-    if (createdPost?.id) recordSquadActivity("art_post", createdPost.id);
 
     setLoading(false);
     onSuccess();

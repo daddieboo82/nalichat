@@ -65,3 +65,45 @@ export async function showPushNotification({ title, body, url = '/' }) {
     new Notification(title, { body, icon: '/favicon.ico' });
   }
 }
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+}
+
+export async function subscribeToRemotePush() {
+  if (!isPushSupported() || Notification.permission !== 'granted') {
+    return { subscribed: false, reason: 'permission' };
+  }
+
+  const reg = await registerServiceWorker();
+  if (!reg?.pushManager) {
+    return { subscribed: false, reason: 'unsupported' };
+  }
+
+  const { base44 } = await import('@/api/base44Client');
+  const configResponse = await base44.functions.invoke('getPushConfig', {});
+  const config = configResponse?.data ?? configResponse;
+  if (!config?.configured || !config?.publicKey) {
+    return { subscribed: false, reason: 'not_configured' };
+  }
+
+  let subscription = await reg.pushManager.getSubscription();
+  if (!subscription) {
+    subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(config.publicKey),
+    });
+  }
+
+  const json = subscription.toJSON();
+  await base44.functions.invoke('registerPushSubscription', {
+    endpoint: json.endpoint,
+    keys: json.keys,
+    userAgent: navigator.userAgent,
+  });
+
+  return { subscribed: true };
+}

@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Pencil, Sparkles, Volume2, Share2, Flag } from "lucide-react";
+import { Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Pencil, Sparkles, Volume2, Share2, Flag, RefreshCw, AlertCircle } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -144,7 +144,7 @@ const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.l
 
 import React from "react";
 
-export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM }) {
+export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onRetry, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM }) {
   const { hasEntitlement } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
   const canTranscribe = hasEntitlement("voice.transcription");
@@ -305,6 +305,25 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
             </div>
           );
         })()}
+
+        {isOwn && message._deliveryState === "failed" && (
+          <div className="mt-1 flex items-center gap-2 text-[11px] text-destructive" role="alert">
+            <AlertCircle className="w-3 h-3" />
+            <span>{message._sendError || "Message failed to send."}</span>
+            {message._retryable && onRetry && (
+              <button
+                type="button"
+                onClick={() => onRetry(message)}
+                className="inline-flex items-center gap-1 font-semibold hover:underline"
+                title="Retry message"
+                aria-label="Retry message"
+              >
+                <RefreshCw className="w-3 h-3" />
+                Retry
+              </button>
+            )}
+          </div>
+        )}
 
         <div className={cn("flex items-center gap-1.5 mt-1", isOwn ? "justify-end mr-1" : "ml-1")}>
           <p className="chat-delivery-state text-[11px] text-muted-foreground/50 font-medium">

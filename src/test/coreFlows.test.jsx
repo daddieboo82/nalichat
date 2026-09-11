@@ -233,6 +233,12 @@ describe('core usage flow coverage', () => {
       if (name === 'toggleLike') {
         return { data: { liked: true, likes: 1 } };
       }
+      if (name === 'createArtPost') {
+        return { data: { success: true, post: { id: 'post-1', ...payload } } };
+      }
+      if (name === 'publishStudioBounce') {
+        return { data: { success: true, post: { id: 'post-1', ...payload } } };
+      }
       if (name === 'claimPublishedPostReward') {
         return { data: { success: true, awarded: true, xp: 50 } };
       }
@@ -246,7 +252,6 @@ describe('core usage flow coverage', () => {
     });
     mockBase44.entities.ArtPost.list.mockResolvedValue([]);
     mockBase44.entities.ArtPost.filter.mockResolvedValue([]);
-    mockBase44.entities.ArtPost.create.mockResolvedValue({ id: 'post-1' });
     mockBase44.integrations.Core.UploadFile.mockResolvedValue({ file_url: 'https://cdn.example.com/file.mp3' });
     mockBase44.auth.updateMe.mockResolvedValue(undefined);
   });
@@ -371,12 +376,10 @@ describe('core usage flow coverage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Publish Track' }));
 
     await waitFor(() => {
-      expect(mockBase44.entities.ArtPost.create).toHaveBeenCalledWith(expect.objectContaining({
+      expect(mockBase44.functions.invoke).toHaveBeenCalledWith('createArtPost', expect.objectContaining({
         title: 'first-track',
         file_url: 'https://cdn.example.com/file.mp3',
         is_explicit: true,
-        creator_id: 'user-1',
-        creator_name: 'Fresh',
       }));
       expect(mockBase44.functions.invoke).toHaveBeenCalledWith('claimPublishedPostReward', { postId: 'post-1' });
       expect(mockBase44.functions.invoke).toHaveBeenCalledWith('recordSquadActivity', {
@@ -406,7 +409,7 @@ describe('core usage flow coverage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Export & Publish Track' }));
 
     await waitFor(() => {
-      expect(mockBase44.entities.ArtPost.create).toHaveBeenCalledWith(expect.objectContaining({
+      expect(mockBase44.functions.invoke).toHaveBeenCalledWith('publishStudioBounce', expect.objectContaining({
         title: 'Night Drive',
         is_explicit: true,
         file_url: 'https://cdn.example.com/file.mp3',
@@ -417,7 +420,11 @@ describe('core usage flow coverage', () => {
   it('keeps the upload dialog open when publish fails so the user can retry', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     try {
-      mockBase44.entities.ArtPost.create.mockRejectedValueOnce(new Error('upload failed'));
+      mockBase44.functions.invoke.mockImplementation(async (name, payload) => {
+        if (name === 'createArtPost') throw new Error('upload failed');
+        if (name === 'listPublicUsers') return { data: { users: [] } };
+        return { data: {} };
+      });
       const onSuccess = vi.fn();
       const { container } = renderWithProviders(
         <UploadArtDialog

@@ -49,15 +49,14 @@ export default function PlaylistDetail() {
   const uploadMutation = useMutation({
     mutationFn: async (file) => {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const newPost = await base44.entities.ArtPost.create({
+      const published = await base44.functions.invoke("createArtPost", {
         title: file.name,
         file_url,
-        creator_id: currentUser.id,
-        creator_name: currentUser.display_name || currentUser.full_name,
-        creator_avatar: currentUser.avatar_url,
         medium: "original",
-        is_explicit: false
+        is_explicit: false,
       });
+      if (published?.data?.error) throw new Error(published.data.error);
+      const newPost = published?.data?.post;
       const updated = {
         ...playlist,
         track_ids: [...(playlist.track_ids || []), newPost.id]

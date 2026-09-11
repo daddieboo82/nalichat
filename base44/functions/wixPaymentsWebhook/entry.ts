@@ -55,131 +55,13 @@ Deno.serve(async (req) => {
 
     console.log('Wix webhook received:', event.eventType || 'unknown');
 
-    // Handle order approved (subscription activated)
+    // New subscription checkout is Stripe-only. Do not activate or mutate
+    // entitlements from legacy Wix order-approved events. We still accept the
+    // signed webhook so Wix does not retry forever, while cancellation/expiry
+    // events below continue to retire existing legacy Wix subscriptions.
     if (event.eventType === 'wix.ecom.v1.order_approved') {
-      try {
-        const order = eventData.actionEvent.body.order;
-        const checkoutId = order?.checkoutId;
-        if (!checkoutId) {
-          console.warn('No checkoutId in order_approved event');
-          return Response.json({ success: true });
-        }
-
-        // Find the pending subscription by checkout ID
-        let subs = await base44.asServiceRole.entities.Subscription.filter({
-          checkout_id: checkoutId,
-        });
-
-        if (subs.length === 0) {
-          try {
-            const subById = await base44.asServiceRole.entities.Subscription.get(checkoutId);
-            if (subById) subs = [subById];
-          } catch (e) {
-            // Ignore format/not found errors
-          }
-        }
-
-        if (subs.length === 0) {
-          console.warn('No pending subscription found for checkout:', checkoutId);
-          return Response.json({ success: true });
-        }
-
-        const sub = subs[0];
-        if (sub.provider && sub.provider !== 'wix') {
-          console.warn('Ignoring Wix event for non-Wix subscription:', checkoutId);
-          return Response.json({ success: true });
-        }
-
-        // Idempotency: if already activated, ack and return — Wix redelivers
-        if (sub.status === 'active') {
-          console.log('Subscription already active, skipping:', checkoutId);
-          return Response.json({ success: true });
-        }
-
-        let subscriptionId = null;
-        for (const lineItem of order.lineItems || []) {
-          if (lineItem.subscriptionInfo) {
-            subscriptionId = lineItem.subscriptionInfo.id;
-            break;
-          }
-        }
-
-        // For recurring subscriptions, we expect an ID. 
-        if (sub.plan !== 'trial' && !subscriptionId) {
-          console.warn('No subscriptionInfo.id in order');
-          // It's possible it was a one-time product without subscription, but we'll activate it anyway
-        }
-
-        const WIX_API_KEY = Deno.env.get('WIX_PAYMENTS_API_KEY');
-        const WIX_SITE_ID = Deno.env.get('WIX_PAYMENTS_SITE_ID');
-
-        // Cancel any previous active or pending subscriptions to avoid double billing and inconsistencies
-        const oldSubs = await base44.asServiceRole.entities.Subscription.filter({
-          user_id: sub.user_id
-        });
-
-        for (const oldSub of oldSubs) {
-          if (
-            oldSub.id !== sub.id
-            && (!oldSub.provider || oldSub.provider === 'wix')
-            && (oldSub.status === 'active' || oldSub.status === 'pending')
-          ) {
-            if (oldSub.status === 'active' && oldSub.subscription_id && WIX_API_KEY && WIX_SITE_ID) {
-              try {
-                const cancelRes = await fetch(`https://www.wixapis.com/payments/base44/v1/subscriptions/${oldSub.subscription_id}/cancel`, {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': WIX_API_KEY,
-                    'wix-site-id': WIX_SITE_ID,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    subscription_id: oldSub.subscription_id,
-                    immediate: true
-                  })
-                });
-                if (!cancelRes.ok) {
-                  console.error('Failed to cancel old subscription in Wix:', await cancelRes.text());
-                }
-              } catch (e) {
-                console.error('Error calling Wix cancel API:', e);
-              }
-            }
-            await base44.asServiceRole.entities.Subscription.update(oldSub.id, { status: 'canceled' });
-          }
-        }
-
-        // Update subscription to active
-        await base44.asServiceRole.entities.Subscription.update(sub.id, {
-          status: 'active',
-          provider: 'wix',
-          subscription_id: subscriptionId || null,
-        });
-
-        // Handle one-time purchases (Base44Purchase) — grant access
-        try {
-          const purchases = await base44.asServiceRole.entities.Base44Purchase.filter({ checkoutSessionId: checkoutId });
-          if (purchases.length > 0) {
-            const purchase = purchases[0];
-            if (purchase.status !== 'paid') {
-              await base44.asServiceRole.entities.Base44Purchase.update(purchase.id, {
-                status: 'paid',
-                wix_order_id: order?.id || null,
-                paid_at: new Date().toISOString(),
-              });
-              console.log('Purchase marked paid:', checkoutId);
-            }
-          }
-        } catch (e) {
-          console.error('Failed to process Base44Purchase:', e);
-        }
-
-        console.log('Subscription activated for user:', sub.user_id);
-        return Response.json({ success: true });
-      } catch (err) {
-        console.error('Order approved handler error:', err);
-        return Response.json({ error: err.message }, { status: 500 });
-      }
+      console.warn('Ignoring legacy Wix order approval; Stripe is the subscription system of record');
+      return Response.json({ success: true, ignored: true });
     }
 
     // Handle subscription canceled

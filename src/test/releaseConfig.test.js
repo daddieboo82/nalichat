@@ -194,6 +194,18 @@ describe('release configuration', () => {
     expect(signer).toContain("user.role !== 'admin'");
   });
 
+  it('validates legacy stored media hosts before server-side AI/transcription use', async () => {
+    const mediaSecurity = await readText('base44/shared/mediaSecurity.ts');
+    const transcription = await readText('base44/functions/transcribeMessageAudio/entry.ts');
+    const viralMoment = await readText('base44/functions/generate-viral-moment/entry.ts');
+    const coverArt = await readText('base44/functions/generate-cover-art/entry.ts');
+
+    expect(mediaSecurity).toContain('isTrustedStoredMediaUrl');
+    expect(transcription).toContain('isTrustedStoredMediaUrl(message.file_url)');
+    expect(viralMoment).toContain('isTrustedStoredMediaUrl(message.file_url)');
+    expect(coverArt).toContain('isTrustedStoredMediaUrl(file_url)');
+  });
+
   it('builds invite links from server-configured origins only', async () => {
     const smsInvite = await readText('base44/functions/sendSmsInvite/entry.ts');
     const emailInvite = await readText('base44/functions/send-invite-email/entry.ts');

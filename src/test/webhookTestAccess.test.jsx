@@ -10,8 +10,6 @@ const base44 = vi.hoisted(() => ({
   entities: {
     Subscription: {
       filter: vi.fn(),
-      create: vi.fn(),
-      delete: vi.fn(),
     },
   },
 }));
@@ -41,10 +39,13 @@ describe('WebhookTest access control', () => {
     expect(base44.entities.Subscription.filter).not.toHaveBeenCalled();
   });
 
-  it('allows admins to load the testing interface', async () => {
+  it('allows admins to load the read-only diagnostics interface', async () => {
     base44.auth.me.mockResolvedValue({ id: 'a1', role: 'admin' });
     renderPage();
-    expect(await screen.findByText('Backend Testing Interface')).toBeTruthy();
+    expect(await screen.findByText('Backend Diagnostics')).toBeTruthy();
+    expect(screen.queryByText('Add Mock Active Sub')).toBeNull();
+    expect(screen.queryByText('Add Mock Pending Sub')).toBeNull();
+    expect(screen.queryByText('Clear All')).toBeNull();
     expect(base44.entities.Subscription.filter).toHaveBeenCalledWith({ user_id: 'a1' });
   });
 });

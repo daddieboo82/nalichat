@@ -120,6 +120,15 @@ describe('release configuration', () => {
     );
   });
 
+  it('keeps production webhook diagnostics read-only', async () => {
+    const page = await readText('src/pages/WebhookTest.jsx');
+    expect(page).toContain('Read-only subscription and Stripe webhook diagnostics');
+    expect(page).not.toContain('Subscription.create(');
+    expect(page).not.toContain('Subscription.delete(');
+    expect(page).not.toContain('Add Mock Active Sub');
+    expect(page).not.toContain('Clear All');
+  });
+
   it('bounds subscription status polling and guards full subscription migration', async () => {
     const status = await readText('base44/functions/checkSubscriptionStatus/entry.ts');
     const migrate = await readText('base44/functions/migrateSubscriptions/entry.ts');

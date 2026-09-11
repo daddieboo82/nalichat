@@ -1,24 +1,19 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Webhook, Trash2, ExternalLink, ShieldAlert } from "lucide-react";
-import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
+import { Loader2, Webhook, ExternalLink, ShieldAlert } from "lucide-react";
 
 export default function WebhookTest() {
-  const [loading, setLoading] = useState(false);
   const [subscriptions, setSubscriptions] = useState([]);
   const [fetchingSubs, setFetchingSubs] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [checkingAccess, setCheckingAccess] = useState(true);
-  const queryClient = useQueryClient();
 
   const fetchSubscriptions = async () => {
     setFetchingSubs(true);
     try {
       const user = await base44.auth.me();
-      if (user) {
+      if (user?.role === "admin") {
         const subs = await base44.entities.Subscription.filter({ user_id: user.id });
         setSubscriptions(subs);
       }
@@ -40,91 +35,6 @@ export default function WebhookTest() {
       .finally(() => setCheckingAccess(false));
   }, []);
 
-  const createMockActiveSubscription = async () => {
-    setLoading(true);
-    try {
-      const user = await base44.auth.me();
-      if (user) {
-        await base44.entities.Subscription.create({
-          user_id: user.id,
-          plan: "pro",
-          status: "active",
-          subscription_id: "mock-sub-" + Date.now(),
-        });
-        await fetchSubscriptions();
-        toast.success("Created mock active subscription");
-        queryClient.removeQueries({ queryKey: ['subscription'] });
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to create mock subscription");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createMockPendingSubscription = async () => {
-    setLoading(true);
-    try {
-      const user = await base44.auth.me();
-      if (user) {
-        await base44.entities.Subscription.create({
-          user_id: user.id,
-          plan: "pro",
-          status: "pending",
-          checkout_id: "mock-checkout-" + Date.now(),
-        });
-        await fetchSubscriptions();
-        toast.success("Created mock pending subscription");
-        queryClient.removeQueries({ queryKey: ['subscription'] });
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to create mock pending subscription");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const clearAllSubscriptions = async () => {
-    setLoading(true);
-    try {
-      const user = await base44.auth.me();
-      if (user) {
-        const subs = await base44.entities.Subscription.filter({ user_id: user.id });
-        await Promise.all(subs.map(sub => base44.entities.Subscription.delete(sub.id)));
-        await fetchSubscriptions();
-        toast.success("Cleared all subscriptions");
-        queryClient.removeQueries({ queryKey: ['subscription'] });
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to clear subscriptions");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const removeSubscription = async (id) => {
-    try {
-      setLoading(true);
-      await base44.entities.Subscription.delete(id);
-      toast.success("Subscription removed");
-
-      setSubscriptions(prev => prev.filter(s => s.id !== id));
-
-      setTimeout(() => {
-        fetchSubscriptions();
-        queryClient.removeQueries({ queryKey: ['subscription'] });
-      }, 1000);
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to remove subscription");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (checkingAccess) {
     return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
@@ -134,7 +44,7 @@ export default function WebhookTest() {
       <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center min-h-[50vh]">
         <ShieldAlert className="w-12 h-12 mb-4 opacity-50" />
         <h2 className="text-xl font-bold mb-2">Admins Only</h2>
-        <p>This testing interface is restricted to administrators.</p>
+        <p>This diagnostics interface is restricted to administrators.</p>
       </div>
     );
   }
@@ -146,31 +56,18 @@ export default function WebhookTest() {
           <Webhook className="w-6 h-6 text-primary" />
         </div>
         <div>
-          <h1 className="text-3xl font-heading font-bold">Backend Testing Interface</h1>
-          <p className="text-muted-foreground">Manage test subscriptions and Stripe webhook events</p>
+          <h1 className="text-3xl font-heading font-bold">Backend Diagnostics</h1>
+          <p className="text-muted-foreground">Read-only subscription and Stripe webhook diagnostics</p>
         </div>
       </div>
 
       <div className="grid gap-6">
         <Card className="border-primary/20">
-          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <CardTitle>Subscription Management</CardTitle>
-              <CardDescription>
-                Create mock subscriptions for testing. Real subscriptions are activated by the Stripe webhook when a checkout completes.
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button onClick={createMockActiveSubscription} disabled={loading} variant="outline" size="sm" className="shrink-0">
-                Add Mock Active Sub
-              </Button>
-              <Button onClick={createMockPendingSubscription} disabled={loading} variant="outline" size="sm" className="shrink-0">
-                Add Mock Pending Sub
-              </Button>
-              <Button onClick={clearAllSubscriptions} disabled={loading} variant="destructive" size="sm" className="shrink-0">
-                Clear All
-              </Button>
-            </div>
+          <CardHeader>
+            <CardTitle>Subscription State</CardTitle>
+            <CardDescription>
+              Read-only view of subscription records for your admin account. Billing state is managed only by server-side checkout, webhook, and migration functions.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {fetchingSubs ? (
@@ -179,45 +76,33 @@ export default function WebhookTest() {
               </div>
             ) : subscriptions.length === 0 ? (
               <div className="text-sm text-muted-foreground p-4 bg-secondary/50 rounded-lg">
-                No subscriptions found for your account. Start a checkout flow or add a mock subscription above.
+                No subscription records found for your account.
               </div>
             ) : (
               <div className="space-y-4">
                 {subscriptions.map((sub) => (
-                  <div key={sub.id} className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center p-4 bg-secondary/30 border border-border rounded-lg">
-                    <div>
-                      <div className="font-mono text-xs text-muted-foreground mb-1">ID: {sub.id}</div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold capitalize">{sub.plan} Plan</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          sub.status === 'active' ? 'bg-green-500/20 text-green-500' :
-                          sub.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' :
-                          'bg-red-500/20 text-red-500'
-                        }`}>
-                          {sub.status}
-                        </span>
-                      </div>
-                      {sub.checkout_id && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Checkout: {sub.checkout_id}
-                        </div>
-                      )}
-                      {sub.subscription_id && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Stripe Sub: {sub.subscription_id}
-                        </div>
-                      )}
+                  <div key={sub.id} className="p-4 bg-secondary/30 border border-border rounded-lg">
+                    <div className="font-mono text-xs text-muted-foreground mb-1">ID: {sub.id}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold capitalize">{sub.plan} Plan</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        sub.status === 'active' ? 'bg-green-500/20 text-green-500' :
+                        sub.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' :
+                        'bg-red-500/20 text-red-500'
+                      }`}>
+                        {sub.status}
+                      </span>
                     </div>
-                    <Button
-                      onClick={() => removeSubscription(sub.id)}
-                      disabled={loading}
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-red-500 shrink-0"
-                      title="Remove Entry"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {sub.checkout_id && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Checkout: {sub.checkout_id}
+                      </div>
+                    )}
+                    {sub.subscription_id && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Stripe Sub: {sub.subscription_id}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -229,7 +114,7 @@ export default function WebhookTest() {
           <CardHeader>
             <CardTitle className="text-lg">Stripe Webhook Setup</CardTitle>
             <CardDescription>
-              To test real webhook events, register the endpoint in your Stripe Dashboard.
+              Configure real webhook events in Stripe. This page does not create, modify, or delete subscription records.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -248,7 +133,7 @@ export default function WebhookTest() {
               </div>
               <div className="flex items-start gap-2">
                 <span className="font-mono text-xs bg-secondary px-2 py-1 rounded shrink-0">4</span>
-                <p>Copy the signing secret (<code className="text-xs">whsec_...</code>) and set it as the <code className="text-xs">STRIPE_WEBHOOK_SECRET</code> app secret</p>
+                <p>Set the Stripe signing secret as the <code className="text-xs">STRIPE_WEBHOOK_SECRET</code> app secret.</p>
               </div>
             </div>
           </CardContent>

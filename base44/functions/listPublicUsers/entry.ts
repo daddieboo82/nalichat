@@ -6,25 +6,40 @@ export default async function(req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Service role bypasses built-in User RLS so non-admins can discover other users.
-    const allUsers = await base44.asServiceRole.entities.User.list();
+    const [allUsers, achievements] = await Promise.all([
+      base44.asServiceRole.entities.User.list(),
+      base44.asServiceRole.entities.Achievement.list(),
+    ]);
 
-    // Return only public fields needed for discovery and chat display.
-    const publicUsers = allUsers.map(u => ({
+    const achievementCount = {};
+    for (const achievement of achievements) {
+      achievementCount[achievement.user_id] = (achievementCount[achievement.user_id] || 0) + 1;
+    }
+
+    // Explicit public projection. Never return email, phone, birthdate, Stripe
+    // identifiers, trial state, moderation state, or other account-only fields.
+    const publicUsers = allUsers.map((u) => ({
       id: u.id,
       display_name: u.display_name,
       full_name: u.full_name,
       avatar_url: u.avatar_url,
+      cover_url: u.cover_url,
+      bio: u.bio,
       role: u.role,
+      artist_role: u.artist_role,
       location: u.location,
-      genres: u.genres || [],
-      is_online: u.is_online || false,
+      genres: u.genres || u.genre || [],
+      xp: Number(u.xp || 0),
+      level: Number(u.level || Math.floor(Number(u.xp || 0) / 200) + 1),
+      viral_concepts_generated: Number(u.viral_concepts_generated || 0),
+      achievement_count: achievementCount[u.id] || 0,
+      is_online: Boolean(u.is_online),
       created_date: u.created_date,
     }));
 
     return Response.json({ users: publicUsers });
   } catch (error) {
     console.error('listPublicUsers error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error?.message || 'Could not list public users' }, { status: 500 });
   }
 }

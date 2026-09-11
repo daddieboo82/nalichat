@@ -21,6 +21,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { createClientMessageKey, applyQueuedMessage, applySendSuccess, applySendFailure } from "@/lib/messageCache";
 import { useSubscription } from "@/hooks/useSubscription";
 import { CHAT_THEME_ENTITLEMENT, getChatTheme, resolveEffectiveChatThemeId } from "@/lib/chatThemes";
+import { useLockedChats } from "@/lib/LockedChatsContext";
+import { partitionUserConversations } from "@/lib/lockedChatPolicy";
 
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -28,6 +30,12 @@ export default function Messages() {
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [sidebarTab, setSidebarTab] = useState("chats");
   const { hasEntitlement } = useSubscription();
+  const {
+    isReady: lockedChatsReady,
+    isUnlocked: lockedChatsUnlocked,
+    lockedConversationIds,
+    canAccessConversation,
+  } = useLockedChats();
 
   // Mark a conversation as read (stores timestamp in localStorage for the unread badge).
   const markConversationRead = (convId) => {
@@ -104,7 +112,14 @@ export default function Messages() {
     staleTime: 3000,
   });
 
-  const myConversations = conversations.filter(c => c.participant_ids?.includes(currentUser?.id));
+  const partitionedConversations = lockedChatsReady
+    ? partitionUserConversations(
+        conversations,
+        currentUser?.id,
+        lockedChatsUnlocked ? [] : lockedConversationIds,
+      )
+    : { visible: [], locked: [] };
+  const myConversations = partitionedConversations.visible;
 
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
     queryKey: ["messages", selectedConvId],
@@ -112,7 +127,7 @@ export default function Messages() {
       const msgs = await base44.entities.Message.filter({ conversation_id: selectedConvId }, "-created_date", 200);
       return msgs.reverse();
     },
-    enabled: !!selectedConvId,
+    enabled: !!selectedConvId && lockedChatsReady && canAccessConversation(selectedConvId),
     refetchInterval: 5000,
     staleTime: 3000,
   });
@@ -314,6 +329,13 @@ export default function Messages() {
       throw err;
     }
   };
+
+  useEffect(() => {
+    if (!selectedConvId) return;
+    if (!lockedChatsReady || !canAccessConversation(selectedConvId)) {
+      setSelectedConvId(null);
+    }
+  }, [selectedConvId, lockedChatsReady, lockedChatsUnlocked, lockedConversationIds]);
 
   const selectedConv = myConversations.find(c => c.id === selectedConvId);
   const otherUsers = users.filter(u => u.id !== currentUser?.id);

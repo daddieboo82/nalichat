@@ -17,6 +17,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { AudioPlayerProvider } from '@/lib/AudioPlayerContext';
 import { CartProvider } from '@/lib/CartContext';
 import { NaliPresenceProvider } from '@/lib/NaliPresenceContext';
+import { LockedChatsProvider } from '@/lib/LockedChatsContext';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -314,8 +315,9 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClientInstance}>
         <AuthProvider>
-          <NaliPresenceProvider>
-            <AudioPlayerProvider>
+          <LockedChatsProvider>
+            <NaliPresenceProvider>
+              <AudioPlayerProvider>
               <CartProvider>
                 <MotionConfig reducedMotion={isLowEnd || reduceMotion ? "always" : "user"}>
                   {!loaded && <AppLoader onDone={handleSplashDone} />}
@@ -333,8 +335,9 @@ function App() {
                   <SonnerToaster />
                 </MotionConfig>
               </CartProvider>
-            </AudioPlayerProvider>
-          </NaliPresenceProvider>
+              </AudioPlayerProvider>
+            </NaliPresenceProvider>
+          </LockedChatsProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

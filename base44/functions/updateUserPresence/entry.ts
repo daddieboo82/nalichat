@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -7,6 +8,16 @@ Deno.serve(async (req) => {
 
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const writeRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'user_presence',
+      1800,
+    );
+    if (!writeRate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     const { isOnline } = await req.json();

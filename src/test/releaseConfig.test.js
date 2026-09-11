@@ -252,6 +252,30 @@ describe('release configuration', () => {
   });
 
 
+  it('bounds user-state writes and legacy export signing', async () => {
+    const cases = [
+      ['base44/functions/updateUserPresence/entry.ts', "'user_presence'", 1800],
+      ['base44/functions/completeOnboarding/entry.ts', "'onboarding_complete'", 20],
+      ['base44/functions/setChatTheme/entry.ts', "'chat_theme_update'", 120],
+      ['base44/functions/get-studio-export-url/entry.ts', "'admin_legacy_export_sign'", 120],
+    ];
+
+    for (const [path, key, limit] of cases) {
+      const source = await readText(path);
+      expect(source).toContain('consumeHourlyLimit');
+      expect(source).toContain(key);
+      expect(source).toContain(`${key},\n      ${limit},`);
+      expect(source).toContain('status: 429');
+    }
+
+    const onboarding = await readText('base44/functions/completeOnboarding/entry.ts');
+    const signer = await readText('base44/functions/get-studio-export-url/entry.ts');
+    expect(onboarding).toContain('user.is_banned');
+    expect(onboarding).toContain("error: 'timed_out'");
+    expect(signer).toContain('user.is_banned');
+    expect(signer).toContain("error: 'timed_out'");
+  });
+
   it('keeps costly AI media and legacy export signing behind server gates', async () => {
     const speech = await readText('base44/functions/generate-speech/entry.ts');
     const mastering = await readText('base44/functions/bounceAndMaster/entry.ts');

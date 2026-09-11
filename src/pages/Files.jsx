@@ -210,25 +210,49 @@ export default function Files() {
     mutationFn: async (filesArray) => {
       setUploading(true);
       const currentFolderObj = currentFolderId ? folders.find(f => f.id === currentFolderId) : null;
+      let uploaded = 0;
+      const failures = [];
+
       for (const file of filesArray) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        const created = await base44.functions.invoke("createSharedFileRecord", {
-          name: file.name,
-          file_url,
-          file_type: detectFileType(file),
-          file_size: file.size,
-          folder_id: currentFolderId,
-          project_id: currentFolderObj?.project_id || null,
-        });
-        if (created?.data?.error) throw new Error(created.data.error);
+        try {
+          const { file_url } = await base44.integrations.Core.UploadFile({ file });
+          const created = await base44.functions.invoke("createSharedFileRecord", {
+            name: file.name,
+            file_url,
+            file_type: detectFileType(file),
+            file_size: file.size,
+            folder_id: currentFolderId,
+            project_id: currentFolderObj?.project_id || null,
+          });
+          if (created?.data?.error) throw new Error(created.data.error);
+          uploaded += 1;
+        } catch (error) {
+          failures.push({ name: file.name, message: error?.message || "Upload failed" });
+        }
       }
-      setUploading(false);
+
+      return { uploaded, failures, total: filesArray.length };
     },
-    onSuccess: () => {
-      sounds.upload();
+    onSuccess: ({ uploaded, failures, total }) => {
+      if (uploaded > 0) sounds.upload();
       queryClient.invalidateQueries({ queryKey: ["shared-files"] });
+      if (failures.length === 0) {
+        toast({ title: "Upload complete", description: `${uploaded} file${uploaded === 1 ? "" : "s"} uploaded.` });
+      } else if (uploaded > 0) {
+        toast({
+          title: "Upload partially completed",
+          description: `${uploaded} of ${total} files uploaded. ${failures.length} failed and can be retried.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Upload failed",
+          description: "No files were uploaded. Your local files were not changed.",
+          variant: "destructive",
+        });
+      }
     },
-    onError: () => setUploading(false),
+    onSettled: () => setUploading(false),
   });
 
   const deleteMutation = useMutation({

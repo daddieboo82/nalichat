@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+const ACCESS_SYNC_BATCH_SIZE = 200;
+
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -93,17 +95,25 @@ Deno.serve(async (req) => {
       for (const entityName of ['Track', 'TrackVersion', 'SharedFile', 'Folder', 'Milestone']) {
         const entity = base44.asServiceRole.entities[entityName];
         if (!entity) continue;
-        const rows = await entity.filter({ project_id: project.id });
-        for (const row of rows) {
-          const accessUserIds = Array.from(new Set([...(row.access_user_ids || []), user.id]));
-          const patch: Record<string, any> = { access_user_ids: accessUserIds };
-          if ('edit_user_ids' in row || entityName === 'Track' || entityName === 'TrackVersion' || entityName === 'Folder' || entityName === 'Milestone') {
-            const editUserIds = new Set(row.edit_user_ids || []);
-            if (invite.role === 'editor') editUserIds.add(user.id);
-            else editUserIds.delete(user.id);
-            patch.edit_user_ids = Array.from(editUserIds);
+        for (let skip = 0; ; skip += ACCESS_SYNC_BATCH_SIZE) {
+          const rows = await entity.filter(
+            { project_id: project.id },
+            '-created_date',
+            ACCESS_SYNC_BATCH_SIZE,
+            skip,
+          );
+          for (const row of rows) {
+            const accessUserIds = Array.from(new Set([...(row.access_user_ids || []), user.id]));
+            const patch: Record<string, any> = { access_user_ids: accessUserIds };
+            if ('edit_user_ids' in row || entityName === 'Track' || entityName === 'TrackVersion' || entityName === 'Folder' || entityName === 'Milestone') {
+              const editUserIds = new Set(row.edit_user_ids || []);
+              if (invite.role === 'editor') editUserIds.add(user.id);
+              else editUserIds.delete(user.id);
+              patch.edit_user_ids = Array.from(editUserIds);
+            }
+            await entity.update(row.id, patch);
           }
-          await entity.update(row.id, patch);
+          if (rows.length < ACCESS_SYNC_BATCH_SIZE) break;
         }
       }
     }

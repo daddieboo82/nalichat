@@ -29,7 +29,7 @@ export default async function(req) {
     const likes = liked_by.length;
     await base44.asServiceRole.entities.ArtPost.update(postId, { likes });
 
-    return Response.json({ liked: !alreadyLiked, likes, liked_by });
+    return Response.json({ liked: !alreadyLiked, likes });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

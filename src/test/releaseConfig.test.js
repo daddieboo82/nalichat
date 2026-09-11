@@ -27,6 +27,24 @@ describe('release configuration', () => {
     }
   });
 
+  it('rate-limits expensive admin fan-out and full-scan operations', async () => {
+    const cases = [
+      ['base44/functions/naliHealthCheck/entry.ts', "'admin_health_check'", 4],
+      ['base44/functions/reengageStalledUsers/entry.ts', "'admin_reengagement'", 4],
+      ['base44/functions/nali-maintenance/entry.ts', "'admin_maintenance'", 12],
+      ['base44/functions/syncToSupabase/entry.ts', "'admin_supabase_sync'", 12],
+    ];
+
+    for (const [path, key, limit] of cases) {
+      const source = await readText(path);
+      expect(source).toContain('consumeHourlyLimit');
+      expect(source).toContain(key);
+      expect(source).toContain(`${key},\n      ${limit},`);
+      expect(source).toContain('Admin operation rate limit exceeded');
+      expect(source).toContain('status: 429');
+    }
+  });
+
   it('protects scheduled bulk re-engagement with admin authorization', async () => {
     const reengage = await readText('base44/functions/reengageStalledUsers/entry.ts');
     expect(reengage).toContain("caller.role !== 'admin'");

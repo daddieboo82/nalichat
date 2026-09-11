@@ -276,16 +276,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Remove challenge votes cast by the deleted account and reconcile totals.
+    // Remove challenge votes cast by the deleted account and reconcile totals
+    // atomically so concurrent votes cannot be overwritten by a stale read.
     const challengeVotes = await entities.ChallengeVote.filter({ voter_id: user.id });
     for (const vote of challengeVotes) {
       try {
-        const submission = await entities.ChallengeSubmission.get(vote.submission_id);
-        if (submission) {
-          await entities.ChallengeSubmission.update(submission.id, {
-            vote_count: Math.max(0, Number(submission.vote_count || 0) - 1),
-          });
-        }
+        await entities.ChallengeSubmission.updateMany(
+          { id: vote.submission_id, vote_count: { $gt: 0 } },
+          { $inc: { vote_count: -1 } },
+        );
       } catch {}
       await entities.ChallengeVote.delete(vote.id);
     }

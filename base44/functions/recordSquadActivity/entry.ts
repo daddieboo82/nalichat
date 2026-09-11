@@ -29,6 +29,14 @@ function goalMet(progress: any, member: 'a' | 'b') {
     (progress[`member_${member}_tasks`] || 0) >= GOAL_TASKS;
 }
 
+function happenedThisWeek(value: unknown) {
+  const raw = String(value || '').trim();
+  if (!raw) return false;
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return false;
+  return weekKey(date) === weekKey();
+}
+
 async function activeSquad(entities: any, userId: string) {
   const [asA, asB] = await Promise.all([
     entities.Squad.filter({ member_a_id: userId, status: 'active' }),
@@ -84,20 +92,24 @@ async function awardOnce(entities: any, userId: string, squad: any, progress: an
 
 async function validateSource(entities: any, user: any, sourceType: string, sourceId: string) {
   if (sourceType === 'message') {
-    const message = await entities.Message.get(sourceId);
+    const message = await entities.Message.get(sourceId).catch(() => null);
     if (!message || message.sender_id !== user.id || message.type === 'session') return false;
-    return true;
+    return happenedThisWeek(message.created_date);
   }
 
   if (sourceType === 'art_post') {
-    const post = await entities.ArtPost.get(sourceId);
-    return Boolean(post && post.creator_id === user.id);
+    const post = await entities.ArtPost.get(sourceId).catch(() => null);
+    return Boolean(
+      post
+      && post.creator_id === user.id
+      && happenedThisWeek(post.created_date)
+    );
   }
 
   if (sourceType === 'milestone') {
-    const milestone = await entities.Milestone.get(sourceId);
-    if (!milestone || !milestone.completed) return false;
-    return milestone.completed_by_id === user.id;
+    const milestone = await entities.Milestone.get(sourceId).catch(() => null);
+    if (!milestone || !milestone.completed || milestone.completed_by_id !== user.id) return false;
+    return happenedThisWeek(milestone.completed_at);
   }
 
   return false;
@@ -118,6 +130,12 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
 
     const { sourceType, sourceId } = await req.json();
     if (!['message', 'art_post', 'milestone'].includes(sourceType) || !sourceId) {

@@ -50,7 +50,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     }
   }, [text]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!text.trim() || disabled) return;
     sounds.upload();
     if (navigator.vibrate) navigator.vibrate(15);
@@ -60,10 +60,15 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       payload.reply_to_sender = replyTo.sender_name;
       payload.reply_to_id = replyTo.id;
     }
-    onSend(payload);
-    setText("");
-    onCancelReply?.();
-    onCancelEdit?.();
+    try {
+      await Promise.resolve(onSend(payload));
+      setText("");
+      onCancelReply?.();
+      onCancelEdit?.();
+    } catch {
+      // The caller surfaces the user-facing error. Keep the draft/edit state
+      // intact so the user can retry without retyping.
+    }
   };
 
   const uploadFile = async (file) => {

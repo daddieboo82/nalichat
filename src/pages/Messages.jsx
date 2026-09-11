@@ -132,6 +132,9 @@ export default function Messages() {
       if (res?.data?.error) throw new Error(res.data.error);
       return res?.data?.message;
     },
+    onError: () => {
+      toast.error("Message edit failed. Your draft was kept so you can retry.");
+    },
     onSuccess: (msg) => {
       if (msg?._flagged) {
         const f = msg._flagged;
@@ -434,7 +437,11 @@ export default function Messages() {
                 }
                 sendMessage.mutate(data);
               }}
-              onEditMessage={(id, text) => editMessage.mutate({ id, text })}
+              onEditMessage={async (id, text) => {
+                const result = await editMessage.mutateAsync({ id, text });
+                if (result?._flagged) throw new Error("moderated");
+                return result;
+              }}
               onReact={handleReact}
               onBack={() => setSelectedConvId(null)}
               onStartDM={startDM}

@@ -400,11 +400,9 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
             key={conversation?.id || "chat"}
             onSend={(payload) => {
               if (editingMessage && payload.type === 'text') {
-                onEditMessage(editingMessage.id, payload.text);
-                setEditingMessage(null);
-              } else {
-                onSendMessage(payload);
+                return onEditMessage(editingMessage.id, payload.text);
               }
+              return onSendMessage(payload);
             }}
             replyTo={replyTo}
             onCancelReply={() => setReplyTo(null)}

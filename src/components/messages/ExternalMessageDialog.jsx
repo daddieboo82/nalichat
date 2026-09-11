@@ -3,12 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, Phone, Send, CheckCircle, AlertCircle } from "lucide-react";
+import { Mail, Send, CheckCircle, AlertCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
 
 export default function ExternalMessageDialog({ open, onOpenChange }) {
-  const [tab, setTab] = useState("email"); // "email" | "sms"
   const [destination, setDestination] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -28,7 +27,7 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
     setStatus(null);
     try {
       const res = await base44.functions.invoke("sendExternalMessage", {
-        type: tab,
+        type: "email",
         destination: destination.trim(),
         message: message.trim(),
       });
@@ -49,38 +48,16 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
     }
   };
 
-  const placeholder = tab === "email" ? "recipient@example.com" : "+1 (555) 000-0000";
-  const label = tab === "email" ? "Email address" : "Phone number";
+  const placeholder = "recipient@example.com";
+  const label = "Email address";
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className="bg-card border-border max-w-md">
          <DialogHeader>
            <DialogTitle className="font-heading">Send External Message</DialogTitle>
-           <DialogDescription>Send an email or SMS message to anyone</DialogDescription>
+           <DialogDescription>Send an email message to a registered NaliChat user</DialogDescription>
          </DialogHeader>
-
-        {/* Tab switcher */}
-        <div className="flex gap-2 p-1 bg-secondary/30 rounded-xl">
-          <button
-            onClick={() => { setTab("email"); reset(); }}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all",
-              tab === "email" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Mail className="w-4 h-4" /> Email
-          </button>
-          <button
-            onClick={() => { setTab("sms"); reset(); }}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all",
-              tab === "sms" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Phone className="w-4 h-4" /> SMS
-          </button>
-        </div>
 
         {status === "success" ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
@@ -102,7 +79,7 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
                 title={label}
                 aria-label={label}
                 className="bg-secondary/50 border-0 rounded-xl"
-                type={tab === "email" ? "email" : "tel"}
+                type="email"
               />
             </div>
 
@@ -120,16 +97,6 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
               <p className="text-xs text-muted-foreground text-right mt-1">{message.length}/1000</p>
             </div>
 
-            {status === "needs_setup" && (
-              <div className="flex gap-2 items-start p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-sm text-yellow-400">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <div>
-                  <p className="font-medium">SMS Setup Required</p>
-                  <p className="text-xs mt-0.5 text-yellow-400/80">Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in app settings to enable SMS.</p>
-                </div>
-              </div>
-            )}
-
             {status === "error" && (
               <div className="flex gap-2 items-start p-3 bg-destructive/10 border border-destructive/30 rounded-xl text-sm text-destructive">
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
@@ -145,7 +112,7 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
               {sending ? (
                 <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending...</>
               ) : (
-                <><Send className="w-4 h-4" /> Send {tab === "email" ? "Email" : "SMS"}</>
+                <><Send className="w-4 h-4" /> Send Email</>
               )}
             </Button>
           </div>

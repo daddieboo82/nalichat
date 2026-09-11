@@ -839,6 +839,12 @@ describe('release configuration', () => {
     expect(likes).toContain('user.timeout_until');
   });
 
+  it('applies moderation timeouts to challenge voting', async () => {
+    const voting = await readText('base44/functions/castVote/entry.ts');
+    expect(voting).toContain("error: 'timed_out'");
+    expect(voting).toContain('user.timeout_until');
+  });
+
   it('counts only current-week squad activity and blocks moderated reward claims', async () => {
     const activity = await readText('base44/functions/recordSquadActivity/entry.ts');
 

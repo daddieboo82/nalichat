@@ -304,6 +304,16 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'request_reset') {
+      const resetRate = await consumeHourlyLimit(
+        base44.asServiceRole.entities,
+        user.id,
+        'locked_chat_reset_email',
+        10,
+      );
+      if (!resetRate.allowed) {
+        return errorResponse('Too many reset-code requests. Try again later.', 429, 'reset_throttled');
+      }
+
       const security = await getSecurity(base44, user.id);
       if (!security) return errorResponse('No locked-chat PIN is configured.', 409, 'pin_not_configured');
       if (!user.email) return errorResponse('Your account has no verified email.', 409, 'email_unavailable');

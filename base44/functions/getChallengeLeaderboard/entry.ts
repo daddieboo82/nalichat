@@ -4,7 +4,7 @@ const MAX_LEADERBOARD_SUBMISSIONS = 500;
 const MAX_WEEKLY_VOTES = 5000;
 const CACHE_TTL_MS = 15_000;
 const MAX_CACHE_ENTRIES = 100;
-const leaderboardCache = new Map<string, { expiresAt: number; payload: unknown }>();
+const leaderboardCache = new Map<string, { expiresAt: number; payload: unknown; status?: number }>();
 const leaderboardInFlight = new Map<string, Promise<unknown>>();
 
 function pruneLeaderboardCache(now: number) {
@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
     const cached = leaderboardCache.get(challengeId);
     if (cached && cached.expiresAt > nowMs) {
       return Response.json(cached.payload, {
+        status: cached.status || 200,
         headers: { 'Cache-Control': 'public, max-age=15', 'X-Nali-Cache': 'hit' },
       });
     }
@@ -46,7 +47,13 @@ Deno.serve(async (req) => {
       pending = (async () => {
         const challenge = await entities.Challenge.get(challengeId);
         if (!challenge) {
-          return { error: 'Challenge not found', status: 404 };
+          const payload = { error: 'Challenge not found' };
+          leaderboardCache.set(challengeId, {
+            expiresAt: Date.now() + CACHE_TTL_MS,
+            payload,
+            status: 404,
+          });
+          return { ...payload, status: 404 };
         }
 
         const now = new Date();

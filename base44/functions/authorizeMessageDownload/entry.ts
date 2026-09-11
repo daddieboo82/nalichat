@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
+import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -29,6 +30,9 @@ Deno.serve(async (req) => {
     }
 
     if (!message.file_url) return Response.json({ error: 'Message has no downloadable media' }, { status: 400 });
+    if (!isTrustedStoredMediaUrl(message.file_url)) {
+      return Response.json({ error: 'Stored message media host is not allowed' }, { status: 400 });
+    }
     return Response.json({
       success: true,
       file_url: message.file_url,

@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+const MAX_TRACK_BYTES = 100 * 1024 * 1024;
+
 const TRUSTED_MEDIA_HOSTS = [
   'storage.googleapis.com',
   'base44-user-files.s3.amazonaws.com',
@@ -8,6 +10,37 @@ const TRUSTED_MEDIA_HOSTS = [
   'files.base44.com',
   'cdn.base44.com',
 ];
+
+async function resolveStoredFileSize(url: string): Promise<number | null> {
+  try {
+    const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+    if (head.ok) {
+      const length = Number(head.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0) return length;
+    }
+  } catch {}
+
+  try {
+    const probe = await fetch(url, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-0' },
+      redirect: 'manual',
+    });
+    if (probe.ok || probe.status === 206) {
+      const range = probe.headers.get('content-range') || '';
+      const match = range.match(/\/(\d+)$/);
+      if (match) {
+        const total = Number(match[1]);
+        if (Number.isFinite(total) && total >= 0) return total;
+      }
+      const length = Number(probe.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0 && probe.status !== 206) return length;
+    }
+    try { await probe.body?.cancel(); } catch {}
+  } catch {}
+
+  return null;
+}
 
 function cleanUploadedMediaUrl(value: unknown) {
   const raw = String(value || '').trim();
@@ -26,9 +59,20 @@ function cleanUploadedMediaUrl(value: unknown) {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
     const creationRate = await consumeHourlyLimit(
       base44.asServiceRole.entities,
       user.id,
@@ -38,18 +82,43 @@ Deno.serve(async (req) => {
     if (!creationRate.allowed) {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
-    if (user.is_banned) {
-      return Response.json({ error: 'banned' }, { status: 403 });
-    }
-    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
-      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
-    }
 
     const body = await req.json();
-    const projectId = String(body?.project_id || '');
-    const name = String(body?.name || '').trim().slice(0, 200);
-    if (!projectId || !name) {
+    if (typeof body?.project_id !== 'string' || typeof body?.name !== 'string') {
       return Response.json({ error: 'project_id and a non-empty name are required' }, { status: 400 });
+    }
+    if (body?.file_url != null && typeof body.file_url !== 'string') {
+      return Response.json({ error: 'file_url must be a string' }, { status: 400 });
+    }
+    if (body?.type != null && typeof body.type !== 'string') {
+      return Response.json({ error: 'type must be a string' }, { status: 400 });
+    }
+    if (body?.color != null && typeof body.color !== 'string') {
+      return Response.json({ error: 'color must be a string' }, { status: 400 });
+    }
+    if (body?.muted != null && typeof body.muted !== 'boolean') {
+      return Response.json({ error: 'muted must be a boolean' }, { status: 400 });
+    }
+    if (body?.solo != null && typeof body.solo !== 'boolean') {
+      return Response.json({ error: 'solo must be a boolean' }, { status: 400 });
+    }
+    if (body?.waveform_data != null && !Array.isArray(body.waveform_data)) {
+      return Response.json({ error: 'waveform_data must be an array' }, { status: 400 });
+    }
+
+    const projectId = body.project_id.trim();
+    const name = body.name.trim();
+    if (!projectId || projectId.length > 200 || !name) {
+      return Response.json({ error: 'project_id and a non-empty name are required' }, { status: 400 });
+    }
+    if (name.length > 200) {
+      return Response.json({ error: 'Track name must be 200 characters or fewer' }, { status: 413 });
+    }
+    if (typeof body?.color === 'string' && body.color.length > 100) {
+      return Response.json({ error: 'Track color must be 100 characters or fewer' }, { status: 413 });
+    }
+    if (Array.isArray(body?.waveform_data) && body.waveform_data.length > 2000) {
+      return Response.json({ error: 'waveform_data supports at most 2000 points' }, { status: 413 });
     }
 
     const volume = Number(body?.volume ?? 75);
@@ -100,24 +169,36 @@ Deno.serve(async (req) => {
     if (body?.file_url && !fileUrl) {
       return Response.json({ error: 'Track media must come from trusted upload storage' }, { status: 400 });
     }
+    if (fileUrl) {
+      const storedSize = await resolveStoredFileSize(fileUrl);
+      if (storedSize === null) {
+        return Response.json({ error: 'Could not verify track media size' }, { status: 400 });
+      }
+      if (storedSize <= 0 || storedSize > MAX_TRACK_BYTES) {
+        return Response.json({ error: 'Track media must be 100MB or smaller' }, { status: 413 });
+      }
+    }
 
     const allowedTypes = new Set(['vocal', 'instrument', 'beat', 'sample', 'fx', 'master']);
+    if (body?.type != null && !allowedTypes.has(body.type)) {
+      return Response.json({ error: 'Invalid track type' }, { status: 400 });
+    }
     const track = await entities.Track.create({
       project_id: projectId,
       name,
       file_url: fileUrl,
-      type: allowedTypes.has(body.type) ? body.type : 'vocal',
-      color: typeof body.color === 'string' ? body.color.slice(0, 100) : undefined,
+      type: body?.type || 'vocal',
+      color: body?.color || undefined,
       volume,
       pan,
-      muted: Boolean(body.muted),
-      solo: Boolean(body.solo),
+      muted: body?.muted === true,
+      solo: body?.solo === true,
       duration,
       waveform_data: Array.isArray(body.waveform_data)
         ? body.waveform_data
             .map((point: unknown) => Number(point))
             .filter((point: number) => Number.isFinite(point) && point >= -1 && point <= 1)
-            .slice(0, 2000)
+            
         : undefined,
       uploaded_by: user.id,
       access_user_ids: accessUserIds,

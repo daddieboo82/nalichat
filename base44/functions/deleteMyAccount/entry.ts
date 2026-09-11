@@ -375,8 +375,10 @@ Deno.serve(async (req) => {
     // Collaborative projects stay manageable by transferring ownership to a
     // real remaining collaborator (prefer an existing editor). Solo projects
     // are removed together with all project-scoped child records.
-    const ownedProjects = await entities.Project.filter({ owner_id: user.id });
-    for (const project of ownedProjects) {
+    await processMatchingBatches(
+      entities.Project,
+      { owner_id: user.id },
+      async (project) => {
       const collaborators = Array.isArray(project.collaborator_ids)
         ? project.collaborator_ids.filter((id: string) => id !== user.id)
         : [];
@@ -385,26 +387,34 @@ Deno.serve(async (req) => {
         : [];
 
       if (collaborators.length === 0) {
-        const tracks = await entities.Track.filter({ project_id: project.id });
-        const trackIds = tracks.map((track: any) => track.id);
-
-        for (const trackId of trackIds) {
-          const comments = await entities.TrackComment.filter({ track_id: trackId, parent_type: 'track' });
-          for (const comment of comments) await entities.TrackComment.delete(comment.id);
-        }
+        await processPagedRows(
+          entities.Track,
+          { project_id: project.id },
+          (track) => processMatchingBatches(
+            entities.TrackComment,
+            { track_id: track.id, parent_type: 'track' },
+            (comment) => entities.TrackComment.delete(comment.id),
+          ),
+        );
 
         for (const entityName of ['TrackVersion', 'Track', 'SharedFile', 'Folder', 'Milestone', 'ProjectInvite']) {
           const entity = entities[entityName];
           if (!entity) continue;
-          const rows = await entity.filter({ project_id: project.id });
-          for (const row of rows) await entity.delete(row.id);
+          await processMatchingBatches(
+            entity,
+            { project_id: project.id },
+            (row) => entity.delete(row.id),
+          );
         }
 
-        const presenceRows = await entities.StudioPresence.filter({ room_id: project.id });
-        for (const presence of presenceRows) await entities.StudioPresence.delete(presence.id);
+        await processMatchingBatches(
+          entities.StudioPresence,
+          { room_id: project.id },
+          (presence) => entities.StudioPresence.delete(presence.id),
+        );
 
         await entities.Project.delete(project.id);
-        continue;
+        return;
       }
 
       const successor = editors.find((id: string) => collaborators.includes(id)) || collaborators[0];
@@ -424,8 +434,7 @@ Deno.serve(async (req) => {
       for (const entityName of ['TrackVersion', 'Track', 'SharedFile', 'Folder', 'Milestone']) {
         const entity = entities[entityName];
         if (!entity) continue;
-        const rows = await entity.filter({ project_id: project.id });
-        for (const row of rows) {
+        await processPagedRows(entity, { project_id: project.id }, async (row) => {
           const accessUserIds = Array.from(new Set([
             ...(Array.isArray(row.access_user_ids) ? row.access_user_ids : []),
             successor,
@@ -450,13 +459,16 @@ Deno.serve(async (req) => {
             update.share_token_hash = null;
           }
           await entity.update(row.id, update);
-        }
+        });
       }
-    }
+      },
+    );
 
     // Remove the deleted account from projects where it was only a collaborator.
-    const collaboratedProjects = await entities.Project.filter({ collaborator_ids: user.id });
-    for (const project of collaboratedProjects) {
+    await processMatchingBatches(
+      entities.Project,
+      { collaborator_ids: user.id },
+      async (project) => {
       const collaboratorIds = Array.isArray(project.collaborator_ids)
         ? project.collaborator_ids.filter((id: string) => id !== user.id)
         : [];
@@ -474,8 +486,7 @@ Deno.serve(async (req) => {
       for (const entityName of ['TrackVersion', 'Track', 'SharedFile', 'Folder', 'Milestone']) {
         const entity = entities[entityName];
         if (!entity) continue;
-        const rows = await entity.filter({ project_id: project.id });
-        for (const row of rows) {
+        await processPagedRows(entity, { project_id: project.id }, async (row) => {
           const update: Record<string, unknown> = {
             access_user_ids: Array.isArray(row.access_user_ids)
               ? row.access_user_ids.filter((id: string) => id !== user.id)
@@ -505,9 +516,10 @@ Deno.serve(async (req) => {
           }
 
           await entity.update(row.id, update);
-        }
+        });
       }
-    }
+      },
+    );
 
     // Public challenge records may have other users' submissions/votes, so keep
     // them but anonymize the departed host identity.

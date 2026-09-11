@@ -792,6 +792,32 @@ describe('release configuration', () => {
     expect(activity).toContain("error: 'timed_out'");
   });
 
+  it('atomically limits each user to one pending or active squad', async () => {
+    const user = await readJson('base44/entities/User.jsonc');
+    const createInvite = await readText('base44/functions/createSquadInvite/entry.ts');
+    const join = await readText('base44/functions/joinSquad/entry.ts');
+    const leave = await readText('base44/functions/leaveSquad/entry.ts');
+
+    expect(user.properties.squad_membership_id?.rls?.write?.user_condition?.role).toBe('admin');
+    expect(createInvite).toContain('squad_membership_id: null');
+    expect(createInvite).toContain('$set: { squad_membership_id: squad.id }');
+    expect(createInvite).toContain('await entities.Squad.delete(squad.id)');
+    expect(join).toContain('squad_membership_id: null');
+    expect(join).toContain('$set: { squad_membership_id: squad.id }');
+    expect(join).toContain('$set: { squad_membership_id: null }');
+    expect(leave).toContain('$set: { squad_membership_id: null }');
+  });
+
+  it('blocks banned or timed-out users from squad creation and joining', async () => {
+    const createInvite = await readText('base44/functions/createSquadInvite/entry.ts');
+    const join = await readText('base44/functions/joinSquad/entry.ts');
+
+    for (const source of [createInvite, join]) {
+      expect(source).toContain('if (user.is_banned)');
+      expect(source).toContain("error: 'timed_out'");
+    }
+  });
+
   it('hides public-room latest message text from nonmembers', async () => {
     const conversation = await readJson('base44/entities/Conversation.jsonc');
     const rule = conversation.properties.last_message_text.rls?.read;

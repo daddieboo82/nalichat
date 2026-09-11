@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
     const messageData: Record<string, any> = {
       conversation_id: conversationId,
       sender_id: user.id,
-      sender_name: user.display_name || user.full_name || user.email || 'User',
+      sender_name: user.display_name || user.full_name || 'User',
       sender_avatar: user.avatar_url || null,
       participant_ids: conversation.participant_ids,
       type,

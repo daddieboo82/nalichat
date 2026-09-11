@@ -19,7 +19,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    const rows = await base44.asServiceRole.entities.Achievement.filter({ user_id: target.id });
+    const rows = await base44.asServiceRole.entities.Achievement.filter(
+      { user_id: target.id },
+      '-created_date',
+      500,
+    );
     return Response.json({
       achievements: rows.map((a) => ({ key: a.key })),
     });

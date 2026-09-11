@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 
 // Generates a viral "moment" from a chat message or voice note — either an
 // AI meme (image + caption) or a vertical reel script for TikTok / Instagram.
@@ -59,6 +60,9 @@ Deno.serve(async (req) => {
     // Message record. The browser can no longer make this function fetch an
     // arbitrary URL.
     if (isVoiceNote) {
+      if (!isTrustedStoredMediaUrl(message.file_url)) {
+        return Response.json({ error: 'Stored voice-note host is not allowed' }, { status: 400 });
+      }
       const voiceAccess = await requireEntitlement(
         base44.asServiceRole.entities,
         user.id,

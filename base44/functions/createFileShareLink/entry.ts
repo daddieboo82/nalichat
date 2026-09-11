@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { acquireSharedFileMutationLock, releaseSharedFileMutationLock } from '../../shared/sharedFileMutationLock.ts';
 
 function randomToken(): string {
   const bytes = new Uint8Array(32);
@@ -14,6 +15,10 @@ async function sha256Hex(value: string): Promise<string> {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -33,9 +38,20 @@ Deno.serve(async (req) => {
     }
 
     const { fileId } = await req.json();
-    if (!fileId) return Response.json({ error: 'fileId is required' }, { status: 400 });
+    if (typeof fileId !== 'string' || !fileId.trim() || fileId.length > 200) {
+      return Response.json({ error: 'fileId is required' }, { status: 400 });
+    }
 
     const entities = base44.asServiceRole.entities;
+    const lockId = await acquireSharedFileMutationLock(entities, fileId);
+    if (!lockId) {
+      return Response.json(
+        { error: 'File is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
     const file = await entities.SharedFile.get(fileId);
     if (!file) return Response.json({ error: 'File not found' }, { status: 404 });
 
@@ -62,6 +78,9 @@ Deno.serve(async (req) => {
       { success: true, fileId, token, expires_at: expiresAt },
       { headers: { 'Cache-Control': 'no-store' } },
     );
+    } finally {
+      await releaseSharedFileMutationLock(entities, lockId);
+    }
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not create share link' }, { status: 500 });
   }

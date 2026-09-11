@@ -262,6 +262,12 @@ describe('release configuration', () => {
     expect(manageConversation.match(/syncConversationAudience\(entities, .*participantIds\)/g)?.length || 0).toBeGreaterThanOrEqual(3);
   });
 
+  it('prunes departed users from message read receipts', async () => {
+    const manageConversation = await readText('base44/functions/manageConversation/entry.ts');
+    expect(manageConversation).toContain('read_by: Array.isArray(message.read_by)');
+    expect(manageConversation).toContain('message.read_by.filter((readerId: string) => participantIds.includes(readerId))');
+  });
+
 
   it('repairs message caches on delete and rate-limits moderated edits', async () => {
     const mutate = await readText('base44/functions/mutateConversationMessage/entry.ts');

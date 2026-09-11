@@ -452,3 +452,16 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after,
+.reduce-motion-surface *,
+.reduce-motion-surface *::before,
+.reduce-motion-surface *::after {
+  scroll-behavior: auto !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}

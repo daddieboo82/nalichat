@@ -295,6 +295,7 @@ export default function Messages() {
       handleSelectConv(conv.id);
     } catch (err) {
       toast.error("Couldn't create the group. Please try again.");
+      throw err;
     }
   };
 

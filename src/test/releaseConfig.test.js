@@ -787,6 +787,28 @@ describe('release configuration', () => {
     expect(reward).toContain("error: 'timed_out'");
   });
 
+  it('keeps destructive data mutations out of the conversational AI tool surface', async () => {
+    const agent = await readJson('base44/agents/studio_ai.jsonc');
+    const functionNames = agent.tool_configs
+      .map((tool) => tool.function_name)
+      .filter(Boolean);
+
+    for (const blocked of [
+      'deleteProject',
+      'deleteArtPost',
+      'deleteFolder',
+      'mutateTrack',
+      'mutatePlaylist',
+      'mutateSharedFile',
+      'mutateMilestone',
+      'manageConversation',
+      'mutateConversationMessage',
+    ]) {
+      expect(functionNames).not.toContain(blocked);
+    }
+    expect(agent.instructions).toContain('Do not perform destructive actions from conversational AI');
+  });
+
   it('avoids raw realtime payload subscriptions for chat and presence data', async () => {
     const messages = await readText('src/pages/Messages.jsx');
     const typing = await readText('src/hooks/useTypingIndicator.js');

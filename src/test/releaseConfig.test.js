@@ -707,6 +707,14 @@ describe('release configuration', () => {
     expect(sw).toContain('const targetUrl = safeNotificationTarget');
   });
 
+  it('synchronizes conversation audience metadata during account deletion', async () => {
+    const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
+    expect(deletion).toContain('async function syncConversationAudience');
+    expect(deletion).toContain('read_by: Array.isArray(message.read_by)');
+    expect(deletion).toContain('reactions: pruneConversationReactions');
+    expect(deletion).toContain('await syncConversationAudience(entities, conversation.id, participantIds)');
+  });
+
 
   it('enforces configured challenge voting windows server-side', async () => {
     const vote = await readText('base44/functions/castVote/entry.ts');

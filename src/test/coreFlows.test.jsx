@@ -251,6 +251,18 @@ describe('core usage flow coverage', () => {
       if (name === 'recordSquadActivity') {
         return { data: { success: true, tracked: true } };
       }
+      if (name === 'manageConversation' && payload?.action === 'create_dm') {
+        const created = {
+          id: `conv-${conversationStore.items.length + 1}`,
+          type: 'dm',
+          participant_ids: ['user-1', ...(payload.participant_ids || [])],
+          last_message_at: null,
+          last_message_text: '',
+        };
+        conversationStore.items = [...conversationStore.items, created];
+        messageStore.byConversation[created.id] = [];
+        return { data: { success: true, conversation: created } };
+      }
       if (name === 'sendConversationMessage') {
         return { data: { message: { id: 'msg-1', ...payload } } };
       }
@@ -298,6 +310,18 @@ describe('core usage flow coverage', () => {
       if (name === 'recordSquadActivity') {
         return { data: { success: true, tracked: true } };
       }
+      if (name === 'manageConversation' && payload?.action === 'create_dm') {
+        const created = {
+          id: 'conv-1',
+          type: 'dm',
+          participant_ids: [currentUser.id, ...payload.participant_ids],
+          last_message_at: null,
+          last_message_text: '',
+        };
+        conversationStore.items = [created];
+        messageStore.byConversation[created.id] = [];
+        return { data: { success: true, conversation: created } };
+      }
       if (name === 'sendConversationMessage') {
         const result = await pending.promise;
         return { data: { message: result } };
@@ -329,9 +353,9 @@ describe('core usage flow coverage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('message-list').textContent).toContain('msg-1:hello there:real');
     });
-    expect(mockBase44.entities.Conversation.create).toHaveBeenCalledWith({
-      type: 'dm',
-      participant_ids: ['user-1', 'user-2'],
+    expect(mockBase44.functions.invoke).toHaveBeenCalledWith('manageConversation', {
+      action: 'create_dm',
+      participant_ids: ['user-2'],
     });
     expect(mockBase44.functions.invoke).toHaveBeenCalledWith('sendConversationMessage', {
       type: 'text',

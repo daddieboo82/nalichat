@@ -334,7 +334,7 @@ export default function Messages() {
         toast.error("Couldn't update the reaction. Please try again.");
       }
     } finally {
-      queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
     }
   };
 

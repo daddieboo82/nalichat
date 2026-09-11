@@ -507,6 +507,21 @@ describe('release configuration', () => {
     expect(share).not.toContain('|| file.uploader_id === user.id\n      || (file.edit_user_ids || []).includes(user.id)');
   });
 
+  it('authorizes track and milestone mutation from the current project role', async () => {
+    const track = await readText('base44/functions/mutateTrack/entry.ts');
+    const milestone = await readText('base44/functions/mutateMilestone/entry.ts');
+
+    expect(track).toContain('entities.Project.get(track.project_id)');
+    expect(track).toContain('project.owner_id === user.id');
+    expect(track).toContain('(project.editor_ids || []).includes(user.id)');
+    expect(track).not.toContain("(track.edit_user_ids || []).includes(user.id)");
+
+    expect(milestone).toContain('entities.Project.get(milestone.project_id)');
+    expect(milestone).toContain('project.owner_id === user.id');
+    expect(milestone).toContain('(project.editor_ids || []).includes(user.id)');
+    expect(milestone).not.toContain("(milestone.edit_user_ids || []).includes(user.id)");
+  });
+
   it('keeps shared-file edit access synchronized with project collaborator roles', async () => {
     const collaborator = await readText('base44/functions/manageProjectCollaborator/entry.ts');
     expect(collaborator).toContain('edit_user_ids: Array.from(editUserIds)');

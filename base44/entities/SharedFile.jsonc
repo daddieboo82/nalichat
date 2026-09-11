@@ -27,7 +27,16 @@
         "document",
         "other"
       ],
-      "default": "other"
+      "default": "other",
+      "description": "Server-managed media classification established when the file is created.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "file_size": {
       "type": "number"

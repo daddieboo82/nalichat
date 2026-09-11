@@ -770,6 +770,23 @@ describe('release configuration', () => {
     expect(publicAchievements).not.toContain('xp: a.xp');
   });
 
+  it('never falls back to account email for shared or public display names', async () => {
+    for (const path of [
+      'base44/functions/createSharedFileRecord/entry.ts',
+      'base44/functions/castVote/entry.ts',
+      'base44/functions/createSquadInvite/entry.ts',
+      'base44/functions/joinSquad/entry.ts',
+      'base44/functions/trackComments/entry.ts',
+      'base44/functions/sendConversationMessage/entry.ts',
+      'base44/functions/createTrackVersion/entry.ts',
+      'base44/functions/publishStudioBounce/entry.ts',
+      'base44/functions/reportContent/entry.ts',
+    ]) {
+      const source = await readText(path);
+      expect(source).not.toMatch(/(?:user|reporter)\.email\s*\|\|/);
+    }
+  });
+
   it('prevents contact ownership reassignment', async () => {
     const contact = await readJson('base44/entities/Contact.jsonc');
     expect(contact.properties.user_id.rls?.write?.user_condition?.role).toBe('admin');

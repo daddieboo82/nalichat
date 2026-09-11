@@ -13,7 +13,7 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
   // Fetch contacts for the current user
   const { data: contacts = [], isLoading: contactsLoading } = useQuery({
     queryKey: ["contacts", currentUserId],
-    queryFn: () => base44.entities.Contact.filter({ user_id: currentUserId }),
+    queryFn: () => base44.entities.Contact.filter({ user_id: currentUserId }, "-created_date", 500),
     enabled: open && !!currentUserId,
   });
 

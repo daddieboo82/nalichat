@@ -5,12 +5,14 @@ import { Search, Users, Hash, UserPlus, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
 
 import React from "react";
 
 export default React.memo(function ConversationList({ conversations, myConversations, selectedId, onSelect, users, currentUserId, onStartDM }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all"); // all, unread, groups
+  const [pendingRoomId, setPendingRoomId] = useState(null);
 
   const getOtherUser = (conv) => {
     if (conv.type === "group") return null;
@@ -280,24 +282,34 @@ export default React.memo(function ConversationList({ conversations, myConversat
               <button
                 key={room.id}
                 onClick={async () => {
-                  let roomId = room.id;
-                  if (room.isMock) {
-                    const res = await base44.functions.invoke("manageConversation", {
-                      action: "create_public",
-                      name: room.name,
-                    });
-                    if (res?.data?.error) throw new Error(res.data.error);
-                    roomId = res?.data?.conversation?.id;
-                  } else {
-                    const res = await base44.functions.invoke("manageConversation", {
-                      action: "join_public",
-                      conversationId: room.id,
-                    });
-                    if (res?.data?.error) throw new Error(res.data.error);
+                  if (pendingRoomId) return;
+                  setPendingRoomId(room.id);
+                  try {
+                    let roomId = room.id;
+                    if (room.isMock) {
+                      const res = await base44.functions.invoke("manageConversation", {
+                        action: "create_public",
+                        name: room.name,
+                      });
+                      if (res?.data?.error) throw new Error(res.data.error);
+                      roomId = res?.data?.conversation?.id;
+                      if (!roomId) throw new Error("Public room was not created");
+                    } else {
+                      const res = await base44.functions.invoke("manageConversation", {
+                        action: "join_public",
+                        conversationId: room.id,
+                      });
+                      if (res?.data?.error) throw new Error(res.data.error);
+                    }
+                    onSelect(roomId);
+                    setSearch("");
+                  } catch {
+                    toast.error("Couldn't open the public room. Please try again.");
+                  } finally {
+                    setPendingRoomId(null);
                   }
-                  onSelect(roomId);
-                  setSearch("");
                 }}
+                disabled={!!pendingRoomId}
                 className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-secondary/40 transition-all text-left group"
                 title={`Join public room ${room.name}`}
                 aria-label={`Join public room ${room.name}`}

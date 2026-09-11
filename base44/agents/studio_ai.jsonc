@@ -5,7 +5,6 @@
     {
       "entity_name": "Project",
       "allowed_operations": [
-        "create",
         "read",
         "update"
       ]
@@ -13,15 +12,12 @@
     {
       "entity_name": "Track",
       "allowed_operations": [
-        "create",
-        "read",
-        "update"
+        "read"
       ]
     },
     {
       "entity_name": "ArtPost",
       "allowed_operations": [
-        "create",
         "read",
         "update"
       ]
@@ -29,44 +25,32 @@
     {
       "entity_name": "Playlist",
       "allowed_operations": [
-        "create",
         "read",
-        "update",
         "delete"
       ]
     },
     {
       "entity_name": "Conversation",
       "allowed_operations": [
-        "create",
-        "read",
-        "update"
+        "read"
       ]
     },
     {
       "entity_name": "Message",
       "allowed_operations": [
-        "create",
-        "read",
-        "update"
+        "read"
       ]
     },
     {
       "entity_name": "SharedFile",
       "allowed_operations": [
-        "create",
-        "read",
-        "update",
-        "delete"
+        "read"
       ]
     },
     {
       "entity_name": "TrackComment",
       "allowed_operations": [
-        "create",
-        "read",
-        "delete",
-        "update"
+        "read"
       ]
     },
     {
@@ -87,26 +71,19 @@
     {
       "entity_name": "Folder",
       "allowed_operations": [
-        "read",
-        "create",
-        "update"
+        "read"
       ]
     },
     {
       "entity_name": "Milestone",
       "allowed_operations": [
-        "read",
-        "create",
-        "update",
-        "delete"
+        "read"
       ]
     },
     {
       "entity_name": "TrackVersion",
       "allowed_operations": [
         "read",
-        "create",
-        "update",
         "delete"
       ]
     },
@@ -170,6 +147,58 @@
     {
       "function_name": "updateUserPresence",
       "description": "Update the presence status of a user."
+    },
+    {
+      "function_name": "createProject",
+      "description": "Create a project with server-derived ownership and validated fields"
+    },
+    {
+      "function_name": "createCollaborativeTrack",
+      "description": "Create an authorized collaborative track with trusted media"
+    },
+    {
+      "function_name": "createArtPost",
+      "description": "Publish an ArtPost with server-derived creator identity and trusted media"
+    },
+    {
+      "function_name": "createPlaylist",
+      "description": "Create a playlist with server-derived ownership and validated tracks"
+    },
+    {
+      "function_name": "mutatePlaylist",
+      "description": "Safely add/remove playlist tracks or edit playlist metadata"
+    },
+    {
+      "function_name": "sendConversationMessage",
+      "description": "Send an authorized conversation message with server-derived sender identity"
+    },
+    {
+      "function_name": "createSharedFileRecord",
+      "description": "Create an authorized shared file record from trusted upload storage"
+    },
+    {
+      "function_name": "mutateSharedFile",
+      "description": "Safely edit, move, or delete an authorized shared file"
+    },
+    {
+      "function_name": "trackComments",
+      "description": "List or create authorized comments through server access checks"
+    },
+    {
+      "function_name": "createProjectFolder",
+      "description": "Create an authorized project or personal folder"
+    },
+    {
+      "function_name": "createProjectMilestone",
+      "description": "Create an authorized project milestone"
+    },
+    {
+      "function_name": "mutateMilestone",
+      "description": "Safely update or delete an authorized project milestone"
+    },
+    {
+      "function_name": "createTrackVersion",
+      "description": "Create an authorized track version with trusted stored media"
     }
   ],
   "context_files": [],

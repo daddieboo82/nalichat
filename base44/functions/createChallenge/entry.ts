@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
       title,
       description,
       host_artist_id: user.id,
-      host_artist_name: user.display_name || user.full_name || user.email || 'Artist',
+      host_artist_name: user.display_name || user.full_name || 'Artist',
       source_track_url: sourceTrackUrl,
       source_track_name: sourceTrackName || 'Challenge Source',
       genre: body?.genre ? String(body.genre).slice(0, 100) : undefined,

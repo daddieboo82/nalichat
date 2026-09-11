@@ -1063,6 +1063,27 @@ describe('release configuration', () => {
     expect(profile).toContain("error: 'timed_out'");
   });
 
+  it('bounds read receipts and derives displayed like counts from liked_by', async () => {
+    const readReceipt = await readText('base44/functions/markMessageRead/entry.ts');
+    const engagement = await readText('src/lib/engagement.js');
+    const explore = await readText('src/pages/Explore.jsx');
+    const leaderboard = await readText('src/pages/Leaderboard.jsx');
+    const analytics = await readText('src/pages/Analytics.jsx');
+    const card = await readText('src/components/explore/ArtPostCard.jsx');
+
+    expect(readReceipt).toContain('consumeHourlyLimit');
+    expect(readReceipt).toContain("'message_read_receipt'");
+    expect(readReceipt).toMatch(/'message_read_receipt',\s*1800/);
+    expect(readReceipt).toContain('Read receipt rate limit exceeded');
+
+    expect(engagement).toContain('Array.isArray(post?.liked_by)');
+    expect(explore).toContain('getLikeCount(p) > 5');
+    expect(leaderboard).toContain('getLikeCount(b) - getLikeCount(a)');
+    expect(analytics).toContain('sum + getLikeCount(p)');
+    expect(card).toContain('getLikeCount(post)');
+    expect(leaderboard).not.toContain('ArtPost.list("-likes"');
+  });
+
   it('rate-limits message reaction writes', async () => {
     const mutate = await readText('base44/functions/mutateConversationMessage/entry.ts');
     expect(mutate).toContain("'message_reaction'");

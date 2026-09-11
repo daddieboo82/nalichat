@@ -21,7 +21,8 @@
         "file",
         "session_invite",
         "milestone",
-        "message"
+        "message",
+        "follow_up_reminder"
       ],
       "description": "Type of notification",
       "rls": {
@@ -99,6 +100,18 @@
       "type": "string",
       "description": "Optional description (up to 1000 characters)",
       "maxLength": 1000,
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "follow_up_reminder_id": {
+      "type": "string",
+      "description": "Server-owned delivery correlation for follow-up reminder recovery",
       "rls": {
         "read": true,
         "write": {

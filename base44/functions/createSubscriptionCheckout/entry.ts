@@ -9,6 +9,7 @@ import {
 } from '../../shared/stripeBilling.ts';
 import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
 import { stripeRequest } from '../../shared/stripe.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const TRIAL_DAYS = 7;
 const CHECKOUT_LEASE_MS = 24 * 60 * 60 * 1000;
@@ -80,6 +81,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Authentication required for subscriptions' }, { status: 401 });
     }
     cleanupUserId = user.id;
+
+    const checkoutRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'subscription_checkout',
+      12,
+    );
+    if (!checkoutRate.allowed) {
+      return Response.json(
+        { error: 'Too many subscription checkout attempts. Please try again later.' },
+        { status: 429 },
+      );
+    }
 
     const subscriptions = await base44.asServiceRole.entities.Subscription.filter({
       user_id: user.id,

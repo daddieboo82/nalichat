@@ -4,6 +4,9 @@ import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/work
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
     const base44 = createClientFromRequest(req);
     const { event, data, changed_fields } = await req.json();
     const record = workflowEntityRecordId({ event, data });

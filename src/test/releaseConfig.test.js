@@ -758,6 +758,22 @@ describe('release configuration', () => {
     expect(joinPage).toContain('squad.is_own_invite');
   });
 
+  it('keeps ArtPost liker identities private while preserving viewer like state', async () => {
+    const artPost = await readJson('base44/entities/ArtPost.jsonc');
+    const liked = await readText('base44/functions/listMyLikedPostIds/entry.ts');
+    const toggle = await readText('base44/functions/toggleLike/entry.ts');
+    const explore = await readText('src/pages/Explore.jsx');
+    const profile = await readText('src/pages/Profile.jsx');
+
+    expect(artPost.properties.liked_by.rls?.read?.user_condition?.role).toBe('admin');
+    expect(liked).toContain('ArtPost.filter({ liked_by: user.id })');
+    expect(liked).toContain('post_ids: posts.map');
+    expect(toggle).toContain('return Response.json({ liked: !alreadyLiked, likes });');
+    expect(toggle).not.toContain('liked_by });');
+    expect(explore).toContain('functions.invoke("listMyLikedPostIds"');
+    expect(profile).toContain('functions.invoke("listMyLikedPostIds"');
+  });
+
   it('refreshes public users without subscribing to raw User events', async () => {
     const messages = await readText('src/pages/Messages.jsx');
     expect(messages).not.toContain('entities.User.subscribe');

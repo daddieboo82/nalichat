@@ -35,9 +35,10 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
         messageId: message.id,
         type,
       });
+      if (response?.data?.error) throw new Error(response.data.error);
       setResult(response.data);
     } catch (err) {
-      setError("Nali couldn't create that moment. Try again!");
+      setError(err?.message || "Nali couldn't create that moment. Try again!");
     } finally {
       setLoading(false);
     }

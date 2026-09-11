@@ -24,7 +24,7 @@ const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", 
 export default function Settings() {
   const { checkUserAuth } = useAuth();
   const [user, setUser] = useState(null);
-  const [form, setForm] = useState({ display_name: "", bio: "", role: "artist", location: "", genres: [], avatar_url: "" });
+  const [form, setForm] = useState({ display_name: "", bio: "", artist_role: "artist", location: "", genres: [], avatar_url: "" });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [genreInput, setGenreInput] = useState("");
@@ -37,7 +37,7 @@ export default function Settings() {
       setForm({
         display_name: u.display_name || u.full_name || "",
         bio: u.bio || "",
-        role: u.role || "artist",
+        artist_role: u.artist_role || (["artist","producer","engineer","ar"].includes(u.role) ? u.role : "artist"),
         location: u.location || "",
         genres: u.genres || [],
         avatar_url: u.avatar_url || "",
@@ -73,6 +73,7 @@ export default function Settings() {
     setSaving(true);
     try {
       const cleanedForm = { ...form };
+      delete cleanedForm.role;
       if (!isValidAvatarUrl(cleanedForm.avatar_url)) {
         cleanedForm.avatar_url = "";
         toast.warning("Your previous avatar URL was invalid and has been cleared. Please upload an image.");
@@ -91,7 +92,7 @@ export default function Settings() {
   if (!user) return <div className="flex items-center justify-center h-full"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
 
   return (
-    <PullToRefresh onRefresh={async () => { const u = await base44.auth.me(); setUser(u); setForm({ display_name: u.display_name || u.full_name || "", bio: u.bio || "", role: u.role || "artist", location: u.location || "", genres: u.genres || [], avatar_url: u.avatar_url || "" }); }} className="h-full overflow-y-auto">
+    <PullToRefresh onRefresh={async () => { const u = await base44.auth.me(); setUser(u); setForm({ display_name: u.display_name || u.full_name || "", bio: u.bio || "", artist_role: u.artist_role || (["artist","producer","engineer","ar"].includes(u.role) ? u.role : "artist"), location: u.location || "", genres: u.genres || [], avatar_url: u.avatar_url || "" }); }} className="h-full overflow-y-auto">
       <div className="max-w-xl mx-auto p-6 py-12">
         <h1 className="text-2xl font-heading font-bold mb-8">Profile Settings</h1>
 
@@ -134,7 +135,7 @@ export default function Settings() {
 
           <div>
             <label className="text-sm font-medium mb-2 block">Role</label>
-            <Select value={form.role} onValueChange={v => setForm(f => ({ ...f, role: v }))}>
+            <Select value={form.artist_role} onValueChange={v => setForm(f => ({ ...f, artist_role: v }))}>
               <SelectTrigger className="bg-secondary/50 border-0 rounded-xl">
                 <SelectValue />
               </SelectTrigger>

@@ -12,10 +12,11 @@ const transcriptionCache = new Map();
 const APP_URL = "nalichat.base44.app";
 const CARD_SIZE = 1080;
 
-async function fetchTranscription(fileUrl, messageId) {
+async function fetchTranscription(_fileUrl, messageId) {
   if (transcriptionCache.has(messageId)) return transcriptionCache.get(messageId);
-  const res = await base44.integrations.Core.TranscribeAudio({ audio_url: fileUrl });
-  const text = (res && res.data ? res.data : res) || "";
+  const res = await base44.functions.invoke("transcribeMessageAudio", { messageId });
+  if (res?.data?.error) throw new Error(res.data.error);
+  const text = res?.data?.text || "";
   const clean = typeof text === "string" ? text.trim() : String(text).trim();
   if (clean) {
     transcriptionCache.set(messageId, clean);

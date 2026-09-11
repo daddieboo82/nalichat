@@ -106,7 +106,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{user.display_name || user.full_name}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{user.location || user.role || "NaliChat member"}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{user.location || user.artist_role || "NaliChat member"}</p>
                     </div>
                     <Select value={role} onValueChange={(v) => handleRoleChange(user.id, v)}>
                       <SelectTrigger className={`w-28 h-8 text-xs border-0 rounded-lg ${ROLE_COLORS[role]}`}>

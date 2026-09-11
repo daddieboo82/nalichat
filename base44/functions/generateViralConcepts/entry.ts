@@ -1,4 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { requireEntitlement, preferredAiModel } from '../../shared/entitlementAccess.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const MOODS = new Set(['all', 'humor', 'shock', 'curiosity', 'relatable', 'controversy', 'awe']);
 
@@ -43,10 +45,30 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const { allowed, entitlements } = await requireEntitlement(
+      base44.asServiceRole.entities,
+      user.id,
+      'ai.standard',
+    );
+    if (!allowed) {
+      return Response.json({ error: 'Premium is required for ViralSeed AI' }, { status: 403 });
+    }
+
+    const rate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'viral_seed',
+      20,
+    );
+    if (!rate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
+
     const body = await req.json().catch(() => ({}));
     const mood = MOODS.has(body?.mood) ? body.mood : 'all';
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      ...(preferredAiModel(entitlements) ? { model: preferredAiModel(entitlements) } : {}),
       prompt: buildPrompt(mood),
       response_json_schema: RESPONSE_SCHEMA,
     });

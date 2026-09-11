@@ -17,6 +17,7 @@ import MessageContextMenu from "./MessageContextMenu";
 import VoiceTranscription from "./VoiceTranscription";
 import SwipeToReply from "./SwipeToReply";
 import ReportContentDialog from "@/components/ReportContentDialog";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -61,7 +62,7 @@ function ReadReceipts({ readBy, users }) {
 
 
 
-function FileAttachment({ message, isOwn, onOpenViewer }) {
+function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe }) {
   const [dlProgress, setDlProgress] = useState(null); // null = idle, 0-100 = downloading
   const isImage = message.type === "image" || message.file_type?.startsWith("image");
   const isAudio = message.type === "audio" || message.file_type?.startsWith("audio") || !!message.file_name?.match(/\.(mp3|wav|ogg|m4a|aac)$/i) || !!message.file_url?.match(/\.(mp3|wav|ogg|m4a|aac)(\?.*)?$/i);
@@ -91,7 +92,7 @@ function FileAttachment({ message, isOwn, onOpenViewer }) {
     return (
       <div className="flex flex-col gap-2 min-w-[200px] sm:min-w-[240px]">
         <CustomMediaPlayer src={message.file_url} title={message.file_name || "Audio Message"} className="shadow-md" />
-        <VoiceTranscription message={message} isOwn={isOwn} />
+        {canTranscribe && <VoiceTranscription message={message} isOwn={isOwn} />}
         <button onClick={() => onOpenViewer(message)} className="text-[10px] text-muted-foreground hover:text-foreground flex items-center justify-end gap-1 transition-colors mt-1 font-medium px-1">
           <Maximize2 className="w-3 h-3" /> Open full viewer
         </button>
@@ -134,6 +135,9 @@ const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.l
 import React from "react";
 
 export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM }) {
+  const { hasEntitlement } = useSubscription();
+  const canUseAi = hasEntitlement("ai.standard");
+  const canTranscribe = hasEntitlement("voice.transcription");
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -145,8 +149,8 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
 
   const hasFile = message.file_url && message.type !== "text";
   const isAudioMessage = !!(message.file_url && (message.type === "audio" || message.file_type?.startsWith("audio") || message.file_name?.match(/\.(mp3|wav|ogg|m4a|aac)$/i)));
-  const canGoViral = !!(message.text || isAudioMessage);
-  const canShareVoiceCard = !!isAudioMessage;
+  const canGoViral = canUseAi && !!(message.text || isAudioMessage);
+  const canShareVoiceCard = canTranscribe && !!isAudioMessage;
 
   const showContextMenu = (x, y) => {
     const menuW = 200, menuH = 320;
@@ -236,7 +240,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           {message.type === "session" ? (
             <ChatSessionViewer message={message} currentUser={currentUser} />
           ) : hasFile ? (
-            <FileAttachment message={message} isOwn={isOwn} onOpenViewer={() => {
+            <FileAttachment message={message} isOwn={isOwn} canTranscribe={canTranscribe} onOpenViewer={() => {
               if (message.type === "audio" || message.file_type?.startsWith("audio")) {
                 onPlayAudio?.(message);
               } else {
@@ -368,7 +372,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           </button>
         )}
 
-        {message.text && message.type === "text" && (
+        {canUseAi && message.text && message.type === "text" && (
           <button
             onClick={() => speakText(message.text)}
             className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-primary/15 hover:border-primary/40 hover:text-primary transition-all shadow-sm"
@@ -459,12 +463,12 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         position={contextMenuPos}
         onClose={() => setContextMenuPos(null)}
         items={[
-          { icon: Sparkles, label: "Create Viral Moment", onClick: () => setViralOpen(true), highlight: true },
+          ...(canGoViral ? [{ icon: Sparkles, label: "Create Viral Moment", onClick: () => setViralOpen(true), highlight: true }] : []),
           ...(canShareVoiceCard ? [{ icon: Share2, label: "Share Voice Card", onClick: () => setVoiceCardOpen(true), highlight: true }] : []),
           { icon: Reply, label: "Reply", onClick: () => { if (navigator.vibrate) navigator.vibrate(20); onReply?.(message); } },
           { icon: MessageSquareQuote, label: "Open Thread", onClick: () => onOpenThread?.(message) },
           ...(message.text ? [{ icon: Copy, label: "Copy", onClick: () => onCopy?.(message) }] : []),
-          ...(message.text ? [{ icon: Volume2, label: "Read Aloud", onClick: () => speakText(message.text) }] : []),
+          ...(canUseAi && message.text ? [{ icon: Volume2, label: "Read Aloud", onClick: () => speakText(message.text) }] : []),
           ...(isOwn && message.type === "text" ? [{ icon: Pencil, label: "Edit", onClick: () => onEdit?.(message) }] : []),
           ...((canDelete !== undefined ? canDelete : isOwn) ? [{ icon: Trash2, label: "Delete", onClick: () => { if (navigator.vibrate) navigator.vibrate(40); onDelete?.(message.id); }, destructive: true }] : []),
           { icon: Flag, label: "Report", onClick: () => setReportOpen(true), destructive: true },

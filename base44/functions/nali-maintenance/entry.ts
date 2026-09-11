@@ -41,6 +41,11 @@ export default async function(req) {
     if (wants('Conversation')) loads.conversations = s.Conversation.list('-created_date', 500);
     if (wants('Message')) loads.messages = s.Message.list('-created_date', 500);
     if (wants('TrackVersion')) loads.trackVersions = s.TrackVersion.list('-created_date', 500);
+    if (wants('Playlist')) {
+      loads.playlists = s.Playlist.list('-created_date', 500);
+      if (!loads.artPosts) loads.artPosts = s.ArtPost.list('-created_date', 500);
+    }
+    if (wants('UsageRateLimit')) loads.usageRateLimits = s.UsageRateLimit.list('-created_date', 1000);
     if (wants('User')) loads.users = s.User.list();
 
     const data = {};
@@ -290,6 +295,63 @@ export default async function(req) {
       if (mode === 'repair' && avatarFixes.length) {
         await s.User.bulkUpdate(avatarFixes);
         avatarFixes.forEach(u => fixed.push({ entity: 'User', id: u.id, change: 'avatar_url cleared (was not an image URL)' }));
+      }
+    }
+
+
+    // =====================================================
+    // 13. PLAYLIST — remove references to deleted ArtPosts
+    // =====================================================
+    if (data.playlists && data.artPosts) {
+      const validPostIds = new Set(data.artPosts.map((post) => post.id));
+      const playlistFixes = [];
+      data.playlists.forEach((playlist) => {
+        const currentIds = Array.isArray(playlist.track_ids) ? playlist.track_ids : [];
+        const validIds = currentIds.filter((id) => validPostIds.has(id));
+        if (validIds.length !== currentIds.length) {
+          issues.push({
+            entity: 'Playlist',
+            id: playlist.id,
+            field: 'track_ids',
+            issue: `${currentIds.length - validIds.length} deleted track reference(s)`,
+          });
+          if (mode === 'repair') playlistFixes.push({ id: playlist.id, track_ids: validIds });
+        }
+      });
+      if (mode === 'repair' && playlistFixes.length) {
+        await s.Playlist.bulkUpdate(playlistFixes);
+        playlistFixes.forEach((u) => fixed.push({
+          entity: 'Playlist',
+          id: u.id,
+          change: 'removed deleted track references',
+        }));
+      }
+    }
+
+    // =====================================================
+    // 14. USAGE RATE LIMIT — delete expired ledger rows
+    // =====================================================
+    if (data.usageRateLimits) {
+      const expired = data.usageRateLimits.filter((row) =>
+        row.expires_at && new Date(row.expires_at).getTime() < now
+      );
+      expired.forEach((row) => {
+        issues.push({
+          entity: 'UsageRateLimit',
+          id: row.id,
+          field: 'expires_at',
+          issue: 'Expired rate-limit ledger row',
+        });
+      });
+      if (mode === 'repair') {
+        for (const row of expired) {
+          await s.UsageRateLimit.delete(row.id);
+          fixed.push({
+            entity: 'UsageRateLimit',
+            id: row.id,
+            change: 'expired row deleted',
+          });
+        }
       }
     }
 

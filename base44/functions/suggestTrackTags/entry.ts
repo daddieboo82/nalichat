@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { requireEntitlement, preferredAiModel } from '../../shared/entitlementAccess.ts';
 
 // Triggered by an entity automation when a Track is created.
 // Analyzes the uploaded track and suggests a genre + BPM, then saves them
@@ -24,6 +25,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Track not found' }, { status: 404 });
     }
 
+    const uploaderId = track.uploaded_by;
+    if (!uploaderId) {
+      return Response.json({ success: true, skipped: true, reason: 'missing_uploader' });
+    }
+    const { allowed, entitlements } = await requireEntitlement(
+      base44.asServiceRole.entities,
+      uploaderId,
+      'ai.standard',
+    );
+    if (!allowed) {
+      return Response.json({ success: true, skipped: true, reason: 'ai_not_entitled' });
+    }
+
     // Pull project context for a better suggestion
     let project = null;
     if (track.project_id) {
@@ -46,7 +60,7 @@ Based on this, suggest the most likely musical genre and a typical BPM (beats pe
 Return realistic values. BPM must be a whole number between 60 and 200.`;
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      model: "claude_opus_4_8",
+      ...(preferredAiModel(entitlements) ? { model: preferredAiModel(entitlements) } : {}),
       prompt,
       response_json_schema: {
         type: 'object',

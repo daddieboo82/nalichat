@@ -39,39 +39,67 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
     if (!remixName.trim()) return toast.error("Give your remix a name.");
     setSubmitting(true);
     try {
-      let remix_file_url = "", source_type = "", file_format = "", external_url = "";
+      let source_type = "";
+      let remix_file_url = "";
+      let external_url = "";
+      let file_format = "";
+      let file_size = 0;
+      let source_post_id = "";
 
       if (tab === "studio") {
         const track = myTracks.find((t) => t.id === selectedTrackId);
-        if (!track) { toast.error("Select one of your tracks."); setSubmitting(false); return; }
-        remix_file_url = track.file_url;
+        if (!track) {
+          toast.error("Select one of your tracks.");
+          setSubmitting(false);
+          return;
+        }
         source_type = "nalichat_studio";
+        source_post_id = track.id;
       } else if (tab === "external") {
-        if (!file) { toast.error("Choose a file to upload."); setSubmitting(false); return; }
+        if (!file) {
+          toast.error("Choose a file to upload.");
+          setSubmitting(false);
+          return;
+        }
+        if (file.size > 100 * 1024 * 1024) {
+          toast.error("Remix files must be 100MB or smaller.");
+          setSubmitting(false);
+          return;
+        }
+        file_format = (file.name.split(".").pop() || "").toLowerCase();
+        if (!["mp3", "wav"].includes(file_format)) {
+          toast.error("Only MP3 and WAV files are supported.");
+          setSubmitting(false);
+          return;
+        }
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
         remix_file_url = file_url;
+        file_size = file.size;
         source_type = "external_upload";
-        file_format = (file.name.split(".").pop() || "").toLowerCase();
       } else {
-        if (!linkUrl.trim()) { toast.error("Paste a link to your remix."); setSubmitting(false); return; }
-        remix_file_url = linkUrl.trim();
+        if (!linkUrl.trim()) {
+          toast.error("Paste a link to your remix.");
+          setSubmitting(false);
+          return;
+        }
         external_url = linkUrl.trim();
         source_type = "link_import";
       }
 
-      const submission = await base44.entities.ChallengeSubmission.create({
+      const res = await base44.functions.invoke("submitChallengeRemix", {
         challenge_id: challenge.id,
-        producer_id: user.id,
-        producer_name: user.full_name || user.email,
-        producer_avatar: user.avatar_url,
-        remix_file_url,
         remix_name: remixName.trim(),
         description: description.trim(),
         source_type,
+        source_post_id,
+        remix_file_url,
         external_url,
         file_format: file_format || undefined,
+        file_size,
         device_type: detectDevice(),
       });
+      if (res?.data?.error) throw new Error(res.data.error);
+      const submission = res?.data?.submission;
 
       toast.success("Remix submitted! Good luck 🎧");
       reset();

@@ -8,6 +8,7 @@ import { useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
+import { useSubscription } from "@/hooks/useSubscription";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +24,8 @@ import {
 
 
 export default function CoverArt() {
+  const { hasEntitlement } = useSubscription();
+  const canUseAi = hasEntitlement("ai.standard");
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [selectedPost, setSelectedPost] = useState(null);
@@ -151,17 +154,16 @@ export default function CoverArt() {
       setIsImporting(true);
       setShowFilesDialog(false);
       toast.info('Importing track from Files...');
-      await base44.entities.ArtPost.create({
+      const published = await base44.functions.invoke("createArtPost", {
         title: file.name.replace(/\.[^/.]+$/, ""),
         description: "Imported from Files",
         medium: "original",
         is_explicit: false,
-        creator_id: currentUser.id,
-        creator_name: currentUser.display_name || currentUser.full_name || "Unknown Artist",
         file_url: file.file_url,
         genre: "Unknown",
-        tags: ["imported"]
+        tags: ["imported"],
       });
+      if (published?.data?.error) throw new Error(published.data.error);
       queryClient.invalidateQueries({ queryKey: ["myArtPosts"] });
       toast.success("Track imported successfully!");
     } catch (error) {
@@ -185,17 +187,16 @@ export default function CoverArt() {
       setIsImporting(true);
       toast.info('Uploading track...');
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.entities.ArtPost.create({
+      const published = await base44.functions.invoke("createArtPost", {
         title: file.name.replace(/\.[^/.]+$/, ""),
         description: "Imported track",
         medium: "original",
         is_explicit: false,
-        creator_id: currentUser.id,
-        creator_name: currentUser.display_name || currentUser.full_name || "Unknown Artist",
-        file_url: file_url,
+        file_url,
         genre: "Unknown",
-        tags: ["imported"]
+        tags: ["imported"],
       });
+      if (published?.data?.error) throw new Error(published.data.error);
       queryClient.invalidateQueries({ queryKey: ["myArtPosts"] });
       toast.success("Track imported successfully!");
     } catch (error) {
@@ -722,7 +723,7 @@ export default function CoverArt() {
                     size="lg" 
                     className="flex-1 min-w-[100px] h-14 gap-2 bg-transparent"
                     onClick={() => setShowEditDialog(true)}
-                    disabled={generateArtMutation.isPending || isUploading}
+                    disabled={!canUseAi || generateArtMutation.isPending || isUploading}
                   >
                     <PenTool className="w-5 h-5" />
                     Edit

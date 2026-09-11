@@ -86,8 +86,8 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
                     <p className="font-medium text-sm">{user.display_name || user.full_name}</p>
                     <p className="text-xs text-muted-foreground truncate">{user.bio || user.email || "No bio"}</p>
                   </div>
-                  <Badge className={`text-[10px] ${roleColors[user.role] || "bg-secondary text-secondary-foreground"} border-0`}>
-                    {user.role?.toUpperCase()}
+                  <Badge className={`text-[10px] ${roleColors[user.artist_role] || "bg-secondary text-secondary-foreground"} border-0`}>
+                    {user.artist_role?.toUpperCase()}
                   </Badge>
                 </button>
               ))}
@@ -113,8 +113,8 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
                 <p className="font-medium text-sm">{user.display_name || user.full_name}</p>
                 <p className="text-xs text-muted-foreground truncate">{user.bio || user.email || "No bio"}</p>
               </div>
-              <Badge className={`text-[10px] ${roleColors[user.role] || "bg-secondary text-secondary-foreground"} border-0`}>
-                {user.role?.toUpperCase()}
+              <Badge className={`text-[10px] ${roleColors[user.artist_role] || "bg-secondary text-secondary-foreground"} border-0`}>
+                {user.artist_role?.toUpperCase()}
               </Badge>
             </button>
           ))}

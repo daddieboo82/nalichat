@@ -8,8 +8,11 @@ import { Play, Pause, Share2, Loader2, Wand2, Music, Zap, Radio } from "lucide-r
 import { motion } from "framer-motion";
 import CollaboratorPresence from "@/components/studio/CollaboratorPresence";
 import ExportBounce from "@/components/studio/ExportBounce";
+import { useSubscription } from "@/hooks/useSubscription";
 
 export default function StudioEditor() {
+  const { hasEntitlement } = useSubscription();
+  const canUseAi = hasEntitlement("ai.standard");
   const [currentUser, setCurrentUser] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
   const [collaborators, setCollaborators] = useState([]);
@@ -40,6 +43,10 @@ export default function StudioEditor() {
   }, [activeSession, currentUser]);
 
   const handleProcessAudio = async () => {
+    if (!canUseAi) {
+      setError("Premium is required for AI mastering.");
+      return;
+    }
     if (!audioUrl) return;
     setProcessing(true);
     setError("");
@@ -60,20 +67,15 @@ export default function StudioEditor() {
     if (!audioUrl || !uploadTitle || !currentUser) return;
     
     try {
-      await base44.entities.ArtPost.create({
+      const published = await base44.functions.invoke("createArtPost", {
         title: uploadTitle,
         description: masterAnalysis?.recommendations || 'AI-mastered session',
         file_url: audioUrl,
         medium: 'production',
         is_explicit: false,
-        creator_id: currentUser.id,
-        creator_name: currentUser.full_name,
-        creator_avatar: currentUser.avatar_url,
-        featured: false,
-        likes: 0,
-        views: 0,
         genre: 'Electronic'
       });
+      if (published?.data?.error) throw new Error(published.data.error);
       setShareDialog(false);
       setAudioUrl("");
       setUploadTitle("");

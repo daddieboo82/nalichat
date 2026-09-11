@@ -9,10 +9,26 @@
       "type": "string"
     },
     "host_artist_name": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "host_artist_id": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "source_track_url": {
       "type": "string",
@@ -27,14 +43,14 @@
       "items": {
         "type": "string"
       },
-      "description": "Legacy multi-stem uploads \u2014 kept for backward compatibility, no longer used by the UI"
+      "description": "Legacy multi-stem uploads — kept for backward compatibility, no longer used by the UI"
     },
     "stem_names": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Legacy stem names \u2014 kept for backward compatibility, no longer used by the UI"
+      "description": "Legacy stem names — kept for backward compatibility, no longer used by the UI"
     },
     "genre": {
       "type": "string"
@@ -83,7 +99,9 @@
   ],
   "rls": {
     "create": {
-      "data.host_artist_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {},
     "update": {

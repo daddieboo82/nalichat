@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import MediaViewerModal from "./MediaViewerModal";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { sounds } from "@/hooks/use-sound";
+import { base44 } from "@/api/base44Client";
 
 import React from "react";
 
@@ -64,6 +65,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
                     if (isActive && isPlaying && audioPlayer?.togglePlay) {
                       audioPlayer.togglePlay();
                     } else if (typeof playTrack === 'function') {
+                      base44.functions.invoke("recordArtPostView", { postId: post.id }).catch(() => {});
                       playTrack({
                         id: post.id,
                         title: post.title,

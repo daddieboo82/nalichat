@@ -85,8 +85,9 @@ function FileDownloadButton({ file }) {
   );
 }
 
-function FileShareButton({ file }) {
+function FileShareButton({ file, canShare }) {
   const { toast } = useToast();
+  if (!canShare) return null;
 
   const handleShare = async (e) => {
     e.preventDefault();
@@ -101,7 +102,7 @@ function FileShareButton({ file }) {
       toast({ title: "Link copied", description: "Secure share link copied to clipboard" });
     } catch (error) {
       console.error("Could not create share link", error);
-      toast({ title: "Share failed", description: "Only the uploader can create a public share link.", variant: "destructive" });
+      toast({ title: "Share failed", description: "You do not have permission to share this file.", variant: "destructive" });
     }
   };
 
@@ -557,6 +558,7 @@ export default function Files() {
                 {filtered.map((file, i) => {
                   const Icon = typeIcons[file.file_type] || File;
                   const isSelected = selectedIds.includes(file.id);
+              const canEditFile = file.uploader_id === currentUser?.id || (file.edit_user_ids || []).includes(currentUser?.id);
                   return (
                     <motion.div
                       key={file.id}
@@ -615,9 +617,9 @@ export default function Files() {
                           )}
                         </div>
                         <div className="flex gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                          <FileShareButton file={file} />
+                          <FileShareButton file={file} canShare={canEditFile} />
                           <FileDownloadButton file={file} />
-                          {file.uploader_id === currentUser?.id && (
+                          {canEditFile && (
                             <>
                               <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg" onClick={(e) => handleEditClick(e, file)}>
                                 <Edit className="w-3.5 h-3.5" />
@@ -640,6 +642,7 @@ export default function Files() {
             {filtered.map((file, i) => {
               const Icon = typeIcons[file.file_type] || File;
               const isSelected = selectedIds.includes(file.id);
+              const canEditFile = file.uploader_id === currentUser?.id || (file.edit_user_ids || []).includes(currentUser?.id);
               return (
                 <motion.div
                   key={file.id}
@@ -651,7 +654,8 @@ export default function Files() {
                   <div className="flex items-start gap-3">
                     <Checkbox
                       checked={isSelected}
-                      onCheckedChange={() => toggleSelect(file.id)}
+                      disabled={!canEditFile}
+                      onCheckedChange={() => canEditFile && toggleSelect(file.id)}
                       className="mt-1 shrink-0"
                     />
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${typeColors[file.file_type] || typeColors.other}`}>
@@ -698,9 +702,9 @@ export default function Files() {
                       )}
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <FileShareButton file={file} />
+                      <FileShareButton file={file} canShare={canEditFile} />
                       <FileDownloadButton file={file} />
-                      {file.uploader_id === currentUser?.id && (
+                      {canEditFile && (
                         <>
                           <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg" onClick={(e) => handleEditClick(e, file)}>
                             <Edit className="w-3.5 h-3.5" />

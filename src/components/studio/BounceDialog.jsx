@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { base44 } from "@/api/base44Client";
 import { renderMasteredMix } from "@/lib/autoMaster";
 import { toast } from "sonner";
+import { useSubscription } from "@/hooks/useSubscription";
 
 // Neutral params = straight mix with no EQ/loudness coloring (used when mastering is off)
 const FLAT_PARAMS = {
@@ -31,6 +32,8 @@ const STEPS = [
 
 export default function BounceDialog({ projectTitle, project, tracks, trigger, open: controlledOpen, onOpenChange, redirectAfter, mixOptions, canPublish = true }) {
   const navigate = useNavigate();
+  const { hasEntitlement } = useSubscription();
+  const canUseAi = hasEntitlement("ai.standard");
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -45,7 +48,7 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
-  const [autoMaster, setAutoMaster] = useState(true);
+  const [autoMaster, setAutoMaster] = useState(canUseAi);
   const [showManualParams, setShowManualParams] = useState(false);
   const [params, setParams] = useState(FLAT_PARAMS);
   const [savedParams, setSavedParams] = useState(null);
@@ -79,7 +82,7 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
       // 1. AI mastering engineer decides the processing chain (skip when disabled)
       setStep(1);
       let masterParams = params;
-      if (autoMaster && !showManualParams) {
+      if (canUseAi && autoMaster && !showManualParams) {
         const res = await base44.functions.invoke("aiMasterSession", {
           project_title: bounceTitle,
           genre: project?.genre,
@@ -230,9 +233,23 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold">AI Auto-Mastering</p>
-                  <p className="text-xs text-muted-foreground">Industry-standard EQ, compression & limiting for a pro-finished sound.</p>
+                  <p className="text-xs text-muted-foreground">
+                    {canUseAi
+                      ? "Industry-standard EQ, compression & limiting for a pro-finished sound."
+                      : "Premium unlocks AI mastering. You can still bounce and publish with a flat master."}
+                  </p>
                 </div>
-                <Switch checked={autoMaster} onCheckedChange={setAutoMaster} />
+                <Switch
+                  checked={canUseAi && autoMaster}
+                  onCheckedChange={(checked) => {
+                    if (!canUseAi) {
+                      toast.error("Premium is required for AI mastering.");
+                      return;
+                    }
+                    setAutoMaster(checked);
+                  }}
+                  disabled={!canUseAi}
+                />
               </div>
 
               {autoMaster && (

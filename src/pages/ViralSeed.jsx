@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ViralConceptCard from "@/components/viralseed/ViralConceptCard";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const MOODS = [
   { id: "humor", label: "😂 Funny" },
@@ -17,6 +18,8 @@ const MOODS = [
 ];
 
 export default function ViralSeed() {
+  const { hasEntitlement } = useSubscription();
+  const canUseAi = hasEntitlement("ai.standard");
   const [concepts, setConcepts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [mood, setMood] = useState("all");
@@ -25,6 +28,10 @@ export default function ViralSeed() {
   const queryClient = useQueryClient();
 
   const generate = async () => {
+    if (!canUseAi) {
+      setError("Premium is required to use ViralSeed AI.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -113,7 +120,7 @@ export default function ViralSeed() {
         <div className="flex justify-center">
           <Button
             onClick={generate}
-            disabled={loading}
+            disabled={loading || !canUseAi}
             size="lg"
             className="bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-white shadow-lg shadow-primary/30 px-8 h-12 rounded-xl"
           >
@@ -130,7 +137,7 @@ export default function ViralSeed() {
             ) : (
               <>
                 <Sparkles className="w-5 h-5" />
-                Generate 5 Viral Concepts
+                {!canUseAi ? "Premium Required" : "Generate 5 Viral Concepts"}
               </>
             )}
           </Button>

@@ -1,4 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { requireEntitlement } from '../../shared/entitlementAccess.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 // Generates AI cover art for a track: transcribes audio, uses LLM to craft
 // an image prompt, then generates the image. All three credit-costly
@@ -9,6 +11,25 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { allowed } = await requireEntitlement(
+      base44.asServiceRole.entities,
+      user.id,
+      'ai.standard',
+    );
+    if (!allowed) {
+      return Response.json({ error: 'Premium is required for AI cover art' }, { status: 403 });
+    }
+
+    const rate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'ai_cover_art',
+      20,
+    );
+    if (!rate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     const { file_url, title, genre, tags } = await req.json();

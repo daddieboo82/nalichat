@@ -97,7 +97,7 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{u.display_name || u.full_name}</p>
-                  <p className="text-[10px] text-muted-foreground capitalize">{u.role}</p>
+                  <p className="text-[10px] text-muted-foreground capitalize">{u.artist_role || "artist"}</p>
                 </div>
                 {u.id !== currentUser?.id && onStartDM && (
                   <button

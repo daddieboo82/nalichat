@@ -1,4 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { requireEntitlement, preferredAiModel } from '../../shared/entitlementAccess.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 // Returns concrete, numeric mastering parameters that the client applies via WebAudio
 // to automatically produce an industry-ready master from stacked stems.
@@ -10,6 +12,25 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { allowed, entitlements } = await requireEntitlement(
+      base44.asServiceRole.entities,
+      user.id,
+      'ai.standard',
+    );
+    if (!allowed) {
+      return Response.json({ error: 'Premium is required for AI mastering' }, { status: 403 });
+    }
+
+    const rate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'ai_master_session',
+      30,
+    );
+    if (!rate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
+
     const { project_title, genre, bpm, stems } = await req.json();
 
     const stemSummary = Array.isArray(stems)
@@ -17,7 +38,7 @@ Deno.serve(async (req) => {
       : 'unknown';
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      model: "claude_opus_4_8",
+      ...(preferredAiModel(entitlements) ? { model: preferredAiModel(entitlements) } : {}),
       prompt: `You are a world-class mastering engineer. Produce concrete, numeric processing settings to turn a multi-stem mix into an industry-ready, streaming-loud master.
 
 Project: "${project_title}"

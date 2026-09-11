@@ -41,10 +41,18 @@ describe('release configuration', () => {
     expect(version.properties.access_user_ids).toBeTruthy();
     expect(sharedFile.properties.access_user_ids).toBeTruthy();
     expect(folder.properties.access_user_ids).toBeTruthy();
+    expect(track.properties.edit_user_ids).toBeTruthy();
+    expect(version.properties.edit_user_ids).toBeTruthy();
+    expect(sharedFile.properties.edit_user_ids).toBeTruthy();
+    expect(folder.properties.edit_user_ids).toBeTruthy();
     expect(track.rls.read).not.toBeNull();
     expect(version.rls.read).not.toBeNull();
     expect(sharedFile.rls.read).not.toBeNull();
     expect(folder.rls.read).not.toBeNull();
+    expect(JSON.stringify(track.rls.update)).toContain('edit_user_ids');
+    expect(JSON.stringify(version.rls.update)).toContain('edit_user_ids');
+    expect(JSON.stringify(sharedFile.rls.update)).toContain('edit_user_ids');
+    expect(JSON.stringify(folder.rls.update)).toContain('edit_user_ids');
   });
 
   it('keeps the PWA manifest scoped to the serving origin', async () => {

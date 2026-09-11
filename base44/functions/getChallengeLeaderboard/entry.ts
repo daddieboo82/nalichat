@@ -32,9 +32,6 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
-    const challenge = await entities.Challenge.get(challengeId);
-    if (!challenge) return Response.json({ error: 'Challenge not found' }, { status: 404 });
-
     const nowMs = Date.now();
     pruneLeaderboardCache(nowMs);
     const cached = leaderboardCache.get(challengeId);
@@ -47,6 +44,11 @@ Deno.serve(async (req) => {
     let pending = leaderboardInFlight.get(challengeId);
     if (!pending) {
       pending = (async () => {
+        const challenge = await entities.Challenge.get(challengeId);
+        if (!challenge) {
+          return { error: 'Challenge not found', status: 404 };
+        }
+
         const now = new Date();
         const todayStart = new Date(now);
         todayStart.setHours(0, 0, 0, 0);
@@ -104,7 +106,10 @@ Deno.serve(async (req) => {
     }
 
     try {
-      const payload = await pending;
+      const payload: any = await pending;
+      if (payload?.error && payload?.status) {
+        return Response.json({ error: payload.error }, { status: payload.status });
+      }
       return Response.json(payload, {
         headers: { 'Cache-Control': 'public, max-age=15', 'X-Nali-Cache': 'miss' },
       });

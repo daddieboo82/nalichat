@@ -138,6 +138,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     sounds.recStart();
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
       sounds.error();
+      toast.error("Voice recording isn't supported on this device or browser.");
       return;
     }
     let stream;
@@ -145,6 +146,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
       sounds.error();
+      toast.error("Microphone access was denied or unavailable.");
       return;
     }
     const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"];
@@ -156,6 +158,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       stream.getTracks().forEach(track => track.stop());
       sounds.error();
       console.error("Unable to start voice recording:", error);
+      toast.error("Couldn't start voice recording. Please try again.");
       return;
     }
     chunksRef.current = [];
@@ -183,7 +186,9 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
         onSend(payload);
         onCancelReply?.();
         onCancelEdit?.();
-      } catch {
+      } catch (error) {
+        sounds.error();
+        toast.error(error?.message || "Couldn't upload the voice message. Please try again.");
         setUploads(u => u.map(x => x.id === id ? { ...x, error: true } : x));
         setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 3000);
       }

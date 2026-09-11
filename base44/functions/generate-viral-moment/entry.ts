@@ -55,8 +55,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const senderName = message.sender_name || 'Someone';
-    let finalMessageText = typeof message.text === 'string' ? message.text.trim() : '';
+    const senderName = String(message.sender_name || 'Someone')
+      .replace(/[\r\n]/g, ' ')
+      .trim()
+      .slice(0, 120) || 'Someone';
+    let finalMessageText = typeof message.text === 'string'
+      ? message.text.trim().slice(0, 12000)
+      : '';
     const isVoiceNote =
       !finalMessageText &&
       !!message.file_url &&
@@ -82,7 +87,8 @@ Deno.serve(async (req) => {
         const transcript = await base44.asServiceRole.integrations.Core.TranscribeAudio({
           audio_url: message.file_url,
         });
-        finalMessageText = typeof transcript === 'string' ? transcript : transcript?.text || '';
+        const transcriptText = typeof transcript === 'string' ? transcript : transcript?.text || '';
+        finalMessageText = String(transcriptText).trim().slice(0, 12000);
       } catch (transcribeErr) {
         console.error('Transcription failed:', transcribeErr.message);
         return Response.json({ error: 'Could not transcribe the voice note. Try a text message instead.' }, { status: 400 });
@@ -118,10 +124,14 @@ Respond as JSON: { "caption": "the meme text", "image_prompt": "detailed visual 
         }
       });
 
-      const { caption, image_prompt } = memeRes;
+      const caption = String(memeRes?.caption || '').trim().slice(0, 300);
+      const imagePrompt = String(memeRes?.image_prompt || '').trim().slice(0, 4000);
+      if (!caption || !imagePrompt) {
+        return Response.json({ error: 'AI returned an invalid meme concept' }, { status: 502 });
+      }
 
       const imgRes = await base44.asServiceRole.integrations.Core.GenerateImage({
-        prompt: image_prompt + ". Bold, vibrant, meme-worthy, high quality, no text, no words, no typography."
+        prompt: imagePrompt + ". Bold, vibrant, meme-worthy, high quality, no text, no words, no typography."
       });
 
       if (!imgRes || !imgRes.url) throw new Error("Image generation failed");

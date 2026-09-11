@@ -3,6 +3,7 @@ import React from "react";
 import { X, Download, ZoomIn, ZoomOut } from "lucide-react";
 import { resumableDownload } from "@/lib/resumableUpload";
 import CustomMediaPlayer from "../audio/CustomMediaPlayer";
+import { base44 } from "@/api/base44Client";
 
 export default function MediaViewer({ media, isOpen, onClose }) {
   const [zoom, setZoom] = useState(100);
@@ -16,8 +17,15 @@ export default function MediaViewer({ media, isOpen, onClose }) {
 
   const handleDownload = async () => {
     setDownloading(true);
-    await resumableDownload(media.file_url, media.file_name || "file");
-    setDownloading(false);
+    try {
+      const auth = await base44.functions.invoke("authorizeMessageDownload", { messageId: media.id });
+      if (auth?.data?.error) throw new Error(auth.data.error);
+      const downloadUrl = auth?.data?.file_url;
+      if (!downloadUrl) throw new Error("Download URL unavailable");
+      await resumableDownload(downloadUrl, auth?.data?.file_name || media.file_name || "file");
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (

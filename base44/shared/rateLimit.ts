@@ -52,3 +52,45 @@ export async function consumeHourlyLimit(
     return { allowed: false, count: Number(row?.count || limit), limit };
   }
 }
+
+
+function minuteWindow(date = new Date()) {
+  const d = new Date(date);
+  d.setSeconds(0, 0);
+  const key = d.toISOString();
+  const expires = new Date(d.getTime() + 2 * 60 * 1000).toISOString();
+  const previous = new Date(d.getTime() - 60 * 1000).toISOString();
+  return { key, previous, expires };
+}
+
+export async function claimMinuteWindow(
+  entities: any,
+  scope: string,
+) {
+  const { key, previous, expires } = minuteWindow();
+  const id = 'minute_' + await sha256Hex(`${scope}:${key}`);
+  const previousId = 'minute_' + await sha256Hex(`${scope}:${previous}`);
+
+  try {
+    await entities.UsageRateLimit.create({
+      id,
+      user_id: scope,
+      action: 'minute_claim',
+      window_key: key,
+      count: 1,
+      expires_at: expires,
+    });
+  } catch {
+    return { allowed: false, key };
+  }
+
+  // These rows have no database TTL. Keep the claim table bounded by deleting
+  // the immediately previous minute after the current minute is secured.
+  try {
+    await entities.UsageRateLimit.delete(previousId);
+  } catch {
+    // Missing/expired prior claims are expected.
+  }
+
+  return { allowed: true, key };
+}

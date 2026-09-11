@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
       if (!emailRegex.test(cleanDestination)) {
         return Response.json({ error: 'Invalid email address' }, { status: 400 });
       }
-      const users = await base44.asServiceRole.entities.User.filter({ email: cleanDestination });
+      const users = await base44.asServiceRole.entities.User.filter({ email: cleanDestination }, '-created_date', 1);
       const isRegistered = users.length > 0;
       if (!isRegistered) {
         // Do not disclose whether an email address is registered.

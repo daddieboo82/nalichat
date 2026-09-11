@@ -1477,6 +1477,26 @@ describe('release configuration', () => {
     }
   });
 
+  it('bounds authenticated squad mutation paths', async () => {
+    const cases = [
+      ['base44/functions/createSquadInvite/entry.ts', "'squad_invite_create'", 30],
+      ['base44/functions/joinSquad/entry.ts', "'squad_join'", 60],
+      ['base44/functions/leaveSquad/entry.ts', "'squad_leave'", 60],
+    ];
+
+    for (const [path, key, limit] of cases) {
+      const source = await readText(path);
+      expect(source).toContain('consumeHourlyLimit');
+      expect(source).toContain(key);
+      expect(source).toContain(`${key}, ${limit}`);
+      expect(source).toContain('Squad action rate limit exceeded');
+    }
+
+    const leave = await readText('base44/functions/leaveSquad/entry.ts');
+    expect(leave).not.toContain('user.is_banned');
+    expect(leave).not.toContain("error: 'timed_out'");
+  });
+
   it('moderation-gates project invites and bounds invite/challenge write paths', async () => {
     const accept = await readText('base44/functions/acceptProjectInvite/entry.ts');
     const revoke = await readText('base44/functions/revokeProjectInvites/entry.ts');

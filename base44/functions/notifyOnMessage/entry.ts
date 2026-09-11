@@ -17,6 +17,22 @@ Deno.serve(async (req) => {
     // The workflow triggers for all Message records, so filtering out DMs here
     // caused one-to-one messages to produce no notification at all.
     
+    let callSignal = null;
+    if (data.type === 'session' && typeof data.text === 'string') {
+      try {
+        const parsed = JSON.parse(data.text);
+        if (parsed?.__nalichat_call__ === true) callSignal = parsed;
+      } catch {
+        // Non-call session messages continue through the normal path.
+      }
+    }
+
+    // Ignore call negotiation chatter. Only the initial offer should surface
+    // as a user-facing notification.
+    if (callSignal && callSignal.type !== 'offer') {
+      return Response.json({ success: true, count: 0, signaling: true });
+    }
+
     // Determine recipients
     const recipients = new Set();
     if (conversation.participant_ids) {
@@ -31,9 +47,11 @@ Deno.serve(async (req) => {
       actor_id: data.sender_id,
       actor_name: data.sender_name || "Someone",
       actor_avatar: data.sender_avatar,
-      message: conversation.type === 'group'
-        ? `sent a message in ${conversation.name || 'a group'}: "${data.text ? data.text.substring(0, 30) + (data.text.length > 30 ? '...' : '') : 'an attachment'}"`
-        : `${data.text ? data.text.substring(0, 60) + (data.text.length > 60 ? '...' : '') : 'Sent you an attachment'}`,
+      message: callSignal
+        ? `Incoming ${callSignal.callType === 'video' ? 'video' : 'audio'} call`
+        : conversation.type === 'group'
+          ? `sent a message in ${conversation.name || 'a group'}: "${data.text ? data.text.substring(0, 30) + (data.text.length > 30 ? '...' : '') : 'an attachment'}"`
+          : `${data.text ? data.text.substring(0, 60) + (data.text.length > 60 ? '...' : '') : 'Sent you an attachment'}`,
       link: `/messages?id=${conversation.id}`
     }));
     

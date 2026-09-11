@@ -32,11 +32,27 @@
     },
     "source_track_url": {
       "type": "string",
-      "description": "URL of the single uploaded source track (MP3/WAV) that producers remix from"
+      "description": "URL of the single uploaded source track (MP3/WAV) that producers remix from",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "source_track_name": {
       "type": "string",
-      "description": "Name of the source track"
+      "description": "Name of the source track",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "stem_file_urls": {
       "type": "array",
@@ -68,7 +84,16 @@
       "type": "string"
     },
     "cover_url": {
-      "type": "string"
+      "type": "string",
+      "description": "Server-managed trusted cover image URL",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "status": {
       "type": "string",
@@ -78,15 +103,42 @@
         "voting",
         "completed"
       ],
-      "default": "upcoming"
+      "default": "upcoming",
+      "description": "Server-managed challenge lifecycle state",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "start_date": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "Server-managed challenge schedule",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "submission_end_date": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "Server-managed challenge schedule",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "voting_end_date": {
       "type": "string",

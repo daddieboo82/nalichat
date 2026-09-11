@@ -51,7 +51,6 @@ Deno.serve(async (req) => {
   let cleanupBase44: any = null;
   let cleanupUserId = '';
   let cleanupRequestKey = '';
-  let cleanupPendingSubscriptionId = '';
   let cleanupTrialClaimed = false;
   let cleanupSessionCreated = false;
 
@@ -131,7 +130,9 @@ Deno.serve(async (req) => {
       return Response.json({
         checkoutUrl: pendingSubscription.checkout_url,
         checkoutId: pendingSubscription.checkout_id,
-        trialApplied: Boolean(pendingSubscription.trial_used_at),
+        trialApplied: Boolean(
+          !user.trial_used_at && user.trial_claim_id === requestKey
+        ),
         reused: true,
       });
     }
@@ -269,8 +270,6 @@ Deno.serve(async (req) => {
           && refreshedUsers[0].trial_claim_id === requestKey;
       }
     }
-
-    cleanupPendingSubscriptionId = pendingSubscription?.id || '';
 
     let session;
     try {

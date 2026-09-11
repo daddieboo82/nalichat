@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import { useQueryClient } from "@tanstack/react-query";
+import { getLikeCount } from "@/lib/engagement";
 
 const USER_TABS = ["xp", "likes", "posts", "achievements", "viral"];
 const CONTENT_TABS = ["songs"];
@@ -34,7 +35,7 @@ export default function Leaderboard() {
 
   const { data: posts = [] } = useQuery({
     queryKey: ["leaderboard-posts"],
-    queryFn: () => base44.entities.ArtPost.list("-likes", 200),
+    queryFn: () => base44.entities.ArtPost.list("-created_date", 200),
   });
 
 
@@ -43,7 +44,7 @@ export default function Leaderboard() {
   const likesCountByUser = {};
   posts.forEach(p => {
     postCountByUser[p.creator_id] = (postCountByUser[p.creator_id] || 0) + 1;
-    likesCountByUser[p.creator_id] = (likesCountByUser[p.creator_id] || 0) + (p.likes || 0);
+    likesCountByUser[p.creator_id] = (likesCountByUser[p.creator_id] || 0) + getLikeCount(p);
   });
 
   const achievementCountByUser = Object.fromEntries(
@@ -67,7 +68,7 @@ export default function Leaderboard() {
     if (userTab === "viral") return `${user.viral_concepts_generated || 0} 🚀`;
   };
 
-  const topSongs = [...posts].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 20);
+  const topSongs = [...posts].sort((a, b) => getLikeCount(b) - getLikeCount(a)).slice(0, 20);
 
   const getCurrentContentList = () => {
     if (contentTab === "songs") return topSongs;
@@ -297,7 +298,7 @@ export default function Leaderboard() {
                     <div className="shrink-0 text-right pr-2">
                       <div className="flex items-center gap-1.5 text-primary bg-primary/10 px-2.5 py-1 rounded-full text-xs font-bold">
                         <Heart className="w-3.5 h-3.5 fill-current" />
-                        {item.likes || 0}
+                        {getLikeCount(item)}
                       </div>
                     </div>
                   </div>

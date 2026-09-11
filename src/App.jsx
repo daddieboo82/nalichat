@@ -27,6 +27,7 @@ import Home from '@/pages/Home';
 import AskNaliHint from '@/components/AskNaliHint';
 import PwaUpdatePrompt from '@/components/PwaUpdatePrompt';
 import { base44 } from '@/api/base44Client';
+import { unsubscribeFromRemotePush } from '@/lib/pushNotifications';
 
 // The assistant pulls in the whole react-markdown/unified stack, which added
 // ~150 kB to the entry chunk even though the panel only renders once the user
@@ -109,10 +110,11 @@ const AuthenticatedApp = () => {
     // Reset the activity timestamp on session start so a stale value from a
     // previous session doesn't immediately log the user out right after login.
     localStorage.setItem('last_activity', Date.now().toString());
-    const checkActivity = () => {
+    const checkActivity = async () => {
       const lastActive = localStorage.getItem('last_activity');
       if (lastActive && Date.now() - parseInt(lastActive, 10) > 24 * 60 * 60 * 1000) {
-        base44.auth.logout();
+        await unsubscribeFromRemotePush();
+        await base44.auth.logout();
       }
     };
     checkActivity();

@@ -513,7 +513,6 @@ async function requireCurrentReminderContext(
   if (!conversation) {
     throw new FollowUpReminderError(409, 'CONVERSATION_NOT_FOUND', 'Conversation no longer exists.');
   }
-  return conversation;
   if (!conversation.participant_ids?.includes(ownerId)) {
     throw new FollowUpReminderError(403, 'NOT_A_PARTICIPANT', 'Conversation membership is required.');
   }
@@ -529,6 +528,7 @@ async function requireCurrentReminderContext(
       'Source message no longer exists.',
     );
   }
+  return conversation;
 }
 
 export async function rescheduleFollowUpReminder({

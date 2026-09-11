@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
         track_id: parentId,
         parent_type: parentType,
         author_id: user.id,
-        author_name: user.display_name || user.full_name || user.email || 'User',
+        author_name: user.display_name || user.full_name || 'User',
         author_avatar: user.avatar_url || null,
         text,
         ...(Number.isFinite(timestamp) && timestamp >= 0 ? { timestamp } : {}),

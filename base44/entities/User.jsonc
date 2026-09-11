@@ -233,6 +233,14 @@
       ],
       "default": "artist",
       "description": "Public music-industry role shown on the profile. This is separate from the protected authorization role."
+    },
+    "website": {
+      "type": "string",
+      "description": "Optional public creator website URL"
+    },
+    "cover_url": {
+      "type": "string",
+      "description": "Public profile cover image URL"
     }
   }
 }

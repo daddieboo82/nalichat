@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
             .slice(0, 30)
         : [],
       creator_id: user.id,
-      creator_name: user.display_name || user.full_name || user.email || 'User',
+      creator_name: user.display_name || user.full_name || 'User',
       creator_avatar: cleanHttpsUrl(user.avatar_url) || null,
       duration: boundedNumber(body?.duration, 0, 24 * 60 * 60),
       genre: String(body?.genre || '').trim().slice(0, 100),

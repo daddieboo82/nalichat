@@ -189,48 +189,19 @@ export default function Messages() {
 
   const sendMessage = useMutation({
     mutationFn: async (msgData) => {
-      // Banned users may only send to conversations that include an admin (appeals).
-      if (currentUser?.is_banned) {
-        const hasAdmin = selectedConv?.participant_ids?.some(
-          id => id !== currentUser.id && users.find(u => u.id === id)?.role === "admin"
-        );
-        if (!hasAdmin) throw new Error("banned");
-      } else if (currentUser?.timeout_until && new Date(currentUser.timeout_until) > new Date()) {
-        throw new Error("timed_out");
-      }
-      const msg = await base44.entities.Message.create({
+      const res = await base44.functions.invoke("sendConversationMessage", {
         ...msgData,
         conversation_id: selectedConvId,
-        sender_id: currentUser.id,
-        sender_name: currentUser.display_name || currentUser.full_name,
-        sender_avatar: currentUser.avatar_url,
-        participant_ids: selectedConv?.participant_ids || [],
       });
-      // Fire-and-forget: update the conversation preview in the background
-      // so it never delays the message swap in onSuccess.
-      base44.entities.Conversation.update(selectedConvId, {
-        last_message_text: msgData.text || `Sent a ${msgData.type}`,
-        last_message_at: new Date().toISOString(),
-      }).catch(() => {});
-
-      // Run content moderation on text messages (skip for banned users appealing to an admin).
-      if (msgData.text && msgData.text.trim() && !currentUser?.is_banned) {
-        try {
-          const { data } = await base44.functions.invoke("moderateContent", {
-            text: msgData.text,
-            conversation_id: selectedConvId,
-            message_id: msg.id,
-          });
-          if (data?.flagged) {
-            return { ...msg, _flagged: data };
-          }
-        } catch (e) {}
+      if (res?.data?.moderation) {
+        return { _flagged: res.data.moderation };
       }
-      return msg;
+      if (res?.data?.error) {
+        throw new Error(res.data.error);
+      }
+      return res?.data?.message;
     },
     onMutate: (msgData) => {
-      // Fire-and-forget: don't await cancelQueries — the optimistic message
-      // must appear in the UI on the same tick the user hits send, with zero delay.
       queryClient.cancelQueries({ queryKey: ["messages", selectedConvId] });
       const previous = queryClient.getQueryData(["messages", selectedConvId]);
       const tempId = createTempId();
@@ -247,28 +218,32 @@ export default function Messages() {
       };
       queryClient.setQueryData(["messages", selectedConvId], (old = []) => [...old, tempMsg]);
       queryClient.setQueryData(["conversations"], (old = []) => {
-        const updated = old.map(c => 
-          c.id === selectedConvId 
-            ? { ...c, last_message_text: msgData.text || `Sent a ${msgData.type}`, last_message_at: tempMsg.created_date } 
+        const updated = old.map(c =>
+          c.id === selectedConvId
+            ? { ...c, last_message_text: msgData.text || `Sent a ${msgData.type}`, last_message_at: tempMsg.created_date }
             : c
         );
         return updated.sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0));
       });
       return { previous, tempId };
     },
-    onError: (_err, _msgData, ctx) => {
-      // Remove only the failed send's bubble. Restoring the whole pre-send
-      // snapshot would also erase other messages still in flight.
+    onError: (err, _msgData, ctx) => {
       queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
         applySendFailure(old, ctx?.tempId)
       );
+      if (err?.message === "timed_out") {
+        toast.error("You are currently timed out and cannot send messages.");
+      } else if (err?.message === "banned") {
+        toast.error("You may only message an admin while your account is banned.");
+      } else {
+        toast.error("Message failed to send.");
+      }
     },
     onSuccess: (msg, _vars, ctx) => {
-      // If the message was flagged by moderation, remove it from the cache and warn the user.
       if (msg?._flagged) {
         const f = msg._flagged;
         queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
-          old.filter(m => m._tempId !== ctx?.tempId && m.id !== msg.id)
+          old.filter(m => m._tempId !== ctx?.tempId)
         );
         const labels = {
           violence: "violence", racism: "racism", sexual_violence: "sexual violence",
@@ -284,7 +259,6 @@ export default function Messages() {
         base44.auth.me().then(setCurrentUser).catch(() => {});
         return;
       }
-      // Swap this send's optimistic temp for the real saved message (no refetch).
       queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
         applySendSuccess(old, msg, ctx?.tempId)
       );

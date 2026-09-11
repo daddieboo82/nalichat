@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import MediaViewerModal from "./MediaViewerModal";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { sounds } from "@/hooks/use-sound";
+import { recordArtPostPlay } from "@/lib/trackAnalytics";
 
 import React from "react";
 
@@ -64,6 +65,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
                     if (isActive && isPlaying && audioPlayer?.togglePlay) {
                       audioPlayer.togglePlay();
                     } else if (typeof playTrack === 'function') {
+                      void recordArtPostPlay(post.id);
                       playTrack({
                         id: post.id,
                         title: post.title,

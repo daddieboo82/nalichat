@@ -1703,6 +1703,30 @@ describe('release configuration', () => {
     expect(leave).not.toContain("error: 'timed_out'");
   });
 
+  it('bounds remaining collaboration and lifecycle mutation paths', async () => {
+    const project = await readText('base44/functions/mutateProject/entry.ts');
+    const challengeDelete = await readText('base44/functions/deleteChallengeSubmission/entry.ts');
+    const squad = await readText('base44/functions/recordSquadActivity/entry.ts');
+    const conversation = await readText('base44/functions/manageConversation/entry.ts');
+
+    expect(project).toContain("'project_mutation'");
+    expect(project).toMatch(/'project_mutation',\s*300/);
+    expect(project).toContain('user.is_banned');
+    expect(project).toContain("error: 'timed_out'");
+
+    expect(challengeDelete).toContain("'challenge_submission_delete'");
+    expect(challengeDelete).toMatch(/'challenge_submission_delete',\s*60/);
+    expect(challengeDelete).toContain('user.is_banned');
+    expect(challengeDelete).toContain("error: 'timed_out'");
+
+    expect(squad).toContain("'squad_activity'");
+    expect(squad).toMatch(/'squad_activity',\s*600/);
+
+    expect(conversation).toContain("'conversation_membership_mutation'");
+    expect(conversation).toMatch(/'conversation_membership_mutation',\s*120/);
+    expect(conversation).toContain("['join_public', 'leave', 'rename'].includes(action)");
+  });
+
   it('moderation-gates and bounds project and ArtPost lifecycle mutations', async () => {
     const createProject = await readText('base44/functions/createProject/entry.ts');
     const deleteProject = await readText('base44/functions/deleteProject/entry.ts');

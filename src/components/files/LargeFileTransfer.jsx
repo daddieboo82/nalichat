@@ -57,10 +57,15 @@ function LargeFileTransferContent({ currentUser }) {
         uploader_id: currentUser.id,
         uploader_name: currentUser.display_name || currentUser.full_name,
         description: message,
+        access_user_ids: [currentUser.id],
       });
 
-      // 3. Generate Link
-      const link = `${window.location.origin}/files?download=${newFile.id}`;
+      // 3. Generate a tokenized public link. The file record itself is not
+      // globally readable.
+      const share = await base44.functions.invoke("createFileShareLink", { fileId: newFile.id });
+      const token = share?.data?.token;
+      if (!token) throw new Error("Could not create share link");
+      const link = `${window.location.origin}/files?download=${encodeURIComponent(newFile.id)}&token=${encodeURIComponent(token)}`;
       setShareLink(link);
 
       if (recipientEmail) {

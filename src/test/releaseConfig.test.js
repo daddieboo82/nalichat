@@ -75,6 +75,19 @@ describe('release configuration', () => {
     expect(comment.rls.read?.user_condition?.role).toBe('admin');
   });
 
+  it('derives project ownership on the server and protects owner identity', async () => {
+    const project = await readJson('base44/entities/Project.jsonc');
+    const createProject = await readText('base44/functions/createProject/entry.ts');
+    const projectsPage = await readText('src/pages/ProjectsSummary.jsx');
+
+    expect(project.rls.create?.user_condition?.role).toBe('admin');
+    expect(project.properties.owner_id.rls?.write?.user_condition?.role).toBe('admin');
+    expect(createProject).toContain('owner_id: user.id');
+    expect(createProject).toContain('collaborator_ids: []');
+    expect(projectsPage).not.toContain('entities.Project.create');
+  });
+
+
   it('protects collaboration role fields from editor self-escalation', async () => {
     const project = await readJson('base44/entities/Project.jsonc');
     for (const field of ['owner_id', 'collaborator_ids', 'collaborator_roles', 'editor_ids']) {

@@ -162,6 +162,21 @@ describe('release configuration', () => {
   });
 
 
+  it('creates conversations only through validated server membership checks', async () => {
+    const conversation = await readJson('base44/entities/Conversation.jsonc');
+    const manageConversation = await readText('base44/functions/manageConversation/entry.ts');
+    const messagesPage = await readText('src/pages/Messages.jsx');
+    const globalMessage = await readText('src/components/GlobalMessageDialog.jsx');
+
+    expect(conversation.rls.create?.user_condition?.role).toBe('admin');
+    expect(manageConversation).toContain("action === 'create_dm' || action === 'create_group'");
+    expect(manageConversation).toContain('Recipient not found');
+    expect(manageConversation).toContain('One or more participants were not found');
+    expect(messagesPage).not.toContain('entities.Conversation.create');
+    expect(globalMessage).not.toContain('entities.Conversation.create');
+  });
+
+
   it('keeps workflow notifications authoritative and idempotent', async () => {
     const messageNotify = await readText('base44/functions/notifyOnMessage/entry.ts');
     const fileNotify = await readText('base44/functions/notifyOnFileUpload/entry.ts');

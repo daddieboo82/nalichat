@@ -42,14 +42,6 @@ export default function StudioExtras({
               className="cursor-pointer"
             />
           </div>
-          <div className="mt-4 flex justify-center">
-             <Button variant="outline" size="sm" onClick={() => {
-                const file = new File(["dummy audio content"], "test-track.wav", { type: "audio/wav" });
-                handleFileChange({ target: { files: [file] } });
-             }}>
-                Load Mock Test Track (Automated Testing)
-             </Button>
-          </div>
         </DialogContent>
       </Dialog>
 

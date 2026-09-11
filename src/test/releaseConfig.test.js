@@ -23,6 +23,14 @@ describe('release configuration', () => {
     );
   });
 
+  it('keeps Stripe checkout lease fields as first-class User properties', async () => {
+    const userSchema = await readJson('base44/entities/User.jsonc');
+    expect(userSchema.properties.trial_claim_id).toBeTruthy();
+    expect(userSchema.properties.stripe_checkout_claim_id).toBeTruthy();
+    expect(userSchema.properties.stripe_checkout_claimed_at).toBeTruthy();
+    expect(userSchema.properties.trial_claim_id.stripe_checkout_claim_id).toBeUndefined();
+  });
+
   it('keeps the PWA manifest scoped to the serving origin', async () => {
     const manifest = await readJson('public/manifest.json');
     expect(manifest.start_url).toBe('/');

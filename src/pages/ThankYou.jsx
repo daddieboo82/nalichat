@@ -28,6 +28,7 @@ export default function ThankYou() {
 
   const urlParams = new URLSearchParams(window.location.search);
   const checkoutId = urlParams.get("checkout_id");
+  const purchaseToken = urlParams.get("purchase_token");
   const isSubscriptionCheckout = urlParams.get("subscription") === "1";
 
   useEffect(() => {
@@ -109,7 +110,7 @@ export default function ThankYou() {
       let purchasedItems = [];
       if (checkoutId) {
         try {
-          const res = await base44.functions.invoke('verifyCheckoutPayment', { checkoutId });
+          const res = await base44.functions.invoke('verifyCheckoutPayment', { checkoutId, purchaseToken });
           purchasedItems = res?.data?.items || [];
         } catch (err) {
           console.error("Payment verification failed:", err);
@@ -156,7 +157,7 @@ export default function ThankYou() {
     };
 
     processThankYou();
-  }, [queryClient, clearCart, checkoutId, isSubscriptionCheckout]);
+  }, [queryClient, clearCart, checkoutId, purchaseToken, isSubscriptionCheckout]);
 
   if (isSubscriptionCheckout) {
     const confirmed = subscriptionConfirmation === "confirmed";

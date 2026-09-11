@@ -998,6 +998,27 @@ describe('release configuration', () => {
     expect(list).not.toContain('active members');
   });
 
+  it('bounds high-volume playlist and project collaboration writes', async () => {
+    const cases = [
+      ['base44/functions/createPlaylist/entry.ts', "'playlist_create'", 60, 'user'],
+      ['base44/functions/mutatePlaylist/entry.ts', "'playlist_mutate'", 300, 'user'],
+      ['base44/functions/createProjectFolder/entry.ts', "'project_folder_create'", 120, 'user'],
+      ['base44/functions/createProjectMilestone/entry.ts', "'project_milestone_create'", 120, 'user'],
+      ['base44/functions/createTrackVersion/entry.ts', "'track_version_create'", 120, 'user'],
+      ['base44/functions/manageProjectCollaborator/entry.ts', "'project_collaborator_mutate'", 60, 'owner'],
+    ];
+
+    for (const [path, key, limit, actor] of cases) {
+      const source = await readText(path);
+      expect(source).toContain('consumeHourlyLimit');
+      expect(source).toContain(key);
+      expect(source).toContain(`${key}, ${limit}`);
+      expect(source).toContain(`${actor}.timeout_until`);
+      expect(source).toContain("error: 'timed_out'");
+      expect(source).toContain('status: 429');
+    }
+  });
+
   it('rate-limits message reaction writes', async () => {
     const mutate = await readText('base44/functions/mutateConversationMessage/entry.ts');
     expect(mutate).toContain("'message_reaction'");

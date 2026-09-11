@@ -9,12 +9,27 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const projects = await entities.Project.filter({});
+    for (const project of projects) {
+      const expectedEditors = Array.from(new Set(
+        Object.entries(project.collaborator_roles || {})
+          .filter(([, role]) => role === 'editor')
+          .map(([id]) => id)
+      ));
+      const currentEditors = Array.isArray(project.editor_ids) ? project.editor_ids : [];
+      if (JSON.stringify([...currentEditors].sort()) !== JSON.stringify([...expectedEditors].sort())) {
+        await entities.Project.update(project.id, { editor_ids: expectedEditors });
+        updatedProjects += 1;
+      }
+    }
+
     const tracks = await entities.Track.filter({});
     let updatedTracks = 0;
     let updatedVersions = 0;
     let updatedFiles = 0;
     let updatedFolders = 0;
     let updatedMilestones = 0;
+    let updatedProjects = 0;
 
     for (const track of tracks) {
       if (Array.isArray(track.access_user_ids) && track.access_user_ids.length > 0) continue;
@@ -147,6 +162,7 @@ Deno.serve(async (req) => {
       updatedFiles,
       updatedFolders,
       updatedMilestones,
+      updatedProjects,
     });
   } catch (error) {
     console.error('backfillTrackAccess failed:', error);

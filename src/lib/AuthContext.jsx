@@ -122,17 +122,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    // Clear the token locally without triggering a full-page hard reload (which
-    // causes a multi-second blank screen while the whole app re-boots).
+  const logout = async () => {
     try {
-      localStorage.removeItem('base44_access_token');
-      localStorage.removeItem('base44_token');
-      sessionStorage.removeItem('base44_access_token');
-      sessionStorage.removeItem('base44_token');
-    } catch (e) {}
-    setUser(null);
-    setIsAuthenticated(false);
+      const { unsubscribeFromRemotePush } = await import('@/lib/pushNotifications');
+      await unsubscribeFromRemotePush();
+    } catch (error) {
+      console.warn('Push cleanup during logout failed:', error);
+    }
+
+    try {
+      await base44.auth.logout();
+    } catch (error) {
+      console.warn('Platform logout failed; clearing local auth state anyway:', error);
+    } finally {
+      try {
+        localStorage.removeItem('base44_access_token');
+        localStorage.removeItem('base44_token');
+        sessionStorage.removeItem('base44_access_token');
+        sessionStorage.removeItem('base44_token');
+      } catch (e) {}
+      setUser(null);
+      setIsAuthenticated(false);
+      setAuthChecked(true);
+    }
   };
 
   const navigateToLogin = () => {

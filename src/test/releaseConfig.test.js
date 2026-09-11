@@ -1037,6 +1037,32 @@ describe('release configuration', () => {
     }
   });
 
+  it('rate-limits common account and interaction write paths', async () => {
+    const cases = [
+      ['base44/functions/updateMyProfile/entry.ts', "'profile_update'", 120],
+      ['base44/functions/registerPushSubscription/entry.ts', "'push_register'", 120],
+      ['base44/functions/unregisterPushSubscription/entry.ts', "'push_unregister'", 120],
+      ['base44/functions/updateStudioPresence/entry.ts', "'studio_presence'", 1500],
+      ['base44/functions/mutateContact/entry.ts', "'contact_mutation'", 120],
+      ['base44/functions/toggleLike/entry.ts', "'artpost_like'", 600],
+    ];
+
+    for (const [path, key, limit] of cases) {
+      const source = await readText(path);
+      expect(source).toContain('consumeHourlyLimit');
+      expect(source).toContain(key);
+      expect(source).toContain(`${key},\n      ${limit},`);
+      expect(source).toContain('status: 429');
+    }
+
+    const contacts = await readText('base44/functions/mutateContact/entry.ts');
+    expect(contacts).toContain('user.is_banned');
+    expect(contacts).toContain("error: 'timed_out'");
+
+    const profile = await readText('base44/functions/updateMyProfile/entry.ts');
+    expect(profile).toContain("error: 'timed_out'");
+  });
+
   it('rate-limits message reaction writes', async () => {
     const mutate = await readText('base44/functions/mutateConversationMessage/entry.ts');
     expect(mutate).toContain("'message_reaction'");

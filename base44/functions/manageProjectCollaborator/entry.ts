@@ -14,8 +14,10 @@ async function syncChildren(entities: any, project: any, userId: string, role: s
       if (role === 'editor') editUserIds.add(userId);
       else editUserIds.delete(userId);
 
-      const patch: Record<string, any> = { access_user_ids: Array.from(accessUserIds) };
-      if (entityName !== 'SharedFile') patch.edit_user_ids = Array.from(editUserIds);
+      const patch: Record<string, any> = {
+        access_user_ids: Array.from(accessUserIds),
+        edit_user_ids: Array.from(editUserIds),
+      };
       await entity.update(row.id, patch);
     }
   }

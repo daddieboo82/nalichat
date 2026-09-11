@@ -41,7 +41,7 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
   const textareaRef = useRef(null);
   const queryClient = useQueryClient();
 
-  const { data: replies = [] } = useQuery({
+  const { data: replies = [], isLoading: repliesLoading, isError: repliesError } = useQuery({
     queryKey: ["thread", parentMessage.id],
     queryFn: () => base44.entities.Message.filter({ thread_id: parentMessage.id }, "created_date", 500),
     refetchInterval: 3000,
@@ -149,7 +149,15 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
 
       {/* Replies */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3">
-        {replies.length === 0 ? (
+        {repliesLoading ? (
+          <div className="flex justify-center py-8">
+            <span className="text-xs text-muted-foreground">Loading replies...</span>
+          </div>
+        ) : repliesError ? (
+          <div className="text-center text-destructive py-8 text-xs" role="alert">
+            Couldn't load thread replies. Please try again.
+          </div>
+        ) : replies.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
             <MessageSquareQuote className="w-8 h-8 opacity-30 mx-auto mb-2" />
             <p className="text-xs">No replies yet. Start the thread!</p>

@@ -136,6 +136,7 @@ Deno.serve(async (req) => {
     const progress = await getOrCreateProgress(entities, squad);
     const ledgerId = await activityId(user.id, sourceType, String(sourceId));
 
+    let duplicate = false;
     try {
       await entities.SquadActivity.create({
         id: ledgerId,
@@ -146,7 +147,7 @@ Deno.serve(async (req) => {
         source_id: String(sourceId),
       });
     } catch {
-      return Response.json({ success: true, tracked: false, duplicate: true, progress });
+      duplicate = true;
     }
 
     const member = squad.member_a_id === user.id ? 'a' : 'b';
@@ -154,13 +155,24 @@ Deno.serve(async (req) => {
       ? `member_${member}_messages`
       : `member_${member}_tasks`;
 
-    await entities.SquadProgress.updateMany(
-      { id: progress.id },
-      { $inc: { [field]: 1 } },
-    );
+    if (!duplicate) {
+      try {
+        await entities.SquadProgress.updateMany(
+          { id: progress.id },
+          { $inc: { [field]: 1 } },
+        );
+      } catch (progressError) {
+        // Keep the activity retryable if its progress increment did not land.
+        await entities.SquadActivity.delete(ledgerId).catch(() => {});
+        throw progressError;
+      }
+    }
 
     let updated = await entities.SquadProgress.get(progress.id);
 
+    // Re-evaluate bonus state even for duplicate retries. This lets a retry
+    // recover if the original request incremented progress but failed while
+    // unlocking or awarding the weekly bonus.
     if (!updated.bonus_unlocked && goalMet(updated, 'a') && goalMet(updated, 'b')) {
       const window = weekendWindow(updated.week_key);
       await entities.SquadProgress.update(updated.id, {
@@ -169,14 +181,21 @@ Deno.serve(async (req) => {
         bonus_expires_at: window.expires_at,
       });
       updated = await entities.SquadProgress.get(updated.id);
+    }
 
+    if (updated.bonus_unlocked && goalMet(updated, 'a') && goalMet(updated, 'b')) {
       await Promise.all([
         awardOnce(entities, squad.member_a_id, squad, updated),
         awardOnce(entities, squad.member_b_id, squad, updated),
       ]);
     }
 
-    return Response.json({ success: true, tracked: true, progress: updated });
+    return Response.json({
+      success: true,
+      tracked: !duplicate,
+      duplicate,
+      progress: updated,
+    });
   } catch (error) {
     console.error('recordSquadActivity error:', error);
     return Response.json({ error: error?.message || 'Could not record squad activity' }, { status: 500 });

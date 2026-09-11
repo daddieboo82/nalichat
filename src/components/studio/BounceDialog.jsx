@@ -29,7 +29,7 @@ const STEPS = [
   "Publishing your finished song...",
 ];
 
-export default function BounceDialog({ projectTitle, project, tracks, trigger, open: controlledOpen, onOpenChange, redirectAfter, mixOptions }) {
+export default function BounceDialog({ projectTitle, project, tracks, trigger, open: controlledOpen, onOpenChange, redirectAfter, mixOptions, canPublish = true }) {
   const navigate = useNavigate();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -51,6 +51,10 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
   const [savedParams, setSavedParams] = useState(null);
 
   const handleBounce = async () => {
+    if (!canPublish) {
+      toast.error("Viewer access cannot publish this shared project.");
+      return;
+    }
     if (!bounceTitle.trim()) {
       toast.error("Please enter a song name before exporting.");
       return;

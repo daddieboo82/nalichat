@@ -368,11 +368,17 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
 
   if (messageData.thread_id) {
       try {
-        await base44.asServiceRole.entities.Message.updateMany(
+        const replyCountUpdate = await base44.asServiceRole.entities.Message.updateMany(
           { id: messageData.thread_id },
           { $inc: { thread_reply_count: 1 } },
         );
-      } catch (_) {}
+        if (Number(replyCountUpdate?.updated || 0) !== 1) {
+          throw new Error('Unable to update thread reply count');
+        }
+      } catch (countError) {
+        await base44.asServiceRole.entities.Message.delete(message.id).catch(() => {});
+        throw countError;
+      }
     }
 
     if (type !== 'session') {

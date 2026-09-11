@@ -163,29 +163,54 @@
             "role": "admin"
           }
         }
-      },
-      "stripe_checkout_claim_id": {
-        "type": "string",
-        "description": "Server-managed lease preventing concurrent subscription checkout attempts",
-        "rls": {
-          "read": false,
-          "write": {
-            "user_condition": {
-              "role": "admin"
-            }
+      }
+    },
+    "stripe_checkout_claim_id": {
+      "type": "string",
+      "description": "Server-managed lease preventing concurrent subscription checkout attempts",
+      "rls": {
+        "read": false,
+        "write": {
+          "user_condition": {
+            "role": "admin"
           }
         }
-      },
-      "stripe_checkout_claimed_at": {
-        "type": "string",
-        "format": "date-time",
-        "description": "When the current subscription checkout lease was acquired",
-        "rls": {
-          "read": false,
-          "write": {
-            "user_condition": {
-              "role": "admin"
-            }
+      }
+    },
+    "stripe_checkout_claimed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the current subscription checkout lease was acquired",
+      "rls": {
+        "read": false,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "scheduled_message_create_claim_token": {
+      "type": "string",
+      "description": "Server-managed lease serializing scheduled-message creation for idempotency.",
+      "rls": {
+        "read": false,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "scheduled_message_create_claim_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Expiration time for the scheduled-message creation lease.",
+      "rls": {
+        "read": false,
+        "write": {
+          "user_condition": {
+            "role": "admin"
           }
         }
       }

@@ -74,9 +74,11 @@ Deno.serve(async (req) => {
           return Response.json({ success: true });
         }
 
-        let subs = await base44.asServiceRole.entities.Subscription.filter({
-          subscription_id: subscriptionId,
-        });
+        let subs = await base44.asServiceRole.entities.Subscription.filter(
+          { subscription_id: subscriptionId },
+          '-created_date',
+          1,
+        );
 
         if (subs.length === 0) {
           // Fallback to internal ID for automated testing environments
@@ -121,9 +123,11 @@ Deno.serve(async (req) => {
           return Response.json({ success: true });
         }
 
-        let subs = await base44.asServiceRole.entities.Subscription.filter({
-          subscription_id: subscriptionId,
-        });
+        let subs = await base44.asServiceRole.entities.Subscription.filter(
+          { subscription_id: subscriptionId },
+          '-created_date',
+          1,
+        );
 
         if (subs.length === 0) {
           try {

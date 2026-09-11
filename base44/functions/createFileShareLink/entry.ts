@@ -30,11 +30,16 @@ Deno.serve(async (req) => {
     }
 
     const token = randomToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     await base44.asServiceRole.entities.SharedFile.update(fileId, {
       share_token_hash: await sha256Hex(token),
+      share_token_expires_at: expiresAt,
     });
 
-    return Response.json({ success: true, fileId, token });
+    return Response.json(
+      { success: true, fileId, token, expires_at: expiresAt },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not create share link' }, { status: 500 });
   }

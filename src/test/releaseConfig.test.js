@@ -735,6 +735,17 @@ describe('release configuration', () => {
     expect(manage).toContain('if (user.is_banned && !otherIsAdmin)');
   });
 
+  it('awards milestone squad activity only to the user who completed it', async () => {
+    const milestone = await readJson('base44/entities/Milestone.jsonc');
+    const mutateMilestone = await readText('base44/functions/mutateMilestone/entry.ts');
+    const squadActivity = await readText('base44/functions/recordSquadActivity/entry.ts');
+
+    expect(milestone.properties.completed_by_id.rls?.write?.user_condition?.role).toBe('admin');
+    expect(mutateMilestone).toContain('completed_by_id: completed ? user.id : null');
+    expect(squadActivity).toContain('return milestone.completed_by_id === user.id');
+    expect(squadActivity).not.toContain('(milestone.edit_user_ids || []).includes(user.id)');
+  });
+
   it('refreshes public users without subscribing to raw User events', async () => {
     const messages = await readText('src/pages/Messages.jsx');
     expect(messages).not.toContain('entities.User.subscribe');

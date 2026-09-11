@@ -59,14 +59,30 @@
       "items": {
         "type": "string"
       },
-      "description": "Legacy multi-stem uploads — kept for backward compatibility, no longer used by the UI"
+      "description": "Legacy multi-stem uploads — kept for backward compatibility, no longer used by the UI",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "stem_names": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Legacy stem names — kept for backward compatibility, no longer used by the UI"
+      "description": "Legacy stem names — kept for backward compatibility, no longer used by the UI",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "genre": {
       "type": "string"
@@ -142,7 +158,16 @@
     },
     "voting_end_date": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "Server-managed challenge schedule",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [

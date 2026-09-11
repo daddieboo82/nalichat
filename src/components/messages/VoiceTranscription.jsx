@@ -20,6 +20,9 @@ export default function VoiceTranscription({ message, isOwn }) {
   const [speaking, setSpeaking] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const audioRef = useState(null);
+  const retryTranscription = () => {
+    setError(false);
+  };
 
   useEffect(() => {
     if (transcription || loading || error) return;
@@ -56,7 +59,10 @@ export default function VoiceTranscription({ message, isOwn }) {
         voice: "honey",
       });
       const url = res?.data?.url;
-      if (!url) return;
+      if (!url) {
+        setSpeaking(false);
+        return;
+      }
       const audio = new Audio(url);
       audio.onended = () => setSpeaking(false);
       audio.onerror = () => setSpeaking(false);
@@ -75,7 +81,22 @@ export default function VoiceTranscription({ message, isOwn }) {
     );
   }
 
-  if (error || !transcription) return null;
+  if (error) {
+    return (
+      <div className={cn("flex items-center gap-2 text-[11px] mt-1.5 px-1", isOwn ? "text-white/70" : "text-muted-foreground")}>
+        <span>Transcription unavailable.</span>
+        <button
+          type="button"
+          onClick={retryTranscription}
+          className={cn("font-semibold hover:underline", isOwn ? "text-white" : "text-primary")}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!transcription) return null;
 
   const preview = expanded ? transcription : transcription.slice(0, 120);
   const truncated = transcription.length > 120;

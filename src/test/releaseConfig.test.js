@@ -621,15 +621,18 @@ describe('release configuration', () => {
     const legacyNotify = await readText('base44/functions/onNewContent/entry.ts');
 
     for (const source of [messageNotify, fileNotify, commentNotify, versionNotify, milestoneNotify]) {
-      expect(source).toContain('data?.id');
+      expect(source).toContain('workflowEntityRecordId({ event, data })');
+      expect(source).toContain("Conflicting entity ids");
+      expect(source).toContain('workflowRecordIsFresh');
       expect(source).toContain('Notification.create');
       expect(source).toContain('notification_');
+      expect(source).not.toMatch(/\.get\(data\.id\)/);
     }
-    expect(messageNotify).toContain('entities.Message.get(data.id)');
-    expect(fileNotify).toContain('entities.SharedFile.get(data.id)');
-    expect(commentNotify).toContain('entities.TrackComment.get(data.id)');
-    expect(versionNotify).toContain('entities.TrackVersion.get(data.id)');
-    expect(milestoneNotify).toContain('entities.Milestone.get(data.id)');
+    expect(messageNotify).toContain('entities.Message.get(record.id)');
+    expect(fileNotify).toContain('entities.SharedFile.get(record.id)');
+    expect(commentNotify).toContain('entities.TrackComment.get(record.id)');
+    expect(versionNotify).toContain('entities.TrackVersion.get(record.id)');
+    expect(milestoneNotify).toContain('entities.Milestone.get(record.id)');
     expect(legacyNotify).toContain('legacy_noop: true');
     expect(legacyNotify).not.toContain('Notification.create');
   });

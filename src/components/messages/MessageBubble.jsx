@@ -18,6 +18,7 @@ import VoiceTranscription from "./VoiceTranscription";
 import SwipeToReply from "./SwipeToReply";
 import ReportContentDialog from "@/components/ReportContentDialog";
 import { useSubscription } from "@/hooks/useSubscription";
+import { toast } from "sonner";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -78,6 +79,8 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
       const downloadUrl = auth?.data?.file_url;
       if (!downloadUrl) throw new Error("Download URL unavailable");
       await resumableDownload(downloadUrl, auth?.data?.file_name || message.file_name || "file", (pct) => setDlProgress(pct));
+    } catch (error) {
+      toast.error(error?.message || "Couldn't download the attachment. Please try again.");
     } finally {
       setDlProgress(null);
     }

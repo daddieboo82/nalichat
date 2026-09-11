@@ -21,18 +21,18 @@ export default function NotificationBell({ direction = "down" }) {
   const [user, setUser] = useState(null);
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
+  const [pushPermission, setPushPermission] = useState(() => getPermissionStatus());
   const { toast } = useToast();
   const panelRef = useRef(null);
   const userRef = useRef(null);
 
   useEffect(() => {
     base44.auth.me().then((u) => { setUser(u); userRef.current = u; }).catch(() => {});
-    // Register service worker and request push permission on first load
-    registerServiceWorker().then(() => {
-      if (getPermissionStatus() === 'default') {
-        // Ask after a short delay so it doesn't immediately pop on page load
-        setTimeout(() => requestPushPermission(), 3000);
-      }
+    // Register the service worker, but only request notification permission
+    // from an explicit user gesture. Browsers may block permission prompts
+    // triggered from timers or page load.
+    registerServiceWorker().finally(() => {
+      setPushPermission(getPermissionStatus());
     });
   }, []);
 
@@ -84,6 +84,12 @@ export default function NotificationBell({ direction = "down" }) {
     if (next && unread > 0 && user) markAllRead();
   };
 
+  const enableNotifications = async () => {
+    await registerServiceWorker();
+    await requestPushPermission();
+    setPushPermission(getPermissionStatus());
+  };
+
   return (
     <div className="relative" ref={panelRef}>
       <button
@@ -107,8 +113,17 @@ export default function NotificationBell({ direction = "down" }) {
           "absolute right-0 w-80 max-w-[90vw] bg-card border border-border rounded-xl shadow-2xl shadow-black/40 z-50 overflow-hidden",
           direction === "up" ? "bottom-full mb-2" : "top-full mt-2"
         )}>
-          <div className="px-4 py-3 border-b border-border">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
             <p className="font-heading font-bold text-sm">Notifications</p>
+            {pushPermission === 'default' && (
+              <button
+                type="button"
+                onClick={enableNotifications}
+                className="text-xs font-semibold text-primary hover:underline"
+              >
+                Enable alerts
+              </button>
+            )}
           </div>
           <div className="max-h-96 overflow-y-auto">
             {items.length === 0 ? (

@@ -9,6 +9,23 @@ import { base44 } from '@/api/base44Client';
 
 export default function JamRoomOverlay({ jamRoomActive, defaultRole, setDefaultRole, roomId }) {
   const [creatingLink, setCreatingLink] = useState(false);
+  const [revokingLinks, setRevokingLinks] = useState(false);
+
+  const revokeInvites = async () => {
+    if (!roomId) return;
+    setRevokingLinks(true);
+    try {
+      const res = await base44.functions.invoke("revokeProjectInvites", {
+        projectId: roomId,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      toast.success(`Revoked ${res?.data?.revoked || 0} active invite link(s).`);
+    } catch (error) {
+      toast.error(error?.message || "Couldn't revoke invite links.");
+    } finally {
+      setRevokingLinks(false);
+    }
+  };
 
   const copyInvite = async () => {
     if (!roomId) {
@@ -63,8 +80,11 @@ export default function JamRoomOverlay({ jamRoomActive, defaultRole, setDefaultR
                   <SelectItem value="viewer">Viewer (Listen only)</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" className="w-full h-7 text-[10px] mt-2" onClick={copyInvite} disabled={creatingLink}>
+              <Button variant="outline" size="sm" className="w-full h-7 text-[10px] mt-2" onClick={copyInvite} disabled={creatingLink || revokingLinks}>
                 {creatingLink ? "Creating link…" : "Copy Invite Link"}
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full h-7 text-[10px] mt-1 text-destructive" onClick={revokeInvites} disabled={creatingLink || revokingLinks}>
+                {revokingLinks ? "Revoking links…" : "Revoke All Invite Links"}
               </Button>
             </div>
             

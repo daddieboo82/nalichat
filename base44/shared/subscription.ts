@@ -107,7 +107,12 @@ export function hasPaidTierAccess(
   limits: ResolveEntitlementLimits = {},
 ): boolean {
   if (status === 'active') {
-    return true;
+    if (!limits.currentPeriodEnd) return true;
+    const now = limits.now instanceof Date
+      ? limits.now.getTime()
+      : Date.parse(limits.now ?? new Date().toISOString());
+    const periodEnd = Date.parse(limits.currentPeriodEnd);
+    return Number.isFinite(periodEnd) && Number.isFinite(now) && periodEnd > now;
   }
   if (status !== 'trialing' && status !== 'canceled') {
     return false;

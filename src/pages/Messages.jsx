@@ -19,7 +19,7 @@ import ModerationBanner from "@/components/messages/ModerationBanner";
 import { MessageSquare, Users, Plus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { createTempId, applySendSuccess, applySendFailure, applyRealtimeCreate } from "@/lib/messageCache";
+import { createClientMessageKey, createTempId, applySendSuccess, applySendFailure, applyRealtimeCreate } from "@/lib/messageCache";
 
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -162,7 +162,9 @@ export default function Messages() {
     onMutate: (msgData) => {
       queryClient.cancelQueries({ queryKey: ["messages", selectedConvId] });
       const previous = queryClient.getQueryData(["messages", selectedConvId]);
-      const tempId = createTempId();
+      const clientMessageKey = msgData.client_message_key || createClientMessageKey();
+      msgData.client_message_key = clientMessageKey;
+      const tempId = `temp-${clientMessageKey}`;
       const tempMsg = {
         id: tempId,
         _tempId: tempId,
@@ -183,11 +185,11 @@ export default function Messages() {
         );
         return updated.sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0));
       });
-      return { previous, tempId };
+      return { previous, tempId, clientMessageKey };
     },
     onError: (err, _msgData, ctx) => {
       queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
-        applySendFailure(old, ctx?.tempId)
+        applySendFailure(old, ctx?.clientMessageKey, err?.message)
       );
       if (err?.message === "timed_out") {
         toast.error("You are currently timed out and cannot send messages.");
@@ -218,7 +220,7 @@ export default function Messages() {
         return;
       }
       queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
-        applySendSuccess(old, msg, ctx?.tempId)
+        applySendSuccess(old, msg, ctx?.clientMessageKey, ctx?.tempId)
       );
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       if (msg?.id && msg?.type !== "session") {

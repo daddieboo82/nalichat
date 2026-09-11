@@ -46,6 +46,16 @@ describe('release configuration', () => {
     }
   });
 
+  it('bounds admin dashboard aggregate scans', async () => {
+    const stats = await readText('base44/functions/getAdminDashboardStats/entry.ts');
+    expect(stats).toContain('consumeHourlyLimit');
+    expect(stats).toContain("'admin_dashboard_stats'");
+    expect(stats).toMatch(/'admin_dashboard_stats',\s*60/);
+    expect(stats).toContain('user.is_banned');
+    expect(stats).toContain('user.timeout_until');
+    expect(stats).toContain('Admin operation rate limit exceeded');
+  });
+
   it('rate-limits expensive admin fan-out and full-scan operations', async () => {
     const cases = [
       ['base44/functions/naliHealthCheck/entry.ts', "'admin_health_check'", 4],

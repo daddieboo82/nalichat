@@ -341,14 +341,35 @@ Deno.serve(async (req) => {
         if (!entity) continue;
         const rows = await entity.filter({ project_id: project.id });
         for (const row of rows) {
-          await entity.update(row.id, {
+          const update: Record<string, unknown> = {
             access_user_ids: Array.isArray(row.access_user_ids)
               ? row.access_user_ids.filter((id: string) => id !== user.id)
               : [],
             edit_user_ids: Array.isArray(row.edit_user_ids)
               ? row.edit_user_ids.filter((id: string) => id !== user.id)
               : [],
-          });
+          };
+
+          if (entityName === 'Track' && row.uploaded_by === user.id) {
+            update.uploaded_by = tombstoneId;
+          }
+          if (entityName === 'TrackVersion' && row.saved_by_id === user.id) {
+            update.saved_by_id = tombstoneId;
+            update.saved_by_name = 'Deleted User';
+          }
+          if (entityName === 'Folder' && row.owner_id === user.id) {
+            // Keep project folders usable by transferring ownership to the
+            // project owner rather than leaving a deleted-user reference.
+            update.owner_id = project.owner_id;
+          }
+          if (entityName === 'SharedFile' && row.uploader_id === user.id) {
+            update.uploader_id = tombstoneId;
+            update.uploader_name = 'Deleted User';
+            update.share_token_hash = null;
+            update.share_token_expires_at = null;
+          }
+
+          await entity.update(row.id, update);
         }
       }
     }

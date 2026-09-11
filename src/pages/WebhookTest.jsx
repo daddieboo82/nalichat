@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Webhook, Trash2, ExternalLink } from "lucide-react";
+import { Loader2, Webhook, Trash2, ExternalLink, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -10,6 +10,8 @@ export default function WebhookTest() {
   const [loading, setLoading] = useState(false);
   const [subscriptions, setSubscriptions] = useState([]);
   const [fetchingSubs, setFetchingSubs] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [checkingAccess, setCheckingAccess] = useState(true);
   const queryClient = useQueryClient();
 
   const fetchSubscriptions = async () => {
@@ -28,7 +30,14 @@ export default function WebhookTest() {
   };
 
   useEffect(() => {
-    fetchSubscriptions();
+    base44.auth.me()
+      .then((u) => {
+        setCurrentUser(u);
+        if (u?.role === "admin") return fetchSubscriptions();
+        setFetchingSubs(false);
+      })
+      .catch(() => setFetchingSubs(false))
+      .finally(() => setCheckingAccess(false));
   }, []);
 
   const createMockActiveSubscription = async () => {
@@ -115,6 +124,20 @@ export default function WebhookTest() {
       setLoading(false);
     }
   };
+
+  if (checkingAccess) {
+    return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  if (!currentUser || currentUser.role !== "admin") {
+    return (
+      <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center min-h-[50vh]">
+        <ShieldAlert className="w-12 h-12 mb-4 opacity-50" />
+        <h2 className="text-xl font-bold mb-2">Admins Only</h2>
+        <p>This testing interface is restricted to administrators.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container max-w-3xl mx-auto p-6 py-12">

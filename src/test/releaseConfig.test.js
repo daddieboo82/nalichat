@@ -176,6 +176,11 @@ describe('release configuration', () => {
     expect(user.properties.role.rls?.write?.user_condition?.role).toBe('admin');
   });
 
+  it('keeps onboarding re-engagement state server-managed', async () => {
+    const user = await readJson('base44/entities/User.jsonc');
+    expect(user.properties.reengagement_sent_at.rls?.write?.user_condition?.role).toBe('admin');
+  });
+
 
   it('keeps costly AI media and legacy export signing behind server gates', async () => {
     const speech = await readText('base44/functions/generate-speech/entry.ts');

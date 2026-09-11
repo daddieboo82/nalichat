@@ -138,6 +138,15 @@ describe('release configuration', () => {
     expect(submission.properties.status.rls?.write?.user_condition?.role).toBe('admin');
   });
 
+  it('routes challenge submission deletion through a cleanup-aware server function', async () => {
+    const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
+    const deletion = await readText('base44/functions/deleteChallengeSubmission/entry.ts');
+    expect(submission.rls.delete?.user_condition?.role).toBe('admin');
+    expect(deletion).toContain('entities.ChallengeVote.filter({ submission_id: submission.id })');
+    expect(deletion).toContain("parent_type: 'challenge_submission'");
+    expect(deletion).toContain('await entities.ChallengeSubmission.delete(submission.id)');
+  });
+
 
   it('keeps Nali AI tiered and free of privileged admin tools', async () => {
     const standardAgent = await readJson('base44/agents/studio_ai.jsonc');

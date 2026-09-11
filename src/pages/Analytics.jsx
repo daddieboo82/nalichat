@@ -120,9 +120,9 @@ export default function Analytics() {
             )}
           </Card>
 
-          {/* Growth Trend */}
+          {/* Catalog totals by release */}
           <Card className="p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06]">
-            <h2 className="font-heading font-semibold mb-4">Cumulative Growth</h2>
+            <h2 className="font-heading font-semibold mb-4">Catalog Totals by Release</h2>
             {growthData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={growthData}>

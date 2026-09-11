@@ -5,8 +5,7 @@
     {
       "entity_name": "Project",
       "allowed_operations": [
-        "read",
-        "update"
+        "read"
       ]
     },
     {
@@ -203,6 +202,10 @@
     {
       "function_name": "updateStudioPresence",
       "description": "Safely update or clear the current user's authorized studio presence"
+    },
+    {
+      "function_name": "mutateProject",
+      "description": "Safely update an authorized project's editable metadata and studio state"
     }
   ],
   "context_files": [],

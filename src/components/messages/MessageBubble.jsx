@@ -62,7 +62,7 @@ function ReadReceipts({ readBy, users }) {
 
 
 
-function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe }) {
+function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownload }) {
   const [dlProgress, setDlProgress] = useState(null); // null = idle, 0-100 = downloading
   const isImage = message.type === "image" || message.file_type?.startsWith("image");
   const isAudio = message.type === "audio" || message.file_type?.startsWith("audio") || !!message.file_name?.match(/\.(mp3|wav|ogg|m4a|aac)$/i) || !!message.file_url?.match(/\.(mp3|wav|ogg|m4a|aac)(\?.*)?$/i);
@@ -112,7 +112,7 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe }) {
 
   return (
     <div className="min-w-[180px] sm:min-w-[220px]">
-      <button onClick={handleDownload} className="w-full flex items-center gap-3 hover:opacity-80 transition-opacity group text-left" title="Download File" aria-label="Download File">
+      <button onClick={canDownload ? handleDownload : undefined} disabled={!canDownload} className="w-full flex items-center gap-3 hover:opacity-80 transition-opacity group text-left disabled:opacity-50 disabled:cursor-not-allowed" title={canDownload ? "Download File" : "Premium is required to download this attachment"} aria-label={canDownload ? "Download File" : "Download locked"}>
         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", isOwn ? "bg-white/20" : "bg-primary/20")}>
           <Icon className={cn("w-5 h-5", isOwn ? "text-white" : "text-primary")} />
         </div>
@@ -145,6 +145,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
   const { hasEntitlement } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
   const canTranscribe = hasEntitlement("voice.transcription");
+  const canDownload = isOwn || hasEntitlement("chat.export");
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -247,7 +248,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           {message.type === "session" ? (
             <ChatSessionViewer message={message} currentUser={currentUser} />
           ) : hasFile ? (
-            <FileAttachment message={message} isOwn={isOwn} canTranscribe={canTranscribe} onOpenViewer={() => {
+            <FileAttachment message={message} isOwn={isOwn} canTranscribe={canTranscribe} canDownload={canDownload} onOpenViewer={() => {
               if (message.type === "audio" || message.file_type?.startsWith("audio")) {
                 onPlayAudio?.(message);
               } else {
@@ -452,6 +453,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         media={hasFile ? message : null}
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
+        canDownload={canDownload}
       />
 
       <ViralMomentDialog

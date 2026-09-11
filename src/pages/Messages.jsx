@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
+import { recordSquadActivity } from "@/lib/squadBonus";
 import { useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -263,6 +264,9 @@ export default function Messages() {
         applySendSuccess(old, msg, ctx?.tempId)
       );
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      if (msg?.id && msg?.type !== "session") {
+        recordSquadActivity("message", msg.id);
+      }
     },
   });
 

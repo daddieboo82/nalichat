@@ -1,0 +1,36 @@
+{
+  "name": "PushSubscription",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User who owns this browser push subscription"
+    },
+    "endpoint": {
+      "type": "string",
+      "description": "Web Push endpoint URL"
+    },
+    "p256dh": {
+      "type": "string",
+      "description": "Browser public encryption key"
+    },
+    "auth": {
+      "type": "string",
+      "description": "Browser push authentication secret"
+    },
+    "user_agent": {
+      "type": "string"
+    },
+    "last_seen_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": ["user_id", "endpoint", "p256dh", "auth"],
+  "rls": {
+    "create": { "data.user_id": "{{user.id}}" },
+    "read": { "data.user_id": "{{user.id}}" },
+    "update": { "data.user_id": "{{user.id}}" },
+    "delete": { "data.user_id": "{{user.id}}" }
+  }
+}

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 // Nali's comprehensive app maintenance & repair function.
 // Scans every entity for data issues and can either just report (diagnose)
@@ -16,6 +17,16 @@ export default async function(req) {
     const caller = await base44.auth.me();
     if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     if (caller.role !== 'admin') return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
+
+    const adminRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      caller.id,
+      'admin_maintenance',
+      12,
+    );
+    if (!adminRate.allowed) {
+      return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
 
     const body = await req.json().catch(() => ({}));
     const mode = body.mode === 'repair' ? 'repair' : 'diagnose';

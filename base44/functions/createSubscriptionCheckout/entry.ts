@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
         },
       },
     );
-    const checkoutClaimUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
+    const checkoutClaimUsers = await base44.asServiceRole.entities.User.filter({ id: user.id }, '-created_date', 1);
     if (
       checkoutClaimUsers.length !== 1
       || checkoutClaimUsers[0].stripe_checkout_claim_id !== requestKey
@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
             },
           },
         );
-        const refreshedUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
+        const refreshedUsers = await base44.asServiceRole.entities.User.filter({ id: user.id }, '-created_date', 1);
         trialApplied = refreshedUsers.length === 1
           && !refreshedUsers[0].trial_used_at
           && refreshedUsers[0].trial_claim_id === requestKey;
@@ -257,14 +257,18 @@ Deno.serve(async (req) => {
           trial_target_plan: sku.plan,
         });
       } catch (createError) {
-        const concurrentAttempts = await base44.asServiceRole.entities.Subscription.filter({
-          checkout_request_key: requestKey,
-          user_id: user.id,
-          provider: 'stripe',
-        });
+        const concurrentAttempts = await base44.asServiceRole.entities.Subscription.filter(
+          {
+            checkout_request_key: requestKey,
+            user_id: user.id,
+            provider: 'stripe',
+          },
+          '-created_date',
+          2,
+        );
         if (concurrentAttempts.length !== 1) throw createError;
         pendingSubscription = concurrentAttempts[0];
-        const refreshedUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
+        const refreshedUsers = await base44.asServiceRole.entities.User.filter({ id: user.id }, '-created_date', 1);
         trialApplied = refreshedUsers.length === 1
           && !refreshedUsers[0].trial_used_at
           && refreshedUsers[0].trial_claim_id === requestKey;

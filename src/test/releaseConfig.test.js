@@ -212,6 +212,10 @@ describe('release configuration', () => {
       expect(source).toContain('consumeHourlyLimit');
       expect(source).toContain('status: 429');
     }
+
+    const limiter = await readText('base44/shared/rateLimit.ts');
+    expect(limiter).toContain('count: { $lt: limit }');
+    expect(limiter).toContain('Number(update?.updated || 0) > 0');
   });
 
 

@@ -105,3 +105,27 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
+
+
+// Open the relevant in-app destination when a notification is clicked.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification?.data?.url || '/', self.location.origin).href;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        try {
+          const clientUrl = new URL(client.url);
+          if (clientUrl.origin === self.location.origin) {
+            client.navigate(targetUrl);
+            return client.focus();
+          }
+        } catch (_) {
+          // Ignore malformed client URLs and continue searching.
+        }
+      }
+      return self.clients.openWindow(targetUrl);
+    })
+  );
+});

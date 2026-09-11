@@ -41,18 +41,20 @@ export default async function(req) {
     const onboardingLink = `${appUrl}/onboarding`;
     const s = base44.asServiceRole.entities;
 
-    // Load all users (service role for full visibility)
-    const allUsers = await s.User.list();
-    const now = Date.now();
-    const oneDayAgo = now - 24 * 60 * 60 * 1000; // only re-engage after 24h
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const MAX_REENGAGEMENTS_PER_RUN = 500;
 
-    // Filter: not onboarded + not yet sent a re-engagement email + registered >24h ago
-    const stalled = allUsers.filter((u) => {
-      if (u.onboarding_completed) return false;
-      if (u.reengagement_sent_at) return false;
-      const createdMs = u.created_date ? new Date(u.created_date).getTime() : 0;
-      return createdMs > 0 && createdMs < oneDayAgo;
-    });
+    // Query only eligible users and cap one maintenance run so a single trigger
+    // cannot fan out into a full user-table read or an unbounded email burst.
+    const stalled = await s.User.filter(
+      {
+        onboarding_completed: false,
+        reengagement_sent_at: null,
+        created_date: { $lt: oneDayAgo },
+      },
+      'created_date',
+      MAX_REENGAGEMENTS_PER_RUN,
+    );
 
     const errors = [];
     let sent = 0;
@@ -99,7 +101,8 @@ export default async function(req) {
     return Response.json({
       sent,
       skipped: stalled.length - sent,
-      totalStalled: stalled.length,
+      totalStalledProcessed: stalled.length,
+      capped: stalled.length >= MAX_REENGAGEMENTS_PER_RUN,
       errors: errors.slice(0, 10),
     });
   } catch (error) {

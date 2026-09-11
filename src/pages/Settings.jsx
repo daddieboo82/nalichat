@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Save, Loader2, X, Plus, BarChart3, Users } from "lucide-react";
+import { Camera, Save, Loader2, X, Plus, BarChart3, Users, Palette } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import DeleteAccountDialog from "@/components/settings/DeleteAccountDialog";
@@ -18,6 +18,7 @@ import { sounds } from "@/hooks/use-sound";
 import { isValidAvatarUrl } from "@/lib/avatarValidation";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import SubscriptionSettings from "@/components/settings/SubscriptionSettings";
+import ChatThemeSettings from "@/components/settings/ChatThemeSettings";
 
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];
 
@@ -181,6 +182,20 @@ export default function Settings() {
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Save Profile
           </Button>
+        </div>
+
+        <div className="mt-12 pt-8 border-t border-border">
+          <h2 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
+            <Palette className="h-5 w-5 text-primary" aria-hidden="true" />
+            Appearance
+          </h2>
+          <ChatThemeSettings
+            user={user}
+            onPreferenceSaved={async (themeId) => {
+              setUser((current) => ({ ...current, chat_theme_id: themeId }));
+              await checkUserAuth();
+            }}
+          />
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">

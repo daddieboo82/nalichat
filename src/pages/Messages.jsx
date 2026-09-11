@@ -56,13 +56,6 @@ export default function Messages() {
   }, []);
 
   useEffect(() => {
-    const unsub = base44.entities.User.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-    });
-    return unsub;
-  }, [queryClient]);
-
-  useEffect(() => {
     const sendPresence = (isOnline) => {
       if (!currentUser) return;
       base44.functions.invoke("updateUserPresence", { isOnline }).catch(() => {});
@@ -98,6 +91,8 @@ export default function Messages() {
       const res = await base44.functions.invoke('listPublicUsers', {});
       return res.data?.users || [];
     },
+    refetchInterval: 30_000,
+    staleTime: 15_000,
   });
 
   const { data: conversations = [] } = useQuery({

@@ -275,7 +275,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               key={item.id}
               message={item}
               isOwn={item.sender_id === currentUser?.id}
-              canDelete={item.sender_id === currentUser?.id || currentUser?.role === 'admin' || ADMIN_EMAILS.includes(currentUser?.email) || currentUser?.role === 'producer'}
+              canDelete={item.sender_id === currentUser?.id || currentUser?.role === 'admin' || ADMIN_EMAILS.includes(currentUser?.email)}
               showAvatar={item.showAvatar}
               onReply={(msg) => {
                 setReplyTo(msg);
@@ -299,7 +299,11 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                   old.filter(m => m.id !== id)
                 );
                 try {
-                  await base44.entities.Message.delete(id);
+                  const res = await base44.functions.invoke("mutateConversationMessage", {
+                    action: "delete",
+                    message_id: id,
+                  });
+                  if (res?.data?.error) throw new Error(res.data.error);
                 } catch (e) {
                   // Restore the message if the server delete failed.
                   if (previous) queryClient.setQueryData(["messages", conversation?.id], previous);

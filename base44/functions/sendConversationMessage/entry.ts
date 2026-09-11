@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const TIMEOUT_48H_MINUTES = 48 * 60;
-const ALLOWED_TYPES = new Set(['text', 'file', 'audio', 'image', 'session']);
+const ALLOWED_TYPES = new Set(['text', 'file', 'audio', 'image', 'video', 'session']);
 const MAX_FILE_BYTES = 20 * 1024 * 1024 * 1024;
 
 const TRUSTED_MEDIA_HOSTS = [
@@ -256,7 +256,7 @@ Deno.serve(async (req) => {
       messageData.file_url = fileUrl;
       messageData.file_size = storedSize;
     }
-    if (['file', 'audio', 'image'].includes(type) && !messageData.file_url) {
+    if (['file', 'audio', 'image', 'video'].includes(type) && !messageData.file_url) {
       return Response.json({ error: 'Attachment messages require a file_url' }, { status: 400 });
     }
     if (typeof body?.file_name === 'string' && body.file_name) {

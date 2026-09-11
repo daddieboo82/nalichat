@@ -309,6 +309,23 @@ describe('release configuration', () => {
     expect(signer).toContain("error: 'timed_out'");
   });
 
+  it('moderation-gates AI speech and bounds message transcription media', async () => {
+    const speech = await readText('base44/functions/generate-speech/entry.ts');
+    const transcribe = await readText('base44/functions/transcribeMessageAudio/entry.ts');
+
+    expect(speech).toContain('user.is_banned');
+    expect(speech).toContain("error: 'timed_out'");
+
+    expect(transcribe).toContain('user.is_banned');
+    expect(transcribe).toContain("error: 'timed_out'");
+    expect(transcribe).toContain('MAX_TRANSCRIBE_BYTES = 50 * 1024 * 1024');
+    expect(transcribe).toContain('storedMediaSize(message.file_url)');
+    expect(transcribe).toContain('Voice transcription supports audio up to 50MB');
+    expect(transcribe.indexOf('storedMediaSize(message.file_url)')).toBeLessThan(
+      transcribe.indexOf('integrations.Core.TranscribeAudio'),
+    );
+  });
+
   it('keeps costly AI media and legacy export signing behind server gates', async () => {
     const speech = await readText('base44/functions/generate-speech/entry.ts');
     const mastering = await readText('base44/functions/bounceAndMaster/entry.ts');

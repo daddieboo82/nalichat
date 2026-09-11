@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { X, Send, MessageSquareQuote } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { createClientMessageKey } from "@/lib/messageCache";
 
 function ThreadMessage({ msg, isOwn }) {
   return (
@@ -72,12 +73,13 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
   }, [text]);
 
   const sendMutation = useMutation({
-    mutationFn: async (msgText) => {
+    mutationFn: async ({ text: msgText, clientMessageKey }) => {
       const res = await base44.functions.invoke("sendConversationMessage", {
         conversation_id: parentMessage.conversation_id,
         text: msgText,
         type: "text",
         thread_id: parentMessage.id,
+        client_message_key: clientMessageKey,
       });
       if (res?.data?.moderation) {
         throw new Error("moderated");
@@ -86,15 +88,19 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
       return res?.data?.message;
     },
     onSuccess: () => {
+      setText("");
       queryClient.invalidateQueries({ queryKey: ["thread", parentMessage.id] });
       queryClient.invalidateQueries({ queryKey: ["messages"] });
     },
   });
 
   const handleSend = () => {
-    if (!text.trim()) return;
-    sendMutation.mutate(text.trim());
-    setText("");
+    const trimmed = text.trim();
+    if (!trimmed || sendMutation.isPending) return;
+    sendMutation.mutate({
+      text: trimmed,
+      clientMessageKey: createClientMessageKey(),
+    });
   };
 
   return (

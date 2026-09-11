@@ -43,23 +43,41 @@ export default function NotificationBell({ direction = "down" }) {
 
   useEffect(() => {
     if (!user?.id) return;
-    load(user.id);
-    const unsub = base44.entities.Notification.subscribe((event) => {
-      const me = userRef.current;
-      if (!me) return;
-      if (event.data?.recipient_id !== me.id) return;
-      if (event.type === "create") {
-        sounds.notification();
-        toast({ title: event.data.actor_name || "New activity", description: event.data.message });
-        showPushNotification({
-          title: event.data.actor_name || "NaliChat",
-          body: event.data.message || "You have a new notification",
-          url: event.data.link || "/",
-        });
+    let cancelled = false;
+    let previousIds = new Set();
+
+    const refreshNotifications = async () => {
+      try {
+        const list = await base44.entities.Notification.filter({ recipient_id: user.id }, "-created_date", 30);
+        if (cancelled) return;
+        const nextIds = new Set((list || []).map((n) => n.id));
+
+        if (previousIds.size > 0) {
+          const newest = (list || []).find((n) => !previousIds.has(n.id));
+          if (newest) {
+            sounds.notification();
+            toast({ title: newest.actor_name || "New activity", description: newest.message });
+            showPushNotification({
+              title: newest.actor_name || "NaliChat",
+              body: newest.message || "You have a new notification",
+              url: newest.link || "/",
+            });
+          }
+        }
+
+        previousIds = nextIds;
+        setItems(list || []);
+      } catch {
+        // Notifications are non-critical; retry on the next poll.
       }
-      load(me.id);
-    });
-    return unsub;
+    };
+
+    refreshNotifications();
+    const poll = window.setInterval(refreshNotifications, 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(poll);
+    };
   }, [user]);
 
   useEffect(() => {

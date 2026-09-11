@@ -54,10 +54,34 @@
     },
     "reported_by_id": {
       "type": "string",
-      "description": "User ID of the person who submitted a manual report"
+      "description": "User ID of the person who submitted a manual report",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "reported_by_name": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "content_type": {
       "type": "string",

@@ -6,6 +6,10 @@ async function readJson(path) {
   return JSON.parse(await readFile(new URL(`../../${path}`, import.meta.url), 'utf8'));
 }
 
+async function readText(path) {
+  return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
+}
+
 describe('release configuration', () => {
   it('targets the current Android API required by the release pipeline', async () => {
     const manifest = await readJson('src/twa-manifest.json');
@@ -97,6 +101,31 @@ describe('release configuration', () => {
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
     expect(submission.properties.vote_count.rls?.write?.user_condition?.role).toBe('admin');
     expect(submission.properties.status.rls?.write?.user_condition?.role).toBe('admin');
+  });
+
+
+  it('keeps challenge submissions and voting server-authoritative', async () => {
+    const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
+    expect(submission.rls.create?.user_condition?.role).toBe('admin');
+    expect(JSON.stringify(submission.rls.read)).toContain('approved');
+
+    const submitFn = await readText('base44/functions/submitChallengeRemix/entry.ts');
+    expect(submitFn).toContain("challenge.status !== 'active'");
+    expect(submitFn).toContain('submission_end_date');
+    expect(submitFn).toContain('MAX_REMIX_BYTES');
+    expect(submitFn).toContain('trustedUploadUrl');
+
+    const submitUi = await readText('src/components/challenges/SubmitRemixModal.jsx');
+    expect(submitUi).toContain('MAX_REMIX_BYTES');
+    expect(submitUi).toContain('submitChallengeRemix');
+    expect(submitUi).not.toContain('ChallengeSubmission.create');
+
+    const castVote = await readText('base44/functions/castVote/entry.ts');
+    expect(castVote).toContain('voting_end_date');
+    expect(castVote).toContain('Voting has ended for this challenge.');
+
+    const comments = await readText('base44/functions/trackComments/entry.ts');
+    expect(comments).toContain("parent.status === 'approved'");
   });
 
   it('keeps the PWA manifest scoped to the serving origin', async () => {

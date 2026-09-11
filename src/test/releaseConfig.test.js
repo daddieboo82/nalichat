@@ -238,6 +238,15 @@ describe('release configuration', () => {
   });
 
 
+  it('repairs message caches on delete and rate-limits moderated edits', async () => {
+    const mutate = await readText('base44/functions/mutateConversationMessage/entry.ts');
+    expect(mutate).toContain("'message_edit'");
+    expect(mutate).toContain('status: 429');
+    expect(mutate).toContain('thread_reply_count: remainingReplies.length');
+    expect(mutate).toContain("last_message_at: latest?.created_date || null");
+  });
+
+
   it('scopes read receipts to conversation participants and updates them atomically', async () => {
     const readReceipt = await readText('base44/functions/markMessageRead/entry.ts');
     expect(readReceipt).toContain('message.participant_ids.includes(user.id)');

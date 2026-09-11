@@ -19,6 +19,10 @@ import {
   summaryRequestDisposition,
 } from '../../shared/callSummary.ts';
 import { resolveUserSubscription } from '../../shared/subscriptionAccess.ts';
+import {
+  acquireCallSummaryStartLock,
+  releaseCallSummaryStartLock,
+} from '../../shared/callSummaryStartLock.ts';
 
 const REQUEST_KEY_PATTERN = /^[A-Za-z0-9._:-]{8,128}$/;
 const MAX_CAPTURE_BYTES = 200 * 1024 * 1024;
@@ -113,6 +117,28 @@ async function loadConversation(entities: any, conversationId: string) {
 
 async function loadConsents(entities: any, sessionId: string) {
   return entities.CallSummaryConsent.filter({ session_id: sessionId }, 'requested_at', 20);
+}
+
+async function ensureSessionConsents(
+  entities: any,
+  session: any,
+  participantIds: string[],
+  ownerId: string,
+  requestedAt: string,
+) {
+  const existing = await loadConsents(entities, session.id);
+  const byParticipant = new Set(existing.map((consent: any) => consent.participant_id));
+
+  for (const participantId of participantIds) {
+    if (byParticipant.has(participantId)) continue;
+    await entities.CallSummaryConsent.create({
+      session_id: session.id,
+      participant_id: participantId,
+      state: participantId === ownerId ? 'accepted' : 'requested',
+      requested_at: requestedAt,
+      responded_at: participantId === ownerId ? requestedAt : undefined,
+    });
+  }
 }
 
 async function loadCaptures(entities: any, sessionId: string) {
@@ -256,33 +282,54 @@ async function createSession(base44: any, user: any, body: any) {
     return jsonError(403, 'CALL_SUMMARY_UPGRADE_REQUIRED', 'Premium Plus is required for call summaries.');
   }
 
-  const existing = await entities.CallSummarySession.filter({ call_id: body.call_id }, '-created_date', 1);
-  if (existing[0] && existing[0].status !== 'deleted') {
-    if (!isParticipant(existing[0].participant_ids, user.id)) {
-      return jsonError(404, 'CALL_SUMMARY_NOT_FOUND', 'Call summary session not found.');
-    }
-    return Response.json(await snapshot(entities, existing[0], user.id));
+  const startLockId = await acquireCallSummaryStartLock(entities, body.call_id);
+  if (!startLockId) {
+    return jsonError(
+      409,
+      'CALL_SUMMARY_START_IN_PROGRESS',
+      'Call summary setup is already in progress. Please retry.',
+    );
   }
 
-  const now = new Date();
-  const requestedAt = now.toISOString();
-  const session = await entities.CallSummarySession.create({
-    call_id: body.call_id,
-    conversation_id: conversation.id,
-    owner_id: user.id,
-    participant_ids: participantIds,
-    status: 'consent_pending',
-    consent_deadline: new Date(now.getTime() + CALL_SUMMARY_CONSENT_TTL_MS).toISOString(),
-    failure_code: '',
-  });
-  await entities.CallSummaryConsent.bulkCreate(participantIds.map((participantId) => ({
-    session_id: session.id,
-    participant_id: participantId,
-    state: participantId === user.id ? 'accepted' : 'requested',
-    requested_at: requestedAt,
-    responded_at: participantId === user.id ? requestedAt : undefined,
-  })));
-  return Response.json(await snapshot(entities, session, user.id));
+  try {
+    const existing = await entities.CallSummarySession.filter({ call_id: body.call_id }, '-created_date', 1);
+    if (existing[0] && existing[0].status !== 'deleted') {
+      if (!isParticipant(existing[0].participant_ids, user.id)) {
+        return jsonError(404, 'CALL_SUMMARY_NOT_FOUND', 'Call summary session not found.');
+      }
+      const requestedAt = existing[0].created_date || new Date().toISOString();
+      await ensureSessionConsents(
+        entities,
+        existing[0],
+        canonicalParticipantIds(existing[0].participant_ids),
+        existing[0].owner_id,
+        requestedAt,
+      );
+      return Response.json(await snapshot(entities, existing[0], user.id));
+    }
+
+    const now = new Date();
+    const requestedAt = now.toISOString();
+    const session = await entities.CallSummarySession.create({
+      call_id: body.call_id,
+      conversation_id: conversation.id,
+      owner_id: user.id,
+      participant_ids: participantIds,
+      status: 'consent_pending',
+      consent_deadline: new Date(now.getTime() + CALL_SUMMARY_CONSENT_TTL_MS).toISOString(),
+      failure_code: '',
+    });
+    await ensureSessionConsents(
+      entities,
+      session,
+      participantIds,
+      user.id,
+      requestedAt,
+    );
+    return Response.json(await snapshot(entities, session, user.id));
+  } finally {
+    await releaseCallSummaryStartLock(entities, startLockId);
+  }
 }
 
 async function readSession(base44: any, user: any, body: any) {
@@ -741,6 +788,10 @@ async function deleteSummary(base44: any, user: any, body: any) {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return jsonError(405, 'METHOD_NOT_ALLOWED', 'Method not allowed.');
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return jsonError(401, 'UNAUTHORIZED', 'Unauthorized');

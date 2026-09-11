@@ -9,6 +9,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
   const [tracks, setTracks] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [tracksError, setTracksError] = useState(false);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
 
@@ -18,9 +19,12 @@ export default function ChatSessionViewer({ message, currentUser }) {
     const refreshTracks = async () => {
       try {
         const next = await base44.entities.Track.filter({ project_id: message.id }, "created_date", 500);
-        if (!cancelled) setTracks(next || []);
+        if (!cancelled) {
+          setTracks(next || []);
+          setTracksError(false);
+        }
       } catch {
-        // Session track refresh is non-critical; retry on the next poll.
+        if (!cancelled) setTracksError(true);
       }
     };
 
@@ -97,6 +101,11 @@ export default function ChatSessionViewer({ message, currentUser }) {
         </div>
       </div>
       <div className="flex-1 relative">
+        {tracksError && (
+          <div className="absolute inset-x-3 top-3 z-10 rounded-xl border border-destructive/30 bg-background/95 px-3 py-2 text-xs text-destructive shadow-sm" role="alert">
+            Couldn't load session tracks. The app will retry automatically.
+          </div>
+        )}
         <MultiTrackEditor
           tracks={tracks}
           selectedProject={{ id: message.id, title: message.text || "Live Session" }}

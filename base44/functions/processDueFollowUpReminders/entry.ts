@@ -3,6 +3,7 @@ import {
   followUpReminderErrorResponse,
   processDueFollowUpReminders,
 } from '../../shared/followUpReminders.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 let activeReminderRun: Promise<unknown> | null = null;
 
@@ -13,6 +14,17 @@ Deno.serve(async (req) => {
     }
 
     const base44 = createClientFromRequest(req);
+    const minuteKey = new Date().toISOString().slice(0, 16);
+    const minuteClaim = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      `follow-up-reminder-processor:${minuteKey}`,
+      'process_due_follow_up_reminders',
+      1,
+    );
+    if (!minuteClaim.allowed) {
+      return Response.json({ success: true, skipped: 'already_processed_this_minute' });
+    }
+
     if (!activeReminderRun) {
       const run = processDueFollowUpReminders({
         entities: base44.asServiceRole.entities,

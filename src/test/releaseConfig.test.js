@@ -600,6 +600,21 @@ describe('release configuration', () => {
     }
   });
 
+  it('keeps collaborative entity mutations server-only', async () => {
+    for (const path of [
+      'base44/entities/SharedFile.jsonc',
+      'base44/entities/Track.jsonc',
+      'base44/entities/Folder.jsonc',
+      'base44/entities/Milestone.jsonc',
+    ]) {
+      const schema = await readJson(path);
+      expect(schema.rls.update?.user_condition?.role).toBe('admin');
+    }
+
+    const sharedFile = await readJson('base44/entities/SharedFile.jsonc');
+    expect(sharedFile.rls.delete?.user_condition?.role).toBe('admin');
+  });
+
 
   it('enforces configured challenge voting windows server-side', async () => {
     const vote = await readText('base44/functions/castVote/entry.ts');

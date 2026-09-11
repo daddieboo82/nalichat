@@ -3,6 +3,35 @@ import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 
+const MAX_TRANSCRIBE_BYTES = 50 * 1024 * 1024;
+
+async function storedMediaSize(url: string): Promise<number | null> {
+  try {
+    const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+    if (head.ok) {
+      const length = Number(head.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0) return length;
+    }
+  } catch {}
+
+  try {
+    const probe = await fetch(url, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-0' },
+      redirect: 'manual',
+    });
+    if (probe.ok || probe.status === 206) {
+      const range = probe.headers.get('content-range') || '';
+      const match = range.match(/\/(\d+)$/);
+      if (match) return Number(match[1]);
+      const length = Number(probe.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0 && probe.status !== 206) return length;
+    }
+    try { await probe.body?.cancel(); } catch {}
+  } catch {}
+  return null;
+}
+
 // Generates AI cover art for a track: transcribes audio, uses LLM to craft
 // an image prompt, then generates the image. All three credit-costly
 // integration calls run server-side under asServiceRole.
@@ -57,8 +86,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Stored track media host is not allowed' }, { status: 400 });
     }
     if (file_url) {
+      const size = await storedMediaSize(file_url);
+      if (size === null) {
+        return Response.json({ error: 'Could not verify track size for AI cover art' }, { status: 400 });
+      }
+      if (size <= 0 || size > MAX_TRANSCRIBE_BYTES) {
+        return Response.json({ error: 'AI cover-art transcription supports tracks up to 50MB' }, { status: 413 });
+      }
       try {
-        transcript = await base44.asServiceRole.integrations.Core.TranscribeAudio({ audio_url: file_url }) || transcript;
+        const rawTranscript = await base44.asServiceRole.integrations.Core.TranscribeAudio({ audio_url: file_url });
+        const text = typeof rawTranscript === 'string' ? rawTranscript : rawTranscript?.text || '';
+        transcript = text ? text.slice(0, 12000) : transcript;
       } catch (e) {
         console.error("Transcription failed:", e.message);
       }

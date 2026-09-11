@@ -156,10 +156,20 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
               <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
               <AlertDialogAction
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
-                onClick={() => {
-                  onDelete?.(project.id);
-                  setShowDelete(false);
-                  onOpenChange(false);
+                onClick={async () => {
+                  try {
+                    const res = await base44.functions.invoke("deleteProject", {
+                      projectId: project.id,
+                      confirmation: "DELETE",
+                    });
+                    if (res?.data?.error) throw new Error(res.data.error);
+                    onDelete?.(project.id);
+                    queryClient.invalidateQueries({ queryKey: ["projects"] });
+                    setShowDelete(false);
+                    onOpenChange(false);
+                  } catch (error) {
+                    console.error("Project deletion failed", error);
+                  }
                 }}
               >
                 Delete

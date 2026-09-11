@@ -23,12 +23,20 @@
     "last_heartbeat": {
       "type": "string",
       "format": "date-time",
-      "description": "Timestamp of the last presence heartbeat \u2014 used to detect who is still active"
+      "description": "Timestamp of the last presence heartbeat — used to detect who is still active"
     },
     "description": {
       "type": "string",
       "description": "Optional description (up to 1000 characters)",
       "maxLength": 1000
+    },
+    "access_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Studio/project members allowed to see this presence record"
     }
   },
   "required": [
@@ -39,7 +47,21 @@
     "create": {
       "data.user_id": "{{user.id}}"
     },
-    "read": null,
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "data.access_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
     "update": {
       "data.user_id": "{{user.id}}"
     },

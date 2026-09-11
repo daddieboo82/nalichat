@@ -790,6 +790,13 @@ describe('release configuration', () => {
     ]));
   });
 
+  it('does not fabricate public-room activity counts', async () => {
+    const list = await readText('src/components/messages/ConversationList.jsx');
+    expect(list).toContain('Join public room');
+    expect(list).not.toContain('% 8000 + 1200');
+    expect(list).not.toContain('active members');
+  });
+
   it('enforces moderation state and cost bounds on outbound messaging', async () => {
     const external = await readText('base44/functions/sendExternalMessage/entry.ts');
     const invite = await readText('base44/functions/sendSmsInvite/entry.ts');

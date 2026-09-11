@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
       access_user_ids: accessUserIds,
       edit_user_ids: editUserIds,
       share_token_hash: null,
+      share_token_expires_at: null,
     });
     return Response.json({ success: true, file: updated });
   } catch (error) {

@@ -11,6 +11,7 @@ import AddToPlaylistDialog from "@/components/explore/AddToPlaylistDialog";
 import TrackCommentsDialog from "@/components/explore/TrackCommentsDialog";
 import { sounds } from "@/hooks/use-sound";
 import { toast } from "sonner";
+import { getLikeCount } from "@/lib/engagement";
 
 const MEDIUMS = ["all", "original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
 
@@ -87,8 +88,7 @@ export default function Explore() {
         const liked_by = liked
           ? p.liked_by.filter(id => id !== currentUser.id)
           : [...(p.liked_by || []), currentUser.id];
-        const likes = Math.max(0, (p.likes || 0) + (liked ? -1 : 1));
-        return { ...p, liked_by, likes };
+        return { ...p, liked_by, likes: liked_by.length };
       });
       queryClient.setQueryData(["artposts", filter, currentUser?.id], update);
       return { previous, filter };
@@ -108,7 +108,7 @@ export default function Explore() {
     return matchesSearch && matchesFilter;
   }), [posts, search, filter]);
 
-  const featured = React.useMemo(() => filtered.filter(p => p?.featured || (p?.likes || 0) > 5), [filtered]);
+  const featured = React.useMemo(() => filtered.filter(p => p?.featured || getLikeCount(p) > 5), [filtered]);
   const recent = filtered;
 
   return (

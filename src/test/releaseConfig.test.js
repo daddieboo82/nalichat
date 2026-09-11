@@ -1592,6 +1592,14 @@ describe('release configuration', () => {
     expect(sw).toContain('const targetUrl = safeNotificationTarget');
   });
 
+  it('removes deleted-user likes atomically', async () => {
+    const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
+    expect(deletion).toContain("$pull: { liked_by: user.id }");
+    expect(deletion).toContain('const refreshedPost = await entities.ArtPost.get(post.id)');
+    expect(deletion).toContain('refreshedPost.liked_by.length');
+    expect(deletion).not.toContain('liked_by: likedBy');
+  });
+
   it('reconciles deleted-user challenge votes atomically', async () => {
     const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
     expect(deletion).toContain('entities.ChallengeSubmission.updateMany');

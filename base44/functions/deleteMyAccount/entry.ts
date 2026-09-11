@@ -264,16 +264,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Remove likes cast by the deleted account while keeping aggregate counts correct.
+    // Remove likes cast by the deleted account atomically so concurrent
+    // likes/unlikes cannot be overwritten by a stale liked_by snapshot.
     const likedPosts = await entities.ArtPost.filter({ liked_by: user.id });
     for (const post of likedPosts) {
-      const likedBy = Array.isArray(post.liked_by)
-        ? post.liked_by.filter((id: string) => id !== user.id)
-        : [];
-      await entities.ArtPost.update(post.id, {
-        liked_by: likedBy,
-        likes: likedBy.length,
-      });
+      await entities.ArtPost.updateMany(
+        { id: post.id },
+        { $pull: { liked_by: user.id } },
+      );
+      const refreshedPost = await entities.ArtPost.get(post.id).catch(() => null);
+      if (refreshedPost) {
+        await entities.ArtPost.update(post.id, {
+          likes: Array.isArray(refreshedPost.liked_by) ? refreshedPost.liked_by.length : 0,
+        });
+      }
     }
 
     // Remove challenge votes cast by the deleted account and reconcile totals

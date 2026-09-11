@@ -50,6 +50,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
     setLoading(true);
     let image_url = null;
     let file_url = null;
+    let createdPost = null;
 
     try {
       if (imageFile) {
@@ -60,7 +61,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
       const audioRes = await base44.integrations.Core.UploadFile({ file: audioFile });
       file_url = audioRes.file_url;
 
-      await base44.entities.ArtPost.create({
+      createdPost = await base44.entities.ArtPost.create({
         ...form,
         is_explicit: form.is_explicit,
         image_url,
@@ -87,7 +88,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
       console.error("Failed to update XP:", err);
     }
 
-    recordSquadActivity(currentUser.id, "task");
+    if (createdPost?.id) recordSquadActivity("art_post", createdPost.id);
 
     setLoading(false);
     onSuccess();

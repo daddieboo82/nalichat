@@ -1,17 +1,20 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendPushToUser } from '../../shared/webPush.ts';
+import { workflowEntityRecordId } from '../../shared/workflowEvents.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const { event, data, changed_fields } = await req.json();
-    if (event?.type !== 'update' || !data?.id) return Response.json({ success: true });
+    const record = workflowEntityRecordId({ event, data });
+    if (record.conflict) return Response.json({ error: 'Conflicting entity ids' }, { status: 400 });
+    if (event?.type !== 'update' || !record.id) return Response.json({ success: true });
     if (!Array.isArray(changed_fields) || !changed_fields.some((f) => ['completed','due_date','title'].includes(f))) {
       return Response.json({ success: true, message: 'No relevant fields changed' });
     }
 
     const entities = base44.asServiceRole.entities;
-    const milestone = await entities.Milestone.get(data.id);
+    const milestone = await entities.Milestone.get(record.id);
     if (!milestone?.project_id) return Response.json({ success: true });
     const project = await entities.Project.get(milestone.project_id);
     if (!project) return Response.json({ success: true });

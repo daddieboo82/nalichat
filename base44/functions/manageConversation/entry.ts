@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -9,6 +10,13 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const action = body?.action;
     const entities = base44.asServiceRole.entities;
+
+    if (['create_dm', 'create_group', 'create_public'].includes(action)) {
+      const rate = await consumeHourlyLimit(entities, user.id, 'conversation_create', 60);
+      if (!rate.allowed) {
+        return Response.json({ error: 'Conversation creation rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+    }
 
     if (action === 'create_dm' || action === 'create_group') {
       const rawParticipantIds = Array.isArray(body?.participant_ids) ? body.participant_ids : [];

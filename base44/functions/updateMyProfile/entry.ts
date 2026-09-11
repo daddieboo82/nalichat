@@ -3,7 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 const VALID_ARTIST_ROLES = new Set(['artist', 'producer', 'engineer', 'ar']);
 const VALID_NALI_LEVELS = new Set(['proactive', 'minimal', 'off']);
 
-function cleanUploadedAvatar(value: unknown) {
+function cleanUploadedImage(value: unknown) {
   const raw = String(value || '').trim();
   if (!raw) return '';
   try {
@@ -38,6 +38,21 @@ Deno.serve(async (req) => {
     if (body?.bio !== undefined) patch.bio = String(body.bio || '').trim().slice(0, 2000);
     if (body?.location !== undefined) patch.location = String(body.location || '').trim().slice(0, 200);
     if (body?.phone !== undefined) patch.phone = String(body.phone || '').trim().slice(0, 40);
+    if (body?.website !== undefined) {
+      const raw = String(body.website || '').trim();
+      if (!raw) {
+        patch.website = '';
+      } else {
+        let parsed;
+        try { parsed = new URL(raw); } catch {
+          return Response.json({ error: 'Website must be a valid URL' }, { status: 400 });
+        }
+        if (!['https:', 'http:'].includes(parsed.protocol)) {
+          return Response.json({ error: 'Website must use HTTP or HTTPS' }, { status: 400 });
+        }
+        patch.website = parsed.toString().slice(0, 500);
+      }
+    }
     if (body?.birthdate !== undefined) {
       const birthdate = String(body.birthdate || '').trim();
       if (birthdate && !/^\d{4}-\d{2}-\d{2}$/.test(birthdate)) {
@@ -62,11 +77,18 @@ Deno.serve(async (req) => {
     }
     if (body?.welcome_tour_completed !== undefined) patch.welcome_tour_completed = Boolean(body.welcome_tour_completed);
     if (body?.avatar_url !== undefined) {
-      const avatar = body.avatar_url ? cleanUploadedAvatar(body.avatar_url) : '';
+      const avatar = body.avatar_url ? cleanUploadedImage(body.avatar_url) : '';
       if (body.avatar_url && !avatar) {
         return Response.json({ error: 'Avatar must come from trusted upload storage' }, { status: 400 });
       }
       patch.avatar_url = avatar;
+    }
+    if (body?.cover_url !== undefined) {
+      const cover = body.cover_url ? cleanUploadedImage(body.cover_url) : '';
+      if (body.cover_url && !cover) {
+        return Response.json({ error: 'Profile cover must come from trusted upload storage' }, { status: 400 });
+      }
+      patch.cover_url = cover;
     }
 
     if (Object.keys(patch).length === 0) {

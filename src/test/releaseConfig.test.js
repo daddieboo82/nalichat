@@ -522,6 +522,14 @@ describe('release configuration', () => {
     expect(milestone).not.toContain("(milestone.edit_user_ids || []).includes(user.id)");
   });
 
+  it('authorizes project-folder uploads from the current project role', async () => {
+    const sharedFile = await readText('base44/functions/createSharedFileRecord/entry.ts');
+    expect(sharedFile).toContain('if (!canEditFolder && folder.project_id)');
+    expect(sharedFile).toContain('entities.Project.get(folder.project_id)');
+    expect(sharedFile).toContain('folderProject.owner_id === user.id');
+    expect(sharedFile).toContain('(folderProject.editor_ids || []).includes(user.id)');
+  });
+
   it('keeps shared-file edit access synchronized with project collaborator roles', async () => {
     const collaborator = await readText('base44/functions/manageProjectCollaborator/entry.ts');
     expect(collaborator).toContain('edit_user_ids: Array.from(editUserIds)');

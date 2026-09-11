@@ -170,34 +170,58 @@ Deno.serve(async (req) => {
       );
 
       let tombstoned = false;
-      if (childReplies.length > 0) {
-        // Keep the thread anchor so replies from other users remain reachable,
-        // but remove the deleted author's content and attachment payload.
-        await entities.Message.update(message.id, {
-          text: 'Message deleted',
-          type: 'text',
-          file_url: '',
-          file_name: '',
-          file_type: '',
-          file_size: 0,
-          reactions: {},
-          is_edited: true,
-        });
-        tombstoned = true;
-      } else {
-        await entities.Message.delete(message.id);
+      let parentThreadLockId: string | null = null;
+      if (message.thread_id && childReplies.length === 0) {
+        parentThreadLockId = await acquireMessageMutationLock(entities, message.thread_id);
+        if (!parentThreadLockId) {
+          return Response.json(
+            { error: 'Thread is being updated. Please retry.' },
+            { status: 409 },
+          );
+        }
       }
 
-      if (message.thread_id && !tombstoned) {
-        try {
-          await entities.Message.updateMany(
+      try {
+        if (childReplies.length > 0) {
+          // Keep the thread anchor so replies from other users remain reachable,
+          // but remove the deleted author's content and attachment payload.
+          await entities.Message.update(message.id, {
+            text: 'Message deleted',
+            type: 'text',
+            file_url: '',
+            file_name: '',
+            file_type: '',
+            file_size: 0,
+            reactions: {},
+            is_edited: true,
+          });
+          tombstoned = true;
+        } else if (message.thread_id) {
+          const replyCountUpdate = await entities.Message.updateMany(
             {
               id: message.thread_id,
               thread_reply_count: { $gt: 0 },
             },
             { $inc: { thread_reply_count: -1 } },
           );
-        } catch {}
+          if (Number(replyCountUpdate?.updated || 0) !== 1) {
+            throw new Error('Unable to update parent thread reply count');
+          }
+
+          try {
+            await entities.Message.delete(message.id);
+          } catch (deleteError) {
+            await entities.Message.updateMany(
+              { id: message.thread_id },
+              { $inc: { thread_reply_count: 1 } },
+            ).catch(() => {});
+            throw deleteError;
+          }
+        } else {
+          await entities.Message.delete(message.id);
+        }
+      } finally {
+        await releaseMessageMutationLock(entities, parentThreadLockId);
       }
 
       if (message.type !== 'session' && message.conversation_id) {

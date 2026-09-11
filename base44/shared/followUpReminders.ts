@@ -203,15 +203,26 @@ async function findLaterRecipientReply(
   >,
   participantIds: readonly string[],
 ): Promise<MessageRecord | null> {
-  const messages = await loadAll(messageEntity, {
-    conversation_id: reminder.conversation_id,
-  });
-  return messages.find((message) => isLaterRecipientReply(
-    message,
-    reminder.owner_id,
-    reminder.source_message_created_at,
-    participantIds,
-  )) || null;
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const messages = await messageEntity.filter(
+      {
+        conversation_id: reminder.conversation_id,
+        created_date: { $gt: reminder.source_message_created_at },
+      },
+      'created_date',
+      pageSize,
+      skip,
+    );
+    const match = messages.find((message) => isLaterRecipientReply(
+      message,
+      reminder.owner_id,
+      reminder.source_message_created_at,
+      participantIds,
+    ));
+    if (match) return match;
+    if (messages.length < pageSize) return null;
+  }
 }
 
 function sameCreateRequest(
@@ -701,7 +712,10 @@ export async function processDueFollowUpReminders({
   now?: string | Date;
 }) {
   const clock = currentDate(now);
-  const scheduled = await loadAll(entities.FollowUpReminder, { status: 'scheduled' });
+  const scheduled = await loadAll(entities.FollowUpReminder, {
+    status: 'scheduled',
+    remind_at: { $lte: clock.toISOString() },
+  });
   const claimed = await loadAll(entities.FollowUpReminder, { status: 'triggered' });
   const staleClaimCutoff = clock.getTime() - 5 * 60 * 1000;
   const recoverableClaims = claimed.filter((reminder) => (
@@ -725,7 +739,7 @@ export async function processDueFollowUpReminders({
       scheduled.push({ ...reminder, status: 'scheduled', delivery_claim_key: null });
     }
   }
-  const due = scheduled.filter((reminder) => Date.parse(reminder.remind_at) <= clock.getTime());
+  const due = scheduled;
   const summary = { due: due.length, triggered: 0, canceled: 0, completed: 0, failed: 0 };
 
   for (const candidate of due) {

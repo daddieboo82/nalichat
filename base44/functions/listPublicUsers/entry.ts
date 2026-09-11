@@ -6,10 +6,22 @@ export default async function(req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const [allUsers, achievements] = await Promise.all([
+    const [allUsers, achievements, contacts, conversations] = await Promise.all([
       base44.asServiceRole.entities.User.list(),
       base44.asServiceRole.entities.Achievement.list(),
+      base44.asServiceRole.entities.Contact.filter({ user_id: user.id }),
+      base44.asServiceRole.entities.Conversation.filter({ participant_ids: user.id }),
     ]);
+
+    const presenceVisibleTo = new Set<string>([user.id]);
+    for (const contact of contacts) {
+      if (contact.contact_user_id) presenceVisibleTo.add(contact.contact_user_id);
+    }
+    for (const conversation of conversations) {
+      for (const participantId of conversation.participant_ids || []) {
+        presenceVisibleTo.add(participantId);
+      }
+    }
 
     const achievementCount = {};
     for (const achievement of achievements) {
@@ -38,7 +50,7 @@ export default async function(req) {
       level: Number(u.level || Math.floor(Number(u.xp || 0) / 200) + 1),
       viral_concepts_generated: Number(u.viral_concepts_generated || 0),
       achievement_count: achievementCount[u.id] || 0,
-      is_online: Boolean(u.is_online),
+      is_online: presenceVisibleTo.has(u.id) ? Boolean(u.is_online) : false,
     }));
 
     return Response.json({ users: publicUsers });

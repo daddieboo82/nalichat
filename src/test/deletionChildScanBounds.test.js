@@ -30,4 +30,15 @@ describe('deletion child scan bounds', () => {
     expect(source).toContain('deleted_submissions: deletedSubmissions');
     expect(source).toContain('deleted_votes: deletedVotes');
   });
+
+  it('batches studio track and ArtPost child cleanup', async () => {
+    const track = await readText('base44/functions/mutateTrack/entry.ts');
+    const post = await readText('base44/functions/deleteArtPost/entry.ts');
+
+    expect(track).toContain('const DELETE_BATCH_SIZE = 200;');
+    expect(track).toContain("entity.filter(query, '-created_date', DELETE_BATCH_SIZE)");
+    expect(track).toContain('deleted_versions: deletedVersions');
+    expect(post).toMatch(/TrackComment\.filter\([\s\S]*parent_type: 'art_post'[\s\S]*DELETE_BATCH_SIZE/);
+    expect(post).toContain('deleted_comments: deletedComments');
+  });
 });

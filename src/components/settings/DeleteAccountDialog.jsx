@@ -23,6 +23,13 @@ export default function DeleteAccountDialog() {
   const handleDelete = async () => {
     setDeleting(true);
     try {
+      try {
+        const { unsubscribeFromRemotePush } = await import("@/lib/pushNotifications");
+        await unsubscribeFromRemotePush();
+      } catch (error) {
+        console.warn("Push cleanup before account deletion failed:", error);
+      }
+
       const res = await base44.functions.invoke("deleteMyAccount", { confirmation: "DELETE" });
       if (!res?.data?.success) {
         throw new Error(res?.data?.error || "Account deletion failed");

@@ -315,6 +315,15 @@ describe('release configuration', () => {
   });
 
 
+  it('bounds locked-chat preference scans without moderation blocking', async () => {
+    const vault = await readText('base44/functions/lockedChatVault/entry.ts');
+    expect(vault).toContain("'locked_chat_state'");
+    expect(vault).toMatch(/'locked_chat_state',\s*300/);
+    expect(vault).toContain("'locked_chat_mutation'");
+    expect(vault).toMatch(/'locked_chat_mutation',\s*120/);
+    expect(vault).not.toContain("if (user.is_banned)");
+  });
+
   it('bounds user-state writes and legacy export signing', async () => {
     const cases = [
       ['base44/functions/updateUserPresence/entry.ts', "'user_presence'", 1800],

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { resolveUserSubscription } from '../../shared/subscriptionAccess.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import {
   constantTimeEqual,
   canConfigureLockedConversation,
@@ -145,6 +146,29 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const action = body?.action;
+
+    if (action === 'state') {
+      const stateRate = await consumeHourlyLimit(
+        base44.asServiceRole.entities,
+        user.id,
+        'locked_chat_state',
+        300,
+      );
+      if (!stateRate.allowed) {
+        return errorResponse('Locked-chat state rate limit exceeded.', 429, 'rate_limited');
+      }
+    }
+    if (action === 'set_locked') {
+      const mutationRate = await consumeHourlyLimit(
+        base44.asServiceRole.entities,
+        user.id,
+        'locked_chat_mutation',
+        120,
+      );
+      if (!mutationRate.allowed) {
+        return errorResponse('Locked-chat mutation rate limit exceeded.', 429, 'rate_limited');
+      }
+    }
 
     if (action === 'state') {
       const [lockedConversationIds, security] = await Promise.all([

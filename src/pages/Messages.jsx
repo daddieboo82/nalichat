@@ -108,7 +108,7 @@ export default function Messages() {
     staleTime: 15_000,
   });
 
-  const { data: conversations = [] } = useQuery({
+  const { data: conversations = [], isError: conversationsError } = useQuery({
     queryKey: ["conversations"],
     queryFn: () => base44.entities.Conversation.list("-last_message_at"),
     refetchInterval: 5000,
@@ -157,7 +157,7 @@ export default function Messages() {
     lockedConversationIds,
   ]);
 
-  const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
+  const { data: messages = [], isLoading: isLoadingMessages, isError: messagesError } = useQuery({
     queryKey: ["messages", selectedConvId],
     queryFn: async () => {
       const msgs = await base44.entities.Message.filter({ conversation_id: selectedConvId }, "-created_date", 200);
@@ -469,6 +469,11 @@ export default function Messages() {
               {sidebarTab === "chats" ? (
                 <motion.div key="chats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col bg-background/40">
                   <PullToRefresh onRefresh={async () => { await queryClient.invalidateQueries({ queryKey: ["conversations"] }); }} className="flex-1 overflow-y-auto">
+                    {conversationsError ? (
+                      <div className="m-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
+                        Couldn't load conversations. Pull to refresh or try again.
+                      </div>
+                    ) : (
                     <ConversationList
                       conversations={conversations}
                       myConversations={myConversations}
@@ -478,6 +483,7 @@ export default function Messages() {
                       currentUserId={currentUser?.id}
                       onStartDM={startDM}
                     />
+                    )}
                   </PullToRefresh>
                 </motion.div>
               ) : (
@@ -502,6 +508,7 @@ export default function Messages() {
               conversation={selectedConv}
               messages={messages}
               isLoading={isLoadingMessages}
+              loadError={messagesError}
               currentUser={currentUser}
               users={users}
               isBlocked={isBlocked}

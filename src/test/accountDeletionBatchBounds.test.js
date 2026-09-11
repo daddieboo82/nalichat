@@ -56,4 +56,26 @@ describe('account deletion batch bounds', () => {
     expect(source).not.toContain('const rows = await entity.filter({ project_id: project.id })');
     expect(source).not.toContain('const presenceRows = await entities.StudioPresence.filter');
   });
+
+  it('batches retained public, squad, and billing-history anonymization', async () => {
+    const source = await readFile(
+      new URL('../../base44/functions/deleteMyAccount/entry.ts', import.meta.url),
+      'utf8',
+    );
+
+    for (const query of [
+      '{ host_artist_id: user.id }',
+      '{ producer_id: user.id }',
+      '{ member_a_id: user.id }',
+      '{ member_b_id: user.id }',
+      '{ user_id: user.id }',
+    ]) {
+      expect(source).toContain(query);
+    }
+    expect(source).not.toContain('const hostedChallenges = await');
+    expect(source).not.toContain('const submissions = await entities.ChallengeSubmission.filter');
+    expect(source).not.toContain('const squadsAsA = await');
+    expect(source).not.toContain('const squadsAsB = await');
+    expect(source).not.toContain('const purchases = await');
+  });
 });

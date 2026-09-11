@@ -756,6 +756,15 @@ describe('release configuration', () => {
     expect(viral).toContain("error: 'AI returned an invalid meme concept'");
   });
 
+  it('keeps Studio AI raw entity access read-only and hides automation-only tools', async () => {
+    const agent = await readJson('base44/agents/studio_ai.jsonc');
+    for (const entityName of ['Playlist', 'Contact', 'TrackVersion']) {
+      const config = agent.tool_configs.find((entry) => entry.entity_name === entityName);
+      expect(config?.allowed_operations).toEqual(['read']);
+    }
+    expect(agent.tool_configs.some((entry) => entry.function_name === 'suggestTrackTags')).toBe(false);
+  });
+
   it('prevents contact spoofing and email/phone account enumeration', async () => {
     const contact = await readJson('base44/entities/Contact.jsonc');
     const mutateContact = await readText('base44/functions/mutateContact/entry.ts');

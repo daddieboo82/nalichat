@@ -272,6 +272,14 @@ describe('release configuration', () => {
   });
 
 
+  it('claims squad invite membership atomically', async () => {
+    const joinSquad = await readText('base44/functions/joinSquad/entry.ts');
+    expect(joinSquad).toContain("status: 'pending'");
+    expect(joinSquad).toContain('member_b_id: null');
+    expect(joinSquad).toContain('Number(claim?.updated || 0) !== 1');
+  });
+
+
   it('keeps project invites rate-limited and acceptance idempotent', async () => {
     const createInvite = await readText('base44/functions/createProjectInvite/entry.ts');
     const acceptInvite = await readText('base44/functions/acceptProjectInvite/entry.ts');

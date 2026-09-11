@@ -10,6 +10,7 @@ import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import ReportContentDialog from "@/components/ReportContentDialog";
 import { copyToClipboard } from "@/lib/clipboard";
 import { useSubscription } from "@/hooks/useSubscription";
+import { base44 } from "@/api/base44Client";
 
 export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlaylist, currentUser }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -193,14 +194,17 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                          e.stopPropagation();
                          toast.success("Download started...");
                          try {
+                           const auth = await base44.functions.invoke("authorizeArtPostDownload", { postId: post.id });
+                           if (auth?.data?.error) throw new Error(auth.data.error);
+                           const downloadUrl = auth?.data?.file_url;
+                           if (!downloadUrl) throw new Error("Download URL unavailable");
                            const { resumableDownload } = await import('@/lib/resumableUpload');
-                           let fileName = post.title || 'download';
-                           // Append extension from URL if not already present
-                           if (post.file_url && !fileName.match(/\.[a-zA-Z0-9]+$/)) {
-                             const match = post.file_url.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+                           let fileName = auth?.data?.title || post.title || 'download';
+                           if (!fileName.match(/\.[a-zA-Z0-9]+$/)) {
+                             const match = downloadUrl.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
                              if (match) fileName += '.' + match[1];
                            }
-                           await resumableDownload(post.file_url, fileName, () => {});
+                           await resumableDownload(downloadUrl, fileName, () => {});
                            toast.success("Download complete");
                          } catch (err) {
                            toast.error("Download failed");

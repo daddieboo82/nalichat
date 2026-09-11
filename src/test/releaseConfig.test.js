@@ -251,6 +251,13 @@ describe('release configuration', () => {
     expect(mutate).toContain("last_message_at: latest?.created_date || null");
   });
 
+  it('blocks message reactions while banned or timed out', async () => {
+    const mutate = await readText('base44/functions/mutateConversationMessage/entry.ts');
+    expect(mutate).toContain("if (action === 'react')");
+    expect(mutate).toContain("if (user.is_banned)");
+    expect(mutate).toContain("error: 'timed_out'");
+  });
+
 
   it('scopes read receipts to conversation participants and updates them atomically', async () => {
     const readReceipt = await readText('base44/functions/markMessageRead/entry.ts');

@@ -8,6 +8,9 @@ import { workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
     const base44 = createClientFromRequest(req);
     const { event, data } = await req.json();
     if (event?.type !== 'create') {

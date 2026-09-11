@@ -7,6 +7,9 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 // back onto the Track. If the parent Project has no genre/bpm yet, fills those too.
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
     const base44 = createClientFromRequest(req);
     const body = await req.json();
     const caller = await base44.auth.me().catch(() => null);

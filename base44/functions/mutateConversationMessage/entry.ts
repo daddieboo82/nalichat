@@ -259,11 +259,21 @@ Deno.serve(async (req) => {
       is_edited: true,
     });
 
-    // Keep the conversation preview in sync if this was the latest message.
+    // Keep the conversation preview in sync only if this exact message is
+    // still the latest non-session message. Comparing text values can update
+    // the preview incorrectly when multiple messages have identical text.
     try {
-      const conversation = await entities.Conversation.get(message.conversation_id);
-      if (conversation?.last_message_text === message.text) {
-        await entities.Conversation.update(conversation.id, { last_message_text: text });
+      const recent = await entities.Message.filter(
+        { conversation_id: message.conversation_id },
+        '-created_date',
+        50,
+      );
+      const latest = recent.find((candidate: any) => candidate.type !== 'session') || null;
+      if (latest?.id === message.id) {
+        await entities.Conversation.update(message.conversation_id, {
+          last_message_text: text,
+          last_message_at: latest.created_date || null,
+        });
       }
     } catch {}
 

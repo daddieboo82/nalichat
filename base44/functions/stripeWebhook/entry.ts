@@ -61,14 +61,14 @@ async function findSubscription(
 ): Promise<any | null> {
   if (checkoutId) {
     const byCheckout = oneRecord(
-      await entities.Subscription.filter({ checkout_id: checkoutId }),
+      await entities.Subscription.filter({ checkout_id: checkoutId }, '-created_date', 2),
       'checkout',
     );
     if (byCheckout) return byCheckout;
   }
   if (subscriptionId) {
     const bySubscription = oneRecord(
-      await entities.Subscription.filter({ subscription_id: subscriptionId }),
+      await entities.Subscription.filter({ subscription_id: subscriptionId }, '-created_date', 2),
       'Stripe subscription',
     );
     if (bySubscription) return bySubscription;
@@ -158,7 +158,7 @@ async function persistUserStripeState(
 ): Promise<void> {
   if (isDeletedUserId(userId)) return;
 
-  const users = await entities.User.filter({ id: userId });
+  const users = await entities.User.filter({ id: userId }, '-created_date', 2);
   const user = oneRecord(users, 'user');
   if (!user) {
     // A Stripe event can race with account deletion. Retained billing records
@@ -310,7 +310,7 @@ async function processCheckout(
 ): Promise<void> {
   if (session.mode === 'payment') {
     const purchase = oneRecord(
-      await entities.Base44Purchase.filter({ checkoutSessionId: session.id }),
+      await entities.Base44Purchase.filter({ checkoutSessionId: session.id }, '-created_date', 2),
       'purchase',
     );
     if (!purchase) {
@@ -448,7 +448,7 @@ Deno.serve(async (req) => {
   let ledger: any;
   try {
     const existing = oneRecord(
-      await entities.StripeWebhookEvent.filter({ stripe_event_id: event.id }),
+      await entities.StripeWebhookEvent.filter({ stripe_event_id: event.id }, '-created_date', 2),
       'webhook event ledger',
     );
     const ledgerAction = webhookLedgerAction(

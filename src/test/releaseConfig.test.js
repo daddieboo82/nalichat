@@ -227,6 +227,14 @@ describe('release configuration', () => {
     expect(sendMessage).not.toContain("'reply_to_text', 'reply_to_sender'");
   });
 
+  it('supports video attachments end to end in the message schema and sender', async () => {
+    const sendMessage = await readText('base44/functions/sendConversationMessage/entry.ts');
+    const message = await readJson('base44/entities/Message.jsonc');
+    expect(sendMessage).toContain("'video'");
+    expect(sendMessage).toContain("['file', 'audio', 'image', 'video'].includes(type)");
+    expect(message.properties.type.enum).toContain('video');
+  });
+
 
   it('creates conversations only through validated server membership checks', async () => {
     const conversation = await readJson('base44/entities/Conversation.jsonc');

@@ -1488,13 +1488,18 @@ describe('release configuration', () => {
     }
   });
 
-  it('limits online presence to contacts and conversation participants', async () => {
+  it('limits online presence to opt-in contacts and conversation participants', async () => {
     const publicUsers = await readText('base44/functions/listPublicUsers/entry.ts');
-    expect(publicUsers).toContain('Contact.filter({ user_id: user.id })');
-    expect(publicUsers).toContain('Conversation.filter({ participant_ids: user.id })');
+    expect(publicUsers).toContain('body?.includePresence === true');
+    expect(publicUsers).toContain('includePresence');
+    expect(publicUsers).toContain('Contact.filter(');
+    expect(publicUsers).toContain('{ user_id: user.id }');
+    expect(publicUsers).toContain('Conversation.filter(');
+    expect(publicUsers).toContain('{ participant_ids: user.id }');
     expect(publicUsers).toContain('presenceVisibleTo.add(contact.contact_user_id)');
     expect(publicUsers).toContain('presenceVisibleTo.add(participantId)');
-    expect(publicUsers).toContain('presenceVisibleTo.has(u.id) ? Boolean(u.is_online) : false');
+    expect(publicUsers).toContain('presenceVisibleTo.has(u.id)');
+    expect(publicUsers).toContain('u.is_online');
   });
 
   it('keeps external contact channels privacy-safe and role authorization server-based', async () => {

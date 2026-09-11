@@ -22,13 +22,16 @@ import { createClientMessageKey, applyQueuedMessage, applySendSuccess, applySend
 import { useSubscription } from "@/hooks/useSubscription";
 import { CHAT_THEME_ENTITLEMENT, getChatTheme, resolveEffectiveChatThemeId } from "@/lib/chatThemes";
 import { useLockedChats } from "@/lib/LockedChatsContext";
-import { partitionUserConversations } from "@/lib/lockedChatPolicy";
+import { partitionUserConversations, resolveRequestedConversation } from "@/lib/lockedChatPolicy";
+import LockedChatAccessDialog from "@/components/messages/LockedChatAccessDialog";
 
 export default function Messages() {
   const [currentUser, setCurrentUser] = useState(null);
   const location = useLocation();
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [sidebarTab, setSidebarTab] = useState("chats");
+  const [lockedLinkConversationId, setLockedLinkConversationId] = useState(null);
+  const [showLockedAccess, setShowLockedAccess] = useState(false);
   const { hasEntitlement } = useSubscription();
   const {
     isReady: lockedChatsReady,
@@ -120,6 +123,39 @@ export default function Messages() {
       )
     : { visible: [], locked: [] };
   const myConversations = partitionedConversations.visible;
+
+  useEffect(() => {
+    if (!lockedChatsReady || !currentUser?.id || !location.search) return;
+    const requestedId = new URLSearchParams(location.search).get("id");
+    if (!requestedId) return;
+
+    const memberConversations = conversations.filter((conversation) =>
+      conversation.participant_ids?.includes(currentUser.id)
+    );
+    const resolution = resolveRequestedConversation(
+      memberConversations,
+      requestedId,
+      lockedConversationIds,
+      lockedChatsUnlocked,
+    );
+
+    if (resolution.status === "allowed") {
+      setLockedLinkConversationId(null);
+      setShowLockedAccess(false);
+      handleSelectConv(requestedId);
+    } else if (resolution.status === "locked") {
+      setSelectedConvId(null);
+      setLockedLinkConversationId(requestedId);
+      setShowLockedAccess(true);
+    }
+  }, [
+    location.search,
+    conversations,
+    currentUser?.id,
+    lockedChatsReady,
+    lockedChatsUnlocked,
+    lockedConversationIds,
+  ]);
 
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
     queryKey: ["messages", selectedConvId],
@@ -547,6 +583,16 @@ export default function Messages() {
       <ExternalMessageDialog
         open={showExternal}
         onOpenChange={setShowExternal}
+      />
+      <LockedChatAccessDialog
+        open={showLockedAccess}
+        onOpenChange={setShowLockedAccess}
+        initialMode="unlock"
+        onUnlocked={() => {
+          if (lockedLinkConversationId) handleSelectConv(lockedLinkConversationId);
+          setLockedLinkConversationId(null);
+        }}
+        onCancel={() => setLockedLinkConversationId(null)}
       />
       <GlobalInviteDialog 
         open={showInvite}

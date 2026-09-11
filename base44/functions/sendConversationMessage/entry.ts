@@ -142,6 +142,17 @@ ${text}
   };
 }
 
+async function deterministicMessageId(userId: string, conversationId: string, clientMessageKey: string) {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`${userId}:${conversationId}:${clientMessageKey}`),
+  );
+  const hex = Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+  return `message_${hex}`;
+}
+
 async function findExistingMessage(base44: any, userId: string, conversationId: string, clientMessageKey: string) {
   if (!clientMessageKey) return null;
   const matches = await base44.asServiceRole.entities.Message.filter(
@@ -182,8 +193,10 @@ async function findModerationReplay(base44: any, user: any, conversationId: stri
 }
 
 async function sendAuthenticated(base44: any, user: any, body: any) {
-  const conversationId = String(body?.conversation_id || '');
-  if (!conversationId) {
+  const conversationId = typeof body?.conversation_id === 'string'
+    ? body.conversation_id.trim()
+    : '';
+  if (!conversationId || conversationId.length > 200) {
     return Response.json({ error: 'conversation_id is required' }, { status: 400 });
   }
 
@@ -226,8 +239,17 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
     }
 
+    if (body?.type != null && typeof body.type !== 'string') {
+      return Response.json({ error: 'Invalid message type' }, { status: 400 });
+    }
     const type = ALLOWED_TYPES.has(body?.type) ? body.type : 'text';
-    let text = typeof body?.text === 'string' ? body.text.slice(0, 20000) : '';
+    if (body?.text != null && typeof body.text !== 'string') {
+      return Response.json({ error: 'Message text must be a string' }, { status: 400 });
+    }
+    let text = typeof body?.text === 'string' ? body.text : '';
+    if (text.length > 20000) {
+      return Response.json({ error: 'Message text must be 20000 characters or fewer' }, { status: 413 });
+    }
 
     let callSignal: any = null;
     if (type === 'session' && text.trim()) {
@@ -263,9 +285,12 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
       }
     } else {
       if (type === 'session') {
-        text = text.trim().slice(0, 200);
+        text = text.trim();
         if (!text) {
           return Response.json({ error: 'Session name is required' }, { status: 400 });
+        }
+        if (text.length > 200) {
+          return Response.json({ error: 'Session name must be 200 characters or fewer' }, { status: 413 });
         }
       }
 
@@ -317,11 +342,25 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
     if (['file', 'audio', 'image', 'video'].includes(type) && !messageData.file_url) {
       return Response.json({ error: 'Attachment messages require a file_url' }, { status: 400 });
     }
+    if (body?.file_name != null && typeof body.file_name !== 'string') {
+      return Response.json({ error: 'file_name must be a string' }, { status: 400 });
+    }
+    if (body?.file_type != null && typeof body.file_type !== 'string') {
+      return Response.json({ error: 'file_type must be a string' }, { status: 400 });
+    }
     if (typeof body?.file_name === 'string' && body.file_name) {
-      messageData.file_name = body.file_name.trim().slice(0, 255);
+      const fileName = body.file_name.trim();
+      if (fileName.length > 255) {
+        return Response.json({ error: 'file_name must be 255 characters or fewer' }, { status: 413 });
+      }
+      messageData.file_name = fileName;
     }
     if (typeof body?.file_type === 'string' && body.file_type) {
-      messageData.file_type = body.file_type.trim().slice(0, 100);
+      const fileType = body.file_type.trim();
+      if (fileType.length > 100) {
+        return Response.json({ error: 'file_type must be 100 characters or fewer' }, { status: 413 });
+      }
+      messageData.file_type = fileType;
     }
 
     const duration = Number(body?.duration);
@@ -353,20 +392,33 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
       messageData.thread_id = threadTarget.id;
     }
 
-  const created = await base44.asServiceRole.entities.Message.create(messageData);
-  let message = created;
-
+  let message;
+  let createdNew = true;
   if (clientMessageKey) {
-    const canonical = await findExistingMessage(base44, user.id, conversationId, clientMessageKey);
-    if (canonical) {
-      message = canonical;
-      if (canonical.id !== created.id) {
-        await base44.asServiceRole.entities.Message.delete(created.id).catch(() => {});
+    const messageId = await deterministicMessageId(user.id, conversationId, clientMessageKey);
+    try {
+      message = await base44.asServiceRole.entities.Message.create({
+        id: messageId,
+        ...messageData,
+      });
+    } catch (createError) {
+      const existing = await base44.asServiceRole.entities.Message.get(messageId).catch(() => null);
+      if (
+        !existing
+        || existing.sender_id !== user.id
+        || existing.conversation_id !== conversationId
+        || existing.client_message_key !== clientMessageKey
+      ) {
+        throw createError;
       }
+      message = existing;
+      createdNew = false;
     }
+  } else {
+    message = await base44.asServiceRole.entities.Message.create(messageData);
   }
 
-  if (messageData.thread_id) {
+  if (createdNew && messageData.thread_id) {
       try {
         await base44.asServiceRole.entities.Message.updateMany(
           { id: messageData.thread_id },
@@ -384,17 +436,23 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
       } catch (_) {}
     }
 
-  return Response.json({ success: true, message, duplicate: message.id !== created.id });
+  return Response.json({ success: true, message, duplicate: !createdNew });
 }
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const conversationId = String(body?.conversation_id || '');
+    const conversationId = typeof body?.conversation_id === 'string'
+      ? body.conversation_id.trim()
+      : '';
     const clientMessageKey = typeof body?.client_message_key === 'string'
       ? body.client_message_key.trim()
       : '';

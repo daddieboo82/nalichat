@@ -81,6 +81,7 @@ export default function MessageSearch({
     const timer = window.setTimeout(async () => {
       try {
         const response = await base44.functions.invoke("searchMessages", searchPayload());
+        if (response?.data?.error) throw new Error(response.data.error);
         if (requestSequence.current !== sequence) return;
         setResults(response.data?.results || []);
         setNextOffset(response.data?.pagination?.next_offset ?? null);
@@ -121,6 +122,7 @@ export default function MessageSearch({
         "searchMessages",
         searchPayload(nextOffset),
       );
+      if (response?.data?.error) throw new Error(response.data.error);
       if (requestSequence.current !== sequence) return;
       setResults((current) => [...current, ...(response.data?.results || [])]);
       setNextOffset(response.data?.pagination?.next_offset ?? null);

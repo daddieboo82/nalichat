@@ -17,6 +17,7 @@ export default function StudioEditor() {
   const [activeSession, setActiveSession] = useState(null);
   const [collaborators, setCollaborators] = useState([]);
   const [audioUrl, setAudioUrl] = useState("");
+  const [publishedPostId, setPublishedPostId] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [masterAnalysis, setMasterAnalysis] = useState(null);
   const [playing, setPlaying] = useState(false);
@@ -76,10 +77,8 @@ export default function StudioEditor() {
         genre: 'Electronic'
       });
       if (published?.data?.error) throw new Error(published.data.error);
+      setPublishedPostId(published?.data?.post?.id || null);
       setShareDialog(false);
-      setAudioUrl("");
-      setUploadTitle("");
-      setMasterAnalysis(null);
       setError("");
     } catch (err) {
       setError("Failed to upload. Please try again.");
@@ -138,7 +137,10 @@ export default function StudioEditor() {
                 <Input
                   placeholder="Audio URL from bounced session"
                   value={audioUrl}
-                  onChange={(e) => setAudioUrl(e.target.value)}
+                  onChange={(e) => {
+                    setAudioUrl(e.target.value);
+                    setPublishedPostId(null);
+                  }}
                   className="rounded-xl"
                 />
 
@@ -261,9 +263,9 @@ export default function StudioEditor() {
                    </Dialog>
 
                    <ExportBounce
-                     audioUrl={audioUrl}
+                     postId={publishedPostId}
                      title={uploadTitle}
-                     disabled={!audioUrl}
+                     disabled={!publishedPostId}
                    />
                  </div>
               </motion.div>

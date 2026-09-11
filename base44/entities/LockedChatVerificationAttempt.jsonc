@@ -1,0 +1,60 @@
+{
+  "name": "LockedChatVerificationAttempt",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "pin",
+        "reset"
+      ]
+    },
+    "challenge_id": {
+      "type": "string"
+    },
+    "attempted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "failed",
+        "succeeded",
+        "throttled"
+      ]
+    }
+  },
+  "required": [
+    "user_id",
+    "kind",
+    "attempted_at",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -311,6 +311,12 @@ describe('release configuration', () => {
     expect(manageConversation).toContain("error: 'timed_out'");
   });
 
+  it('prevents ordinary members from renaming public rooms', async () => {
+    const manageConversation = await readText('base44/functions/manageConversation/entry.ts');
+    expect(manageConversation).toContain("conversation.is_public === true && user.role !== 'admin'");
+    expect(manageConversation).toContain('Only an admin can rename a public room');
+  });
+
 
   it('keeps workflow notifications authoritative and idempotent', async () => {
     const messageNotify = await readText('base44/functions/notifyOnMessage/entry.ts');

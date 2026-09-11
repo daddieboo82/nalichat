@@ -4,6 +4,20 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 const MUTABLE_KEYS = new Set([
   'name','volume','pan','muted','solo','color','description','waveform_data','duration'
 ]);
+const DELETE_BATCH_SIZE = 200;
+
+async function deleteChildren(entity: any, query: Record<string, unknown>): Promise<number> {
+  let deleted = 0;
+  while (true) {
+    const rows = await entity.filter(query, '-created_date', DELETE_BATCH_SIZE);
+    if (rows.length === 0) return deleted;
+    for (const row of rows) {
+      await entity.delete(row.id);
+      deleted += 1;
+    }
+    if (rows.length < DELETE_BATCH_SIZE) return deleted;
+  }
+}
 
 Deno.serve(async (req) => {
   try {
@@ -45,18 +59,16 @@ Deno.serve(async (req) => {
     if (!canEdit) return Response.json({ error: 'Viewer access cannot modify this track' }, { status: 403 });
 
     if (action === 'delete') {
-      const [versions, comments] = await Promise.all([
-        entities.TrackVersion.filter({ track_id: track.id }),
-        entities.TrackComment.filter({ track_id: track.id, parent_type: 'track' }),
+      const [deletedVersions, deletedComments] = await Promise.all([
+        deleteChildren(entities.TrackVersion, { track_id: track.id }),
+        deleteChildren(entities.TrackComment, { track_id: track.id, parent_type: 'track' }),
       ]);
-      for (const version of versions) await entities.TrackVersion.delete(version.id);
-      for (const comment of comments) await entities.TrackComment.delete(comment.id);
       await entities.Track.delete(track.id);
       return Response.json({
         success: true,
         deleted: true,
-        deleted_versions: versions.length,
-        deleted_comments: comments.length,
+        deleted_versions: deletedVersions,
+        deleted_comments: deletedComments,
       });
     }
 

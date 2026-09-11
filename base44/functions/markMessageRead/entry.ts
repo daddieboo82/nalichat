@@ -22,6 +22,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Message not found' }, { status: 404 });
     }
 
+    const conversation = await base44.asServiceRole.entities.Conversation.get(message.conversation_id);
+    const participants = Array.isArray(conversation?.participant_ids) ? conversation.participant_ids : [];
+    if (!conversation || !participants.includes(user.id)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     // Don't mark your own messages as read
     if (message.sender_id === user.id) {
       return Response.json({ success: true, alreadyRead: true });

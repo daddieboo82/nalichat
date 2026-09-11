@@ -23,8 +23,10 @@ export default function DeleteAccountDialog() {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      const me = await base44.auth.me();
-      await base44.entities.User.delete(me.id);
+      const res = await base44.functions.invoke("deleteMyAccount", { confirmation: "DELETE" });
+      if (!res?.data?.success) {
+        throw new Error(res?.data?.error || "Account deletion failed");
+      }
       toast.success("Your account has been deleted.");
       await base44.auth.logout();
     } catch (err) {
@@ -37,7 +39,7 @@ export default function DeleteAccountDialog() {
     <div className="mt-10 pt-8 border-t border-destructive/20">
       <h2 className="text-sm font-semibold text-destructive mb-1">Danger Zone</h2>
       <p className="text-xs text-muted-foreground mb-4">
-        Permanently delete your account and all associated data. This action cannot be undone.
+        Permanently delete your NaliChat account. Some shared or billing-related records may be retained where required. This action cannot be undone.
       </p>
       <AlertDialog>
         <AlertDialogTrigger asChild>

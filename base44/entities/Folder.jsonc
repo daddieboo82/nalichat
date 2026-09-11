@@ -23,6 +23,14 @@
       "type": "string",
       "description": "Optional description (up to 1000 characters)",
       "maxLength": 1000
+    },
+    "access_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Project members allowed to read and organize this folder"
     }
   },
   "required": [
@@ -34,10 +42,34 @@
       "data.owner_id": "{{user.id}}"
     },
     "read": {
-      "data.owner_id": "{{user.id}}"
+      "$or": [
+        {
+          "data.owner_id": "{{user.id}}"
+        },
+        {
+          "data.access_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     },
     "update": {
-      "data.owner_id": "{{user.id}}"
+      "$or": [
+        {
+          "data.owner_id": "{{user.id}}"
+        },
+        {
+          "data.access_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     },
     "delete": {
       "data.owner_id": "{{user.id}}"

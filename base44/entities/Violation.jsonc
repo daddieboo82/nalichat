@@ -51,6 +51,58 @@
     "explanation": {
       "type": "string",
       "description": "AI explanation of why the content was flagged"
+    },
+    "reported_by_id": {
+      "type": "string",
+      "description": "User ID of the person who submitted a manual report",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "reported_by_name": {
+      "type": "string",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "message",
+        "art_post",
+        "other"
+      ],
+      "default": "other"
+    },
+    "content_id": {
+      "type": "string"
+    },
+    "review_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "reviewed",
+        "dismissed"
+      ],
+      "default": "pending"
     }
   },
   "required": [

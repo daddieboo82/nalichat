@@ -16,6 +16,7 @@ export default function ThankYou() {
   const queryClient = useQueryClient();
   const { clearCart } = useCart();
   const [processing, setProcessing] = useState(true);
+  const [purchaseVerification, setPurchaseVerification] = useState("processing");
   // Purchased licensed tracks resolved from verifyCheckoutPayment's item list —
   // the standard cart flow used to confirm payment and then discard this data,
   // so a buyer got a generic "your items are now available" message with no
@@ -28,6 +29,7 @@ export default function ThankYou() {
 
   const urlParams = new URLSearchParams(window.location.search);
   const checkoutId = urlParams.get("checkout_id");
+  const purchaseToken = urlParams.get("purchase_token");
   const isSubscriptionCheckout = urlParams.get("subscription") === "1";
 
   useEffect(() => {
@@ -107,13 +109,25 @@ export default function ThankYou() {
       // licenses so we can hand over a real download instead of a vague
       // "your items are now available" message.
       let purchasedItems = [];
-      if (checkoutId) {
-        try {
-          const res = await base44.functions.invoke('verifyCheckoutPayment', { checkoutId });
-          purchasedItems = res?.data?.items || [];
-        } catch (err) {
-          console.error("Payment verification failed:", err);
+      if (!checkoutId || !purchaseToken) {
+        setPurchaseVerification("failed");
+        setProcessing(false);
+        return;
+      }
+      try {
+        const res = await base44.functions.invoke('verifyCheckoutPayment', { checkoutId, purchaseToken });
+        if (res?.data?.status !== 'paid') {
+          setPurchaseVerification("failed");
+          setProcessing(false);
+          return;
         }
+        purchasedItems = res?.data?.items || [];
+        setPurchaseVerification("confirmed");
+      } catch (err) {
+        console.error("Payment verification failed:", err);
+        setPurchaseVerification("failed");
+        setProcessing(false);
+        return;
       }
 
       try {
@@ -156,7 +170,7 @@ export default function ThankYou() {
     };
 
     processThankYou();
-  }, [queryClient, clearCart, checkoutId, isSubscriptionCheckout]);
+  }, [queryClient, clearCart, checkoutId, purchaseToken, isSubscriptionCheckout]);
 
   if (isSubscriptionCheckout) {
     const confirmed = subscriptionConfirmation === "confirmed";
@@ -224,6 +238,26 @@ export default function ThankYou() {
   }
 
   // ── Standard cart purchase view ──
+  if (!processing && purchaseVerification === "failed") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
+        <div className="text-center max-w-2xl" aria-live="polite">
+          <CircleAlert className="w-20 h-20 text-amber-500 mx-auto mb-6" />
+          <h1 className="font-heading font-black text-5xl mb-4">Payment not verified</h1>
+          <p className="text-xl text-muted-foreground mb-8">
+            We could not verify a completed payment for this checkout. Your cart has not been cleared.
+          </p>
+          <div className="flex gap-4 justify-center flex-wrap">
+            <Button size="lg" onClick={() => window.location.reload()}>Try again</Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/">Back to NaliChat</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
       <motion.div

@@ -72,6 +72,7 @@ vi.mock('@/pages/Login', async () => {
 vi.mock('@/pages/Register', () => ({ default: () => <div>Register Page</div> }));
 vi.mock('@/pages/ForgotPassword', () => ({ default: () => <div>Forgot Password Page</div> }));
 vi.mock('@/pages/ResetPassword', () => ({ default: () => <div>Reset Password Page</div> }));
+vi.mock('@/pages/OAuthConsent', () => ({ default: () => <div>OAuth Consent Page</div> }));
 vi.mock('@/pages/Home', () => ({ default: () => <div>Home Page</div> }));
 vi.mock('@/pages/Terms', () => ({ default: () => <div>Terms Page</div> }));
 vi.mock('@/pages/Privacy', () => ({ default: () => <div>Privacy Page</div> }));
@@ -147,6 +148,21 @@ describe('app routing guards', () => {
     window.history.pushState({}, '', '/download');
     render(<App />);
     await screen.findByText('Download Page');
+  });
+
+  it('keeps OAuth consent reachable without onboarding and hides app overlays', async () => {
+    mockAuthState.current = {
+      ...mockAuthState.current,
+      isAuthenticated: true,
+      user: { id: 'u1', onboarding_completed: false, role: 'artist' },
+    };
+    window.history.pushState({}, '', '/oauth-consent?ctx=test-handle');
+
+    render(<App />);
+
+    await screen.findByText('OAuth Consent Page');
+    expect(window.location.pathname).toBe('/oauth-consent');
+    expect(screen.queryByText('Ask Nali Hint')).toBeNull();
   });
 
   it('keeps the thank-you page reachable after checkout even without auth', async () => {

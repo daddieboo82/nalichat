@@ -50,7 +50,23 @@ export default function MilestonesPanel({ projectId, canEdit }) {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["milestones", projectId] });
 
   const addMilestone = useMutation({
-    mutationFn: () => base44.entities.Milestone.create({ ...form, project_id: projectId }),
+    mutationFn: async () => {
+      const [me, project] = await Promise.all([
+        base44.auth.me(),
+        base44.entities.Project.get(projectId),
+      ]);
+      const accessUserIds = Array.from(new Set([
+        me?.id,
+        project?.owner_id,
+        ...(project?.collaborator_ids || []),
+      ].filter(Boolean)));
+      return base44.entities.Milestone.create({
+        ...form,
+        project_id: projectId,
+        created_by_id: me.id,
+        access_user_ids: accessUserIds,
+      });
+    },
     onSuccess: () => { invalidate(); setShowAdd(false); setForm({ title: "", description: "", due_date: "", priority: "medium" }); },
   });
 

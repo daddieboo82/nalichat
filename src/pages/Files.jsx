@@ -87,14 +87,22 @@ function FileDownloadButton({ file }) {
 
 function FileShareButton({ file }) {
   const { toast } = useToast();
-  
-  const handleShare = (e) => {
+
+  const handleShare = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     sounds.click();
-    const url = `${window.location.origin}/files?download=${file.id}`;
-    copyToClipboard(url);
-    toast({ title: "Link copied", description: "Share link copied to clipboard" });
+    try {
+      const res = await base44.functions.invoke("createFileShareLink", { fileId: file.id });
+      const token = res?.data?.token;
+      if (!token) throw new Error("No share token returned");
+      const url = `${window.location.origin}/shared-file?id=${encodeURIComponent(file.id)}&token=${encodeURIComponent(token)}`;
+      copyToClipboard(url);
+      toast({ title: "Link copied", description: "Secure share link copied to clipboard" });
+    } catch (error) {
+      console.error("Could not create share link", error);
+      toast({ title: "Share failed", description: "Only the uploader can create a public share link.", variant: "destructive" });
+    }
   };
 
   return (
@@ -136,19 +144,20 @@ export default function Files() {
     // Check for download query param
     const urlParams = new URLSearchParams(window.location.search);
     const downloadId = urlParams.get('download');
-    if (downloadId) {
-      base44.entities.SharedFile.get(downloadId).then(async (file) => {
-        if (file) {
+    const shareToken = urlParams.get('token');
+    if (downloadId && shareToken) {
+      base44.functions.invoke("getSharedFileByToken", { fileId: downloadId, token: shareToken })
+        .then(async (res) => {
+          const file = res?.data?.file;
+          if (!file) throw new Error("Shared file not found");
           toast({ title: "Starting download...", description: `Downloading ${file.name}` });
-          try {
-            await resumableDownload(file.file_url, file.name || "file");
-            toast({ title: "Download complete", description: `${file.name} downloaded successfully.` });
-          } catch (e) {
-            console.error(e);
-            toast({ title: "Download failed", description: "There was an error downloading the file.", variant: "destructive" });
-          }
-        }
-      }).catch(e => console.error("Could not fetch file to download", e));
+          await resumableDownload(file.file_url, file.name || "file");
+          toast({ title: "Download complete", description: `${file.name} downloaded successfully.` });
+        })
+        .catch((e) => {
+          console.error("Could not fetch shared file", e);
+          toast({ title: "Share link invalid", description: "This file link is invalid or has been replaced.", variant: "destructive" });
+        });
     }
   }, []);
 
@@ -203,6 +212,14 @@ export default function Files() {
       const currentFolderObj = currentFolderId ? folders.find(f => f.id === currentFolderId) : null;
       for (const file of filesArray) {
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const project = currentFolderObj?.project_id
+          ? projects.find((p) => p.id === currentFolderObj.project_id)
+          : null;
+        const accessUserIds = Array.from(new Set([
+          currentUser.id,
+          project?.owner_id,
+          ...(project?.collaborator_ids || []),
+        ].filter(Boolean)));
         await base44.entities.SharedFile.create({
           name: file.name,
           file_url,
@@ -212,6 +229,7 @@ export default function Files() {
           uploader_name: currentUser.display_name || currentUser.full_name,
           folder_id: currentFolderId,
           project_id: currentFolderObj?.project_id || null,
+          access_user_ids: accessUserIds,
         });
       }
       setUploading(false);
@@ -252,11 +270,22 @@ export default function Files() {
   };
 
   const createFolderMutation = useMutation({
-    mutationFn: (name) => base44.entities.Folder.create({
-      name,
-      owner_id: currentUser.id,
-      project_id: newFolderProject === "none" ? null : newFolderProject,
-    }),
+    mutationFn: (name) => {
+      const project = newFolderProject === "none"
+        ? null
+        : projects.find((p) => p.id === newFolderProject);
+      const accessUserIds = Array.from(new Set([
+        currentUser.id,
+        project?.owner_id,
+        ...(project?.collaborator_ids || []),
+      ].filter(Boolean)));
+      return base44.entities.Folder.create({
+        name,
+        owner_id: currentUser.id,
+        project_id: newFolderProject === "none" ? null : newFolderProject,
+        access_user_ids: accessUserIds,
+      });
+    },
     onSuccess: () => {
       sounds.success();
       queryClient.invalidateQueries({ queryKey: ["folders"] });
@@ -697,18 +726,7 @@ export default function Files() {
             </div>
             <div className="flex justify-between items-center">
               <p className="text-xs text-muted-foreground">Files will be uploaded to {currentFolder ? currentFolder.name : "the root directory"}.</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                onClick={() => {
-                  const file = new File(["dummy file content for testing"], "test-file.txt", { type: "text/plain" });
-                  handleUpload({ target: { files: [file] } });
-                  setShowUploadModal(false);
-                }}
-              >
-                Mock Upload (Test)
-              </Button>
+
             </div>
           </div>
         </DialogContent>

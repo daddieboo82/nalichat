@@ -111,30 +111,8 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground block">Audio File *</span>
               <div className="flex gap-2">
-                <button 
-                  type="button" 
-                  id="auto-fill-test-btn"
-                  onClick={() => {
-                    const file = new File(["dummy audio content for testing"], "test-audio.mp3", { type: "audio/mpeg" });
-                    setAudioFile(file);
-                    setForm(f => ({ ...f, title: "Test Track", description: "Automated test description for QA", tags: ["electronic", "ambient"] }));
-                  }} 
-                  className="text-[10px] bg-secondary text-primary px-2 py-1 rounded hover:bg-secondary/80"
-                >
-                  Auto-Fill Form (Test)
-                </button>
-                <button 
-                  id="load-mock-audio-btn"
-                  type="button" 
-                  onClick={() => {
-                    const file = new File(["dummy audio content for testing"], "test-audio.mp3", { type: "audio/mpeg" });
-                    handleAudio({ target: { files: [file] } });
-                    setForm(f => ({ ...f, title: f.title || "Test Track" }));
-                  }} 
-                  className="text-[10px] text-primary hover:underline"
-                >
-                  Load Mock Audio
-                </button>
+                
+                
               </div>
             </div>
             <div
@@ -161,20 +139,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground block">Cover Art</span>
-              <button 
-                type="button" 
-                onClick={() => {
-                  // A tiny 1x1 transparent PNG data URL used as mock image for testing
-                  const dataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-                  fetch(dataUrl).then(r => r.blob()).then(blob => {
-                    const file = new File([blob], "mock-cover.png", { type: "image/png" });
-                    handleImage({ target: { files: [file] } });
-                  });
-                }} 
-                className="text-[10px] text-primary hover:underline"
-              >
-                Load Mock Cover (Automated Testing)
-              </button>
+              
             </div>
             <div
               className={cn("relative border-2 border-dashed border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-center", preview ? "h-48" : "h-24")}

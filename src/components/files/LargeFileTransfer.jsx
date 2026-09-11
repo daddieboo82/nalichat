@@ -57,10 +57,15 @@ function LargeFileTransferContent({ currentUser }) {
         uploader_id: currentUser.id,
         uploader_name: currentUser.display_name || currentUser.full_name,
         description: message,
+        access_user_ids: [currentUser.id],
       });
 
-      // 3. Generate Link
-      const link = `${window.location.origin}/files?download=${newFile.id}`;
+      // 3. Generate a tokenized public link. The file record itself is not
+      // globally readable.
+      const share = await base44.functions.invoke("createFileShareLink", { fileId: newFile.id });
+      const token = share?.data?.token;
+      if (!token) throw new Error("Could not create share link");
+      const link = `${window.location.origin}/shared-file?id=${encodeURIComponent(newFile.id)}&token=${encodeURIComponent(token)}`;
       setShareLink(link);
 
       if (recipientEmail) {
@@ -110,20 +115,6 @@ function LargeFileTransferContent({ currentUser }) {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex justify-end mb-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                onClick={() => {
-                  const file = new File(["dummy large file content"], "large-test-file.zip", { type: "application/zip" });
-                  handleFileChange({ target: { files: [file] } });
-                }}
-              >
-                Mock Upload (Test)
-              </Button>
-            </div>
             <div 
               className="relative border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-8 flex flex-col items-center justify-center text-center bg-secondary/20"
             >

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { sendPushToUser } from '../../shared/webPush.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -12,9 +13,26 @@ Deno.serve(async (req) => {
     const conversation = await base44.asServiceRole.entities.Conversation.get(data.conversation_id);
     if (!conversation) return Response.json({ success: true });
     
-    // Only notify if it's a group or shared session channel
-    if (conversation.type !== 'group') return Response.json({ success: true, message: 'Not a group chat' });
+    // Notify every other participant for both DMs and group chats.
+    // The workflow triggers for all Message records, so filtering out DMs here
+    // caused one-to-one messages to produce no notification at all.
     
+    let callSignal = null;
+    if (data.type === 'session' && typeof data.text === 'string') {
+      try {
+        const parsed = JSON.parse(data.text);
+        if (parsed?.__nalichat_call__ === true) callSignal = parsed;
+      } catch {
+        // Non-call session messages continue through the normal path.
+      }
+    }
+
+    // Ignore call negotiation chatter. Only the initial offer should surface
+    // as a user-facing notification.
+    if (callSignal && callSignal.type !== 'offer') {
+      return Response.json({ success: true, count: 0, signaling: true });
+    }
+
     // Determine recipients
     const recipients = new Set();
     if (conversation.participant_ids) {
@@ -29,12 +47,23 @@ Deno.serve(async (req) => {
       actor_id: data.sender_id,
       actor_name: data.sender_name || "Someone",
       actor_avatar: data.sender_avatar,
-      message: `sent a message in ${conversation.name || 'a group'}: "${data.text ? data.text.substring(0, 30) + (data.text.length > 30 ? '...' : '') : 'an attachment'}"`,
+      message: callSignal
+        ? `Incoming ${callSignal.callType === 'video' ? 'video' : 'audio'} call`
+        : conversation.type === 'group'
+          ? `sent a message in ${conversation.name || 'a group'}: "${data.text ? data.text.substring(0, 30) + (data.text.length > 30 ? '...' : '') : 'an attachment'}"`
+          : `${data.text ? data.text.substring(0, 60) + (data.text.length > 60 ? '...' : '') : 'Sent you an attachment'}`,
       link: `/messages?id=${conversation.id}`
     }));
     
     if (notifications.length > 0) {
       await base44.asServiceRole.entities.Notification.bulkCreate(notifications);
+      await Promise.all(notifications.map((notification) =>
+        sendPushToUser(base44.asServiceRole.entities, notification.recipient_id, {
+          title: notification.actor_name || 'NaliChat',
+          body: notification.message,
+          url: notification.link,
+        })
+      ));
     }
     
     return Response.json({ success: true, count: notifications.length });

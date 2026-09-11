@@ -163,29 +163,29 @@
             "role": "admin"
           }
         }
-      },
-      "stripe_checkout_claim_id": {
-        "type": "string",
-        "description": "Server-managed lease preventing concurrent subscription checkout attempts",
-        "rls": {
-          "read": false,
-          "write": {
-            "user_condition": {
-              "role": "admin"
-            }
+      }
+    },
+    "stripe_checkout_claim_id": {
+      "type": "string",
+      "description": "Server-managed lease preventing concurrent subscription checkout attempts",
+      "rls": {
+        "read": false,
+        "write": {
+          "user_condition": {
+            "role": "admin"
           }
         }
-      },
-      "stripe_checkout_claimed_at": {
-        "type": "string",
-        "format": "date-time",
-        "description": "When the current subscription checkout lease was acquired",
-        "rls": {
-          "read": false,
-          "write": {
-            "user_condition": {
-              "role": "admin"
-            }
+      }
+    },
+    "stripe_checkout_claimed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the current subscription checkout lease was acquired",
+      "rls": {
+        "read": false,
+        "write": {
+          "user_condition": {
+            "role": "admin"
           }
         }
       }

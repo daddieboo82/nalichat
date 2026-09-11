@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { sendPushToUser } from '../../shared/webPush.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -26,14 +27,21 @@ Deno.serve(async (req) => {
       ? `: "${data.text.slice(0, 60)}${data.text.length > 60 ? '…' : ''}"`
       : '';
 
-    await base44.asServiceRole.entities.Notification.create({
+    const notification = {
       recipient_id: track.creator_id,
       type: 'comment',
       actor_id: data.author_id,
       actor_name: data.author_name || 'Someone',
       actor_avatar: data.author_avatar,
       message: `commented on your track "${track.title}"${commentPreview}`,
-      link: `/explore`,
+      link: '/explore',
+    };
+
+    await base44.asServiceRole.entities.Notification.create(notification);
+    await sendPushToUser(base44.asServiceRole.entities, notification.recipient_id, {
+      title: notification.actor_name,
+      body: notification.message,
+      url: notification.link,
     });
 
     return Response.json({ success: true, count: 1 });

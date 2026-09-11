@@ -52,6 +52,17 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
 
   const uploadTracks = async () => {
     setUploading(true);
+    let accessUserIds = [currentUser.id];
+    try {
+      const project = await base44.entities.Project.get(projectId);
+      accessUserIds = Array.from(new Set([
+        project?.owner_id,
+        ...(project?.collaborator_ids || []),
+        currentUser.id,
+      ].filter(Boolean)));
+    } catch {
+      // Keep the uploader-only fallback if the project cannot be loaded.
+    }
     const pendingItems = queue.filter(item => item.status === "pending");
 
     for (const item of pendingItems) {
@@ -76,6 +87,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
           muted: false,
           solo: false,
           uploaded_by: currentUser.id,
+          access_user_ids: accessUserIds,
         });
 
         setQueue(prev =>
@@ -179,18 +191,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
               >
                 Select Files
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4 text-xs"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const file = new File(["dummy audio track"], "test-track.mp3", { type: "audio/mpeg" });
-                  handleFiles([file]);
-                }}
-              >
-                Mock Upload (Test)
-              </Button>
+              
             </div>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import MilestonesPanel from '@/components/studio/MilestonesPanel';
 import Record from '@/pages/Record';
@@ -41,14 +40,6 @@ export default function StudioExtras({
               onChange={handleFileChange} 
               className="cursor-pointer"
             />
-          </div>
-          <div className="mt-4 flex justify-center">
-             <Button variant="outline" size="sm" onClick={() => {
-                const file = new File(["dummy audio content"], "test-track.wav", { type: "audio/wav" });
-                handleFileChange({ target: { files: [file] } });
-             }}>
-                Load Mock Test Track (Automated Testing)
-             </Button>
           </div>
         </DialogContent>
       </Dialog>

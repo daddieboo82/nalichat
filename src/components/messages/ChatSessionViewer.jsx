@@ -42,15 +42,13 @@ export default function ChatSessionViewer({ message, currentUser }) {
         const file = new File([blob], `track-${Date.now()}.webm`, { type: "audio/webm" });
         try {
           const { file_url } = await base44.integrations.Core.UploadFile({ file });
-          await base44.entities.Track.create({
+          const created = await base44.functions.invoke("createCollaborativeTrack", {
             project_id: message.id,
             name: `Track by ${currentUser?.full_name || "Unknown"}`,
             file_url,
             type: "vocal",
-            uploaded_by: currentUser?.id,
-            access_user_ids: message.participant_ids || [currentUser?.id].filter(Boolean),
-            edit_user_ids: message.participant_ids || [currentUser?.id].filter(Boolean)
           });
+          if (created?.data?.error) throw new Error(created.data.error);
         } catch (e) {
           console.error(e);
         }

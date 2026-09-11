@@ -232,7 +232,11 @@ export default function Files() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.SharedFile.delete(id),
+    mutationFn: async (id) => {
+      const res = await base44.functions.invoke("mutateSharedFile", { action: "delete", fileId: id });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data;
+    },
     onSuccess: () => {
       sounds.error();
       queryClient.invalidateQueries({ queryKey: ["shared-files"] });
@@ -240,7 +244,15 @@ export default function Files() {
   });
 
   const updateFileMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SharedFile.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const res = await base44.functions.invoke("mutateSharedFile", {
+        action: "update",
+        fileId: id,
+        ...data,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.file;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shared-files"] });
       toast({ title: "File updated", description: "File details have been saved." });
@@ -287,15 +299,15 @@ export default function Files() {
   });
 
   const moveToFolderMutation = useMutation({
-    mutationFn: ({ fileIds, folderId }) => {
-      const targetFolder = folders.find(f => f.id === folderId);
-      return Promise.all(fileIds.map(id =>
-        base44.entities.SharedFile.update(id, { 
-          folder_id: folderId,
-          project_id: targetFolder?.project_id || null
-        })
-      ));
-    },
+    mutationFn: ({ fileIds, folderId }) => Promise.all(fileIds.map(async (id) => {
+      const res = await base44.functions.invoke("mutateSharedFile", {
+        action: "move",
+        fileId: id,
+        folderId,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.file;
+    })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shared-files"] });
       setSelectedIds([]);

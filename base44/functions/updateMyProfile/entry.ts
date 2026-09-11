@@ -3,6 +3,17 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 const VALID_ARTIST_ROLES = new Set(['artist', 'producer', 'engineer', 'ar']);
 const VALID_NALI_LEVELS = new Set(['proactive', 'minimal', 'off']);
 
+function cleanBirthdate(value: unknown) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+  const parsed = new Date(raw + 'T00:00:00Z');
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== raw) return null;
+  const now = new Date();
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return parsed.getTime() <= today ? raw : null;
+}
+
 function cleanUploadedImage(value: unknown) {
   const raw = String(value || '').trim();
   if (!raw) return '';
@@ -54,8 +65,8 @@ Deno.serve(async (req) => {
       }
     }
     if (body?.birthdate !== undefined) {
-      const birthdate = String(body.birthdate || '').trim();
-      if (birthdate && !/^\d{4}-\d{2}-\d{2}$/.test(birthdate)) {
+      const birthdate = cleanBirthdate(body.birthdate);
+      if (birthdate === null) {
         return Response.json({ error: 'Invalid birthdate' }, { status: 400 });
       }
       patch.birthdate = birthdate || null;

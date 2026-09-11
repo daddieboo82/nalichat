@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, ArrowLeft, ArrowDown, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2 } from "lucide-react";
+import { MessageSquare, ArrowLeft, ArrowDown, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2, LockKeyhole, LockOpen } from "lucide-react";
 import MediaViewerModal from "@/components/explore/MediaViewerModal";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
@@ -23,6 +23,7 @@ import CallOverlay from "./CallOverlay";
 import { motion, AnimatePresence } from "framer-motion";
 import { getChatTheme } from "@/lib/chatThemes";
 import { toast } from "sonner";
+import { useLockedChats } from "@/lib/LockedChatsContext";
 
 import React from "react";
 
@@ -43,6 +44,35 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const theme = getChatTheme(themePreference?.id);
+  const {
+    security: lockedChatSecurity,
+    isEntitled: canConfigureLockedChats,
+    isConversationLocked,
+    updateConversationLock,
+  } = useLockedChats();
+  const conversationIsLocked = !!conversation?.id && isConversationLocked(conversation.id);
+  const [updatingLock, setUpdatingLock] = useState(false);
+
+  const toggleConversationLock = async () => {
+    if (!conversation?.id || updatingLock) return;
+    if (!canConfigureLockedChats) {
+      toast.error("Premium Plus is required to change locked chats.");
+      return;
+    }
+    if (!conversationIsLocked && !lockedChatSecurity?.configured) {
+      toast.error("Set up your locked-chat PIN in Settings before locking a chat.");
+      return;
+    }
+    setUpdatingLock(true);
+    try {
+      await updateConversationLock(conversation.id, !conversationIsLocked);
+      toast.success(conversationIsLocked ? "Chat unlocked." : "Chat locked.");
+    } catch (error) {
+      toast.error(error?.message || "Couldn't update the chat lock. Please try again.");
+    } finally {
+      setUpdatingLock(false);
+    }
+  };
 
   // Real typing presence: broadcasts our own keystrokes (throttled) and reports
   // which other participants are currently typing.
@@ -279,6 +309,16 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                     <Info className="w-4 h-4 mr-2" /> Group Info
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem
+                  onClick={toggleConversationLock}
+                  disabled={updatingLock}
+                  className="py-2.5 rounded-lg cursor-pointer"
+                >
+                  {conversationIsLocked
+                    ? <LockOpen className="w-4 h-4 mr-2 text-muted-foreground" />
+                    : <LockKeyhole className="w-4 h-4 mr-2 text-muted-foreground" />}
+                  {updatingLock ? "Updating..." : conversationIsLocked ? "Unlock chat" : "Lock chat"}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

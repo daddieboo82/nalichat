@@ -55,6 +55,14 @@
       "type": "object",
       "description": "Portable NaliStudio editor state for this collaborative project, including track arrangement and remote audio URLs",
       "default": {}
+    },
+    "editor_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Collaborator user IDs with editor permission. Viewer collaborators are excluded."
     }
   },
   "required": [
@@ -81,7 +89,7 @@
           "data.owner_id": "{{user.id}}"
         },
         {
-          "data.collaborator_ids": "{{user.id}}"
+          "data.editor_ids": "{{user.id}}"
         },
         {
           "user_condition": {

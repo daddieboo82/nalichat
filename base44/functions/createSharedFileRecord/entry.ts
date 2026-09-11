@@ -131,9 +131,16 @@ Deno.serve(async (req) => {
       const folder = await entities.Folder.get(folderId);
       if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
 
-      const canEditFolder = user.role === 'admin'
-        || folder.owner_id === user.id
-        || (folder.edit_user_ids || []).includes(user.id);
+      let canEditFolder = user.role === 'admin';
+      if (!canEditFolder && folder.project_id) {
+        const folderProject = await entities.Project.get(folder.project_id).catch(() => null);
+        if (!folderProject) return Response.json({ error: 'Project not found' }, { status: 404 });
+        canEditFolder = folderProject.owner_id === user.id
+          || (folderProject.editor_ids || []).includes(user.id);
+      } else if (!canEditFolder) {
+        canEditFolder = folder.owner_id === user.id
+          || (folder.edit_user_ids || []).includes(user.id);
+      }
       if (!canEditFolder) {
         return Response.json({ error: 'Viewer access cannot add files to this folder' }, { status: 403 });
       }

@@ -28,7 +28,7 @@ import { useLockedChats } from "@/lib/LockedChatsContext";
 import React from "react";
 
 
-export default React.memo(function ChatView({ conversation, messages, isLoading, currentUser, users, onSendMessage, onEditMessage, onReact, onRetryMessage, onBack, onStartDM, isBlocked, moderationBanner, theme: themePreference }) {
+export default React.memo(function ChatView({ conversation, messages, isLoading, loadError, currentUser, users, onSendMessage, onEditMessage, onReact, onRetryMessage, onBack, onStartDM, isBlocked, moderationBanner, theme: themePreference }) {
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -330,6 +330,10 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : loadError ? (
+          <div className="flex h-full items-center justify-center p-6 text-center text-sm text-destructive" role="alert">
+            Couldn't load messages. Please try again.
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">

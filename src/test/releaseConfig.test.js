@@ -6,6 +6,10 @@ async function readJson(path) {
   return JSON.parse(await readFile(new URL(`../../${path}`, import.meta.url), 'utf8'));
 }
 
+async function readText(path) {
+  return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
+}
+
 describe('release configuration', () => {
   it('targets the current Android API required by the release pipeline', async () => {
     const manifest = await readJson('src/twa-manifest.json');
@@ -97,6 +101,26 @@ describe('release configuration', () => {
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
     expect(submission.properties.vote_count.rls?.write?.user_condition?.role).toBe('admin');
     expect(submission.properties.status.rls?.write?.user_condition?.role).toBe('admin');
+  });
+
+
+  it('cleans platform and push state on logout', async () => {
+    const registerPush = await readText('base44/functions/registerPushSubscription/entry.ts');
+    expect(registerPush).toContain('const endpointRows = await entity.filter({ endpoint })');
+    expect(registerPush).toContain('row.user_id !== user.id');
+
+    const unregisterPush = await readText('base44/functions/unregisterPushSubscription/entry.ts');
+    expect(unregisterPush).toContain('user_id: user.id, endpoint');
+
+    const auth = await readText('src/lib/AuthContext.jsx');
+    expect(auth).toContain('unsubscribeFromRemotePush');
+    expect(auth).toContain('await base44.auth.logout()');
+
+    const app = await readText('src/App.jsx');
+    expect(app).toContain('await unsubscribeFromRemotePush()');
+
+    const deletion = await readText('src/components/settings/DeleteAccountDialog.jsx');
+    expect(deletion).toContain('unsubscribeFromRemotePush');
   });
 
   it('keeps the PWA manifest scoped to the serving origin', async () => {

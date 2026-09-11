@@ -760,6 +760,16 @@ describe('release configuration', () => {
     expect(dialog).not.toContain('Phone number');
   });
 
+  it('only exposes achievement keys for discoverable public profiles', async () => {
+    const publicAchievements = await readText('base44/functions/listPublicAchievements/entry.ts');
+    expect(publicAchievements).toContain('target.onboarding_completed');
+    expect(publicAchievements).toContain('target.is_banned');
+    expect(publicAchievements).toContain("!String(target.display_name || '').trim()");
+    expect(publicAchievements).toContain('rows.map((a) => ({ key: a.key }))');
+    expect(publicAchievements).not.toContain('created_date: a.created_date');
+    expect(publicAchievements).not.toContain('xp: a.xp');
+  });
+
   it('prevents contact ownership reassignment', async () => {
     const contact = await readJson('base44/entities/Contact.jsonc');
     expect(contact.properties.user_id.rls?.write?.user_condition?.role).toBe('admin');

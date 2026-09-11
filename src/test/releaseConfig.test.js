@@ -242,6 +242,17 @@ describe('release configuration', () => {
     expect(globalMessage).not.toContain('entities.Conversation.create');
   });
 
+  it('does not expose public-room membership lists to nonmembers', async () => {
+    const conversation = await readJson('base44/entities/Conversation.jsonc');
+    const readRule = conversation.properties.participant_ids.rls?.read;
+    expect(readRule?.$or).toBeTruthy();
+    expect(readRule.$or).toEqual(expect.arrayContaining([
+      expect.objectContaining({ 'data.participant_ids': '{{user.id}}' }),
+      expect.objectContaining({ user_condition: { role: 'admin' } }),
+    ]));
+    expect(conversation.properties.participant_ids.rls?.write?.user_condition?.role).toBe('admin');
+  });
+
 
   it('repairs message caches on delete and rate-limits moderated edits', async () => {
     const mutate = await readText('base44/functions/mutateConversationMessage/entry.ts');

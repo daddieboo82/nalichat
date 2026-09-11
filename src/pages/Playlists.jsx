@@ -48,7 +48,14 @@ export default function Playlists() {
   });
 
   const deletePlaylistMutation = useMutation({
-    mutationFn: (playlistId) => base44.entities.Playlist.delete(playlistId),
+    mutationFn: async (playlistId) => {
+      const res = await base44.functions.invoke("mutatePlaylist", {
+        action: "delete",
+        playlistId,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlists"] });
     },

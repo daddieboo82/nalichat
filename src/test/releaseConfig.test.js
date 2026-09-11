@@ -833,6 +833,16 @@ describe('release configuration', () => {
     }
   });
 
+  it('releases both squad membership claims whenever a squad ends', async () => {
+    const leave = await readText('base44/functions/leaveSquad/entry.ts');
+    const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
+
+    expect(leave).toContain('[squad.member_a_id, squad.member_b_id].filter(Boolean)');
+    expect(leave).toContain('$set: { squad_membership_id: null }');
+    expect(deletion).toContain('id: squad.member_b_id, squad_membership_id: squad.id');
+    expect(deletion).toContain('id: squad.member_a_id, squad_membership_id: squad.id');
+  });
+
   it('hides public-room latest message text from nonmembers', async () => {
     const conversation = await readJson('base44/entities/Conversation.jsonc');
     const rule = conversation.properties.last_message_text.rls?.read;

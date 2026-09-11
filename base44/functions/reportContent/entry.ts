@@ -1,4 +1,5 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -8,7 +9,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { content_type, content_id, content_text, reason, conversation_id } = await req.json();
+    const { content_type, content_id, reason } = await req.json();
     if (!content_type || !content_id) {
       return Response.json({ error: 'content_type and content_id are required' }, { status: 400 });
     }
@@ -27,9 +28,15 @@ Deno.serve(async (req) => {
     };
 
     const entities = base44.asServiceRole.entities;
+    const rate = await consumeHourlyLimit(entities, reporter.id, 'content_report', 30);
+    if (!rate.allowed) {
+      return Response.json({ error: 'Report rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
+
     let reportedUserId = '';
     let reportedUserName = '';
     let authoritativeText = '';
+    let authoritativeConversationId = null;
 
     if (content_type === 'message') {
       const message = await entities.Message.get(content_id);
@@ -42,6 +49,7 @@ Deno.serve(async (req) => {
       reportedUserId = message.sender_id || '';
       reportedUserName = message.sender_name || '';
       authoritativeText = message.text || message.file_name || '';
+      authoritativeConversationId = message.conversation_id || null;
     } else if (content_type === 'art_post') {
       const post = await entities.ArtPost.get(content_id);
       if (!post) return Response.json({ error: 'Content not found' }, { status: 404 });
@@ -81,7 +89,7 @@ Deno.serve(async (req) => {
       category: categoryMap[reportReason] || 'bullying',
       severity: 'low',
       content: `[USER REPORT — ${reportReason}]\nContent type: ${content_type}\nContent ID: ${content_id}\n\n${authoritativeText.slice(0, 800)}`,
-      conversation_id: conversation_id || null,
+      conversation_id: authoritativeConversationId,
       message_id: content_type === 'message' ? content_id : null,
       action_taken: 'warning',
       review_status: 'pending',

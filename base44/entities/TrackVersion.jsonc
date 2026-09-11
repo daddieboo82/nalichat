@@ -15,11 +15,27 @@
       }
     },
     "project_id": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "version_number": {
       "type": "number",
-      "description": "Incrementing version number"
+      "description": "Incrementing version number",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "label": {
       "type": "string",
@@ -52,7 +68,15 @@
       }
     },
     "saved_by_name": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "description": {
       "type": "string",

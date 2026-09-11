@@ -8,9 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // │  DOWNLOAD URLs                                                        │
 // │  Update these to your GitHub Releases URLs after the first builds.     │
 // └──────────────────────────────────────────────────────────────────────┘
-const APK_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat.apk';
-const EXE_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat-Setup.exe';
-const DMG_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/latest/download/NaliChat.dmg';
+const APK_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/download/1.0.0/NaliChat.apk';
+const EXE_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/download/1.0.0/NaliChat-Setup.exe';
+const DMG_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/download/1.0.0/NaliChat.dmg';
 // iOS does not allow installing an arbitrary downloaded .ipa the way Android
 // allows sideloading an APK — it requires the App Store, TestFlight, or a
 // paid Apple Developer Enterprise/Ad-Hoc distribution setup. None of that
@@ -20,7 +20,7 @@ const DMG_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/lates
 // Screen" — this app is already a fully configured PWA (manifest.json,
 // apple-mobile-web-app meta tags, and a registered service worker), so this
 // genuinely installs a full-screen, app-like icon today with no extra build.
-const PWA_URL = 'https://nalichat.base44.app';
+const PWA_URL = 'https://nalichat.org';
 
 function useAvailability(url) {
   const [state, setState] = useState({ checking: true, available: false, finalUrl: url });
@@ -176,7 +176,7 @@ export default function Download() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <Step n={1}>Open <strong className="text-foreground">nalichat.base44.app</strong> in <strong className="text-foreground">Safari</strong> (this must be Safari — other browsers on iOS don't support this).</Step>
+                <Step n={1}>Open <strong className="text-foreground">nalichat.org</strong> in <strong className="text-foreground">Safari</strong> (this must be Safari — other browsers on iOS don't support this).</Step>
                 <Step n={2}>Tap the <strong className="text-foreground">Share</strong> icon (the square with an arrow) in the toolbar.</Step>
                 <Step n={3}>Scroll down and tap <strong className="text-foreground">Add to Home Screen</strong>.</Step>
                 <Step n={4}>Tap <strong className="text-foreground">Add</strong> in the top right corner.</Step>

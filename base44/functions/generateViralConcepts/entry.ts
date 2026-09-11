@@ -41,6 +41,9 @@ Optimize for authentic music culture and early engagement. Emotional emphasis: $
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });

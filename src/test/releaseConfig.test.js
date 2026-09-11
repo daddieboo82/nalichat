@@ -226,6 +226,17 @@ describe('release configuration', () => {
   });
 
 
+  it('validates public media URLs before publishing or challenge submission', async () => {
+    const createPost = await readText('base44/functions/createArtPost/entry.ts');
+    const submitRemix = await readText('base44/functions/submitChallengeRemix/entry.ts');
+
+    expect(createPost).toContain("parsed.protocol === 'https:'");
+    expect(createPost).toContain('valid HTTPS file URL');
+    expect(createPost).toContain('boundedNumber(body?.bpm, 1, 400)');
+    expect(submitRemix).toContain("uploadedUrl.protocol !== 'https:'");
+  });
+
+
   it('keeps ArtPost views server-counted and challenge submissions immutable by entrants', async () => {
     const artPost = await readJson('base44/entities/ArtPost.jsonc');
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');

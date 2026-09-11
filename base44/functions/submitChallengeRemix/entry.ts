@@ -51,6 +51,9 @@ Deno.serve(async (req) => {
     if (user.is_banned) {
       return Response.json({ error: 'banned' }, { status: 403 });
     }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
 
     const body = await req.json();
     const challengeId = String(body?.challenge_id || '');

@@ -138,6 +138,9 @@ Deno.serve(async (req) => {
       if (conversation.type !== 'group') {
         return Response.json({ error: 'Only group conversations can be renamed' }, { status: 400 });
       }
+      if (conversation.is_public === true && user.role !== 'admin') {
+        return Response.json({ error: 'Only an admin can rename a public room' }, { status: 403 });
+      }
       const name = String(body?.name || '').trim().slice(0, 120);
       if (!name) return Response.json({ error: 'Group name is required' }, { status: 400 });
       const updated = await entities.Conversation.update(conversation.id, { name });

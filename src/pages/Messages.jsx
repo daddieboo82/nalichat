@@ -356,6 +356,11 @@ export default function Messages() {
       const conv = created?.data?.conversation;
       if (!conv?.id) throw new Error("Conversation was not created");
       await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      if (lockedConversationIds.includes(conv.id) && !lockedChatsUnlocked) {
+        setLockedLinkConversationId(conv.id);
+        setShowLockedAccess(true);
+        return;
+      }
       handleSelectConv(conv.id);
     } catch (err) {
       toast.error("Couldn't start the conversation. Please try again.");

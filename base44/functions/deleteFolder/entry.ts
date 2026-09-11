@@ -42,16 +42,28 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'You cannot delete this folder' }, { status: 403 });
     }
 
-    const files = await entities.SharedFile.filter({ folder_id: folder.id });
-    for (const file of files) {
-      await entities.SharedFile.update(file.id, { folder_id: null });
+    let detachedFiles = 0;
+    while (true) {
+      const files = await entities.SharedFile.filter(
+        { folder_id: folder.id },
+        '-created_date',
+        200,
+      );
+      if (files.length === 0) break;
+
+      for (const file of files) {
+        await entities.SharedFile.update(file.id, { folder_id: null });
+        detachedFiles += 1;
+      }
+
+      if (files.length < 200) break;
     }
 
     await entities.Folder.delete(folder.id);
     return Response.json({
       success: true,
       deleted: true,
-      detached_files: files.length,
+      detached_files: detachedFiles,
     });
   } catch (error) {
     console.error('deleteFolder error:', error);

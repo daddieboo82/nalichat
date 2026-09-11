@@ -226,6 +226,15 @@ describe('release configuration', () => {
   });
 
 
+  it('validates shared-file destination authority and media URL', async () => {
+    const sharedFile = await readText('base44/functions/createSharedFileRecord/entry.ts');
+    expect(sharedFile).toContain('valid HTTPS file_url');
+    expect(sharedFile).toContain('Viewer access cannot add files to this folder');
+    expect(sharedFile).toContain('folder_id does not belong to project_id');
+    expect(sharedFile).toContain('file_size must be a non-negative number');
+  });
+
+
   it('validates public media URLs before publishing or challenge submission', async () => {
     const createPost = await readText('base44/functions/createArtPost/entry.ts');
     const submitRemix = await readText('base44/functions/submitChallengeRemix/entry.ts');

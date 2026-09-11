@@ -182,19 +182,9 @@
       ]
     },
     "update": {
-      "$or": [
-        {
-          "data.owner_id": "{{user.id}}"
-        },
-        {
-          "data.editor_ids": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
       "user_condition": {

@@ -86,12 +86,17 @@ Return realistic values. BPM must be a whole number between 60 and 200.`;
       },
     });
 
-    const suggestedGenre = result?.genre?.trim();
+    const suggestedGenre = String(result?.genre || '').trim().slice(0, 100);
     const suggestedBpm = Math.round(Number(result?.bpm));
 
-    if (!suggestedGenre || !suggestedBpm) {
+    if (
+      !suggestedGenre
+      || !Number.isFinite(suggestedBpm)
+      || suggestedBpm < 60
+      || suggestedBpm > 200
+    ) {
       console.error('LLM returned invalid suggestion', result);
-      return Response.json({ error: 'Invalid suggestion from LLM' }, { status: 500 });
+      return Response.json({ error: 'Invalid suggestion from LLM' }, { status: 502 });
     }
 
     await base44.asServiceRole.entities.Track.update(trackId, {

@@ -1656,7 +1656,7 @@ describe('release configuration', () => {
     expect(deletion).toContain('async function syncConversationAudience');
     expect(deletion).toContain('read_by: Array.isArray(message.read_by)');
     expect(deletion).toContain('reactions: pruneConversationReactions');
-    expect(deletion).toContain('await syncConversationAudience(entities, conversation.id, participantIds)');
+    expect(deletion).toContain('await syncConversationAudience(entities, conversation.id, participantIds, user.id)');
   });
 
   it('removes or anonymizes cross-user references during account deletion', async () => {

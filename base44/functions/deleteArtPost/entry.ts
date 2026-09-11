@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+const DELETE_BATCH_SIZE = 200;
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -31,11 +33,23 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Only the creator can delete this post' }, { status: 403 });
     }
 
-    const comments = await entities.TrackComment.filter({
-      track_id: post.id,
-      parent_type: 'art_post',
-    });
-    for (const comment of comments) await entities.TrackComment.delete(comment.id);
+    let deletedComments = 0;
+    while (true) {
+      const comments = await entities.TrackComment.filter(
+        {
+          track_id: post.id,
+          parent_type: 'art_post',
+        },
+        '-created_date',
+        DELETE_BATCH_SIZE,
+      );
+      if (comments.length === 0) break;
+      for (const comment of comments) {
+        await entities.TrackComment.delete(comment.id);
+        deletedComments += 1;
+      }
+      if (comments.length < DELETE_BATCH_SIZE) break;
+    }
 
     let playlistsUpdated = 0;
     while (true) {
@@ -61,7 +75,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
-      deleted_comments: comments.length,
+      deleted_comments: deletedComments,
       playlists_updated: playlistsUpdated,
     });
   } catch (error) {

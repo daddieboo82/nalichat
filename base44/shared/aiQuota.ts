@@ -23,7 +23,8 @@ interface UsageEntity {
     limit?: number,
     skip?: number,
   ): Promise<UsageRecord[]>;
-  create(data: Omit<UsageRecord, 'id'>): Promise<UsageRecord>;
+  create(data: Omit<UsageRecord, 'id'> & { id?: string }): Promise<UsageRecord>;
+  get(id: string): Promise<UsageRecord | null>;
   update(id: string, data: Partial<UsageRecord>): Promise<UsageRecord>;
   delete(id: string): Promise<unknown>;
 }
@@ -65,6 +66,17 @@ function snapshot(limit: number, used: number, resetAt: string): AiQuotaSnapshot
     remaining: Math.max(0, limit - used),
     reset_at: resetAt,
   };
+}
+
+async function reservationId(userId: string, utcDay: string, requestKey: string) {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`${userId}:${utcDay}:${requestKey}`),
+  );
+  const hex = Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+  return `ai_usage_${hex}`;
 }
 
 async function loadUsage(entity: UsageEntity, userId: string, utcDay: string) {
@@ -148,15 +160,42 @@ export async function reserveAiUsage({
     );
   }
 
-  const reservation = await entity.create({
-    user_id: userId,
-    utc_day: window.utcDay,
-    request_key: normalizedRequestKey,
-    operation,
-    status: 'reserved',
-    reserved_at: window.now.toISOString(),
-    dispatched_at: null,
-  });
+  const id = await reservationId(userId, window.utcDay, normalizedRequestKey);
+  let reservation: UsageRecord;
+  try {
+    reservation = await entity.create({
+      id,
+      user_id: userId,
+      utc_day: window.utcDay,
+      request_key: normalizedRequestKey,
+      operation,
+      status: 'reserved',
+      reserved_at: window.now.toISOString(),
+      dispatched_at: null,
+    });
+  } catch (createError) {
+    const raced = await entity.get(id).catch(() => null);
+    if (!raced) throw createError;
+
+    const racedQuota = snapshot(limit, dispatched.length, window.resetAt);
+    if (raced.status === 'dispatched') {
+      throw new AiQuotaError(
+        409,
+        AI_REQUEST_ALREADY_DISPATCHED,
+        'This AI request was already dispatched.',
+        racedQuota,
+      );
+    }
+    if (raced.status === 'reserved') {
+      throw new AiQuotaError(
+        409,
+        'AI_REQUEST_IN_PROGRESS',
+        'This AI request is already in progress.',
+        racedQuota,
+      );
+    }
+    throw createError;
+  }
 
   return { reservation, quota };
 }

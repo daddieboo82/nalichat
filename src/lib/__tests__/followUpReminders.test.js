@@ -36,6 +36,7 @@ function entity(initial = [], options = {}) {
     async update(id, patch) {
       const record = records.find((candidate) => candidate.id === id);
       if (!record) throw new Error(`Missing record ${id}`);
+      options.onUpdate?.({ id, patch: { ...patch }, records });
       Object.assign(record, patch);
       return { ...record };
     },
@@ -291,6 +292,31 @@ describe("due follow-up processing", () => {
     });
     expect(summary.triggered).toBe(0);
     expect(store.Notification.records).toHaveLength(0);
+  });
+
+  it("keeps triggered_at empty until notification delivery is confirmed", async () => {
+    const claimPatches = [];
+    const store = entities({
+      reminders: [scheduledReminder],
+      messages: [sourceMessage],
+      reminderOptions: {
+        onUpdate({ patch }) {
+          if (patch.status === "triggered") claimPatches.push(patch);
+        },
+      },
+    });
+
+    const summary = await processDueFollowUpReminders({
+      entities: store,
+      now: "2026-09-10T16:00:00.000Z",
+    });
+
+    expect(summary.triggered).toBe(1);
+    expect(claimPatches[0]).toMatchObject({
+      status: "triggered",
+      triggered_at: null,
+    });
+    expect(store.FollowUpReminder.records[0].triggered_at).toBeTruthy();
   });
 
   it("completes instead of notifying when a later recipient reply exists", async () => {

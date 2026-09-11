@@ -818,7 +818,7 @@ export async function processDueFollowUpReminders({
     const deliveryClaimKey = `delivery:${crypto.randomUUID()}`;
     await entities.FollowUpReminder.update(reminder.id, {
       status: 'triggered',
-      triggered_at: clock.toISOString(),
+      triggered_at: null,
       last_attempt_at: clock.toISOString(),
       delivery_claim_key: deliveryClaimKey,
     });

@@ -48,10 +48,8 @@
   ],
   "rls": {
     "create": {
-      "data.participant_ids": {
-        "$in": [
-          "{{user.id}}"
-        ]
+      "user_condition": {
+        "role": "admin"
       }
     },
     "read": {

@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+const PAGE_SIZE = 200;
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -31,8 +33,9 @@ Deno.serve(async (req) => {
     let updatedMilestones = 0;
     let updatedProjects = 0;
 
-    const projects = await entities.Project.filter({});
-    for (const project of projects) {
+    for (let skip = 0; ; skip += PAGE_SIZE) {
+      const projects = await entities.Project.filter({}, '-created_date', PAGE_SIZE, skip);
+      for (const project of projects) {
       const expectedEditors = Array.from(new Set(
         Object.entries(project.collaborator_roles || {})
           .filter(([, role]) => role === 'editor')
@@ -43,11 +46,14 @@ Deno.serve(async (req) => {
         await entities.Project.update(project.id, { editor_ids: expectedEditors });
         updatedProjects += 1;
       }
+      }
+      if (projects.length < PAGE_SIZE) break;
     }
 
-    const tracks = await entities.Track.filter({});
+    for (let skip = 0; ; skip += PAGE_SIZE) {
+      const tracks = await entities.Track.filter({}, '-created_date', PAGE_SIZE, skip);
 
-    for (const track of tracks) {
+      for (const track of tracks) {
       if (Array.isArray(track.access_user_ids) && track.access_user_ids.length > 0) continue;
 
       let accessUserIds = [track.uploaded_by].filter(Boolean);
@@ -78,19 +84,30 @@ Deno.serve(async (req) => {
       });
       updatedTracks += 1;
 
-      const versions = await entities.TrackVersion.filter({ track_id: track.id });
-      for (const version of versions) {
-        if (Array.isArray(version.access_user_ids) && version.access_user_ids.length > 0) continue;
-        await entities.TrackVersion.update(version.id, {
-          access_user_ids: accessUserIds,
-          edit_user_ids: track.__backfill_edit_user_ids || [version.saved_by_id].filter(Boolean),
-        });
-        updatedVersions += 1;
+      for (let versionSkip = 0; ; versionSkip += PAGE_SIZE) {
+        const versions = await entities.TrackVersion.filter(
+          { track_id: track.id },
+          '-created_date',
+          PAGE_SIZE,
+          versionSkip,
+        );
+        for (const version of versions) {
+          if (Array.isArray(version.access_user_ids) && version.access_user_ids.length > 0) continue;
+          await entities.TrackVersion.update(version.id, {
+            access_user_ids: accessUserIds,
+            edit_user_ids: track.__backfill_edit_user_ids || [version.saved_by_id].filter(Boolean),
+          });
+          updatedVersions += 1;
+        }
+        if (versions.length < PAGE_SIZE) break;
       }
+      }
+      if (tracks.length < PAGE_SIZE) break;
     }
 
-    const sharedFiles = await entities.SharedFile.filter({});
-    for (const file of sharedFiles) {
+    for (let skip = 0; ; skip += PAGE_SIZE) {
+      const sharedFiles = await entities.SharedFile.filter({}, '-created_date', PAGE_SIZE, skip);
+      for (const file of sharedFiles) {
       if (Array.isArray(file.access_user_ids) && file.access_user_ids.length > 0) continue;
 
       let accessUserIds = [file.uploader_id].filter(Boolean);
@@ -115,10 +132,13 @@ Deno.serve(async (req) => {
         share_token_expires_at: null,
       });
       updatedFiles += 1;
+      }
+      if (sharedFiles.length < PAGE_SIZE) break;
     }
 
-    const folders = await entities.Folder.filter({});
-    for (const folder of folders) {
+    for (let skip = 0; ; skip += PAGE_SIZE) {
+      const folders = await entities.Folder.filter({}, '-created_date', PAGE_SIZE, skip);
+      for (const folder of folders) {
       if (Array.isArray(folder.access_user_ids) && folder.access_user_ids.length > 0) continue;
       let accessUserIds = [folder.owner_id].filter(Boolean);
       if (folder.project_id) {
@@ -145,10 +165,13 @@ Deno.serve(async (req) => {
         edit_user_ids: folder.__backfill_edit_user_ids || [folder.owner_id].filter(Boolean),
       });
       updatedFolders += 1;
+      }
+      if (folders.length < PAGE_SIZE) break;
     }
 
-    const milestones = await entities.Milestone.filter({});
-    for (const milestone of milestones) {
+    for (let skip = 0; ; skip += PAGE_SIZE) {
+      const milestones = await entities.Milestone.filter({}, '-created_date', PAGE_SIZE, skip);
+      for (const milestone of milestones) {
       if (Array.isArray(milestone.access_user_ids) && milestone.access_user_ids.length > 0) continue;
       let accessUserIds = [milestone.created_by_id].filter(Boolean);
       try {
@@ -173,6 +196,8 @@ Deno.serve(async (req) => {
         edit_user_ids: milestone.__backfill_edit_user_ids || [milestone.created_by_id].filter(Boolean),
       });
       updatedMilestones += 1;
+      }
+      if (milestones.length < PAGE_SIZE) break;
     }
 
     return Response.json({

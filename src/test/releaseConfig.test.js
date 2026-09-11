@@ -122,6 +122,14 @@ describe('release configuration', () => {
     expect(standardEntities).not.toContain('Notification');
   });
 
+
+  it('separates artist profession from authorization role', async () => {
+    const user = await readJson('base44/entities/User.jsonc');
+    expect(user.properties.artist_role).toBeTruthy();
+    expect(user.properties.role.default).toBe('user');
+    expect(user.properties.role.rls?.write?.user_condition?.role).toBe('admin');
+  });
+
   it('keeps the PWA manifest scoped to the serving origin', async () => {
     const manifest = await readJson('public/manifest.json');
     expect(manifest.start_url).toBe('/');

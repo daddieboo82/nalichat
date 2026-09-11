@@ -1,0 +1,46 @@
+{
+  "name": "WixWebhookEvent",
+  "type": "object",
+  "properties": {
+    "wix_event_id": {
+      "type": "string",
+      "description": "Wix event ID or deterministic signed-payload fingerprint used as the durable idempotency key"
+    },
+    "event_type": {
+      "type": "string"
+    },
+    "event_time": {
+      "type": "string"
+    },
+    "claimed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "wix_event_id",
+    "event_type"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

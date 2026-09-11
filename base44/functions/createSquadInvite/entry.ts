@@ -43,6 +43,20 @@ Deno.serve(async (req) => {
       status: 'pending',
     });
 
+    const membershipClaim = await entities.User.updateMany(
+      {
+        id: user.id,
+        squad_membership_id: null,
+      },
+      {
+        $set: { squad_membership_id: squad.id },
+      },
+    );
+    if (Number(membershipClaim?.updated || 0) !== 1) {
+      await entities.Squad.delete(squad.id).catch(() => {});
+      return Response.json({ error: 'You already have an active or pending squad.' }, { status: 409 });
+    }
+
     return Response.json({ success: true, squad });
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not create squad invite' }, { status: 500 });

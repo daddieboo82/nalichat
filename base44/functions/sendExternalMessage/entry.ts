@@ -8,6 +8,12 @@ Deno.serve(async (req) => {
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
 
     const rate = await consumeHourlyLimit(
       base44.asServiceRole.entities,
@@ -25,7 +31,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'destination and message are required' }, { status: 400 });
     }
 
-    const name = user.display_name || user.full_name || 'Someone on NaliChat';
+    const name = String(user.display_name || user.full_name || 'Someone on NaliChat')
+      .replace(/[\r\n]/g, ' ')
+      .trim()
+      .slice(0, 80) || 'Someone on NaliChat';
 
     if (type === 'email') {
       // Prevent open email relay: only allow sending to registered app users.
@@ -41,7 +50,10 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Recipient is not a registered NaliChat user' }, { status: 403 });
       }
       // Sanitize the message body to remove CRLF sequences
-      const cleanMessage = message.replace(/[\r\n]{2,}/g, '\n\n').replace(/[\r\n]/g, '\n');
+      const cleanMessage = String(message)
+        .replace(/[\r\n]{2,}/g, '\n\n')
+        .replace(/[\r\n]/g, '\n')
+        .slice(0, 5000);
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: cleanDestination,
         subject: `Message from ${name} via NaliChat`,
@@ -72,7 +84,10 @@ Deno.serve(async (req) => {
         }, { status: 503 });
       }
 
-      const cleanMessage = message.replace(/[\r\n]{2,}/g, '\n\n').replace(/[\r\n]/g, '\n');
+      const cleanMessage = String(message)
+        .replace(/[\r\n]{2,}/g, '\n\n')
+        .replace(/[\r\n]/g, '\n')
+        .slice(0, 320);
       const body = `${name} sent you a message via NaliChat:\n\n"${cleanMessage}"\n\nJoin NaliChat to reply directly.`;
 
       const formData = new URLSearchParams();

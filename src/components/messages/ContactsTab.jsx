@@ -66,7 +66,8 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
     : allUsers.filter(u => u.id !== currentUserId && !contactUserIds.has(u.id));
 
   const filtered = listToShow.filter(u => {
-    if (roleFilter !== "all" && u.role !== roleFilter) return false;
+    const publicRole = u.artist_role || (["artist", "producer", "engineer", "ar"].includes(u.role) ? u.role : "artist");
+    if (roleFilter !== "all" && publicRole !== roleFilter) return false;
     const q = search.toLowerCase();
     return (u.display_name || u.full_name || "").toLowerCase().includes(q) ||
            (u.genres || []).some(g => g.toLowerCase().includes(q)) ||

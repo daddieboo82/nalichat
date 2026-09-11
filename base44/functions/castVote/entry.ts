@@ -58,7 +58,7 @@ export default async function(req) {
         submission_id,
         challenge_id: submission.challenge_id,
         voter_id: user.id,
-        voter_name: user.display_name || user.full_name || user.email,
+        voter_name: user.display_name || user.full_name || 'User',
       });
     } catch (error) {
       // Deterministic vote IDs make concurrent duplicate requests collide at

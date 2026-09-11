@@ -36,9 +36,9 @@ Deno.serve(async (req) => {
     // Construct the invite link server-side from trusted app URL — never accept
     // a client-supplied link (prevents phishing/link injection)
     const appUrl =
-      req.headers.get('X-Base44-App-Url') ||
+      Deno.env.get('APP_BASE_URL') ||
       Deno.env.get('WIX_CHECKOUT_APP_URL') ||
-      '';
+      'https://nalichat.org';
     if (!appUrl) {
       return Response.json(
         { error: 'Server is not configured with an app URL' },

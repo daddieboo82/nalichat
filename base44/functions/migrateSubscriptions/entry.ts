@@ -3,6 +3,7 @@ import {
   buildSubscriptionMigrationPlan,
   type LegacySubscriptionRecord,
 } from '../../shared/subscriptionMigration.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const PAGE_SIZE = 500;
 
@@ -40,9 +41,26 @@ Deno.serve(async (req) => {
     if (!user || user.role !== 'admin') {
       return Response.json({ error: 'Forbidden: admin role required' }, { status: 403 });
     }
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
+    const migrationRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'admin_subscription_migration',
+      2,
+    );
+    if (!migrationRate.allowed) {
+      return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
 
     const body = await req.json();
     const dryRun = body.dryRun !== false;
+    if (!dryRun && body.confirmation !== 'MIGRATE') {
+      return Response.json({ error: 'Explicit MIGRATE confirmation is required' }, { status: 400 });
+    }
     const subscriptions = await loadAllSubscriptions(
       base44.asServiceRole.entities.Subscription,
     );

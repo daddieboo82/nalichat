@@ -120,6 +120,23 @@ describe('release configuration', () => {
     );
   });
 
+  it('bounds subscription status polling and guards full subscription migration', async () => {
+    const status = await readText('base44/functions/checkSubscriptionStatus/entry.ts');
+    const migrate = await readText('base44/functions/migrateSubscriptions/entry.ts');
+
+    expect(status).toContain('consumeHourlyLimit');
+    expect(status).toContain("'subscription_status'");
+    expect(status).toMatch(/'subscription_status',\s*600/);
+    expect(status).toContain('Subscription status rate limit exceeded');
+
+    expect(migrate).toContain('consumeHourlyLimit');
+    expect(migrate).toContain("'admin_subscription_migration'");
+    expect(migrate).toMatch(/'admin_subscription_migration',\s*2/);
+    expect(migrate).toContain('user.is_banned');
+    expect(migrate).toContain("error: 'timed_out'");
+    expect(migrate).toContain("body.confirmation !== 'MIGRATE'");
+  });
+
   it('reserves trial eligibility at checkout without consuming it before Stripe starts the trial', async () => {
     const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');
     const webhook = await readText('base44/functions/stripeWebhook/entry.ts');

@@ -6,6 +6,7 @@ import {
   resolveEntitlements,
 } from '../../shared/subscription.ts';
 import { trialEligibility } from '../../shared/stripeBilling.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const PAGE_SIZE = 500;
 
@@ -75,6 +76,16 @@ Deno.serve(async (req) => {
 
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const statusRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'subscription_status',
+      600,
+    );
+    if (!statusRate.allowed) {
+      return Response.json({ error: 'Subscription status rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     const subs = await loadUserSubscriptions(

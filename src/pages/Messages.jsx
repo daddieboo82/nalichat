@@ -79,7 +79,7 @@ export default function Messages() {
       sendPresence(isOnline);
       if (isOnline) {
         // Immediately refresh messages and conversations when returning to the tab
-        queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
+        queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
       }
     };
@@ -203,9 +203,11 @@ export default function Messages() {
 
   const sendMessage = useMutation({
     mutationFn: async (msgData) => {
+      const conversationId = msgData.conversation_id;
+      if (!conversationId) throw new Error("Conversation is required");
       const res = await base44.functions.invoke("sendConversationMessage", {
         ...msgData,
-        conversation_id: selectedConvId,
+        conversation_id: conversationId,
       });
       if (res?.data?.moderation) {
         return { _flagged: res.data.moderation };
@@ -216,8 +218,11 @@ export default function Messages() {
       return res?.data?.message;
     },
     onMutate: (msgData) => {
-      queryClient.cancelQueries({ queryKey: ["messages", selectedConvId] });
-      const previous = queryClient.getQueryData(["messages", selectedConvId]);
+      const conversationId = msgData.conversation_id || selectedConvId;
+      if (!conversationId) throw new Error("Conversation is required");
+      msgData.conversation_id = conversationId;
+      queryClient.cancelQueries({ queryKey: ["messages", conversationId] });
+      const previous = queryClient.getQueryData(["messages", conversationId]);
       const previousConversations = queryClient.getQueryData(["conversations"]);
       const clientMessageKey = msgData.client_message_key || createClientMessageKey();
       msgData.client_message_key = clientMessageKey;
@@ -226,7 +231,7 @@ export default function Messages() {
         id: tempId,
         _tempId: tempId,
         ...msgData,
-        conversation_id: selectedConvId,
+        conversation_id: conversationId,
         sender_id: currentUser?.id,
         sender_name: currentUser?.display_name || currentUser?.full_name,
         sender_avatar: currentUser?.avatar_url,
@@ -236,21 +241,21 @@ export default function Messages() {
         _deliveryState: "sending",
         _sendError: null,
       };
-      queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+      queryClient.setQueryData(["messages", conversationId], (old = []) =>
         applyQueuedMessage(old, tempMsg)
       );
       queryClient.setQueryData(["conversations"], (old = []) => {
         const updated = old.map(c =>
-          c.id === selectedConvId
+          c.id === conversationId
             ? { ...c, last_message_text: msgData.text || `Sent a ${msgData.type}`, last_message_at: tempMsg.created_date }
             : c
         );
         return updated.sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0));
       });
-      return { previous, previousConversations, tempId, clientMessageKey };
+      return { previous, previousConversations, tempId, clientMessageKey, conversationId };
     },
     onError: (err, _msgData, ctx) => {
-      queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+      queryClient.setQueryData(["messages", ctx?.conversationId], (old = []) =>
         applySendFailure(old, ctx?.clientMessageKey, err?.message)
       );
       if (ctx?.previousConversations) {
@@ -267,7 +272,7 @@ export default function Messages() {
     onSuccess: (msg, _vars, ctx) => {
       if (msg?._flagged) {
         const f = msg._flagged;
-        queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+        queryClient.setQueryData(["messages", ctx?.conversationId], (old = []) =>
           old.filter(m => m._tempId !== ctx?.tempId)
         );
         if (ctx?.previousConversations) {
@@ -287,7 +292,7 @@ export default function Messages() {
         base44.auth.me().then(setCurrentUser).catch(() => {});
         return;
       }
-      queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+      queryClient.setQueryData(["messages", ctx?.conversationId], (old = []) =>
         applySendSuccess(old, msg, ctx?.clientMessageKey, ctx?.tempId)
       );
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
@@ -300,15 +305,16 @@ export default function Messages() {
   const isTimedOut = currentUser?.timeout_until && new Date(currentUser.timeout_until) > new Date();
 
   const handleReact = async (messageId, emoji) => {
+    const conversationId = selectedConvId;
     const msg = messages.find(m => m.id === messageId);
-    if (!msg || !currentUser) return;
-    const previous = queryClient.getQueryData(["messages", selectedConvId]);
+    if (!conversationId || !msg || !currentUser) return;
+    const previous = queryClient.getQueryData(["messages", conversationId]);
     const optimisticReactions = { ...(msg.reactions || {}) };
     const userKey = `${emoji}__${currentUser.id}`;
     if (optimisticReactions[userKey]) delete optimisticReactions[userKey];
     else optimisticReactions[userKey] = emoji;
 
-    queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+    queryClient.setQueryData(["messages", conversationId], (old = []) =>
       old.map(m => (m.id === messageId ? { ...m, reactions: optimisticReactions } : m))
     );
     try {
@@ -319,7 +325,7 @@ export default function Messages() {
       });
       if (res?.data?.error) throw new Error(res.data.error);
     } catch (err) {
-      if (previous) queryClient.setQueryData(["messages", selectedConvId], previous);
+      if (previous) queryClient.setQueryData(["messages", conversationId], previous);
       if (err?.message === "timed_out") {
         toast.error("You are timed out and cannot react to messages right now.");
       } else if (err?.message === "banned") {
@@ -519,7 +525,7 @@ export default function Messages() {
                   toast.error(currentUser?.is_banned ? "You are banned from sending messages." : "You are timed out and cannot send messages right now.");
                   return;
                 }
-                sendMessage.mutate(data);
+                sendMessage.mutate({ ...data, conversation_id: selectedConvId });
               }}
               onEditMessage={async (id, text) => {
                 const result = await editMessage.mutateAsync({ id, text });
@@ -541,6 +547,7 @@ export default function Messages() {
                   reply_to_text: message.reply_to_text,
                   reply_to_sender: message.reply_to_sender,
                   client_message_key: message.client_message_key,
+                  conversation_id: message.conversation_id || selectedConvId,
                 });
               }}
               onBack={() => setSelectedConvId(null)}

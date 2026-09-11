@@ -223,7 +223,7 @@ describe('core usage flow coverage', () => {
       error: null,
       refetch: vi.fn(),
     };
-    mockBase44.functions.invoke.mockImplementation(async (name) => {
+    mockBase44.functions.invoke.mockImplementation(async (name, payload) => {
       if (name === 'listPublicUsers') {
         return { data: { users: [] } };
       }
@@ -232,6 +232,15 @@ describe('core usage flow coverage', () => {
       }
       if (name === 'toggleLike') {
         return { data: { liked: true, likes: 1 } };
+      }
+      if (name === 'claimPublishedPostReward') {
+        return { data: { success: true, awarded: true, xp: 50 } };
+      }
+      if (name === 'recordSquadActivity') {
+        return { data: { success: true, tracked: true } };
+      }
+      if (name === 'sendConversationMessage') {
+        return { data: { message: { id: 'msg-1', ...payload } } };
       }
       return { data: {} };
     });
@@ -262,23 +271,25 @@ describe('core usage flow coverage', () => {
     expect(screen.getByText(/Select a conversation from the sidebar/)).toBeTruthy();
   });
 
-  it('creates a DM, sends an optimistic message, and swaps in the saved message', async () => {
+  it('creates a DM, sends an optimistic message, and swaps in the saved server message', async () => {
     const currentUser = { id: 'user-1', display_name: 'Fresh', full_name: 'Fresh User' };
     const otherUser = { id: 'user-2', display_name: 'Producer Two', full_name: 'Producer Two' };
     const pending = createDeferred();
-    deferredMessage.promise = pending.promise;
-    deferredMessage.resolve = (payload) => {
-      messageStore.byConversation[payload.conversation_id] = [payload];
-      pending.resolve(payload);
-    };
 
     mockBase44.auth.me.mockResolvedValue(currentUser);
-    mockBase44.functions.invoke.mockImplementation(async (name) => {
+    mockBase44.functions.invoke.mockImplementation(async (name, payload) => {
       if (name === 'listPublicUsers') {
         return { data: { users: [currentUser, otherUser] } };
       }
       if (name === 'updateUserPresence') {
         return { data: { ok: true } };
+      }
+      if (name === 'recordSquadActivity') {
+        return { data: { success: true, tracked: true } };
+      }
+      if (name === 'sendConversationMessage') {
+        const result = await pending.promise;
+        return { data: { message: result } };
       }
       return { data: {} };
     });
@@ -294,7 +305,7 @@ describe('core usage flow coverage', () => {
       expect(screen.getByTestId('message-list').textContent).toContain('hello there:temp');
     });
 
-    deferredMessage.resolve({
+    pending.resolve({
       id: 'msg-1',
       text: 'hello there',
       type: 'text',
@@ -310,6 +321,11 @@ describe('core usage flow coverage', () => {
     expect(mockBase44.entities.Conversation.create).toHaveBeenCalledWith({
       type: 'dm',
       participant_ids: ['user-1', 'user-2'],
+    });
+    expect(mockBase44.functions.invoke).toHaveBeenCalledWith('sendConversationMessage', {
+      type: 'text',
+      text: 'hello there',
+      conversation_id: 'conv-1',
     });
   });
 
@@ -335,7 +351,7 @@ describe('core usage flow coverage', () => {
     expect(mockBase44.entities.ArtPost.list).toHaveBeenCalledTimes(2);
   });
 
-  it('persists the explicit rating from the upload dialog and updates the user profile xp', async () => {
+  it('persists the explicit rating and claims publish XP through the server', async () => {
     const currentUser = { id: 'user-1', display_name: 'Fresh', full_name: 'Fresh User', xp: 150, total_posts: 2 };
     const onSuccess = vi.fn();
     const { container } = renderWithProviders(
@@ -362,7 +378,12 @@ describe('core usage flow coverage', () => {
         creator_id: 'user-1',
         creator_name: 'Fresh',
       }));
-      expect(mockBase44.auth.updateMe).toHaveBeenCalledWith({ xp: 200, level: 2, total_posts: 3 });
+      expect(mockBase44.functions.invoke).toHaveBeenCalledWith('claimPublishedPostReward', { postId: 'post-1' });
+      expect(mockBase44.functions.invoke).toHaveBeenCalledWith('recordSquadActivity', {
+        sourceType: 'art_post',
+        sourceId: 'post-1',
+      });
+      expect(mockBase44.auth.updateMe).not.toHaveBeenCalled();
       expect(onSuccess).toHaveBeenCalled();
     });
   });

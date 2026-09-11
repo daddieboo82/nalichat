@@ -1,12 +1,39 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { copyToClipboard } from '@/lib/clipboard';
+import { base44 } from '@/api/base44Client';
 
-export default function JamRoomOverlay({ jamRoomActive, defaultRole, setDefaultRole }) {
+export default function JamRoomOverlay({ jamRoomActive, defaultRole, setDefaultRole, roomId }) {
+  const [creatingLink, setCreatingLink] = useState(false);
+
+  const copyInvite = async () => {
+    if (!roomId) {
+      toast.error("Open a saved project before creating a Jam Room invite.");
+      return;
+    }
+    setCreatingLink(true);
+    try {
+      const res = await base44.functions.invoke("createProjectInvite", {
+        projectId: roomId,
+        role: defaultRole,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      const url = new URL("/studio", window.location.origin);
+      url.searchParams.set("room", roomId);
+      url.searchParams.set("invite", res.data.token);
+      copyToClipboard(url.toString());
+      toast.success(`${defaultRole === "editor" ? "Editor" : "Viewer"} invite link copied!`);
+    } catch (error) {
+      toast.error(error?.message || "Couldn't create an invite link.");
+    } finally {
+      setCreatingLink(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {jamRoomActive && (
@@ -36,11 +63,8 @@ export default function JamRoomOverlay({ jamRoomActive, defaultRole, setDefaultR
                   <SelectItem value="viewer">Viewer (Listen only)</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" className="w-full h-7 text-[10px] mt-2" onClick={() => {
-                copyToClipboard(window.location.href);
-                toast.success("Invite link copied!");
-              }}>
-                Copy Invite Link
+              <Button variant="outline" size="sm" className="w-full h-7 text-[10px] mt-2" onClick={copyInvite} disabled={creatingLink}>
+                {creatingLink ? "Creating link…" : "Copy Invite Link"}
               </Button>
             </div>
             

@@ -50,6 +50,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
     setLoading(true);
     let image_url = null;
     let file_url = null;
+    let createdPost = null;
 
     try {
       if (imageFile) {
@@ -60,7 +61,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
       const audioRes = await base44.integrations.Core.UploadFile({ file: audioFile });
       file_url = audioRes.file_url;
 
-      await base44.entities.ArtPost.create({
+      createdPost = await base44.entities.ArtPost.create({
         ...form,
         is_explicit: form.is_explicit,
         image_url,
@@ -78,16 +79,14 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
       return;
     }
     
-    try {
-      // Award XP
-      const xp = (currentUser.xp || 0) + 50;
-      const level = Math.floor(xp / 200) + 1;
-      await base44.auth.updateMe({ xp, level, total_posts: (currentUser.total_posts || 0) + 1 });
-    } catch (err) {
-      console.error("Failed to update XP:", err);
+    if (createdPost?.id) {
+      try {
+        await base44.functions.invoke("claimPublishedPostReward", { postId: createdPost.id });
+      } catch (err) {
+        console.error("Failed to award publish XP:", err);
+      }
+      recordSquadActivity("art_post", createdPost.id);
     }
-
-    recordSquadActivity(currentUser.id, "task");
 
     setLoading(false);
     onSuccess();

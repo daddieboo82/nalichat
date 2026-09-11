@@ -212,25 +212,15 @@ export default function Files() {
       const currentFolderObj = currentFolderId ? folders.find(f => f.id === currentFolderId) : null;
       for (const file of filesArray) {
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        const project = currentFolderObj?.project_id
-          ? projects.find((p) => p.id === currentFolderObj.project_id)
-          : null;
-        const accessUserIds = Array.from(new Set([
-          currentUser.id,
-          project?.owner_id,
-          ...(project?.collaborator_ids || []),
-        ].filter(Boolean)));
-        await base44.entities.SharedFile.create({
+        const created = await base44.functions.invoke("createSharedFileRecord", {
           name: file.name,
           file_url,
           file_type: detectFileType(file),
           file_size: file.size,
-          uploader_id: currentUser.id,
-          uploader_name: currentUser.display_name || currentUser.full_name,
           folder_id: currentFolderId,
           project_id: currentFolderObj?.project_id || null,
-          access_user_ids: accessUserIds,
         });
+        if (created?.data?.error) throw new Error(created.data.error);
       }
       setUploading(false);
     },
@@ -270,21 +260,13 @@ export default function Files() {
   };
 
   const createFolderMutation = useMutation({
-    mutationFn: (name) => {
-      const project = newFolderProject === "none"
-        ? null
-        : projects.find((p) => p.id === newFolderProject);
-      const accessUserIds = Array.from(new Set([
-        currentUser.id,
-        project?.owner_id,
-        ...(project?.collaborator_ids || []),
-      ].filter(Boolean)));
-      return base44.entities.Folder.create({
+    mutationFn: async (name) => {
+      const res = await base44.functions.invoke("createProjectFolder", {
         name,
-        owner_id: currentUser.id,
         project_id: newFolderProject === "none" ? null : newFolderProject,
-        access_user_ids: accessUserIds,
       });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.folder;
     },
     onSuccess: () => {
       sounds.success();

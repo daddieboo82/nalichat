@@ -16,65 +16,6 @@ const MOODS = [
   { id: "awe", label: "✨ Awe" },
 ];
 
-const RESPONSE_SCHEMA = {
-  type: "object",
-  properties: {
-    concepts: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          title: { type: "string" },
-          hook: { type: "string" },
-          emotional_trigger: { type: "string" },
-          tiktok_script: { type: "string" },
-          reddit_post: { type: "string" },
-          discord_message: { type: "string" },
-          x_thread: { type: "string" },
-          youtube_shorts_script: { type: "string" },
-          viral_loop: { type: "string" },
-          hashtags: { type: "array", items: { type: "string" } },
-          communities: { type: "array", items: { type: "string" } },
-          screenshot_caption: { type: "string" },
-          cta: { type: "string" },
-        },
-      },
-    },
-  },
-};
-
-function buildPrompt(mood) {
-  return `You are ViralSeed AI — an autonomous engine that creates, optimizes, and distributes viral content for NaliChat, a music collaboration platform at nalichat.org where producers, artists, and fans collaborate in real-time, mix tracks in a built-in studio, share music, and join remix challenges.
-
-Your mission:
-1. Generate 5 viral content ideas for music creators — beats, studio sessions, collaborations, music challenges, producer struggles, viral sounds, remix battles.
-2. Convert each idea into platform-native formats: TikTok scripts, Reddit posts, Discord messages, X threads, YouTube Shorts scripts.
-3. Identify the best communities, hashtags, and posting times for maximum early engagement.
-4. Create "viral loops" that encourage users to share their results from nalichat.org.
-5. Produce 3 versions of each content piece natively formatted for each platform's culture.
-
-Rules:
-- Always use emotional triggers: ${mood === "all" ? "awe, humor, anger, surprise, validation, or curiosity" : mood}.
-- Always include a CTA that drives traffic back to nalichat.org.
-- Always format content natively for each platform's culture.
-- Always optimize for early engagement (first 30 minutes).
-- Generate multiple variations so users can test what hits.
-
-Output Format for each concept:
-1. Viral Concept (title + hook)
-2. TikTok/Reels Script
-3. Reddit Post
-4. Discord Message
-5. X (Twitter) Thread
-6. YouTube Shorts Script
-7. Viral Loop Mechanic
-8. Hashtags + Communities
-9. Shareable Screenshot Caption
-10. CTA to nalichat.org
-
-Generate 5 viral concepts for nalichat.org now. Be specific, creative, and authentic to music culture.`;
-}
-
 export default function ViralSeed() {
   const [concepts, setConcepts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -87,39 +28,15 @@ export default function ViralSeed() {
     setLoading(true);
     setError(null);
     try {
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildPrompt(mood),
-        response_json_schema: RESPONSE_SCHEMA,
-      });
-      setConcepts(res?.concepts || []);
-
-      // Award XP and track viral generation for leaderboard
-      try {
-        const me = await base44.auth.me();
-        const conceptCount = res?.concepts?.length || 5;
-        const wasFirstGeneration = !(me.viral_concepts_generated > 0);
-        await base44.auth.updateMe({
-          xp: (me.xp || 0) + 50,
-          viral_concepts_generated: (me.viral_concepts_generated || 0) + conceptCount,
-        });
-        if (wasFirstGeneration) {
-          await base44.entities.Achievement.create({
-            user_id: me.id,
-            key: "viral_seed",
-            title: "Viral Seed",
-            description: "Generated your first viral content concepts with ViralSeed AI",
-            icon: "rocket",
-            xp: 50,
-            category: "creative",
-          });
-        }
-        setXpAwarded(50);
+      const res = await base44.functions.invoke("generateViralConcepts", { mood });
+      if (res?.data?.error) throw new Error(res.data.error);
+      setConcepts(res?.data?.concepts || []);
+      if (res?.data?.xp_awarded) {
+        setXpAwarded(res.data.xp_awarded);
         setTimeout(() => setXpAwarded(null), 3000);
-        queryClient.invalidateQueries({ queryKey: ["leaderboard-users"] });
-        queryClient.invalidateQueries({ queryKey: ["all-achievements"] });
-      } catch (xpErr) {
-        // XP awarding is secondary — don't fail the whole generation
       }
+      queryClient.invalidateQueries({ queryKey: ["leaderboard-users"] });
+      queryClient.invalidateQueries({ queryKey: ["all-achievements"] });
     } catch (err) {
       setError("Failed to generate viral concepts. Please try again.");
     }

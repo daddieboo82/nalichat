@@ -19,8 +19,8 @@ export default function SquadJoin() {
   const loadSquad = () => {
     // A rejection used to skip setLoading(false) and spin forever.
     setLoadError(false);
-    base44.entities.Squad.filter({ invite_code: inviteCode })
-      .then((res) => setSquad(res[0] || null))
+    base44.functions.invoke("getSquadInvite", { inviteCode })
+      .then((res) => setSquad(res?.data?.squad || null))
       .catch((e) => {
         console.error("Failed to load squad invite", e);
         setLoadError(true);
@@ -34,11 +34,8 @@ export default function SquadJoin() {
     if (!squad || !user) return;
     setJoining(true);
     try {
-      await base44.entities.Squad.update(squad.id, {
-        member_b_id: user.id,
-        member_b_name: user.full_name || user.email,
-        status: "active",
-      });
+      const res = await base44.functions.invoke("joinSquad", { inviteCode });
+      if (res?.data?.error) throw new Error(res.data.error);
       toast.success("You're linked up! Bonus tracking starts now.");
       navigate("/squad");
     } catch (err) {
@@ -82,7 +79,7 @@ export default function SquadJoin() {
     );
   }
 
-  if (squad.status === "active" || squad.member_b_id) {
+  if (squad.status === "active" || squad.is_full) {
     return (
       <div className="max-w-md mx-auto p-6 text-center space-y-3">
         <h1 className="font-heading text-xl font-bold">Invite already used</h1>

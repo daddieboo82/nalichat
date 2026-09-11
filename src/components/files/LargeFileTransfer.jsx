@@ -49,16 +49,15 @@ function LargeFileTransferContent({ currentUser }) {
       });
 
       // 2. Create SharedFile record
-      const newFile = await base44.entities.SharedFile.create({
+      const created = await base44.functions.invoke("createSharedFileRecord", {
         name: file.name,
         file_url,
         file_type: file.type.startsWith("audio") ? "audio" : file.type.startsWith("video") ? "video" : "other",
         file_size: file.size,
-        uploader_id: currentUser.id,
-        uploader_name: currentUser.display_name || currentUser.full_name,
         description: message,
-        access_user_ids: [currentUser.id],
       });
+      if (created?.data?.error) throw new Error(created.data.error);
+      const newFile = created.data.file;
 
       // 3. Generate a tokenized public link. The file record itself is not
       // globally readable.

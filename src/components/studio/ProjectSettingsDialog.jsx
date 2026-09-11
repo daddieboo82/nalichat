@@ -22,7 +22,10 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ["users"],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const res = await base44.functions.invoke("listPublicUsers", {});
+      return res?.data?.users || [];
+    },
     enabled: open,
   });
 
@@ -31,21 +34,19 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
   );
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Project.update(project.id, data),
+    mutationFn: (payload) => base44.functions.invoke("manageProjectCollaborator", {
+      projectId: project.id,
+      ...payload,
+    }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projects"] }),
   });
 
   const handleRoleChange = (userId, newRole) => {
-    const roles = { ...(project.collaborator_roles || {}) };
-    roles[userId] = newRole;
-    updateMutation.mutate({ collaborator_roles: roles });
+    updateMutation.mutate({ userId, action: "set_role", role: newRole });
   };
 
   const handleRemove = (userId) => {
-    const newIds = (project.collaborator_ids || []).filter(id => id !== userId);
-    const roles = { ...(project.collaborator_roles || {}) };
-    delete roles[userId];
-    updateMutation.mutate({ collaborator_ids: newIds, collaborator_roles: roles });
+    updateMutation.mutate({ userId, action: "remove" });
   };
 
   const owner = allUsers.find(u => u.id === project.owner_id);
@@ -77,7 +78,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{owner.display_name || owner.full_name}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{owner.email}</p>
+                
               </div>
               <Badge className="bg-chart-4/20 text-chart-4 border-0 flex items-center gap-1">
                 <Crown className="w-3 h-3" /> Owner
@@ -105,7 +106,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{user.display_name || user.full_name}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{user.location || user.role || "NaliChat member"}</p>
                     </div>
                     <Select value={role} onValueChange={(v) => handleRoleChange(user.id, v)}>
                       <SelectTrigger className={`w-28 h-8 text-xs border-0 rounded-lg ${ROLE_COLORS[role]}`}>

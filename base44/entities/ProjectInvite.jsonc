@@ -1,0 +1,29 @@
+{
+  "name": "ProjectInvite",
+  "type": "object",
+  "properties": {
+    "project_id": { "type": "string" },
+    "token_hash": {
+      "type": "string",
+      "rls": {
+        "read": false,
+        "write": { "user_condition": { "role": "admin" } }
+      }
+    },
+    "role": {
+      "type": "string",
+      "enum": ["editor", "viewer"],
+      "default": "editor"
+    },
+    "created_by_id": { "type": "string" },
+    "expires_at": { "type": "string", "format": "date-time" },
+    "used_count": { "type": "number", "default": 0 }
+  },
+  "required": ["project_id", "token_hash", "role", "created_by_id", "expires_at"],
+  "rls": {
+    "create": { "user_condition": { "role": "admin" } },
+    "read": { "user_condition": { "role": "admin" } },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}

@@ -21,7 +21,10 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users-list"],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const res = await base44.functions.invoke("listPublicUsers", {});
+      return res?.data?.users || [];
+    },
     enabled: open,
   });
 
@@ -29,10 +32,7 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
     .filter(u => u.id !== currentUser?.id)
     .filter(u => {
       const query = search.toLowerCase();
-      return (
-        (u.display_name || u.full_name || "").toLowerCase().includes(query) ||
-        (u.email || "").toLowerCase().includes(query)
-      );
+      return (u.display_name || u.full_name || "").toLowerCase().includes(query);
     });
 
   const handleSendMessage = async () => {
@@ -56,15 +56,13 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
         });
       }
 
-      // Send message
-      await base44.entities.Message.create({
+      const send = await base44.functions.invoke("sendConversationMessage", {
         conversation_id: conversation.id,
-        sender_id: currentUser.id,
-        sender_name: currentUser.display_name || currentUser.full_name,
-        sender_avatar: currentUser.avatar_url,
         text: message,
         type: "text",
       });
+      if (send?.data?.moderation) throw new Error("moderated");
+      if (send?.data?.error) throw new Error(send.data.error);
 
       setMessage("");
       setSelectedUser(null);
@@ -100,7 +98,7 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name or email..."
+                placeholder="Search by name..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-9 rounded-lg bg-secondary/50 border-0"
@@ -132,7 +130,7 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{user.display_name || user.full_name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.location || user.role || "NaliChat member"}</p>
                     </div>
                     <Badge className={`text-[10px] ${roleColors[user.role] || "bg-secondary text-secondary-foreground"} border-0`}>
                       {user.role?.toUpperCase()}

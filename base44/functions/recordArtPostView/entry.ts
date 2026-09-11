@@ -14,6 +14,15 @@ Deno.serve(async (req) => {
     const post = await entities.ArtPost.get(String(postId));
     if (!post) return Response.json({ error: 'Post not found' }, { status: 404 });
 
+    if (post.creator_id === user.id) {
+      return Response.json({
+        success: true,
+        counted: false,
+        reason: 'owner',
+        views: Number(post.views || 0),
+      });
+    }
+
     const rate = await consumeHourlyLimit(
       entities,
       user.id,

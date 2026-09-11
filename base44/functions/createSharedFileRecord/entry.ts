@@ -13,6 +13,7 @@ Deno.serve(async (req) => {
 
     const entities = base44.asServiceRole.entities;
     let accessUserIds = [user.id];
+    let editUserIds = [user.id];
 
     if (body.project_id) {
       const project = await entities.Project.get(body.project_id);
@@ -24,6 +25,11 @@ Deno.serve(async (req) => {
       accessUserIds = Array.from(new Set([
         project.owner_id,
         ...(project.collaborator_ids || []),
+        user.id,
+      ].filter(Boolean)));
+      editUserIds = Array.from(new Set([
+        project.owner_id,
+        ...(project.editor_ids || []),
         user.id,
       ].filter(Boolean)));
     }
@@ -39,6 +45,7 @@ Deno.serve(async (req) => {
       folder_id: body.folder_id || null,
       project_id: body.project_id || null,
       access_user_ids: accessUserIds,
+      edit_user_ids: editUserIds,
     });
 
     return Response.json({ success: true, file });

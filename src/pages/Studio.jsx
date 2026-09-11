@@ -88,6 +88,7 @@ export default function Studio() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const roomId = searchParams.get('room');
+  const inviteToken = searchParams.get('invite');
   const isMobile = useIsMobile();
   const { isLowEnd } = usePerformance();
   const WAVEFORM_POINTS = isMobile ? 2000 : 8000;
@@ -326,6 +327,13 @@ export default function Studio() {
 
     (async () => {
       try {
+        if (inviteToken) {
+          const accepted = await base44.functions.invoke("acceptProjectInvite", {
+            projectId: roomId,
+            token: inviteToken,
+          });
+          if (accepted?.data?.error) throw new Error(accepted.data.error);
+        }
         const project = await base44.entities.Project.get(roomId);
         if (!project || cancelled) return;
 
@@ -397,7 +405,7 @@ export default function Studio() {
     })();
 
     return () => { cancelled = true; };
-  }, [roomId, WAVEFORM_POINTS]);
+  }, [roomId, inviteToken, WAVEFORM_POINTS]);
 
   const handleStartBlank = () => { setTracks([]); setShowWelcome(false); };
 
@@ -1951,7 +1959,7 @@ export default function Studio() {
       {/* Main Workspace */}
       <div className="flex-1 overflow-auto bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
         {/* Jam Room Floating Overlay */}
-        <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} />
+        <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} roomId={roomId} />
         {/* Unified scroll — left pane + waveforms move together in one container */}
         <div className="flex w-fit min-w-full min-h-full">
         {/* Track Headers (Left Sidebar) */}

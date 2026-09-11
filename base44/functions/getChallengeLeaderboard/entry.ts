@@ -1,5 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
+const MAX_LEADERBOARD_SUBMISSIONS = 500;
+const MAX_WEEKLY_VOTES = 5000;
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -20,11 +23,19 @@ Deno.serve(async (req) => {
     weekStart.setDate(weekStart.getDate() - 7);
 
     const [submissions, votes] = await Promise.all([
-      entities.ChallengeSubmission.filter({ challenge_id: challengeId, status: 'approved' }),
-      entities.ChallengeVote.filter({
-        challenge_id: challengeId,
-        created_date: { $gte: weekStart.toISOString() },
-      }),
+      entities.ChallengeSubmission.filter(
+        { challenge_id: challengeId, status: 'approved' },
+        '-vote_count',
+        MAX_LEADERBOARD_SUBMISSIONS,
+      ),
+      entities.ChallengeVote.filter(
+        {
+          challenge_id: challengeId,
+          created_date: { $gte: weekStart.toISOString() },
+        },
+        '-created_date',
+        MAX_WEEKLY_VOTES,
+      ),
     ]);
 
     const counts: Record<string, { all: number; week: number; today: number }> = {};
@@ -44,7 +55,17 @@ Deno.serve(async (req) => {
       if (created >= todayStart) counts[vote.submission_id].today += 1;
     }
 
-    return Response.json({ success: true, counts }, { headers: { 'Cache-Control': 'public, max-age=15' } });
+    return Response.json(
+      {
+        success: true,
+        counts,
+        truncated: {
+          submissions: submissions.length >= MAX_LEADERBOARD_SUBMISSIONS,
+          weeklyVotes: votes.length >= MAX_WEEKLY_VOTES,
+        },
+      },
+      { headers: { 'Cache-Control': 'public, max-age=15' } },
+    );
   } catch (error) {
     console.error('getChallengeLeaderboard error:', error);
     return Response.json({ error: error?.message || 'Could not load leaderboard' }, { status: 500 });

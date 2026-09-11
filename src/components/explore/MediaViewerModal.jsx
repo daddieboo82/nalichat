@@ -10,6 +10,7 @@ import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import ReportContentDialog from "@/components/ReportContentDialog";
 import { copyToClipboard } from "@/lib/clipboard";
 import { useSubscription } from "@/hooks/useSubscription";
+import { recordArtPostPlay } from "@/lib/trackAnalytics";
 import { base44 } from "@/api/base44Client";
 
 export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlaylist, currentUser }) {
@@ -312,7 +313,10 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
                    onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
                    onEnded={() => setIsPlaying(false)}
-                   onPlay={() => setIsPlaying(true)}
+                   onPlay={() => {
+                     setIsPlaying(true);
+                     void recordArtPostPlay(post.id);
+                   }}
                    onPause={() => setIsPlaying(false)}
                    controlsList="nodownload nofullscreen noremoteplayback"
                  />

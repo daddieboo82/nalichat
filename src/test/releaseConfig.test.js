@@ -155,6 +155,13 @@ describe('release configuration', () => {
   });
 
 
+  it('derives outbound sender identity from the authenticated user', async () => {
+    const externalMessage = await readText('base44/functions/sendExternalMessage/entry.ts');
+    expect(externalMessage).not.toContain('senderName');
+    expect(externalMessage).toContain("user.display_name || user.full_name");
+  });
+
+
   it('keeps workflow notifications authoritative and idempotent', async () => {
     const messageNotify = await readText('base44/functions/notifyOnMessage/entry.ts');
     const fileNotify = await readText('base44/functions/notifyOnFileUpload/entry.ts');

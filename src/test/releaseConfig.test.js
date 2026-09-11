@@ -250,6 +250,17 @@ describe('release configuration', () => {
   });
 
 
+  it('keeps project invites rate-limited and acceptance idempotent', async () => {
+    const createInvite = await readText('base44/functions/createProjectInvite/entry.ts');
+    const acceptInvite = await readText('base44/functions/acceptProjectInvite/entry.ts');
+
+    expect(createInvite).toContain("'project_invite_create'");
+    expect(createInvite).toContain('status: 429');
+    expect(acceptInvite).toContain('already_member: true');
+    expect(acceptInvite).toContain('(project.collaborator_ids || []).includes(user.id)');
+  });
+
+
   it('preserves collaboration integrity when deleting an account', async () => {
     const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
 

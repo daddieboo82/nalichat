@@ -5,7 +5,7 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    // Require authentication — this endpoint fetches arbitrary URLs server-side
+    // Require authentication before resolving any stored media.
     const user = await base44.auth.me();
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -30,15 +30,30 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { audioUrl, loudnessTarget, format, bitDepth, sampleRate } = await req.json();
+    const { postId, loudnessTarget, format, bitDepth, sampleRate } = await req.json();
 
-    if (!audioUrl) {
-      return Response.json({ error: 'Audio URL required' }, { status: 400 });
+    if (!postId) {
+      return Response.json({ error: 'postId is required' }, { status: 400 });
     }
 
-    // Validate audioUrl to prevent SSRF — only allow https URLs from trusted storage hosts
+    const post = await base44.asServiceRole.entities.ArtPost.get(postId);
+    if (!post) {
+      return Response.json({ error: 'Track not found' }, { status: 404 });
+    }
+    if (post.creator_id !== user.id) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const audioUrl = String(post.file_url || '').trim();
+    if (!audioUrl) {
+      return Response.json({ error: 'Track has no audio file' }, { status: 400 });
+    }
+
+    // Fetch only the URL stored on the authorized ArtPost record. New posts are
+    // restricted to trusted storage hosts by createArtPost, and legacy records
+    // still receive a strict host check here before any server-side request.
     const ALLOWED_HOSTS = [
-      'storage.googleapis.com',        // Base44 file storage
+      'storage.googleapis.com',
       'base44-user-files.s3.amazonaws.com',
       'base44-user-files.s3.us-east-1.amazonaws.com',
       'files.base44.com',
@@ -48,21 +63,13 @@ Deno.serve(async (req) => {
     try {
       parsedUrl = new URL(audioUrl);
     } catch {
-      return Response.json({ error: 'Invalid audio URL' }, { status: 400 });
+      return Response.json({ error: 'Stored audio URL is invalid' }, { status: 400 });
     }
-    if (parsedUrl.protocol !== 'https:') {
-      return Response.json({ error: 'Audio URL must use https' }, { status: 400 });
-    }
-    // Block internal/private IP literals and metadata endpoints
     const hostname = parsedUrl.hostname.toLowerCase();
-    if (hostname === 'localhost' || hostname === 'metadata.google.internal' ||
-        /^(10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|127\.|0\.)/.test(hostname) ||
-        hostname.endsWith('.internal') || hostname.endsWith('.local')) {
-      return Response.json({ error: 'Audio URL host not allowed' }, { status: 400 });
-    }
-    const isAllowed = ALLOWED_HOSTS.some(h => hostname === h || hostname.endsWith('.' + h));
+    const isAllowed = parsedUrl.protocol === 'https:' &&
+      ALLOWED_HOSTS.some((host) => hostname === host || hostname.endsWith('.' + host));
     if (!isAllowed) {
-      return Response.json({ error: 'Audio URL host not allowed' }, { status: 400 });
+      return Response.json({ error: 'Stored audio host is not allowed' }, { status: 400 });
     }
 
     // Fetch audio file

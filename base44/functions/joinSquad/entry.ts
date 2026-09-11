@@ -51,8 +51,8 @@ Deno.serve(async (req) => {
     }
 
     const [asA, asB] = await Promise.all([
-      entities.Squad.filter({ member_a_id: user.id }),
-      entities.Squad.filter({ member_b_id: user.id }),
+      entities.Squad.filter({ member_a_id: user.id }, '-created_date', 100),
+      entities.Squad.filter({ member_b_id: user.id }, '-created_date', 100),
     ]);
     if ([...asA, ...asB].some((candidate) => candidate.status !== 'ended')) {
       return Response.json({ error: 'You already have an active or pending squad.' }, { status: 409 });

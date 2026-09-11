@@ -14,4 +14,17 @@ describe('squad status lookup bounds', () => {
     expect(source).toContain("Squad.filter({ member_b_id: user.id, status: 'active' }, '-created_date', 1)");
     expect(source).toMatch(/SquadProgress\.filter\([\s\S]*week_key: key[\s\S]*'-created_date',[\s\S]*1/);
   });
+
+  it('bounds squad membership scans in create, join, and activity paths', async () => {
+    const create = await readText('base44/functions/createSquadInvite/entry.ts');
+    const join = await readText('base44/functions/joinSquad/entry.ts');
+    const activity = await readText('base44/functions/recordSquadActivity/entry.ts');
+
+    expect(create).toContain("Squad.filter({ member_a_id: user.id }, '-created_date', 100)");
+    expect(create).toContain("Squad.filter({ member_b_id: user.id }, '-created_date', 100)");
+    expect(join).toContain("Squad.filter({ member_a_id: user.id }, '-created_date', 100)");
+    expect(join).toContain("Squad.filter({ member_b_id: user.id }, '-created_date', 100)");
+    expect(activity).toContain("Squad.filter({ member_a_id: userId, status: 'active' }, '-created_date', 1)");
+    expect(activity).toContain("Squad.filter({ member_b_id: userId, status: 'active' }, '-created_date', 1)");
+  });
 });

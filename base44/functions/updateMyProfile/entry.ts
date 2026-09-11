@@ -105,8 +105,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No supported profile fields supplied' }, { status: 400 });
     }
 
-    const updated = await base44.asServiceRole.entities.User.update(user.id, patch);
-    return Response.json({ success: true, user: updated });
+    await base44.asServiceRole.entities.User.update(user.id, patch);
+    return Response.json({ success: true });
   } catch (error) {
     console.error('updateMyProfile error:', error);
     return Response.json({ error: error?.message || 'Profile update failed' }, { status: 500 });

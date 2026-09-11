@@ -211,6 +211,22 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
     return Response.json({ error: 'Invalid client_message_key' }, { status: 400 });
   }
 
+  let clientSendLockId: string | null = null;
+  if (clientMessageKey) {
+    const messageId = await deterministicMessageId(user.id, conversationId, clientMessageKey);
+    clientSendLockId = await acquireMessageMutationLock(
+      base44.asServiceRole.entities,
+      messageId,
+    );
+    if (!clientSendLockId) {
+      return Response.json(
+        { error: 'Message send is already in progress. Please retry.' },
+        { status: 409 },
+      );
+    }
+  }
+
+  try {
   const conversation = await base44.asServiceRole.entities.Conversation.get(conversationId);
   if (!conversation || !Array.isArray(conversation.participant_ids) || !conversation.participant_ids.includes(user.id)) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -467,6 +483,9 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
   return Response.json({ success: true, message, duplicate: !createdNew });
   } finally {
     await releaseMessageMutationLock(base44.asServiceRole.entities, threadLockId);
+  }
+  } finally {
+    await releaseMessageMutationLock(base44.asServiceRole.entities, clientSendLockId);
   }
 }
 

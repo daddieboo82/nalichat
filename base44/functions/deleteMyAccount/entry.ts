@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
     // Cancel live Stripe billing before deleting account access. If cancellation
     // fails, abort deletion so the user is never stranded without a billing
     // portal while an external subscription can continue charging.
+    const subscriptions = await entities.Subscription.filter({ user_id: user.id });
     for (const subscription of subscriptions) {
       if (
         subscription.provider === 'stripe'

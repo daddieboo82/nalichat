@@ -735,6 +735,13 @@ describe('release configuration', () => {
     expect(manage).toContain('if (user.is_banned && !otherIsAdmin)');
   });
 
+  it('refreshes public users without subscribing to raw User events', async () => {
+    const messages = await readText('src/pages/Messages.jsx');
+    expect(messages).not.toContain('entities.User.subscribe');
+    expect(messages).toContain("functions.invoke('listPublicUsers'");
+    expect(messages).toContain('refetchInterval: 30_000');
+  });
+
   it('enforces moderation state and cost bounds on outbound messaging', async () => {
     const external = await readText('base44/functions/sendExternalMessage/entry.ts');
     const invite = await readText('base44/functions/sendSmsInvite/entry.ts');

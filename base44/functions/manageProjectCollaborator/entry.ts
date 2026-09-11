@@ -51,6 +51,12 @@ Deno.serve(async (req) => {
     const editorIds = new Set(project.editor_ids || []);
     const roles = { ...(project.collaborator_roles || {}) };
 
+    // This endpoint manages existing collaborators only. New collaborators must
+    // join through an invite/consent flow rather than being added by arbitrary ID.
+    if (action === 'set_role' && !collaboratorIds.has(userId)) {
+      return Response.json({ error: 'User is not an existing collaborator' }, { status: 409 });
+    }
+
     if (action === 'remove') {
       collaboratorIds.delete(userId);
       editorIds.delete(userId);

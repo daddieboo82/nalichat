@@ -33,6 +33,20 @@ export default async function(req) {
       return Response.json({ error: 'Voting is not open for this challenge.' }, { status: 409 });
     }
 
+    const now = Date.now();
+    const submissionEnd = challenge.submission_end_date
+      ? new Date(challenge.submission_end_date).getTime()
+      : null;
+    const votingEnd = challenge.voting_end_date
+      ? new Date(challenge.voting_end_date).getTime()
+      : null;
+    if (submissionEnd && Number.isFinite(submissionEnd) && submissionEnd > now) {
+      return Response.json({ error: 'Voting has not opened yet.' }, { status: 409 });
+    }
+    if (votingEnd && Number.isFinite(votingEnd) && votingEnd < now) {
+      return Response.json({ error: 'Voting has ended.' }, { status: 409 });
+    }
+
     if (submission.producer_id === user.id) {
       return Response.json({ error: "You can't vote on your own submission." }, { status: 403 });
     }

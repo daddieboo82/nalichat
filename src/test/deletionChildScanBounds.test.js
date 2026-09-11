@@ -20,4 +20,14 @@ describe('deletion child scan bounds', () => {
     expect(source).toContain('deletedVotes += 1');
     expect(source).toContain('deletedComments += 1');
   });
+
+  it('batches full challenge deletion cascades', async () => {
+    const source = await readText('base44/functions/deleteChallenge/entry.ts');
+    expect(source).toContain('const DELETE_BATCH_SIZE = 200;');
+    expect(source).toMatch(/ChallengeVote\.filter\([\s\S]*challenge_id: challenge\.id[\s\S]*DELETE_BATCH_SIZE/);
+    expect(source).toMatch(/ChallengeSubmission\.filter\([\s\S]*challenge_id: challenge\.id[\s\S]*DELETE_BATCH_SIZE/);
+    expect(source).toMatch(/TrackComment\.filter\([\s\S]*parent_type: 'challenge_submission'[\s\S]*DELETE_BATCH_SIZE/);
+    expect(source).toContain('deleted_submissions: deletedSubmissions');
+    expect(source).toContain('deleted_votes: deletedVotes');
+  });
 });

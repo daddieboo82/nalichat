@@ -101,6 +101,18 @@
           }
         }
       }
+    },
+    "completed_by_id": {
+      "type": "string",
+      "description": "Server-managed ID of the user who most recently completed the milestone.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [

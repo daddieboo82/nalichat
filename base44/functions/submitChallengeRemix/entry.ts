@@ -3,6 +3,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 const MAX_REMIX_BYTES = 100 * 1024 * 1024;
 const ALLOWED_SOURCE_TYPES = new Set(['nalichat_studio', 'external_upload', 'link_import']);
 const ALLOWED_FORMATS = new Set(['mp3', 'wav']);
+const TRUSTED_UPLOAD_HOSTS = [
+  'storage.googleapis.com',
+  'base44-user-files.s3.amazonaws.com',
+  'base44-user-files.s3.us-east-1.amazonaws.com',
+  'files.base44.com',
+  'cdn.base44.com',
+];
 
 function safeText(value: unknown, max: number): string {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
@@ -12,6 +19,19 @@ function validHttpsUrl(value: string): boolean {
   try {
     const url = new URL(value);
     return url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function trustedUploadUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') return false;
+    const host = url.hostname.toLowerCase();
+    if (host === 'localhost' || host.endsWith('.internal') || host.endsWith('.local')) return false;
+    if (/^(10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host)) return false;
+    return TRUSTED_UPLOAD_HOSTS.some((allowed) => host === allowed || host.endsWith('.' + allowed));
   } catch {
     return false;
   }
@@ -70,7 +90,7 @@ export default async function(req) {
       storedExternalUrl = null;
       storedFormat = null;
     } else if (sourceType === 'external_upload') {
-      if (!remixFileUrl || !validHttpsUrl(remixFileUrl) || !ALLOWED_FORMATS.has(fileFormat)) {
+      if (!remixFileUrl || !trustedUploadUrl(remixFileUrl) || !ALLOWED_FORMATS.has(fileFormat)) {
         return Response.json({ error: 'Uploaded remix must be an MP3 or WAV file.' }, { status: 400 });
       }
 

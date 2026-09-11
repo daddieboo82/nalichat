@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'email is required' }, { status: 400 });
     }
 
-    const users = await base44.asServiceRole.entities.User.filter({ email });
+    const users = await base44.asServiceRole.entities.User.filter({ email }, '-created_date', 1);
     const target = users[0];
     if (!target) {
       return Response.json({ error: `No user found with email ${email}` }, { status: 404 });
@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
     await base44.asServiceRole.entities.User.update(target.id, { role: 'admin' });
 
-    const updated = await base44.asServiceRole.entities.User.filter({ email });
+    const updated = await base44.asServiceRole.entities.User.filter({ email }, '-created_date', 1);
     return Response.json({ success: true, email, role: updated[0]?.role });
   } catch (error) {
     console.error('makeAdmin error:', error.message);

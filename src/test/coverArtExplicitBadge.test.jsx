@@ -33,6 +33,9 @@ const mockToast = vi.hoisted(() => ({
 }));
 
 vi.mock('@/api/base44Client', () => ({ base44: mockBase44 }));
+vi.mock('@/hooks/useSubscription', () => ({
+  useSubscription: () => ({ hasEntitlement: () => true, isLoading: false }),
+}));
 vi.mock('sonner', () => ({ toast: mockToast }));
 
 const renderWithProviders = (ui) => {

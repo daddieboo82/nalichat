@@ -17,6 +17,18 @@ const typeIcon = {
   message: MessageCircle,
 };
 
+function safeNotificationPath(value) {
+  if (!value || typeof value !== "string") return null;
+  try {
+    const parsed = new URL(value, window.location.origin);
+    if (parsed.origin !== window.location.origin) return null;
+    if (!["http:", "https:"].includes(parsed.protocol)) return null;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function NotificationBell({ direction = "down" }) {
   const [user, setUser] = useState(null);
   const [items, setItems] = useState([]);
@@ -183,8 +195,9 @@ export default function NotificationBell({ direction = "down" }) {
                     </div>
                   </div>
                 );
-                return n.link ? (
-                  <Link key={n.id} to={n.link} onClick={() => setOpen(false)}>{inner}</Link>
+                const safeLink = safeNotificationPath(n.link);
+                return safeLink ? (
+                  <Link key={n.id} to={safeLink} onClick={() => setOpen(false)}>{inner}</Link>
                 ) : (
                   <div key={n.id}>{inner}</div>
                 );

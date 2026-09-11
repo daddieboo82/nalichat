@@ -40,8 +40,8 @@ function happenedThisWeek(value: unknown) {
 
 async function activeSquad(entities: any, userId: string) {
   const [asA, asB] = await Promise.all([
-    entities.Squad.filter({ member_a_id: userId, status: 'active' }),
-    entities.Squad.filter({ member_b_id: userId, status: 'active' }),
+    entities.Squad.filter({ member_a_id: userId, status: 'active' }, '-created_date', 1),
+    entities.Squad.filter({ member_b_id: userId, status: 'active' }, '-created_date', 1),
   ]);
   return asA[0] || asB[0] || null;
 }

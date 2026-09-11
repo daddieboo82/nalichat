@@ -27,6 +27,25 @@ describe('release configuration', () => {
     }
   });
 
+  it('bounds privileged role changes and challenge host mutations', async () => {
+    const cases = [
+      ['base44/functions/makeAdmin/entry.ts', "'admin_promote_user'", 30, 'caller'],
+      ['base44/functions/migrateUserRoles/entry.ts', "'admin_role_migration'", 2, 'caller'],
+      ['base44/functions/updateChallengeStatus/entry.ts', "'challenge_status_mutation'", 120, 'user'],
+      ['base44/functions/deleteChallenge/entry.ts', "'challenge_delete'", 30, 'user'],
+    ];
+
+    for (const [path, key, limit, actor] of cases) {
+      const source = await readText(path);
+      expect(source).toContain('consumeHourlyLimit');
+      expect(source).toContain(key);
+      expect(source).toContain(`${key},\n      ${limit},`);
+      expect(source).toContain(`${actor}.is_banned`);
+      expect(source).toContain(`${actor}.timeout_until`);
+      expect(source).toContain('status: 429');
+    }
+  });
+
   it('rate-limits expensive admin fan-out and full-scan operations', async () => {
     const cases = [
       ['base44/functions/naliHealthCheck/entry.ts', "'admin_health_check'", 4],

@@ -6,6 +6,10 @@ async function readJson(path) {
   return JSON.parse(await readFile(new URL(`../../${path}`, import.meta.url), 'utf8'));
 }
 
+async function readText(path) {
+  return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
+}
+
 describe('release configuration', () => {
   it('targets the current Android API required by the release pipeline', async () => {
     const manifest = await readJson('src/twa-manifest.json');
@@ -97,6 +101,30 @@ describe('release configuration', () => {
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
     expect(submission.properties.vote_count.rls?.write?.user_condition?.role).toBe('admin');
     expect(submission.properties.status.rls?.write?.user_condition?.role).toBe('admin');
+  });
+
+
+  it('keeps AI and service-role actions within user and subscription boundaries', async () => {
+    const tags = await readText('base44/functions/suggestTrackTags/entry.ts');
+    expect(tags).toContain('await base44.auth.me()');
+    expect(tags).toContain('canEditTrack');
+    expect(tags).toContain('track.edit_user_ids');
+
+    const master = await readText('base44/functions/aiMasterSession/entry.ts');
+    expect(master).toContain("entitlements['ai.standard']");
+    expect(master).toContain("entitlements['ai.best_model']");
+    expect(master).toContain("from '../../shared/subscription.ts'");
+
+    const viral = await readText('base44/functions/generateViralConcepts/entry.ts');
+    expect(viral).toContain('const xpAwarded = priorCount === 0 ? 50 : 0');
+    expect(viral).toContain('xp_awarded: xpAwarded');
+
+    const agent = await readJson('base44/agents/studio_ai.jsonc');
+    const serializedTools = JSON.stringify(agent.tool_configs);
+    expect(serializedTools).not.toContain('"function_name":"makeAdmin"');
+    expect(serializedTools).not.toContain('"function_name":"moderateContent"');
+    expect(serializedTools).not.toContain('"entity_name":"Subscription"');
+    expect(serializedTools).not.toContain('"entity_name":"Violation"');
   });
 
   it('keeps the PWA manifest scoped to the serving origin', async () => {

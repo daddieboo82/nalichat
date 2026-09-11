@@ -114,6 +114,19 @@
         }
       }
     },
+    "share_token_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Expiry timestamp for the current public share token",
+      "rls": {
+        "read": false,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
     "edit_user_ids": {
       "type": "array",
       "items": {

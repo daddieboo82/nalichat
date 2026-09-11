@@ -308,7 +308,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate">{room.name}</p>
                   <p className="text-xs text-accent font-medium mt-0.5 flex items-center gap-1">
-                    Join public room • {((room.name?.length * 12345) % 8000 + 1200).toLocaleString()} active members
+                    Join public room
                   </p>
                 </div>
               </button>

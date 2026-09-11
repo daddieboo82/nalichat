@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+const MAX_TRACK_VERSION_BYTES = 100 * 1024 * 1024;
+
 const TRUSTED_MEDIA_HOSTS = [
   'storage.googleapis.com',
   'base44-user-files.s3.amazonaws.com',
@@ -8,6 +10,37 @@ const TRUSTED_MEDIA_HOSTS = [
   'files.base44.com',
   'cdn.base44.com',
 ];
+
+async function resolveStoredFileSize(url: string): Promise<number | null> {
+  try {
+    const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+    if (head.ok) {
+      const length = Number(head.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0) return length;
+    }
+  } catch {}
+
+  try {
+    const probe = await fetch(url, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-0' },
+      redirect: 'manual',
+    });
+    if (probe.ok || probe.status === 206) {
+      const range = probe.headers.get('content-range') || '';
+      const match = range.match(/\/(\d+)$/);
+      if (match) {
+        const total = Number(match[1]);
+        if (Number.isFinite(total) && total >= 0) return total;
+      }
+      const length = Number(probe.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0 && probe.status !== 206) return length;
+    }
+    try { await probe.body?.cancel(); } catch {}
+  } catch {}
+
+  return null;
+}
 
 function cleanUploadedMediaUrl(value: unknown) {
   const raw = String(value || '').trim();
@@ -37,6 +70,10 @@ async function versionId(trackId: string, versionNumber: number) {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -49,18 +86,42 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    if (!body?.track_id || !body?.project_id) {
+    if (
+      typeof body?.track_id !== 'string'
+      || typeof body?.project_id !== 'string'
+      || !body.track_id.trim()
+      || !body.project_id.trim()
+      || body.track_id.length > 200
+      || body.project_id.length > 200
+    ) {
       return Response.json({ error: 'track_id and project_id are required' }, { status: 400 });
     }
+    if (body?.label != null && typeof body.label !== 'string') {
+      return Response.json({ error: 'label must be a string' }, { status: 400 });
+    }
+    if (typeof body?.label === 'string' && body.label.length > 200) {
+      return Response.json({ error: 'label must be 200 characters or fewer' }, { status: 413 });
+    }
+    if (body?.file_url != null && typeof body.file_url !== 'string') {
+      return Response.json({ error: 'file_url must be a string' }, { status: 400 });
+    }
+    if (body?.muted != null && typeof body.muted !== 'boolean') {
+      return Response.json({ error: 'muted must be a boolean' }, { status: 400 });
+    }
+    if (body?.solo != null && typeof body.solo !== 'boolean') {
+      return Response.json({ error: 'solo must be a boolean' }, { status: 400 });
+    }
 
+    const trackId = body.track_id.trim();
+    const projectId = body.project_id.trim();
     const entities = base44.asServiceRole.entities;
     const rate = await consumeHourlyLimit(entities, user.id, 'track_version_create', 120);
     if (!rate.allowed) {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
     const [project, track] = await Promise.all([
-      entities.Project.get(body.project_id),
-      entities.Track.get(body.track_id),
+      entities.Project.get(projectId),
+      entities.Track.get(trackId),
     ]);
     if (!project || !track || track.project_id !== project.id) {
       return Response.json({ error: 'Project/track not found' }, { status: 404 });
@@ -86,6 +147,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Track version media must come from trusted upload storage' }, { status: 400 });
     }
 
+    const versionFileUrl = inheritedFileUrl || fallbackFileUrl;
+    if (versionFileUrl) {
+      const storedSize = await resolveStoredFileSize(versionFileUrl);
+      if (storedSize === null) {
+        return Response.json({ error: 'Could not verify track version media size' }, { status: 400 });
+      }
+      if (storedSize <= 0 || storedSize > MAX_TRACK_VERSION_BYTES) {
+        return Response.json({ error: 'Track version media must be 100MB or smaller' }, { status: 413 });
+      }
+    }
+
     let version = null;
     for (let attempt = 0; attempt < 5 && !version; attempt += 1) {
       const id = await versionId(track.id, nextNum);
@@ -95,8 +167,10 @@ Deno.serve(async (req) => {
           track_id: track.id,
           project_id: project.id,
           version_number: nextNum,
-          label: String(body.label || `Version ${nextNum}`).slice(0, 200),
-          file_url: inheritedFileUrl || fallbackFileUrl,
+          label: typeof body?.label === 'string' && body.label.trim()
+            ? body.label.trim()
+            : `Version ${nextNum}`,
+          file_url: versionFileUrl,
           volume,
           pan,
           muted: body.muted ?? track.muted,

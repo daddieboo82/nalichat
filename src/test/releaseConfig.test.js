@@ -809,6 +809,22 @@ describe('release configuration', () => {
     expect(agent.instructions).toContain('Do not perform destructive actions from conversational AI');
   });
 
+  it('rate-limits high-volume user content creation endpoints', async () => {
+    const cases = [
+      ['base44/functions/createProject/entry.ts', "'project_create'"],
+      ['base44/functions/createCollaborativeTrack/entry.ts', "'track_create'"],
+      ['base44/functions/createArtPost/entry.ts', "'art_post_create'"],
+      ['base44/functions/createSharedFileRecord/entry.ts', "'shared_file_create'"],
+    ];
+
+    for (const [path, bucket] of cases) {
+      const source = await readText(path);
+      expect(source).toContain('consumeHourlyLimit');
+      expect(source).toContain(bucket);
+      expect(source).toContain('status: 429');
+    }
+  });
+
   it('avoids raw realtime payload subscriptions for chat and presence data', async () => {
     const messages = await readText('src/pages/Messages.jsx');
     const typing = await readText('src/hooks/useTypingIndicator.js');

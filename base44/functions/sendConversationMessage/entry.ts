@@ -142,25 +142,29 @@ ${text}
 
 async function findExistingMessage(base44: any, userId: string, conversationId: string, clientMessageKey: string) {
   if (!clientMessageKey) return null;
-  const matches = await base44.asServiceRole.entities.Message.filter({
-    sender_id: userId,
-    conversation_id: conversationId,
-    client_message_key: clientMessageKey,
-  });
-  if (!matches?.length) return null;
-  return [...matches].sort((a: any, b: any) => {
-    const byDate = new Date(a.created_date || 0).getTime() - new Date(b.created_date || 0).getTime();
-    return byDate || String(a.id).localeCompare(String(b.id));
-  })[0];
+  const matches = await base44.asServiceRole.entities.Message.filter(
+    {
+      sender_id: userId,
+      conversation_id: conversationId,
+      client_message_key: clientMessageKey,
+    },
+    'created_date',
+    1,
+  );
+  return matches?.[0] || null;
 }
 
 async function findModerationReplay(base44: any, user: any, conversationId: string, clientMessageKey: string) {
   if (!clientMessageKey) return null;
-  const matches = await base44.asServiceRole.entities.Violation.filter({
-    user_id: user.id,
-    conversation_id: conversationId,
-    client_message_key: clientMessageKey,
-  });
+  const matches = await base44.asServiceRole.entities.Violation.filter(
+    {
+      user_id: user.id,
+      conversation_id: conversationId,
+      client_message_key: clientMessageKey,
+    },
+    'created_date',
+    1,
+  );
   const violation = matches?.[0];
   if (!violation) return null;
   return {

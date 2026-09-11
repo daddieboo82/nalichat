@@ -195,8 +195,10 @@ export default function Messages() {
         base44.auth.me().then(setCurrentUser).catch(() => {});
       }
     },
-    onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
+    onSettled: async (_data, _error, variables) => {
+      if (variables?.conversationId) {
+        await queryClient.invalidateQueries({ queryKey: ["messages", variables.conversationId] });
+      }
       await queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
@@ -528,7 +530,7 @@ export default function Messages() {
                 sendMessage.mutate({ ...data, conversation_id: selectedConvId });
               }}
               onEditMessage={async (id, text) => {
-                const result = await editMessage.mutateAsync({ id, text });
+                const result = await editMessage.mutateAsync({ id, text, conversationId: selectedConvId });
                 if (result?._flagged) throw new Error("moderated");
                 return result;
               }}

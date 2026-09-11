@@ -12,6 +12,7 @@ export function useStudioPresence(roomId = 'studio-main') {
   const recordRef = useRef(null);
   const activityRef = useRef('In the studio');
   const cancelledRef = useRef(false);
+  const accessRef = useRef([]);
 
   const filterActive = useCallback((rows) => {
     const now = Date.now();
@@ -47,6 +48,7 @@ export function useStudioPresence(roomId = 'studio-main') {
       user_avatar: me.avatar_url || '',
       activity: activityRef.current,
       last_heartbeat: new Date().toISOString(),
+      access_user_ids: accessRef.current,
     };
     try {
       if (currentId) {
@@ -76,6 +78,18 @@ export function useStudioPresence(roomId = 'studio-main') {
         const me = await base44.auth.me();
         if (cancelled || !me) return;
         meRef.current = me;
+        let accessUserIds = [me.id];
+        try {
+          const project = await base44.entities.Project.get(roomId);
+          accessUserIds = Array.from(new Set([
+            project?.owner_id,
+            ...(project?.collaborator_ids || []),
+            me.id,
+          ].filter(Boolean)));
+        } catch {
+          // Local/private rooms remain visible only to the current user.
+        }
+        accessRef.current = accessUserIds;
 
         await writeHeartbeat();
         await refresh();

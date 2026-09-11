@@ -3,6 +3,18 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const PAGE_SIZE = 200;
 
+async function dmConversationId(userA: string, userB: string) {
+  const pair = [userA, userB].sort().join(':');
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(pair),
+  );
+  const hex = Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+  return `dm_${hex}`;
+}
+
 function pruneReactions(reactions: unknown, participantIds: string[]) {
   if (!reactions || typeof reactions !== 'object' || Array.isArray(reactions)) return {};
   const allowed = new Set(participantIds);
@@ -88,6 +100,10 @@ async function deleteConversationRows(entity: any, conversationId: string): Prom
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -125,10 +141,19 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'create_dm' || action === 'create_group') {
+      if (body?.participant_ids != null && !Array.isArray(body.participant_ids)) {
+        return Response.json({ error: 'participant_ids must be an array' }, { status: 400 });
+      }
       const rawParticipantIds = Array.isArray(body?.participant_ids) ? body.participant_ids : [];
+      if (rawParticipantIds.some((id: unknown) => typeof id !== 'string')) {
+        return Response.json({ error: 'participant_ids must contain only strings' }, { status: 400 });
+      }
       const requestedIds = rawParticipantIds
-        .map((id: unknown) => String(id || '').trim())
+        .map((id: string) => id.trim())
         .filter(Boolean);
+      if (requestedIds.some((id: string) => id.length > 200)) {
+        return Response.json({ error: 'Invalid participant id' }, { status: 400 });
+      }
       const participantIds = Array.from(new Set([user.id, ...requestedIds]));
 
       if (action === 'create_dm') {
@@ -163,20 +188,42 @@ Deno.serve(async (req) => {
         });
         if (existing) return Response.json({ success: true, conversation: existing });
 
-        const conversation = await entities.Conversation.create({
-          type: 'dm',
-          is_public: false,
-          participant_ids: participantIds,
-        });
-        return Response.json({ success: true, conversation });
+        const id = await dmConversationId(user.id, otherUserId);
+        try {
+          const conversation = await entities.Conversation.create({
+            id,
+            type: 'dm',
+            is_public: false,
+            participant_ids: participantIds,
+          });
+          return Response.json({ success: true, conversation });
+        } catch (createError) {
+          const raced = await entities.Conversation.get(id).catch(() => null);
+          const racedIds = Array.isArray(raced?.participant_ids) ? raced.participant_ids : [];
+          if (
+            raced?.type === 'dm'
+            && racedIds.length === 2
+            && racedIds.includes(user.id)
+            && racedIds.includes(otherUserId)
+          ) {
+            return Response.json({ success: true, conversation: raced, duplicate: true });
+          }
+          throw createError;
+        }
       }
 
       if (participantIds.length < 2 || participantIds.length > 100) {
         return Response.json({ error: 'Groups require 2 to 100 participants' }, { status: 400 });
       }
 
-      const name = String(body?.name || '').trim().slice(0, 120);
+      if (body?.name != null && typeof body.name !== 'string') {
+        return Response.json({ error: 'Group name must be a string' }, { status: 400 });
+      }
+      const name = (body?.name || '').trim();
       if (!name) return Response.json({ error: 'Group name is required' }, { status: 400 });
+      if (name.length > 120) {
+        return Response.json({ error: 'Group name must be 120 characters or fewer' }, { status: 413 });
+      }
 
       const uniqueOtherIds = participantIds.filter((id: string) => id !== user.id);
       const resolvedUsers = await Promise.all(

@@ -53,6 +53,26 @@
     "views": {
       "type": "number",
       "default": 0
+    },
+    "access_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Users allowed to read this file inside NaliChat"
+    },
+    "share_token_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of the current opaque public share token",
+      "rls": {
+        "read": false,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [
@@ -64,7 +84,21 @@
     "create": {
       "data.uploader_id": "{{user.id}}"
     },
-    "read": null,
+    "read": {
+      "$or": [
+        {
+          "data.uploader_id": "{{user.id}}"
+        },
+        {
+          "data.access_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
     "update": {
       "data.uploader_id": "{{user.id}}"
     },

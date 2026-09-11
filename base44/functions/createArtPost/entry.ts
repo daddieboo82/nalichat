@@ -47,9 +47,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'A title and trusted uploaded media URL are required' }, { status: 400 });
     }
 
-    const imageUrl = body?.image_url ? cleanHttpsUrl(body.image_url) : '';
+    const imageUrl = body?.image_url ? cleanHttpsUrl(body.image_url, true) : '';
     if (body?.image_url && !imageUrl) {
-      return Response.json({ error: 'Cover art URL must use HTTPS' }, { status: 400 });
+      return Response.json({ error: 'Cover art must come from trusted upload storage' }, { status: 400 });
     }
 
     const medium = ALLOWED_MEDIA.has(body?.medium) ? body.medium : 'original';

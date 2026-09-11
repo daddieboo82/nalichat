@@ -27,14 +27,24 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'You already have an active or pending squad.' }, { status: 409 });
     }
 
-    // Claim the pending squad. Re-read immediately after the write and only
-    // succeed if this user owns member_b_id; this prevents a stale UI from
-    // reporting success if another join won the race.
-    await entities.Squad.update(squad.id, {
-      member_b_id: user.id,
-      member_b_name: user.display_name || user.full_name || user.email || 'Artist',
-      status: 'active',
-    });
+    // Atomically claim the pending slot so only one concurrent join can win.
+    const claim = await entities.Squad.updateMany(
+      {
+        id: squad.id,
+        status: 'pending',
+        member_b_id: null,
+      },
+      {
+        $set: {
+          member_b_id: user.id,
+          member_b_name: user.display_name || user.full_name || user.email || 'Artist',
+          status: 'active',
+        },
+      },
+    );
+    if (Number(claim?.updated || 0) !== 1) {
+      return Response.json({ error: 'Invite was claimed by another user' }, { status: 409 });
+    }
 
     const claimed = await entities.Squad.get(squad.id);
     if (claimed?.member_b_id !== user.id || claimed?.status !== 'active') {

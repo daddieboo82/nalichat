@@ -104,6 +104,22 @@ describe('release configuration', () => {
     expect(userSchema.properties.trial_claim_id.stripe_checkout_claim_id).toBeUndefined();
   });
 
+  it('bounds public checkout amplification and validates fallback verification early', async () => {
+    const checkout = await readText('base44/functions/createCheckout/entry.ts');
+    const verify = await readText('base44/functions/verifyCheckoutPayment/entry.ts');
+
+    expect(checkout).toContain('MAX_CHECKOUT_ITEMS = 10');
+    expect(checkout).toContain('MAX_TOTAL_DONATION_CENTS = 500_000');
+    expect(checkout).toContain('items.length > MAX_CHECKOUT_ITEMS');
+    expect(checkout).toContain('Checkout total exceeds the allowed limit');
+
+    expect(verify).toContain('/^cs_(?:test_|live_)?[A-Za-z0-9_]{8,255}$/');
+    expect(verify).toContain('/^[0-9a-f]{64}$/');
+    expect(verify.indexOf('normalizedCheckoutId')).toBeLessThan(
+      verify.indexOf('asServiceRole.entities.Base44Purchase.filter'),
+    );
+  });
+
   it('reserves trial eligibility at checkout without consuming it before Stripe starts the trial', async () => {
     const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');
     const webhook = await readText('base44/functions/stripeWebhook/entry.ts');

@@ -112,9 +112,6 @@
     "update": {
       "$or": [
         {
-          "data.uploaded_by": "{{user.id}}"
-        },
-        {
           "data.edit_user_ids": "{{user.id}}"
         },
         {
@@ -126,9 +123,6 @@
     },
     "delete": {
       "$or": [
-        {
-          "data.uploaded_by": "{{user.id}}"
-        },
         {
           "data.edit_user_ids": "{{user.id}}"
         },

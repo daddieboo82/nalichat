@@ -1,8 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,9 +27,9 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const milestoneId = String(body?.milestoneId || '');
-    const action = body?.action;
-    if (!milestoneId || !['toggle', 'delete'].includes(action)) {
+    const milestoneId = typeof body?.milestoneId === 'string' ? body.milestoneId.trim() : '';
+    const action = typeof body?.action === 'string' ? body.action : '';
+    if (!milestoneId || milestoneId.length > 200 || !['toggle', 'delete'].includes(action)) {
       return Response.json({ error: 'Valid milestoneId and action are required' }, { status: 400 });
     }
 
@@ -40,18 +45,32 @@ Deno.serve(async (req) => {
     }
     if (!canEdit) return Response.json({ error: 'Viewer access cannot modify milestones' }, { status: 403 });
 
+    const lockId = await acquireProjectMembershipLock(entities, milestone.project_id);
+    if (!lockId) {
+      return Response.json({ error: 'Project is being updated. Please retry.' }, { status: 409 });
+    }
+
+    try {
+      const currentMilestone = await entities.Milestone.get(milestone.id).catch(() => null);
+      if (!currentMilestone) {
+        return Response.json({ error: 'Milestone not found' }, { status: 404 });
+      }
+
     if (action === 'delete') {
-      await entities.Milestone.delete(milestone.id);
+      await entities.Milestone.delete(currentMilestone.id);
       return Response.json({ success: true, deleted: true });
     }
 
-    const completed = !milestone.completed;
-    const updated = await entities.Milestone.update(milestone.id, {
+    const completed = !currentMilestone.completed;
+    const updated = await entities.Milestone.update(currentMilestone.id, {
       completed,
       completed_at: completed ? new Date().toISOString() : null,
       completed_by_id: completed ? user.id : null,
     });
     return Response.json({ success: true, milestone: updated });
+    } finally {
+      await releaseProjectMembershipLock(entities, lockId);
+    }
   } catch (error) {
     return Response.json({ error: error?.message || 'Milestone mutation failed' }, { status: 500 });
   }

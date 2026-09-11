@@ -17,7 +17,14 @@ Deno.serve(async (req) => {
     const file = await entities.SharedFile.get(fileId);
     if (!file) return Response.json({ error: 'File not found' }, { status: 404 });
 
-    const canEdit = user.role === 'admin' || (file.edit_user_ids || []).includes(user.id);
+    let canEdit = user.role === 'admin';
+    if (!canEdit && file.project_id) {
+      const project = await entities.Project.get(file.project_id).catch(() => null);
+      if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
+      canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
+    } else if (!canEdit) {
+      canEdit = file.uploader_id === user.id || (file.edit_user_ids || []).includes(user.id);
+    }
     if (!canEdit) return Response.json({ error: 'Viewer access cannot modify this file' }, { status: 403 });
 
     if (action === 'delete') {
@@ -52,9 +59,20 @@ Deno.serve(async (req) => {
 
     if (folderId) {
       const folder = await entities.Folder.get(folderId);
-      if (!folder || (!(folder.edit_user_ids || []).includes(user.id) && user.role !== 'admin')) {
+      if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
+
+      let canUseFolder = user.role === 'admin';
+      if (!canUseFolder && folder.project_id) {
+        const targetProject = await entities.Project.get(folder.project_id).catch(() => null);
+        if (!targetProject) return Response.json({ error: 'Project not found' }, { status: 404 });
+        canUseFolder = targetProject.owner_id === user.id || (targetProject.editor_ids || []).includes(user.id);
+      } else if (!canUseFolder) {
+        canUseFolder = folder.owner_id === user.id || (folder.edit_user_ids || []).includes(user.id);
+      }
+      if (!canUseFolder) {
         return Response.json({ error: 'You cannot move files into this folder' }, { status: 403 });
       }
+
       projectId = folder.project_id || null;
       accessUserIds = Array.from(new Set(folder.access_user_ids || []));
       editUserIds = Array.from(new Set(folder.edit_user_ids || []));

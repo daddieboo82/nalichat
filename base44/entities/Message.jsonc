@@ -86,6 +86,18 @@
         "type": "string"
       },
       "description": "User IDs of the conversation's participants at send time, copied from the Conversation — used to scope reads"
+    },
+    "client_message_key": {
+      "type": "string",
+      "description": "Stable client-generated idempotency key scoped to sender and conversation"
+    },
+    "delivery_status": {
+      "type": "string",
+      "enum": [
+        "sent"
+      ],
+      "default": "sent",
+      "description": "Server-confirmed delivery state. Queued/sending/failed remain client-only."
     }
   },
   "required": [

@@ -76,6 +76,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (['join_public', 'leave', 'rename'].includes(action)) {
+      const mutationRate = await consumeHourlyLimit(
+        entities,
+        user.id,
+        'conversation_membership_mutation',
+        120,
+      );
+      if (!mutationRate.allowed) {
+        return Response.json({ error: 'Conversation action rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+    }
+
     if (action === 'create_dm' || action === 'create_group') {
       const rawParticipantIds = Array.isArray(body?.participant_ids) ? body.participant_ids : [];
       const requestedIds = rawParticipantIds

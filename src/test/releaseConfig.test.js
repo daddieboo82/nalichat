@@ -297,6 +297,20 @@ describe('release configuration', () => {
   });
 
 
+  it('keeps payment verification local-first and deletion billing-safe', async () => {
+    const verify = await readText('base44/functions/verifyCheckoutPayment/entry.ts');
+    const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
+    const webhook = await readText('base44/functions/stripeWebhook/entry.ts');
+
+    expect(verify.indexOf('Base44Purchase.filter')).toBeLessThan(verify.indexOf("stripeRequest(`/checkout/sessions/"));
+    expect(verify.indexOf('Invalid purchase verifier')).toBeLessThan(verify.indexOf("stripeRequest(`/checkout/sessions/"));
+    expect(deletion).toContain("'/subscriptions/${encodeURIComponent(subscription.subscription_id)}'");
+    expect(deletion).toContain('Legacy Wix billing must be canceled before account deletion');
+    expect(webhook).toContain('deleted:${metadataUserId}');
+    expect(webhook).toContain('if (isDeletedUserId(userId)) return');
+  });
+
+
   it('preserves collaboration integrity when deleting an account', async () => {
     const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
 

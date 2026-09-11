@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
 
 const MUTABLE_KEYS = new Set([
   'name','volume','pan','muted','solo','color','description','waveform_data','duration'
@@ -21,6 +22,10 @@ async function deleteChildren(entity: any, query: Record<string, unknown>): Prom
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -40,13 +45,19 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const trackId = String(body?.trackId || '');
-    const action = body?.action;
-    if (!trackId || !['update', 'delete'].includes(action)) {
+    const trackId = typeof body?.trackId === 'string' ? body.trackId.trim() : '';
+    const action = typeof body?.action === 'string' ? body.action : '';
+    if (!trackId || trackId.length > 200 || !['update', 'delete'].includes(action)) {
       return Response.json({ error: 'Valid trackId and action are required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
+    const lockId = await acquireTrackLifecycleLock(entities, trackId);
+    if (!lockId) {
+      return Response.json({ error: 'Track is being updated. Please retry.' }, { status: 409 });
+    }
+
+    try {
     const track = await entities.Track.get(trackId);
     if (!track) return Response.json({ error: 'Track not found' }, { status: 404 });
 
@@ -79,12 +90,32 @@ Deno.serve(async (req) => {
     }
 
     if (patch.name !== undefined) {
-      const name = String(patch.name || '').trim().slice(0, 200);
+      if (typeof patch.name !== 'string') {
+        return Response.json({ error: 'Track name must be a string' }, { status: 400 });
+      }
+      const name = patch.name.trim();
       if (!name) return Response.json({ error: 'Track name cannot be empty' }, { status: 400 });
+      if (name.length > 200) {
+        return Response.json({ error: 'Track name must be 200 characters or fewer' }, { status: 413 });
+      }
       patch.name = name;
     }
-    if (patch.description !== undefined) patch.description = String(patch.description || '').slice(0, 1000);
-    if (patch.color !== undefined) patch.color = String(patch.color || '').slice(0, 100);
+    if (patch.description !== undefined) {
+      if (typeof patch.description !== 'string') {
+        return Response.json({ error: 'Track description must be a string' }, { status: 400 });
+      }
+      if (patch.description.length > 1000) {
+        return Response.json({ error: 'Track description must be 1000 characters or fewer' }, { status: 413 });
+      }
+    }
+    if (patch.color !== undefined) {
+      if (typeof patch.color !== 'string') {
+        return Response.json({ error: 'Track color must be a string' }, { status: 400 });
+      }
+      if (patch.color.length > 100) {
+        return Response.json({ error: 'Track color must be 100 characters or fewer' }, { status: 413 });
+      }
+    }
 
     if (patch.volume !== undefined) {
       const volume = Number(patch.volume);
@@ -107,16 +138,26 @@ Deno.serve(async (req) => {
       }
       patch.duration = duration;
     }
-    if (patch.muted !== undefined) patch.muted = Boolean(patch.muted);
-    if (patch.solo !== undefined) patch.solo = Boolean(patch.solo);
+    if (patch.muted !== undefined) {
+      if (typeof patch.muted !== 'boolean') {
+        return Response.json({ error: 'muted must be a boolean' }, { status: 400 });
+      }
+    }
+    if (patch.solo !== undefined) {
+      if (typeof patch.solo !== 'boolean') {
+        return Response.json({ error: 'solo must be a boolean' }, { status: 400 });
+      }
+    }
     if (patch.waveform_data !== undefined) {
       if (!Array.isArray(patch.waveform_data)) {
         return Response.json({ error: 'waveform_data must be an array' }, { status: 400 });
       }
-      patch.waveform_data = patch.waveform_data
-        .map((point: unknown) => Number(point))
-        .filter((point: number) => Number.isFinite(point) && point >= -1 && point <= 1)
-        .slice(0, 2000);
+      if (patch.waveform_data.length > 2000) {
+        return Response.json({ error: 'waveform_data supports at most 2000 points' }, { status: 413 });
+      }
+      if (patch.waveform_data.some((point: unknown) => typeof point !== 'number' || !Number.isFinite(point) || point < -1 || point > 1)) {
+        return Response.json({ error: 'waveform_data points must be numbers between -1 and 1' }, { status: 400 });
+      }
     }
 
     if (Object.keys(patch).length === 0) {
@@ -125,6 +166,9 @@ Deno.serve(async (req) => {
 
     const updated = await entities.Track.update(track.id, patch);
     return Response.json({ success: true, track: updated });
+    } finally {
+      await releaseTrackLifecycleLock(entities, lockId);
+    }
   } catch (error) {
     return Response.json({ error: error?.message || 'Track mutation failed' }, { status: 500 });
   }

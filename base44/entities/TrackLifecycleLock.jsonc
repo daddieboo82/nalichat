@@ -1,0 +1,16 @@
+{
+  "name": "TrackLifecycleLock",
+  "type": "object",
+  "properties": {
+    "track_id": { "type": "string" },
+    "claimed_at": { "type": "string", "format": "date-time" },
+    "expires_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["track_id", "claimed_at", "expires_at"],
+  "rls": {
+    "create": { "user_condition": { "role": "admin" } },
+    "read": { "user_condition": { "role": "admin" } },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}

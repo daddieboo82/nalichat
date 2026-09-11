@@ -309,6 +309,22 @@ describe('release configuration', () => {
     expect(signer).toContain("error: 'timed_out'");
   });
 
+  it('verifies call-summary capture size before transcription and moderation-gates expensive actions', async () => {
+    const callSummary = await readText('base44/functions/callSummarySession/entry.ts');
+
+    expect(callSummary).toContain('async function storedCaptureSize');
+    expect(callSummary).toContain('const actualSize = await storedCaptureSize(capture.audio_url)');
+    expect(callSummary).toContain("throw new Error('CAPTURE_SIZE_UNVERIFIED')");
+    expect(callSummary).toContain("throw new Error('CAPTURE_TOO_LARGE')");
+    expect(callSummary.indexOf('storedCaptureSize(capture.audio_url)')).toBeLessThan(
+      callSummary.indexOf('integrations.Core.TranscribeAudio'),
+    );
+
+    expect(callSummary).toContain("['start', 'register_capture', 'generate'].includes(body?.action)");
+    expect(callSummary).toContain("jsonError(403, 'BANNED'");
+    expect(callSummary).toContain("jsonError(403, 'TIMED_OUT'");
+  });
+
   it('bounds Viral Moment transcription and validates premium automation/download media', async () => {
     const viral = await readText('base44/functions/generate-viral-moment/entry.ts');
     const tags = await readText('base44/functions/suggestTrackTags/entry.ts');

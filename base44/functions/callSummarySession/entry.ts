@@ -65,6 +65,33 @@ async function withProviderTimeout<T>(operation: Promise<T>): Promise<T> {
   }
 }
 
+async function storedCaptureSize(url: string): Promise<number | null> {
+  try {
+    const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+    if (head.ok) {
+      const length = Number(head.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0) return length;
+    }
+  } catch {}
+
+  try {
+    const probe = await fetch(url, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-0' },
+      redirect: 'manual',
+    });
+    if (probe.ok || probe.status === 206) {
+      const range = probe.headers.get('content-range') || '';
+      const match = range.match(/\/(\d+)$/);
+      if (match) return Number(match[1]);
+      const length = Number(probe.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0 && probe.status !== 206) return length;
+    }
+    try { await probe.body?.cancel(); } catch {}
+  } catch {}
+  return null;
+}
+
 async function loadSession(entities: any, sessionId: unknown, callId: unknown) {
   if (typeof sessionId === 'string' && sessionId) {
     return entities.CallSummarySession.get(sessionId);
@@ -583,9 +610,17 @@ async function generateSummary(base44: any, user: any, body: any) {
         const orderedCaptures = canonicalParticipantIds(session.participant_ids)
           .map((participantId) => captures.find((capture: any) => capture.participant_id === participantId));
         for (let index = 0; index < orderedCaptures.length; index += 1) {
+          const capture = orderedCaptures[index];
+          const actualSize = await storedCaptureSize(capture.audio_url);
+          if (actualSize === null) {
+            throw new Error('CAPTURE_SIZE_UNVERIFIED');
+          }
+          if (actualSize <= 0 || actualSize > MAX_CAPTURE_BYTES) {
+            throw new Error('CAPTURE_TOO_LARGE');
+          }
           const transcriptResult = await withProviderTimeout<unknown>(
             base44.asServiceRole.integrations.Core.TranscribeAudio({
-              audio_url: orderedCaptures[index].audio_url,
+              audio_url: capture.audio_url,
             }),
           );
           const text = transcriptionText(transcriptResult);
@@ -710,6 +745,17 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return jsonError(401, 'UNAUTHORIZED', 'Unauthorized');
     const body = await req.json();
+    const moderatedAction = ['start', 'register_capture', 'generate'].includes(body?.action);
+    if (moderatedAction && user.is_banned) {
+      return jsonError(403, 'BANNED', 'This action is unavailable while the account is banned.');
+    }
+    if (
+      moderatedAction
+      && user.timeout_until
+      && new Date(user.timeout_until).getTime() > Date.now()
+    ) {
+      return jsonError(403, 'TIMED_OUT', 'This action is unavailable during a timeout.');
+    }
 
     switch (body?.action) {
       case 'start':

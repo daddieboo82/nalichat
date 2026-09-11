@@ -127,7 +127,7 @@ export default function Profile() {
     setForm(f => ({ ...f, genres: current.includes(g) ? current.filter(x => x !== g) : [...current, g] }));
   };
 
-  const totalLikes = myPosts.reduce((sum, p) => sum + (p.likes || 0), 0);
+  const totalPlays = myPosts.reduce((sum, p) => sum + (p.views || 0), 0);
   const xpForNext = ((Math.floor((user?.xp || 0) / 200) + 1) * 200);
   const xpProgress = ((user?.xp || 0) % 200) / 200 * 100;
 
@@ -206,7 +206,7 @@ export default function Profile() {
         <div className="grid grid-cols-3 gap-3 mb-6">
           {[
             { label: "Tracks", value: myPosts.length, icon: Grid },
-            { label: "Plays", value: totalLikes, icon: Heart },
+            { label: "Plays", value: totalPlays, icon: Heart },
             { label: "Awards", value: achievements.length, icon: Award },
           ].map(({ label, value, icon: Icon }) => (
             <div key={label} className="bg-card/50 backdrop-blur-xl rounded-xl border border-white/[0.06] p-3 text-center">

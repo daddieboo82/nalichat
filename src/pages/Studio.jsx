@@ -223,7 +223,7 @@ export default function Studio() {
   const [isProcessing, setIsProcessing] = useState(null); // 'separate' | 'generate' | null
 
   // Real-time collaborator presence
-  const { peers: livePeers, setActivity } = useStudioPresence('studio-main');
+  const { peers: livePeers, setActivity } = useStudioPresence(roomId || 'local_studio');
   
   const [tracks, setTracks] = useState([]);
   const [showWelcome, setShowWelcome] = useState(true);

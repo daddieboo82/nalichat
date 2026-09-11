@@ -90,9 +90,6 @@
     "update": {
       "$or": [
         {
-          "data.saved_by_id": "{{user.id}}"
-        },
-        {
           "data.edit_user_ids": "{{user.id}}"
         },
         {
@@ -104,9 +101,6 @@
     },
     "delete": {
       "$or": [
-        {
-          "data.saved_by_id": "{{user.id}}"
-        },
         {
           "data.edit_user_ids": "{{user.id}}"
         },

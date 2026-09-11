@@ -67,6 +67,9 @@ Deno.serve(async (req) => {
 
     if (action === 'create') {
       if (!user?.id) return Response.json({ error: 'Sign in to comment' }, { status: 401 });
+      if (user.is_banned) {
+        return Response.json({ error: 'banned' }, { status: 403 });
+      }
 
       const rate = await consumeHourlyLimit(entities, user.id, 'track_comment', 120);
       if (!rate.allowed) {

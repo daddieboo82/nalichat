@@ -102,6 +102,44 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
       <div className="bg-card border border-border rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-5 border-b border-border shrink-0">
           <h2 className="font-heading font-bold text-lg">Release Your Track</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="p-5 space-y-4 overflow-y-auto custom-scrollbar">
+          
+          {/* Audio Upload (Required) */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-muted-foreground block">Audio File *</span>
+              <div className="flex gap-2">
+                
+                
+              </div>
+            </div>
+            <div
+              className={cn("relative border-2 border-dashed rounded-xl overflow-hidden cursor-pointer transition-colors flex items-center justify-center h-20", audioFile ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/50")}
+            >
+              <input id="audio-upload" ref={audioRef} type="file" accept="audio/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleAudio} />
+              <div className="text-center text-muted-foreground pointer-events-none relative z-0">
+                {audioFile ? (
+                  <>
+                    <Music className="w-6 h-6 mx-auto mb-1 text-primary" />
+                    <p className="text-xs font-medium text-foreground px-4 truncate max-w-[300px]">{audioFile.name}</p>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-6 h-6 mx-auto mb-1 opacity-40" />
+                    <p className="text-sm">Click to select audio file</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Cover Art upload */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-muted-foreground block">Cover Art</span>
+              
             </div>
             <div
               className={cn("relative border-2 border-dashed border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-center", preview ? "h-48" : "h-24")}

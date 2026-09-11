@@ -521,10 +521,10 @@ describe('release configuration', () => {
   it('synchronizes message and typing read audiences when conversation membership changes', async () => {
     const manageConversation = await readText('base44/functions/manageConversation/entry.ts');
     expect(manageConversation).toContain('async function syncConversationAudience');
-    expect(manageConversation).toContain('entities.Message.filter({ conversation_id: conversationId })');
-    expect(manageConversation).toContain('entities.TypingStatus.filter({ conversation_id: conversationId })');
+    expect(manageConversation).toMatch(/entities\.Message\.filter\([\s\S]*conversation_id: conversationId[\s\S]*PAGE_SIZE/);
+    expect(manageConversation).toMatch(/entities\.TypingStatus\.filter\([\s\S]*conversation_id: conversationId[\s\S]*PAGE_SIZE/);
     expect(manageConversation).toContain('participant_ids: participantIds');
-    expect(manageConversation.match(/syncConversationAudience\(entities, .*participantIds\)/g)?.length || 0).toBeGreaterThanOrEqual(3);
+    expect(manageConversation.match(/await syncConversationAudience\(entities,/g)?.length || 0).toBeGreaterThanOrEqual(3);
   });
 
   it('prunes departed users from message read receipts', async () => {

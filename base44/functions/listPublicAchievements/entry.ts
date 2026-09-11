@@ -1,15 +1,36 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { userId } = await req.json();
-    if (!userId) return Response.json({ error: 'userId is required' }, { status: 400 });
+    const targetUserId = String(userId || '').trim();
+    if (!targetUserId || targetUserId.length > 256) {
+      return Response.json({ error: 'Valid userId is required' }, { status: 400 });
+    }
 
-    const target = await base44.asServiceRole.entities.User.get(String(userId)).catch(() => null);
+    const readRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'public_achievement_lookup',
+      240,
+    );
+    if (!readRate.allowed) {
+      return Response.json(
+        { error: 'Achievement lookup rate limit exceeded. Please try again later.' },
+        { status: 429 },
+      );
+    }
+
+    const target = await base44.asServiceRole.entities.User.get(targetUserId).catch(() => null);
     if (
       !target
       || !target.onboarding_completed

@@ -60,21 +60,17 @@ export default function ThreadPanel({ parentMessage, currentUser, onClose }) {
 
   const sendMutation = useMutation({
     mutationFn: async (msgText) => {
-      const reply = await base44.entities.Message.create({
+      const res = await base44.functions.invoke("sendConversationMessage", {
         conversation_id: parentMessage.conversation_id,
-        sender_id: currentUser.id,
-        sender_name: currentUser.display_name || currentUser.full_name,
-        sender_avatar: currentUser.avatar_url || null,
         text: msgText,
         type: "text",
         thread_id: parentMessage.id,
       });
-      // Bump reply count on parent — fetch fresh count to avoid stale closure
-      const fresh = await base44.entities.Message.filter({ thread_id: parentMessage.id }, "created_date");
-      await base44.entities.Message.update(parentMessage.id, {
-        thread_reply_count: fresh.length,
-      });
-      return reply;
+      if (res?.data?.moderation) {
+        throw new Error("moderated");
+      }
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.message;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["thread", parentMessage.id] });

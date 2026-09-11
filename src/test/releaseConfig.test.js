@@ -815,6 +815,20 @@ describe('release configuration', () => {
     expect(bell).not.toContain('to={n.link}');
   });
 
+  it('expires stale squad invites and releases stale membership claims', async () => {
+    const squad = await readJson('base44/entities/Squad.jsonc');
+    const createInvite = await readText('base44/functions/createSquadInvite/entry.ts');
+    const getInvite = await readText('base44/functions/getSquadInvite/entry.ts');
+    const join = await readText('base44/functions/joinSquad/entry.ts');
+
+    expect(squad.properties.invite_expires_at).toBeTruthy();
+    expect(createInvite).toContain('invite_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)');
+    expect(createInvite).toContain("s.status === 'pending' && isInviteExpired(s)");
+    expect(createInvite).toContain('squad_membership_id: null');
+    expect(getInvite).toContain('isInviteExpired(squad)');
+    expect(join).toContain('isInviteExpired(squad)');
+  });
+
   it('counts only current-week squad activity and blocks moderated reward claims', async () => {
     const activity = await readText('base44/functions/recordSquadActivity/entry.ts');
 

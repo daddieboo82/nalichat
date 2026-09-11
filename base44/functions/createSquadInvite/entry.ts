@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 function isInviteExpired(squad: any) {
   const raw = squad?.invite_expires_at || squad?.created_date;
@@ -33,6 +34,10 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const squadRate = await consumeHourlyLimit(entities, user.id, 'squad_invite_create', 30);
+    if (!squadRate.allowed) {
+      return Response.json({ error: 'Squad action rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
     const [asA, asB] = await Promise.all([
       entities.Squad.filter({ member_a_id: user.id }),
       entities.Squad.filter({ member_b_id: user.id }),

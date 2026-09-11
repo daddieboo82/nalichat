@@ -12,6 +12,9 @@ import { toast } from "sonner";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import LoadError from "@/components/layout/LoadError";
 
+const MAX_CHALLENGE_SUBMISSIONS = 500;
+const MAX_USER_CHALLENGE_VOTES = 500;
+
 export default function ChallengeDetail() {
   const { challengeId } = useParams();
   const [challenge, setChallenge] = useState(null);
@@ -24,12 +27,15 @@ export default function ChallengeDetail() {
 
   const loadSubmissions = () =>
     base44.entities.ChallengeSubmission
-      .filter({ challenge_id: challengeId, status: "approved" }, "-vote_count")
+      .filter(
+        { challenge_id: challengeId, status: "approved" },
+        "-vote_count",
+        MAX_CHALLENGE_SUBMISSIONS,
+      )
       .then(setSubmissions)
       .catch((e) => console.error("Failed to load submissions", e));
 
   const refresh = async () => {
-    // A rejection here used to skip setLoading(false), leaving a permanent spinner.
     setLoadError(false);
     try {
       const c = await base44.entities.Challenge.get(challengeId);
@@ -50,9 +56,16 @@ export default function ChallengeDetail() {
 
   useEffect(() => {
     if (!user) { setMyVotes(new Set()); return; }
-    base44.entities.ChallengeVote.filter({ challenge_id: challengeId, voter_id: user.id }).then((votes) => {
-      setMyVotes(new Set(votes.map((v) => v.submission_id)));
-    }).catch((e) => console.error("Failed to load votes", e));
+    base44.entities.ChallengeVote
+      .filter(
+        { challenge_id: challengeId, voter_id: user.id },
+        "-created_date",
+        MAX_USER_CHALLENGE_VOTES,
+      )
+      .then((votes) => {
+        setMyVotes(new Set(votes.map((v) => v.submission_id)));
+      })
+      .catch((e) => console.error("Failed to load votes", e));
   }, [user, challengeId]);
 
   const handleVote = async (submissionId) => {
@@ -119,7 +132,7 @@ export default function ChallengeDetail() {
             </div>
             <Button variant="outline" size="sm" className="rounded-full gap-1.5" asChild>
               <Link to={`/challenge/${challengeId}/leaderboard`}><ListOrdered className="w-4 h-4" /> Leaderboard</Link>
-              </Button>
+            </Button>
           </div>
 
           <div className="flex flex-wrap gap-2">

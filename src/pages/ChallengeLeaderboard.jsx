@@ -5,6 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Play, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const MAX_LEADERBOARD_SUBMISSIONS = 500;
+
 const FILTERS = [
   { key: "all", label: "All Time" },
   { key: "week", label: "This Week" },
@@ -20,7 +22,13 @@ export default function ChallengeLeaderboard() {
 
   useEffect(() => {
     base44.entities.Challenge.get(challengeId).then(setChallenge);
-    base44.entities.ChallengeSubmission.filter({ challenge_id: challengeId, status: "approved" }).then(setSubmissions);
+    base44.entities.ChallengeSubmission
+      .filter(
+        { challenge_id: challengeId, status: "approved" },
+        "-vote_count",
+        MAX_LEADERBOARD_SUBMISSIONS,
+      )
+      .then(setSubmissions);
     base44.functions.invoke("getChallengeLeaderboard", { challengeId })
       .then((res) => setVoteCounts(res?.data?.counts || {}))
       .catch(() => setVoteCounts({}));

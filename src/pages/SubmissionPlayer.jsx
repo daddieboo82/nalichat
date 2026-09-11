@@ -8,6 +8,8 @@ import ShareButtons from "@/components/challenges/ShareButtons";
 import SubmissionComments from "@/components/challenges/SubmissionComments";
 import { toast } from "sonner";
 
+const MAX_CHALLENGE_SUBMISSIONS = 500;
+
 export default function SubmissionPlayer() {
   const { challengeId, submissionId } = useParams();
   const navigate = useNavigate();
@@ -20,7 +22,13 @@ export default function SubmissionPlayer() {
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
-    base44.entities.ChallengeSubmission.filter({ challenge_id: challengeId, status: "approved" }, "-vote_count").then(setAllSubs);
+    base44.entities.ChallengeSubmission
+      .filter(
+        { challenge_id: challengeId, status: "approved" },
+        "-vote_count",
+        MAX_CHALLENGE_SUBMISSIONS,
+      )
+      .then(setAllSubs);
   }, [challengeId]);
 
   useEffect(() => {
@@ -30,7 +38,9 @@ export default function SubmissionPlayer() {
 
   useEffect(() => {
     if (!user) { setHasVoted(false); return; }
-    base44.entities.ChallengeVote.filter({ submission_id: submissionId, voter_id: user.id }).then((v) => setHasVoted(v.length > 0));
+    base44.entities.ChallengeVote
+      .filter({ submission_id: submissionId, voter_id: user.id }, "-created_date", 1)
+      .then((v) => setHasVoted(v.length > 0));
   }, [user, submissionId]);
 
   const handleVote = async () => {

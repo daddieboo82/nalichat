@@ -37,15 +37,24 @@ Deno.serve(async (req) => {
     });
     for (const comment of comments) await entities.TrackComment.delete(comment.id);
 
-    const playlists = await entities.Playlist.list();
     let playlistsUpdated = 0;
-    for (const playlist of playlists) {
-      const trackIds = Array.isArray(playlist.track_ids) ? playlist.track_ids : [];
-      if (!trackIds.includes(post.id)) continue;
-      await entities.Playlist.update(playlist.id, {
-        track_ids: trackIds.filter((id: string) => id !== post.id),
-      });
-      playlistsUpdated += 1;
+    while (true) {
+      const playlists = await entities.Playlist.filter(
+        { track_ids: post.id },
+        '-created_date',
+        200,
+      );
+      if (playlists.length === 0) break;
+
+      for (const playlist of playlists) {
+        const trackIds = Array.isArray(playlist.track_ids) ? playlist.track_ids : [];
+        await entities.Playlist.update(playlist.id, {
+          track_ids: trackIds.filter((id: string) => id !== post.id),
+        });
+        playlistsUpdated += 1;
+      }
+
+      if (playlists.length < 200) break;
     }
 
     await entities.ArtPost.delete(post.id);

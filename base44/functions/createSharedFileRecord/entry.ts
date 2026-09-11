@@ -1,22 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
-import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
+import { resolveUserSubscription } from '../../shared/subscriptionAccess.ts';
 
 const FREE_FILE_LIMIT = 250 * 1024 * 1024;
 const PREMIUM_FILE_LIMIT = 20 * 1024 * 1024 * 1024;
 const FILE_TYPES = new Set(['audio', 'image', 'video', 'session', 'document', 'other']);
 
 async function hasLargeUploadAccess(entities: any, userId: string): Promise<boolean> {
-  const subscriptions = await entities.Subscription.filter({ user_id: userId });
-  const now = new Date().toISOString();
-  return subscriptions.some((subscription: any) => (
-    normalizePlan(subscription.plan) !== 'free'
-    && hasPaidTierAccess(normalizeStatus(subscription.status), {
-      currentPeriodEnd: subscription.current_period_end || null,
-      trialEndDate: subscription.trial_end_date || null,
-      now,
-    })
-  ));
+  const access = await resolveUserSubscription(entities.Subscription, userId);
+  return access.hasPaidAccess;
 }
 
 const TRUSTED_MEDIA_HOSTS = [

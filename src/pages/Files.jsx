@@ -316,10 +316,21 @@ export default function Files() {
   });
 
   const deleteFolderMutation = useMutation({
-    mutationFn: (id) => base44.entities.Folder.delete(id),
-    onSuccess: () => {
+    mutationFn: async (id) => {
+      const res = await base44.functions.invoke("deleteFolder", { folderId: id });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data;
+    },
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["folders"] });
+      queryClient.invalidateQueries({ queryKey: ["shared-files"] });
       setCurrentFolderId(null);
+      toast({
+        title: "Folder deleted",
+        description: result?.detached_files
+          ? `${result.detached_files} file${result.detached_files === 1 ? "" : "s"} moved back to the root.`
+          : "Folder removed.",
+      });
     },
   });
 

@@ -6,6 +6,10 @@ async function readJson(path) {
   return JSON.parse(await readFile(new URL(`../../${path}`, import.meta.url), 'utf8'));
 }
 
+async function readText(path) {
+  return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
+}
+
 describe('release configuration', () => {
   it('targets the current Android API required by the release pipeline', async () => {
     const manifest = await readJson('src/twa-manifest.json');
@@ -97,6 +101,29 @@ describe('release configuration', () => {
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
     expect(submission.properties.vote_count.rls?.write?.user_condition?.role).toBe('admin');
     expect(submission.properties.status.rls?.write?.user_condition?.role).toBe('admin');
+  });
+
+  it('keeps messaging and invite mutations server-authorized', async () => {
+    const markRead = await readText('base44/functions/markMessageRead/entry.ts');
+    expect(markRead).toContain('Conversation.get(message.conversation_id)');
+    expect(markRead).toContain('participants.includes(user.id)');
+
+    const moderate = await readText('base44/functions/moderateContent/entry.ts');
+    expect(moderate).toContain("ownedMessage.sender_id !== user.id");
+    expect(moderate).toContain('contentToModerate = typeof ownedMessage.text');
+
+    const external = await readText('base44/functions/sendExternalMessage/entry.ts');
+    expect(external).not.toContain('senderName');
+    expect(external).toContain('message must be 1000 characters or fewer');
+
+    const smsInvite = await readText('base44/functions/sendSmsInvite/entry.ts');
+    expect(smsInvite).not.toContain('const { phone, link }');
+    expect(smsInvite).toContain("Deno.env.get('APP_BASE_URL')");
+
+    const inviteUi = await readText('src/components/messages/InviteTab.jsx');
+    expect(inviteUi).not.toContain('recipient@example.com');
+    expect(inviteUi).toContain("send-invite-email', { to: trimmed }");
+    expect(inviteUi).toContain("sendSmsInvite', { phone: normalized }");
   });
 
   it('keeps the PWA manifest scoped to the serving origin', async () => {

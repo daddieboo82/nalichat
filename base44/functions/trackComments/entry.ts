@@ -1,5 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import {
+  acquireChallengeSubmissionLock,
+  releaseChallengeSubmissionLock,
+} from '../../shared/challengeSubmissionLock.ts';
 
 async function canAccessParent(entities: any, user: any, parentType: string, parentId: string) {
   if (parentType === 'art_post') {
@@ -30,19 +34,40 @@ async function canAccessParent(entities: any, user: any, parentType: string, par
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     let user = null;
     try { user = await base44.auth.me(); } catch {}
 
     const body = await req.json();
-    const action = body?.action;
-    const parentType = String(body?.parentType || '');
-    const parentId = String(body?.parentId || '');
-    if (!['art_post', 'challenge_submission', 'track'].includes(parentType) || !parentId) {
-      return Response.json({ error: 'Valid parentType and parentId are required' }, { status: 400 });
+    const action = typeof body?.action === 'string' ? body.action : '';
+    const parentType = typeof body?.parentType === 'string' ? body.parentType : '';
+    const parentId = typeof body?.parentId === 'string' ? body.parentId.trim() : '';
+    if (
+      !['list', 'create'].includes(action)
+      || !['art_post', 'challenge_submission', 'track'].includes(parentType)
+      || !parentId
+      || parentId.length > 200
+    ) {
+      return Response.json({ error: 'Valid action, parentType, and parentId are required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
+    let submissionLockId: string | null = null;
+    if (action === 'create' && parentType === 'challenge_submission') {
+      submissionLockId = await acquireChallengeSubmissionLock(entities, parentId);
+      if (!submissionLockId) {
+        return Response.json(
+          { error: 'Submission is being updated. Please retry.' },
+          { status: 409 },
+        );
+      }
+    }
+
+    try {
     const access = await canAccessParent(entities, user, parentType, parentId);
     if (!access.parent) return Response.json({ error: 'Comment target not found' }, { status: 404 });
     if (!access.allowed) return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -79,10 +104,19 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Comment rate limit exceeded. Please try again later.' }, { status: 429 });
       }
 
-      const text = String(body?.text || '').trim().slice(0, 2000);
+      if (typeof body?.text !== 'string') {
+        return Response.json({ error: 'Comment text is required' }, { status: 400 });
+      }
+      const text = body.text.trim();
       if (!text) return Response.json({ error: 'Comment text is required' }, { status: 400 });
+      if (text.length > 2000) {
+        return Response.json({ error: 'Comment text must be 2000 characters or fewer' }, { status: 413 });
+      }
 
-      const timestamp = body?.timestamp == null ? null : Number(body.timestamp);
+      if (body?.timestamp != null && typeof body.timestamp !== 'number') {
+        return Response.json({ error: 'timestamp must be a number' }, { status: 400 });
+      }
+      const timestamp = body?.timestamp == null ? null : body.timestamp;
       const comment = await entities.TrackComment.create({
         track_id: parentId,
         parent_type: parentType,
@@ -96,6 +130,9 @@ Deno.serve(async (req) => {
     }
 
     return Response.json({ error: 'Unsupported comment action' }, { status: 400 });
+    } finally {
+      await releaseChallengeSubmissionLock(entities, submissionLockId);
+    }
   } catch (error) {
     console.error('trackComments error:', error);
     return Response.json({ error: error?.message || 'Comment action failed' }, { status: 500 });

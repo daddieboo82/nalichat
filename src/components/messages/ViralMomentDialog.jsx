@@ -31,16 +31,10 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
     setError(null);
     setResult(null);
     try {
-      const payload = {
-        messageText: message.text,
-        senderName: message.sender_name,
+      const response = await base44.functions.invoke("generate-viral-moment", {
+        message_id: message.id,
         type,
-      };
-      // For voice notes with no text, pass the audio URL for server-side transcription
-      if (!message.text && message.file_url && (message.type === "audio" || message.file_type?.startsWith("audio"))) {
-        payload.audioUrl = message.file_url;
-      }
-      const response = await base44.functions.invoke("generate-viral-moment", payload);
+      });
       setResult(response.data);
     } catch (err) {
       setError("Nali couldn't create that moment. Try again!");

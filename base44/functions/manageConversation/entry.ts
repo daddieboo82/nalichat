@@ -1,5 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import {
+  acquireConversationMembershipLock,
+  releaseConversationMembershipLock,
+} from '../../shared/conversationMembershipLock.ts';
 
 const PAGE_SIZE = 200;
 
@@ -268,12 +272,27 @@ Deno.serve(async (req) => {
       );
       if (existing.length > 0) {
         const room = existing[0];
-        const participants = Array.from(new Set([...(room.participant_ids || []), user.id]));
-        if (!(room.participant_ids || []).includes(user.id)) {
-          await entities.Conversation.update(room.id, { participant_ids: participants });
-          await syncConversationAudience(entities, room.id, participants);
+        const lockId = await acquireConversationMembershipLock(entities, room.id);
+        if (!lockId) {
+          return Response.json(
+            { error: 'Conversation membership is being updated. Please retry.' },
+            { status: 409 },
+          );
         }
-        return Response.json({ success: true, conversation: { ...room, participant_ids: participants } });
+        try {
+          const currentRoom = await entities.Conversation.get(room.id);
+          if (!currentRoom) {
+            return Response.json({ error: 'Conversation not found' }, { status: 404 });
+          }
+          const participants = Array.from(new Set([...(currentRoom.participant_ids || []), user.id]));
+          if (!(currentRoom.participant_ids || []).includes(user.id)) {
+            await entities.Conversation.update(currentRoom.id, { participant_ids: participants });
+            await syncConversationAudience(entities, currentRoom.id, participants);
+          }
+          return Response.json({ success: true, conversation: { ...currentRoom, participant_ids: participants } });
+        } finally {
+          await releaseConversationMembershipLock(entities, lockId);
+        }
       }
 
       const conversation = await entities.Conversation.create({
@@ -290,6 +309,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'conversationId is required' }, { status: 400 });
     }
 
+    let membershipLockId: string | null = null;
+    if (['join_public', 'leave', 'rename'].includes(action)) {
+      membershipLockId = await acquireConversationMembershipLock(entities, conversationId);
+      if (!membershipLockId) {
+        return Response.json(
+          { error: 'Conversation membership is being updated. Please retry.' },
+          { status: 409 },
+        );
+      }
+    }
+
+    try {
     const conversation = await entities.Conversation.get(conversationId);
     if (!conversation) return Response.json({ error: 'Conversation not found' }, { status: 404 });
 
@@ -342,6 +373,9 @@ Deno.serve(async (req) => {
     }
 
     return Response.json({ error: 'Unsupported conversation action' }, { status: 400 });
+    } finally {
+      await releaseConversationMembershipLock(entities, membershipLockId);
+    }
   } catch (error) {
     console.error('manageConversation error:', error);
     return Response.json({ error: error?.message || 'Conversation action failed' }, { status: 500 });

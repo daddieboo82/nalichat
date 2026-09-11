@@ -13,9 +13,16 @@ Deno.serve(async (req) => {
     const folder = await entities.Folder.get(String(folderId));
     if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
 
-    const canEdit = user.role === 'admin'
-      || folder.owner_id === user.id
-      || (folder.edit_user_ids || []).includes(user.id);
+    let canEdit = user.role === 'admin';
+    if (!canEdit && folder.project_id) {
+      const project = await entities.Project.get(folder.project_id).catch(() => null);
+      if (!project) {
+        return Response.json({ error: 'Project not found' }, { status: 404 });
+      }
+      canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
+    } else if (!canEdit) {
+      canEdit = folder.owner_id === user.id;
+    }
     if (!canEdit) {
       return Response.json({ error: 'You cannot delete this folder' }, { status: 403 });
     }

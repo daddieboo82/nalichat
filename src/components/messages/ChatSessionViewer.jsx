@@ -47,7 +47,8 @@ export default function ChatSessionViewer({ message, currentUser }) {
             name: `Track by ${currentUser?.full_name || "Unknown"}`,
             file_url,
             type: "vocal",
-            uploaded_by: currentUser?.id
+            uploaded_by: currentUser?.id,
+            access_user_ids: message.participant_ids || [currentUser?.id].filter(Boolean)
           });
         } catch (e) {
           console.error(e);

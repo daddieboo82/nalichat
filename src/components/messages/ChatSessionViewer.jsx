@@ -48,7 +48,8 @@ export default function ChatSessionViewer({ message, currentUser }) {
             file_url,
             type: "vocal",
             uploaded_by: currentUser?.id,
-            access_user_ids: message.participant_ids || [currentUser?.id].filter(Boolean)
+            access_user_ids: message.participant_ids || [currentUser?.id].filter(Boolean),
+            edit_user_ids: message.participant_ids || [currentUser?.id].filter(Boolean)
           });
         } catch (e) {
           console.error(e);

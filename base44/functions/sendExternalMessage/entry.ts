@@ -47,7 +47,8 @@ Deno.serve(async (req) => {
       const users = await base44.asServiceRole.entities.User.filter({ email: cleanDestination });
       const isRegistered = users.length > 0;
       if (!isRegistered) {
-        return Response.json({ error: 'Recipient is not a registered NaliChat user' }, { status: 403 });
+        // Do not disclose whether an email address is registered.
+        return Response.json({ success: true, method: 'email', accepted: true });
       }
       // Sanitize the message body to remove CRLF sequences
       const cleanMessage = String(message)
@@ -69,7 +70,8 @@ Deno.serve(async (req) => {
       const smsUsers = await base44.asServiceRole.entities.User.filter({ phone: cleanPhone });
       const isRegisteredPhone = smsUsers.length > 0;
       if (!isRegisteredPhone) {
-        return Response.json({ error: 'Recipient is not a registered NaliChat user' }, { status: 403 });
+        // Do not disclose whether a phone number is registered.
+        return Response.json({ success: true, method: 'sms', accepted: true });
       }
 
       // SMS via Twilio

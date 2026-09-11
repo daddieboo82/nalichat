@@ -746,6 +746,18 @@ describe('release configuration', () => {
     expect(squadActivity).not.toContain('(milestone.edit_user_ids || []).includes(user.id)');
   });
 
+  it('keeps squad invite ownership private and uses high-entropy new codes', async () => {
+    const createInvite = await readText('base44/functions/createSquadInvite/entry.ts');
+    const getInvite = await readText('base44/functions/getSquadInvite/entry.ts');
+    const joinPage = await readText('src/pages/SquadJoin.jsx');
+
+    expect(createInvite).toContain('new Uint8Array(12)');
+    expect(createInvite).toContain("b.toString(16).padStart(2, '0')");
+    expect(getInvite).not.toContain('member_a_id: squad.member_a_id');
+    expect(getInvite).toContain('is_own_invite: Boolean');
+    expect(joinPage).toContain('squad.is_own_invite');
+  });
+
   it('refreshes public users without subscribing to raw User events', async () => {
     const messages = await readText('src/pages/Messages.jsx');
     expect(messages).not.toContain('entities.User.subscribe');

@@ -223,12 +223,24 @@ Deno.serve(async (req) => {
     // Preserve shared chat history for remaining participants, but remove
     // personal identity from messages authored by the deleted account.
     const authoredMessages = await entities.Message.filter({ sender_id: user.id });
+    const authoredMessageIds = new Set(authoredMessages.map((message: any) => message.id));
     for (const message of authoredMessages) {
       await entities.Message.update(message.id, {
         sender_id: tombstoneId,
         sender_name: 'Deleted User',
         sender_avatar: null,
       });
+    }
+
+    // Replies cache the original sender label separately from the parent
+    // message. Anonymize that copied identity while preserving quoted text.
+    if (authoredMessageIds.size > 0) {
+      const conversationsWithReplies = await entities.Message.list('-created_date', 5000);
+      for (const message of conversationsWithReplies) {
+        if (message.reply_to_id && authoredMessageIds.has(message.reply_to_id) && message.reply_to_sender) {
+          await entities.Message.update(message.id, { reply_to_sender: 'Deleted User' });
+        }
+      }
     }
 
     // Preserve public releases and comments, but remove personal identity.

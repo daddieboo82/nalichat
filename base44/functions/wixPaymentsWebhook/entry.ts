@@ -1,8 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import jwt from 'npm:jsonwebtoken';
 
+async function sha256Hex(value: string) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 // Legacy compatibility only. New subscription checkout is Stripe-only.
 Deno.serve(async (req) => {
+  let wixEventEntity: any = null;
+  let wixEventClaimId: string | null = null;
   try {
     // Security: Only POST allowed
     if (req.method !== 'POST') {
@@ -53,19 +62,53 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
 
-    console.log('Wix webhook received:', event.eventType || 'unknown');
+    const eventType = String(event?.eventType || '');
+    const wixEventId = typeof eventData?.id === 'string' && eventData.id
+      ? eventData.id
+      : `legacy:${await sha256Hex(`${eventType}:${event?.data || ''}`)}`;
+    wixEventEntity = base44.asServiceRole.entities.WixWebhookEvent;
+    const existingEvents = await wixEventEntity.filter(
+      { wix_event_id: wixEventId },
+      '-created_date',
+      1,
+    );
+    if (existingEvents[0]) {
+      return Response.json({ success: true, duplicate: true });
+    }
+    try {
+      await wixEventEntity.create({
+        id: wixEventId,
+        wix_event_id: wixEventId,
+        event_type: eventType || 'unknown',
+        event_time: String(eventData?.eventTime || ''),
+        claimed_at: new Date().toISOString(),
+      });
+      wixEventClaimId = wixEventId;
+    } catch {
+      const claimed = await wixEventEntity.filter(
+        { wix_event_id: wixEventId },
+        '-created_date',
+        1,
+      );
+      if (claimed[0]) {
+        return Response.json({ success: true, duplicate: true });
+      }
+      throw new Error('Unable to claim Wix webhook event');
+    }
+
+    console.log('Wix webhook received:', eventType || 'unknown');
 
     // New subscription checkout is Stripe-only. Do not activate or mutate
     // entitlements from legacy Wix order-approved events. We still accept the
     // signed webhook so Wix does not retry forever, while cancellation/expiry
     // events below continue to retire existing legacy Wix subscriptions.
-    if (event.eventType === 'wix.ecom.v1.order_approved') {
+    if (eventType === 'wix.ecom.v1.order_approved') {
       console.warn('Ignoring legacy Wix order approval; Stripe is the subscription system of record');
       return Response.json({ success: true, ignored: true });
     }
 
     // Handle subscription canceled
-    if (event.eventType === 'wix.ecom.subscription_contracts.v1.subscription_contract_canceled') {
+    if (eventType === 'wix.ecom.subscription_contracts.v1.subscription_contract_canceled') {
       try {
         const subscriptionContract = eventData.actionEvent.body.subscriptionContract;
         const subscriptionId = subscriptionContract?.id;
@@ -109,12 +152,12 @@ Deno.serve(async (req) => {
         return Response.json({ success: true });
       } catch (err) {
         console.error('Subscription cancel handler error:', err);
-        return Response.json({ error: err.message }, { status: 500 });
+        throw err;
       }
     }
 
     // Handle subscription expired
-    if (event.eventType === 'wix.ecom.subscription_contracts.v1.subscription_contract_expired') {
+    if (eventType === 'wix.ecom.subscription_contracts.v1.subscription_contract_expired') {
       try {
         const subscriptionContract = eventData.actionEvent.body.subscriptionContract;
         const subscriptionId = subscriptionContract?.id;
@@ -155,15 +198,22 @@ Deno.serve(async (req) => {
         return Response.json({ success: true });
       } catch (err) {
         console.error('Subscription expire handler error:', err);
-        return Response.json({ error: err.message }, { status: 500 });
+        throw err;
       }
     }
 
     // Unknown event type - still return 200 to ack receipt
-    console.log('Unknown webhook type:', event.eventType);
+    console.log('Unknown webhook type:', eventType);
     return Response.json({ success: true });
   } catch (error) {
     console.error('Webhook error:', error);
+    if (wixEventEntity && wixEventClaimId) {
+      try {
+        await wixEventEntity.delete(wixEventClaimId);
+      } catch (releaseError) {
+        console.error('Failed to release Wix webhook replay claim:', releaseError);
+      }
+    }
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

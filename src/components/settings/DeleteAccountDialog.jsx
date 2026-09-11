@@ -23,9 +23,11 @@ export default function DeleteAccountDialog() {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      const me = await base44.auth.me();
-      await base44.entities.User.delete(me.id);
-      toast.success("Your account has been deleted.");
+      const res = await base44.functions.invoke("deleteMyAccount", { confirmation: "DELETE" });
+      if (!res?.data?.success) {
+        throw new Error(res?.data?.error || "Account deletion failed");
+      }
+      toast.success("Your account deletion has been completed.");
       await base44.auth.logout();
     } catch (err) {
       toast.error("Could not delete your account. Please contact support.");

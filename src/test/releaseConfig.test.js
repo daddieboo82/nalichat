@@ -670,6 +670,35 @@ describe('release configuration', () => {
     expect(contact.rls.read?.['data.user_id']).toBe('{{user.id}}');
   });
 
+  it('keeps remote push subscriptions server-authoritative and safe on account changes', async () => {
+    const push = await readJson('base44/entities/PushSubscription.jsonc');
+    const register = await readText('base44/functions/registerPushSubscription/entry.ts');
+    const unregister = await readText('base44/functions/unregisterPushSubscription/entry.ts');
+    const pushClient = await readText('src/lib/pushNotifications.js');
+    const auth = await readText('src/lib/AuthContext.jsx');
+    const app = await readText('src/App.jsx');
+
+    expect(push.rls.create?.user_condition?.role).toBe('admin');
+    expect(push.rls.update?.user_condition?.role).toBe('admin');
+    expect(push.rls.delete?.user_condition?.role).toBe('admin');
+    expect(register).toContain('isSafePushEndpoint');
+    expect(register).toContain("Push endpoint is already registered to another account");
+    expect(register).toContain('row.p256dh !== p256dh || row.auth !== auth');
+    expect(unregister).toContain('user_id: user.id, endpoint');
+    expect(pushClient).toContain('unregisterPushSubscription');
+    expect(auth).toContain('unsubscribeFromRemotePush');
+    expect(app).not.toContain('base44.auth.logout()');
+  });
+
+  it('lets recipients change notification read state without rewriting notification content', async () => {
+    const notification = await readJson('base44/entities/Notification.jsonc');
+    for (const field of ['recipient_id', 'type', 'actor_id', 'actor_name', 'actor_avatar', 'message', 'link', 'description']) {
+      expect(notification.properties[field].rls?.write?.user_condition?.role).toBe('admin');
+    }
+    expect(notification.rls.update?.['data.recipient_id']).toBe('{{user.id}}');
+    expect(notification.properties.read.rls).toBeUndefined();
+  });
+
 
   it('enforces configured challenge voting windows server-side', async () => {
     const vote = await readText('base44/functions/castVote/entry.ts');

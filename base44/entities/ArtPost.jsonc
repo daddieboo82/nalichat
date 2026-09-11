@@ -168,7 +168,9 @@
       "data.creator_id": "{{user.id}}"
     },
     "delete": {
-      "data.creator_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

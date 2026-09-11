@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, Edit3, Award, Grid, Heart, Zap, Save } from "lucide-react";
+import { Camera, Edit3, Award, Grid, Eye, Zap, Save } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import ArtPostCard from "@/components/explore/ArtPostCard";
@@ -206,7 +206,7 @@ export default function Profile() {
         <div className="grid grid-cols-3 gap-3 mb-6">
           {[
             { label: "Tracks", value: myPosts.length, icon: Grid },
-            { label: "Plays", value: totalPlays, icon: Heart },
+            { label: "Plays", value: totalPlays, icon: Eye },
             { label: "Awards", value: achievements.length, icon: Award },
           ].map(({ label, value, icon: Icon }) => (
             <div key={label} className="bg-card/50 backdrop-blur-xl rounded-xl border border-white/[0.06] p-3 text-center">

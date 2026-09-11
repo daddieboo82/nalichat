@@ -1516,6 +1516,15 @@ describe('release configuration', () => {
     }
   });
 
+  it('enforces timeouts on collaborative track and shared-file creation', async () => {
+    const track = await readText('base44/functions/createCollaborativeTrack/entry.ts');
+    const file = await readText('base44/functions/createSharedFileRecord/entry.ts');
+    expect(track).toContain('user.timeout_until');
+    expect(track).toContain("error: 'timed_out'");
+    expect(file).toContain('user.timeout_until');
+    expect(file).toContain("error: 'timed_out'");
+  });
+
   it('enforces app-wide bans on public and collaborative write endpoints', async () => {
     for (const path of [
       'base44/functions/createArtPost/entry.ts',

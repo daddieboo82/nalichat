@@ -182,14 +182,14 @@ export default function Files() {
 
   const { data: files = [], isLoading } = useQuery({
     queryKey: ["shared-files"],
-    queryFn: () => base44.entities.SharedFile.list("-created_date"),
+    queryFn: () => base44.entities.SharedFile.list("-created_date", 500),
   });
 
   const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
       if (!currentUser) return [];
-      const all = await base44.entities.Project.list();
+      const all = await base44.entities.Project.list("-created_date", 500);
       return all.filter(p => p.owner_id === currentUser.id || (p.collaborator_ids || []).includes(currentUser.id));
     },
     enabled: !!currentUser,

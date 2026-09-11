@@ -45,6 +45,14 @@
       },
       "default": [],
       "description": "Project members allowed to read and edit this milestone"
+    },
+    "edit_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Project members allowed to modify this record. Viewer-only collaborators are excluded."
     }
   },
   "required": [
@@ -76,7 +84,7 @@
           "data.created_by_id": "{{user.id}}"
         },
         {
-          "data.access_user_ids": "{{user.id}}"
+          "data.edit_user_ids": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -91,7 +99,7 @@
           "data.created_by_id": "{{user.id}}"
         },
         {
-          "data.access_user_ids": "{{user.id}}"
+          "data.edit_user_ids": "{{user.id}}"
         },
         {
           "user_condition": {

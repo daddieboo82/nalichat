@@ -35,13 +35,16 @@ describe('release configuration', () => {
     const track = await readJson('base44/entities/Track.jsonc');
     const version = await readJson('base44/entities/TrackVersion.jsonc');
     const sharedFile = await readJson('base44/entities/SharedFile.jsonc');
+    const folder = await readJson('base44/entities/Folder.jsonc');
 
     expect(track.properties.access_user_ids).toBeTruthy();
     expect(version.properties.access_user_ids).toBeTruthy();
     expect(sharedFile.properties.access_user_ids).toBeTruthy();
+    expect(folder.properties.access_user_ids).toBeTruthy();
     expect(track.rls.read).not.toBeNull();
     expect(version.rls.read).not.toBeNull();
     expect(sharedFile.rls.read).not.toBeNull();
+    expect(folder.rls.read).not.toBeNull();
   });
 
   it('keeps the PWA manifest scoped to the serving origin', async () => {

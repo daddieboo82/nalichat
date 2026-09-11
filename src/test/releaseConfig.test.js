@@ -261,6 +261,13 @@ describe('release configuration', () => {
   });
 
 
+  it('keeps shared-file edit access synchronized with project collaborator roles', async () => {
+    const collaborator = await readText('base44/functions/manageProjectCollaborator/entry.ts');
+    expect(collaborator).toContain('edit_user_ids: Array.from(editUserIds)');
+    expect(collaborator).not.toContain("entityName !== 'SharedFile'");
+  });
+
+
   it('preserves collaboration integrity when deleting an account', async () => {
     const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
 

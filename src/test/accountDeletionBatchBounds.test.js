@@ -41,4 +41,19 @@ describe('account deletion batch bounds', () => {
     expect(source).toContain('{ $pull: { liked_by: user.id } }');
     expect(source).toContain('{ $inc: { vote_count: -1 } }');
   });
+
+  it('batches owned and collaborated project cascades', async () => {
+    const source = await readFile(
+      new URL('../../base44/functions/deleteMyAccount/entry.ts', import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain('{ owner_id: user.id }');
+    expect(source).toContain('{ collaborator_ids: user.id }');
+    expect(source).toContain("{ track_id: track.id, parent_type: 'track' }");
+    expect(source).toContain('{ room_id: project.id }');
+    expect(source).toContain('await processPagedRows(entity, { project_id: project.id }');
+    expect(source).not.toContain('const rows = await entity.filter({ project_id: project.id })');
+    expect(source).not.toContain('const presenceRows = await entities.StudioPresence.filter');
+  });
 });

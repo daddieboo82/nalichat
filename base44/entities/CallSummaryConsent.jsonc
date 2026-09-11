@@ -1,0 +1,40 @@
+{
+  "name": "CallSummaryConsent",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string"
+    },
+    "participant_id": {
+      "type": "string",
+      "description": "Account ID only; display names and call content are not stored"
+    },
+    "state": {
+      "type": "string",
+      "enum": ["requested", "accepted", "declined", "revoked", "expired", "call_ended"]
+    },
+    "requested_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "responded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revoked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expired_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": ["session_id", "participant_id", "state", "requested_at"],
+  "rls": {
+    "create": { "user_condition": { "role": "admin" } },
+    "read": { "user_condition": { "role": "admin" } },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}

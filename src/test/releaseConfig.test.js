@@ -402,6 +402,13 @@ describe('release configuration', () => {
     expect(collaborator).toContain('patch.share_token_expires_at = null');
   });
 
+  it('keeps access backfill counters initialized before use and revokes stale file share links', async () => {
+    const backfill = await readText('base44/functions/backfillTrackAccess/entry.ts');
+    expect(backfill.indexOf('let updatedProjects = 0')).toBeLessThan(backfill.indexOf('updatedProjects += 1'));
+    expect(backfill).toContain('share_token_hash: null');
+    expect(backfill).toContain('share_token_expires_at: null');
+  });
+
 
   it('keeps subscription billing Stripe-authoritative and rate-limited', async () => {
     const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');

@@ -116,7 +116,11 @@ Deno.serve(async (req) => {
           return Response.json({ error: 'banned' }, { status: 403 });
         }
 
-        const candidates = await entities.Conversation.filter({ type: 'dm' });
+        const candidates = await entities.Conversation.filter(
+          { type: 'dm', participant_ids: user.id },
+          '-last_message_at',
+          500,
+        );
         const existing = candidates.find((conversation: any) => {
           const ids = Array.isArray(conversation.participant_ids) ? conversation.participant_ids : [];
           return ids.length === 2 && ids.includes(user.id) && ids.includes(otherUserId);
@@ -170,11 +174,15 @@ Deno.serve(async (req) => {
       if (!name.startsWith('#') || name.length < 2) {
         return Response.json({ error: 'Public room names must start with #' }, { status: 400 });
       }
-      const existing = await entities.Conversation.filter({
-        type: 'group',
-        is_public: true,
-        name,
-      });
+      const existing = await entities.Conversation.filter(
+        {
+          type: 'group',
+          is_public: true,
+          name,
+        },
+        '-created_date',
+        1,
+      );
       if (existing.length > 0) {
         const room = existing[0];
         const participants = Array.from(new Set([...(room.participant_ids || []), user.id]));

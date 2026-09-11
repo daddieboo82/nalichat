@@ -486,6 +486,12 @@ Deno.serve(async (req) => {
         member_a_name: 'Deleted User',
         status: 'ended',
       });
+      if (squad.member_b_id) {
+        await entities.User.updateMany(
+          { id: squad.member_b_id, squad_membership_id: squad.id },
+          { $set: { squad_membership_id: null } },
+        ).catch(() => {});
+      }
     }
     const squadsAsB = await entities.Squad.filter({ member_b_id: user.id });
     for (const squad of squadsAsB) {
@@ -494,6 +500,12 @@ Deno.serve(async (req) => {
         member_b_name: 'Deleted User',
         status: 'ended',
       });
+      if (squad.member_a_id) {
+        await entities.User.updateMany(
+          { id: squad.member_a_id, squad_membership_id: squad.id },
+          { $set: { squad_membership_id: null } },
+        ).catch(() => {});
+      }
     }
 
     // Subscription and purchase records are intentionally retained as billing

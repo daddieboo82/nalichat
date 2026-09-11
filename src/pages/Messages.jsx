@@ -182,6 +182,7 @@ export default function Messages() {
     onMutate: (msgData) => {
       queryClient.cancelQueries({ queryKey: ["messages", selectedConvId] });
       const previous = queryClient.getQueryData(["messages", selectedConvId]);
+      const previousConversations = queryClient.getQueryData(["conversations"]);
       const clientMessageKey = msgData.client_message_key || createClientMessageKey();
       msgData.client_message_key = clientMessageKey;
       const tempId = `temp-${clientMessageKey}`;
@@ -210,12 +211,15 @@ export default function Messages() {
         );
         return updated.sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0));
       });
-      return { previous, tempId, clientMessageKey };
+      return { previous, previousConversations, tempId, clientMessageKey };
     },
     onError: (err, _msgData, ctx) => {
       queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
         applySendFailure(old, ctx?.clientMessageKey, err?.message)
       );
+      if (ctx?.previousConversations) {
+        queryClient.setQueryData(["conversations"], ctx.previousConversations);
+      }
       if (err?.message === "timed_out") {
         toast.error("You are currently timed out and cannot send messages.");
       } else if (err?.message === "banned") {
@@ -230,6 +234,9 @@ export default function Messages() {
         queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
           old.filter(m => m._tempId !== ctx?.tempId)
         );
+        if (ctx?.previousConversations) {
+          queryClient.setQueryData(["conversations"], ctx.previousConversations);
+        }
         const labels = {
           violence: "violence", racism: "racism", sexual_violence: "sexual violence",
           bullying: "bullying", illegal_activity: "illegal activity",

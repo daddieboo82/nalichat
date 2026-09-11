@@ -829,6 +829,16 @@ describe('release configuration', () => {
     expect(join).toContain('isInviteExpired(squad)');
   });
 
+  it('applies moderation timeouts consistently to public interactions', async () => {
+    const comments = await readText('base44/functions/trackComments/entry.ts');
+    const likes = await readText('base44/functions/toggleLike/entry.ts');
+
+    expect(comments).toContain("error: 'timed_out'");
+    expect(comments).toContain('user.timeout_until');
+    expect(likes).toContain("error: 'timed_out'");
+    expect(likes).toContain('user.timeout_until');
+  });
+
   it('counts only current-week squad activity and blocks moderated reward claims', async () => {
     const activity = await readText('base44/functions/recordSquadActivity/entry.ts');
 

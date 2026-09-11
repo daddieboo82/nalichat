@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import { unsubscribeFromRemotePush } from '@/lib/pushNotifications';
 
 const AuthContext = createContext();
 
@@ -123,9 +124,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    // Terminate the server/cookie-backed session as well as local bearer-token
-    // state. Clearing storage alone can leave a valid platform session cookie,
-    // causing a supposedly logged-out browser to authenticate again.
+    // Remove this browser's remote push capability while the authenticated
+    // session still exists, then terminate the server/cookie-backed session.
+    try {
+      await unsubscribeFromRemotePush();
+    } catch (error) {
+      console.error('Push unsubscribe failed:', error);
+    }
+
     try {
       await base44.auth.logout();
     } catch (error) {

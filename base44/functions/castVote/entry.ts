@@ -67,10 +67,14 @@ export default async function(req) {
     } catch (error) {
       // Deterministic vote IDs make concurrent duplicate requests collide at
       // creation time. Verify the record exists before returning a duplicate.
-      const existing = await entities.ChallengeVote.filter({
-        submission_id,
-        voter_id: user.id,
-      });
+      const existing = await entities.ChallengeVote.filter(
+        {
+          submission_id,
+          voter_id: user.id,
+        },
+        '-created_date',
+        1,
+      );
       if (existing.length > 0) {
         return Response.json({ error: 'You already voted on this submission.' }, { status: 409 });
       }

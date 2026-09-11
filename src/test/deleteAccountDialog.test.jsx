@@ -24,10 +24,10 @@ describe('DeleteAccountDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
     const deleteForever = await screen.findByRole('button', { name: 'Delete Forever' });
-    expect(deleteForever).toBeDisabled();
+    expect(deleteForever.disabled).toBe(true);
 
     fireEvent.change(screen.getByPlaceholderText('Type DELETE'), { target: { value: 'DELETE' } });
-    expect(deleteForever).not.toBeDisabled();
+    expect(deleteForever.disabled).toBe(false);
     fireEvent.click(deleteForever);
 
     await waitFor(() => {

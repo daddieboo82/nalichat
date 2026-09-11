@@ -50,10 +50,13 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
       );
 
       if (!conversation) {
-        conversation = await base44.entities.Conversation.create({
-          type: "dm",
-          participant_ids: [currentUser.id, selectedUser.id],
+        const created = await base44.functions.invoke("manageConversation", {
+          action: "create_dm",
+          participant_ids: [selectedUser.id],
         });
+        if (created?.data?.error) throw new Error(created.data.error);
+        conversation = created?.data?.conversation;
+        if (!conversation?.id) throw new Error("Conversation was not created");
       }
 
       const send = await base44.functions.invoke("sendConversationMessage", {

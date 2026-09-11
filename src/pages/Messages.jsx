@@ -257,6 +257,13 @@ export default function Messages() {
       if (res?.data?.error) throw new Error(res.data.error);
     } catch (err) {
       if (previous) queryClient.setQueryData(["messages", selectedConvId], previous);
+      if (err?.message === "timed_out") {
+        toast.error("You are timed out and cannot react to messages right now.");
+      } else if (err?.message === "banned") {
+        toast.error("You cannot react to messages while your account is banned.");
+      } else {
+        toast.error("Couldn't update the reaction. Please try again.");
+      }
     } finally {
       queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
     }

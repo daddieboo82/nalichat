@@ -45,9 +45,15 @@ export default function Explore() {
   });
 
   const deletePost = useMutation({
-    mutationFn: async (post) => base44.entities.ArtPost.delete(post.id),
+    mutationFn: async (post) => {
+      const res = await base44.functions.invoke("deleteArtPost", { postId: post.id });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["artposts"] });
+      queryClient.invalidateQueries({ queryKey: ["playlistTracks"] });
+      queryClient.invalidateQueries({ queryKey: ["myPlaylists"] });
       toast.success("Track deleted");
     },
     onError: () => toast.error("Failed to delete track"),

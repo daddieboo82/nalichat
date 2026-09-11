@@ -28,7 +28,7 @@ export default function Leaderboard() {
   const { data: users = [] } = useQuery({
     queryKey: ["leaderboard-users"],
     queryFn: async () => {
-      const res = await base44.functions.invoke("listPublicUsers", {});
+      const res = await base44.functions.invoke("listPublicUsers", { includeAchievementCounts: true });
       return res?.data?.users || [];
     },
   });

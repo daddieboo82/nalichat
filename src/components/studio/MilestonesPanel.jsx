@@ -60,11 +60,17 @@ export default function MilestonesPanel({ projectId, canEdit }) {
         project?.owner_id,
         ...(project?.collaborator_ids || []),
       ].filter(Boolean)));
+      const editUserIds = Array.from(new Set([
+        me?.id,
+        project?.owner_id,
+        ...(project?.editor_ids || []),
+      ].filter(Boolean)));
       return base44.entities.Milestone.create({
         ...form,
         project_id: projectId,
         created_by_id: me.id,
         access_user_ids: accessUserIds,
+        edit_user_ids: editUserIds,
       });
     },
     onSuccess: () => { invalidate(); setShowAdd(false); setForm({ title: "", description: "", due_date: "", priority: "medium" }); },

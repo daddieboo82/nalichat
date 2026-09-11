@@ -97,8 +97,7 @@ async function validateSource(entities: any, user: any, sourceType: string, sour
   if (sourceType === 'milestone') {
     const milestone = await entities.Milestone.get(sourceId);
     if (!milestone || !milestone.completed) return false;
-    return milestone.created_by_id === user.id ||
-      (milestone.edit_user_ids || []).includes(user.id);
+    return milestone.completed_by_id === user.id;
   }
 
   return false;

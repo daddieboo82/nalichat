@@ -1,5 +1,28 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
+const TRUSTED_MEDIA_HOSTS = [
+  'storage.googleapis.com',
+  'base44-user-files.s3.amazonaws.com',
+  'base44-user-files.s3.us-east-1.amazonaws.com',
+  'files.base44.com',
+  'cdn.base44.com',
+];
+
+function cleanUploadedMediaUrl(value: unknown) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'https:') return '';
+    const hostname = parsed.hostname.toLowerCase();
+    return TRUSTED_MEDIA_HOSTS.some(
+      (host) => hostname === host || hostname.endsWith('.' + host),
+    ) ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -25,12 +48,18 @@ Deno.serve(async (req) => {
     const versions = await entities.TrackVersion.filter({ track_id: track.id }, '-version_number', 1);
     const nextNum = (versions[0]?.version_number || 0) + 1;
 
+    const inheritedFileUrl = track.file_url ? cleanUploadedMediaUrl(track.file_url) : '';
+    const fallbackFileUrl = body?.file_url ? cleanUploadedMediaUrl(body.file_url) : '';
+    if ((track.file_url && !inheritedFileUrl) || (body?.file_url && !fallbackFileUrl)) {
+      return Response.json({ error: 'Track version media must come from trusted upload storage' }, { status: 400 });
+    }
+
     const version = await entities.TrackVersion.create({
       track_id: track.id,
       project_id: project.id,
       version_number: nextNum,
       label: String(body.label || `Version ${nextNum}`).slice(0, 200),
-      file_url: track.file_url || body.file_url || '',
+      file_url: inheritedFileUrl || fallbackFileUrl,
       volume: Number.isFinite(Number(body.volume)) ? Number(body.volume) : track.volume,
       pan: Number.isFinite(Number(body.pan)) ? Number(body.pan) : track.pan,
       muted: body.muted ?? track.muted,

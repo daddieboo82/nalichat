@@ -3,6 +3,7 @@ import {
   executeMessageSearch,
   MessageSearchError,
 } from '../../shared/messageSearch.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -12,6 +13,19 @@ Deno.serve(async (req) => {
       return Response.json(
         { error: 'Unauthorized', code: 'UNAUTHORIZED' },
         { status: 401 },
+      );
+    }
+
+    const searchRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'message_search',
+      300,
+    );
+    if (!searchRate.allowed) {
+      return Response.json(
+        { error: 'Message search rate limit exceeded. Please try again later.', code: 'RATE_LIMITED' },
+        { status: 429 },
       );
     }
 

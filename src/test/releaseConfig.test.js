@@ -127,6 +127,13 @@ describe('release configuration', () => {
   });
 
 
+  it('uses artist_role for public profession filtering', async () => {
+    const contacts = await readText('src/components/messages/ContactsTab.jsx');
+    expect(contacts).toContain('u.artist_role ||');
+    expect(contacts).not.toContain('u.role !== roleFilter');
+  });
+
+
   it('separates artist profession from authorization role', async () => {
     const user = await readJson('base44/entities/User.jsonc');
     expect(user.properties.artist_role).toBeTruthy();

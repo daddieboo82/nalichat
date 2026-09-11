@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const GOAL_MESSAGES = 20;
 const GOAL_TASKS = 3;
@@ -135,6 +136,16 @@ Deno.serve(async (req) => {
     }
     if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
+    const activityRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'squad_activity',
+      600,
+    );
+    if (!activityRate.allowed) {
+      return Response.json({ error: 'Squad activity rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     const { sourceType, sourceId } = await req.json();

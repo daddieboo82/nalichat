@@ -677,6 +677,14 @@ describe('release configuration', () => {
     expect(studio).not.toContain('entities.Project.update');
   });
 
+  it('removes password reset tokens from browser history after capture', async () => {
+    const reset = await readText('src/pages/ResetPassword.jsx');
+    expect(reset).toContain('new URLSearchParams(window.location.search).get("token")');
+    expect(reset).toContain('url.searchParams.delete("token")');
+    expect(reset).toContain('window.history.replaceState');
+    expect(reset).not.toContain('useSearchParams');
+  });
+
   it('prevents contact ownership reassignment', async () => {
     const contact = await readJson('base44/entities/Contact.jsonc');
     expect(contact.properties.user_id.rls?.write?.user_condition?.role).toBe('admin');

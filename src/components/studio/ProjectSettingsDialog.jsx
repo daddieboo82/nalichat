@@ -90,7 +90,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
           {collaborators.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
               <p className="text-sm">No collaborators yet.</p>
-              <p className="text-xs mt-1">Add collaborators from the Network page.</p>
+              <p className="text-xs mt-1">Create an invite link from the project or Jam Room to add collaborators.</p>
             </div>
           ) : (
             <div className="space-y-2">

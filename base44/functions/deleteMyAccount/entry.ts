@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { stripeRequest } from '../../shared/stripe.ts';
+import { acquireAccountDeletionLock, releaseAccountDeletionLock } from '../../shared/accountDeletionLock.ts';
 
 const CLEANUP_BATCH_SIZE = 200;
 
@@ -83,6 +84,10 @@ async function syncConversationAudience(
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
@@ -96,6 +101,15 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const lockId = await acquireAccountDeletionLock(entities, user.id);
+    if (!lockId) {
+      return Response.json(
+        { error: 'Account deletion is already in progress.' },
+        { status: 409 },
+      );
+    }
+
+    try {
     const tombstoneId = deletedIdentity(user.id);
 
     // Cancel live Stripe billing before deleting account access. If cancellation
@@ -608,6 +622,9 @@ Deno.serve(async (req) => {
 
     await entities.User.delete(user.id);
     return Response.json({ success: true });
+    } finally {
+      await releaseAccountDeletionLock(entities, lockId);
+    }
   } catch (error) {
     console.error('deleteMyAccount failed:', error);
     return Response.json(

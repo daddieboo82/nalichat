@@ -83,9 +83,6 @@
     "update": {
       "$or": [
         {
-          "data.created_by_id": "{{user.id}}"
-        },
-        {
           "data.edit_user_ids": "{{user.id}}"
         },
         {
@@ -97,9 +94,6 @@
     },
     "delete": {
       "$or": [
-        {
-          "data.created_by_id": "{{user.id}}"
-        },
         {
           "data.edit_user_ids": "{{user.id}}"
         },

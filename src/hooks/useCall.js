@@ -59,6 +59,7 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
         if (res?.data?.error) throw new Error(res.data.error);
       } catch (e) {
         console.error("Call signal failed:", e);
+        throw e;
       }
     },
     [conversationId, currentUser, conversation]

@@ -298,7 +298,11 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
       } else {
         handleDownload();
       }
-    } catch {}
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        toast.error("Couldn't share the voice card. Please try again.");
+      }
+    }
   };
 
   const handleRetry = () => {

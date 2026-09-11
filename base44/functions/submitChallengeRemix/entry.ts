@@ -12,6 +12,19 @@ const TRUSTED_MEDIA_HOSTS = [
   'cdn.base44.com',
 ];
 
+function isSafeExternalMediaUrl(parsed: URL) {
+  if (parsed.protocol !== 'https:') return false;
+  const hostname = parsed.hostname.toLowerCase();
+  if (
+    hostname === 'localhost'
+    || hostname === 'metadata.google.internal'
+    || hostname.endsWith('.local')
+    || hostname.endsWith('.internal')
+    || /^(10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.)/.test(hostname)
+  ) return false;
+  return true;
+}
+
 async function resolveStoredFileSize(url: string): Promise<number | null> {
   try {
     const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
@@ -126,10 +139,10 @@ Deno.serve(async (req) => {
       try { parsed = new URL(externalUrl); } catch {
         return Response.json({ error: 'Invalid remix link' }, { status: 400 });
       }
-      if (parsed.protocol !== 'https:') {
-        return Response.json({ error: 'Remix links must use HTTPS' }, { status: 400 });
+      if (!isSafeExternalMediaUrl(parsed)) {
+        return Response.json({ error: 'Remix links must use a public HTTPS host' }, { status: 400 });
       }
-      remixFileUrl = externalUrl;
+      remixFileUrl = parsed.toString();
     }
 
     const deviceType = DEVICE_TYPES.has(body?.device_type) ? body.device_type : 'desktop';

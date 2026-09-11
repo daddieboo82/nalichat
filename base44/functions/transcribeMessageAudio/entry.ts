@@ -3,11 +3,44 @@ import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 
+const MAX_TRANSCRIBE_BYTES = 50 * 1024 * 1024;
+
+async function storedMediaSize(url: string): Promise<number | null> {
+  try {
+    const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+    if (head.ok) {
+      const length = Number(head.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0) return length;
+    }
+  } catch {}
+
+  try {
+    const probe = await fetch(url, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-0' },
+      redirect: 'manual',
+    });
+    if (probe.ok || probe.status === 206) {
+      const range = probe.headers.get('content-range') || '';
+      const match = range.match(/\/(\d+)$/);
+      if (match) return Number(match[1]);
+      const length = Number(probe.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0 && probe.status !== 206) return length;
+    }
+    try { await probe.body?.cancel(); } catch {}
+  } catch {}
+  return null;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
 
     const rate = await consumeHourlyLimit(
       base44.asServiceRole.entities,
@@ -33,6 +66,14 @@ Deno.serve(async (req) => {
     }
     if (!isTrustedStoredMediaUrl(message.file_url)) {
       return Response.json({ error: 'Stored audio host is not allowed' }, { status: 400 });
+    }
+
+    const mediaSize = await storedMediaSize(message.file_url);
+    if (mediaSize === null) {
+      return Response.json({ error: 'Could not verify stored audio size' }, { status: 400 });
+    }
+    if (mediaSize <= 0 || mediaSize > MAX_TRANSCRIBE_BYTES) {
+      return Response.json({ error: 'Voice transcription supports audio up to 50MB' }, { status: 413 });
     }
 
     const { allowed } = await requireEntitlement(entities, user.id, 'voice.transcription');

@@ -276,6 +276,12 @@ describe('release configuration', () => {
     expect(manageConversation).toContain('await entities.TypingStatus.delete(row.id)');
   });
 
+  it('highlights the current user reaction using the server reaction-key format', async () => {
+    const bubble = await readText('src/components/messages/MessageBubble.jsx');
+    expect(bubble).toContain("key.endsWith(`__${currentUser.id}`)");
+    expect(bubble).not.toContain('(message.reactions || {})[currentUser.id]');
+  });
+
 
   it('repairs message caches on delete and rate-limits moderated edits', async () => {
     const mutate = await readText('base44/functions/mutateConversationMessage/entry.ts');

@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
       is_explicit: Boolean(body.is_explicit),
       bpm: Number.isFinite(Number(body.bpm)) ? Number(body.bpm) : undefined,
       creator_id: user.id,
-      creator_name: user.display_name || user.full_name || user.email || 'User',
+      creator_name: user.display_name || user.full_name || 'User',
       creator_avatar: user.avatar_url || null,
       featured: false,
       likes: 0,

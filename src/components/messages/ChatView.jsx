@@ -31,6 +31,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [threadMessage, setThreadMessage] = useState(null);
+  const [threadTargetId, setThreadTargetId] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [unreadSinceScroll, setUnreadSinceScroll] = useState(0);
@@ -133,8 +134,38 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     setEditingMessage(null);
     setShowGroupInfo(false);
     setThreadMessage(null);
+    setThreadTargetId(null);
     setShowSearch(false);
   }, [conversation?.id]);
+
+  const revealSearchResult = async (message) => {
+    if (message.thread_id) {
+      const parent = messages.find((candidate) => candidate.id === message.thread_id)
+        || await base44.entities.Message.get(message.thread_id);
+      if (!parent) throw new Error("Thread parent is unavailable.");
+      setThreadTargetId(message.id);
+      setThreadMessage(parent);
+      return;
+    }
+
+    if (!messages.some((candidate) => candidate.id === message.id)) {
+      queryClient.setQueryData(["messages", conversation?.id], (current = []) =>
+        [...current, message].sort(
+          (left, right) => new Date(left.created_date || 0) - new Date(right.created_date || 0),
+        )
+      );
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+    }
+
+    const element = document.getElementById(`message-${message.id}`);
+    if (!element) throw new Error("Message is not available in this conversation.");
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
+    element.classList.add("bg-primary/20", "rounded-xl", "transition-colors");
+    window.setTimeout(
+      () => element.classList.remove("bg-primary/20", "rounded-xl"),
+      2000,
+    );
+  };
 
   const getOtherUser = () => {
     if (conversation?.type === "group") return null;
@@ -287,7 +318,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                 setReplyTo(null);
               }}
               onReact={onReact}
-              onOpenThread={setThreadMessage}
+              onOpenThread={(message) => { setThreadTargetId(null); setThreadMessage(message); }}
               users={users}
               onCopy={() => copyToClipboard(item.text || "")}
               onDelete={async (id) => {
@@ -390,20 +421,21 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
         <GroupInfoPanel conversation={conversation} users={users} currentUser={currentUser} onClose={() => setShowGroupInfo(false)} onStartDM={onStartDM} />
       )}
       {threadMessage && (
-        <ThreadPanel parentMessage={threadMessage} currentUser={currentUser} onClose={() => setThreadMessage(null)} />
+        <ThreadPanel
+          parentMessage={threadMessage}
+          currentUser={currentUser}
+          targetMessageId={threadTargetId}
+          onClose={() => {
+            setThreadMessage(null);
+            setThreadTargetId(null);
+          }}
+        />
       )}
       {showSearch && (
         <MessageSearch
-          messages={messages}
+          conversation={conversation}
           onClose={() => setShowSearch(false)}
-          onSelectMessage={(msg) => {
-            const el = document.getElementById(`message-${msg.id}`);
-            if (el) {
-              el.scrollIntoView({ behavior: "smooth", block: "center" });
-              el.classList.add("bg-primary/20", "rounded-xl", "transition-colors");
-              setTimeout(() => el.classList.remove("bg-primary/20", "rounded-xl"), 2000);
-            }
-          }}
+          onSelectMessage={revealSearchResult}
           users={users}
         />
       )}

@@ -27,7 +27,8 @@ export default async function(req) {
       cover_url: u.cover_url,
       website: u.website,
       bio: u.bio,
-      role: u.role === 'admin' ? 'admin' : 'user',
+      // Never expose authorization privilege through public discovery.
+      role: 'user',
       artist_role: u.artist_role || (
         ['artist', 'producer', 'engineer', 'ar'].includes(u.role) ? u.role : 'artist'
       ),
@@ -38,7 +39,6 @@ export default async function(req) {
       viral_concepts_generated: Number(u.viral_concepts_generated || 0),
       achievement_count: achievementCount[u.id] || 0,
       is_online: Boolean(u.is_online),
-      created_date: u.created_date,
     }));
 
     return Response.json({ users: publicUsers });

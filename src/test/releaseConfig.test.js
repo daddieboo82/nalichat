@@ -6,6 +6,10 @@ async function readJson(path) {
   return JSON.parse(await readFile(new URL(`../../${path}`, import.meta.url), 'utf8'));
 }
 
+async function readText(path) {
+  return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
+}
+
 describe('release configuration', () => {
   it('targets the current Android API required by the release pipeline', async () => {
     const manifest = await readJson('src/twa-manifest.json');
@@ -97,6 +101,28 @@ describe('release configuration', () => {
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
     expect(submission.properties.vote_count.rls?.write?.user_condition?.role).toBe('admin');
     expect(submission.properties.status.rls?.write?.user_condition?.role).toBe('admin');
+  });
+
+
+  it('keeps play analytics server-authoritative', async () => {
+    const artPost = await readJson('base44/entities/ArtPost.jsonc');
+    expect(artPost.properties.views.rls?.write?.user_condition?.role).toBe('admin');
+
+    const playLedger = await readJson('base44/entities/ArtPostPlay.jsonc');
+    expect(playLedger.rls.create?.user_condition?.role).toBe('admin');
+
+    const recordPlay = await readText('base44/functions/recordArtPostPlay/entry.ts');
+    expect(recordPlay).toContain('creator_self_play');
+    expect(recordPlay).toContain('already_counted_today');
+    expect(recordPlay).toContain('$inc: { views: 1 }');
+
+    const profile = await readText('src/pages/Profile.jsx');
+    expect(profile).toContain('const totalPlays');
+    expect(profile).toContain('{ label: "Plays", value: totalPlays');
+
+    const analytics = await readText('src/pages/Analytics.jsx');
+    expect(analytics).not.toContain('Cumulative Growth');
+    expect(analytics).toContain('Catalog Totals by Release');
   });
 
   it('keeps the PWA manifest scoped to the serving origin', async () => {

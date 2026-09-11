@@ -57,7 +57,11 @@ Deno.serve(async (req) => {
     let code = '';
     for (let i = 0; i < 5; i += 1) {
       code = inviteCode();
-      const duplicate = await entities.Squad.filter({ invite_code: code });
+      const duplicate = await entities.Squad.filter(
+        { invite_code: code },
+        '-created_date',
+        1,
+      );
       if (duplicate.length === 0) break;
       code = '';
     }

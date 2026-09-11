@@ -37,10 +37,14 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Contact is unavailable' }, { status: 404 });
       }
 
-      const existing = await entities.Contact.filter({
-        user_id: user.id,
-        contact_user_id: target.id,
-      });
+      const existing = await entities.Contact.filter(
+        {
+          user_id: user.id,
+          contact_user_id: target.id,
+        },
+        '-created_date',
+        1,
+      );
       if (existing.length > 0) {
         return Response.json({ success: true, contact: existing[0], existing: true });
       }

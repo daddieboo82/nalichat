@@ -19,7 +19,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invalid invite code' }, { status: 400 });
     }
 
-    const squads = await base44.asServiceRole.entities.Squad.filter({ invite_code: normalizedCode });
+    const squads = await base44.asServiceRole.entities.Squad.filter(
+      { invite_code: normalizedCode },
+      '-created_date',
+      1,
+    );
     const squad = squads[0];
     if (!squad || squad.status === 'ended' || isInviteExpired(squad)) {
       return Response.json({ error: 'Invite not found' }, { status: 404 });

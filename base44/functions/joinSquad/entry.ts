@@ -30,7 +30,11 @@ Deno.serve(async (req) => {
     if (!squadRate.allowed) {
       return Response.json({ error: 'Squad action rate limit exceeded. Please try again later.' }, { status: 429 });
     }
-    const squads = await entities.Squad.filter({ invite_code: String(inviteCode).toUpperCase() });
+    const squads = await entities.Squad.filter(
+      { invite_code: String(inviteCode).toUpperCase() },
+      '-created_date',
+      1,
+    );
     const squad = squads[0];
     if (!squad || squad.status !== 'pending' || squad.member_b_id || isInviteExpired(squad)) {
       if (squad?.status === 'pending' && isInviteExpired(squad)) {

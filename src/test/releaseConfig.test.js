@@ -410,6 +410,15 @@ describe('release configuration', () => {
   });
 
 
+  it('enforces configured challenge voting windows server-side', async () => {
+    const vote = await readText('base44/functions/castVote/entry.ts');
+    expect(vote).toContain('Voting has not opened yet.');
+    expect(vote).toContain('Voting has ended.');
+    expect(vote).toContain('challenge.submission_end_date');
+    expect(vote).toContain('challenge.voting_end_date');
+  });
+
+
   it('keeps ArtPost views server-counted and challenge submissions immutable by entrants', async () => {
     const artPost = await readJson('base44/entities/ArtPost.jsonc');
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');

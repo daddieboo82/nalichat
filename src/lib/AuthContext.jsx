@@ -122,17 +122,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    // Clear the token locally without triggering a full-page hard reload (which
-    // causes a multi-second blank screen while the whole app re-boots).
+  const logout = async () => {
+    // Terminate the server/cookie-backed session as well as local bearer-token
+    // state. Clearing storage alone can leave a valid platform session cookie,
+    // causing a supposedly logged-out browser to authenticate again.
     try {
-      localStorage.removeItem('base44_access_token');
-      localStorage.removeItem('base44_token');
-      sessionStorage.removeItem('base44_access_token');
-      sessionStorage.removeItem('base44_token');
-    } catch (e) {}
-    setUser(null);
-    setIsAuthenticated(false);
+      await base44.auth.logout();
+    } catch (error) {
+      console.error('Server logout failed:', error);
+    } finally {
+      try {
+        localStorage.removeItem('base44_access_token');
+        localStorage.removeItem('base44_token');
+        sessionStorage.removeItem('base44_access_token');
+        sessionStorage.removeItem('base44_token');
+      } catch (e) {}
+      setUser(null);
+      setIsAuthenticated(false);
+      setAuthChecked(true);
+    }
   };
 
   const navigateToLogin = () => {

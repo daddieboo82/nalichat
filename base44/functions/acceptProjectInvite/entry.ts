@@ -26,9 +26,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invite is invalid or expired' }, { status: 403 });
     }
     const maxUses = Number(invite.max_uses || 25);
-    if (Number(invite.used_count || 0) >= maxUses) {
-      return Response.json({ error: 'Invite usage limit reached' }, { status: 410 });
-    }
 
     const project = await base44.asServiceRole.entities.Project.get(projectId);
     if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
@@ -44,6 +41,19 @@ Deno.serve(async (req) => {
       }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
+    const claim = await base44.asServiceRole.entities.ProjectInvite.updateMany(
+      {
+        id: invite.id,
+        used_count: { $lt: maxUses },
+      },
+      { $inc: { used_count: 1 } },
+    );
+    if (Number(claim?.updated || 0) !== 1) {
+      return Response.json({ error: 'Invite usage limit reached' }, { status: 410 });
+    }
+
+    let membershipGranted = false;
+    try {
     if (project.owner_id !== user.id) {
       const collaboratorIds = Array.from(new Set([...(project.collaborator_ids || []), user.id]));
       const roles = { ...(project.collaborator_roles || {}), [user.id]: invite.role };
@@ -74,16 +84,22 @@ Deno.serve(async (req) => {
           await entity.update(row.id, patch);
         }
       }
+      membershipGranted = true;
     }
-
-    await base44.asServiceRole.entities.ProjectInvite.update(invite.id, {
-      used_count: (invite.used_count || 0) + 1,
-    });
 
     return Response.json(
       { success: true, role: invite.role },
       { headers: { 'Cache-Control': 'no-store' } },
     );
+    } catch (grantError) {
+      if (!membershipGranted) {
+        await base44.asServiceRole.entities.ProjectInvite.updateMany(
+          { id: invite.id, used_count: { $gt: 0 } },
+          { $inc: { used_count: -1 } },
+        ).catch(() => {});
+      }
+      throw grantError;
+    }
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not accept project invite' }, { status: 500 });
   }

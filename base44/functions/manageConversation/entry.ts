@@ -7,16 +7,20 @@ import {
 
 const PAGE_SIZE = 200;
 
-async function dmConversationId(userA: string, userB: string) {
-  const pair = [userA, userB].sort().join(':');
+async function hashedConversationId(prefix: string, value: string) {
   const digest = await crypto.subtle.digest(
     'SHA-256',
-    new TextEncoder().encode(pair),
+    new TextEncoder().encode(value),
   );
   const hex = Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
-  return `dm_${hex}`;
+  return `${prefix}_${hex}`;
+}
+
+async function dmConversationId(userA: string, userB: string) {
+  const pair = [userA, userB].sort().join(':');
+  return hashedConversationId('dm', pair);
 }
 
 function pruneReactions(reactions: unknown, participantIds: string[]) {
@@ -257,9 +261,15 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'create_public') {
-      const name = String(body?.name || '').trim().slice(0, 120);
+      if (typeof body?.name !== 'string') {
+        return Response.json({ error: 'Public room name must be a string' }, { status: 400 });
+      }
+      const name = body.name.trim();
       if (!name.startsWith('#') || name.length < 2) {
         return Response.json({ error: 'Public room names must start with #' }, { status: 400 });
+      }
+      if (name.length > 120) {
+        return Response.json({ error: 'Public room name must be 120 characters or fewer' }, { status: 413 });
       }
       const existing = await entities.Conversation.filter(
         {
@@ -295,13 +305,53 @@ Deno.serve(async (req) => {
         }
       }
 
-      const conversation = await entities.Conversation.create({
-        name,
-        type: 'group',
-        is_public: true,
-        participant_ids: [user.id],
-      });
-      return Response.json({ success: true, conversation });
+      const id = await hashedConversationId('public_room', name);
+      try {
+        const conversation = await entities.Conversation.create({
+          id,
+          name,
+          type: 'group',
+          is_public: true,
+          participant_ids: [user.id],
+        });
+        return Response.json({ success: true, conversation });
+      } catch (createError) {
+        const raced = await entities.Conversation.get(id).catch(() => null);
+        if (
+          !raced
+          || raced.type !== 'group'
+          || raced.is_public !== true
+          || raced.name !== name
+        ) {
+          throw createError;
+        }
+
+        const lockId = await acquireConversationMembershipLock(entities, raced.id);
+        if (!lockId) {
+          return Response.json(
+            { error: 'Conversation membership is being updated. Please retry.' },
+            { status: 409 },
+          );
+        }
+        try {
+          const currentRoom = await entities.Conversation.get(raced.id);
+          if (!currentRoom) {
+            return Response.json({ error: 'Conversation not found' }, { status: 404 });
+          }
+          const participants = Array.from(new Set([...(currentRoom.participant_ids || []), user.id]));
+          if (!(currentRoom.participant_ids || []).includes(user.id)) {
+            await entities.Conversation.update(currentRoom.id, { participant_ids: participants });
+            await syncConversationAudience(entities, currentRoom.id, participants);
+          }
+          return Response.json({
+            success: true,
+            conversation: { ...currentRoom, participant_ids: participants },
+            duplicate: true,
+          });
+        } finally {
+          await releaseConversationMembershipLock(entities, lockId);
+        }
+      }
     }
 
     const conversationId = String(body?.conversationId || '');

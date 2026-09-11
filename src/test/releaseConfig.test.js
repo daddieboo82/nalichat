@@ -57,6 +57,17 @@ describe('release configuration', () => {
     expect(userSchema.properties.trial_claim_id.stripe_checkout_claim_id).toBeUndefined();
   });
 
+  it('reserves trial eligibility at checkout without consuming it before Stripe starts the trial', async () => {
+    const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');
+    const webhook = await readText('base44/functions/stripeWebhook/entry.ts');
+
+    expect(checkout).toContain('trial_claim_id: requestKey');
+    expect(checkout).not.toContain('trial_used_at: now');
+    expect(checkout).toContain('!user.trial_used_at && user.trial_claim_id === requestKey');
+    expect(webhook).toContain('trialUsedAt');
+    expect(webhook).toContain('trial_used_at: trialUsedAt');
+  });
+
   it('does not expose Studio tracks or shared files through globally-open RLS', async () => {
     const track = await readJson('base44/entities/Track.jsonc');
     const version = await readJson('base44/entities/TrackVersion.jsonc');

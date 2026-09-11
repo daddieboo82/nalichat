@@ -26,6 +26,8 @@ export default function ProjectsSummary() {
   const [newProjectTitle, setNewProjectTitle] = useState("");
   const [newProjectDescription, setNewProjectDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [inviteLinks, setInviteLinks] = useState({});
+  const [creatingInviteId, setCreatingInviteId] = useState(null);
 
   useEffect(() => {
     if (searchParams.get('new') === 'true') {
@@ -33,6 +35,27 @@ export default function ProjectsSummary() {
       setSearchParams({});
     }
   }, [searchParams, setSearchParams]);
+
+  const handleCreateInvite = async (projectId) => {
+    setCreatingInviteId(projectId);
+    try {
+      const res = await base44.functions.invoke("createProjectInvite", {
+        projectId,
+        role: "viewer",
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      const token = res?.data?.token;
+      if (!token) throw new Error("Invite token was not created");
+      const url = `${window.location.origin}/studio?room=${projectId}&invite=${encodeURIComponent(token)}`;
+      setInviteLinks((prev) => ({ ...prev, [projectId]: url }));
+      await navigator.clipboard.writeText(url);
+      toast.success("Secure invite link copied to clipboard!");
+    } catch (error) {
+      toast.error(error?.message || "Could not create invite link");
+    } finally {
+      setCreatingInviteId(null);
+    }
+  };
 
   const handleCreateProject = async () => {
     if (!newProjectTitle.trim()) return toast.error("Project title is required");
@@ -146,40 +169,54 @@ export default function ProjectsSummary() {
                           <Users className="w-3 h-3 mr-1" />
                           {project.collaborator_ids?.length || 0} Collaborator{(project.collaborator_ids?.length !== 1) ? 's' : ''}
                         </Badge>
-                        <div onClick={e => e.stopPropagation()}>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" size="sm" className="h-6 text-xs gap-1.5 ml-2 border-primary/50 text-primary hover:bg-primary/10 transition-colors">
-                                <Link2 className="w-3 h-3" /> Invite
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent align="end" className="w-72">
-                            <div className="space-y-3">
-                              <div>
-                                <h4 className="font-semibold text-sm">Invite to Project</h4>
-                                <p className="text-xs text-muted-foreground">Share this link to collaborate in the studio.</p>
-                              </div>
-                              <div className="flex gap-2">
-                                <Input 
-                                  readOnly 
-                                  value={`${window.location.origin}/studio?room=${project.id}`} 
-                                  className="h-8 text-xs bg-secondary/50 font-mono"
-                                />
-                                <Button 
-                                  size="sm" 
-                                  className="h-8 px-3 shrink-0 bg-primary hover:bg-primary/90 text-white"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(`${window.location.origin}/studio?room=${project.id}`);
-                                    toast.success('Invite link copied to clipboard!');
-                                  }}
-                                >
-                                  <Copy className="w-3 h-3" />
+                        {project.owner_id === user.id && (
+                          <div onClick={e => e.stopPropagation()}>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-6 text-xs gap-1.5 ml-2 border-primary/50 text-primary hover:bg-primary/10 transition-colors">
+                                  <Link2 className="w-3 h-3" /> Invite
                                 </Button>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                        </div>
+                              </PopoverTrigger>
+                              <PopoverContent align="end" className="w-72">
+                                <div className="space-y-3">
+                                  <div>
+                                    <h4 className="font-semibold text-sm">Invite to Project</h4>
+                                    <p className="text-xs text-muted-foreground">Create a viewer invite link. Links expire automatically.</p>
+                                  </div>
+                                  {inviteLinks[project.id] ? (
+                                    <div className="flex gap-2">
+                                      <Input
+                                        readOnly
+                                        value={inviteLinks[project.id]}
+                                        className="h-8 text-xs bg-secondary/50 font-mono"
+                                      />
+                                      <Button
+                                        size="sm"
+                                        className="h-8 px-3 shrink-0 bg-primary hover:bg-primary/90 text-white"
+                                        onClick={async () => {
+                                          await navigator.clipboard.writeText(inviteLinks[project.id]);
+                                          toast.success("Invite link copied to clipboard!");
+                                        }}
+                                      >
+                                        <Copy className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      className="w-full"
+                                      disabled={creatingInviteId === project.id}
+                                      onClick={() => handleCreateInvite(project.id)}
+                                    >
+                                      {creatingInviteId === project.id ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Link2 className="w-3 h-3 mr-2" />}
+                                      Create & Copy Invite Link
+                                    </Button>
+                                  )}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardHeader>

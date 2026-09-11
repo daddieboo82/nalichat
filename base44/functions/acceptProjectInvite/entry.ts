@@ -1,46 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 const ACCESS_SYNC_BATCH_SIZE = 200;
-const MEMBERSHIP_LOCK_TTL_MS = 5 * 60 * 1000;
-
-async function acquireMembershipLock(entities: any, projectId: string) {
-  const id = `project_membership_lock_${projectId}`;
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + MEMBERSHIP_LOCK_TTL_MS).toISOString();
-
-  try {
-    await entities.ProjectMembershipLock.create({
-      id,
-      project_id: projectId,
-      claimed_at: now.toISOString(),
-      expires_at: expiresAt,
-    });
-    return id;
-  } catch (createError) {
-    const existing = await entities.ProjectMembershipLock.get(id).catch(() => null);
-    if (!existing) throw createError;
-
-    const expired = Date.parse(existing.expires_at || '') <= now.getTime();
-    if (!expired) return null;
-
-    await entities.ProjectMembershipLock.delete(id).catch(() => {});
-    try {
-      await entities.ProjectMembershipLock.create({
-        id,
-        project_id: projectId,
-        claimed_at: now.toISOString(),
-        expires_at: expiresAt,
-      });
-      return id;
-    } catch (retryError) {
-      const raced = await entities.ProjectMembershipLock.get(id).catch(() => null);
-      if (raced) return null;
-      throw retryError;
-    }
-  }
-}
-
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -93,7 +55,7 @@ Deno.serve(async (req) => {
     }
     const maxUses = Number(invite.max_uses || 25);
 
-    const lockId = await acquireMembershipLock(base44.asServiceRole.entities, projectId);
+    const lockId = await acquireProjectMembershipLock(base44.asServiceRole.entities, projectId);
     if (!lockId) {
       return Response.json(
         { error: 'Project membership is being updated. Please retry.' },
@@ -186,7 +148,7 @@ Deno.serve(async (req) => {
       throw grantError;
     }
     } finally {
-      await base44.asServiceRole.entities.ProjectMembershipLock.delete(lockId).catch(() => {});
+      await releaseProjectMembershipLock(base44.asServiceRole.entities, lockId);
     }
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not accept project invite' }, { status: 500 });

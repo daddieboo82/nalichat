@@ -9,7 +9,11 @@ async function canAccessParent(entities: any, user: any, parentType: string, par
 
   if (parentType === 'challenge_submission') {
     const parent = await entities.ChallengeSubmission.get(parentId);
-    return parent ? { allowed: true, parent } : { allowed: false, parent: null };
+    if (!parent) return { allowed: false, parent: null };
+    const allowed = parent.status === 'approved'
+      || user?.role === 'admin'
+      || parent.producer_id === user?.id;
+    return { allowed, parent };
   }
 
   if (parentType === 'track') {

@@ -1647,6 +1647,21 @@ describe('release configuration', () => {
     }
   });
 
+  it('rate-limits expensive authenticated read scans', async () => {
+    const search = await readText('base44/functions/searchMessages/entry.ts');
+    const liked = await readText('base44/functions/listMyLikedPostIds/entry.ts');
+
+    expect(search).toContain('consumeHourlyLimit');
+    expect(search).toContain("'message_search'");
+    expect(search).toMatch(/'message_search',\s*300/);
+    expect(search).toContain("code: 'RATE_LIMITED'");
+
+    expect(liked).toContain('consumeHourlyLimit');
+    expect(liked).toContain("'liked_post_lookup'");
+    expect(liked).toMatch(/'liked_post_lookup',\s*300/);
+    expect(liked).toContain('Liked-post lookup rate limit exceeded');
+  });
+
   it('bounds public lookup work before service-role reads', async () => {
     const leaderboard = await readText('base44/functions/getChallengeLeaderboard/entry.ts');
     const squadInvite = await readText('base44/functions/getSquadInvite/entry.ts');

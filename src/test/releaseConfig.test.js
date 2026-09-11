@@ -805,8 +805,8 @@ describe('release configuration', () => {
     expect(deletion).toContain("['TrackVersion', 'Track', 'SharedFile', 'Folder', 'Milestone']");
     expect(deletion).toContain("creator_name: 'Deleted User'");
     expect(deletion).toContain("author_name: 'Deleted User'");
-    expect(deletion).toContain("ChallengeVote.filter({ voter_id: user.id })");
-    expect(deletion).toContain("actorNotifications");
+    expect(deletion).toContain("{ voter_id: user.id }");
+    expect(deletion).toContain("{ actor_id: user.id }");
     expect(deletion).toContain("editor_ids: editorIds");
     expect(deletion).toContain("edit_user_ids: remainingEditors");
   });

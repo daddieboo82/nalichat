@@ -36,6 +36,22 @@ async function processMatchingBatches(
   }
 }
 
+async function processPagedRows(
+  entity: any,
+  query: Record<string, unknown>,
+  process: (row: any) => Promise<unknown>,
+): Promise<number> {
+  let processed = 0;
+  for (let skip = 0; ; skip += CLEANUP_BATCH_SIZE) {
+    const rows = await entity.filter(query, '-created_date', CLEANUP_BATCH_SIZE, skip);
+    for (const row of rows) {
+      await process(row);
+      processed += 1;
+    }
+    if (rows.length < CLEANUP_BATCH_SIZE) return processed;
+  }
+}
+
 async function syncConversationAudience(entities: any, conversationId: string, participantIds: string[]) {
   const [messages, typingRows] = await Promise.all([
     entities.Message.filter({ conversation_id: conversationId }),
@@ -248,86 +264,92 @@ Deno.serve(async (req) => {
 
     // Preserve shared chat history for remaining participants, but remove
     // personal identity from messages authored by the deleted account.
-    const authoredMessages = await entities.Message.filter({ sender_id: user.id });
-    const authoredMessageIds = new Set(authoredMessages.map((message: any) => message.id));
-    for (const message of authoredMessages) {
-      await entities.Message.update(message.id, {
-        sender_id: tombstoneId,
-        sender_name: 'Deleted User',
-        sender_avatar: null,
-      });
-    }
-
-    // Replies cache the original sender label separately from the parent
-    // message. Anonymize that copied identity while preserving quoted text.
-    if (authoredMessageIds.size > 0) {
-      for (const parentId of authoredMessageIds) {
-        const replies = await entities.Message.filter({ reply_to_id: parentId });
-        for (const reply of replies) {
-          if (reply.reply_to_sender) {
-            await entities.Message.update(reply.id, { reply_to_sender: 'Deleted User' });
-          }
-        }
-      }
-    }
+    await processMatchingBatches(
+      entities.Message,
+      { sender_id: user.id },
+      async (message) => {
+        // Replies cache the original sender label separately from the parent.
+        await processPagedRows(
+          entities.Message,
+          { reply_to_id: message.id },
+          (reply) => reply.reply_to_sender
+            ? entities.Message.update(reply.id, { reply_to_sender: 'Deleted User' })
+            : Promise.resolve(),
+        );
+        await entities.Message.update(message.id, {
+          sender_id: tombstoneId,
+          sender_name: 'Deleted User',
+          sender_avatar: null,
+        });
+      },
+    );
 
     // Preserve public releases and comments, but remove personal identity.
-    const authoredPosts = await entities.ArtPost.filter({ creator_id: user.id });
-    for (const post of authoredPosts) {
-      await entities.ArtPost.update(post.id, {
+    await processMatchingBatches(
+      entities.ArtPost,
+      { creator_id: user.id },
+      (post) => entities.ArtPost.update(post.id, {
         creator_id: tombstoneId,
         creator_name: 'Deleted User',
         creator_avatar: null,
-      });
-    }
+      }),
+    );
 
-    const authoredComments = await entities.TrackComment.filter({ author_id: user.id });
-    for (const comment of authoredComments) {
-      await entities.TrackComment.update(comment.id, {
+    await processMatchingBatches(
+      entities.TrackComment,
+      { author_id: user.id },
+      (comment) => entities.TrackComment.update(comment.id, {
         author_id: tombstoneId,
         author_name: 'Deleted User',
         author_avatar: null,
-      });
-    }
+      }),
+    );
 
     // Remove likes cast by the deleted account atomically so concurrent
     // likes/unlikes cannot be overwritten by a stale liked_by snapshot.
-    const likedPosts = await entities.ArtPost.filter({ liked_by: user.id });
-    for (const post of likedPosts) {
-      await entities.ArtPost.updateMany(
-        { id: post.id },
-        { $pull: { liked_by: user.id } },
-      );
-      const refreshedPost = await entities.ArtPost.get(post.id).catch(() => null);
-      if (refreshedPost) {
-        await entities.ArtPost.update(post.id, {
-          likes: Array.isArray(refreshedPost.liked_by) ? refreshedPost.liked_by.length : 0,
-        });
-      }
-    }
+    await processMatchingBatches(
+      entities.ArtPost,
+      { liked_by: user.id },
+      async (post) => {
+        await entities.ArtPost.updateMany(
+          { id: post.id },
+          { $pull: { liked_by: user.id } },
+        );
+        const refreshedPost = await entities.ArtPost.get(post.id).catch(() => null);
+        if (refreshedPost) {
+          await entities.ArtPost.update(post.id, {
+            likes: Array.isArray(refreshedPost.liked_by) ? refreshedPost.liked_by.length : 0,
+          });
+        }
+      },
+    );
 
     // Remove challenge votes cast by the deleted account and reconcile totals
     // atomically so concurrent votes cannot be overwritten by a stale read.
-    const challengeVotes = await entities.ChallengeVote.filter({ voter_id: user.id });
-    for (const vote of challengeVotes) {
-      try {
-        await entities.ChallengeSubmission.updateMany(
-          { id: vote.submission_id, vote_count: { $gt: 0 } },
-          { $inc: { vote_count: -1 } },
-        );
-      } catch {}
-      await entities.ChallengeVote.delete(vote.id);
-    }
+    await processMatchingBatches(
+      entities.ChallengeVote,
+      { voter_id: user.id },
+      async (vote) => {
+        try {
+          await entities.ChallengeSubmission.updateMany(
+            { id: vote.submission_id, vote_count: { $gt: 0 } },
+            { $inc: { vote_count: -1 } },
+          );
+        } catch {}
+        await entities.ChallengeVote.delete(vote.id);
+      },
+    );
 
     // Notifications delivered to other users may retain actor identity; anonymize it.
-    const actorNotifications = await entities.Notification.filter({ actor_id: user.id });
-    for (const notification of actorNotifications) {
-      await entities.Notification.update(notification.id, {
+    await processMatchingBatches(
+      entities.Notification,
+      { actor_id: user.id },
+      (notification) => entities.Notification.update(notification.id, {
         actor_id: tombstoneId,
         actor_name: 'Deleted User',
         actor_avatar: null,
-      });
-    }
+      }),
+    );
 
     // Remove the account from conversation membership without deleting the
     // conversation for other participants.

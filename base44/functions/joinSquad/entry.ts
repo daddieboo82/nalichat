@@ -1,5 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
+function isInviteExpired(squad: any) {
+  const raw = squad?.invite_expires_at || squad?.created_date;
+  if (!raw) return false;
+  const base = Date.parse(raw);
+  if (Number.isNaN(base)) return false;
+  const expiry = squad?.invite_expires_at ? base : base + 7 * 24 * 60 * 60 * 1000;
+  return expiry <= Date.now();
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -18,7 +27,14 @@ Deno.serve(async (req) => {
     const entities = base44.asServiceRole.entities;
     const squads = await entities.Squad.filter({ invite_code: String(inviteCode).toUpperCase() });
     const squad = squads[0];
-    if (!squad || squad.status !== 'pending' || squad.member_b_id) {
+    if (!squad || squad.status !== 'pending' || squad.member_b_id || isInviteExpired(squad)) {
+      if (squad?.status === 'pending' && isInviteExpired(squad)) {
+        await entities.Squad.update(squad.id, { status: 'ended' }).catch(() => {});
+        await entities.User.updateMany(
+          { id: squad.member_a_id, squad_membership_id: squad.id },
+          { $set: { squad_membership_id: null } },
+        ).catch(() => {});
+      }
       return Response.json({ error: 'Invite already used or unavailable' }, { status: 409 });
     }
     if (squad.member_a_id === user.id) {

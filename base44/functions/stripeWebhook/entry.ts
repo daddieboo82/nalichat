@@ -472,14 +472,37 @@ Deno.serve(async (req) => {
         last_error: '',
       });
     } else {
-      ledger = await entities.StripeWebhookEvent.create({
-        id: event.id,
-        stripe_event_id: event.id,
-        event_type: event.type,
-        event_created: event.created,
-        processing_state: 'processing',
-        attempt_count: 1,
-      });
+      try {
+        ledger = await entities.StripeWebhookEvent.create({
+          id: event.id,
+          stripe_event_id: event.id,
+          event_type: event.type,
+          event_created: event.created,
+          processing_state: 'processing',
+          attempt_count: 1,
+        });
+      } catch (createError) {
+        const raced = oneRecord(
+          await entities.StripeWebhookEvent.filter({ stripe_event_id: event.id }, '-created_date', 2),
+          'webhook event ledger',
+        );
+        if (!raced) throw createError;
+
+        const racedAction = webhookLedgerAction(
+          raced.processing_state,
+          raced.updated_date || raced.created_date,
+        );
+        if (racedAction === 'duplicate') {
+          return Response.json({ received: true, duplicate: true });
+        }
+        if (racedAction === 'busy') {
+          return Response.json(
+            { error: 'Event is already processing; retry later' },
+            { status: 409 },
+          );
+        }
+        throw createError;
+      }
     }
 
     const environment = stripeEnvironment(Deno.env.get('STRIPE_ENVIRONMENT'));

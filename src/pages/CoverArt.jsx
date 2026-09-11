@@ -227,10 +227,7 @@ export default function CoverArt() {
     mutationFn: async (post) => {
       setGeneratingStatus("Listening to your track...");
       const res = await base44.functions.invoke('generate-cover-art', {
-        file_url: post.file_url,
-        title: post.title,
-        genre: post.genre,
-        tags: post.tags,
+        post_id: post.id,
       });
       if (res.data?.error) throw new Error(res.data.error);
       if (!res.data?.image_url) throw new Error("Image generation failed");

@@ -6,12 +6,25 @@ function parseDate(value: unknown) {
   return Number.isFinite(ms) ? ms : null;
 }
 
-function cleanUrl(value: unknown) {
+const TRUSTED_MEDIA_HOSTS = [
+  'storage.googleapis.com',
+  'base44-user-files.s3.amazonaws.com',
+  'base44-user-files.s3.us-east-1.amazonaws.com',
+  'files.base44.com',
+  'cdn.base44.com',
+];
+
+function cleanUploadedUrl(value: unknown) {
   if (!value) return '';
   const raw = String(value).trim();
   let parsed;
   try { parsed = new URL(raw); } catch { return ''; }
-  return parsed.protocol === 'https:' ? raw : '';
+  if (parsed.protocol !== 'https:') return '';
+  const hostname = parsed.hostname.toLowerCase();
+  const trusted = TRUSTED_MEDIA_HOSTS.some(
+    (host) => hostname === host || hostname.endsWith('.' + host),
+  );
+  return trusted ? parsed.toString() : '';
 }
 
 Deno.serve(async (req) => {
@@ -23,11 +36,11 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const title = String(body?.title || '').trim().slice(0, 200);
     const description = String(body?.description || '').trim().slice(0, 3000);
-    const sourceTrackUrl = cleanUrl(body?.source_track_url);
+    const sourceTrackUrl = cleanUploadedUrl(body?.source_track_url);
     const sourceTrackName = String(body?.source_track_name || '').trim().slice(0, 255);
 
     if (!title || !description || !sourceTrackUrl) {
-      return Response.json({ error: 'Title, description, and source track are required' }, { status: 400 });
+      return Response.json({ error: 'Title, description, and a trusted uploaded source track are required' }, { status: 400 });
     }
 
     const start = parseDate(body?.start_date);
@@ -77,7 +90,7 @@ Deno.serve(async (req) => {
       key: body?.key ? String(body.key).slice(0, 50) : undefined,
       rules: body?.rules ? String(body.rules).slice(0, 3000) : undefined,
       prize_description: body?.prize_description ? String(body.prize_description).slice(0, 2000) : undefined,
-      cover_url: cleanUrl(body?.cover_url) || undefined,
+      cover_url: cleanUploadedUrl(body?.cover_url) || undefined,
       status,
       start_date: start ? new Date(start).toISOString() : undefined,
       submission_end_date: submissionEnd ? new Date(submissionEnd).toISOString() : undefined,

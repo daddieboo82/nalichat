@@ -65,6 +65,7 @@ const SquadJoin = lazy(() => import('@/pages/SquadJoin'));
 const ViralSeed = lazy(() => import('@/pages/ViralSeed'));
 const Download = lazy(() => import('@/pages/Download'));
 const OAuthConsent = lazy(() => import('@/pages/OAuthConsent'));
+const SharedFileDownload = lazy(() => import('@/pages/SharedFileDownload'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -159,7 +160,7 @@ const AuthenticatedApp = () => {
   // from Terms/Privacy and cannot complete a password reset.
   const ONBOARDING_EXEMPT_PATHS = new Set([
     '/onboarding', '/login', '/register', '/forgot-password', '/reset-password',
-    '/privacy', '/terms', '/download', '/thankyou', '/oauth-consent',
+    '/privacy', '/terms', '/download', '/thankyou', '/oauth-consent', '/shared-file',
   ]);
   const currentPath = location.pathname.toLowerCase();
 
@@ -189,6 +190,7 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/oauth-consent" element={<OAuthConsent />} />
+      <Route path="/shared-file" element={<SharedFileDownload />} />
       <Route path="/onboarding" element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />}><Onboarding /></ProtectedRoute>} />
       <Route path="/Onboarding" element={<Navigate to="/onboarding" replace />} />
       <Route element={<AppLayout />}>
@@ -235,7 +237,7 @@ const AuthenticatedApp = () => {
       <Route path="*" element={<PageNotFound />} />
       </Routes>
       </Suspense>
-      {!['/login', '/register', '/onboarding', '/forgot-password', '/reset-password', '/oauth-consent'].includes(location.pathname) && <AskNaliHint />}
+      {!['/login', '/register', '/onboarding', '/forgot-password', '/reset-password', '/oauth-consent', '/shared-file'].includes(location.pathname) && <AskNaliHint />}
     </>
   );
 };

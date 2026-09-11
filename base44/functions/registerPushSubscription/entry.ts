@@ -16,7 +16,17 @@ Deno.serve(async (req) => {
     }
 
     const entity = base44.asServiceRole.entities.PushSubscription;
-    const existing = await entity.filter({ user_id: user.id, endpoint });
+    const endpointRows = await entity.filter({ endpoint });
+    const existing = endpointRows.find((row: any) => row.user_id === user.id);
+
+    // A browser push endpoint identifies a device/browser subscription. Keep it
+    // associated with only the account that most recently registered it.
+    for (const row of endpointRows) {
+      if (row.user_id !== user.id) {
+        await entity.delete(row.id);
+      }
+    }
+
     const data = {
       user_id: user.id,
       endpoint,
@@ -26,8 +36,8 @@ Deno.serve(async (req) => {
       last_seen_at: new Date().toISOString(),
     };
 
-    if (existing.length > 0) {
-      await entity.update(existing[0].id, data);
+    if (existing) {
+      await entity.update(existing.id, data);
     } else {
       await entity.create(data);
     }

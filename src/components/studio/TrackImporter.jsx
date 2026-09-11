@@ -53,11 +53,17 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
   const uploadTracks = async () => {
     setUploading(true);
     let accessUserIds = [currentUser.id];
+    let editUserIds = [currentUser.id];
     try {
       const project = await base44.entities.Project.get(projectId);
       accessUserIds = Array.from(new Set([
         project?.owner_id,
         ...(project?.collaborator_ids || []),
+        currentUser.id,
+      ].filter(Boolean)));
+      editUserIds = Array.from(new Set([
+        project?.owner_id,
+        ...(project?.editor_ids || []),
         currentUser.id,
       ].filter(Boolean)));
     } catch {
@@ -88,6 +94,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
           solo: false,
           uploaded_by: currentUser.id,
           access_user_ids: accessUserIds,
+          edit_user_ids: editUserIds,
         });
 
         setQueue(prev =>

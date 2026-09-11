@@ -4,6 +4,47 @@ import { stripeRequest } from '../../shared/stripe.ts';
 // Server-side price catalog — never trust client-supplied prices
 const DONATION_PRESETS = [5, 10, 25, 50];
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Failed to create checkout session';
+}
+
+function randomVerifier(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function allowedCheckoutOrigins(): Set<string> {
+  const origins = new Set<string>();
+  const appBaseUrl = Deno.env.get('APP_BASE_URL');
+  if (appBaseUrl) {
+    try { origins.add(new URL(appBaseUrl).origin); } catch (_) {}
+  }
+  for (const raw of (Deno.env.get('CHECKOUT_ALLOWED_ORIGINS') || '').split(',')) {
+    const value = raw.trim();
+    if (!value) continue;
+    try { origins.add(new URL(value).origin); } catch (_) {}
+  }
+  return origins;
+}
+
+function validateCallbackUrl(raw: unknown, allowedOrigins: Set<string>): string {
+  if (typeof raw !== 'string' || !raw) throw new Error('Invalid checkout callback URL');
+  const url = new URL(raw);
+  if (url.protocol !== 'https:' || !allowedOrigins.has(url.origin)) {
+    throw new Error('Checkout callback URL is not allowed');
+  }
+  return url.toString();
+}
+
+
 Deno.serve(async (req) => {
   try {
     const { items, callbackUrls } = await req.json();
@@ -24,12 +65,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate callback URLs
+    // Validate callback URLs against server-controlled allowed origins.
     if (!callbackUrls?.thankYouPageUrl || !callbackUrls?.postFlowUrl) {
       return Response.json(
         { error: 'Both thankYouPageUrl and postFlowUrl are required' },
         { status: 400 }
       );
+    }
+    const allowedOrigins = allowedCheckoutOrigins();
+    if (allowedOrigins.size === 0) {
+      return Response.json({ error: 'Checkout callback origins are not configured' }, { status: 500 });
+    }
+    let thankYouPageUrl: string;
+    let postFlowUrl: string;
+    try {
+      thankYouPageUrl = validateCallbackUrl(callbackUrls.thankYouPageUrl, allowedOrigins);
+      postFlowUrl = validateCallbackUrl(callbackUrls.postFlowUrl, allowedOrigins);
+    } catch (error) {
+      return Response.json({ error: errorMessage(error) }, { status: 400 });
     }
 
     // Resolve each item's price server-side — never trust client-supplied prices
@@ -76,16 +129,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Append Stripe's {CHECKOUT_SESSION_ID} placeholder so the ThankYou page
-    // can verify the payment even if the webhook hasn't fired yet.
-    const separator = callbackUrls.thankYouPageUrl.includes('?') ? '&' : '?';
-    const successUrl = `${callbackUrls.thankYouPageUrl}${separator}checkout_id={CHECKOUT_SESSION_ID}`;
+    // Bind the public verification fallback to an opaque return verifier.
+    // Only its SHA-256 hash is stored server-side.
+    const purchaseVerifier = randomVerifier();
+    const purchaseVerifierHash = await sha256Hex(purchaseVerifier);
+    const successUrl = new URL(thankYouPageUrl);
+    successUrl.searchParams.set('checkout_id', '{CHECKOUT_SESSION_ID}');
+    successUrl.searchParams.set('purchase_token', purchaseVerifier);
 
     const sessionParams: Record<string, any> = {
       mode: 'payment',
       line_items: lineItems,
-      success_url: successUrl,
-      cancel_url: callbackUrls.postFlowUrl,
+      success_url: successUrl.toString(),
+      cancel_url: postFlowUrl,
     };
 
     if (user?.email) {
@@ -102,6 +158,7 @@ Deno.serve(async (req) => {
         user_id: user?.id || null,
         user_email: user?.email || null,
         items: persistedItems,
+        purchase_verifier_hash: purchaseVerifierHash,
       });
     } catch (e) {
       console.error('Failed to persist Base44Purchase:', e);
@@ -112,9 +169,10 @@ Deno.serve(async (req) => {
       checkoutId: session.id,
     });
   } catch (error) {
-    console.error('Checkout error:', error.message);
+    const message = errorMessage(error);
+    console.error('Checkout error:', message);
     return Response.json(
-      { error: error.message || 'Failed to create checkout session' },
+      { error: message },
       { status: 500 }
     );
   }

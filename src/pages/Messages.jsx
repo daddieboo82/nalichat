@@ -63,24 +63,33 @@ export default function Messages() {
   }, [queryClient]);
 
   useEffect(() => {
+    const sendPresence = (isOnline) => {
+      if (!currentUser) return;
+      base44.functions.invoke("updateUserPresence", { isOnline }).catch(() => {});
+    };
+
     const handleVisibilityChange = async () => {
       const isOnline = document.visibilityState === "visible";
-      if (currentUser) {
-        try {
-          await base44.functions.invoke("updateUserPresence", { isOnline });
-        } catch (err) {}
-      }
+      sendPresence(isOnline);
       if (isOnline) {
         // Immediately refresh messages and conversations when returning to the tab
         queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
       }
     };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    if (currentUser) {
-      base44.functions.invoke("updateUserPresence", { isOnline: true }).catch(() => {});
-    }
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    if (currentUser) sendPresence(document.visibilityState === "visible");
+
+    const heartbeat = window.setInterval(() => {
+      if (document.visibilityState === "visible") sendPresence(true);
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(heartbeat);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      sendPresence(false);
+    };
   }, [currentUser, queryClient, selectedConvId]);
 
   const { data: users = [] } = useQuery({

@@ -1,14 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendPushToUser } from '../../shared/webPush.ts';
+import { workflowEntityRecordId } from '../../shared/workflowEvents.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const { event, data } = await req.json();
-    if (event?.type !== 'create' || !data?.id) return Response.json({ success: true });
+    const record = workflowEntityRecordId({ event, data });
+    if (record.conflict) return Response.json({ error: 'Conflicting entity ids' }, { status: 400 });
+    if (event?.type !== 'create' || !record.id) return Response.json({ success: true });
 
     const entities = base44.asServiceRole.entities;
-    const file = await entities.SharedFile.get(data.id);
+    const file = await entities.SharedFile.get(record.id);
     if (!file?.project_id) return Response.json({ success: true });
     const project = await entities.Project.get(file.project_id);
     if (!project) return Response.json({ success: true });

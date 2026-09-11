@@ -741,6 +741,25 @@ describe('release configuration', () => {
     }
   });
 
+  it('keeps external contact channels privacy-safe and role authorization server-based', async () => {
+    const chat = await readText('src/components/messages/ChatView.jsx');
+    const profile = await readText('base44/functions/updateMyProfile/entry.ts');
+    const external = await readText('base44/functions/sendExternalMessage/entry.ts');
+    const dialog = await readText('src/components/messages/ExternalMessageDialog.jsx');
+
+    expect(chat).not.toContain('ADMIN_EMAILS');
+    expect(chat).not.toContain('currentUser?.email');
+    expect(chat).toContain("currentUser?.role === 'admin'");
+
+    expect(profile).not.toContain('patch.phone');
+    expect(external).toContain('External SMS messaging is temporarily unavailable');
+    expect(external).not.toContain("accepted: true");
+    expect(dialog).toContain('Request Accepted');
+    expect(dialog).toContain('If that address can receive NaliChat messages, it will be delivered.');
+    expect(dialog).not.toContain('Send SMS');
+    expect(dialog).not.toContain('Phone number');
+  });
+
   it('prevents contact ownership reassignment', async () => {
     const contact = await readJson('base44/entities/Contact.jsonc');
     expect(contact.properties.user_id.rls?.write?.user_condition?.role).toBe('admin');

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const TIMEOUT_48H_MINUTES = 48 * 60;
 
@@ -118,6 +119,34 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Only the sender or an admin can delete this message' }, { status: 403 });
       }
       await entities.Message.delete(message.id);
+
+      if (message.thread_id) {
+        const remainingReplies = await entities.Message.filter({
+          thread_id: message.thread_id,
+          conversation_id: message.conversation_id,
+        });
+        try {
+          await entities.Message.update(message.thread_id, {
+            thread_reply_count: remainingReplies.length,
+          });
+        } catch {}
+      }
+
+      if (message.type !== 'session' && message.conversation_id) {
+        try {
+          const recent = await entities.Message.filter(
+            { conversation_id: message.conversation_id },
+            '-created_date',
+            200,
+          );
+          const latest = recent.find((candidate: any) => candidate.type !== 'session') || null;
+          await entities.Conversation.update(message.conversation_id, {
+            last_message_text: latest?.text || (latest ? `Sent a ${latest.type || 'message'}` : ''),
+            last_message_at: latest?.created_date || null,
+          });
+        } catch {}
+      }
+
       return Response.json({ success: true, deleted: true });
     }
 
@@ -137,6 +166,11 @@ Deno.serve(async (req) => {
 
     const text = String(body?.text || '').slice(0, 20000);
     if (!text.trim()) return Response.json({ error: 'Message text cannot be empty' }, { status: 400 });
+
+    const editRate = await consumeHourlyLimit(entities, user.id, 'message_edit', 120);
+    if (!editRate.allowed) {
+      return Response.json({ error: 'Message edit rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
 
     const moderation = await moderateEditedText(base44, user, text, message.conversation_id);
     if (moderation) return Response.json({ success: false, moderation });

@@ -115,7 +115,7 @@ export default function Messages() {
       sendPresence(isOnline);
       if (isOnline) {
         // Immediately refresh messages and conversations when returning to the tab
-        queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+        queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
       }
     };

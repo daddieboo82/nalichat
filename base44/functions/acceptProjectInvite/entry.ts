@@ -25,19 +25,23 @@ Deno.serve(async (req) => {
     if (!invite || new Date(invite.expires_at).getTime() < Date.now()) {
       return Response.json({ error: 'Invite is invalid or expired' }, { status: 403 });
     }
+    const maxUses = Number(invite.max_uses || 25);
+    if (Number(invite.used_count || 0) >= maxUses) {
+      return Response.json({ error: 'Invite usage limit reached' }, { status: 410 });
+    }
 
     const project = await base44.asServiceRole.entities.Project.get(projectId);
     if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
 
     if (project.owner_id === user.id) {
-      return Response.json({ success: true, role: 'owner', already_member: true });
+      return Response.json({ success: true, role: 'owner', already_member: true }, { headers: { 'Cache-Control': 'no-store' } });
     }
     if ((project.collaborator_ids || []).includes(user.id)) {
       return Response.json({
         success: true,
         role: project.collaborator_roles?.[user.id] || 'viewer',
         already_member: true,
-      });
+      }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
     if (project.owner_id !== user.id) {
@@ -76,7 +80,10 @@ Deno.serve(async (req) => {
       used_count: (invite.used_count || 0) + 1,
     });
 
-    return Response.json({ success: true, role: invite.role });
+    return Response.json(
+      { success: true, role: invite.role },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not accept project invite' }, { status: 500 });
   }

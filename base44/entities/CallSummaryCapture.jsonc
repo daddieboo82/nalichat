@@ -1,0 +1,55 @@
+{
+  "name": "CallSummaryCapture",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string"
+    },
+    "participant_id": {
+      "type": "string"
+    },
+    "audio_url": {
+      "type": "string",
+      "description": "Temporary provider URL, cleared immediately after processing or deletion"
+    },
+    "mime_type": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "byte_size": {
+      "type": "number"
+    },
+    "capture_started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "capture_ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ready", "processed", "deleted"]
+    },
+    "deleted_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "session_id",
+    "participant_id",
+    "audio_url",
+    "mime_type",
+    "byte_size",
+    "capture_started_at",
+    "capture_ended_at",
+    "status"
+  ],
+  "rls": {
+    "create": { "user_condition": { "role": "admin" } },
+    "read": { "user_condition": { "role": "admin" } },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}

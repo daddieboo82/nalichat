@@ -1,0 +1,73 @@
+{
+  "name": "CallSummarySession",
+  "type": "object",
+  "properties": {
+    "call_id": {
+      "type": "string",
+      "maxLength": 160,
+      "description": "Opaque WebRTC call identifier; never contains transcript content"
+    },
+    "conversation_id": {
+      "type": "string"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "Participant who requested and is charged for summary generation"
+    },
+    "participant_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Server snapshot of Conversation participants when consent was requested"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "consent_pending",
+        "recording",
+        "paused",
+        "ended",
+        "call_failed",
+        "deleted"
+      ]
+    },
+    "consent_deadline": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "capture_started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "capture_deadline": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Short post-call grace period for consented local capture uploads"
+    },
+    "failure_code": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "deleted_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "call_id",
+    "conversation_id",
+    "owner_id",
+    "participant_ids",
+    "status",
+    "consent_deadline"
+  ],
+  "rls": {
+    "create": { "user_condition": { "role": "admin" } },
+    "read": { "user_condition": { "role": "admin" } },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}

@@ -1,8 +1,23 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+async function contactRecordId(userId: string, targetUserId: string) {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`${userId}:${targetUserId}`),
+  );
+  const hex = Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+  return `contact_${hex}`;
+}
+
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -49,13 +64,23 @@ Deno.serve(async (req) => {
         return Response.json({ success: true, contact: existing[0], existing: true });
       }
 
-      const contact = await entities.Contact.create({
-        user_id: user.id,
-        contact_user_id: target.id,
-        contact_name: target.display_name || target.full_name || 'NaliChat User',
-        contact_avatar: target.avatar_url || null,
-      });
-      return Response.json({ success: true, contact, existing: false });
+      const deterministicId = await contactRecordId(user.id, target.id);
+      try {
+        const contact = await entities.Contact.create({
+          id: deterministicId,
+          user_id: user.id,
+          contact_user_id: target.id,
+          contact_name: target.display_name || target.full_name || 'NaliChat User',
+          contact_avatar: target.avatar_url || null,
+        });
+        return Response.json({ success: true, contact, existing: false });
+      } catch (createError) {
+        const raced = await entities.Contact.get(deterministicId).catch(() => null);
+        if (raced?.user_id === user.id && raced?.contact_user_id === target.id) {
+          return Response.json({ success: true, contact: raced, existing: true });
+        }
+        throw createError;
+      }
     }
 
     if (action === 'delete') {

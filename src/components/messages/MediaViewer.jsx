@@ -4,6 +4,7 @@ import { X, Download, ZoomIn, ZoomOut } from "lucide-react";
 import { resumableDownload } from "@/lib/resumableUpload";
 import CustomMediaPlayer from "../audio/CustomMediaPlayer";
 import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
 
 export default function MediaViewer({ media, isOpen, onClose, canDownload = false }) {
   const [zoom, setZoom] = useState(100);
@@ -23,6 +24,8 @@ export default function MediaViewer({ media, isOpen, onClose, canDownload = fals
       const downloadUrl = auth?.data?.file_url;
       if (!downloadUrl) throw new Error("Download URL unavailable");
       await resumableDownload(downloadUrl, auth?.data?.file_name || media.file_name || "file");
+    } catch (error) {
+      toast.error(error?.message || "Couldn't download the attachment. Please try again.");
     } finally {
       setDownloading(false);
     }

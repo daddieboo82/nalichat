@@ -693,6 +693,20 @@ describe('release configuration', () => {
     expect(appParams).toContain("storage.removeItem('base44_token')");
   });
 
+  it('enforces moderation state and cost bounds on outbound messaging', async () => {
+    const external = await readText('base44/functions/sendExternalMessage/entry.ts');
+    const invite = await readText('base44/functions/sendSmsInvite/entry.ts');
+
+    for (const source of [external, invite]) {
+      expect(source).toContain('if (user.is_banned)');
+      expect(source).toContain("error: 'timed_out'");
+    }
+    expect(external).toContain('.slice(0, 5000)');
+    expect(external).toContain('.slice(0, 320)');
+    expect(external).toContain(".replace(/[\r\n]/g, ' ')");
+    expect(invite).toContain(".replace(/[\r\n]/g, ' ')");
+  });
+
   it('prevents contact ownership reassignment', async () => {
     const contact = await readJson('base44/entities/Contact.jsonc');
     expect(contact.properties.user_id.rls?.write?.user_condition?.role).toBe('admin');

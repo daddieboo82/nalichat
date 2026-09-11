@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
       user_id: reportedUserId,
       user_name: reportedUserName || 'Unknown user',
       reported_by_id: reporter.id,
-      reported_by_name: reporter.display_name || reporter.full_name || reporter.email || 'Reporter',
+      reported_by_name: reporter.display_name || reporter.full_name || 'Reporter',
       content_type,
       content_id,
       category: categoryMap[reportReason] || 'bullying',

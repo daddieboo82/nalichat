@@ -1,0 +1,47 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { postId } = await req.json();
+    if (!postId) return Response.json({ error: 'postId is required' }, { status: 400 });
+
+    const entities = base44.asServiceRole.entities;
+    const post = await entities.ArtPost.get(String(postId));
+    if (!post) return Response.json({ error: 'Post not found' }, { status: 404 });
+    if (post.creator_id !== user.id && user.role !== 'admin') {
+      return Response.json({ error: 'Only the creator can delete this post' }, { status: 403 });
+    }
+
+    const comments = await entities.TrackComment.filter({
+      track_id: post.id,
+      parent_type: 'art_post',
+    });
+    for (const comment of comments) await entities.TrackComment.delete(comment.id);
+
+    const playlists = await entities.Playlist.list();
+    let playlistsUpdated = 0;
+    for (const playlist of playlists) {
+      const trackIds = Array.isArray(playlist.track_ids) ? playlist.track_ids : [];
+      if (!trackIds.includes(post.id)) continue;
+      await entities.Playlist.update(playlist.id, {
+        track_ids: trackIds.filter((id: string) => id !== post.id),
+      });
+      playlistsUpdated += 1;
+    }
+
+    await entities.ArtPost.delete(post.id);
+
+    return Response.json({
+      success: true,
+      deleted_comments: comments.length,
+      playlists_updated: playlistsUpdated,
+    });
+  } catch (error) {
+    console.error('deleteArtPost error:', error);
+    return Response.json({ error: error?.message || 'Post deletion failed' }, { status: 500 });
+  }
+});

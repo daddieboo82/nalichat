@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 const MAX_TRACK_BYTES = 100 * 1024 * 1024;
 
@@ -120,6 +121,17 @@ Deno.serve(async (req) => {
     if (Array.isArray(body?.waveform_data) && body.waveform_data.length > 2000) {
       return Response.json({ error: 'waveform_data supports at most 2000 points' }, { status: 413 });
     }
+    if (
+      Array.isArray(body?.waveform_data)
+      && body.waveform_data.some(
+        (point: unknown) => typeof point !== 'number' || !Number.isFinite(point) || point < -1 || point > 1,
+      )
+    ) {
+      return Response.json(
+        { error: 'waveform_data points must be numbers between -1 and 1' },
+        { status: 400 },
+      );
+    }
 
     const volume = Number(body?.volume ?? 75);
     const pan = Number(body?.pan ?? 50);
@@ -138,32 +150,46 @@ Deno.serve(async (req) => {
     let accessUserIds = [user.id];
     let editUserIds = [user.id];
 
-    const project = await entities.Project.get(projectId).catch(() => null);
-    if (project) {
-      const canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
-      if (!canEdit) return Response.json({ error: 'Viewer access cannot create tracks' }, { status: 403 });
-      accessUserIds = Array.from(new Set([
-        project.owner_id,
-        ...(project.collaborator_ids || []),
-        user.id,
-      ].filter(Boolean)));
-      editUserIds = Array.from(new Set([
-        project.owner_id,
-        ...(project.editor_ids || []),
-        user.id,
-      ].filter(Boolean)));
-    } else {
-      // Chat-session tracks use the parent Message ID as project_id.
-      const message = await entities.Message.get(projectId).catch(() => null);
-      if (!message) {
-        return Response.json({ error: 'Project/session not found' }, { status: 404 });
-      }
-      if (!message?.participant_ids?.includes(user.id)) {
-        return Response.json({ error: 'Forbidden' }, { status: 403 });
-      }
-      accessUserIds = message.participant_ids;
-      editUserIds = message.participant_ids;
+    const initialProject = await entities.Project.get(projectId).catch(() => null);
+    const projectLockId = initialProject
+      ? await acquireProjectMembershipLock(entities, projectId)
+      : null;
+    if (initialProject && !projectLockId) {
+      return Response.json(
+        { error: 'Project is being updated. Please retry.' },
+        { status: 409 },
+      );
     }
+
+    try {
+      if (initialProject) {
+        const project = await entities.Project.get(projectId).catch(() => null);
+        if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
+
+        const canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
+        if (!canEdit) return Response.json({ error: 'Viewer access cannot create tracks' }, { status: 403 });
+        accessUserIds = Array.from(new Set([
+          project.owner_id,
+          ...(project.collaborator_ids || []),
+          user.id,
+        ].filter(Boolean)));
+        editUserIds = Array.from(new Set([
+          project.owner_id,
+          ...(project.editor_ids || []),
+          user.id,
+        ].filter(Boolean)));
+      } else {
+        // Chat-session tracks use the parent Message ID as project_id.
+        const message = await entities.Message.get(projectId).catch(() => null);
+        if (!message) {
+          return Response.json({ error: 'Project/session not found' }, { status: 404 });
+        }
+        if (!message?.participant_ids?.includes(user.id)) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 });
+        }
+        accessUserIds = message.participant_ids;
+        editUserIds = message.participant_ids;
+      }
 
     const fileUrl = body?.file_url ? cleanUploadedMediaUrl(body.file_url) : '';
     if (body?.file_url && !fileUrl) {
@@ -196,9 +222,6 @@ Deno.serve(async (req) => {
       duration,
       waveform_data: Array.isArray(body.waveform_data)
         ? body.waveform_data
-            .map((point: unknown) => Number(point))
-            .filter((point: number) => Number.isFinite(point) && point >= -1 && point <= 1)
-            
         : undefined,
       uploaded_by: user.id,
       access_user_ids: accessUserIds,
@@ -206,6 +229,9 @@ Deno.serve(async (req) => {
     });
 
     return Response.json({ success: true, track });
+    } finally {
+      await releaseProjectMembershipLock(entities, projectLockId);
+    }
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not create track' }, { status: 500 });
   }

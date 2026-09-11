@@ -1,6 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { claimModerationStrike } from '../../shared/moderationStrikes.ts';
+import {
+  acquireMessageMutationLock,
+  releaseMessageMutationLock,
+} from '../../shared/messageMutationLock.ts';
 
 const TIMEOUT_48H_MINUTES = 48 * 60;
 
@@ -83,18 +87,35 @@ ${text}
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const action = body?.action;
-    const messageId = String(body?.message_id || '');
-    if (!messageId || !['edit', 'react', 'delete'].includes(action)) {
+    const action = typeof body?.action === 'string' ? body.action : '';
+    const messageId = typeof body?.message_id === 'string' ? body.message_id.trim() : '';
+    if (
+      !messageId
+      || messageId.length > 200
+      || !['edit', 'react', 'delete'].includes(action)
+    ) {
       return Response.json({ error: 'Valid action and message_id are required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
+    const lockId = await acquireMessageMutationLock(entities, messageId);
+    if (!lockId) {
+      return Response.json(
+        { error: 'Message is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
     const message = await entities.Message.get(messageId);
     if (!message) return Response.json({ error: 'Message not found' }, { status: 404 });
     if (!Array.isArray(message.participant_ids) || !message.participant_ids.includes(user.id)) {
@@ -109,8 +130,14 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
       }
 
-      const emoji = String(body?.emoji || '').trim().slice(0, 32);
+      if (typeof body?.emoji !== 'string') {
+        return Response.json({ error: 'emoji is required' }, { status: 400 });
+      }
+      const emoji = body.emoji.trim();
       if (!emoji) return Response.json({ error: 'emoji is required' }, { status: 400 });
+      if (emoji.length > 32) {
+        return Response.json({ error: 'emoji must be 32 characters or fewer' }, { status: 413 });
+      }
 
       const reactionRate = await consumeHourlyLimit(entities, user.id, 'message_reaction', 600);
       if (!reactionRate.allowed) {
@@ -210,8 +237,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
     }
 
-    const text = String(body?.text || '').slice(0, 20000);
+    if (typeof body?.text !== 'string') {
+      return Response.json({ error: 'Message text cannot be empty' }, { status: 400 });
+    }
+    const text = body.text;
     if (!text.trim()) return Response.json({ error: 'Message text cannot be empty' }, { status: 400 });
+    if (text.length > 20000) {
+      return Response.json({ error: 'Message text must be 20000 characters or fewer' }, { status: 413 });
+    }
 
     const editRate = await consumeHourlyLimit(entities, user.id, 'message_edit', 120);
     if (!editRate.allowed) {
@@ -235,6 +268,9 @@ Deno.serve(async (req) => {
     } catch {}
 
     return Response.json({ success: true, message: updated });
+    } finally {
+      await releaseMessageMutationLock(entities, lockId);
+    }
   } catch (error) {
     console.error('mutateConversationMessage error:', error);
     return Response.json({ error: error?.message || 'Message mutation failed' }, { status: 500 });

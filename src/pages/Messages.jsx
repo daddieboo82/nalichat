@@ -18,7 +18,7 @@ import ModerationBanner from "@/components/messages/ModerationBanner";
 import { MessageSquare, Users, Plus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { createClientMessageKey, applySendSuccess, applySendFailure } from "@/lib/messageCache";
+import { createClientMessageKey, applyQueuedMessage, applySendSuccess, applySendFailure } from "@/lib/messageCache";
 import { useSubscription } from "@/hooks/useSubscription";
 import { CHAT_THEME_ENTITLEMENT, getChatTheme, resolveEffectiveChatThemeId } from "@/lib/chatThemes";
 
@@ -180,8 +180,13 @@ export default function Messages() {
         sender_avatar: currentUser?.avatar_url,
         created_date: new Date().toISOString(),
         _optimistic: true,
+        _retryable: false,
+        _deliveryState: "sending",
+        _sendError: null,
       };
-      queryClient.setQueryData(["messages", selectedConvId], (old = []) => [...old, tempMsg]);
+      queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
+        applyQueuedMessage(old, tempMsg)
+      );
       queryClient.setQueryData(["conversations"], (old = []) => {
         const updated = old.map(c =>
           c.id === selectedConvId
@@ -450,6 +455,22 @@ export default function Messages() {
                 return result;
               }}
               onReact={handleReact}
+              onRetryMessage={(message) => {
+                if (!message?.client_message_key || sendMessage.isPending) return;
+                sendMessage.mutate({
+                  text: message.text || "",
+                  type: message.type || "text",
+                  file_url: message.file_url,
+                  file_name: message.file_name,
+                  file_size: message.file_size,
+                  file_type: message.file_type,
+                  duration: message.duration,
+                  reply_to_id: message.reply_to_id,
+                  reply_to_text: message.reply_to_text,
+                  reply_to_sender: message.reply_to_sender,
+                  client_message_key: message.client_message_key,
+                });
+              }}
               onBack={() => setSelectedConvId(null)}
               onStartDM={startDM}
             />

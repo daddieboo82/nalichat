@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import React from "react";
 
 
-export default React.memo(function ChatView({ conversation, messages, isLoading, currentUser, users, onSendMessage, onEditMessage, onReact, onBack, onStartDM, isBlocked, moderationBanner, theme: themePreference }) {
+export default React.memo(function ChatView({ conversation, messages, isLoading, currentUser, users, onSendMessage, onEditMessage, onReact, onRetryMessage, onBack, onStartDM, isBlocked, moderationBanner, theme: themePreference }) {
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -319,6 +319,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                 setReplyTo(null);
               }}
               onReact={onReact}
+              onRetry={onRetryMessage}
               onOpenThread={(message) => { setThreadTargetId(null); setThreadMessage(message); }}
               users={users}
               onCopy={() => copyToClipboard(item.text || "")}

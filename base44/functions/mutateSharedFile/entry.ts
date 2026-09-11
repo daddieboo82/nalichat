@@ -63,17 +63,44 @@ Deno.serve(async (req) => {
 
     if (action === 'update') {
       const patch: Record<string, any> = {};
-      if (typeof body?.name === 'string') {
-        const name = body.name.trim().slice(0, 255);
+
+      if (body?.name !== undefined) {
+        if (typeof body.name !== 'string') {
+          return Response.json({ error: 'File name must be a string' }, { status: 400 });
+        }
+        const name = body.name.trim();
         if (!name) return Response.json({ error: 'File name cannot be empty' }, { status: 400 });
+        if (name.length > 255) {
+          return Response.json({ error: 'File name must be 255 characters or fewer' }, { status: 413 });
+        }
         patch.name = name;
       }
-      if (typeof body?.description === 'string') patch.description = body.description.slice(0, 1000);
-      if (Array.isArray(body?.tags)) {
-        patch.tags = Array.from(new Set(
-          body.tags.map((t) => String(t).trim().slice(0, 64)).filter(Boolean),
-        )).slice(0, 50);
+
+      if (body?.description !== undefined) {
+        if (typeof body.description !== 'string') {
+          return Response.json({ error: 'File description must be a string' }, { status: 400 });
+        }
+        if (body.description.length > 1000) {
+          return Response.json({ error: 'File description must be 1000 characters or fewer' }, { status: 413 });
+        }
+        patch.description = body.description;
       }
+
+      if (body?.tags !== undefined) {
+        if (!Array.isArray(body.tags)) {
+          return Response.json({ error: 'tags must be an array' }, { status: 400 });
+        }
+        if (body.tags.length > 50) {
+          return Response.json({ error: 'Files support at most 50 tags' }, { status: 413 });
+        }
+        if (body.tags.some((tag: unknown) => typeof tag !== 'string' || tag.trim().length > 64)) {
+          return Response.json({ error: 'Each tag must be a string of 64 characters or fewer' }, { status: 400 });
+        }
+        patch.tags = Array.from(new Set(
+          body.tags.map((tag: string) => tag.trim()).filter(Boolean),
+        ));
+      }
+
       if (Object.keys(patch).length === 0) {
         return Response.json({ error: 'No supported file fields supplied' }, { status: 400 });
       }
@@ -81,7 +108,13 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, file: updated });
     }
 
-    const folderId = body?.folderId || null;
+    if (body?.folderId != null && typeof body.folderId !== 'string') {
+      return Response.json({ error: 'folderId must be a string or null' }, { status: 400 });
+    }
+    const folderId = typeof body?.folderId === 'string' ? body.folderId.trim() : null;
+    if (folderId && folderId.length > 200) {
+      return Response.json({ error: 'folderId is too long' }, { status: 400 });
+    }
     let projectId = null;
     let accessUserIds = [file.uploader_id].filter(Boolean);
     let editUserIds = [file.uploader_id].filter(Boolean);

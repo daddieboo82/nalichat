@@ -202,7 +202,7 @@ const AuthenticatedApp = () => {
         <Route path="/challenge/:challengeId/leaderboard" element={<ChallengeLeaderboard />} />
         <Route path="/challenge/:challengeId/submission/:submissionId" element={<SubmissionPlayer />} />
         <Route path="/squad/join/:inviteCode" element={<SquadJoin />} />
-      <Route path="/viral-seed" element={<ViralSeed />} />
+      <Route path="/viral-seed" element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login?returnTo=%2Fviral-seed" replace />}><ViralSeed /></ProtectedRoute>} />
         <Route path="/ThankYou" element={<ThankYou />} />
         <Route path="/thankyou" element={<ThankYou />} />
       </Route>

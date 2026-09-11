@@ -457,7 +457,8 @@ describe('core usage flow coverage', () => {
       display_name: 'Old Name',
       full_name: 'Old Name',
       bio: 'Original bio',
-      role: 'artist',
+      role: 'user',
+      artist_role: 'artist',
       location: 'Old Town',
       genres: ['Hip-Hop'],
       avatar_url: 'https://cdn.example.com/avatar.png',
@@ -478,7 +479,7 @@ describe('core usage flow coverage', () => {
       expect(mockBase44.auth.updateMe).toHaveBeenCalledWith(expect.objectContaining({
         display_name: 'New Alias',
         bio: 'Original bio',
-        role: 'artist',
+        artist_role: 'artist',
         location: 'Old Town',
         genres: ['Hip-Hop'],
         avatar_url: 'https://cdn.example.com/avatar.png',

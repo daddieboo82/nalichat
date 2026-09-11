@@ -693,6 +693,16 @@ describe('release configuration', () => {
     expect(appParams).toContain("storage.removeItem('base44_token')");
   });
 
+  it('does not return raw service-role User records from self-service profile mutations', async () => {
+    const profile = await readText('base44/functions/updateMyProfile/entry.ts');
+    const onboarding = await readText('base44/functions/completeOnboarding/entry.ts');
+
+    expect(profile).toContain('return Response.json({ success: true });');
+    expect(onboarding).toContain('return Response.json({ success: true });');
+    expect(profile).not.toContain('user: updated');
+    expect(onboarding).not.toContain('user: updated');
+  });
+
   it('enforces moderation state and cost bounds on outbound messaging', async () => {
     const external = await readText('base44/functions/sendExternalMessage/entry.ts');
     const invite = await readText('base44/functions/sendSmsInvite/entry.ts');

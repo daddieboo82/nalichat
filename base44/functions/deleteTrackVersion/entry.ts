@@ -3,6 +3,10 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,12 +26,12 @@ Deno.serve(async (req) => {
     }
 
     const { versionId } = await req.json();
-    if (!versionId) {
+    if (typeof versionId !== 'string' || !versionId.trim() || versionId.length > 200) {
       return Response.json({ error: 'versionId is required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
-    const version = await entities.TrackVersion.get(String(versionId));
+    const version = await entities.TrackVersion.get(versionId);
     if (!version) return Response.json({ error: 'Track version not found' }, { status: 404 });
 
     const project = await entities.Project.get(version.project_id).catch(() => null);

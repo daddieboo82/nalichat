@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendPushToUser } from '../../shared/webPush.ts';
 import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
+import { createNotificationIdempotently } from '../../shared/workflowNotifications.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -41,17 +42,20 @@ Deno.serve(async (req) => {
       link: '/explore',
     };
 
+    const result = await createNotificationIdempotently(entities.Notification, notification);
+    if (!result.created) {
+      return Response.json({ success: true, count: 0, duplicate: true });
+    }
     try {
-      await entities.Notification.create(notification);
       await sendPushToUser(entities, notification.recipient_id, {
         title: notification.actor_name,
         body: notification.message,
         url: notification.link,
       });
-      return Response.json({ success: true, count: 1 });
-    } catch {
-      return Response.json({ success: true, count: 0, duplicate: true });
+    } catch (pushError) {
+      console.error('Comment push delivery failed:', pushError);
     }
+    return Response.json({ success: true, count: 1 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

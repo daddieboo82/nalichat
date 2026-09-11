@@ -663,6 +663,13 @@ describe('release configuration', () => {
     expect(studio).not.toContain('entities.Project.update');
   });
 
+  it('prevents contact ownership reassignment', async () => {
+    const contact = await readJson('base44/entities/Contact.jsonc');
+    expect(contact.properties.user_id.rls?.write?.user_condition?.role).toBe('admin');
+    expect(contact.rls.create?.['data.user_id']).toBe('{{user.id}}');
+    expect(contact.rls.read?.['data.user_id']).toBe('{{user.id}}');
+  });
+
 
   it('enforces configured challenge voting windows server-side', async () => {
     const vote = await readText('base44/functions/castVote/entry.ts');

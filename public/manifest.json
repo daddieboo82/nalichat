@@ -48,7 +48,7 @@
       "name": "Explore Tracks",
       "short_name": "Explore",
       "description": "Discover tracks from producers worldwide",
-      "url": "/https://nalichat.base44.app/explore",
+      "url": "/explore",
       "icons": [
         {
           "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/d8bbad742_NalichatLogo.png",
@@ -61,7 +61,7 @@
       "name": "Open Studio",
       "short_name": "Studio",
       "description": "Start a mixing and production session",
-      "url": "/https://nalichat.base44.app/studio",
+      "url": "/studio",
       "icons": [
         {
           "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/d8bbad742_NalichatLogo.png",
@@ -74,7 +74,7 @@
       "name": "Messages",
       "short_name": "Messages",
       "description": "Open your conversations",
-      "url": "/https://nalichat.base44.app/messages",
+      "url": "/messages",
       "icons": [
         {
           "src": "https://media.base44.com/images/public/6a1f5ee134147461560c2b37/d8bbad742_NalichatLogo.png",

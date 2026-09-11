@@ -10,6 +10,10 @@ async function readJson(path) {
   return JSON.parse(await readText(path));
 }
 
+async function readText(path) {
+  return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
+}
+
 describe('release configuration', () => {
   it('keeps workflow backend function references valid', async () => {
     const workflowDir = new URL('../../base44/workflows/', import.meta.url);
@@ -1335,7 +1339,25 @@ describe('release configuration', () => {
     expect(manifest.start_url).toBe('/');
     expect(manifest.scope).toBe('/');
     for (const shortcut of manifest.shortcuts || []) {
-      expect(shortcut.url).toMatch(/^\//);
+      expect(shortcut.url).toMatch(/^\/(?!\/)/);
+      expect(shortcut.url).not.toContain('://');
     }
+  });
+
+  it('uses one canonical public origin across install and desktop surfaces', async () => {
+    const html = await readText('index.html');
+    expect(html).toContain('rel="manifest" href="/manifest.json"');
+    expect(html).not.toContain('store-manifest.json');
+
+    const download = await readText('src/pages/Download.jsx');
+    expect(download).toContain('https://nalichat.org');
+    expect(download).toContain('/releases/download/1.0.0/');
+    expect(download).not.toContain('releases/latest/download');
+    expect(download).not.toContain('nalichat.base44.app');
+
+    const electron = await readText('electron/main.js');
+    const electronError = await readText('electron/error.html');
+    expect(electron).toContain("https://nalichat.org");
+    expect(electronError).toContain('https://nalichat.org');
   });
 });

@@ -1,7 +1,7 @@
 const { app, BrowserWindow, Menu, shell } = require('electron');
 const path = require('path');
 
-const PWA_URL = 'https://nalichat.base44.app';
+const PWA_URL = 'https://nalichat.org';
 
 function createWindow() {
   const win = new BrowserWindow({

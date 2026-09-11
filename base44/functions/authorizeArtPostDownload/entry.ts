@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
+import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -26,6 +27,9 @@ Deno.serve(async (req) => {
     }
 
     if (!post.file_url) return Response.json({ error: 'Track has no downloadable media' }, { status: 400 });
+    if (!isTrustedStoredMediaUrl(post.file_url)) {
+      return Response.json({ error: 'Stored track media host is not allowed' }, { status: 400 });
+    }
     return Response.json({ success: true, file_url: post.file_url, title: post.title || 'download' });
   } catch (error) {
     console.error('authorizeArtPostDownload error:', error);

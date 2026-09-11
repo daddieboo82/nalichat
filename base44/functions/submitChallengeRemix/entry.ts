@@ -60,7 +60,14 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Only MP3 and WAV submissions are supported' }, { status: 400 });
       }
       remixFileUrl = String(body?.remix_file_url || '').trim();
-      if (!remixFileUrl) return Response.json({ error: 'Uploaded remix URL is required' }, { status: 400 });
+      let uploadedUrl;
+      try { uploadedUrl = new URL(remixFileUrl); } catch {
+        return Response.json({ error: 'Uploaded remix URL is invalid' }, { status: 400 });
+      }
+      if (uploadedUrl.protocol !== 'https:') {
+        return Response.json({ error: 'Uploaded remix URL must use HTTPS' }, { status: 400 });
+      }
+      remixFileUrl = uploadedUrl.toString();
     } else {
       externalUrl = String(body?.external_url || '').trim();
       let parsed;

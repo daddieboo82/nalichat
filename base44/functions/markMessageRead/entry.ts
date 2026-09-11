@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 // Marks a message as read by the current user using the service role
 // (bypasses RLS — the sender owns the message, so the reader can't
@@ -10,6 +11,16 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const readRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'message_read_receipt',
+      1800,
+    );
+    if (!readRate.allowed) {
+      return Response.json({ error: 'Read receipt rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     const { message_id } = await req.json();

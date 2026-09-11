@@ -7,6 +7,7 @@ import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { sounds } from "@/hooks/use-sound";
 import { recordArtPostPlay } from "@/lib/trackAnalytics";
 import { base44 } from "@/api/base44Client";
+import { getLikeCount } from "@/lib/engagement";
 
 import React from "react";
 
@@ -140,7 +141,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
               )}
             >
               <Heart className={cn("w-3.5 h-3.5", liked && "fill-current")} />
-              <span>{post.likes || 0}</span>
+              <span>{getLikeCount(post)}</span>
             </button>
           </div>
         </div>

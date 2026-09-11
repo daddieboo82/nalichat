@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Play, Sparkles, X, Music } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
+import { getLikeCount } from "@/lib/engagement";
 
 export default function DailyRecommendation() {
   const [post, setPost] = useState(null);
@@ -16,11 +17,12 @@ export default function DailyRecommendation() {
     const key = `nali_rec_dismissed_${new Date().toDateString()}`;
     if (sessionStorage.getItem(key)) { setDismissed(true); return; }
 
-    base44.entities.ArtPost.list("-likes", 20).then((posts) => {
+    base44.entities.ArtPost.list("-created_date", 100).then((posts) => {
       if (!posts?.length) return;
-      // Pick a pseudo-random one from top 20 based on day
-      const idx = new Date().getDate() % posts.length;
-      setPost(posts[idx]);
+      const topPosts = [...posts].sort((a, b) => getLikeCount(b) - getLikeCount(a)).slice(0, 20);
+      // Pick a pseudo-random one from the top 20 based on day
+      const idx = new Date().getDate() % topPosts.length;
+      setPost(topPosts[idx]);
     }).catch(() => {});
   }, []);
 
@@ -104,7 +106,7 @@ export default function DailyRecommendation() {
             <Link to="/explore" onClick={() => sounds.click()}>
               <p className="font-heading font-bold text-sm hover:text-accent transition-colors line-clamp-2">{post.title}</p>
             </Link>
-            <p className="text-xs text-muted-foreground truncate">{post.creator_name} · {post.genre || "Music"} · {post.likes || 0} likes</p>
+            <p className="text-xs text-muted-foreground truncate">{post.creator_name} · {post.genre || "Music"} · {getLikeCount(post)} likes</p>
           </div>
 
           {/* Explore CTA */}

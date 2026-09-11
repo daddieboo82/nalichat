@@ -1,10 +1,11 @@
 import { Star, Music, Headphones, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getLikeCount } from "@/lib/engagement";
 
 export default function TopWorksGallery({ posts }) {
   // Sort by likes + views (engagement metric)
   const topWorks = posts
-    .sort((a, b) => (b.likes + (b.views || 0)) - (a.likes + (a.views || 0)))
+    .sort((a, b) => (getLikeCount(b) + (b.views || 0)) - (getLikeCount(a) + (a.views || 0)))
     .slice(0, 12);
 
   if (topWorks.length === 0) {
@@ -78,7 +79,7 @@ export default function TopWorksGallery({ posts }) {
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1.5">
                   <Headphones className="w-3.5 h-3.5 text-accent" />
-                  <span className="font-medium">{post.likes || 0}</span>
+                  <span className="font-medium">{getLikeCount(post)}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <TrendingUp className="w-3.5 h-3.5 text-primary" />

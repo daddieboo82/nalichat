@@ -6,6 +6,10 @@ async function readJson(path) {
   return JSON.parse(await readFile(new URL(`../../${path}`, import.meta.url), 'utf8'));
 }
 
+async function readText(path) {
+  return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
+}
+
 describe('release configuration', () => {
   it('targets the current Android API required by the release pipeline', async () => {
     const manifest = await readJson('src/twa-manifest.json');
@@ -97,6 +101,20 @@ describe('release configuration', () => {
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
     expect(submission.properties.vote_count.rls?.write?.user_condition?.role).toBe('admin');
     expect(submission.properties.status.rls?.write?.user_condition?.role).toBe('admin');
+  });
+
+
+  it('makes account deletion billing-safe and transfers collaborative ownership', async () => {
+    const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
+    expect(deletion).toContain("from '../../shared/stripe.ts'");
+    expect(deletion).toContain("'DELETE'");
+    expect(deletion).toContain("status: 'ended'");
+    expect(deletion).toContain('const replacementOwner = collaborators.find');
+    expect(deletion).not.toContain('owner_id: tombstoneId');
+
+    const webhook = await readText('base44/functions/stripeWebhook/entry.ts');
+    expect(webhook).toContain('const tombstoneUserId =');
+    expect(webhook).toContain("if (userId.startsWith('deleted:')) return");
   });
 
   it('keeps the PWA manifest scoped to the serving origin', async () => {

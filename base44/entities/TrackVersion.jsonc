@@ -153,16 +153,9 @@
       ]
     },
     "update": {
-      "$or": [
-        {
-          "data.edit_user_ids": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
       "$or": [

@@ -1,8 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { acquireSharedFileMutationLock, releaseSharedFileMutationLock } from '../../shared/sharedFileMutationLock.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,10 +27,12 @@ Deno.serve(async (req) => {
     }
 
     const { folderId } = await req.json();
-    if (!folderId) return Response.json({ error: 'folderId is required' }, { status: 400 });
+    if (typeof folderId !== 'string' || !folderId.trim() || folderId.length > 200) {
+      return Response.json({ error: 'folderId is required' }, { status: 400 });
+    }
 
     const entities = base44.asServiceRole.entities;
-    const folder = await entities.Folder.get(String(folderId));
+    const folder = await entities.Folder.get(folderId);
     if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
 
     let canEdit = user.role === 'admin';
@@ -52,8 +59,23 @@ Deno.serve(async (req) => {
       if (files.length === 0) break;
 
       for (const file of files) {
-        await entities.SharedFile.update(file.id, { folder_id: null });
-        detachedFiles += 1;
+        const fileLockId = await acquireSharedFileMutationLock(entities, file.id);
+        if (!fileLockId) {
+          return Response.json(
+            { error: 'A file in this folder is being updated. Please retry.' },
+            { status: 409 },
+          );
+        }
+
+        try {
+          const current = await entities.SharedFile.get(file.id).catch(() => null);
+          if (current?.folder_id === folder.id) {
+            await entities.SharedFile.update(file.id, { folder_id: null });
+            detachedFiles += 1;
+          }
+        } finally {
+          await releaseSharedFileMutationLock(entities, fileLockId);
+        }
       }
 
       if (files.length < 200) break;

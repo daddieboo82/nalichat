@@ -239,7 +239,7 @@ describe('release configuration', () => {
   it('keeps message attachments and thread references scoped to the active conversation', async () => {
     const sendMessage = await readText('base44/functions/sendConversationMessage/entry.ts');
 
-    expect(sendMessage).toContain('Message attachment URL must use HTTPS');
+    expect(sendMessage).toContain('Message attachment must come from trusted upload storage');
     expect(sendMessage).toContain('Reply target is not in this conversation');
     expect(sendMessage).toContain('Thread target is not in this conversation');
     expect(sendMessage).toContain('replyTarget.conversation_id !== conversationId');
@@ -525,7 +525,7 @@ describe('release configuration', () => {
 
   it('validates shared-file destination authority and media URL', async () => {
     const sharedFile = await readText('base44/functions/createSharedFileRecord/entry.ts');
-    expect(sharedFile).toContain('valid HTTPS file_url');
+    expect(sharedFile).toContain('name and a trusted uploaded file are required');
     expect(sharedFile).toContain('Viewer access cannot add files to this folder');
     expect(sharedFile).toContain('folder_id does not belong to project_id');
     expect(sharedFile).toContain('file_size must be a non-negative number');
@@ -537,9 +537,9 @@ describe('release configuration', () => {
     const submitRemix = await readText('base44/functions/submitChallengeRemix/entry.ts');
 
     expect(createPost).toContain("parsed.protocol === 'https:'");
-    expect(createPost).toContain('valid HTTPS file URL');
+    expect(createPost).toContain('trusted uploaded media URL are required');
     expect(createPost).toContain('boundedNumber(body?.bpm, 1, 400)');
-    expect(submitRemix).toContain("uploadedUrl.protocol !== 'https:'");
+    expect(submitRemix).toContain("uploadedUrl.protocol === 'https:'");
   });
 
   it('rejects collaborative tracks whose project or session parent does not exist', async () => {

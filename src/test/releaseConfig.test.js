@@ -765,6 +765,19 @@ describe('release configuration', () => {
     expect(agent.tool_configs.some((entry) => entry.function_name === 'suggestTrackTags')).toBe(false);
   });
 
+  it('verifies mastering media before full download and rejects fake studio rooms', async () => {
+    const bounce = await readText('base44/functions/bounceAndMaster/entry.ts');
+    expect(bounce).toContain('MAX_AUDIO_BYTES = 50 * 1024 * 1024');
+    expect(bounce).toContain('await storedAudioSize(audioUrl)');
+    expect(bounce).toContain('arrayBuffer.byteLength !== storedSize');
+    expect(bounce).toContain('if (user.is_banned)');
+    expect(bounce).toContain("error: 'timed_out'");
+
+    const presence = await readText('base44/functions/updateStudioPresence/entry.ts');
+    expect(presence).toContain("roomId !== 'local_studio'");
+    expect(presence).toContain("error: 'Studio room not found'");
+  });
+
   it('prevents contact spoofing and email/phone account enumeration', async () => {
     const contact = await readJson('base44/entities/Contact.jsonc');
     const mutateContact = await readText('base44/functions/mutateContact/entry.ts');

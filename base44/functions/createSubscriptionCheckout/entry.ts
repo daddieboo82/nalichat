@@ -209,7 +209,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    let trialApplied = Boolean(pendingSubscription?.trial_used_at);
+    let trialApplied = Boolean(
+      !user.trial_used_at && user.trial_claim_id === requestKey
+    );
     if (!pendingSubscription) {
       const eligibility = trialEligibility(user.trial_used_at, subscriptions);
       if (eligibility.eligible) {
@@ -217,16 +219,20 @@ Deno.serve(async (req) => {
           {
             id: user.id,
             trial_used_at: null,
+            $or: [
+              { trial_claim_id: null },
+              { trial_claim_id: requestKey },
+            ],
           },
           {
             $set: {
-              trial_used_at: now,
               trial_claim_id: requestKey,
             },
           },
         );
         const refreshedUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
         trialApplied = refreshedUsers.length === 1
+          && !refreshedUsers[0].trial_used_at
           && refreshedUsers[0].trial_claim_id === requestKey;
         cleanupTrialClaimed = trialApplied;
       }
@@ -248,7 +254,6 @@ Deno.serve(async (req) => {
           checkout_success_destination: body.callbackDestinations.success,
           checkout_cancel_destination: body.callbackDestinations.cancel,
           trial_target_plan: sku.plan,
-          ...(trialApplied ? { trial_used_at: now } : {}),
         });
       } catch (createError) {
         const concurrentAttempts = await base44.asServiceRole.entities.Subscription.filter({
@@ -258,7 +263,10 @@ Deno.serve(async (req) => {
         });
         if (concurrentAttempts.length !== 1) throw createError;
         pendingSubscription = concurrentAttempts[0];
-        trialApplied = Boolean(pendingSubscription.trial_used_at);
+        const refreshedUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
+        trialApplied = refreshedUsers.length === 1
+          && !refreshedUsers[0].trial_used_at
+          && refreshedUsers[0].trial_claim_id === requestKey;
       }
     }
 
@@ -333,21 +341,12 @@ Deno.serve(async (req) => {
               stripe_checkout_claim_id: null,
               stripe_checkout_claimed_at: null,
               ...(cleanupTrialClaimed ? {
-                trial_used_at: null,
                 trial_claim_id: null,
               } : {}),
             },
           },
         );
 
-        if (cleanupTrialClaimed && cleanupPendingSubscriptionId) {
-          await cleanupBase44.asServiceRole.entities.Subscription.update(
-            cleanupPendingSubscriptionId,
-            {
-              trial_used_at: null,
-            },
-          );
-        }
       } catch (cleanupError) {
         console.error('Subscription checkout cleanup failed:', cleanupError);
       }

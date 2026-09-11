@@ -3,6 +3,10 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) {
@@ -27,8 +31,14 @@ Deno.serve(async (req) => {
 
     const { type, destination, message } = await req.json();
 
-    if (!destination || !message) {
+    if (typeof destination !== 'string' || typeof message !== 'string') {
+      return Response.json({ error: 'destination and message must be strings' }, { status: 400 });
+    }
+    if (!destination.trim() || !message.trim()) {
       return Response.json({ error: 'destination and message are required' }, { status: 400 });
+    }
+    if (message.length > 5000) {
+      return Response.json({ error: 'Message must be 5000 characters or fewer' }, { status: 413 });
     }
 
     const name = String(user.display_name || user.full_name || 'Someone on NaliChat')

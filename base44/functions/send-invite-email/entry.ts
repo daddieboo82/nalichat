@@ -6,6 +6,10 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) {
@@ -31,8 +35,11 @@ Deno.serve(async (req) => {
     const { to } = await req.json();
 
     // Validate recipient email
-    if (!to || !to.trim()) {
+    if (typeof to !== 'string' || !to.trim()) {
       return Response.json({ error: 'Recipient email is required' }, { status: 400 });
+    }
+    if (to.length > 320) {
+      return Response.json({ error: 'Email address is too long' }, { status: 400 });
     }
     const recipient = to.trim();
     if (!EMAIL_REGEX.test(recipient)) {

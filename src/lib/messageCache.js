@@ -48,11 +48,11 @@ export function applySendSuccess(messages = [], saved, clientMessageKey, tempId)
 }
 
 /** Preserve a failed send so the user can retry it with the same client key. */
-export function applySendFailure(messages = [], clientMessageKey, errorMessage) {
+export function applySendFailure(messages = [], clientMessageKey, errorMessage, retryable = true) {
   if (!clientMessageKey) return messages;
   return applyDeliveryState(messages, clientMessageKey, "failed", {
     _optimistic: true,
-    _retryable: true,
+    _retryable: retryable,
     _sendError: errorMessage || "Message could not be sent.",
   });
 }

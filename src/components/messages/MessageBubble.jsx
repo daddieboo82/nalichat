@@ -72,8 +72,15 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe }) {
     e.preventDefault();
     if (dlProgress !== null) return;
     setDlProgress(0);
-    await resumableDownload(message.file_url, message.file_name || "file", (pct) => setDlProgress(pct));
-    setDlProgress(null);
+    try {
+      const auth = await base44.functions.invoke("authorizeMessageDownload", { messageId: message.id });
+      if (auth?.data?.error) throw new Error(auth.data.error);
+      const downloadUrl = auth?.data?.file_url;
+      if (!downloadUrl) throw new Error("Download URL unavailable");
+      await resumableDownload(downloadUrl, auth?.data?.file_name || message.file_name || "file", (pct) => setDlProgress(pct));
+    } finally {
+      setDlProgress(null);
+    }
   };
 
   if (isImage) {

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 const PROJECT_STATUSES = new Set(['draft','in_progress','mixing','mastering','complete']);
 
@@ -13,6 +14,10 @@ function jsonSize(value: unknown) {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -32,11 +37,25 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const projectId = String(body?.projectId || '');
-    const data = body?.data && typeof body.data === 'object' ? body.data : {};
-    if (!projectId) return Response.json({ error: 'projectId is required' }, { status: 400 });
+    const projectId = typeof body?.projectId === 'string' ? body.projectId.trim() : '';
+    if (!projectId || projectId.length > 200) {
+      return Response.json({ error: 'projectId is required' }, { status: 400 });
+    }
+    if (!body?.data || typeof body.data !== 'object' || Array.isArray(body.data)) {
+      return Response.json({ error: 'data must be an object' }, { status: 400 });
+    }
+    const data = body.data;
 
     const entities = base44.asServiceRole.entities;
+    const lockId = await acquireProjectMembershipLock(entities, projectId);
+    if (!lockId) {
+      return Response.json(
+        { error: 'Project is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
     const project = await entities.Project.get(projectId);
     if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
 
@@ -48,13 +67,45 @@ Deno.serve(async (req) => {
     const patch: Record<string, unknown> = {};
 
     if (data.title !== undefined) {
-      const title = String(data.title || '').trim().slice(0, 200);
+      if (typeof data.title !== 'string') {
+        return Response.json({ error: 'Project title must be a string' }, { status: 400 });
+      }
+      const title = data.title.trim();
       if (!title) return Response.json({ error: 'Project title cannot be empty' }, { status: 400 });
+      if (title.length > 200) {
+        return Response.json({ error: 'Project title must be 200 characters or fewer' }, { status: 413 });
+      }
       patch.title = title;
     }
-    if (data.description !== undefined) patch.description = String(data.description || '').slice(0, 3000);
-    if (data.genre !== undefined) patch.genre = String(data.genre || '').trim().slice(0, 100);
-    if (data.key !== undefined) patch.key = String(data.key || '').trim().slice(0, 50);
+    if (data.description !== undefined) {
+      if (typeof data.description !== 'string') {
+        return Response.json({ error: 'Project description must be a string' }, { status: 400 });
+      }
+      if (data.description.length > 3000) {
+        return Response.json({ error: 'Project description must be 3000 characters or fewer' }, { status: 413 });
+      }
+      patch.description = data.description;
+    }
+    if (data.genre !== undefined) {
+      if (typeof data.genre !== 'string') {
+        return Response.json({ error: 'Project genre must be a string' }, { status: 400 });
+      }
+      const genre = data.genre.trim();
+      if (genre.length > 100) {
+        return Response.json({ error: 'Project genre must be 100 characters or fewer' }, { status: 413 });
+      }
+      patch.genre = genre;
+    }
+    if (data.key !== undefined) {
+      if (typeof data.key !== 'string') {
+        return Response.json({ error: 'Project key must be a string' }, { status: 400 });
+      }
+      const key = data.key.trim();
+      if (key.length > 50) {
+        return Response.json({ error: 'Project key must be 50 characters or fewer' }, { status: 413 });
+      }
+      patch.key = key;
+    }
 
     if (data.bpm !== undefined) {
       const bpm = Number(data.bpm);
@@ -65,7 +116,10 @@ Deno.serve(async (req) => {
     }
 
     if (data.status !== undefined) {
-      const status = String(data.status || '');
+      if (typeof data.status !== 'string') {
+        return Response.json({ error: 'Project status must be a string' }, { status: 400 });
+      }
+      const status = data.status;
       if (!PROJECT_STATUSES.has(status)) {
         return Response.json({ error: 'Invalid project status' }, { status: 400 });
       }
@@ -98,6 +152,9 @@ Deno.serve(async (req) => {
 
     const updated = await entities.Project.update(project.id, patch);
     return Response.json({ success: true, project: updated });
+    } finally {
+      await releaseProjectMembershipLock(entities, lockId);
+    }
   } catch (error) {
     console.error('mutateProject error:', error);
     return Response.json({ error: error?.message || 'Project update failed' }, { status: 500 });

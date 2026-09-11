@@ -50,6 +50,11 @@
       "type": "object",
       "description": "Master bus FX chain (insert id -> { enabled, params }) so mixes travel with the project",
       "default": {}
+    },
+    "studio_state": {
+      "type": "object",
+      "description": "Portable NaliStudio editor state for this collaborative project, including track arrangement and remote audio URLs",
+      "default": {}
     }
   },
   "required": [

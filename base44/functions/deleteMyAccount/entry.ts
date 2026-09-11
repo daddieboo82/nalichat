@@ -235,10 +235,12 @@ Deno.serve(async (req) => {
     // Replies cache the original sender label separately from the parent
     // message. Anonymize that copied identity while preserving quoted text.
     if (authoredMessageIds.size > 0) {
-      const conversationsWithReplies = await entities.Message.list('-created_date', 5000);
-      for (const message of conversationsWithReplies) {
-        if (message.reply_to_id && authoredMessageIds.has(message.reply_to_id) && message.reply_to_sender) {
-          await entities.Message.update(message.id, { reply_to_sender: 'Deleted User' });
+      for (const parentId of authoredMessageIds) {
+        const replies = await entities.Message.filter({ reply_to_id: parentId });
+        for (const reply of replies) {
+          if (reply.reply_to_sender) {
+            await entities.Message.update(reply.id, { reply_to_sender: 'Deleted User' });
+          }
         }
       }
     }

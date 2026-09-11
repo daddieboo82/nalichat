@@ -9,11 +9,25 @@ import {
   executeRoutedAiRequest,
 } from '../../shared/aiCapability.ts';
 
+const MAX_AGENT_MESSAGE_CHARS = 12_000;
+const MAX_CONVERSATION_ID_CHARS = 256;
+
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json(
+        { error: 'timed_out', timeout_until: user.timeout_until },
+        { status: 403 },
+      );
+    }
 
     const body = await req.json();
     const conversationId = typeof body?.conversation_id === 'string'
@@ -24,6 +38,15 @@ Deno.serve(async (req) => {
       return Response.json(
         { error: 'Conversation and message content are required.' },
         { status: 400 },
+      );
+    }
+    if (conversationId.length > MAX_CONVERSATION_ID_CHARS) {
+      return Response.json({ error: 'Invalid conversation id.' }, { status: 400 });
+    }
+    if (content.length > MAX_AGENT_MESSAGE_CHARS) {
+      return Response.json(
+        { error: 'Assistant message is too long.' },
+        { status: 413 },
       );
     }
 

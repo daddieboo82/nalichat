@@ -276,6 +276,11 @@ async function processCheckout(
     if (!purchase) {
       throw new Error(`No purchase found for checkout ${session.id}`);
     }
+    if (session.payment_status !== 'paid') {
+      // checkout.session.completed can precede settlement for delayed payment
+      // methods. Keep the purchase pending until Stripe reports it paid.
+      return;
+    }
     if (purchase.status !== 'paid') {
       await entities.Base44Purchase.update(purchase.id, {
         status: 'paid',

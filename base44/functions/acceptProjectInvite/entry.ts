@@ -2,6 +2,44 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const ACCESS_SYNC_BATCH_SIZE = 200;
+const MEMBERSHIP_LOCK_TTL_MS = 5 * 60 * 1000;
+
+async function acquireMembershipLock(entities: any, projectId: string) {
+  const id = `project_membership_lock_${projectId}`;
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + MEMBERSHIP_LOCK_TTL_MS).toISOString();
+
+  try {
+    await entities.ProjectMembershipLock.create({
+      id,
+      project_id: projectId,
+      claimed_at: now.toISOString(),
+      expires_at: expiresAt,
+    });
+    return id;
+  } catch (createError) {
+    const existing = await entities.ProjectMembershipLock.get(id).catch(() => null);
+    if (!existing) throw createError;
+
+    const expired = Date.parse(existing.expires_at || '') <= now.getTime();
+    if (!expired) return null;
+
+    await entities.ProjectMembershipLock.delete(id).catch(() => {});
+    try {
+      await entities.ProjectMembershipLock.create({
+        id,
+        project_id: projectId,
+        claimed_at: now.toISOString(),
+        expires_at: expiresAt,
+      });
+      return id;
+    } catch (retryError) {
+      const raced = await entities.ProjectMembershipLock.get(id).catch(() => null);
+      if (raced) return null;
+      throw retryError;
+    }
+  }
+}
 
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
@@ -10,6 +48,10 @@ async function sha256Hex(value: string): Promise<string> {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -29,11 +71,14 @@ Deno.serve(async (req) => {
     }
 
     const { projectId, token } = await req.json();
-    if (!projectId || !token) {
+    if (typeof projectId !== 'string' || typeof token !== 'string' || !projectId.trim() || !token.trim()) {
       return Response.json({ error: 'projectId and token are required' }, { status: 400 });
     }
+    if (projectId.length > 200 || token.length > 256) {
+      return Response.json({ error: 'Invalid projectId or token' }, { status: 400 });
+    }
 
-    const tokenHash = await sha256Hex(String(token));
+    const tokenHash = await sha256Hex(token);
     const invites = await base44.asServiceRole.entities.ProjectInvite.filter(
       {
         project_id: projectId,
@@ -48,6 +93,15 @@ Deno.serve(async (req) => {
     }
     const maxUses = Number(invite.max_uses || 25);
 
+    const lockId = await acquireMembershipLock(base44.asServiceRole.entities, projectId);
+    if (!lockId) {
+      return Response.json(
+        { error: 'Project membership is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
     const project = await base44.asServiceRole.entities.Project.get(projectId);
     if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
 
@@ -130,6 +184,9 @@ Deno.serve(async (req) => {
         ).catch(() => {});
       }
       throw grantError;
+    }
+    } finally {
+      await base44.asServiceRole.entities.ProjectMembershipLock.delete(lockId).catch(() => {});
     }
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not accept project invite' }, { status: 500 });

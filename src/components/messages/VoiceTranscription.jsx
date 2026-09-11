@@ -28,10 +28,11 @@ export default function VoiceTranscription({ message, isOwn }) {
     let cancelled = false;
     setLoading(true);
 
-    base44.integrations.Core.TranscribeAudio({ audio_url: message.file_url })
+    base44.functions.invoke("transcribeMessageAudio", { messageId: message.id })
       .then((res) => {
         if (cancelled) return;
-        const text = (res && res.data ? res.data : res) || "";
+        if (res?.data?.error) throw new Error(res.data.error);
+        const text = res?.data?.text || "";
         const clean = typeof text === "string" ? text.trim() : String(text).trim();
         if (clean && clean.length > 0) {
           transcriptionCache.set(message.id, clean);

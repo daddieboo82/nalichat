@@ -845,6 +845,15 @@ describe('release configuration', () => {
     expect(voting).toContain('user.timeout_until');
   });
 
+  it('blocks timed-out users from publishing public tracks or challenge submissions', async () => {
+    const post = await readText('base44/functions/createArtPost/entry.ts');
+    const remix = await readText('base44/functions/submitChallengeRemix/entry.ts');
+    for (const source of [post, remix]) {
+      expect(source).toContain("error: 'timed_out'");
+      expect(source).toContain('user.timeout_until');
+    }
+  });
+
   it('counts only current-week squad activity and blocks moderated reward claims', async () => {
     const activity = await readText('base44/functions/recordSquadActivity/entry.ts');
 

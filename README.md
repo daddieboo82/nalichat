@@ -42,6 +42,21 @@ Run browser end-to-end tests:
 1. Install Playwright browsers: `npx playwright install --with-deps chromium`
 2. Execute e2e suite: `npm run test:e2e`
 
+**Premium conversation export**
+
+Premium and Premium Plus members can export a conversation from its More
+Options menu as Markdown or PDF. The authenticated `exportConversation`
+function verifies both current membership and the canonical `chat.export`
+entitlement before returning normalized export data; clients never submit raw
+messages or participant IDs.
+
+Exports include message timestamps, edited markers, reply/thread context, and
+attachment links plus metadata. Hard-deleted messages are absent, soft-deleted
+records are labeled, and unsupported media is not embedded. PDF content is
+written as plain text locally, while temporary download object URLs are always
+revoked. Each export is capped at the first 5,000 messages and reports when that
+limit is reached.
+
 **Publish your changes**
 
 Open [Base44.com](http://Base44.com) and click on Publish.

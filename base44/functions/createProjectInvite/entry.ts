@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 function randomToken(): string {
   const bytes = new Uint8Array(32);
@@ -13,6 +14,10 @@ async function sha256Hex(value: string): Promise<string> {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,14 +27,13 @@ Deno.serve(async (req) => {
     }
 
     const { projectId, role } = await req.json();
-    if (!projectId || !['editor', 'viewer'].includes(role)) {
+    if (
+      typeof projectId !== 'string'
+      || !projectId.trim()
+      || projectId.length > 200
+      || !['editor', 'viewer'].includes(role)
+    ) {
       return Response.json({ error: 'projectId and valid role are required' }, { status: 400 });
-    }
-
-    const project = await base44.asServiceRole.entities.Project.get(projectId);
-    if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
-    if (project.owner_id !== user.id) {
-      return Response.json({ error: 'Only the project owner can create invite links' }, { status: 403 });
     }
 
     const rate = await consumeHourlyLimit(
@@ -42,9 +46,25 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invite creation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
+    const entities = base44.asServiceRole.entities;
+    const lockId = await acquireProjectMembershipLock(entities, projectId);
+    if (!lockId) {
+      return Response.json(
+        { error: 'Project membership is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
+    const project = await entities.Project.get(projectId);
+    if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
+    if (project.owner_id !== user.id) {
+      return Response.json({ error: 'Only the project owner can create invite links' }, { status: 403 });
+    }
+
     const token = randomToken();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    await base44.asServiceRole.entities.ProjectInvite.create({
+    await entities.ProjectInvite.create({
       project_id: project.id,
       token_hash: await sha256Hex(token),
       role,
@@ -62,6 +82,9 @@ Deno.serve(async (req) => {
       expiresAt,
       maxUses: 25,
     }, { headers: { 'Cache-Control': 'no-store' } });
+    } finally {
+      await releaseProjectMembershipLock(entities, lockId);
+    }
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not create project invite' }, { status: 500 });
   }

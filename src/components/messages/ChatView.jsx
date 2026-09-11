@@ -388,11 +388,20 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                   old.filter(m => m.id !== id)
                 );
                 try {
-                  const res = await base44.functions.invoke("mutateConversationMessage", {
+                  let res = await base44.functions.invoke("mutateConversationMessage", {
                     action: "delete",
                     message_id: id,
+                    conversation_id: conversation?.id,
                   });
                   if (res?.data?.error) throw new Error(res.data.error);
+                  if (res?.data?.preview_refresh_failed) {
+                    res = await base44.functions.invoke("mutateConversationMessage", {
+                      action: "delete",
+                      message_id: id,
+                      conversation_id: conversation?.id,
+                    });
+                    if (res?.data?.error) throw new Error(res.data.error);
+                  }
                 } catch (e) {
                   // Restore the message and any composer context if the server delete failed.
                   if (previous) queryClient.setQueryData(["messages", conversation?.id], previous);

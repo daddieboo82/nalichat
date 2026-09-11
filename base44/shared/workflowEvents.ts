@@ -13,3 +13,16 @@ export function workflowEntityRecordId(body: {
     conflict: unique.length > 1,
   };
 }
+
+export function workflowRecordIsFresh(
+  record: { created_date?: unknown; updated_date?: unknown },
+  kind: 'create' | 'update',
+  nowMs = Date.now(),
+  maxAgeMs = 10 * 60 * 1000,
+) {
+  const raw = kind === 'update' ? record?.updated_date : record?.created_date;
+  const timestamp = Date.parse(String(raw || ''));
+  return Number.isFinite(timestamp)
+    && nowMs >= timestamp
+    && nowMs - timestamp <= maxAgeMs;
+}

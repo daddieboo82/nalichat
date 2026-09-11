@@ -33,19 +33,46 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Only the project owner can delete this project' }, { status: 403 });
     }
 
-    const tracks = await entities.Track.filter({ project_id: project.id });
-    for (const track of tracks) {
-      const comments = await entities.TrackComment.filter({
-        track_id: track.id,
-        parent_type: 'track',
-      });
-      for (const comment of comments) await entities.TrackComment.delete(comment.id);
-    }
-
     const deleted: Record<string, number> = {};
+
+    let deletedTracks = 0;
+    let deletedComments = 0;
+    while (true) {
+      const tracks = await entities.Track.filter(
+        { project_id: project.id },
+        '-created_date',
+        100,
+      );
+      if (tracks.length === 0) break;
+
+      for (const track of tracks) {
+        while (true) {
+          const comments = await entities.TrackComment.filter(
+            {
+              track_id: track.id,
+              parent_type: 'track',
+            },
+            '-created_date',
+            200,
+          );
+          if (comments.length === 0) break;
+          for (const comment of comments) {
+            await entities.TrackComment.delete(comment.id);
+            deletedComments += 1;
+          }
+          if (comments.length < 200) break;
+        }
+        await entities.Track.delete(track.id);
+        deletedTracks += 1;
+      }
+
+      if (tracks.length < 100) break;
+    }
+    deleted.Track = deletedTracks;
+    deleted.TrackComment = deletedComments;
+
     for (const entityName of [
       'TrackVersion',
-      'Track',
       'SharedFile',
       'Folder',
       'Milestone',
@@ -53,14 +80,38 @@ Deno.serve(async (req) => {
     ]) {
       const entity = entities[entityName];
       if (!entity) continue;
-      const rows = await entity.filter({ project_id: project.id });
-      deleted[entityName] = rows.length;
-      for (const row of rows) await entity.delete(row.id);
+      let count = 0;
+      while (true) {
+        const rows = await entity.filter(
+          { project_id: project.id },
+          '-created_date',
+          200,
+        );
+        if (rows.length === 0) break;
+        for (const row of rows) {
+          await entity.delete(row.id);
+          count += 1;
+        }
+        if (rows.length < 200) break;
+      }
+      deleted[entityName] = count;
     }
 
-    const presenceRows = await entities.StudioPresence.filter({ room_id: project.id });
-    deleted.StudioPresence = presenceRows.length;
-    for (const presence of presenceRows) await entities.StudioPresence.delete(presence.id);
+    let deletedPresence = 0;
+    while (true) {
+      const presenceRows = await entities.StudioPresence.filter(
+        { room_id: project.id },
+        '-last_heartbeat',
+        200,
+      );
+      if (presenceRows.length === 0) break;
+      for (const presence of presenceRows) {
+        await entities.StudioPresence.delete(presence.id);
+        deletedPresence += 1;
+      }
+      if (presenceRows.length < 200) break;
+    }
+    deleted.StudioPresence = deletedPresence;
 
     await entities.Project.delete(project.id);
 

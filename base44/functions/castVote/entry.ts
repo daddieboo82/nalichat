@@ -32,6 +32,10 @@ export default async function(req) {
     if (challenge.status !== 'voting') {
       return Response.json({ error: 'Voting is not open for this challenge.' }, { status: 409 });
     }
+    const votingEnd = challenge.voting_end_date ? Date.parse(challenge.voting_end_date) : Number.NaN;
+    if (Number.isFinite(votingEnd) && Date.now() > votingEnd) {
+      return Response.json({ error: 'Voting has ended for this challenge.' }, { status: 409 });
+    }
 
     if (submission.producer_id === user.id) {
       return Response.json({ error: "You can't vote on your own submission." }, { status: 403 });

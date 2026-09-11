@@ -80,7 +80,9 @@
       "data.owner_id": "{{user.id}}"
     },
     "delete": {
-      "data.owner_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

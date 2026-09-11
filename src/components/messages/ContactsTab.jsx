@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, Trash2, MessageSquare, Loader2, MapPin } from "lucide-react";
+import { toast } from "sonner";
 
 const roleColors = {
   artist: "bg-primary/20 text-primary border-primary/30",
@@ -48,6 +49,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
       return res?.data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["contacts", currentUserId] }),
+    onError: () => toast.error("Couldn't remove contact. Please try again."),
   });
 
   const addContactMutation = useMutation({
@@ -62,6 +64,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contacts", currentUserId] });
     },
+    onError: () => toast.error("Couldn't add contact. Please try again."),
   });
 
   const contactUserIds = new Set(contacts.map(c => c.contact_user_id));
@@ -181,6 +184,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
                         variant="outline"
                         className="w-8 h-8 p-0 rounded-lg text-destructive hover:bg-destructive/10 border-border"
                         onClick={() => deleteContactMutation.mutate(contactRecord.id)}
+                        disabled={deleteContactMutation.isPending}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>

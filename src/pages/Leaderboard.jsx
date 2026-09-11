@@ -46,10 +46,9 @@ export default function Leaderboard() {
     likesCountByUser[p.creator_id] = (likesCountByUser[p.creator_id] || 0) + (p.likes || 0);
   });
 
-  const achievementCountByUser = {};
-  achievements.forEach(a => {
-    achievementCountByUser[a.user_id] = (achievementCountByUser[a.user_id] || 0) + 1;
-  });
+  const achievementCountByUser = Object.fromEntries(
+    users.map((user) => [user.id, Number(user.achievement_count || 0)])
+  );
 
   const sorted = [...users].sort((a, b) => {
     if (userTab === "xp") return (b.xp || 0) - (a.xp || 0);

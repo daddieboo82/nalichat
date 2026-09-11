@@ -132,7 +132,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="font-heading font-semibold text-sm truncate">{user.display_name || user.full_name}</p>
-                        <span className="text-xs">{roleIcons[user.role]}</span>
+                        <span className="text-xs">{roleIcons[user.artist_role]}</span>
                       </div>
                       <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
                         {user.location && <><MapPin className="w-3 h-3" /> {user.location}</>}

@@ -1,9 +1,15 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { readFile } from 'node:fs/promises';
+import { access, readFile, readdir } from 'node:fs/promises';
 
 async function readJson(path) {
   return JSON.parse(await readFile(new URL(`../../${path}`, import.meta.url), 'utf8'));
+}
+
+async function workflowFiles() {
+  const dir = new URL('../../base44/workflows/', import.meta.url);
+  const names = await readdir(dir);
+  return names.filter((name) => name.endsWith('.jsonc'));
 }
 
 describe('release configuration', () => {
@@ -97,6 +103,34 @@ describe('release configuration', () => {
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
     expect(submission.properties.vote_count.rls?.write?.user_condition?.role).toBe('admin');
     expect(submission.properties.status.rls?.write?.user_condition?.role).toBe('admin');
+  });
+
+
+  it('only references backend functions that exist from Base44 workflows', async () => {
+    for (const name of await workflowFiles()) {
+      const workflow = await readJson(`base44/workflows/${name}`);
+      for (const step of workflow.definition?.do || []) {
+        const functionName = step?.run_function?.with?.function_name;
+        if (!functionName) continue;
+        await expect(
+          access(new URL(`../../base44/functions/${functionName}/entry.ts`, import.meta.url)),
+        ).resolves.toBeUndefined();
+      }
+    }
+  });
+
+  it('has a single TrackComment create notification workflow', async () => {
+    const commentWorkflows = [];
+    for (const name of await workflowFiles()) {
+      const workflow = await readJson(`base44/workflows/${name}`);
+      const config = workflow.trigger?.config;
+      if (config?.trigger_type === 'entity'
+        && config?.entity_name === 'TrackComment'
+        && (config?.events || []).includes('create')) {
+        commentWorkflows.push(name);
+      }
+    }
+    expect(commentWorkflows).toEqual(['Notify on Track Comment.jsonc']);
   });
 
   it('keeps the PWA manifest scoped to the serving origin', async () => {

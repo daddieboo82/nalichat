@@ -5,8 +5,13 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import TutorialTopics from "@/components/ai/TutorialTopics";
 import { toast } from "sonner";
+import { useSubscription } from "@/hooks/useSubscription";
 
 export default function AiAssistant() {
+  const { hasEntitlement, isLoading: subscriptionLoading } = useSubscription();
+  const canUseAi = hasEntitlement("ai.standard");
+  const canUseBestModel = hasEntitlement("ai.best_model");
+  const agentName = canUseBestModel ? "studio_ai_plus" : "studio_ai";
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -32,6 +37,10 @@ export default function AiAssistant() {
     const handleSendMessage = async (e) => {
       const text = e.detail?.message;
       if (!text) return;
+      if (subscriptionLoading || !canUseAi) {
+        toast.error(subscriptionLoading ? "Checking your subscription…" : "Premium is required to use NALI.ai.");
+        return;
+      }
       setOpen(true);
       setMinimized(false);
       let conv = conversation;
@@ -52,7 +61,7 @@ export default function AiAssistant() {
       window.removeEventListener('open-ai-assistant', handleOpen);
       window.removeEventListener('nali-send-message', handleSendMessage);
     };
-  }, [conversation]);
+  }, [conversation, canUseAi, subscriptionLoading, agentName]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -110,8 +119,13 @@ export default function AiAssistant() {
   }, []);
 
   const initConversation = async () => {
+    if (subscriptionLoading) throw new Error("Subscription is still loading");
+    if (!canUseAi) {
+      toast.error("Premium is required to use NALI.ai.");
+      throw new Error("AI entitlement required");
+    }
     if (conversation) return conversation;
-    const conv = await base44.agents.createConversation({ agent_name: "studio_ai" });
+    const conv = await base44.agents.createConversation({ agent_name: agentName });
     setConversation(conv);
     // Subscribe — stop the typing indicator once the assistant has replied
     unsubRef.current = base44.agents.subscribeToConversation(conv.id, (data) => {
@@ -126,6 +140,14 @@ export default function AiAssistant() {
   };
 
   const openChat = async (greeting) => {
+    if (subscriptionLoading) {
+      toast.info("Checking your subscription…");
+      return;
+    }
+    if (!canUseAi) {
+      toast.error("Premium is required to use NALI.ai.");
+      return;
+    }
     setOpen(true);
     setMinimized(false);
     if (!conversation) {

@@ -18,6 +18,7 @@ export default function ChallengeLeaderboard() {
   const [challenge, setChallenge] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [voteCounts, setVoteCounts] = useState({});
+  const [truncated, setTruncated] = useState({ submissions: false, weeklyVotes: false });
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
@@ -30,8 +31,14 @@ export default function ChallengeLeaderboard() {
       )
       .then(setSubmissions);
     base44.functions.invoke("getChallengeLeaderboard", { challengeId })
-      .then((res) => setVoteCounts(res?.data?.counts || {}))
-      .catch(() => setVoteCounts({}));
+      .then((res) => {
+        setVoteCounts(res?.data?.counts || {});
+        setTruncated(res?.data?.truncated || { submissions: false, weeklyVotes: false });
+      })
+      .catch(() => {
+        setVoteCounts({});
+        setTruncated({ submissions: false, weeklyVotes: false });
+      });
   }, [challengeId]);
 
   const ranked = useMemo(() => {
@@ -66,6 +73,12 @@ export default function ChallengeLeaderboard() {
           </button>
         ))}
       </div>
+
+      {(truncated.submissions || (filter !== "all" && truncated.weeklyVotes)) && (
+        <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          This leaderboard is showing a capped data set, so some rankings or vote totals may be incomplete.
+        </div>
+      )}
 
       <div className="space-y-2">
         {ranked.map((s, i) => (

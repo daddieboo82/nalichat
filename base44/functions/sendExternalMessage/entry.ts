@@ -8,13 +8,21 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { type, destination, message, senderName } = await req.json();
+    const { type, destination, message } = await req.json();
 
     if (!destination || !message) {
       return Response.json({ error: 'destination and message are required' }, { status: 400 });
     }
 
-    const name = senderName || user.full_name || 'Someone on NaliChat';
+    const cleanInputMessage = String(message).trim();
+    if (!cleanInputMessage) {
+      return Response.json({ error: 'message is required' }, { status: 400 });
+    }
+    if (cleanInputMessage.length > 1000) {
+      return Response.json({ error: 'message must be 1000 characters or fewer' }, { status: 400 });
+    }
+
+    const name = user.display_name || user.full_name || 'Someone on NaliChat';
 
     if (type === 'email') {
       // Prevent open email relay: only allow sending to registered app users.
@@ -30,7 +38,7 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Recipient is not a registered NaliChat user' }, { status: 403 });
       }
       // Sanitize the message body to remove CRLF sequences
-      const cleanMessage = message.replace(/[\r\n]{2,}/g, '\n\n').replace(/[\r\n]/g, '\n');
+      const cleanMessage = cleanInputMessage.replace(/[\r\n]{2,}/g, '\n\n').replace(/[\r\n]/g, '\n');
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: cleanDestination,
         subject: `Message from ${name} via NaliChat`,
@@ -61,7 +69,7 @@ Deno.serve(async (req) => {
         }, { status: 503 });
       }
 
-      const cleanMessage = message.replace(/[\r\n]{2,}/g, '\n\n').replace(/[\r\n]/g, '\n');
+      const cleanMessage = cleanInputMessage.replace(/[\r\n]{2,}/g, '\n\n').replace(/[\r\n]/g, '\n');
       const body = `${name} sent you a message via NaliChat:\n\n"${cleanMessage}"\n\nJoin NaliChat to reply directly.`;
 
       const formData = new URLSearchParams();

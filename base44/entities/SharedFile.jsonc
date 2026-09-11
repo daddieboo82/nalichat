@@ -39,7 +39,16 @@
       }
     },
     "file_size": {
-      "type": "number"
+      "type": "number",
+      "description": "Server-managed uploaded file size in bytes.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "uploader_id": {
       "type": "string",

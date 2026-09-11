@@ -1,4 +1,5 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { stripeRequest } from '../../shared/stripe.ts';
 
 function deletedIdentity(userId: string): string {
   return `deleted:${userId}`;
@@ -20,6 +21,44 @@ Deno.serve(async (req) => {
 
     const entities = base44.asServiceRole.entities;
     const tombstoneId = deletedIdentity(user.id);
+
+    // Cancel live Stripe billing before deleting account access. If cancellation
+    // fails, abort deletion so the user is never stranded without a billing
+    // portal while an external subscription can continue charging.
+    for (const subscription of subscriptions) {
+      if (
+        subscription.provider === 'stripe'
+        && subscription.subscription_id
+        && !['canceled', 'ended'].includes(String(subscription.status || ''))
+      ) {
+        await stripeRequest(
+          `/subscriptions/${encodeURIComponent(subscription.subscription_id)}`,
+          {},
+          'DELETE',
+          { idempotencyKey: `delete_account_cancel_${subscription.id}`.slice(0, 255) },
+        );
+        await entities.Subscription.update(subscription.id, {
+          status: 'canceled',
+          cancel_at_period_end: false,
+          current_period_end: new Date().toISOString(),
+        });
+      } else if (
+        subscription.provider === 'stripe'
+        && subscription.checkout_id
+        && ['pending', 'incomplete'].includes(String(subscription.status || ''))
+      ) {
+        try {
+          await stripeRequest(
+            `/checkout/sessions/${encodeURIComponent(subscription.checkout_id)}/expire`,
+            {},
+            'POST',
+            { idempotencyKey: `delete_account_expire_${subscription.id}`.slice(0, 255) },
+          );
+        } catch (error) {
+          console.warn('Could not expire pending checkout during account deletion:', error);
+        }
+      }
+    }
 
     // Delete records that are private to this account and safe to remove.
     const ownedDeletes: Array<[string, string]> = [

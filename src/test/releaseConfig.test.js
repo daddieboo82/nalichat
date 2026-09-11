@@ -268,6 +268,20 @@ describe('release configuration', () => {
   });
 
 
+  it('keeps subscription billing Stripe-authoritative and rate-limited', async () => {
+    const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');
+    const portal = await readText('base44/functions/createBillingPortal/entry.ts');
+    const wix = await readText('base44/functions/wixPaymentsWebhook/entry.ts');
+
+    expect(checkout).toContain("'subscription_checkout'");
+    expect(checkout).toContain('status: 429');
+    expect(portal).toContain("'billing_portal'");
+    expect(portal).toContain('status: 429');
+    expect(wix).toContain('Ignoring legacy Wix order approval');
+    expect(wix).not.toContain("status: 'active',\n          provider: 'wix'");
+  });
+
+
   it('preserves collaboration integrity when deleting an account', async () => {
     const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
 

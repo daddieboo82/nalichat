@@ -33,6 +33,10 @@ function isTrustedStoredUrl(value: unknown): boolean {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const { fileId, token } = await req.json();
     const normalizedFileId = String(fileId || '').trim();
@@ -43,15 +47,15 @@ Deno.serve(async (req) => {
 
     const file = await base44.asServiceRole.entities.SharedFile.get(normalizedFileId);
     if (!file || !file.share_token_hash) {
-      return Response.json({ error: 'Share link not found' }, { status: 404 });
+      return Response.json({ error: 'Invalid or expired share link' }, { status: 404 });
     }
     if (file.share_token_expires_at && new Date(file.share_token_expires_at).getTime() <= Date.now()) {
-      return Response.json({ error: 'Share link expired' }, { status: 410 });
+      return Response.json({ error: 'Invalid or expired share link' }, { status: 404 });
     }
 
     const candidate = await sha256Hex(normalizedToken);
     if (!constantTimeEqual(candidate, String(file.share_token_hash))) {
-      return Response.json({ error: 'Invalid share token' }, { status: 403 });
+      return Response.json({ error: 'Invalid or expired share link' }, { status: 404 });
     }
     if (!isTrustedStoredUrl(file.file_url)) {
       return Response.json({ error: 'Shared file media host is not allowed' }, { status: 400 });

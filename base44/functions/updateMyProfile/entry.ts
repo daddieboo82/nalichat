@@ -48,7 +48,6 @@ Deno.serve(async (req) => {
     if (body?.display_name !== undefined) patch.display_name = String(body.display_name || '').trim().slice(0, 120);
     if (body?.bio !== undefined) patch.bio = String(body.bio || '').trim().slice(0, 2000);
     if (body?.location !== undefined) patch.location = String(body.location || '').trim().slice(0, 200);
-    if (body?.phone !== undefined) patch.phone = String(body.phone || '').trim().slice(0, 40);
     if (body?.website !== undefined) {
       const raw = String(body.website || '').trim();
       if (!raw) {

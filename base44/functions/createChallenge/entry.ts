@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
+const MAX_SOURCE_TRACK_BYTES = 100 * 1024 * 1024;
+
 function parseDate(value: unknown) {
   if (!value) return null;
   const ms = new Date(String(value)).getTime();
@@ -27,6 +29,37 @@ function cleanUploadedUrl(value: unknown) {
   return trusted ? parsed.toString() : '';
 }
 
+async function resolveStoredFileSize(url: string): Promise<number | null> {
+  try {
+    const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+    if (head.ok) {
+      const length = Number(head.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0) return length;
+    }
+  } catch {}
+
+  try {
+    const probe = await fetch(url, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-0' },
+      redirect: 'manual',
+    });
+    if (probe.ok || probe.status === 206) {
+      const range = probe.headers.get('content-range') || '';
+      const match = range.match(/\/(\d+)$/);
+      if (match) {
+        const total = Number(match[1]);
+        if (Number.isFinite(total) && total >= 0) return total;
+      }
+      const length = Number(probe.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0 && probe.status !== 206) return length;
+    }
+    try { await probe.body?.cancel(); } catch {}
+  } catch {}
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -41,6 +74,14 @@ Deno.serve(async (req) => {
 
     if (!title || !description || !sourceTrackUrl) {
       return Response.json({ error: 'Title, description, and a trusted uploaded source track are required' }, { status: 400 });
+    }
+
+    const sourceTrackSize = await resolveStoredFileSize(sourceTrackUrl);
+    if (sourceTrackSize === null) {
+      return Response.json({ error: 'Could not verify source track size' }, { status: 400 });
+    }
+    if (sourceTrackSize <= 0 || sourceTrackSize > MAX_SOURCE_TRACK_BYTES) {
+      return Response.json({ error: 'Challenge source tracks must be 100MB or smaller' }, { status: 413 });
     }
 
     const start = parseDate(body?.start_date);

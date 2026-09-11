@@ -57,7 +57,7 @@ export function useStudioPresence(roomId = 'local_studio') {
 
   useEffect(() => {
     let interval;
-    let unsubscribe;
+    let refreshInterval;
     let cancelled = false;
 
     cancelledRef.current = false;
@@ -71,10 +71,7 @@ export function useStudioPresence(roomId = 'local_studio') {
         await refresh();
 
         interval = setInterval(writeHeartbeat, HEARTBEAT_MS);
-
-        unsubscribe = base44.entities.StudioPresence.subscribe(() => {
-          refresh();
-        });
+        refreshInterval = setInterval(refresh, 5000);
       } catch (e) {
         // not logged in — no presence
       }
@@ -84,7 +81,7 @@ export function useStudioPresence(roomId = 'local_studio') {
       cancelled = true;
       cancelledRef.current = true;
       if (interval) clearInterval(interval);
-      if (unsubscribe) unsubscribe();
+      if (refreshInterval) clearInterval(refreshInterval);
       setTimeout(() => {
         base44.functions.invoke("updateStudioPresence", {
           action: "clear",

@@ -13,8 +13,9 @@ Deno.serve(async (req) => {
     const conversation = await base44.asServiceRole.entities.Conversation.get(data.conversation_id);
     if (!conversation) return Response.json({ success: true });
     
-    // Only notify if it's a group or shared session channel
-    if (conversation.type !== 'group') return Response.json({ success: true, message: 'Not a group chat' });
+    // Notify every other participant for both DMs and group chats.
+    // The workflow triggers for all Message records, so filtering out DMs here
+    // caused one-to-one messages to produce no notification at all.
     
     // Determine recipients
     const recipients = new Set();
@@ -30,7 +31,9 @@ Deno.serve(async (req) => {
       actor_id: data.sender_id,
       actor_name: data.sender_name || "Someone",
       actor_avatar: data.sender_avatar,
-      message: `sent a message in ${conversation.name || 'a group'}: "${data.text ? data.text.substring(0, 30) + (data.text.length > 30 ? '...' : '') : 'an attachment'}"`,
+      message: conversation.type === 'group'
+        ? `sent a message in ${conversation.name || 'a group'}: "${data.text ? data.text.substring(0, 30) + (data.text.length > 30 ? '...' : '') : 'an attachment'}"`
+        : `${data.text ? data.text.substring(0, 60) + (data.text.length > 60 ? '...' : '') : 'Sent you an attachment'}`,
       link: `/messages?id=${conversation.id}`
     }));
     

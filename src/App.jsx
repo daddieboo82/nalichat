@@ -5,6 +5,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, MotionConfig } from 'framer-motion';
 import { usePerformance } from '@/hooks/use-performance';
+import { useReducedMotionPreference } from '@/hooks/useReducedMotionPreference';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -251,6 +252,7 @@ function App() {
     } catch { return false; }
   });
   const { isLowEnd } = usePerformance();
+  const { reduceMotion } = useReducedMotionPreference();
 
   // The assistant is code-split, so an "open" event fired while its chunk is
   // still downloading would be lost. Queue those events and let the assistant
@@ -315,7 +317,7 @@ function App() {
           <NaliPresenceProvider>
             <AudioPlayerProvider>
               <CartProvider>
-                <MotionConfig reducedMotion={isLowEnd ? "always" : "user"}>
+                <MotionConfig reducedMotion={isLowEnd || reduceMotion ? "always" : "user"}>
                   {!loaded && <AppLoader onDone={handleSplashDone} />}
                   {!isLowEnd && <NavRipple />}
                   <Router>

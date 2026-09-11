@@ -170,11 +170,11 @@ async function persistUserStripeState(
   }
   await entities.User.update(userId, {
     stripe_customer_id: customerId,
+    stripe_checkout_claim_id: null,
+    stripe_checkout_claimed_at: null,
     ...(trialUsedAt && !user.trial_used_at ? {
       trial_used_at: trialUsedAt,
       trial_claim_id: null,
-      stripe_checkout_claim_id: null,
-      stripe_checkout_claimed_at: null,
     } : {}),
   });
 }

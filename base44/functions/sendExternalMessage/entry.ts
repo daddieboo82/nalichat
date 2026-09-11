@@ -19,13 +19,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { type, destination, message, senderName } = await req.json();
+    const { type, destination, message } = await req.json();
 
     if (!destination || !message) {
       return Response.json({ error: 'destination and message are required' }, { status: 400 });
     }
 
-    const name = senderName || user.full_name || 'Someone on NaliChat';
+    const name = user.display_name || user.full_name || 'Someone on NaliChat';
 
     if (type === 'email') {
       // Prevent open email relay: only allow sending to registered app users.

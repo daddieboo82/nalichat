@@ -59,7 +59,15 @@
     },
     "views": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "duration": {
       "type": "number",

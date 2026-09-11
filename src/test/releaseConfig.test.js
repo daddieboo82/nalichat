@@ -162,6 +162,19 @@ describe('release configuration', () => {
   });
 
 
+  it('keeps message attachments and thread references scoped to the active conversation', async () => {
+    const sendMessage = await readText('base44/functions/sendConversationMessage/entry.ts');
+
+    expect(sendMessage).toContain('Message attachment URL must use HTTPS');
+    expect(sendMessage).toContain('Reply target is not in this conversation');
+    expect(sendMessage).toContain('Thread target is not in this conversation');
+    expect(sendMessage).toContain('replyTarget.conversation_id !== conversationId');
+    expect(sendMessage).toContain('threadTarget.conversation_id !== conversationId');
+    expect(sendMessage).toContain('conversation_id: conversationId');
+    expect(sendMessage).not.toContain("'reply_to_text', 'reply_to_sender'");
+  });
+
+
   it('creates conversations only through validated server membership checks', async () => {
     const conversation = await readJson('base44/entities/Conversation.jsonc');
     const manageConversation = await readText('base44/functions/manageConversation/entry.ts');

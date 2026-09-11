@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireSharedFileMutationLock, releaseSharedFileMutationLock } from '../../shared/sharedFileMutationLock.ts';
+import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -32,22 +33,40 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
-    const folder = await entities.Folder.get(folderId);
+    let folder = await entities.Folder.get(folderId);
     if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
 
-    let canEdit = user.role === 'admin';
-    if (!canEdit && folder.project_id) {
-      const project = await entities.Project.get(folder.project_id).catch(() => null);
-      if (!project) {
-        return Response.json({ error: 'Project not found' }, { status: 404 });
+    const projectLockId = folder.project_id
+      ? await acquireProjectMembershipLock(entities, folder.project_id)
+      : null;
+    if (folder.project_id && !projectLockId) {
+      return Response.json(
+        { error: 'Project is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
+      const currentFolder = await entities.Folder.get(folderId).catch(() => null);
+      if (!currentFolder) return Response.json({ error: 'Folder not found' }, { status: 404 });
+      if ((currentFolder.project_id || null) !== (folder.project_id || null)) {
+        return Response.json({ error: 'Folder project changed. Please retry.' }, { status: 409 });
       }
-      canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
-    } else if (!canEdit) {
-      canEdit = folder.owner_id === user.id;
-    }
-    if (!canEdit) {
-      return Response.json({ error: 'You cannot delete this folder' }, { status: 403 });
-    }
+      folder = currentFolder;
+
+      let canEdit = user.role === 'admin';
+      if (!canEdit && folder.project_id) {
+        const project = await entities.Project.get(folder.project_id).catch(() => null);
+        if (!project) {
+          return Response.json({ error: 'Project not found' }, { status: 404 });
+        }
+        canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
+      } else if (!canEdit) {
+        canEdit = folder.owner_id === user.id;
+      }
+      if (!canEdit) {
+        return Response.json({ error: 'You cannot delete this folder' }, { status: 403 });
+      }
 
     let detachedFiles = 0;
     while (true) {
@@ -87,6 +106,9 @@ Deno.serve(async (req) => {
       deleted: true,
       detached_files: detachedFiles,
     });
+    } finally {
+      await releaseProjectMembershipLock(entities, projectLockId);
+    }
   } catch (error) {
     console.error('deleteFolder error:', error);
     return Response.json({ error: error?.message || 'Folder deletion failed' }, { status: 500 });

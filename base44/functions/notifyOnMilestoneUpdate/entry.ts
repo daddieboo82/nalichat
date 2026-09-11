@@ -9,7 +9,16 @@ Deno.serve(async (req) => {
     const record = workflowEntityRecordId({ event, data });
     if (record.conflict) return Response.json({ error: 'Conflicting entity ids' }, { status: 400 });
     if (event?.type !== 'update' || !record.id) return Response.json({ success: true });
-    if (!Array.isArray(changed_fields) || !changed_fields.some((f) => ['completed','due_date','title'].includes(f))) {
+
+    const changedFields = Array.isArray(changed_fields)
+      ? changed_fields
+      : Array.isArray(event?.changed_fields)
+        ? event.changed_fields
+        : null;
+    if (
+      changedFields
+      && !changedFields.some((field) => ['completed', 'due_date', 'title'].includes(field))
+    ) {
       return Response.json({ success: true, message: 'No relevant fields changed' });
     }
 

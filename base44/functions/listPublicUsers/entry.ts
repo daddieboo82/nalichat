@@ -1,6 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+const MAX_DISCOVERY_USERS = 1000;
+const MAX_DISCOVERY_ACHIEVEMENTS = 5000;
+const MAX_DISCOVERY_CONTACTS = 1000;
+const MAX_DISCOVERY_CONVERSATIONS = 1000;
+
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -18,11 +23,23 @@ export default async function(req) {
     }
 
     const [allUsers, achievements, contacts, inboundContacts, conversations] = await Promise.all([
-      base44.asServiceRole.entities.User.list(),
-      base44.asServiceRole.entities.Achievement.list(),
-      base44.asServiceRole.entities.Contact.filter({ user_id: user.id }),
-      base44.asServiceRole.entities.Contact.filter({ contact_user_id: user.id }),
-      base44.asServiceRole.entities.Conversation.filter({ participant_ids: user.id }),
+      base44.asServiceRole.entities.User.list('-created_date', MAX_DISCOVERY_USERS),
+      base44.asServiceRole.entities.Achievement.list('-created_date', MAX_DISCOVERY_ACHIEVEMENTS),
+      base44.asServiceRole.entities.Contact.filter(
+        { user_id: user.id },
+        '-created_date',
+        MAX_DISCOVERY_CONTACTS,
+      ),
+      base44.asServiceRole.entities.Contact.filter(
+        { contact_user_id: user.id },
+        '-created_date',
+        MAX_DISCOVERY_CONTACTS,
+      ),
+      base44.asServiceRole.entities.Conversation.filter(
+        { participant_ids: user.id },
+        '-last_message_at',
+        MAX_DISCOVERY_CONVERSATIONS,
+      ),
     ]);
 
     const presenceVisibleTo = new Set<string>([user.id]);
@@ -79,7 +96,13 @@ export default async function(req) {
         : false,
     }));
 
-    return Response.json({ users: publicUsers });
+    return Response.json({
+      users: publicUsers,
+      truncated: {
+        users: allUsers.length >= MAX_DISCOVERY_USERS,
+        achievements: achievements.length >= MAX_DISCOVERY_ACHIEVEMENTS,
+      },
+    });
   } catch (error) {
     console.error('listPublicUsers error:', error);
     return Response.json({ error: error?.message || 'Could not list public users' }, { status: 500 });

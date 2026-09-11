@@ -5,9 +5,17 @@ const DELETE_BATCH_SIZE = 200;
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
 
     const writeRate = await consumeHourlyLimit(
       base44.asServiceRole.entities,
@@ -20,8 +28,11 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const endpoint = String(body?.endpoint || '');
-    if (!endpoint) {
+    if (typeof body?.endpoint !== 'string') {
+      return Response.json({ error: 'endpoint is required' }, { status: 400 });
+    }
+    const endpoint = body.endpoint.trim();
+    if (!endpoint || endpoint.length > 2048) {
       return Response.json({ error: 'endpoint is required' }, { status: 400 });
     }
 

@@ -1,6 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+async function pushSubscriptionId(endpoint: string) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(endpoint));
+  const hex = Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+  return `push_${hex}`;
+}
+
 function isSafePushEndpoint(value: string) {
   try {
     const parsed = new URL(value);
@@ -21,9 +29,17 @@ function isSafePushEndpoint(value: string) {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
 
     const writeRate = await consumeHourlyLimit(
       base44.asServiceRole.entities,
@@ -36,16 +52,29 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const endpoint = String(body?.endpoint || '');
-    const p256dh = String(body?.keys?.p256dh || '');
-    const auth = String(body?.keys?.auth || '');
+    if (
+      typeof body?.endpoint !== 'string'
+      || typeof body?.keys?.p256dh !== 'string'
+      || typeof body?.keys?.auth !== 'string'
+    ) {
+      return Response.json({ error: 'Invalid push subscription' }, { status: 400 });
+    }
+    const endpoint = body.endpoint.trim();
+    const p256dh = body.keys.p256dh.trim();
+    const auth = body.keys.auth.trim();
 
-    if (!endpoint || !p256dh || !auth || !isSafePushEndpoint(endpoint)) {
+    if (
+      !endpoint || endpoint.length > 2048
+      || !p256dh || p256dh.length > 512
+      || !auth || auth.length > 512
+      || !isSafePushEndpoint(endpoint)
+    ) {
       return Response.json({ error: 'Invalid push subscription' }, { status: 400 });
     }
 
     const entity = base44.asServiceRole.entities.PushSubscription;
-    const endpointRows = await entity.filter({ endpoint });
+    const deterministicId = await pushSubscriptionId(endpoint);
+    const endpointRows = await entity.filter({ endpoint }, '-created_date', 10);
 
     // A browser PushManager subscription is device/browser scoped rather than
     // account scoped. Reusing the same subscription after sign-out must transfer
@@ -60,20 +89,42 @@ Deno.serve(async (req) => {
       await entity.delete(row.id);
     }
 
-    const existing = endpointRows.filter((row: any) => row.user_id === user.id);
     const data = {
       user_id: user.id,
       endpoint,
       p256dh,
       auth,
-      user_agent: String(body?.userAgent || '').slice(0, 500),
+      user_agent: typeof body?.userAgent === 'string' ? body.userAgent.slice(0, 500) : '',
       last_seen_at: new Date().toISOString(),
     };
 
-    if (existing.length > 0) {
-      await entity.update(existing[0].id, data);
+    const deterministic = await entity.get(deterministicId).catch(() => null);
+    if (deterministic) {
+      if (
+        deterministic.user_id !== user.id
+        && (deterministic.p256dh !== p256dh || deterministic.auth !== auth)
+      ) {
+        return Response.json({ error: 'Push endpoint is already registered to another account' }, { status: 409 });
+      }
+      await entity.update(deterministicId, data);
     } else {
-      await entity.create(data);
+      try {
+        await entity.create({ id: deterministicId, ...data });
+      } catch (createError) {
+        const raced = await entity.get(deterministicId).catch(() => null);
+        if (!raced) throw createError;
+        if (raced.p256dh !== p256dh || raced.auth !== auth) {
+          return Response.json({ error: 'Push endpoint is already registered to another account' }, { status: 409 });
+        }
+        await entity.update(deterministicId, data);
+      }
+    }
+
+    // Remove legacy/random-ID duplicates after the deterministic record is safe.
+    for (const row of endpointRows) {
+      if (row.id !== deterministicId) {
+        await entity.delete(row.id).catch(() => {});
+      }
     }
 
     return Response.json({ success: true });

@@ -715,6 +715,16 @@ describe('release configuration', () => {
     expect(deletion).toContain('await syncConversationAudience(entities, conversation.id, participantIds)');
   });
 
+  it('removes or anonymizes cross-user references during account deletion', async () => {
+    const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
+    expect(deletion).toContain('entities.Contact.filter({ contact_user_id: user.id })');
+    expect(deletion).toContain('await entities.Contact.delete(contact.id)');
+    expect(deletion).toContain('entities.Violation.filter({ user_id: user.id })');
+    expect(deletion).toContain("user_name: 'Deleted User'");
+    expect(deletion).toContain('entities.Violation.filter({ reported_by_id: user.id })');
+    expect(deletion).toContain("reported_by_name: 'Deleted User'");
+  });
+
 
   it('enforces configured challenge voting windows server-side', async () => {
     const vote = await readText('base44/functions/castVote/entry.ts');

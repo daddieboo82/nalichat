@@ -6,16 +6,25 @@ export default async function(req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const [allUsers, achievements, contacts, conversations] = await Promise.all([
+    const [allUsers, achievements, contacts, inboundContacts, conversations] = await Promise.all([
       base44.asServiceRole.entities.User.list(),
       base44.asServiceRole.entities.Achievement.list(),
       base44.asServiceRole.entities.Contact.filter({ user_id: user.id }),
+      base44.asServiceRole.entities.Contact.filter({ contact_user_id: user.id }),
       base44.asServiceRole.entities.Conversation.filter({ participant_ids: user.id }),
     ]);
 
     const presenceVisibleTo = new Set<string>([user.id]);
+    const inboundContactOwners = new Set(
+      inboundContacts.map((contact: any) => contact.user_id).filter(Boolean),
+    );
     for (const contact of contacts) {
-      if (contact.contact_user_id) presenceVisibleTo.add(contact.contact_user_id);
+      // Contact lists are unilateral. Reveal presence only when the relationship
+      // is mutual, otherwise simply adding a public profile would become an
+      // online-status tracking primitive.
+      if (contact.contact_user_id && inboundContactOwners.has(contact.contact_user_id)) {
+        presenceVisibleTo.add(contact.contact_user_id);
+      }
     }
     for (const conversation of conversations) {
       for (const participantId of conversation.participant_ids || []) {

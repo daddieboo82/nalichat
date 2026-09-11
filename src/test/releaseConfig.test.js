@@ -651,6 +651,18 @@ describe('release configuration', () => {
     expect(coverArt).not.toContain('entities.ArtPost.update');
   });
 
+  it('keeps project updates server-authoritative', async () => {
+    const project = await readJson('base44/entities/Project.jsonc');
+    const mutateProject = await readText('base44/functions/mutateProject/entry.ts');
+    const studio = await readText('src/pages/Studio.jsx');
+
+    expect(project.rls.update?.user_condition?.role).toBe('admin');
+    expect(mutateProject).toContain('project.owner_id === user.id');
+    expect(mutateProject).toContain('(project.editor_ids || []).includes(user.id)');
+    expect(studio).toContain('functions.invoke("mutateProject"');
+    expect(studio).not.toContain('entities.Project.update');
+  });
+
 
   it('enforces configured challenge voting windows server-side', async () => {
     const vote = await readText('base44/functions/castVote/entry.ts');

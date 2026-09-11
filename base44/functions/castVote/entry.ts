@@ -1,4 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import {
+  acquireChallengeSubmissionLock,
+  releaseChallengeSubmissionLock,
+} from '../../shared/challengeSubmissionLock.ts';
 
 async function voteId(submissionId: string, userId: string): Promise<string> {
   const digest = await crypto.subtle.digest(
@@ -13,6 +17,10 @@ async function voteId(submissionId: string, userId: string): Promise<string> {
 
 export default async function(req) {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'You must be logged in to vote.' }, { status: 401 });
@@ -22,9 +30,20 @@ export default async function(req) {
     }
 
     const { submission_id } = await req.json();
-    if (!submission_id) return Response.json({ error: 'submission_id is required' }, { status: 400 });
+    if (typeof submission_id !== 'string' || !submission_id.trim() || submission_id.length > 200) {
+      return Response.json({ error: 'submission_id is required' }, { status: 400 });
+    }
 
     const entities = base44.asServiceRole.entities;
+    const lockId = await acquireChallengeSubmissionLock(entities, submission_id);
+    if (!lockId) {
+      return Response.json(
+        { error: 'Submission is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
     const submission = await entities.ChallengeSubmission.get(submission_id);
     if (!submission) return Response.json({ error: 'Submission not found' }, { status: 404 });
     if (submission.status !== 'approved') {
@@ -96,6 +115,9 @@ export default async function(req) {
 
     const updated = await entities.ChallengeSubmission.get(submission_id);
     return Response.json({ success: true, vote_count: updated.vote_count });
+    } finally {
+      await releaseChallengeSubmissionLock(entities, lockId);
+    }
   } catch (error) {
     console.error('castVote error:', error);
     return Response.json({ error: error?.message || 'Vote failed' }, { status: 500 });

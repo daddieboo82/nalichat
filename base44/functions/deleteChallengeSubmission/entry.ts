@@ -1,8 +1,16 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import {
+  acquireChallengeSubmissionLock,
+  releaseChallengeSubmissionLock,
+} from '../../shared/challengeSubmissionLock.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,12 +30,21 @@ Deno.serve(async (req) => {
     }
 
     const { submissionId } = await req.json();
-    if (!submissionId) {
+    if (typeof submissionId !== 'string' || !submissionId.trim() || submissionId.length > 200) {
       return Response.json({ error: 'submissionId is required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
-    const submission = await entities.ChallengeSubmission.get(String(submissionId));
+    const lockId = await acquireChallengeSubmissionLock(entities, submissionId);
+    if (!lockId) {
+      return Response.json(
+        { error: 'Submission is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
+    const submission = await entities.ChallengeSubmission.get(submissionId);
     if (!submission) return Response.json({ error: 'Submission not found' }, { status: 404 });
 
     if (submission.producer_id !== user.id && user.role !== 'admin') {
@@ -78,6 +95,9 @@ Deno.serve(async (req) => {
       deleted_votes: deletedVotes,
       deleted_comments: deletedComments,
     });
+    } finally {
+      await releaseChallengeSubmissionLock(entities, lockId);
+    }
   } catch (error) {
     console.error('deleteChallengeSubmission error:', error);
     return Response.json({ error: error?.message || 'Could not delete submission' }, { status: 500 });

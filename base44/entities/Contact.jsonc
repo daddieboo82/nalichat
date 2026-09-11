@@ -4,7 +4,15 @@
   "properties": {
     "user_id": {
       "type": "string",
-      "description": "ID of the user who has the contact"
+      "description": "ID of the user who has the contact",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "contact_user_id": {
       "type": "string",

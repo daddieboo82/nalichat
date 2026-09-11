@@ -1422,6 +1422,14 @@ describe('release configuration', () => {
     expect(sw).toContain('const targetUrl = safeNotificationTarget');
   });
 
+  it('reconciles deleted-user challenge votes atomically', async () => {
+    const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
+    expect(deletion).toContain('entities.ChallengeSubmission.updateMany');
+    expect(deletion).toContain('vote_count: { $gt: 0 }');
+    expect(deletion).toContain('$inc: { vote_count: -1 }');
+    expect(deletion).not.toContain('Math.max(0, Number(submission.vote_count || 0) - 1)');
+  });
+
   it('synchronizes conversation audience metadata during account deletion', async () => {
     const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
     expect(deletion).toContain('async function syncConversationAudience');

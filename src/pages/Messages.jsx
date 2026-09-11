@@ -26,6 +26,7 @@ export default function Messages() {
   const location = useLocation();
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [sidebarTab, setSidebarTab] = useState("chats");
+  const { hasEntitlement } = useSubscription();
 
   // Mark a conversation as read (stores timestamp in localStorage for the unread badge).
   const markConversationRead = (convId) => {
@@ -306,6 +307,10 @@ export default function Messages() {
   const isBlocked = currentUser?.is_banned
     ? !convHasAdmin
     : isTimedOut;
+  const activeChatTheme = getChatTheme(resolveEffectiveChatThemeId(
+    currentUser?.chat_theme_id,
+    hasEntitlement?.(CHAT_THEME_ENTITLEMENT) === true,
+  ));
 
   return (
     <div className="absolute inset-0 sm:relative sm:inset-auto sm:h-[calc(100vh-80px)] p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden">
@@ -419,6 +424,7 @@ export default function Messages() {
               users={users}
               isBlocked={isBlocked}
               moderationBanner={isBlocked ? <ModerationBanner currentUser={currentUser} /> : null}
+              theme={activeChatTheme}
               onSendMessage={(data) => {
                 if (isBlocked) {
                   toast.error(currentUser?.is_banned ? "You are banned from sending messages." : "You are timed out and cannot send messages right now.");

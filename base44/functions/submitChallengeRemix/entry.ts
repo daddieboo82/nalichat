@@ -12,6 +12,37 @@ const TRUSTED_MEDIA_HOSTS = [
   'cdn.base44.com',
 ];
 
+async function resolveStoredFileSize(url: string): Promise<number | null> {
+  try {
+    const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+    if (head.ok) {
+      const length = Number(head.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0) return length;
+    }
+  } catch {}
+
+  try {
+    const probe = await fetch(url, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-0' },
+      redirect: 'manual',
+    });
+    if (probe.ok || probe.status === 206) {
+      const range = probe.headers.get('content-range') || '';
+      const match = range.match(/\/(\d+)$/);
+      if (match) {
+        const total = Number(match[1]);
+        if (Number.isFinite(total) && total >= 0) return total;
+      }
+      const length = Number(probe.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0 && probe.status !== 206) return length;
+    }
+    try { await probe.body?.cancel(); } catch {}
+  } catch {}
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -58,10 +89,6 @@ Deno.serve(async (req) => {
       }
       remixFileUrl = post.file_url;
     } else if (sourceType === 'external_upload') {
-      const size = Number(body?.file_size || 0);
-      if (!Number.isFinite(size) || size <= 0 || size > MAX_UPLOAD_BYTES) {
-        return Response.json({ error: 'Uploaded remix must be 100MB or smaller' }, { status: 413 });
-      }
       fileFormat = String(body?.file_format || '').toLowerCase();
       if (!FILE_FORMATS.has(fileFormat)) {
         return Response.json({ error: 'Only MP3 and WAV submissions are supported' }, { status: 400 });
@@ -79,6 +106,14 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Uploaded remix must come from trusted upload storage' }, { status: 400 });
       }
       remixFileUrl = uploadedUrl.toString();
+
+      const storedSize = await resolveStoredFileSize(remixFileUrl);
+      if (storedSize === null) {
+        return Response.json({ error: 'Could not verify uploaded remix size' }, { status: 400 });
+      }
+      if (storedSize <= 0 || storedSize > MAX_UPLOAD_BYTES) {
+        return Response.json({ error: 'Uploaded remix must be 100MB or smaller' }, { status: 413 });
+      }
     } else {
       externalUrl = String(body?.external_url || '').trim();
       let parsed;

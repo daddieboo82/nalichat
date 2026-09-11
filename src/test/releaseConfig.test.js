@@ -1678,6 +1678,20 @@ describe('release configuration', () => {
     expect(submit).toContain('Challenge submission rate limit exceeded');
   });
 
+  it('moderation-gates challenge creation and revalidates studio submission media', async () => {
+    const create = await readText('base44/functions/createChallenge/entry.ts');
+    const submit = await readText('base44/functions/submitChallengeRemix/entry.ts');
+
+    expect(create).toContain('consumeHourlyLimit');
+    expect(create).toContain("'challenge_create'");
+    expect(create).toMatch(/'challenge_create',\s*20/);
+    expect(create).toContain("error: 'timed_out'");
+
+    expect(submit).toContain('storedPostUrl = new URL(String(post.file_url))');
+    expect(submit).toContain('trustedStoredPost');
+    expect(submit).toContain('Selected track media is not on trusted storage');
+  });
+
   it('enforces configured challenge voting windows server-side', async () => {
     const vote = await readText('base44/functions/castVote/entry.ts');
     expect(vote).toContain('Voting has not opened yet.');

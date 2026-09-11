@@ -4,7 +4,7 @@
   "properties": {
     "checkoutSessionId": {
       "type": "string",
-      "description": "Stripe Checkout Session ID \u2014 the only link from a payment back to the buyer"
+      "description": "Stripe Checkout Session ID — the only link from a payment back to the buyer"
     },
     "status": {
       "type": "string",
@@ -45,6 +45,10 @@
       "type": "string",
       "description": "Optional description (up to 1000 characters)",
       "maxLength": 1000
+    },
+    "purchase_verifier_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of the opaque verifier placed in the Stripe success return URL"
     }
   },
   "required": [

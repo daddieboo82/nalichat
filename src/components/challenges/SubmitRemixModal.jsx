@@ -8,6 +8,8 @@ import { Loader2, UploadCloud, Music2, Link2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
+const MAX_REMIX_BYTES = 100 * 1024 * 1024;
+
 function detectDevice() {
   const ua = navigator.userAgent;
   if (/tablet|ipad/i.test(ua)) return "tablet";
@@ -39,19 +41,31 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
     if (!remixName.trim()) return toast.error("Give your remix a name.");
     setSubmitting(true);
     try {
-      let remix_file_url = "", source_type = "", file_format = "", external_url = "";
+      let remix_file_url = "", source_type = "", file_format = "", external_url = "", source_id = "";
 
       if (tab === "studio") {
         const track = myTracks.find((t) => t.id === selectedTrackId);
         if (!track) { toast.error("Select one of your tracks."); setSubmitting(false); return; }
         remix_file_url = track.file_url;
         source_type = "nalichat_studio";
+        source_id = track.id;
       } else if (tab === "external") {
         if (!file) { toast.error("Choose a file to upload."); setSubmitting(false); return; }
+        if (file.size > MAX_REMIX_BYTES) {
+          toast.error("Remix file must be 100MB or smaller.");
+          setSubmitting(false);
+          return;
+        }
+        const ext = (file.name.split(".").pop() || "").toLowerCase();
+        if (!["mp3", "wav"].includes(ext)) {
+          toast.error("Upload an MP3 or WAV file.");
+          setSubmitting(false);
+          return;
+        }
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
         remix_file_url = file_url;
         source_type = "external_upload";
-        file_format = (file.name.split(".").pop() || "").toLowerCase();
+        file_format = ext;
       } else {
         if (!linkUrl.trim()) { toast.error("Paste a link to your remix."); setSubmitting(false); return; }
         remix_file_url = linkUrl.trim();
@@ -59,19 +73,19 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
         source_type = "link_import";
       }
 
-      const submission = await base44.entities.ChallengeSubmission.create({
+      const res = await base44.functions.invoke("submitChallengeRemix", {
         challenge_id: challenge.id,
-        producer_id: user.id,
-        producer_name: user.full_name || user.email,
-        producer_avatar: user.avatar_url,
         remix_file_url,
         remix_name: remixName.trim(),
         description: description.trim(),
         source_type,
+        source_id,
         external_url,
         file_format: file_format || undefined,
         device_type: detectDevice(),
       });
+      const submission = res.data?.submission;
+      if (!submission) throw new Error(res.data?.error || "Failed to submit remix");
 
       toast.success("Remix submitted! Good luck 🎧");
       reset();

@@ -15,7 +15,15 @@
     },
     "file_url": {
       "type": "string",
-      "description": "Audio file URL"
+      "description": "Audio file URL. Server-managed after trusted upload validation.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "medium": {
       "type": "string",

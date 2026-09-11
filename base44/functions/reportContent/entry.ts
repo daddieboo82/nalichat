@@ -3,10 +3,23 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const reporter = await base44.auth.me();
     if (!reporter) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (reporter.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (reporter.timeout_until && new Date(reporter.timeout_until).getTime() > Date.now()) {
+      return Response.json(
+        { error: 'timed_out', timeout_until: reporter.timeout_until },
+        { status: 403 },
+      );
     }
 
     const { content_type, content_id, reason } = await req.json();

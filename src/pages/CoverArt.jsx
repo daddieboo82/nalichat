@@ -249,7 +249,12 @@ export default function CoverArt() {
   const saveArtMutation = useMutation({
     mutationFn: async () => {
       if (!selectedPost || !generatedImage) return;
-      await base44.entities.ArtPost.update(selectedPost.id, { image_url: generatedImage });
+      const res = await base44.functions.invoke("mutateArtPost", {
+        postId: selectedPost.id,
+        image_url: generatedImage,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.post;
     },
     onSuccess: () => {
       toast.success("Cover art saved to track!");

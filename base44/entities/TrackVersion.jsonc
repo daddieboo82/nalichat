@@ -42,6 +42,14 @@
       "type": "string",
       "description": "Optional description (up to 1000 characters)",
       "maxLength": 1000
+    },
+    "access_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Project/session members allowed to read and collaborate on this audio record"
     }
   },
   "required": [
@@ -54,9 +62,35 @@
     "create": {
       "data.saved_by_id": "{{user.id}}"
     },
-    "read": null,
+    "read": {
+      "$or": [
+        {
+          "data.saved_by_id": "{{user.id}}"
+        },
+        {
+          "data.access_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
     "update": {
-      "data.saved_by_id": "{{user.id}}"
+      "$or": [
+        {
+          "data.saved_by_id": "{{user.id}}"
+        },
+        {
+          "data.access_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     },
     "delete": {
       "$or": [

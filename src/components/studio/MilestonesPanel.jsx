@@ -69,7 +69,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
     onSuccess: (_, m) => {
       invalidate();
       if (!m.completed) {
-        base44.auth.me().then((u) => recordSquadActivity(u.id, "task"));
+        recordSquadActivity("milestone", m.id);
       }
     },
   });

@@ -67,7 +67,7 @@
     "violation_count": {
       "type": "number",
       "default": 0,
-      "description": "Total number of content policy violations recorded for this user. Written only by the moderateContent function via asServiceRole; locked here so a user cannot reset their own strike count.",
+      "description": "Total number of content policy violations recorded for this user. Written only by server-side moderation via service role; locked here so a user cannot reset their own strike count.",
       "rls": {
         "read": true,
         "write": {

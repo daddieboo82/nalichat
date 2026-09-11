@@ -3,6 +3,8 @@ import { stripeRequest } from '../../shared/stripe.ts';
 
 // Server-side price catalog — never trust client-supplied prices
 const DONATION_PRESETS = [5, 10, 25, 50];
+const MAX_CHECKOUT_ITEMS = 10;
+const MAX_TOTAL_DONATION_CENTS = 500_000;
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Failed to create checkout session';
@@ -58,9 +60,9 @@ Deno.serve(async (req) => {
     }
 
     // Validate items
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    if (!items || !Array.isArray(items) || items.length === 0 || items.length > MAX_CHECKOUT_ITEMS) {
       return Response.json(
-        { error: 'Items array is required and must not be empty' },
+        { error: `Items array must contain between 1 and ${MAX_CHECKOUT_ITEMS} items` },
         { status: 400 }
       );
     }
@@ -88,6 +90,7 @@ Deno.serve(async (req) => {
     // Resolve each item's price server-side — never trust client-supplied prices
     const lineItems = [];
     const persistedItems = [];
+    let totalCents = 0;
 
     for (const item of items) {
       let unitPrice: number;
@@ -112,10 +115,16 @@ Deno.serve(async (req) => {
         );
       }
 
+      const unitAmountCents = Math.round(unitPrice * 100);
+      totalCents += unitAmountCents * quantity;
+      if (totalCents > MAX_TOTAL_DONATION_CENTS) {
+        return Response.json({ error: 'Checkout total exceeds the allowed limit' }, { status: 400 });
+      }
+
       lineItems.push({
         price_data: {
           currency: 'usd',
-          unit_amount: Math.round(unitPrice * 100),
+          unit_amount: unitAmountCents,
           product_data: { name },
         },
         quantity,

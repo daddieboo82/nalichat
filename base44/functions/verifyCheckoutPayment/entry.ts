@@ -8,8 +8,13 @@ Deno.serve(async (req) => {
   try {
     const { checkoutId, purchaseToken } = await req.json();
 
-    if (!checkoutId || !purchaseToken) {
-      return Response.json({ error: 'checkoutId and purchaseToken are required' }, { status: 400 });
+    const normalizedCheckoutId = String(checkoutId || '').trim();
+    const normalizedPurchaseToken = String(purchaseToken || '').trim();
+    if (
+      !/^cs_(?:test_|live_)?[A-Za-z0-9_]{8,255}$/.test(normalizedCheckoutId)
+      || !/^[0-9a-f]{64}$/.test(normalizedPurchaseToken)
+    ) {
+      return Response.json({ error: 'Invalid checkout verification data' }, { status: 400 });
     }
 
     const base44 = createClientFromRequest(req);
@@ -18,7 +23,7 @@ Deno.serve(async (req) => {
     // request. This prevents the public fallback endpoint from becoming an
     // unauthenticated Stripe session-enumeration / API-amplification surface.
     const purchases = await base44.asServiceRole.entities.Base44Purchase.filter({
-      checkoutSessionId: checkoutId,
+      checkoutSessionId: normalizedCheckoutId,
     });
     if (purchases.length !== 1) {
       return Response.json({ error: 'Purchase record not found' }, { status: 404 });
@@ -27,7 +32,7 @@ Deno.serve(async (req) => {
 
     const digest = await crypto.subtle.digest(
       'SHA-256',
-      new TextEncoder().encode(String(purchaseToken)),
+      new TextEncoder().encode(normalizedPurchaseToken),
     );
     const verifierHash = Array.from(new Uint8Array(digest))
       .map((byte) => byte.toString(16).padStart(2, '0'))
@@ -36,7 +41,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invalid purchase verifier' }, { status: 403 });
     }
 
-    const session = await stripeRequest(`/checkout/sessions/${encodeURIComponent(checkoutId)}`, {}, 'GET');
+    const session = await stripeRequest(`/checkout/sessions/${encodeURIComponent(normalizedCheckoutId)}`, {}, 'GET');
     if (!session) {
       return Response.json({ error: 'Checkout session not found' }, { status: 404 });
     }
@@ -50,7 +55,7 @@ Deno.serve(async (req) => {
         stripe_customer_id: session.customer || null,
         paid_at: new Date().toISOString(),
       });
-      console.log('Payment fulfilled via ThankYou fallback:', checkoutId);
+      console.log('Payment fulfilled via ThankYou fallback:', normalizedCheckoutId);
     }
 
     // 4. Return the current status so the UI can show the right state

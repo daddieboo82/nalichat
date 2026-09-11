@@ -27,6 +27,8 @@ Deno.serve(async (req) => {
         project.owner_id,
         ...collaborators,
       ].filter(Boolean)));
+    } else if (roomId !== 'local_studio') {
+      return Response.json({ error: 'Studio room not found' }, { status: 404 });
     }
 
     const existing = await entities.StudioPresence.filter({

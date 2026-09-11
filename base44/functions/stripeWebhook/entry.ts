@@ -106,11 +106,12 @@ function canonicalIdentity(
     if (metadata.environment !== expectedEnvironment || sku.priceId !== priceId) {
       throw new Error(`Stripe metadata or price mismatch for ${stripeSubscription.id}`);
     }
-    if (record?.user_id && record.user_id !== metadata.userId) {
+    const tombstoneUserId = `deleted:${metadata.userId}`;
+    if (record?.user_id && record.user_id !== metadata.userId && record.user_id !== tombstoneUserId) {
       throw new Error(`Stripe metadata ownership mismatch for ${stripeSubscription.id}`);
     }
     return {
-      userId: metadata.userId,
+      userId: record?.user_id === tombstoneUserId ? tombstoneUserId : metadata.userId,
       plan: metadata.plan,
       billingPeriod: metadata.billingPeriod,
       sku: metadata.sku,
@@ -147,6 +148,7 @@ async function persistUserStripeState(
   customerId: string,
   trialUsedAt?: string,
 ): Promise<void> {
+  if (userId.startsWith('deleted:')) return;
   const users = await entities.User.filter({ id: userId });
   const user = oneRecord(users, 'user');
   if (!user) throw new Error(`No NaliChat user found for ${userId}`);

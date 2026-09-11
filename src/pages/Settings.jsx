@@ -78,7 +78,8 @@ export default function Settings() {
         cleanedForm.avatar_url = "";
         toast.warning("Your previous avatar URL was invalid and has been cleared. Please upload an image.");
       }
-      await base44.auth.updateMe(cleanedForm);
+      const res = await base44.functions.invoke("updateMyProfile", cleanedForm);
+      if (res?.data?.error) throw new Error(res.data.error);
       // Refresh the global auth context so the new display_name propagates
       // to the Home greeting, nav bar, and anywhere else that reads user data.
       await checkUserAuth();

@@ -276,8 +276,11 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         {/* Reactions display */}
         {(() => {
           const counts = {};
-          const userReaction = currentUser ? (message.reactions || {})[currentUser.id] : null;
-          for (const emoji of Object.values(message.reactions || {})) {
+          const reactionEntries = Object.entries(message.reactions || {});
+          const userReaction = currentUser
+            ? reactionEntries.find(([key]) => key.endsWith(`__${currentUser.id}`))?.[1] || null
+            : null;
+          for (const [, emoji] of reactionEntries) {
             counts[emoji] = (counts[emoji] || 0) + 1;
           }
           const entries = Object.entries(counts);

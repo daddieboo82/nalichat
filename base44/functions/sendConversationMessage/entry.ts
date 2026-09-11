@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { claimModerationStrike } from '../../shared/moderationStrikes.ts';
 
 const TIMEOUT_48H_MINUTES = 48 * 60;
 const ALLOWED_TYPES = new Set(['text', 'file', 'audio', 'image', 'video', 'session']);
@@ -95,11 +96,11 @@ ${text}
 
   if (!result?.flagged || result.category === 'none') return null;
 
-  const priorCount = user.violation_count || 0;
-  const newCount = priorCount + 1;
+  const strike = await claimModerationStrike(base44.asServiceRole.entities, user.id);
+  const newCount = strike.violationCount;
   let action_taken = 'warning';
   let timeout_until = null;
-  let is_banned = user.is_banned || false;
+  let is_banned = Boolean(strike.user.is_banned);
 
   if (newCount >= 3) {
     action_taken = 'ban';
@@ -122,11 +123,12 @@ ${text}
     ...(clientMessageKey ? { client_message_key: clientMessageKey } : {}),
   });
 
-  await base44.asServiceRole.entities.User.update(user.id, {
-    violation_count: newCount,
-    ...(timeout_until ? { timeout_until } : {}),
-    ...(is_banned ? { is_banned: true } : {}),
-  });
+  if (timeout_until || is_banned) {
+    await base44.asServiceRole.entities.User.update(user.id, {
+      ...(timeout_until ? { timeout_until } : {}),
+      ...(is_banned ? { is_banned: true } : {}),
+    });
+  }
 
   return {
     flagged: true,

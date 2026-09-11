@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     const squad = await entities.Squad.create({
       member_a_id: user.id,
-      member_a_name: user.display_name || user.full_name || user.email || 'Artist',
+      member_a_name: user.display_name || user.full_name || 'Artist',
       invite_code: code,
       status: 'pending',
     });

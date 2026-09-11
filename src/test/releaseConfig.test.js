@@ -1135,6 +1135,17 @@ describe('release configuration', () => {
     expect(external).toContain("accepted: true");
   });
 
+  it('rate-limits public discovery scans and keeps chat discovery email-free', async () => {
+    const publicUsers = await readText('base44/functions/listPublicUsers/entry.ts');
+    const newChat = await readText('src/components/messages/NewChatDialog.jsx');
+
+    expect(publicUsers).toContain('consumeHourlyLimit');
+    expect(publicUsers).toContain("'public_user_discovery'");
+    expect(publicUsers).toMatch(/'public_user_discovery',\s*120/);
+    expect(publicUsers).toContain('status: 429');
+    expect(newChat).not.toContain('user.email');
+  });
+
   it('minimizes public user discovery metadata', async () => {
     const publicUsers = await readText('base44/functions/listPublicUsers/entry.ts');
     expect(publicUsers).toContain("role: 'user'");

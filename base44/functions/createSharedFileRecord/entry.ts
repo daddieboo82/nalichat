@@ -17,6 +17,17 @@ async function hasLargeUploadAccess(entities: any, userId: string): Promise<bool
   ));
 }
 
+function cleanHttpsUrl(value: unknown) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === 'https:' ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -24,12 +35,16 @@ Deno.serve(async (req) => {
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    if (!body?.name || !body?.file_url) {
-      return Response.json({ error: 'name and file_url are required' }, { status: 400 });
+    const fileUrl = cleanHttpsUrl(body?.file_url);
+    if (!body?.name || !fileUrl) {
+      return Response.json({ error: 'name and a valid HTTPS file_url are required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
-    const fileSize = Number.isFinite(Number(body.file_size)) ? Number(body.file_size) : 0;
+    const fileSize = Number(body.file_size || 0);
+    if (!Number.isFinite(fileSize) || fileSize < 0) {
+      return Response.json({ error: 'file_size must be a non-negative number' }, { status: 400 });
+    }
     if (fileSize > PREMIUM_FILE_LIMIT) {
       return Response.json({ error: 'Files larger than 20GB are not supported' }, { status: 413 });
     }
@@ -37,13 +52,42 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Premium is required for files larger than 250MB' }, { status: 403 });
     }
 
+    let projectId = body?.project_id ? String(body.project_id) : null;
+    let folderId = body?.folder_id ? String(body.folder_id) : null;
     let accessUserIds = [user.id];
     let editUserIds = [user.id];
 
-    if (body.project_id) {
-      const project = await entities.Project.get(body.project_id);
+    if (folderId) {
+      const folder = await entities.Folder.get(folderId);
+      if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
+
+      const canEditFolder = user.role === 'admin'
+        || folder.owner_id === user.id
+        || (folder.edit_user_ids || []).includes(user.id);
+      if (!canEditFolder) {
+        return Response.json({ error: 'Viewer access cannot add files to this folder' }, { status: 403 });
+      }
+
+      const folderProjectId = folder.project_id || null;
+      if (projectId && folderProjectId !== projectId) {
+        return Response.json({ error: 'folder_id does not belong to project_id' }, { status: 400 });
+      }
+
+      projectId = folderProjectId;
+      accessUserIds = Array.from(new Set([
+        ...(folder.access_user_ids || []),
+        user.id,
+      ].filter(Boolean)));
+      editUserIds = Array.from(new Set([
+        ...(folder.edit_user_ids || []),
+        user.id,
+      ].filter(Boolean)));
+    } else if (projectId) {
+      const project = await entities.Project.get(projectId);
       if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
-      const canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
+      const canEdit = user.role === 'admin'
+        || project.owner_id === user.id
+        || (project.editor_ids || []).includes(user.id);
       if (!canEdit) {
         return Response.json({ error: 'Viewer access cannot add project files' }, { status: 403 });
       }
@@ -60,15 +104,15 @@ Deno.serve(async (req) => {
     }
 
     const file = await entities.SharedFile.create({
-      name: String(body.name).slice(0, 255),
-      file_url: String(body.file_url),
-      file_type: String(body.file_type || 'other').slice(0, 50),
+      name: String(body.name).trim().slice(0, 255),
+      file_url: fileUrl,
+      file_type: String(body.file_type || 'other').trim().slice(0, 50),
       file_size: fileSize || undefined,
       uploader_id: user.id,
       uploader_name: user.display_name || user.full_name || user.email || 'User',
       description: typeof body.description === 'string' ? body.description.slice(0, 1000) : '',
-      folder_id: body.folder_id || null,
-      project_id: body.project_id || null,
+      folder_id: folderId,
+      project_id: projectId,
       access_user_ids: accessUserIds,
       edit_user_ids: editUserIds,
     });

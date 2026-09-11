@@ -56,6 +56,34 @@ import { createStudioKeyHandler } from '@/lib/studioKeyHandler';
 const MAX_TRACKS = 999;
 const generateWaveform = (len = 8000) => Array.from({ length: len }, (_, i) => Math.min(1, Math.max(0.001, Math.abs((Math.sin(i * 0.1) * Math.cos(i * 0.05)) * (Math.random() * 0.8 + 0.1) * (Math.sin(i * Math.PI / len) * 0.8 + 0.2)) * 2)));
 
+const nextTrackId = (tracks) => {
+  const numericIds = tracks
+    .map((track) => typeof track.id === 'number' ? track.id : Number(track.id))
+    .filter(Number.isFinite);
+  return numericIds.length > 0 ? Math.max(...numericIds) + 1 : Date.now();
+};
+
+const compactWaveform = (waveform, maxPoints = 1000) => {
+  if (!Array.isArray(waveform) || waveform.length <= maxPoints) return waveform || [];
+  const step = waveform.length / maxPoints;
+  return Array.from({ length: maxPoints }, (_, i) => waveform[Math.floor(i * step)] || 0);
+};
+
+const portableTrackState = (track, audioUrl) => {
+  const {
+    _optimistic,
+    _persistedTrackId,
+    ...rest
+  } = track;
+  return {
+    ...rest,
+    audioUrl,
+    file_url: audioUrl,
+    waveform: compactWaveform(track.waveform),
+    ...(track._persistedTrackId ? { persisted_track_id: track._persistedTrackId } : {}),
+  };
+};
+
 export default function Studio() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -291,27 +319,85 @@ export default function Studio() {
   }, []);
 
   useEffect(() => {
-    if (roomId) {
-      masterFxLoadedRef.current = false;
-      base44.entities.Project.get(roomId).then(project => {
-        if (project) {
-          setProjectName(project.title);
-          if (project.bpm) setBpm(project.bpm);
-          if (project.key) setSongKey(project.key);
-          // Remote chain wins; fall back to whatever this device had locally.
-          const remote = project.master_fx;
-          if (remote && typeof remote === 'object') setMasterFx(remote);
-          else {
-            const local = loadLocalMasterFx();
-            if (local) setMasterFx(local);
-          }
-          setShowWelcome(false);
-          setJamRoomActive(true);
+    if (!roomId) return;
+
+    let cancelled = false;
+    masterFxLoadedRef.current = false;
+
+    (async () => {
+      try {
+        const project = await base44.entities.Project.get(roomId);
+        if (!project || cancelled) return;
+
+        setProjectName(project.title || "Untitled Project");
+        if (project.bpm) {
+          setBpm(project.bpm);
+          setBpmInput(String(project.bpm));
         }
-      }).catch(err => console.error("Failed to load project:", err))
-        .finally(() => { masterFxLoadedRef.current = true; });
-    }
-  }, [roomId]);
+        if (project.key) setSongKey(project.key);
+
+        const remote = project.master_fx;
+        if (remote && typeof remote === 'object') setMasterFx(remote);
+        else {
+          const local = loadLocalMasterFx();
+          if (local) setMasterFx(local);
+        }
+
+        const savedState = project.studio_state;
+        if (savedState?.tracks && Array.isArray(savedState.tracks) && savedState.tracks.length > 0) {
+          const hydrated = savedState.tracks.map((track) => ({
+            ...track,
+            audioUrl: track.audioUrl || track.file_url || "",
+            waveform: Array.isArray(track.waveform) && track.waveform.length > 0
+              ? track.waveform
+              : generateWaveform(WAVEFORM_POINTS),
+          }));
+          setTracks(hydrated);
+          if (Number.isFinite(savedState.masterVolume)) setMasterVolume(savedState.masterVolume);
+          if (savedState.timeSignature) setTimeSignature(savedState.timeSignature);
+        } else {
+          const persistedTracks = await base44.entities.Track.filter({ project_id: roomId }, "created_date", 500);
+          if (!cancelled && persistedTracks.length > 0) {
+            setTracks(persistedTracks.map((track) => ({
+              id: track.id,
+              _persistedTrackId: track.id,
+              name: track.name,
+              type: track.type || "vocal",
+              color: track.color || "bg-green-500",
+              volume: track.volume ?? 75,
+              pan: track.pan ?? 50,
+              muted: Boolean(track.muted),
+              solo: Boolean(track.solo),
+              armed: false,
+              waveform: Array.isArray(track.waveform_data) && track.waveform_data.length > 0
+                ? track.waveform_data
+                : generateWaveform(WAVEFORM_POINTS),
+              startTime: 0,
+              duration: track.duration || 0,
+              audioUrl: track.file_url || "",
+              file_url: track.file_url || "",
+              locked: false,
+              grouped: false,
+              showAutomation: false,
+              elasticAudio: false,
+              fadeIn: 0,
+              fadeOut: 0,
+            })));
+          }
+        }
+
+        setShowWelcome(false);
+        setJamRoomActive(true);
+      } catch (err) {
+        console.error("Failed to load project:", err);
+        toast.error("Couldn't load this Studio project.");
+      } finally {
+        if (!cancelled) masterFxLoadedRef.current = true;
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [roomId, WAVEFORM_POINTS]);
 
   const handleStartBlank = () => { setTracks([]); setShowWelcome(false); };
 
@@ -1051,7 +1137,7 @@ export default function Studio() {
     }
 
     const newTracks = [];
-    let nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    let nextId = nextTrackId(tracks);
 
     tracks.forEach(t => {
       if (selectedTrackIds.includes(t.id)) {
@@ -1084,7 +1170,7 @@ export default function Studio() {
   };
   const duplicateTrack = (track) => {
     if (tracks.length >= maxTracks) return toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
-    const nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    const nextId = nextTrackId(tracks);
     setTracksWithHistory(prev => [...prev, { ...track, id: nextId, name: `${track.name} (Copy)` }]); toast.success("Track duplicated");
   };
 
@@ -1120,7 +1206,7 @@ export default function Studio() {
     }
     const clipDur = track.duration || 40;
     const clipStart = track.startTime || 0;
-    let nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    let nextId = nextTrackId(tracks);
     const newClips = [];
     for (let i = 1; i <= count; i++) {
       newClips.push({
@@ -1231,7 +1317,7 @@ export default function Studio() {
       return;
     }
 
-    let nextId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    let nextId = nextTrackId(tracks);
     let splitCount = 0;
     
     const newTracksList = [];
@@ -1286,14 +1372,14 @@ export default function Studio() {
       toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
       return;
     }
-    const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    const newId = nextTrackId(tracks);
     setNewTrackName(`New Track ${newId}`);
     setNewTrackType('audio');
     setCreatingTrack(true);
   };
   const handleCreateTrackConfirm = () => {
     if (!newTrackName.trim()) return;
-    const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    const newId = nextTrackId(tracks);
     const isInstrument = newTrackType === 'midi' || newTrackType === 'instrument';
     setTracksWithHistory([...tracks, {
       id: newId, name: newTrackName.trim(), type: newTrackType,
@@ -1346,7 +1432,7 @@ export default function Studio() {
   // Pro Tools-style VCA Master Track: controls volume of assigned member tracks
   const addVcaTrack = () => {
     sounds.click();
-    const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    const newId = nextTrackId(tracks);
     setTracksWithHistory([...tracks, { id: newId, name: `VCA Master ${newId}`, trackType: 'vca', color: 'bg-accent', volume: 100, vcaMembers: [], muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0 }]);
     toast.success("VCA Master track added");
   };
@@ -1354,7 +1440,7 @@ export default function Studio() {
   // Pro Tools-style Folder Track: collapsible container for grouping tracks
   const addFolderTrack = () => {
     sounds.click();
-    const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+    const newId = nextTrackId(tracks);
     setTracksWithHistory([...tracks, { id: newId, name: `Folder ${newId}`, trackType: 'folder', color: 'bg-primary', collapsed: false, folderMembers: [], muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0 }]);
     toast.success("Folder track added");
   };
@@ -1419,7 +1505,7 @@ export default function Studio() {
     toast.info("Generating melody...");
     try {
       const { url, waveform, duration } = await generateMelody({ seconds: 8, bpm: 120 });
-      const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+      const newId = nextTrackId(tracks);
       const colors = ["bg-green-500"];
       setTracksWithHistory(prev => [...prev, {
         id: newId,
@@ -1439,20 +1525,62 @@ export default function Studio() {
   };
 
   const handleSave = async () => {
+    const toastId = toast.loading("Saving Studio project...");
     try {
-      localStorage.setItem('nalistudio_project_autosave', JSON.stringify(tracks));
+      const portableTracks = [];
+      for (const track of tracks) {
+        let audioUrl = track.audioUrl || track.file_url || "";
+
+        // blob: URLs are device-local and die after reload. Upload them before
+        // persisting so the project can reopen on another device.
+        if (audioUrl.startsWith("blob:")) {
+          const response = await fetch(audioUrl);
+          const blob = await response.blob();
+          const extension = blob.type.includes("mpeg") ? "mp3" : blob.type.includes("webm") ? "webm" : "wav";
+          const safeName = (track.name || "track").replace(/[^a-z0-9_-]+/gi, "_");
+          const file = new File([blob], `${safeName}.${extension}`, { type: blob.type || "audio/wav" });
+          const uploaded = await base44.integrations.Core.UploadFile({ file });
+          audioUrl = uploaded.file_url;
+        }
+
+        portableTracks.push(portableTrackState(track, audioUrl));
+      }
+
+      const studioState = {
+        version: 1,
+        saved_at: new Date().toISOString(),
+        tracks: portableTracks,
+        masterVolume,
+        timeSignature,
+      };
+
+      localStorage.setItem('nalistudio_project_autosave', JSON.stringify(portableTracks));
       localStorage.setItem('nalistudio_master_fx', JSON.stringify(masterFx || {}));
+
       if (roomId) {
         await base44.entities.Project.update(roomId, {
           title: projectName,
-          bpm: bpm,
+          bpm,
           key: songKey,
-          master_fx: masterFx || {}
+          master_fx: masterFx || {},
+          studio_state: studioState,
         });
       }
-      toast.success("Project saved successfully!");
+
+      // Replace transient blob URLs in memory with their uploaded URLs so future
+      // saves do not re-upload the same audio.
+      setTracks((prev) => prev.map((track, index) => ({
+        ...track,
+        audioUrl: portableTracks[index]?.audioUrl || track.audioUrl,
+        file_url: portableTracks[index]?.file_url || track.file_url,
+      })));
+
+      toast.success("Project saved successfully!", { id: toastId });
+      return true;
     } catch (e) {
-      toast.error("Failed to save project.");
+      console.error("Studio save failed", e);
+      toast.error("Failed to save project.", { id: toastId });
+      return false;
     }
   };
 
@@ -1500,7 +1628,7 @@ export default function Studio() {
         return;
       }
       
-      const newId = tracks.length > 0 ? Math.max(...tracks.map(t => t.id)) + 1 : 1;
+      const newId = nextTrackId(tracks);
       const colors = ["bg-green-500"];
       const fileUrl = URL.createObjectURL(file);
 
@@ -1626,7 +1754,7 @@ export default function Studio() {
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={() => { handleSave(); navigate('/'); }} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                <Button variant="ghost" size="icon" onClick={async () => { if (await handleSave()) navigate('/'); }} className="h-8 w-8 text-muted-foreground hover:text-foreground">
                   <ChevronLeft className="w-5 h-5" />
                 </Button>
               </TooltipTrigger>

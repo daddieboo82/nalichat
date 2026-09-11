@@ -28,16 +28,17 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
   const [tab, setTab] = useState("contacts"); // "contacts" | "discover"
   const queryClient = useQueryClient();
 
-  const { data: contacts = [], isLoading: loadingContacts } = useQuery({
+  const { data: contacts = [], isLoading: loadingContacts, isError: contactsError } = useQuery({
     queryKey: ["contacts", currentUserId],
     queryFn: () => currentUserId ? base44.entities.Contact.filter({ user_id: currentUserId }, "-created_date", 500) : [],
     enabled: !!currentUserId,
   });
 
-  const { data: allUsers = [], isLoading: loadingUsers } = useQuery({
+  const { data: allUsers = [], isLoading: loadingUsers, isError: usersError } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
       const res = await base44.functions.invoke('listPublicUsers', {});
+      if (res?.data?.error) throw new Error(res.data.error);
       return res.data?.users || [];
     },
   });
@@ -120,6 +121,13 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 custom-scrollbar">
+        {(contactsError || usersError) && (
+          <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive" role="alert">
+            {usersError
+              ? "Couldn't load people right now. Please try again."
+              : "Couldn't load your contacts. Discovery may be incomplete."}
+          </div>
+        )}
         {filtered.length === 0 ? (
           <div className="text-center py-10 text-muted-foreground">
             <p className="text-sm">No users found.</p>

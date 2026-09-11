@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const playlistId = String(body?.playlistId || '');
     const action = String(body?.action || '');
-    if (!playlistId || !['add_track', 'remove_track', 'update_meta'].includes(action)) {
+    if (!playlistId || !['add_track', 'remove_track', 'update_meta', 'delete'].includes(action)) {
       return Response.json({ error: 'Valid playlistId and action are required' }, { status: 400 });
     }
 
@@ -18,6 +18,11 @@ Deno.serve(async (req) => {
     if (!playlist) return Response.json({ error: 'Playlist not found' }, { status: 404 });
     if (playlist.owner_id !== user.id && user.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    if (action === 'delete') {
+      await entities.Playlist.delete(playlist.id);
+      return Response.json({ success: true, deleted: true });
     }
 
     if (action === 'add_track' || action === 'remove_track') {

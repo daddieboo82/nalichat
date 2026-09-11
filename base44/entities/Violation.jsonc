@@ -103,6 +103,10 @@
         "dismissed"
       ],
       "default": "pending"
+    },
+    "client_message_key": {
+      "type": "string",
+      "description": "Client key of a moderated send, used to make enforcement replay-safe"
     }
   },
   "required": [

@@ -74,6 +74,14 @@
       },
       "default": [],
       "description": "Project/session members allowed to read and collaborate on this audio record"
+    },
+    "edit_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Project members allowed to modify this record. Viewer-only collaborators are excluded."
     }
   },
   "required": [
@@ -105,7 +113,7 @@
           "data.uploaded_by": "{{user.id}}"
         },
         {
-          "data.access_user_ids": "{{user.id}}"
+          "data.edit_user_ids": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -118,6 +126,9 @@
       "$or": [
         {
           "data.uploaded_by": "{{user.id}}"
+        },
+        {
+          "data.edit_user_ids": "{{user.id}}"
         },
         {
           "user_condition": {

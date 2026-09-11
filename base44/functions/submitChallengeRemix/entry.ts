@@ -4,6 +4,13 @@ const SOURCE_TYPES = new Set(['nalichat_studio', 'external_upload', 'link_import
 const DEVICE_TYPES = new Set(['desktop', 'mobile', 'tablet']);
 const FILE_FORMATS = new Set(['wav', 'mp3']);
 const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+const TRUSTED_MEDIA_HOSTS = [
+  'storage.googleapis.com',
+  'base44-user-files.s3.amazonaws.com',
+  'base44-user-files.s3.us-east-1.amazonaws.com',
+  'files.base44.com',
+  'cdn.base44.com',
+];
 
 Deno.serve(async (req) => {
   try {
@@ -64,8 +71,12 @@ Deno.serve(async (req) => {
       try { uploadedUrl = new URL(remixFileUrl); } catch {
         return Response.json({ error: 'Uploaded remix URL is invalid' }, { status: 400 });
       }
-      if (uploadedUrl.protocol !== 'https:') {
-        return Response.json({ error: 'Uploaded remix URL must use HTTPS' }, { status: 400 });
+      const hostname = uploadedUrl.hostname.toLowerCase();
+      const trusted = uploadedUrl.protocol === 'https:' && TRUSTED_MEDIA_HOSTS.some(
+        (host) => hostname === host || hostname.endsWith('.' + host),
+      );
+      if (!trusted) {
+        return Response.json({ error: 'Uploaded remix must come from trusted upload storage' }, { status: 400 });
       }
       remixFileUrl = uploadedUrl.toString();
     } else {

@@ -279,11 +279,17 @@ export default function Files() {
         project?.owner_id,
         ...(project?.collaborator_ids || []),
       ].filter(Boolean)));
+      const editUserIds = Array.from(new Set([
+        currentUser.id,
+        project?.owner_id,
+        ...(project?.editor_ids || []),
+      ].filter(Boolean)));
       return base44.entities.Folder.create({
         name,
         owner_id: currentUser.id,
         project_id: newFolderProject === "none" ? null : newFolderProject,
         access_user_ids: accessUserIds,
+        edit_user_ids: editUserIds,
       });
     },
     onSuccess: () => {

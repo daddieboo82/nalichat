@@ -65,7 +65,7 @@ function LargeFileTransferContent({ currentUser }) {
       const share = await base44.functions.invoke("createFileShareLink", { fileId: newFile.id });
       const token = share?.data?.token;
       if (!token) throw new Error("Could not create share link");
-      const link = `${window.location.origin}/files?download=${encodeURIComponent(newFile.id)}&token=${encodeURIComponent(token)}`;
+      const link = `${window.location.origin}/shared-file?id=${encodeURIComponent(newFile.id)}&token=${encodeURIComponent(token)}`;
       setShareLink(link);
 
       if (recipientEmail) {

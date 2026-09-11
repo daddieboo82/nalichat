@@ -21,11 +21,12 @@ import { useCall, isCallSignal } from "@/hooks/useCall";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import CallOverlay from "./CallOverlay";
 import { motion, AnimatePresence } from "framer-motion";
+import { getChatTheme } from "@/lib/chatThemes";
 
 import React from "react";
 
 
-export default React.memo(function ChatView({ conversation, messages, isLoading, currentUser, users, onSendMessage, onEditMessage, onReact, onBack, onStartDM, isBlocked, moderationBanner }) {
+export default React.memo(function ChatView({ conversation, messages, isLoading, currentUser, users, onSendMessage, onEditMessage, onReact, onBack, onStartDM, isBlocked, moderationBanner, theme: themePreference }) {
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -39,6 +40,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const markedRef = useRef(new Set());
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const theme = getChatTheme(themePreference?.id);
 
   // Real typing presence: broadcasts our own keystrokes (throttled) and reports
   // which other participants are currently typing.
@@ -189,10 +191,10 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const avatarGradient = gradients[(displayName?.charCodeAt(0) || 0) % gradients.length];
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden relative min-h-0">
+    <div className={cn("chat-theme flex-1 flex flex-col overflow-hidden relative min-h-0", theme.className)} data-chat-theme={theme.id}>
       {/* Floating Header */}
       <div className="absolute top-0 left-0 right-0 z-20 p-2 sm:p-4 pointer-events-none">
-        <div className="h-16 bg-background/80 backdrop-blur-2xl border border-border/50 rounded-3xl flex items-center px-4 gap-3 shadow-xl pointer-events-auto transition-all">
+        <div className="chat-theme-header h-16 bg-background/80 backdrop-blur-2xl border border-border/50 rounded-3xl flex items-center px-4 gap-3 shadow-xl pointer-events-auto transition-all">
           <button onClick={onBack} className="w-11 h-11 rounded-full flex items-center justify-center text-muted-foreground bg-secondary/80 hover:bg-secondary transition-colors shrink-0" title="Go Back" aria-label="Go Back">
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -243,7 +245,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       </div>
 
       {/* Messages Area */}
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-6 pt-24 pb-4 space-y-0.5 custom-scrollbar">
+      <div ref={scrollRef} onScroll={handleScroll} className="chat-theme-messages flex-1 overflow-y-auto min-h-0 px-4 sm:px-6 pt-24 pb-4 space-y-0.5 custom-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -257,14 +259,14 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
           groups.map((item, i) =>
           item.type === "date" ? (
             <div key={item.key} className="flex justify-center my-6 sticky top-24 z-10 pointer-events-none">
-              <span className="text-[10px] text-muted-foreground font-semibold px-3 py-1 rounded-full bg-background/60 backdrop-blur-md border border-border/30 shadow-sm uppercase tracking-wider">
+              <span className="chat-theme-chip text-[10px] text-muted-foreground font-semibold px-3 py-1 rounded-full bg-background/60 backdrop-blur-md border border-border/30 shadow-sm uppercase tracking-wider">
                 {item.label}
               </span>
             </div>
           ) : item.type === "unread" ? (
             <div key={item.key} className="flex items-center justify-center my-3 gap-2">
               <div className="h-px flex-1 bg-border/40" />
-              <span className="text-[10px] font-bold text-primary px-2 uppercase tracking-wider bg-primary/10 rounded-full py-0.5 border border-primary/20">
+              <span className="chat-theme-unread text-[10px] font-bold text-primary px-2 uppercase tracking-wider bg-primary/10 rounded-full py-0.5 border border-primary/20">
                 New Messages
               </span>
               <div className="h-px flex-1 bg-border/40" />
@@ -362,7 +364,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       {/* Input Area — flex child so it always sits at the bottom of the column */}
       <div className="shrink-0 z-20 p-2 sm:p-4" style={{ marginBottom: `${keyboardOffset}px` }}>
         {isBlocked ? moderationBanner : (
-        <div className="w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-visible bg-background/90 backdrop-blur-2xl border border-border/50">
+        <div className="chat-theme-composer w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-visible bg-background/90 backdrop-blur-2xl border border-border/50">
           <ChatInput
             key={conversation?.id || "chat"}
             onSend={(payload) => {

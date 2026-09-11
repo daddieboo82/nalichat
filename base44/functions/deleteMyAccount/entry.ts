@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { stripeRequest } from '../../shared/stripe.ts';
 
 function deletedIdentity(userId: string): string {
   return `deleted:${userId}`;
@@ -20,6 +21,35 @@ Deno.serve(async (req) => {
 
     const entities = base44.asServiceRole.entities;
     const tombstoneId = deletedIdentity(user.id);
+
+    // Billing must be terminated before destructive account cleanup. If Stripe
+    // cancellation fails, abort deletion so a user is never left paying for an
+    // account they can no longer access.
+    const subscriptions = await entities.Subscription.filter({ user_id: user.id });
+    for (const subscription of subscriptions) {
+      const stripeSubscriptionId = typeof subscription.subscription_id === 'string'
+        ? subscription.subscription_id.trim()
+        : '';
+      const needsCancellation = subscription.provider === 'stripe'
+        && stripeSubscriptionId
+        && !['canceled', 'ended'].includes(subscription.status)
+        && subscription.stripe_subscription_status !== 'canceled';
+
+      if (needsCancellation) {
+        await stripeRequest(
+          `/subscriptions/${encodeURIComponent(stripeSubscriptionId)}`,
+          {},
+          'DELETE',
+          { idempotencyKey: `nalichat_delete_${user.id}_${stripeSubscriptionId}`.slice(0, 255) },
+        );
+        await entities.Subscription.update(subscription.id, {
+          status: 'ended',
+          stripe_subscription_status: 'canceled',
+          cancel_at_period_end: false,
+          current_period_end: new Date().toISOString(),
+        });
+      }
+    }
 
     // Delete records that are private to this account and safe to remove.
     const ownedDeletes: Array<[string, string]> = [
@@ -98,9 +128,24 @@ Deno.serve(async (req) => {
         for (const track of tracks) await entities.Track.delete(track.id);
         await entities.Project.delete(project.id);
       } else {
+        const collaboratorRoles = { ...(project.collaborator_roles || {}) };
+        const editorIds = Array.isArray(project.editor_ids)
+          ? project.editor_ids.filter((id: string) => id !== user.id)
+          : [];
+
+        const replacementOwner = collaborators.find(
+          (id: string) => collaboratorRoles[id] === 'editor' || editorIds.includes(id),
+        ) || collaborators[0];
+
+        const remainingCollaborators = collaborators.filter((id: string) => id !== replacementOwner);
+        delete collaboratorRoles[user.id];
+        delete collaboratorRoles[replacementOwner];
+
         await entities.Project.update(project.id, {
-          owner_id: tombstoneId,
-          collaborator_ids: collaborators,
+          owner_id: replacementOwner,
+          collaborator_ids: remainingCollaborators,
+          collaborator_roles: collaboratorRoles,
+          editor_ids: editorIds.filter((id: string) => id !== replacementOwner),
         });
       }
     }
@@ -160,7 +205,6 @@ Deno.serve(async (req) => {
     // Subscription and purchase records are intentionally retained as billing
     // history; remove direct account identity where possible while retaining
     // Stripe reconciliation IDs.
-    const subscriptions = await entities.Subscription.filter({ user_id: user.id });
     for (const subscription of subscriptions) {
       await entities.Subscription.update(subscription.id, { user_id: tombstoneId });
     }

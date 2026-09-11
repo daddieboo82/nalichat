@@ -42,13 +42,8 @@ export default function Profile() {
     queryKey: ["user", targetUserId],
     queryFn: async () => {
       if (!targetUserId) return null;
-      // In case User.get fails for regular users, fallback to finding them in User.list()
-      try {
-        return await base44.entities.User.get(targetUserId);
-      } catch (err) {
-        const allUsers = await base44.entities.User.list();
-        return allUsers.find(u => u.id === targetUserId) || null;
-      }
+      const res = await base44.functions.invoke("listPublicUsers", {});
+      return (res?.data?.users || []).find((u) => u.id === targetUserId) || null;
     },
     enabled: !!targetUserId,
   });
@@ -70,7 +65,10 @@ export default function Profile() {
 
   const { data: achievements = [] } = useQuery({
     queryKey: ["my-achievements", user?.id],
-    queryFn: () => base44.entities.Achievement.filter({ user_id: user.id }),
+    queryFn: async () => {
+      const res = await base44.functions.invoke("listPublicAchievements", { userId: user.id });
+      return res?.data?.achievements || [];
+    },
     enabled: !!user?.id,
   });
 
@@ -82,7 +80,7 @@ export default function Profile() {
       artist_role: form.artist_role,
       location: form.location,
       website: form.website,
-      genre: form.genre,
+      genres: form.genress || [],
     });
     const updated = await base44.auth.me();
     setCurrentUser(updated);
@@ -125,7 +123,7 @@ export default function Profile() {
   };
 
   const toggleGenre = (g) => {
-    const current = form.genre || [];
+    const current = form.genres || [];
     setForm(f => ({ ...f, genre: current.includes(g) ? current.filter(x => x !== g) : [...current, g] }));
   };
 
@@ -241,7 +239,7 @@ export default function Profile() {
               <label className="text-xs text-muted-foreground mb-2 block">Genres / Styles</label>
               <div className="flex flex-wrap gap-2">
                 {GENRES.map(g => (
-                  <button key={g} onClick={() => toggleGenre(g)} className={cn("px-3 py-1 rounded-full text-xs transition-colors", (form.genre || []).includes(g) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>{g}</button>
+                  <button key={g} onClick={() => toggleGenre(g)} className={cn("px-3 py-1 rounded-full text-xs transition-colors", (form.genres || []).includes(g) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>{g}</button>
                 ))}
               </div>
             </div>
@@ -252,9 +250,9 @@ export default function Profile() {
         {!editing && (
           <div className="mb-6">
             {user.bio && <p className="text-sm text-muted-foreground mb-2">{user.bio}</p>}
-            {Array.isArray(user.genre) && user.genre.length > 0 && (
+            {Array.isArray(user.genres) && user.genres.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
-                {user.genre.map(g => <span key={g} className="text-[11px] bg-accent/10 text-accent px-2.5 py-0.5 rounded-full">{g}</span>)}
+                {user.genres.map(g => <span key={g} className="text-[11px] bg-accent/10 text-accent px-2.5 py-0.5 rounded-full">{g}</span>)}
               </div>
             )}
             {user.location && <p className="text-xs text-muted-foreground">📍 {user.location}</p>}

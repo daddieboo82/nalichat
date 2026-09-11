@@ -102,7 +102,16 @@
     },
     "views": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "System-managed engagement counter.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "access_user_ids": {
       "type": "array",

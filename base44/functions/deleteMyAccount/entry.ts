@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { stripeRequest } from '../../shared/stripe.ts';
 
+const CLEANUP_BATCH_SIZE = 200;
+
 function deletedIdentity(userId: string): string {
   return `deleted:${userId}`;
 }
@@ -15,6 +17,23 @@ function pruneConversationReactions(reactions: unknown, participantIds: string[]
       return allowed.has(key.slice(separator + 2));
     }),
   );
+}
+
+async function processMatchingBatches(
+  entity: any,
+  query: Record<string, unknown>,
+  process: (row: any) => Promise<unknown>,
+): Promise<number> {
+  let processed = 0;
+  while (true) {
+    const rows = await entity.filter(query, '-created_date', CLEANUP_BATCH_SIZE);
+    if (rows.length === 0) return processed;
+    for (const row of rows) {
+      await process(row);
+      processed += 1;
+    }
+    if (rows.length < CLEANUP_BATCH_SIZE) return processed;
+  }
 }
 
 async function syncConversationAudience(entities: any, conversationId: string, participantIds: string[]) {
@@ -167,58 +186,65 @@ Deno.serve(async (req) => {
     for (const [entityName, ownerField] of ownedDeletes) {
       const entity = entities[entityName];
       if (!entity) continue;
-      const rows = await entity.filter({ [ownerField]: user.id });
-      for (const row of rows) {
-        await entity.delete(row.id);
-      }
+      await processMatchingBatches(
+        entity,
+        { [ownerField]: user.id },
+        (row) => entity.delete(row.id),
+      );
     }
 
     // Remove references to the deleted account from other users' contact lists.
-    const inboundContacts = await entities.Contact.filter({ contact_user_id: user.id });
-    for (const contact of inboundContacts) {
-      await entities.Contact.delete(contact.id);
-    }
+    await processMatchingBatches(
+      entities.Contact,
+      { contact_user_id: user.id },
+      (contact) => entities.Contact.delete(contact.id),
+    );
 
     // Preserve moderation history while anonymizing both subject and reporter
     // identity when the deleted account appears in a Violation record.
-    const subjectViolations = await entities.Violation.filter({ user_id: user.id });
-    for (const violation of subjectViolations) {
-      await entities.Violation.update(violation.id, {
+    await processMatchingBatches(
+      entities.Violation,
+      { user_id: user.id },
+      (violation) => entities.Violation.update(violation.id, {
         user_id: tombstoneId,
         user_name: 'Deleted User',
-      });
-    }
-    const reporterViolations = await entities.Violation.filter({ reported_by_id: user.id });
-    for (const violation of reporterViolations) {
-      await entities.Violation.update(violation.id, {
+      }),
+    );
+    await processMatchingBatches(
+      entities.Violation,
+      { reported_by_id: user.id },
+      (violation) => entities.Violation.update(violation.id, {
         reported_by_id: tombstoneId,
         reported_by_name: 'Deleted User',
-      });
-    }
+      }),
+    );
 
     // Remove private uploads. Project-linked files are retained for remaining
     // collaborators, but the departed uploader identity is anonymized.
-    const uploadedFiles = await entities.SharedFile.filter({ uploader_id: user.id });
-    for (const file of uploadedFiles) {
-      if (file.project_id) {
-        const remainingAccess = Array.isArray(file.access_user_ids)
-          ? file.access_user_ids.filter((id: string) => id !== user.id)
-          : [];
-        const remainingEditors = Array.isArray(file.edit_user_ids)
-          ? file.edit_user_ids.filter((id: string) => id !== user.id)
-          : [];
-        await entities.SharedFile.update(file.id, {
-          uploader_id: tombstoneId,
-          uploader_name: 'Deleted User',
-          access_user_ids: remainingAccess,
-          edit_user_ids: remainingEditors,
-          share_token_hash: null,
-      share_token_expires_at: null,
-        });
-      } else {
-        await entities.SharedFile.delete(file.id);
-      }
-    }
+    await processMatchingBatches(
+      entities.SharedFile,
+      { uploader_id: user.id },
+      async (file) => {
+        if (file.project_id) {
+          const remainingAccess = Array.isArray(file.access_user_ids)
+            ? file.access_user_ids.filter((id: string) => id !== user.id)
+            : [];
+          const remainingEditors = Array.isArray(file.edit_user_ids)
+            ? file.edit_user_ids.filter((id: string) => id !== user.id)
+            : [];
+          await entities.SharedFile.update(file.id, {
+            uploader_id: tombstoneId,
+            uploader_name: 'Deleted User',
+            access_user_ids: remainingAccess,
+            edit_user_ids: remainingEditors,
+            share_token_hash: null,
+            share_token_expires_at: null,
+          });
+        } else {
+          await entities.SharedFile.delete(file.id);
+        }
+      },
+    );
 
     // Preserve shared chat history for remaining participants, but remove
     // personal identity from messages authored by the deleted account.

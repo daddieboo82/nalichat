@@ -129,3 +129,24 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
+
+
+// Receive background Web Push messages when the app is closed or inactive.
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (_) {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'NaliChat', {
+      body: data.body || 'You have a new notification',
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      tag: data.tag || 'nali-remote-notification',
+      data: { url: data.url || '/' },
+    })
+  );
+});

@@ -28,19 +28,27 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
 
   const { data: comments = [] } = useQuery({
     queryKey: ["trackComments", track.id],
-    queryFn: () => base44.entities.TrackComment.filter({ track_id: track.id })
+    queryFn: async () => {
+      const res = await base44.functions.invoke("trackComments", {
+        action: "list",
+        parentType: "track",
+        parentId: track.id,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.comments || [];
+    }
   });
 
   const addCommentMutation = useMutation({
     mutationFn: async ({ text, timestamp }) => {
-      await base44.entities.TrackComment.create({
-        track_id: track.id,
-        author_id: currentUser?.id,
-        author_name: currentUser?.full_name,
-        author_avatar: currentUser?.avatar_url,
+      const res = await base44.functions.invoke("trackComments", {
+        action: "create",
+        parentType: "track",
+        parentId: track.id,
         text,
-        timestamp
+        timestamp,
       });
+      if (res?.data?.error) throw new Error(res.data.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trackComments", track.id] });

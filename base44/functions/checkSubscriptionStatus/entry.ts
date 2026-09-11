@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
       hasPaidAccess,
       hasAccess: hasPaidAccess,
       hasPending,
-      isTrialing: status === 'trialing',
+      isTrialing: status === 'trialing' && hasPaidAccess,
     });
   } catch (error) {
     console.error('Check subscription error:', error);

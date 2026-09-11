@@ -29,7 +29,7 @@ const STEPS = [
   "Publishing your finished song...",
 ];
 
-export default function BounceDialog({ projectTitle, project, tracks, trigger, open: controlledOpen, onOpenChange, redirectAfter, mixOptions }) {
+export default function BounceDialog({ projectTitle, project, tracks, trigger, open: controlledOpen, onOpenChange, redirectAfter, mixOptions, canPublish = true }) {
   const navigate = useNavigate();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -51,6 +51,10 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
   const [savedParams, setSavedParams] = useState(null);
 
   const handleBounce = async () => {
+    if (!canPublish) {
+      toast.error("Viewer access cannot publish this shared project.");
+      return;
+    }
     if (!bounceTitle.trim()) {
       toast.error("Please enter a song name before exporting.");
       return;
@@ -98,8 +102,8 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
       // 3. Upload + publish the finished, industry-ready song
       setStep(3);
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const me = await base44.auth.me();
-      await base44.entities.ArtPost.create({
+      const published = await base44.functions.invoke("publishStudioBounce", {
+        projectId: project?.id || null,
         title: bounceTitle,
         description: autoMaster
           ? `AI-mastered, industry-ready song produced from ${validTracks.length} stacked stems.`
@@ -110,13 +114,15 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
         tags: bounceTags.split(',').map(t => t.trim()).filter(Boolean),
         is_explicit: isExplicit,
         bpm: project?.bpm,
-        creator_id: me.id,
-        creator_name: me.display_name || me.full_name,
-        creator_avatar: me.avatar_url,
-        featured: false,
-        likes: 0,
-        views: 0,
       });
+      if (published?.data?.error) throw new Error(published.data.error);
+      const postId = published?.data?.post?.id;
+      if (postId) {
+        await Promise.allSettled([
+          base44.functions.invoke("claimPublishedPostReward", { postId }),
+          base44.functions.invoke("recordSquadActivity", { sourceType: "art_post", sourceId: postId }),
+        ]);
+      }
 
       setDone(true);
       setTimeout(() => {

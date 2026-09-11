@@ -8,11 +8,27 @@
     },
     "project_id": {
       "type": "string",
-      "description": "Associated project ID"
+      "description": "Associated project ID",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "owner_id": {
       "type": "string",
-      "description": "User ID of the folder creator"
+      "description": "User ID of the folder creator",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "color": {
       "type": "string",
@@ -30,7 +46,15 @@
         "type": "string"
       },
       "default": [],
-      "description": "Project members allowed to read and organize this folder"
+      "description": "Project members allowed to read and organize this folder",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "edit_user_ids": {
       "type": "array",
@@ -38,7 +62,15 @@
         "type": "string"
       },
       "default": [],
-      "description": "Project members allowed to modify this record. Viewer-only collaborators are excluded."
+      "description": "Project members allowed to modify this record. Viewer-only collaborators are excluded.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [
@@ -69,9 +101,6 @@
     "update": {
       "$or": [
         {
-          "data.owner_id": "{{user.id}}"
-        },
-        {
           "data.edit_user_ids": "{{user.id}}"
         },
         {
@@ -83,9 +112,6 @@
     },
     "delete": {
       "$or": [
-        {
-          "data.owner_id": "{{user.id}}"
-        },
         {
           "data.edit_user_ids": "{{user.id}}"
         },

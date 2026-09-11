@@ -11,21 +11,26 @@ export default function SubmissionComments({ submissionId, user }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    base44.entities.TrackComment.filter({ track_id: submissionId }, "-created_date", 50)
-      .then(setComments)
+    base44.functions.invoke("trackComments", {
+      action: "list",
+      parentType: "challenge_submission",
+      parentId: submissionId,
+    })
+      .then((res) => setComments(res?.data?.comments || []))
       .finally(() => setLoading(false));
   }, [submissionId]);
 
   const handleSend = async () => {
     if (!text.trim() || !user) return;
-    const created = await base44.entities.TrackComment.create({
-      track_id: submissionId,
-      author_id: user.id,
-      author_name: user.full_name || user.email,
-      author_avatar: user.avatar_url,
+    const res = await base44.functions.invoke("trackComments", {
+      action: "create",
+      parentType: "challenge_submission",
+      parentId: submissionId,
       text: text.trim(),
     });
-    setComments([created, ...comments]);
+    if (res?.data?.error) throw new Error(res.data.error);
+    const created = res?.data?.comment;
+    setComments(created ? [created, ...comments] : comments);
     setText("");
   };
 

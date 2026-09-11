@@ -35,6 +35,11 @@
       "type": "string",
       "description": "Optional description (up to 1000 characters)",
       "maxLength": 1000
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether a group can be discovered and joined by authenticated users."
     }
   },
   "required": [
@@ -50,20 +55,23 @@
       }
     },
     "read": {
-      "data.participant_ids": "{{user.id}}"
+      "$or": [
+        {
+          "data.participant_ids": "{{user.id}}"
+        },
+        {
+          "data.is_public": true
+        }
+      ]
     },
     "update": {
-      "data.participant_ids": {
-        "$in": [
-          "{{user.id}}"
-        ]
+      "user_condition": {
+        "role": "admin"
       }
     },
     "delete": {
-      "data.participant_ids": {
-        "$in": [
-          "{{user.id}}"
-        ]
+      "user_condition": {
+        "role": "admin"
       }
     }
   }

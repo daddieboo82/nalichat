@@ -62,10 +62,14 @@ export default function MilestonesPanel({ projectId, canEdit }) {
   });
 
   const toggle = useMutation({
-    mutationFn: (m) => base44.entities.Milestone.update(m.id, {
-      completed: !m.completed,
-      completed_at: !m.completed ? new Date().toISOString() : null,
-    }),
+    mutationFn: async (m) => {
+      const res = await base44.functions.invoke("mutateMilestone", {
+        action: "toggle",
+        milestoneId: m.id,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.milestone;
+    },
     onSuccess: (_, m) => {
       invalidate();
       if (!m.completed) {
@@ -75,7 +79,14 @@ export default function MilestonesPanel({ projectId, canEdit }) {
   });
 
   const remove = useMutation({
-    mutationFn: (id) => base44.entities.Milestone.delete(id),
+    mutationFn: async (id) => {
+      const res = await base44.functions.invoke("mutateMilestone", {
+        action: "delete",
+        milestoneId: id,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data;
+    },
     onSuccess: invalidate,
   });
 

@@ -10,18 +10,63 @@
       "type": "string"
     },
     "owner_id": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "$or": [
+            {
+              "data.owner_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "collaborator_ids": {
       "type": "array",
       "items": {
         "type": "string"
+      },
+      "rls": {
+        "read": true,
+        "write": {
+          "$or": [
+            {
+              "data.owner_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
       }
     },
     "collaborator_roles": {
       "type": "object",
       "description": "Map of user_id -> role ('viewer' | 'editor')",
-      "default": {}
+      "default": {},
+      "rls": {
+        "read": true,
+        "write": {
+          "$or": [
+            {
+              "data.owner_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "genre": {
       "type": "string"
@@ -62,7 +107,22 @@
         "type": "string"
       },
       "default": [],
-      "description": "Collaborator user IDs with editor permission. Viewer collaborators are excluded."
+      "description": "Collaborator user IDs with editor permission. Viewer collaborators are excluded.",
+      "rls": {
+        "read": true,
+        "write": {
+          "$or": [
+            {
+              "data.owner_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     }
   },
   "required": [

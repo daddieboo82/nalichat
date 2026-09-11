@@ -24,18 +24,42 @@
       "type": "number"
     },
     "uploader_id": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "uploader_name": {
       "type": "string"
     },
     "project_id": {
       "type": "string",
-      "description": "Optional project association"
+      "description": "Optional project association",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "folder_id": {
       "type": "string",
-      "description": "Optional folder ID for organization"
+      "description": "Optional folder ID for organization",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "tags": {
       "type": "array",
@@ -60,13 +84,37 @@
         "type": "string"
       },
       "default": [],
-      "description": "Users allowed to read this file inside NaliChat"
+      "description": "Users allowed to read this file inside NaliChat",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "share_token_hash": {
       "type": "string",
       "description": "SHA-256 hash of the current opaque public share token",
       "rls": {
         "read": false,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "edit_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Users allowed to modify or delete this file. Viewer-only collaborators are excluded.",
+      "rls": {
+        "read": true,
         "write": {
           "user_condition": {
             "role": "admin"
@@ -102,10 +150,28 @@
       ]
     },
     "update": {
-      "data.uploader_id": "{{user.id}}"
+      "$or": [
+        {
+          "data.edit_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     },
     "delete": {
-      "data.uploader_id": "{{user.id}}"
+      "$or": [
+        {
+          "data.edit_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     }
   }
 }

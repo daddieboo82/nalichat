@@ -17,15 +17,23 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
 
   const saveName = async () => {
     if (!nameValue.trim()) return;
-    await base44.entities.Conversation.update(conversation.id, { name: nameValue.trim() });
+    const res = await base44.functions.invoke("manageConversation", {
+      action: "rename",
+      conversationId: conversation.id,
+      name: nameValue.trim(),
+    });
+    if (res?.data?.error) throw new Error(res.data.error);
     queryClient.invalidateQueries({ queryKey: ["conversations"] });
     setEditingName(false);
   };
 
   const leaveGroup = async () => {
     if (!currentUser) return;
-    const newParticipants = conversation.participant_ids?.filter(id => id !== currentUser.id) || [];
-    await base44.entities.Conversation.update(conversation.id, { participant_ids: newParticipants });
+    const res = await base44.functions.invoke("manageConversation", {
+      action: "leave",
+      conversationId: conversation.id,
+    });
+    if (res?.data?.error) throw new Error(res.data.error);
     queryClient.invalidateQueries({ queryKey: ["conversations"] });
     onClose();
   };

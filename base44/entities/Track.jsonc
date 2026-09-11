@@ -3,7 +3,15 @@
   "type": "object",
   "properties": {
     "project_id": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "name": {
       "type": "string"
@@ -46,7 +54,15 @@
       "type": "number"
     },
     "uploaded_by": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "waveform_data": {
       "type": "array",
@@ -73,7 +89,15 @@
         "type": "string"
       },
       "default": [],
-      "description": "Project/session members allowed to read and collaborate on this audio record"
+      "description": "Project/session members allowed to read and collaborate on this audio record",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "edit_user_ids": {
       "type": "array",
@@ -81,7 +105,15 @@
         "type": "string"
       },
       "default": [],
-      "description": "Project members allowed to modify this record. Viewer-only collaborators are excluded."
+      "description": "Project members allowed to modify this record. Viewer-only collaborators are excluded.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [
@@ -112,9 +144,6 @@
     "update": {
       "$or": [
         {
-          "data.uploaded_by": "{{user.id}}"
-        },
-        {
           "data.edit_user_ids": "{{user.id}}"
         },
         {
@@ -126,9 +155,6 @@
     },
     "delete": {
       "$or": [
-        {
-          "data.uploaded_by": "{{user.id}}"
-        },
         {
           "data.edit_user_ids": "{{user.id}}"
         },

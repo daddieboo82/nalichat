@@ -210,29 +210,57 @@ export default function Files() {
     mutationFn: async (filesArray) => {
       setUploading(true);
       const currentFolderObj = currentFolderId ? folders.find(f => f.id === currentFolderId) : null;
+      let uploaded = 0;
+      const failures = [];
+
       for (const file of filesArray) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        const created = await base44.functions.invoke("createSharedFileRecord", {
-          name: file.name,
-          file_url,
-          file_type: detectFileType(file),
-          file_size: file.size,
-          folder_id: currentFolderId,
-          project_id: currentFolderObj?.project_id || null,
-        });
-        if (created?.data?.error) throw new Error(created.data.error);
+        try {
+          const { file_url } = await base44.integrations.Core.UploadFile({ file });
+          const created = await base44.functions.invoke("createSharedFileRecord", {
+            name: file.name,
+            file_url,
+            file_type: detectFileType(file),
+            file_size: file.size,
+            folder_id: currentFolderId,
+            project_id: currentFolderObj?.project_id || null,
+          });
+          if (created?.data?.error) throw new Error(created.data.error);
+          uploaded += 1;
+        } catch (error) {
+          failures.push({ name: file.name, message: error?.message || "Upload failed" });
+        }
       }
-      setUploading(false);
+
+      return { uploaded, failures, total: filesArray.length };
     },
-    onSuccess: () => {
-      sounds.upload();
+    onSuccess: ({ uploaded, failures, total }) => {
+      if (uploaded > 0) sounds.upload();
       queryClient.invalidateQueries({ queryKey: ["shared-files"] });
+      if (failures.length === 0) {
+        toast({ title: "Upload complete", description: `${uploaded} file${uploaded === 1 ? "" : "s"} uploaded.` });
+      } else if (uploaded > 0) {
+        toast({
+          title: "Upload partially completed",
+          description: `${uploaded} of ${total} files uploaded. ${failures.length} failed and can be retried.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Upload failed",
+          description: "No files were uploaded. Your local files were not changed.",
+          variant: "destructive",
+        });
+      }
     },
-    onError: () => setUploading(false),
+    onSettled: () => setUploading(false),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.SharedFile.delete(id),
+    mutationFn: async (id) => {
+      const res = await base44.functions.invoke("mutateSharedFile", { action: "delete", fileId: id });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data;
+    },
     onSuccess: () => {
       sounds.error();
       queryClient.invalidateQueries({ queryKey: ["shared-files"] });
@@ -240,7 +268,15 @@ export default function Files() {
   });
 
   const updateFileMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SharedFile.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const res = await base44.functions.invoke("mutateSharedFile", {
+        action: "update",
+        fileId: id,
+        ...data,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.file;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shared-files"] });
       toast({ title: "File updated", description: "File details have been saved." });
@@ -287,15 +323,15 @@ export default function Files() {
   });
 
   const moveToFolderMutation = useMutation({
-    mutationFn: ({ fileIds, folderId }) => {
-      const targetFolder = folders.find(f => f.id === folderId);
-      return Promise.all(fileIds.map(id =>
-        base44.entities.SharedFile.update(id, { 
-          folder_id: folderId,
-          project_id: targetFolder?.project_id || null
-        })
-      ));
-    },
+    mutationFn: ({ fileIds, folderId }) => Promise.all(fileIds.map(async (id) => {
+      const res = await base44.functions.invoke("mutateSharedFile", {
+        action: "move",
+        fileId: id,
+        folderId,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.file;
+    })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shared-files"] });
       setSelectedIds([]);

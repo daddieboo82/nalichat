@@ -282,16 +282,18 @@ export default React.memo(function ConversationList({ conversations, myConversat
                 onClick={async () => {
                   let roomId = room.id;
                   if (room.isMock) {
-                    const newRoom = await base44.entities.Conversation.create({
+                    const res = await base44.functions.invoke("manageConversation", {
+                      action: "create_public",
                       name: room.name,
-                      type: "group",
-                      participant_ids: [currentUserId]
                     });
-                    roomId = newRoom.id;
+                    if (res?.data?.error) throw new Error(res.data.error);
+                    roomId = res?.data?.conversation?.id;
                   } else {
-                    await base44.entities.Conversation.update(room.id, {
-                      participant_ids: [...new Set([...(room.participant_ids || []), currentUserId])]
+                    const res = await base44.functions.invoke("manageConversation", {
+                      action: "join_public",
+                      conversationId: room.id,
                     });
+                    if (res?.data?.error) throw new Error(res.data.error);
                   }
                   onSelect(roomId);
                   setSearch("");

@@ -147,16 +147,23 @@ export default function Record() {
 
   const saveRecording = async (rec) => {
     setSaving(rec.id);
-    const file = new File([rec.blob], `${rec.name}.webm`, { type: "audio/webm" });
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const created = await base44.functions.invoke("createSharedFileRecord", {
-      name: rec.name,
-      file_url,
-      file_type: "audio",
-      file_size: file.size,
-    });
-    if (created?.data?.error) throw new Error(created.data.error);
-    setSaving(null);
+    try {
+      const file = new File([rec.blob], `${rec.name}.webm`, { type: "audio/webm" });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const created = await base44.functions.invoke("createSharedFileRecord", {
+        name: rec.name,
+        file_url,
+        file_type: "audio",
+        file_size: file.size,
+      });
+      if (created?.data?.error) throw new Error(created.data.error);
+      toast.success("Recording saved to Files.");
+    } catch (error) {
+      console.error("Recording save failed:", error);
+      toast.error(error?.message || "Recording could not be saved. The local recording is still available.");
+    } finally {
+      setSaving(null);
+    }
   };
 
   const deleteRecording = (id) => {

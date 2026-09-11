@@ -220,6 +220,7 @@ export default function Studio() {
   const [jamRoomActive, setJamRoomActive] = useState(false);
   const [jamVideoActive, setJamVideoActive] = useState(false);
   const [defaultRole, setDefaultRole] = useState("editor");
+  const [canEditProject, setCanEditProject] = useState(!roomId);
   const [isProcessing, setIsProcessing] = useState(null); // 'separate' | 'generate' | null
 
   // Real-time collaborator presence
@@ -301,13 +302,13 @@ export default function Studio() {
       } catch (e) {
         console.error('Failed to autosave master FX chain', e);
       }
-      if (roomId) {
+      if (roomId && canEditProject) {
         base44.entities.Project.update(roomId, { master_fx: chain })
           .catch(err => console.error('Failed to sync master FX to project', err));
       }
     }, 1000);
     return () => clearTimeout(timeoutId);
-  }, [masterFx, roomId]);
+  }, [masterFx, roomId, canEditProject]);
 
   useEffect(() => {
     try {
@@ -334,9 +335,14 @@ export default function Studio() {
           });
           if (accepted?.data?.error) throw new Error(accepted.data.error);
         }
-        const project = await base44.entities.Project.get(roomId);
+        const [project, me] = await Promise.all([
+          base44.entities.Project.get(roomId),
+          base44.auth.me(),
+        ]);
         if (!project || cancelled) return;
 
+        const canEdit = project.owner_id === me?.id || (project.editor_ids || []).includes(me?.id);
+        setCanEditProject(Boolean(canEdit));
         setProjectName(project.title || "Untitled Project");
         if (project.bpm) {
           setBpm(project.bpm);
@@ -1566,6 +1572,10 @@ export default function Studio() {
       localStorage.setItem('nalistudio_master_fx', JSON.stringify(masterFx || {}));
 
       if (roomId) {
+        if (!canEditProject) {
+          toast.error("This Jam Room invite is view-only. Your local changes were not saved to the shared project.", { id: toastId });
+          return false;
+        }
         await base44.entities.Project.update(roomId, {
           title: projectName,
           bpm,
@@ -1908,16 +1918,25 @@ export default function Studio() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { if (selectedTrackIds.length > 0) setShowAudioSuite(true); else toast.error("Select a track first"); }} className="cursor-pointer py-2"><Wand2 className="w-4 h-4 mr-2" /> AudioSuite (Offline FX) <kbd className="ml-auto bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+U</kbd></DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { if (selectedTrackIds.length > 0) setShowFadePresets(true); else toast.error("Select clips first"); }} className="cursor-pointer py-2"><SlidersHorizontal className="w-4 h-4 mr-2" /> Fade Presets <kbd className="ml-auto bg-secondary px-1 py-0.5 rounded text-[9px] text-muted-foreground">Ctrl+Shift+F</kbd></DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setBounceRedirect('explore'); setBounceOpen(true); }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Export & Publish</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setBounceRedirect('cover-art'); setBounceOpen(true); }} className="cursor-pointer py-2"><ImageIcon className="w-4 h-4 mr-2" /> Export to Cover Creator</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  if (!canEditProject) return toast.error("Viewer access cannot publish this shared project.");
+                  setBounceRedirect('explore');
+                  setBounceOpen(true);
+                }} className="cursor-pointer py-2"><Download className="w-4 h-4 mr-2" /> Export & Publish</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  if (!canEditProject) return toast.error("Viewer access cannot publish this shared project.");
+                  setBounceRedirect('cover-art');
+                  setBounceOpen(true);
+                }} className="cursor-pointer py-2"><ImageIcon className="w-4 h-4 mr-2" /> Export to Cover Creator</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
             <BounceDialog
               open={bounceOpen}
               onOpenChange={setBounceOpen}
-              projectTitle="Untitled Studio Project"
-              project={{ genre: "Electronic", bpm: 120 }}
+              projectTitle={projectName}
+              project={{ id: roomId, genre: "", bpm }}
+              canPublish={canEditProject}
               tracks={tracks}
               redirectAfter={bounceRedirect}
               mixOptions={{ masterVolume, masterFx }}
@@ -2841,7 +2860,7 @@ export default function Studio() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <button
-          onClick={() => { handleSave(); navigate('/'); }}
+          onClick={async () => { if (await handleSave()) navigate('/'); }}
           className="flex items-center gap-2 px-6 py-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground text-sm font-medium transition-colors min-h-[44px]"
         >
           <ChevronLeft className="w-4 h-4" /> Exit Studio

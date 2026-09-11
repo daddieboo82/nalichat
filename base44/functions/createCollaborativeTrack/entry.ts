@@ -1,5 +1,28 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
+const TRUSTED_MEDIA_HOSTS = [
+  'storage.googleapis.com',
+  'base44-user-files.s3.amazonaws.com',
+  'base44-user-files.s3.us-east-1.amazonaws.com',
+  'files.base44.com',
+  'cdn.base44.com',
+];
+
+function cleanUploadedMediaUrl(value: unknown) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'https:') return '';
+    const hostname = parsed.hostname.toLowerCase();
+    return TRUSTED_MEDIA_HOSTS.some(
+      (host) => hostname === host || hostname.endsWith('.' + host),
+    ) ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -46,11 +69,16 @@ Deno.serve(async (req) => {
       }
     }
 
+    const fileUrl = body?.file_url ? cleanUploadedMediaUrl(body.file_url) : '';
+    if (body?.file_url && !fileUrl) {
+      return Response.json({ error: 'Track media must come from trusted upload storage' }, { status: 400 });
+    }
+
     const allowedTypes = new Set(['vocal', 'instrument', 'beat', 'sample', 'fx', 'master']);
     const track = await entities.Track.create({
       project_id: projectId,
       name: String(body.name).slice(0, 200),
-      file_url: typeof body.file_url === 'string' ? body.file_url : '',
+      file_url: fileUrl,
       type: allowedTypes.has(body.type) ? body.type : 'vocal',
       color: typeof body.color === 'string' ? body.color : undefined,
       volume: Number.isFinite(Number(body.volume)) ? Number(body.volume) : 75,

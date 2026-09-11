@@ -371,6 +371,18 @@
           }
         }
       }
+    },
+    "squad_membership_id": {
+      "type": "string",
+      "description": "Server-managed ID of the user's current pending or active squad, used as an atomic membership claim.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "rls": {

@@ -46,7 +46,10 @@ export default async function(req) {
       if (!loads.artPosts) loads.artPosts = s.ArtPost.list('-created_date', 500);
     }
     if (wants('UsageRateLimit')) loads.usageRateLimits = s.UsageRateLimit.list('-created_date', 1000);
-    if (wants('User')) loads.users = s.User.list();
+    if (wants('User') || wants('Squad')) {
+      loads.users = s.User.list();
+      loads.squads = s.Squad.list('-created_date', 1000);
+    }
 
     const data = {};
     const keys = Object.keys(loads);
@@ -351,6 +354,52 @@ export default async function(req) {
             id: row.id,
             change: 'expired row deleted',
           });
+        }
+      }
+    }
+
+    // =====================================================
+    // 15. USER/SQUAD — repair atomic squad membership claims
+    // =====================================================
+    if (data.users && data.squads) {
+      const memberships = new Map();
+      for (const squad of data.squads) {
+        if (squad.status === 'ended') continue;
+        for (const memberId of [squad.member_a_id, squad.member_b_id].filter(Boolean)) {
+          if (!memberships.has(memberId)) memberships.set(memberId, []);
+          memberships.get(memberId).push(squad.id);
+        }
+      }
+
+      for (const user of data.users) {
+        const activeIds = memberships.get(user.id) || [];
+        if (activeIds.length > 1) {
+          issues.push({
+            entity: 'User',
+            id: user.id,
+            field: 'squad_membership_id',
+            issue: `User belongs to ${activeIds.length} non-ended squads; manual review required`,
+          });
+          continue;
+        }
+
+        const expected = activeIds[0] || null;
+        const current = user.squad_membership_id || null;
+        if (current !== expected) {
+          issues.push({
+            entity: 'User',
+            id: user.id,
+            field: 'squad_membership_id',
+            issue: `Squad membership claim "${current || ''}" should be "${expected || ''}"`,
+          });
+          if (mode === 'repair') {
+            await s.User.update(user.id, { squad_membership_id: expected });
+            fixed.push({
+              entity: 'User',
+              id: user.id,
+              change: `squad_membership_id → ${expected || 'null'}`,
+            });
+          }
         }
       }
     }

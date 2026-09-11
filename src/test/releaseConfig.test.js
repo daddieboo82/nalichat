@@ -395,6 +395,13 @@ describe('release configuration', () => {
     expect(collaborator).not.toContain("entityName !== 'SharedFile'");
   });
 
+  it('revokes public file share tokens when collaborator access changes', async () => {
+    const collaborator = await readText('base44/functions/manageProjectCollaborator/entry.ts');
+    expect(collaborator).toContain("if (entityName === 'SharedFile')");
+    expect(collaborator).toContain('patch.share_token_hash = null');
+    expect(collaborator).toContain('patch.share_token_expires_at = null');
+  });
+
 
   it('keeps subscription billing Stripe-authoritative and rate-limited', async () => {
     const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');

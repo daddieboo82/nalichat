@@ -3,6 +3,10 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) {
@@ -26,8 +30,11 @@ Deno.serve(async (req) => {
     }
 
     const { phone } = await req.json();
-    if (!phone) {
+    if (typeof phone !== 'string' || !phone.trim()) {
       return Response.json({ error: 'Missing phone' }, { status: 400 });
+    }
+    if (phone.length > 32) {
+      return Response.json({ error: 'Phone number is too long' }, { status: 400 });
     }
 
     // Validate E.164 phone format to prevent SMS abuse

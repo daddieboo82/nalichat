@@ -383,6 +383,25 @@
           }
         }
       }
+    },
+    "chat_theme_id": {
+      "type": "string",
+      "enum": [
+        "default",
+        "midnight",
+        "aurora",
+        "sunset"
+      ],
+      "default": "default",
+      "description": "Server-managed chat appearance preference. Premium IDs are written through setChatTheme after entitlement verification.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "rls": {

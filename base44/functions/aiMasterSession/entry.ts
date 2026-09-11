@@ -4,6 +4,44 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 // Returns concrete, numeric mastering parameters that the client applies via WebAudio
 // to automatically produce an industry-ready master from stacked stems.
+function clampNumber(value: unknown, min: number, max: number, fallback: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+
+function normalizeMasteringResult(result: any) {
+  return {
+    low_shelf: {
+      freq_hz: clampNumber(result?.low_shelf?.freq_hz, 20, 500, 100),
+      gain_db: clampNumber(result?.low_shelf?.gain_db, -6, 6, 0),
+    },
+    low_mid: {
+      freq_hz: clampNumber(result?.low_mid?.freq_hz, 100, 1000, 300),
+      gain_db: clampNumber(result?.low_mid?.gain_db, -6, 6, 0),
+      q: clampNumber(result?.low_mid?.q, 0.1, 10, 1),
+    },
+    presence: {
+      freq_hz: clampNumber(result?.presence?.freq_hz, 1000, 8000, 3000),
+      gain_db: clampNumber(result?.presence?.gain_db, -6, 6, 0),
+      q: clampNumber(result?.presence?.q, 0.1, 10, 1),
+    },
+    high_shelf: {
+      freq_hz: clampNumber(result?.high_shelf?.freq_hz, 4000, 20000, 10000),
+      gain_db: clampNumber(result?.high_shelf?.gain_db, -6, 6, 0),
+    },
+    compressor: {
+      threshold_db: clampNumber(result?.compressor?.threshold_db, -60, 0, -18),
+      ratio: clampNumber(result?.compressor?.ratio, 1, 20, 2.5),
+      attack_s: clampNumber(result?.compressor?.attack_s, 0.001, 1, 0.01),
+      release_s: clampNumber(result?.compressor?.release_s, 0.01, 2, 0.2),
+      knee_db: clampNumber(result?.compressor?.knee_db, 0, 40, 6),
+    },
+    makeup_gain_db: clampNumber(result?.makeup_gain_db, -12, 12, 3),
+    limiter_ceiling_db: clampNumber(result?.limiter_ceiling_db, -12, 0, -1),
+    notes: String(result?.notes || '').slice(0, 2000),
+  };
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -91,7 +129,7 @@ gain_db values should be modest (-6 to +6). ratio 1.5-4. attack 0.003-0.05. rele
       }
     });
 
-    return Response.json(result);
+    return Response.json(normalizeMasteringResult(result));
   } catch (error) {
     console.error('aiMasterSession error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

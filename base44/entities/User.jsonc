@@ -12,8 +12,8 @@
         "engineer",
         "ar"
       ],
-      "default": "artist",
-      "description": "Field-level security: anyone may read a role, but only an existing admin may write one. This is what actually stops privilege escalation - auth.updateMe() is a self-write, so without this rule any signed-in user could promote themselves to admin. Admin promotion is expected to go through the makeAdmin function, which verifies the caller is already an admin and then writes via asServiceRole (service role bypasses FLS).",
+      "default": "user",
+      "description": "Authorization role. 'admin' grants administrative privileges; all non-admin users should use 'user'. Legacy profession values remain accepted during migration.",
       "rls": {
         "read": true,
         "write": {
@@ -213,6 +213,17 @@
           }
         }
       }
+    },
+    "artist_role": {
+      "type": "string",
+      "enum": [
+        "artist",
+        "producer",
+        "engineer",
+        "ar"
+      ],
+      "default": "artist",
+      "description": "Public music-industry role shown on the profile. This is separate from the protected authorization role."
     }
   }
 }

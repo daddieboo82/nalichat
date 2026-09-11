@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendPushToUser } from '../../shared/webPush.ts';
-import { workflowEntityRecordId } from '../../shared/workflowEvents.ts';
+import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -12,6 +12,9 @@ Deno.serve(async (req) => {
 
     const entities = base44.asServiceRole.entities;
     const message = await entities.Message.get(record.id);
+    if (!message || !workflowRecordIsFresh(message, 'create')) {
+      return Response.json({ success: true, count: 0, skipped: 'stale_workflow_record' });
+    }
     if (!message?.conversation_id) return Response.json({ success: true });
 
     const conversation = await entities.Conversation.get(message.conversation_id);

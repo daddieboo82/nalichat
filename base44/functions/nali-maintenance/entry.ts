@@ -62,7 +62,7 @@ export default async function(req) {
     }
     if (wants('UsageRateLimit')) loads.usageRateLimits = s.UsageRateLimit.list('-created_date', 1000);
     if (wants('User') || wants('Squad')) {
-      loads.users = s.User.list();
+      loads.users = s.User.list('-created_date', 500);
       loads.squads = s.Squad.list('-created_date', 1000);
     }
 
@@ -435,6 +435,10 @@ export default async function(req) {
       issues: issues.slice(0, 100),    // cap for response size
       fixed: mode === 'repair' ? fixed.slice(0, 100) : [],
       needsAttention: issues.length > 0,
+      truncated: {
+        users: Array.isArray(data.users) && data.users.length >= 500,
+        squads: Array.isArray(data.squads) && data.squads.length >= 1000,
+      },
     };
 
     console.log(`Nali maintenance (${mode}): ${issues.length} issues found, ${fixed.length} fixed.`);

@@ -43,13 +43,13 @@ export default function Onboarding() {
     }
     setLoading(true);
     try {
-      await base44.auth.updateMe({
+      const res = await base44.functions.invoke("completeOnboarding", {
         display_name: form.display_name,
         birthdate: form.birthdate,
         bio: form.bio,
         location: form.location,
-        onboarding_completed: true
       });
+      if (res?.data?.error) throw new Error(res.data.error);
       
       await checkUserAuth();
       

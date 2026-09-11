@@ -18,8 +18,8 @@ Deno.serve(async (req) => {
 
     const entities = base44.asServiceRole.entities;
     const [asA, asB] = await Promise.all([
-      entities.Squad.filter({ member_a_id: user.id, status: 'active' }),
-      entities.Squad.filter({ member_b_id: user.id, status: 'active' }),
+      entities.Squad.filter({ member_a_id: user.id, status: 'active' }, '-created_date', 1),
+      entities.Squad.filter({ member_b_id: user.id, status: 'active' }, '-created_date', 1),
     ]);
     const squad = asA[0] || asB[0] || null;
     if (!squad) {
@@ -27,7 +27,11 @@ Deno.serve(async (req) => {
     }
 
     const key = weekKey();
-    const progressRows = await entities.SquadProgress.filter({ squad_id: squad.id, week_key: key });
+    const progressRows = await entities.SquadProgress.filter(
+      { squad_id: squad.id, week_key: key },
+      '-created_date',
+      1,
+    );
     const progress = progressRows[0] || null;
     const now = Date.now();
     const active = Boolean(

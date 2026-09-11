@@ -1,5 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
+function isInviteExpired(squad: any) {
+  const raw = squad?.invite_expires_at || squad?.created_date;
+  if (!raw) return false;
+  const base = Date.parse(raw);
+  if (Number.isNaN(base)) return false;
+  const expiry = squad?.invite_expires_at ? base : base + 7 * 24 * 60 * 60 * 1000;
+  return expiry <= Date.now();
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -9,7 +18,7 @@ Deno.serve(async (req) => {
 
     const squads = await base44.asServiceRole.entities.Squad.filter({ invite_code: String(inviteCode).toUpperCase() });
     const squad = squads[0];
-    if (!squad || squad.status === 'ended') {
+    if (!squad || squad.status === 'ended' || isInviteExpired(squad)) {
       return Response.json({ error: 'Invite not found' }, { status: 404 });
     }
 

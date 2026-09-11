@@ -2,12 +2,28 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
 const ALLOWED_MEDIA = new Set(['original','remix','cover','beat','production','mixing','mastering','collab']);
 
-function cleanHttpsUrl(value: unknown) {
+const TRUSTED_MEDIA_HOSTS = [
+  'storage.googleapis.com',
+  'base44-user-files.s3.amazonaws.com',
+  'base44-user-files.s3.us-east-1.amazonaws.com',
+  'files.base44.com',
+  'cdn.base44.com',
+];
+
+function cleanHttpsUrl(value: unknown, requireTrustedHost = false) {
   const raw = String(value || '').trim();
   if (!raw) return '';
   try {
     const parsed = new URL(raw);
-    return parsed.protocol === 'https:' ? parsed.toString() : '';
+    if (parsed.protocol !== 'https:') return '';
+    const hostname = parsed.hostname.toLowerCase();
+    if (requireTrustedHost) {
+      const trusted = TRUSTED_MEDIA_HOSTS.some(
+        (host) => hostname === host || hostname.endsWith('.' + host),
+      );
+      if (!trusted) return '';
+    }
+    return parsed.toString();
   } catch {
     return '';
   }
@@ -26,9 +42,9 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const title = String(body?.title || '').trim().slice(0, 200);
-    const fileUrl = cleanHttpsUrl(body?.file_url);
+    const fileUrl = cleanHttpsUrl(body?.file_url, true);
     if (!title || !fileUrl) {
-      return Response.json({ error: 'A title and valid HTTPS file URL are required' }, { status: 400 });
+      return Response.json({ error: 'A title and trusted uploaded media URL are required' }, { status: 400 });
     }
 
     const imageUrl = body?.image_url ? cleanHttpsUrl(body.image_url) : '';

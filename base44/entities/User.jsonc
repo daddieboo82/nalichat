@@ -119,12 +119,28 @@
     "xp": {
       "type": "number",
       "default": 0,
-      "description": "Experience points earned through platform activity"
+      "description": "Experience points earned through platform activity",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "viral_concepts_generated": {
       "type": "number",
       "default": 0,
-      "description": "Number of viral content concepts generated via ViralSeed AI"
+      "description": "Number of viral content concepts generated via ViralSeed AI",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "nali_presence_level": {
       "type": "string",

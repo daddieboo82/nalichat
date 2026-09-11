@@ -4,7 +4,15 @@
   "properties": {
     "recipient_id": {
       "type": "string",
-      "description": "User ID who receives the notification"
+      "description": "User ID who receives the notification",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "type": {
       "type": "string",
@@ -15,25 +23,73 @@
         "milestone",
         "message"
       ],
-      "description": "Type of notification"
+      "description": "Type of notification",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "actor_id": {
       "type": "string",
-      "description": "User ID who triggered the notification"
+      "description": "User ID who triggered the notification",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "actor_name": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "actor_avatar": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "message": {
       "type": "string",
-      "description": "Notification body text"
+      "description": "Notification body text",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "link": {
       "type": "string",
-      "description": "In-app path to navigate to"
+      "description": "In-app path to navigate to",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "read": {
       "type": "boolean",
@@ -42,7 +98,15 @@
     "description": {
       "type": "string",
       "description": "Optional description (up to 1000 characters)",
-      "maxLength": 1000
+      "maxLength": 1000,
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [

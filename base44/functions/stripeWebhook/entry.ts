@@ -214,6 +214,26 @@ async function reconcileSubscription(
     ...(checkoutId ? { checkout_id: checkoutId } : {}),
   };
 
+  // Deleted accounts retain tombstoned billing history for reconciliation.
+  // Stripe can deliver cancellation/invoice events after account deletion; do
+  // not require a now-deleted User record or restore the original user_id.
+  if (typeof record?.user_id === 'string' && record.user_id.startsWith('deleted:')) {
+    if (record.stripe_customer_id && record.stripe_customer_id !== customerId) {
+      throw new Error(`Deleted-account customer ownership mismatch for ${subscriptionId}`);
+    }
+    await entities.Subscription.updateMany(
+      {
+        id: record.id,
+        $or: [
+          { stripe_event_created: null },
+          { stripe_event_created: { $lte: event.created } },
+        ],
+      },
+      { $set: baseUpdate },
+    );
+    return 'applied';
+  }
+
   if (record?.grandfathered === true) {
     if (record.stripe_customer_id && record.stripe_customer_id !== customerId) {
       throw new Error(`Grandfathered customer ownership mismatch for ${subscriptionId}`);

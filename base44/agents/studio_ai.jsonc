@@ -7,8 +7,7 @@
       "allowed_operations": [
         "create",
         "read",
-        "update",
-        "delete"
+        "update"
       ]
     },
     {
@@ -16,8 +15,7 @@
       "allowed_operations": [
         "create",
         "read",
-        "update",
-        "delete"
+        "update"
       ]
     },
     {
@@ -25,8 +23,7 @@
       "allowed_operations": [
         "create",
         "read",
-        "update",
-        "delete"
+        "update"
       ]
     },
     {
@@ -43,8 +40,7 @@
       "allowed_operations": [
         "create",
         "read",
-        "update",
-        "delete"
+        "update"
       ]
     },
     {
@@ -52,7 +48,6 @@
       "allowed_operations": [
         "create",
         "read",
-        "delete",
         "update"
       ]
     },
@@ -95,8 +90,7 @@
       "allowed_operations": [
         "read",
         "create",
-        "update",
-        "delete"
+        "update"
       ]
     },
     {
@@ -132,6 +126,30 @@
     {
       "function_name": "suggestTrackTags",
       "description": "Suggest tags for a track"
+    },
+    {
+      "function_name": "deleteProject",
+      "description": "Safely delete an owned project and its dependent records after explicit confirmation"
+    },
+    {
+      "function_name": "deleteArtPost",
+      "description": "Safely delete an owned ArtPost and clean comments and playlist references"
+    },
+    {
+      "function_name": "mutateTrack",
+      "description": "Safely update or delete an authorized track with dependent cleanup"
+    },
+    {
+      "function_name": "mutateConversationMessage",
+      "description": "Safely edit, react to, or delete an authorized message while preserving thread integrity"
+    },
+    {
+      "function_name": "manageConversation",
+      "description": "Safely create, join, rename, or leave conversations"
+    },
+    {
+      "function_name": "deleteFolder",
+      "description": "Safely delete a folder and detach contained files"
     },
     {
       "entity_name": "StudioPresence",

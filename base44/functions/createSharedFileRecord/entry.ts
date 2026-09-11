@@ -17,12 +17,25 @@ async function hasLargeUploadAccess(entities: any, userId: string): Promise<bool
   ));
 }
 
-function cleanHttpsUrl(value: unknown) {
+const TRUSTED_MEDIA_HOSTS = [
+  'storage.googleapis.com',
+  'base44-user-files.s3.amazonaws.com',
+  'base44-user-files.s3.us-east-1.amazonaws.com',
+  'files.base44.com',
+  'cdn.base44.com',
+];
+
+function cleanUploadedMediaUrl(value: unknown) {
   const raw = String(value || '').trim();
   if (!raw) return '';
   try {
     const parsed = new URL(raw);
-    return parsed.protocol === 'https:' ? parsed.toString() : '';
+    if (parsed.protocol !== 'https:') return '';
+    const hostname = parsed.hostname.toLowerCase();
+    const trusted = TRUSTED_MEDIA_HOSTS.some(
+      (host) => hostname === host || hostname.endsWith('.' + host),
+    );
+    return trusted ? parsed.toString() : '';
   } catch {
     return '';
   }
@@ -35,9 +48,9 @@ Deno.serve(async (req) => {
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const fileUrl = cleanHttpsUrl(body?.file_url);
+    const fileUrl = cleanUploadedMediaUrl(body?.file_url);
     if (!body?.name || !fileUrl) {
-      return Response.json({ error: 'name and a valid HTTPS file_url are required' }, { status: 400 });
+      return Response.json({ error: 'name and a trusted uploaded file are required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;

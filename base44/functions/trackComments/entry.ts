@@ -4,6 +4,10 @@ import {
   acquireChallengeSubmissionLock,
   releaseChallengeSubmissionLock,
 } from '../../shared/challengeSubmissionLock.ts';
+import {
+  acquireTrackLifecycleLock,
+  releaseTrackLifecycleLock,
+} from '../../shared/trackLifecycleLock.ts';
 
 async function canAccessParent(entities: any, user: any, parentType: string, parentId: string) {
   if (parentType === 'art_post') {
@@ -57,11 +61,22 @@ Deno.serve(async (req) => {
 
     const entities = base44.asServiceRole.entities;
     let submissionLockId: string | null = null;
+    let trackLockId: string | null = null;
     if (action === 'create' && parentType === 'challenge_submission') {
       submissionLockId = await acquireChallengeSubmissionLock(entities, parentId);
       if (!submissionLockId) {
         return Response.json(
           { error: 'Submission is being updated. Please retry.' },
+          { status: 409 },
+        );
+      }
+    }
+    if (action === 'create' && parentType === 'track') {
+      trackLockId = await acquireTrackLifecycleLock(entities, parentId);
+      if (!trackLockId) {
+        await releaseChallengeSubmissionLock(entities, submissionLockId);
+        return Response.json(
+          { error: 'Track is being updated. Please retry.' },
           { status: 409 },
         );
       }
@@ -131,6 +146,7 @@ Deno.serve(async (req) => {
 
     return Response.json({ error: 'Unsupported comment action' }, { status: 400 });
     } finally {
+      await releaseTrackLifecycleLock(entities, trackLockId);
       await releaseChallengeSubmissionLock(entities, submissionLockId);
     }
   } catch (error) {

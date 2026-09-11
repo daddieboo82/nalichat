@@ -7,10 +7,20 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 // present in read_by.
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { message_id } = await req.json();
+    const messageId = String(message_id || '').trim();
+    if (!messageId || messageId.length > 256) {
+      return Response.json({ error: 'Valid message_id is required' }, { status: 400 });
     }
 
     const readRate = await consumeHourlyLimit(
@@ -23,12 +33,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Read receipt rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { message_id } = await req.json();
-    if (!message_id) {
-      return Response.json({ error: 'message_id is required' }, { status: 400 });
-    }
-
-    const message = await base44.asServiceRole.entities.Message.get(message_id);
+    const message = await base44.asServiceRole.entities.Message.get(messageId);
     if (!message) {
       return Response.json({ error: 'Message not found' }, { status: 404 });
     }
@@ -48,7 +53,7 @@ Deno.serve(async (req) => {
     }
 
     await base44.asServiceRole.entities.Message.updateMany(
-      { id: message_id },
+      { id: messageId },
       { $addToSet: { read_by: user.id } },
     );
 

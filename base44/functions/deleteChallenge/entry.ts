@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+const DELETE_BATCH_SIZE = 200;
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -34,35 +36,58 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const [submissions, votes] = await Promise.all([
-      entities.ChallengeSubmission.filter({ challenge_id: challenge.id }),
-      entities.ChallengeVote.filter({ challenge_id: challenge.id }),
-    ]);
-
-    let deletedComments = 0;
-    for (const submission of submissions) {
-      const comments = await entities.TrackComment.filter({
-        track_id: submission.id,
-        parent_type: 'challenge_submission',
-      });
-      for (const comment of comments) {
-        await entities.TrackComment.delete(comment.id);
-        deletedComments += 1;
+    let deletedVotes = 0;
+    while (true) {
+      const votes = await entities.ChallengeVote.filter(
+        { challenge_id: challenge.id },
+        '-created_date',
+        DELETE_BATCH_SIZE,
+      );
+      if (votes.length === 0) break;
+      for (const vote of votes) {
+        await entities.ChallengeVote.delete(vote.id);
+        deletedVotes += 1;
       }
+      if (votes.length < DELETE_BATCH_SIZE) break;
     }
 
-    for (const vote of votes) {
-      await entities.ChallengeVote.delete(vote.id);
-    }
-    for (const submission of submissions) {
-      await entities.ChallengeSubmission.delete(submission.id);
+    let deletedSubmissions = 0;
+    let deletedComments = 0;
+    while (true) {
+      const submissions = await entities.ChallengeSubmission.filter(
+        { challenge_id: challenge.id },
+        '-created_date',
+        DELETE_BATCH_SIZE,
+      );
+      if (submissions.length === 0) break;
+      for (const submission of submissions) {
+        while (true) {
+          const comments = await entities.TrackComment.filter(
+            {
+              track_id: submission.id,
+              parent_type: 'challenge_submission',
+            },
+            '-created_date',
+            DELETE_BATCH_SIZE,
+          );
+          if (comments.length === 0) break;
+          for (const comment of comments) {
+            await entities.TrackComment.delete(comment.id);
+            deletedComments += 1;
+          }
+          if (comments.length < DELETE_BATCH_SIZE) break;
+        }
+        await entities.ChallengeSubmission.delete(submission.id);
+        deletedSubmissions += 1;
+      }
+      if (submissions.length < DELETE_BATCH_SIZE) break;
     }
     await entities.Challenge.delete(challenge.id);
 
     return Response.json({
       success: true,
-      deleted_submissions: submissions.length,
-      deleted_votes: votes.length,
+      deleted_submissions: deletedSubmissions,
+      deleted_votes: deletedVotes,
       deleted_comments: deletedComments,
     });
   } catch (error) {

@@ -22,9 +22,11 @@ Deno.serve(async (req) => {
     // Authorize against the local opaque verifier before making any Stripe API
     // request. This prevents the public fallback endpoint from becoming an
     // unauthenticated Stripe session-enumeration / API-amplification surface.
-    const purchases = await base44.asServiceRole.entities.Base44Purchase.filter({
-      checkoutSessionId: normalizedCheckoutId,
-    });
+    const purchases = await base44.asServiceRole.entities.Base44Purchase.filter(
+      { checkoutSessionId: normalizedCheckoutId },
+      '-created_date',
+      2,
+    );
     if (purchases.length !== 1) {
       return Response.json({ error: 'Purchase record not found' }, { status: 404 });
     }

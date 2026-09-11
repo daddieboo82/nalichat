@@ -38,10 +38,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    const subscriptions = await base44.asServiceRole.entities.Subscription.filter({
-      user_id: user.id,
-      provider: 'stripe',
-    });
+    const subscriptions = await base44.asServiceRole.entities.Subscription.filter(
+      {
+        user_id: user.id,
+        provider: 'stripe',
+      },
+      '-created_date',
+      100,
+    );
     const associatedCustomerIds = new Set(
       subscriptions
         .map((subscription: Record<string, unknown>) => subscription.stripe_customer_id)

@@ -51,15 +51,12 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
     async (signal) => {
       if (!conversationId || !currentUser) return;
       try {
-        await base44.entities.Message.create({
+        const res = await base44.functions.invoke("sendConversationMessage", {
           conversation_id: conversationId,
-          sender_id: currentUser.id,
-          sender_name: currentUser.display_name || currentUser.full_name,
-          sender_avatar: currentUser.avatar_url,
-          participant_ids: conversation?.participant_ids || [],
           type: "session",
           text: JSON.stringify({ [SIGNAL_SENTINEL]: true, ...signal }),
         });
+        if (res?.data?.error) throw new Error(res.data.error);
       } catch (e) {
         console.error("Call signal failed:", e);
       }

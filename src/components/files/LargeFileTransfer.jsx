@@ -115,20 +115,6 @@ function LargeFileTransferContent({ currentUser }) {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex justify-end mb-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                onClick={() => {
-                  const file = new File(["dummy large file content"], "large-test-file.zip", { type: "application/zip" });
-                  handleFileChange({ target: { files: [file] } });
-                }}
-              >
-                Mock Upload (Test)
-              </Button>
-            </div>
             <div 
               className="relative border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-8 flex flex-col items-center justify-center text-center bg-secondary/20"
             >

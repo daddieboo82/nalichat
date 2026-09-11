@@ -140,7 +140,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
             {onlineUsers.map(u => (
               <button
                 key={u.id}
-                onClick={() => onStartDM(u)}
+                onClick={() => { Promise.resolve(onStartDM(u)).catch(() => {}); }}
                 className="flex flex-col items-center gap-1 shrink-0 group"
                 title={`Message ${u.display_name || u.full_name}`}
                 aria-label={`Message ${u.display_name || u.full_name}`}
@@ -256,7 +256,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
             {searchResults.discoverUsers.map(user => (
               <button
                 key={user.id}
-                onClick={() => { onStartDM(user); setSearch(""); }}
+                onClick={async () => {\n                  try {\n                    await onStartDM(user);\n                    setSearch("");\n                  } catch {}\n                }}
                 className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-secondary/40 transition-all text-left group"
                 title={`Start conversation with ${user.display_name || user.full_name}`}
                 aria-label={`Start conversation with ${user.display_name || user.full_name}`}

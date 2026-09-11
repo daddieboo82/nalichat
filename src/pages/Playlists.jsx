@@ -36,12 +36,9 @@ export default function Playlists() {
 
   const createPlaylistMutation = useMutation({
     mutationFn: async (data) => {
-      const newPlaylist = await base44.entities.Playlist.create({
-        ...data,
-        owner_id: currentUser.id,
-        owner_name: currentUser.full_name,
-      });
-      return newPlaylist;
+      const created = await base44.functions.invoke("createPlaylist", data);
+      if (created?.data?.error) throw new Error(created.data.error);
+      return created?.data?.playlist;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlists"] });

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const MAX_SOURCE_TRACK_BYTES = 100 * 1024 * 1024;
 
@@ -67,6 +68,19 @@ Deno.serve(async (req) => {
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     if (user.is_banned) {
       return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
+    const createRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'challenge_create',
+      20,
+    );
+    if (!createRate.allowed) {
+      return Response.json({ error: 'Challenge creation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     const body = await req.json();

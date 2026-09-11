@@ -39,8 +39,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Squad action rate limit exceeded. Please try again later.' }, { status: 429 });
     }
     const [asA, asB] = await Promise.all([
-      entities.Squad.filter({ member_a_id: user.id }),
-      entities.Squad.filter({ member_b_id: user.id }),
+      entities.Squad.filter({ member_a_id: user.id }, '-created_date', 100),
+      entities.Squad.filter({ member_b_id: user.id }, '-created_date', 100),
     ]);
     for (const stale of [...asA, ...asB].filter((s) => s.status === 'pending' && isInviteExpired(s))) {
       await entities.Squad.update(stale.id, { status: 'ended' });

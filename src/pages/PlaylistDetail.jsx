@@ -57,17 +57,14 @@ export default function PlaylistDetail() {
       });
       if (published?.data?.error) throw new Error(published.data.error);
       const newPost = published?.data?.post;
-      const updated = {
-        ...playlist,
-        track_ids: [...(playlist.track_ids || []), newPost.id]
-      };
+      if (!newPost?.id) throw new Error("Track was not created");
       const res = await base44.functions.invoke("mutatePlaylist", {
-        action: "remove_track",
+        action: "add_track",
         playlistId,
-        trackId,
+        trackId: newPost.id,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      return updated;
+      return res?.data?.playlist;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
@@ -85,17 +82,13 @@ export default function PlaylistDetail() {
 
   const removeTrackMutation = useMutation({
     mutationFn: async (trackId) => {
-      const updated = {
-        ...playlist,
-        track_ids: playlist.track_ids.filter((id) => id !== trackId),
-      };
       const res = await base44.functions.invoke("mutatePlaylist", {
-        action: "add_track",
+        action: "remove_track",
         playlistId,
-        trackId: newPost.id,
+        trackId,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      return updated;
+      return res?.data?.playlist;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });

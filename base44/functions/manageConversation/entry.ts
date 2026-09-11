@@ -89,8 +89,18 @@ Deno.serve(async (req) => {
         }
         const otherUserId = participantIds.find((id: string) => id !== user.id);
         const otherUser = otherUserId ? await entities.User.get(otherUserId).catch(() => null) : null;
-        if (!otherUser) return Response.json({ error: 'Recipient not found' }, { status: 404 });
-        if (user.is_banned && otherUser.role !== 'admin') {
+        const otherIsAdmin = otherUser?.role === 'admin';
+        const otherIsDiscoverable = Boolean(
+          otherUser
+          && otherUser.onboarding_completed
+          && !otherUser.is_banned
+          && String(otherUser.display_name || '').trim()
+        );
+        if (!otherUser || (!otherIsAdmin && !otherIsDiscoverable)) {
+          // Keep missing, hidden, and ineligible accounts indistinguishable.
+          return Response.json({ error: 'Recipient unavailable' }, { status: 404 });
+        }
+        if (user.is_banned && !otherIsAdmin) {
           return Response.json({ error: 'banned' }, { status: 403 });
         }
 
@@ -120,8 +130,18 @@ Deno.serve(async (req) => {
       const resolvedUsers = await Promise.all(
         uniqueOtherIds.map((id: string) => entities.User.get(id).catch(() => null)),
       );
-      if (resolvedUsers.some((candidate: any) => !candidate)) {
-        return Response.json({ error: 'One or more participants were not found' }, { status: 400 });
+      if (resolvedUsers.some((candidate: any) => (
+        !candidate
+        || (
+          candidate.role !== 'admin'
+          && (
+            !candidate.onboarding_completed
+            || candidate.is_banned
+            || !String(candidate.display_name || '').trim()
+          )
+        )
+      ))) {
+        return Response.json({ error: 'One or more participants are unavailable' }, { status: 400 });
       }
 
       const conversation = await entities.Conversation.create({

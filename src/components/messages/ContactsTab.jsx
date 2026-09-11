@@ -29,7 +29,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
 
   const { data: contacts = [], isLoading: loadingContacts } = useQuery({
     queryKey: ["contacts", currentUserId],
-    queryFn: () => currentUserId ? base44.entities.Contact.filter({ user_id: currentUserId }) : [],
+    queryFn: () => currentUserId ? base44.entities.Contact.filter({ user_id: currentUserId }, "-created_date", 500) : [],
     enabled: !!currentUserId,
   });
 

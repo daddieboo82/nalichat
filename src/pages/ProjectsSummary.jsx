@@ -86,9 +86,9 @@ export default function ProjectsSummary() {
       if (!user) return;
       try {
         const [projectsRes, milestonesRes, filesRes] = await Promise.all([
-          base44.entities.Project.list(),
-          base44.entities.Milestone.list(),
-          base44.entities.SharedFile.list()
+          base44.entities.Project.list("-created_date", 500),
+          base44.entities.Milestone.list("-created_date", 500),
+          base44.entities.SharedFile.list("-created_date", 500)
         ]);
         
         const myProjects = projectsRes.filter(p => p.owner_id === user.id || (p.collaborator_ids && p.collaborator_ids.includes(user.id)));

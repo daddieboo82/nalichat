@@ -28,7 +28,7 @@ export default function QuickAccessGrid() {
     queryKey: ["quick-access-unread"],
     queryFn: async () => {
       try {
-        const conversations = await base44.entities.Conversation.list();
+        const conversations = await base44.entities.Conversation.list("-last_message_at", 500);
         let count = 0;
         for (const conv of conversations) {
           if (!conv.last_message_at) continue;

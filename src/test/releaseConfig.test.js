@@ -731,6 +731,16 @@ describe('release configuration', () => {
     expect(external).toContain("accepted: true");
   });
 
+  it('minimizes public user discovery metadata', async () => {
+    const publicUsers = await readText('base44/functions/listPublicUsers/entry.ts');
+    expect(publicUsers).toContain("role: 'user'");
+    expect(publicUsers).not.toContain("role: u.role === 'admin'");
+    expect(publicUsers).not.toContain('created_date: u.created_date');
+    for (const privateField of ['email:', 'phone:', 'birthdate:', 'stripe_customer_id:', 'trial_used_at:', 'is_banned:', 'timeout_until:']) {
+      expect(publicUsers).not.toContain(privateField);
+    }
+  });
+
   it('prevents contact ownership reassignment', async () => {
     const contact = await readJson('base44/entities/Contact.jsonc');
     expect(contact.properties.user_id.rls?.write?.user_condition?.role).toBe('admin');

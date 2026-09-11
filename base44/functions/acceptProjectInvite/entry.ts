@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
@@ -10,6 +11,20 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
+    const inviteRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'project_invite_accept',
+      60,
+    );
+    if (!inviteRate.allowed) {
+      return Response.json({ error: 'Invite acceptance rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
 
     const { projectId, token } = await req.json();
     if (!projectId || !token) {

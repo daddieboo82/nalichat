@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       const isRegistered = users.length > 0;
       if (!isRegistered) {
         // Do not disclose whether an email address is registered.
-        return Response.json({ success: true, method: 'email', accepted: true });
+        return Response.json({ success: true, method: 'email' });
       }
       // Sanitize the message body to remove CRLF sequences
       const cleanMessage = String(message)

@@ -216,14 +216,14 @@ Deno.serve(async (req) => {
     if (!pendingSubscription) {
       const eligibility = trialEligibility(user.trial_used_at, subscriptions);
       if (eligibility.eligible) {
+        // The checkout lease above guarantees only this requestKey owns the
+        // active checkout slot. If an older abandoned checkout left a stale
+        // trial_claim_id behind, the new lease holder may safely replace it.
         await base44.asServiceRole.entities.User.updateMany(
           {
             id: user.id,
             trial_used_at: null,
-            $or: [
-              { trial_claim_id: null },
-              { trial_claim_id: requestKey },
-            ],
+            stripe_checkout_claim_id: requestKey,
           },
           {
             $set: {

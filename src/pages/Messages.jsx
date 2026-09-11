@@ -98,10 +98,11 @@ export default function Messages() {
     };
   }, [currentUser, queryClient, selectedConvId]);
 
-  const { data: users = [] } = useQuery({
+  const { data: users = [], isError: usersError } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
       const res = await base44.functions.invoke('listPublicUsers', {});
+      if (res?.data?.error) throw new Error(res.data.error);
       return res.data?.users || [];
     },
     refetchInterval: 30_000,
@@ -473,6 +474,11 @@ export default function Messages() {
           </div>
 
           <div className="flex-1 min-h-0 overflow-hidden relative bg-background/40">
+            {usersError && (
+              <div className="mx-4 mb-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive" role="alert">
+                Couldn't load people. Names and new-chat discovery may be unavailable until you refresh.
+              </div>
+            )}
             <AnimatePresence mode="wait">
               {sidebarTab === "chats" ? (
                 <motion.div key="chats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col bg-background/40">

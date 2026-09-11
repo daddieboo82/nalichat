@@ -24,31 +24,87 @@
       }
     },
     "display_name": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "birthdate": {
       "type": "string",
       "format": "date",
-      "description": "User's date of birth"
+      "description": "User's date of birth",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "bio": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "location": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "avatar_url": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "genres": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "default": []
+      "default": [],
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "phone": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "onboarding_completed": {
       "type": "boolean",
@@ -66,7 +122,15 @@
     "welcome_tour_completed": {
       "type": "boolean",
       "default": false,
-      "description": "Whether the user has completed or dismissed the guided welcome tour"
+      "description": "Whether the user has completed or dismissed the guided welcome tour",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "reengagement_sent_at": {
       "type": "string",
@@ -159,7 +223,15 @@
         "off"
       ],
       "default": "proactive",
-      "description": "How omnipresent Nali is across the app: proactive (auto hints), minimal (on-demand), or off (hidden)"
+      "description": "How omnipresent Nali is across the app: proactive (auto hints), minimal (on-demand), or off (hidden)",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "stripe_customer_id": {
       "type": "string",
@@ -232,15 +304,39 @@
         "ar"
       ],
       "default": "artist",
-      "description": "Public music-industry role shown on the profile. This is separate from the protected authorization role."
+      "description": "Public music-industry role shown on the profile. This is separate from the protected authorization role.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "website": {
       "type": "string",
-      "description": "Optional public creator website URL"
+      "description": "Optional public creator website URL",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "cover_url": {
       "type": "string",
-      "description": "Public profile cover image URL"
+      "description": "Public profile cover image URL",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "rls": {

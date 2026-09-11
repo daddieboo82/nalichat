@@ -1935,7 +1935,7 @@ export default function Studio() {
               open={bounceOpen}
               onOpenChange={setBounceOpen}
               projectTitle={projectName}
-              project={{ genre: "", bpm }}
+              project={{ id: roomId, genre: "", bpm }}
               canPublish={canEditProject}
               tracks={tracks}
               redirectAfter={bounceRedirect}

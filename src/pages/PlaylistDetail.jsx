@@ -61,9 +61,12 @@ export default function PlaylistDetail() {
         ...playlist,
         track_ids: [...(playlist.track_ids || []), newPost.id]
       };
-      await base44.entities.Playlist.update(playlistId, {
-        track_ids: updated.track_ids
+      const res = await base44.functions.invoke("mutatePlaylist", {
+        action: "remove_track",
+        playlistId,
+        trackId,
       });
+      if (res?.data?.error) throw new Error(res.data.error);
       return updated;
     },
     onSuccess: () => {
@@ -86,9 +89,12 @@ export default function PlaylistDetail() {
         ...playlist,
         track_ids: playlist.track_ids.filter((id) => id !== trackId),
       };
-      await base44.entities.Playlist.update(playlistId, {
-        track_ids: updated.track_ids,
+      const res = await base44.functions.invoke("mutatePlaylist", {
+        action: "add_track",
+        playlistId,
+        trackId: newPost.id,
       });
+      if (res?.data?.error) throw new Error(res.data.error);
       return updated;
     },
     onSuccess: () => {

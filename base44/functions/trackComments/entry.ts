@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 async function canAccessParent(entities: any, user: any, parentType: string, parentId: string) {
   if (parentType === 'art_post') {
@@ -62,6 +63,12 @@ Deno.serve(async (req) => {
 
     if (action === 'create') {
       if (!user?.id) return Response.json({ error: 'Sign in to comment' }, { status: 401 });
+
+      const rate = await consumeHourlyLimit(entities, user.id, 'track_comment', 120);
+      if (!rate.allowed) {
+        return Response.json({ error: 'Comment rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+
       const text = String(body?.text || '').trim().slice(0, 2000);
       if (!text) return Response.json({ error: 'Comment text is required' }, { status: 400 });
 

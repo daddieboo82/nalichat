@@ -703,6 +703,13 @@ describe('release configuration', () => {
     expect(onboarding).not.toContain('user: updated');
   });
 
+  it('does not reveal presence from unilateral contact relationships', async () => {
+    const listUsers = await readText('base44/functions/listPublicUsers/entry.ts');
+    expect(listUsers).toContain('Contact.filter({ contact_user_id: user.id })');
+    expect(listUsers).toContain('inboundContactOwners.has(contact.contact_user_id)');
+    expect(listUsers).toContain('presenceVisibleTo.add(contact.contact_user_id)');
+  });
+
   it('enforces moderation state and cost bounds on outbound messaging', async () => {
     const external = await readText('base44/functions/sendExternalMessage/entry.ts');
     const invite = await readText('base44/functions/sendSmsInvite/entry.ts');

@@ -18,7 +18,7 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
 
   const { data: versions = [] } = useQuery({
     queryKey: ["track-versions", track?.id],
-    queryFn: () => base44.entities.TrackVersion.filter({ track_id: track.id }, "-version_number"),
+    queryFn: () => base44.entities.TrackVersion.filter({ track_id: track.id }, "-version_number", 500),
     enabled: !!track?.id && open,
   });
 

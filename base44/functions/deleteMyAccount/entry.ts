@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { stripeRequest } from '../../shared/stripe.ts';
 import { acquireAccountDeletionLock, releaseAccountDeletionLock } from '../../shared/accountDeletionLock.ts';
+import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 const CLEANUP_BATCH_SIZE = 200;
 
@@ -50,6 +51,22 @@ async function processPagedRows(
       processed += 1;
     }
     if (rows.length < CLEANUP_BATCH_SIZE) return processed;
+  }
+}
+
+async function withProjectMembershipLock(
+  entities: any,
+  projectId: string,
+  task: () => Promise<unknown>,
+) {
+  const lockId = await acquireProjectMembershipLock(entities, projectId);
+  if (!lockId) {
+    throw new Error('Project membership is being updated. Please retry account deletion.');
+  }
+  try {
+    return await task();
+  } finally {
+    await releaseProjectMembershipLock(entities, lockId);
   }
 }
 
@@ -402,7 +419,7 @@ Deno.serve(async (req) => {
     await processMatchingBatches(
       entities.Project,
       { owner_id: user.id },
-      async (project) => {
+      async (project) => withProjectMembershipLock(entities, project.id, async () => {
       const collaborators = Array.isArray(project.collaborator_ids)
         ? project.collaborator_ids.filter((id: string) => id !== user.id)
         : [];
@@ -485,14 +502,14 @@ Deno.serve(async (req) => {
           await entity.update(row.id, update);
         });
       }
-      },
+      }),
     );
 
     // Remove the deleted account from projects where it was only a collaborator.
     await processMatchingBatches(
       entities.Project,
       { collaborator_ids: user.id },
-      async (project) => {
+      async (project) => withProjectMembershipLock(entities, project.id, async () => {
       const collaboratorIds = Array.isArray(project.collaborator_ids)
         ? project.collaborator_ids.filter((id: string) => id !== user.id)
         : [];
@@ -542,7 +559,7 @@ Deno.serve(async (req) => {
           await entity.update(row.id, update);
         });
       }
-      },
+      }),
     );
 
     // Public challenge records may have other users' submissions/votes, so keep

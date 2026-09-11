@@ -40,24 +40,15 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
 
     setSending(true);
     try {
-      // Find or create conversation
-      const conversations = await base44.entities.Conversation.filter({});
-      let conversation = conversations.find(
-        c =>
-          c.type === "dm" &&
-          c.participant_ids.includes(currentUser.id) &&
-          c.participant_ids.includes(selectedUser.id)
-      );
-
-      if (!conversation) {
-        const created = await base44.functions.invoke("manageConversation", {
-          action: "create_dm",
-          participant_ids: [selectedUser.id],
-        });
-        if (created?.data?.error) throw new Error(created.data.error);
-        conversation = created?.data?.conversation;
-        if (!conversation?.id) throw new Error("Conversation was not created");
-      }
+      // Let the server perform the bounded, authorization-aware lookup and
+      // create the DM only when no existing conversation matches.
+      const created = await base44.functions.invoke("manageConversation", {
+        action: "create_dm",
+        participant_ids: [selectedUser.id],
+      });
+      if (created?.data?.error) throw new Error(created.data.error);
+      const conversation = created?.data?.conversation;
+      if (!conversation?.id) throw new Error("Conversation was not created");
 
       const send = await base44.functions.invoke("sendConversationMessage", {
         conversation_id: conversation.id,

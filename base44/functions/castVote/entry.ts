@@ -74,10 +74,17 @@ export default async function(req) {
     }
 
     // Increment only after the unique vote record was created successfully.
-    await entities.ChallengeSubmission.updateMany(
-      { id: submission_id },
-      { $inc: { vote_count: 1 } },
-    );
+    // If the counter update fails, remove the vote ledger so the voter can
+    // retry instead of being permanently recorded without a counted vote.
+    try {
+      await entities.ChallengeSubmission.updateMany(
+        { id: submission_id },
+        { $inc: { vote_count: 1 } },
+      );
+    } catch (countError) {
+      await entities.ChallengeVote.delete(id).catch(() => {});
+      throw countError;
+    }
 
     const updated = await entities.ChallengeSubmission.get(submission_id);
     return Response.json({ success: true, vote_count: updated.vote_count });

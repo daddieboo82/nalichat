@@ -78,8 +78,12 @@ async function awardOnce(entities: any, userId: string, squad: any, progress: an
       credits: CREDITS_REWARD,
       week_key: progress.week_key,
     });
-  } catch {
-    return false;
+  } catch (createError) {
+    const existing = await entities.SquadReward.get(rewardId).catch(() => null);
+    if (existing?.user_id === userId && existing?.progress_id === progress.id) {
+      return false;
+    }
+    throw createError;
   }
   try {
     await entities.User.updateMany({ id: userId }, { $inc: { squad_credits: CREDITS_REWARD } });
@@ -128,6 +132,10 @@ async function activityId(userId: string, sourceType: string, sourceId: string) 
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -174,8 +182,17 @@ Deno.serve(async (req) => {
         source_type: sourceType,
         source_id: String(sourceId),
       });
-    } catch {
-      duplicate = true;
+    } catch (createError) {
+      const existing = await entities.SquadActivity.get(ledgerId).catch(() => null);
+      if (
+        existing?.user_id === user.id
+        && existing?.source_type === sourceType
+        && existing?.source_id === String(sourceId)
+      ) {
+        duplicate = true;
+      } else {
+        throw createError;
+      }
     }
 
     const member = squad.member_a_id === user.id ? 'a' : 'b';

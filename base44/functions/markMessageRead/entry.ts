@@ -22,19 +22,24 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Message not found' }, { status: 404 });
     }
 
-    // Don't mark your own messages as read
+    if (!Array.isArray(message.participant_ids) || !message.participant_ids.includes(user.id)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Don't mark your own messages as read.
     if (message.sender_id === user.id) {
       return Response.json({ success: true, alreadyRead: true });
     }
 
-    const readBy = Array.isArray(message.read_by) ? message.read_by : [];
-    if (readBy.includes(user.id)) {
+    const alreadyRead = Array.isArray(message.read_by) && message.read_by.includes(user.id);
+    if (alreadyRead) {
       return Response.json({ success: true, alreadyRead: true });
     }
 
-    await base44.asServiceRole.entities.Message.update(message_id, {
-      read_by: [...readBy, user.id],
-    });
+    await base44.asServiceRole.entities.Message.updateMany(
+      { id: message_id },
+      { $addToSet: { read_by: user.id } },
+    );
 
     return Response.json({ success: true, alreadyRead: false });
   } catch (error) {

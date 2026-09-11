@@ -42,7 +42,16 @@
       "description": "Optional user-given label, e.g. 'First mix', 'After vocal tuning'"
     },
     "file_url": {
-      "type": "string"
+      "type": "string",
+      "description": "Immutable media URL captured when the version is created.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "volume": {
       "type": "number"

@@ -807,6 +807,14 @@ describe('release configuration', () => {
     expect(bell).toContain('setInterval(refreshNotifications, 15000)');
   });
 
+  it('validates in-app notification links before navigation', async () => {
+    const bell = await readText('src/components/notifications/NotificationBell.jsx');
+    expect(bell).toContain('function safeNotificationPath');
+    expect(bell).toContain('parsed.origin !== window.location.origin');
+    expect(bell).toContain('const safeLink = safeNotificationPath(n.link)');
+    expect(bell).not.toContain('to={n.link}');
+  });
+
   it('counts only current-week squad activity and blocks moderated reward claims', async () => {
     const activity = await readText('base44/functions/recordSquadActivity/entry.ts');
 

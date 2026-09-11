@@ -781,6 +781,19 @@ describe('release configuration', () => {
     expect(messages).toContain('refetchInterval: 30_000');
   });
 
+  it('avoids raw realtime payload subscriptions for chat and presence data', async () => {
+    const messages = await readText('src/pages/Messages.jsx');
+    const typing = await readText('src/hooks/useTypingIndicator.js');
+    const studioPresence = await readText('src/hooks/useStudioPresence.js');
+
+    expect(messages).not.toContain('entities.Message.subscribe');
+    expect(messages).not.toContain('entities.Conversation.subscribe');
+    expect(typing).not.toContain('entities.TypingStatus.subscribe');
+    expect(typing).toContain('TypingStatus.filter({ conversation_id: conversationId })');
+    expect(studioPresence).not.toContain('entities.StudioPresence.subscribe');
+    expect(studioPresence).toContain('setInterval(refresh, 5000)');
+  });
+
   it('counts only current-week squad activity and blocks moderated reward claims', async () => {
     const activity = await readText('base44/functions/recordSquadActivity/entry.ts');
 

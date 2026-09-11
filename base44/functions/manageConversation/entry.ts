@@ -11,6 +11,15 @@ Deno.serve(async (req) => {
     const action = body?.action;
     const entities = base44.asServiceRole.entities;
 
+    const timeoutActive = user.timeout_until && new Date(user.timeout_until).getTime() > Date.now();
+    if (timeoutActive && ['create_dm', 'create_group', 'create_public', 'join_public', 'rename'].includes(action)) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
+    if (user.is_banned && ['create_group', 'create_public', 'join_public', 'rename'].includes(action)) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+
     if (['create_dm', 'create_group', 'create_public'].includes(action)) {
       const rate = await consumeHourlyLimit(entities, user.id, 'conversation_create', 60);
       if (!rate.allowed) {
@@ -32,6 +41,9 @@ Deno.serve(async (req) => {
         const otherUserId = participantIds.find((id: string) => id !== user.id);
         const otherUser = otherUserId ? await entities.User.get(otherUserId).catch(() => null) : null;
         if (!otherUser) return Response.json({ error: 'Recipient not found' }, { status: 404 });
+        if (user.is_banned && otherUser.role !== 'admin') {
+          return Response.json({ error: 'banned' }, { status: 403 });
+        }
 
         const candidates = await entities.Conversation.filter({ type: 'dm' });
         const existing = candidates.find((conversation: any) => {

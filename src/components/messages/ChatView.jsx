@@ -369,6 +369,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
         <div className="w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-visible bg-background/90 backdrop-blur-2xl border border-border/50">
           <ChatInput
             key={conversation?.id || "chat"}
+            conversationId={conversation?.id}
             onSend={(payload) => {
               if (editingMessage && payload.type === 'text') {
                 onEditMessage(editingMessage.id, payload.text);

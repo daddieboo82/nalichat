@@ -1,0 +1,15 @@
+{
+  "name": "dispatchScheduledMessages",
+  "entry": "entry.ts",
+  "automations": [
+    {
+      "type": "scheduled",
+      "name": "dispatch_scheduled_messages_each_minute",
+      "description": "Claims and delivers due scheduled messages in UTC.",
+      "is_active": true,
+      "schedule_mode": "recurring",
+      "schedule_type": "cron",
+      "cron_expression": "* * * * *"
+    }
+  ]
+}

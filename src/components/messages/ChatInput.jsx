@@ -11,8 +11,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { authorizedUpload } from "@/lib/authorizedUpload";
+import ScheduledMessagesDialog from "./ScheduledMessagesDialog";
 
-export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessage, onCancelEdit, disabled, onTyping }) {
+export default function ChatInput({ conversationId, onSend, replyTo, onCancelReply, editingMessage, onCancelEdit, disabled, onTyping }) {
   const [text, setText] = useState("");
 
   useEffect(() => {
@@ -428,6 +429,17 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
         >
           <Paperclip className="w-5 h-5" />
         </button>
+
+        <ScheduledMessagesDialog
+          conversationId={conversationId}
+          draftText={text}
+          draftUnavailable={!!replyTo || !!editingMessage}
+          onDraftScheduled={() => {
+            setText("");
+            onCancelReply?.();
+            onCancelEdit?.();
+          }}
+        />
 
         {/* Recording or textarea */}
         {isRecording ? (

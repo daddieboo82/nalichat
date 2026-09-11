@@ -85,6 +85,14 @@
         "type": "string"
       },
       "description": "User IDs of the conversation's participants at send time, copied from the Conversation \u2014 used to scope reads"
+    },
+    "scheduled_message_id": {
+      "type": "string",
+      "description": "Server-only delivery key used to reconcile scheduled-message retries.",
+      "rls": {
+        "read": false,
+        "write": false
+      }
     }
   },
   "required": [

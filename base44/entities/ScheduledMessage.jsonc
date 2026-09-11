@@ -1,0 +1,106 @@
+{
+  "name": "ScheduledMessage",
+  "type": "object",
+  "description": "Server-owned pending and completed scheduled message deliveries.",
+  "properties": {
+    "sender_id": {
+      "type": "string"
+    },
+    "conversation_id": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["text"]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        }
+      },
+      "required": ["type", "text"]
+    },
+    "scheduled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "dispatch_after": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["scheduled", "processing", "sent", "canceled", "failed"]
+    },
+    "client_request_key": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 128
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resulting_message_id": {
+      "type": "string"
+    },
+    "failure_code": {
+      "type": "string",
+      "enum": [
+        "ENTITLEMENT_REVOKED",
+        "SENDER_UNAVAILABLE",
+        "SENDER_NOT_MEMBER",
+        "SENDER_BANNED",
+        "SENDER_TIMED_OUT",
+        "CONVERSATION_UNAVAILABLE",
+        "MODERATION_REJECTED",
+        "DELIVERY_RETRY_EXHAUSTED"
+      ]
+    },
+    "claim_token": {
+      "type": "string"
+    },
+    "claim_expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "attempt_count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "preview_pending": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "sender_id",
+    "conversation_id",
+    "payload",
+    "scheduled_at",
+    "dispatch_after",
+    "status",
+    "client_request_key",
+    "created_at",
+    "updated_at"
+  ],
+  "rls": {
+    "create": false,
+    "read": false,
+    "update": false,
+    "delete": false
+  }
+}

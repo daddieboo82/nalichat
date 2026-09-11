@@ -39,6 +39,14 @@
     "message_id": {
       "type": "string"
     },
+    "scheduled_message_id": {
+      "type": "string",
+      "description": "Server-only source schedule for a delivery-time moderation decision.",
+      "rls": {
+        "read": false,
+        "write": false
+      }
+    },
     "action_taken": {
       "type": "string",
       "enum": [

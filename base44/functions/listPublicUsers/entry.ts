@@ -59,7 +59,13 @@ export default async function(req) {
       level: Number(u.level || Math.floor(Number(u.xp || 0) / 200) + 1),
       viral_concepts_generated: Number(u.viral_concepts_generated || 0),
       achievement_count: achievementCount[u.id] || 0,
-      is_online: presenceVisibleTo.has(u.id) ? Boolean(u.is_online) : false,
+      is_online: presenceVisibleTo.has(u.id)
+        ? Boolean(
+            u.is_online
+            && typeof u.last_seen === 'string'
+            && Date.now() - Date.parse(u.last_seen) < 2 * 60 * 1000
+          )
+        : false,
     }));
 
     return Response.json({ users: publicUsers });

@@ -584,6 +584,22 @@ describe('release configuration', () => {
     expect(versionHistory).not.toContain('entities.TrackVersion.delete');
   });
 
+  it('routes destructive project data deletion through cleanup-aware server functions', async () => {
+    const cases = [
+      ['base44/entities/Project.jsonc', 'base44/functions/deleteProject/entry.ts', 'Project'],
+      ['base44/entities/Track.jsonc', 'base44/functions/mutateTrack/entry.ts', 'Track'],
+      ['base44/entities/Folder.jsonc', 'base44/functions/deleteFolder/entry.ts', 'Folder'],
+      ['base44/entities/Milestone.jsonc', 'base44/functions/mutateMilestone/entry.ts', 'Milestone'],
+    ];
+
+    for (const [schemaPath, functionPath, entityName] of cases) {
+      const schema = await readJson(schemaPath);
+      const fn = await readText(functionPath);
+      expect(schema.rls.delete?.user_condition?.role).toBe('admin');
+      expect(fn).toContain(`entities.${entityName}.delete`);
+    }
+  });
+
 
   it('enforces configured challenge voting windows server-side', async () => {
     const vote = await readText('base44/functions/castVote/entry.ts');

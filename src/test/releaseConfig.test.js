@@ -781,6 +781,17 @@ describe('release configuration', () => {
     expect(messages).toContain('refetchInterval: 30_000');
   });
 
+  it('counts only current-week squad activity and blocks moderated reward claims', async () => {
+    const activity = await readText('base44/functions/recordSquadActivity/entry.ts');
+
+    expect(activity).toContain('function happenedThisWeek');
+    expect(activity).toContain('happenedThisWeek(message.created_date)');
+    expect(activity).toContain('happenedThisWeek(post.created_date)');
+    expect(activity).toContain('happenedThisWeek(milestone.completed_at)');
+    expect(activity).toContain('if (user.is_banned)');
+    expect(activity).toContain("error: 'timed_out'");
+  });
+
   it('hides public-room latest message text from nonmembers', async () => {
     const conversation = await readJson('base44/entities/Conversation.jsonc');
     const rule = conversation.properties.last_message_text.rls?.read;

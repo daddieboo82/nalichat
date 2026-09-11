@@ -26,13 +26,14 @@ Deno.serve(async (req) => {
     }
 
     // --- Gather a lightweight snapshot of app data ---
-    const [artPosts, projects, tracks, sharedFiles, subscriptions, users] = await Promise.all([
+    const [artPosts, projects, tracks, sharedFiles, subscriptions, users, admins] = await Promise.all([
       base44.asServiceRole.entities.ArtPost.list('-created_date', 200),
       base44.asServiceRole.entities.Project.list('-created_date', 200),
       base44.asServiceRole.entities.Track.list('-created_date', 200),
       base44.asServiceRole.entities.SharedFile.list('-created_date', 200),
       base44.asServiceRole.entities.Subscription.list('-created_date', 200),
-      base44.asServiceRole.entities.User.list(),
+      base44.asServiceRole.entities.User.list('-created_date', 200),
+      base44.asServiceRole.entities.User.filter({ role: 'admin' }, '-created_date', 100),
     ]);
 
     // --- Detect concrete data issues ---
@@ -98,9 +99,7 @@ ${dataSummary}`,
     const report = llmResult?.report || dataSummary;
     const needsAttention = !!llmResult?.needs_attention || issues.length > 0;
 
-    // --- Notify all admins ---
-    const admins = users.filter(u => u.role === 'admin');
-
+    // --- Notify admins without requiring a full user-table scan ---
     await Promise.all(
       admins.map(admin =>
         base44.asServiceRole.entities.Notification.create({

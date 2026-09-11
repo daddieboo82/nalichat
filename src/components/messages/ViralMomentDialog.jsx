@@ -52,9 +52,13 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
     return `${result.caption}\n\n${scriptText}\n\n#${result.hashtags?.join(" #")}\n\nMade in NaliChat`;
   };
 
-  const handleCopy = () => {
-    copyToClipboard(buildShareText());
-    toast.success("Copied to clipboard!");
+  const handleCopy = async () => {
+    const copied = await copyToClipboard(buildShareText());
+    if (copied) {
+      toast.success("Copied to clipboard!");
+    } else {
+      toast.error("Couldn't copy the script. Please copy it manually.");
+    }
   };
 
   const handleShare = async () => {

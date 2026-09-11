@@ -1,6 +1,18 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+function pruneReactions(reactions: unknown, participantIds: string[]) {
+  if (!reactions || typeof reactions !== 'object' || Array.isArray(reactions)) return {};
+  const allowed = new Set(participantIds);
+  return Object.fromEntries(
+    Object.entries(reactions as Record<string, unknown>).filter(([key]) => {
+      const separator = key.lastIndexOf('__');
+      if (separator < 0) return false;
+      return allowed.has(key.slice(separator + 2));
+    }),
+  );
+}
+
 async function syncConversationAudience(entities: any, conversationId: string, participantIds: string[]) {
   const [messages, typingRows] = await Promise.all([
     entities.Message.filter({ conversation_id: conversationId }),
@@ -15,20 +27,27 @@ async function syncConversationAudience(entities: any, conversationId: string, p
         read_by: Array.isArray(message.read_by)
           ? message.read_by.filter((readerId: string) => participantIds.includes(readerId))
           : [],
+        reactions: pruneReactions(message.reactions, participantIds),
       })),
     );
   }
 
-  for (let i = 0; i < typingRows.length; i += 100) {
+  const activeTypingRows = typingRows.filter((row: any) => participantIds.includes(row.user_id));
+  const departedTypingRows = typingRows.filter((row: any) => !participantIds.includes(row.user_id));
+
+  for (let i = 0; i < activeTypingRows.length; i += 100) {
     await entities.TypingStatus.bulkUpdate(
-      typingRows.slice(i, i + 100).map((row: any) => ({
+      activeTypingRows.slice(i, i + 100).map((row: any) => ({
         id: row.id,
         participant_ids: participantIds,
       })),
     );
   }
+  for (const row of departedTypingRows) {
+    await entities.TypingStatus.delete(row.id);
+  }
 
-  return { messages: messages.length, typingRows: typingRows.length };
+  return { messages: messages.length, typingRows: activeTypingRows.length, removedTypingRows: departedTypingRows.length };
 }
 
 Deno.serve(async (req) => {

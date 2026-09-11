@@ -57,6 +57,7 @@ export default async function(req) {
     const body = await req.json().catch(() => ({}));
     const requestedUserId = String(body?.userId || '').trim();
     const includeAchievementCounts = body?.includeAchievementCounts === true;
+    const includePresence = body?.includePresence === true;
     if (requestedUserId.length > 256) {
       return Response.json({ error: 'Invalid userId' }, { status: 400 });
     }
@@ -71,21 +72,27 @@ export default async function(req) {
               500,
             )
           : Promise.resolve([]),
-        base44.asServiceRole.entities.Contact.filter(
-          { user_id: user.id },
-          '-created_date',
-          MAX_DISCOVERY_CONTACTS,
-        ),
-        base44.asServiceRole.entities.Contact.filter(
-          { contact_user_id: user.id },
-          '-created_date',
-          MAX_DISCOVERY_CONTACTS,
-        ),
-        base44.asServiceRole.entities.Conversation.filter(
-          { participant_ids: user.id },
-          '-last_message_at',
-          MAX_DISCOVERY_CONVERSATIONS,
-        ),
+        includePresence
+          ? base44.asServiceRole.entities.Contact.filter(
+              { user_id: user.id },
+              '-created_date',
+              MAX_DISCOVERY_CONTACTS,
+            )
+          : Promise.resolve([]),
+        includePresence
+          ? base44.asServiceRole.entities.Contact.filter(
+              { contact_user_id: user.id },
+              '-created_date',
+              MAX_DISCOVERY_CONTACTS,
+            )
+          : Promise.resolve([]),
+        includePresence
+          ? base44.asServiceRole.entities.Conversation.filter(
+              { participant_ids: user.id },
+              '-last_message_at',
+              MAX_DISCOVERY_CONVERSATIONS,
+            )
+          : Promise.resolve([]),
       ]);
 
       if (
@@ -126,21 +133,27 @@ export default async function(req) {
       includeAchievementCounts
         ? base44.asServiceRole.entities.Achievement.list('-created_date', MAX_DISCOVERY_ACHIEVEMENTS)
         : Promise.resolve([]),
-      base44.asServiceRole.entities.Contact.filter(
-        { user_id: user.id },
-        '-created_date',
-        MAX_DISCOVERY_CONTACTS,
-      ),
-      base44.asServiceRole.entities.Contact.filter(
-        { contact_user_id: user.id },
-        '-created_date',
-        MAX_DISCOVERY_CONTACTS,
-      ),
-      base44.asServiceRole.entities.Conversation.filter(
-        { participant_ids: user.id },
-        '-last_message_at',
-        MAX_DISCOVERY_CONVERSATIONS,
-      ),
+      includePresence
+        ? base44.asServiceRole.entities.Contact.filter(
+            { user_id: user.id },
+            '-created_date',
+            MAX_DISCOVERY_CONTACTS,
+          )
+        : Promise.resolve([]),
+      includePresence
+        ? base44.asServiceRole.entities.Contact.filter(
+            { contact_user_id: user.id },
+            '-created_date',
+            MAX_DISCOVERY_CONTACTS,
+          )
+        : Promise.resolve([]),
+      includePresence
+        ? base44.asServiceRole.entities.Conversation.filter(
+            { participant_ids: user.id },
+            '-last_message_at',
+            MAX_DISCOVERY_CONVERSATIONS,
+          )
+        : Promise.resolve([]),
     ]);
 
     const presenceVisibleTo = new Set<string>([user.id]);

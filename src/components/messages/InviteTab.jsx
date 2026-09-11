@@ -10,6 +10,8 @@ export default function InviteTab() {
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [emailStatus, setEmailStatus] = useState(null); // { type: 'success' | 'error', message }
   const [sendingSms, setSendingSms] = useState(false);
   const [smsStatus, setSmsStatus] = useState(null); // { type: 'success' | 'error', message }
 
@@ -43,7 +45,7 @@ export default function InviteTab() {
     }
     setSendingSms(true);
     try {
-      const res = await base44.functions.invoke('sendSmsInvite', { phone: trimmed, link: inviteLink });
+      const res = await base44.functions.invoke('sendSmsInvite', { phone: normalized });
       if (res.data?.success) {
         toast.success('Invite sent via SMS!');
         setSmsStatus({ type: 'success', message: `Invite sent to ${trimmed}!` });
@@ -60,11 +62,27 @@ export default function InviteTab() {
   };
 
   const shareViaEmail = async () => {
+    setEmailStatus(null);
+    const trimmed = email.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmed)) {
+      setEmailStatus({ type: 'error', message: 'Enter a valid email address.' });
+      return;
+    }
+
     setLoading(true);
     try {
-      await base44.functions.invoke('send-invite-email', { to: 'recipient@example.com' });
+      const res = await base44.functions.invoke('send-invite-email', { to: trimmed });
+      if (res.data?.success === false || res.data?.error) {
+        setEmailStatus({ type: 'error', message: res.data?.error || 'Failed to send invite.' });
+        return;
+      }
+      toast.success('Invite sent via email!');
+      setEmailStatus({ type: 'success', message: `Invite sent to ${trimmed}!` });
+      setEmail('');
     } catch (err) {
       console.error('Failed to send invite:', err);
+      setEmailStatus({ type: 'error', message: 'Failed to send invite. Please try again.' });
     } finally {
       setLoading(false);
     }
@@ -111,6 +129,31 @@ export default function InviteTab() {
         >
           Copy Invite Link
         </Button>
+
+        <div className="bg-card rounded-lg p-4 mb-3 border border-border/40 text-left">
+          <label className="text-sm font-medium flex items-center gap-2 mb-2">
+            <Mail className="w-4 h-4 text-primary" />
+            Invite via Email
+          </label>
+          <div className="flex items-center gap-2">
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setEmailStatus(null); }}
+              placeholder="name@example.com"
+              className="flex-1 text-sm"
+            />
+            <Button onClick={shareViaEmail} disabled={loading} className="shrink-0">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send'}
+            </Button>
+          </div>
+          {emailStatus && (
+            <p className={`text-xs mt-2 flex items-center gap-1.5 font-medium ${emailStatus.type === 'success' ? 'text-green-500' : 'text-destructive'}`}>
+              {emailStatus.type === 'success' ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+              {emailStatus.message}
+            </p>
+          )}
+        </div>
 
         <div className="bg-card rounded-lg p-4 mb-3 border border-border/40 text-left">
           <label className="text-sm font-medium flex items-center gap-2 mb-2">

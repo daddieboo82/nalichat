@@ -270,27 +270,13 @@ export default function Files() {
   };
 
   const createFolderMutation = useMutation({
-    mutationFn: (name) => {
-      const project = newFolderProject === "none"
-        ? null
-        : projects.find((p) => p.id === newFolderProject);
-      const accessUserIds = Array.from(new Set([
-        currentUser.id,
-        project?.owner_id,
-        ...(project?.collaborator_ids || []),
-      ].filter(Boolean)));
-      const editUserIds = Array.from(new Set([
-        currentUser.id,
-        project?.owner_id,
-        ...(project?.editor_ids || []),
-      ].filter(Boolean)));
-      return base44.entities.Folder.create({
+    mutationFn: async (name) => {
+      const res = await base44.functions.invoke("createProjectFolder", {
         name,
-        owner_id: currentUser.id,
         project_id: newFolderProject === "none" ? null : newFolderProject,
-        access_user_ids: accessUserIds,
-        edit_user_ids: editUserIds,
       });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.folder;
     },
     onSuccess: () => {
       sounds.success();

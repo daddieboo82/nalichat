@@ -5,12 +5,24 @@ const TIMEOUT_48H_MINUTES = 48 * 60;
 const ALLOWED_TYPES = new Set(['text', 'file', 'audio', 'image', 'session']);
 const MAX_FILE_BYTES = 20 * 1024 * 1024 * 1024;
 
-function cleanHttpsUrl(value: unknown) {
+const TRUSTED_MEDIA_HOSTS = [
+  'storage.googleapis.com',
+  'base44-user-files.s3.amazonaws.com',
+  'base44-user-files.s3.us-east-1.amazonaws.com',
+  'files.base44.com',
+  'cdn.base44.com',
+];
+
+function cleanUploadedMediaUrl(value: unknown) {
   const raw = String(value || '').trim();
   if (!raw) return '';
   try {
     const parsed = new URL(raw);
-    return parsed.protocol === 'https:' ? parsed.toString() : '';
+    if (parsed.protocol !== 'https:') return '';
+    const hostname = parsed.hostname.toLowerCase();
+    return TRUSTED_MEDIA_HOSTS.some(
+      (host) => hostname === host || hostname.endsWith('.' + host),
+    ) ? parsed.toString() : '';
   } catch {
     return '';
   }
@@ -159,9 +171,9 @@ Deno.serve(async (req) => {
     };
 
     if (typeof body?.file_url === 'string' && body.file_url) {
-      const fileUrl = cleanHttpsUrl(body.file_url);
+      const fileUrl = cleanUploadedMediaUrl(body.file_url);
       if (!fileUrl) {
-        return Response.json({ error: 'Message attachment URL must use HTTPS' }, { status: 400 });
+        return Response.json({ error: 'Message attachment must come from trusted upload storage' }, { status: 400 });
       }
       messageData.file_url = fileUrl;
     }

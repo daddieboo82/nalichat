@@ -180,7 +180,23 @@ export default function Messages() {
 
   const editMessage = useMutation({
     mutationFn: async ({ id, text }) => {
-      return await base44.entities.Message.update(id, { text, is_edited: true });
+      const res = await base44.functions.invoke("mutateConversationMessage", {
+        action: "edit",
+        message_id: id,
+        text,
+      });
+      if (res?.data?.moderation) return { _flagged: res.data.moderation };
+      if (res?.data?.error) throw new Error(res.data.error);
+      return res?.data?.message;
+    },
+    onSuccess: (msg) => {
+      if (msg?._flagged) {
+        const f = msg._flagged;
+        if (f.is_banned) toast.error("Edit blocked. Your account is now banned for repeated policy violations.");
+        else if (f.action_taken === "timeout") toast.error("Edit blocked. You are timed out for 48 hours.");
+        else toast.error("Edit blocked for a policy violation.");
+        base44.auth.me().then(setCurrentUser).catch(() => {});
+      }
     },
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
@@ -275,17 +291,22 @@ export default function Messages() {
   const handleReact = async (messageId, emoji) => {
     const msg = messages.find(m => m.id === messageId);
     if (!msg || !currentUser) return;
-    const reactions = { ...(msg.reactions || {}) };
-    const userKey = `${emoji}__${currentUser.id}`;
-    if (reactions[userKey]) delete reactions[userKey];
-    else reactions[userKey] = emoji;
-    
     const previous = queryClient.getQueryData(["messages", selectedConvId]);
+    const optimisticReactions = { ...(msg.reactions || {}) };
+    const userKey = `${emoji}__${currentUser.id}`;
+    if (optimisticReactions[userKey]) delete optimisticReactions[userKey];
+    else optimisticReactions[userKey] = emoji;
+
     queryClient.setQueryData(["messages", selectedConvId], (old = []) =>
-      old.map(m => (m.id === messageId ? { ...m, reactions } : m))
+      old.map(m => (m.id === messageId ? { ...m, reactions: optimisticReactions } : m))
     );
     try {
-      await base44.entities.Message.update(messageId, { reactions });
+      const res = await base44.functions.invoke("mutateConversationMessage", {
+        action: "react",
+        message_id: messageId,
+        emoji,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
     } catch (err) {
       if (previous) queryClient.setQueryData(["messages", selectedConvId], previous);
     } finally {

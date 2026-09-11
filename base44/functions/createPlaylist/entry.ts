@@ -3,6 +3,10 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -13,13 +17,36 @@ Deno.serve(async (req) => {
     if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
 
     const body = await req.json();
-    const name = String(body?.name || '').trim().slice(0, 120);
-    const description = String(body?.description || '').trim().slice(0, 1000);
-    const trackIds = Array.isArray(body?.track_ids)
-      ? Array.from(new Set(body.track_ids.map((id: unknown) => String(id || '').trim()).filter(Boolean))).slice(0, 500)
-      : [];
+    if (body?.name != null && typeof body.name !== 'string') {
+      return Response.json({ error: 'Playlist name must be a string' }, { status: 400 });
+    }
+    if (body?.description != null && typeof body.description !== 'string') {
+      return Response.json({ error: 'Playlist description must be a string' }, { status: 400 });
+    }
+    if (body?.track_ids != null && !Array.isArray(body.track_ids)) {
+      return Response.json({ error: 'track_ids must be an array' }, { status: 400 });
+    }
+
+    const name = String(body?.name || '').trim();
+    const description = String(body?.description || '').trim();
+    const rawTrackIds = Array.isArray(body?.track_ids) ? body.track_ids : [];
+    if (rawTrackIds.length > 500) {
+      return Response.json({ error: 'Playlists support at most 500 tracks' }, { status: 413 });
+    }
+    const trackIds = Array.from(new Set(
+      rawTrackIds
+        .filter((id: unknown) => typeof id === 'string')
+        .map((id: string) => id.trim())
+        .filter(Boolean),
+    ));
 
     if (!name) return Response.json({ error: 'Playlist name is required' }, { status: 400 });
+    if (name.length > 120) {
+      return Response.json({ error: 'Playlist name must be 120 characters or fewer' }, { status: 413 });
+    }
+    if (description.length > 1000) {
+      return Response.json({ error: 'Playlist description must be 1000 characters or fewer' }, { status: 413 });
+    }
 
     const entities = base44.asServiceRole.entities;
     const rate = await consumeHourlyLimit(entities, user.id, 'playlist_create', 60);

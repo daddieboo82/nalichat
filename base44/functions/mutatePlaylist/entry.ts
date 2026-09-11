@@ -3,6 +3,10 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -13,9 +17,9 @@ Deno.serve(async (req) => {
     if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
 
     const body = await req.json();
-    const playlistId = String(body?.playlistId || '');
-    const action = String(body?.action || '');
-    if (!playlistId || !['add_track', 'remove_track', 'update_meta', 'delete'].includes(action)) {
+    const playlistId = typeof body?.playlistId === 'string' ? body.playlistId.trim() : '';
+    const action = typeof body?.action === 'string' ? body.action : '';
+    if (!playlistId || playlistId.length > 200 || !['add_track', 'remove_track', 'update_meta', 'delete'].includes(action)) {
       return Response.json({ error: 'Valid playlistId and action are required' }, { status: 400 });
     }
 
@@ -36,30 +40,60 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'add_track' || action === 'remove_track') {
-      const trackId = String(body?.trackId || '');
-      if (!trackId) return Response.json({ error: 'trackId is required' }, { status: 400 });
+      const trackId = typeof body?.trackId === 'string' ? body.trackId.trim() : '';
+      if (!trackId || trackId.length > 200) {
+        return Response.json({ error: 'trackId is required' }, { status: 400 });
+      }
 
       if (action === 'add_track') {
         const post = await entities.ArtPost.get(trackId).catch(() => null);
         if (!post) return Response.json({ error: 'Track not found' }, { status: 404 });
+        const current = Array.isArray(playlist.track_ids) ? playlist.track_ids : [];
+        if (!current.includes(trackId) && current.length >= 500) {
+          return Response.json({ error: 'Playlist track limit reached' }, { status: 409 });
+        }
+        await entities.Playlist.updateMany(
+          { id: playlist.id },
+          { $addToSet: { track_ids: trackId } },
+        );
+      } else {
+        await entities.Playlist.updateMany(
+          { id: playlist.id },
+          { $pull: { track_ids: trackId } },
+        );
       }
-
-      const current = Array.isArray(playlist.track_ids) ? playlist.track_ids : [];
-      const next = action === 'add_track'
-        ? Array.from(new Set([...current, trackId])).slice(0, 500)
-        : current.filter((id: string) => id !== trackId);
-      const updated = await entities.Playlist.update(playlist.id, { track_ids: next });
+      const updated = await entities.Playlist.get(playlist.id);
       return Response.json({ success: true, playlist: updated });
     }
 
     const patch: Record<string, unknown> = {};
     if (body?.name !== undefined) {
-      const name = String(body.name || '').trim().slice(0, 120);
+      if (typeof body.name !== 'string') {
+        return Response.json({ error: 'Playlist name must be a string' }, { status: 400 });
+      }
+      const name = body.name.trim();
       if (!name) return Response.json({ error: 'Playlist name is required' }, { status: 400 });
+      if (name.length > 120) {
+        return Response.json({ error: 'Playlist name must be 120 characters or fewer' }, { status: 413 });
+      }
       patch.name = name;
     }
-    if (body?.description !== undefined) patch.description = String(body.description || '').trim().slice(0, 1000);
-    if (body?.is_public !== undefined) patch.is_public = Boolean(body.is_public);
+    if (body?.description !== undefined) {
+      if (typeof body.description !== 'string') {
+        return Response.json({ error: 'Playlist description must be a string' }, { status: 400 });
+      }
+      const description = body.description.trim();
+      if (description.length > 1000) {
+        return Response.json({ error: 'Playlist description must be 1000 characters or fewer' }, { status: 413 });
+      }
+      patch.description = description;
+    }
+    if (body?.is_public !== undefined) {
+      if (typeof body.is_public !== 'boolean') {
+        return Response.json({ error: 'is_public must be a boolean' }, { status: 400 });
+      }
+      patch.is_public = body.is_public;
+    }
 
     const updated = await entities.Playlist.update(playlist.id, patch);
     return Response.json({ success: true, playlist: updated });

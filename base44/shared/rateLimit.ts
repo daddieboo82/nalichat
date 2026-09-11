@@ -94,3 +94,23 @@ export async function claimMinuteWindow(
 
   return { allowed: true, key };
 }
+
+
+export async function releaseSingleHourlyClaim(
+  entities: any,
+  userId: string,
+  action: string,
+) {
+  const { key } = hourWindow();
+  const id = 'usage_' + await sha256Hex(`${userId}:${action}:${key}`);
+  try {
+    const row = await entities.UsageRateLimit.get(id);
+    if (Number(row?.count || 0) === 1) {
+      await entities.UsageRateLimit.delete(id);
+      return true;
+    }
+  } catch {
+    // Missing claims are already effectively released.
+  }
+  return false;
+}

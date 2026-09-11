@@ -58,6 +58,47 @@ Deno.serve(async (req) => {
         } catch (error) {
           console.warn('Could not expire pending checkout during account deletion:', error);
         }
+      } else if (
+        subscription.provider === 'wix'
+        && subscription.subscription_id
+        && !['canceled', 'ended'].includes(String(subscription.status || ''))
+      ) {
+        const wixApiKey = Deno.env.get('WIX_PAYMENTS_API_KEY');
+        const wixSiteId = Deno.env.get('WIX_PAYMENTS_SITE_ID');
+        if (!wixApiKey || !wixSiteId) {
+          return Response.json(
+            { error: 'Legacy Wix billing must be canceled before account deletion. Please contact support.' },
+            { status: 409 },
+          );
+        }
+
+        const cancelRes = await fetch(
+          `https://www.wixapis.com/payments/base44/v1/subscriptions/${encodeURIComponent(subscription.subscription_id)}/cancel`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: wixApiKey,
+              'wix-site-id': wixSiteId,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              subscription_id: subscription.subscription_id,
+              immediate: true,
+            }),
+          },
+        );
+        if (!cancelRes.ok) {
+          console.error('Failed to cancel legacy Wix subscription:', await cancelRes.text());
+          return Response.json(
+            { error: 'Legacy Wix billing could not be canceled. Account deletion was stopped.' },
+            { status: 502 },
+          );
+        }
+        await entities.Subscription.update(subscription.id, {
+          status: 'canceled',
+          cancel_at_period_end: false,
+          current_period_end: new Date().toISOString(),
+        });
       }
     }
 

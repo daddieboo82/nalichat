@@ -78,4 +78,19 @@ describe('account deletion batch bounds', () => {
     expect(source).not.toContain('const squadsAsB = await');
     expect(source).not.toContain('const purchases = await');
   });
+
+  it('batches conversation membership and audience synchronization', async () => {
+    const source = await readFile(
+      new URL('../../base44/functions/deleteMyAccount/entry.ts', import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain('{ participant_ids: user.id }');
+    expect(source).toContain('{ conversation_id: conversationId, user_id: departedUserId }');
+    expect(source).toContain('await processPagedRows(\n    entities.Message');
+    expect(source).toContain('await processPagedRows(\n    entities.TypingStatus');
+    expect(source).toContain('syncConversationAudience(entities, conversation.id, participantIds, user.id)');
+    expect(source).not.toContain('const conversations = await entities.Conversation.filter');
+    expect(source).not.toContain('const [messages, typingRows] = await Promise.all');
+  });
 });

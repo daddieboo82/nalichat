@@ -854,6 +854,19 @@ describe('release configuration', () => {
     }
   });
 
+  it('protects challenge viewers from automatic or private-network external media fetches', async () => {
+    const remix = await readText('base44/functions/submitChallengeRemix/entry.ts');
+    const card = await readText('src/components/challenges/SubmissionCard.jsx');
+    const player = await readText('src/pages/SubmissionPlayer.jsx');
+
+    expect(remix).toContain('function isSafeExternalMediaUrl');
+    expect(remix).toContain("hostname === 'localhost'");
+    expect(remix).toContain("hostname.endsWith('.internal')");
+    expect(remix).toContain('Remix links must use a public HTTPS host');
+    expect(card).toContain('preload="none"');
+    expect(player).toContain('preload="none"');
+  });
+
   it('counts only current-week squad activity and blocks moderated reward claims', async () => {
     const activity = await readText('base44/functions/recordSquadActivity/entry.ts');
 

@@ -165,7 +165,11 @@ vi.mock('@/components/ui/responsive-select', () => ({
 vi.mock('@/hooks/use-sound', () => ({ sounds: { click: vi.fn(), nav: vi.fn(), success: vi.fn(), notification: vi.fn() } }));
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
 vi.mock('sonner', () => ({ toast: mockToast }));
-vi.mock('@/lib/squadBonus', () => ({ recordSquadActivity: vi.fn() }));
+vi.mock('@/lib/squadBonus', () => ({
+  recordSquadActivity: vi.fn((sourceType, sourceId) =>
+    mockBase44.functions.invoke('recordSquadActivity', { sourceType, sourceId })
+  ),
+}));
 vi.mock('@/lib/avatarValidation', () => ({ isValidAvatarUrl: vi.fn(() => true) }));
 vi.mock('@/lib/autoMaster', () => ({
   renderMasteredMix: vi.fn(async () => new Uint8Array([1, 2, 3])),

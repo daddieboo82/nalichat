@@ -781,6 +781,15 @@ describe('release configuration', () => {
     expect(messages).toContain('refetchInterval: 30_000');
   });
 
+  it('hides public-room latest message text from nonmembers', async () => {
+    const conversation = await readJson('base44/entities/Conversation.jsonc');
+    const rule = conversation.properties.last_message_text.rls?.read;
+    expect(rule?.$or).toEqual(expect.arrayContaining([
+      expect.objectContaining({ 'data.participant_ids': '{{user.id}}' }),
+      expect.objectContaining({ user_condition: { role: 'admin' } }),
+    ]));
+  });
+
   it('enforces moderation state and cost bounds on outbound messaging', async () => {
     const external = await readText('base44/functions/sendExternalMessage/entry.ts');
     const invite = await readText('base44/functions/sendSmsInvite/entry.ts');

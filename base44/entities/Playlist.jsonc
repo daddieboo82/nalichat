@@ -37,7 +37,8 @@
         "type": "string"
       },
       "description": "Array of ArtPost IDs in the playlist",
-      "default": []      "rls": {
+      "default": [],
+      "rls": {
         "read": true,
         "write": {
           "user_condition": {

@@ -90,7 +90,9 @@
   ],
   "rls": {
     "create": {
-      "data.uploaded_by": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "$or": [

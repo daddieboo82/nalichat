@@ -110,6 +110,11 @@ Deno.serve(async (req) => {
       const emoji = String(body?.emoji || '').trim().slice(0, 32);
       if (!emoji) return Response.json({ error: 'emoji is required' }, { status: 400 });
 
+      const reactionRate = await consumeHourlyLimit(entities, user.id, 'message_reaction', 600);
+      if (!reactionRate.allowed) {
+        return Response.json({ error: 'Reaction rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+
       const reactions = { ...(message.reactions || {}) };
       const key = `${emoji}__${user.id}`;
       if (reactions[key]) delete reactions[key];

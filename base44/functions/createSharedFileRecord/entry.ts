@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { resolveUserSubscription } from '../../shared/subscriptionAccess.ts';
+import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 const FREE_FILE_LIMIT = 250 * 1024 * 1024;
 const PREMIUM_FILE_LIMIT = 20 * 1024 * 1024 * 1024;
@@ -160,74 +161,99 @@ Deno.serve(async (req) => {
     let accessUserIds = [user.id];
     let editUserIds = [user.id];
 
+    // Resolve the destination project first, then serialize the final
+    // authorization + create against project deletion/membership changes.
+    let destinationProjectId = projectId;
     if (folderId) {
       const folder = await entities.Folder.get(folderId);
       if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
-
-      let canEditFolder = user.role === 'admin';
-      if (!canEditFolder && folder.project_id) {
-        const folderProject = await entities.Project.get(folder.project_id).catch(() => null);
-        if (!folderProject) return Response.json({ error: 'Project not found' }, { status: 404 });
-        canEditFolder = folderProject.owner_id === user.id
-          || (folderProject.editor_ids || []).includes(user.id);
-      } else if (!canEditFolder) {
-        canEditFolder = folder.owner_id === user.id
-          || (folder.edit_user_ids || []).includes(user.id);
-      }
-      if (!canEditFolder) {
-        return Response.json({ error: 'Viewer access cannot add files to this folder' }, { status: 403 });
-      }
-
       const folderProjectId = folder.project_id || null;
       if (projectId && folderProjectId !== projectId) {
         return Response.json({ error: 'folder_id does not belong to project_id' }, { status: 400 });
       }
-
-      projectId = folderProjectId;
-      accessUserIds = Array.from(new Set([
-        ...(folder.access_user_ids || []),
-        user.id,
-      ].filter(Boolean)));
-      editUserIds = Array.from(new Set([
-        ...(folder.edit_user_ids || []),
-        user.id,
-      ].filter(Boolean)));
-    } else if (projectId) {
-      const project = await entities.Project.get(projectId);
-      if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
-      const canEdit = user.role === 'admin'
-        || project.owner_id === user.id
-        || (project.editor_ids || []).includes(user.id);
-      if (!canEdit) {
-        return Response.json({ error: 'Viewer access cannot add project files' }, { status: 403 });
-      }
-      accessUserIds = Array.from(new Set([
-        project.owner_id,
-        ...(project.collaborator_ids || []),
-        user.id,
-      ].filter(Boolean)));
-      editUserIds = Array.from(new Set([
-        project.owner_id,
-        ...(project.editor_ids || []),
-        user.id,
-      ].filter(Boolean)));
+      destinationProjectId = folderProjectId;
     }
 
-    const file = await entities.SharedFile.create({
-      name,
-      file_url: fileUrl,
-      file_type: fileType,
-      file_size: fileSize,
-      uploader_id: user.id,
-      uploader_name: user.display_name || user.full_name || 'User',
-      description,
-      folder_id: folderId,
-      project_id: projectId,
-      access_user_ids: accessUserIds,
-      edit_user_ids: editUserIds,
-    });
+    const projectLockId = destinationProjectId
+      ? await acquireProjectMembershipLock(entities, destinationProjectId)
+      : null;
+    if (destinationProjectId && !projectLockId) {
+      return Response.json(
+        { error: 'Project is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
 
-    return Response.json({ success: true, file });
+    try {
+      if (folderId) {
+        const folder = await entities.Folder.get(folderId);
+        if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
+        if ((folder.project_id || null) !== (destinationProjectId || null)) {
+          return Response.json({ error: 'Folder destination changed. Please retry.' }, { status: 409 });
+        }
+
+        let canEditFolder = user.role === 'admin';
+        if (!canEditFolder && folder.project_id) {
+          const folderProject = await entities.Project.get(folder.project_id).catch(() => null);
+          if (!folderProject) return Response.json({ error: 'Project not found' }, { status: 404 });
+          canEditFolder = folderProject.owner_id === user.id
+            || (folderProject.editor_ids || []).includes(user.id);
+        } else if (!canEditFolder) {
+          canEditFolder = folder.owner_id === user.id
+            || (folder.edit_user_ids || []).includes(user.id);
+        }
+        if (!canEditFolder) {
+          return Response.json({ error: 'Viewer access cannot add files to this folder' }, { status: 403 });
+        }
+
+        projectId = folder.project_id || null;
+        accessUserIds = Array.from(new Set([
+          ...(folder.access_user_ids || []),
+          user.id,
+        ].filter(Boolean)));
+        editUserIds = Array.from(new Set([
+          ...(folder.edit_user_ids || []),
+          user.id,
+        ].filter(Boolean)));
+      } else if (projectId) {
+        const project = await entities.Project.get(projectId);
+        if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
+        const canEdit = user.role === 'admin'
+          || project.owner_id === user.id
+          || (project.editor_ids || []).includes(user.id);
+        if (!canEdit) {
+          return Response.json({ error: 'Viewer access cannot add project files' }, { status: 403 });
+        }
+        accessUserIds = Array.from(new Set([
+          project.owner_id,
+          ...(project.collaborator_ids || []),
+          user.id,
+        ].filter(Boolean)));
+        editUserIds = Array.from(new Set([
+          project.owner_id,
+          ...(project.editor_ids || []),
+          user.id,
+        ].filter(Boolean)));
+      }
+
+      const file = await entities.SharedFile.create({
+        name,
+        file_url: fileUrl,
+        file_type: fileType,
+        file_size: fileSize,
+        uploader_id: user.id,
+        uploader_name: user.display_name || user.full_name || 'User',
+        description,
+        folder_id: folderId,
+        project_id: projectId,
+        access_user_ids: accessUserIds,
+        edit_user_ids: editUserIds,
+      });
+
+      return Response.json({ success: true, file });
+    } finally {
+      await releaseProjectMembershipLock(entities, projectLockId);
+    }
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not create shared file' }, { status: 500 });
   }

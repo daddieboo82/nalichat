@@ -144,13 +144,30 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Reaction rate limit exceeded. Please try again later.' }, { status: 429 });
       }
 
-      const reactions = { ...(message.reactions || {}) };
-      const key = `${emoji}__${user.id}`;
-      if (reactions[key]) delete reactions[key];
-      else reactions[key] = emoji;
+      const reactionLockId = await acquireMessageMutationLock(entities, message.id);
+      if (!reactionLockId) {
+        return Response.json(
+          { error: 'Message reactions are being updated. Please retry.' },
+          { status: 409 },
+        );
+      }
 
-      const updated = await entities.Message.update(message.id, { reactions });
-      return Response.json({ success: true, message: updated, reactions });
+      try {
+        const freshMessage = await entities.Message.get(message.id);
+        if (!freshMessage) {
+          return Response.json({ error: 'Message not found' }, { status: 404 });
+        }
+
+        const reactions = { ...(freshMessage.reactions || {}) };
+        const key = `${emoji}__${user.id}`;
+        if (reactions[key]) delete reactions[key];
+        else reactions[key] = emoji;
+
+        const updated = await entities.Message.update(message.id, { reactions });
+        return Response.json({ success: true, message: updated, reactions });
+      } finally {
+        await releaseMessageMutationLock(entities, reactionLockId);
+      }
     }
 
     const isAdmin = user.role === 'admin';

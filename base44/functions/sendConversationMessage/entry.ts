@@ -156,10 +156,14 @@ Deno.serve(async (req) => {
 
     const otherParticipantIds = conversation.participant_ids.filter((id: string) => id !== user.id);
     if (user.is_banned) {
-      const otherUsers = await Promise.all(
-        otherParticipantIds.map((id: string) => base44.asServiceRole.entities.User.get(id).catch(() => null)),
-      );
-      if (!otherUsers.some((candidate: any) => candidate?.role === 'admin')) {
+      // Appeals are intentionally limited to a direct 1:1 conversation with an
+      // administrator. Merely including an admin in a group must not turn that
+      // group into a moderation bypass for messaging arbitrary users.
+      if (conversation.type !== 'dm' || conversation.participant_ids.length !== 2 || otherParticipantIds.length !== 1) {
+        return Response.json({ error: 'banned' }, { status: 403 });
+      }
+      const appealAdmin = await base44.asServiceRole.entities.User.get(otherParticipantIds[0]).catch(() => null);
+      if (appealAdmin?.role !== 'admin') {
         return Response.json({ error: 'banned' }, { status: 403 });
       }
     } else if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {

@@ -144,6 +144,7 @@ Deno.serve(async (req) => {
           access_user_ids: remainingAccess,
           edit_user_ids: remainingEditors,
           share_token_hash: null,
+      share_token_expires_at: null,
         });
       } else {
         await entities.SharedFile.delete(file.id);

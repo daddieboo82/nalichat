@@ -2,6 +2,18 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
 const TIMEOUT_48H_MINUTES = 48 * 60;
 const ALLOWED_TYPES = new Set(['text', 'file', 'audio', 'image', 'session']);
+const MAX_FILE_BYTES = 20 * 1024 * 1024 * 1024;
+
+function cleanHttpsUrl(value: unknown) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === 'https:' ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
+}
 
 async function moderateText(base44: any, user: any, text: string, conversationId: string) {
   const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
@@ -133,16 +145,64 @@ Deno.serve(async (req) => {
       text,
     };
 
-    for (const key of ['file_url', 'file_name', 'file_type', 'reply_to_id', 'reply_to_text', 'reply_to_sender', 'thread_id']) {
-      if (typeof body?.[key] === 'string' && body[key]) messageData[key] = body[key];
+    if (typeof body?.file_url === 'string' && body.file_url) {
+      const fileUrl = cleanHttpsUrl(body.file_url);
+      if (!fileUrl) {
+        return Response.json({ error: 'Message attachment URL must use HTTPS' }, { status: 400 });
+      }
+      messageData.file_url = fileUrl;
     }
-    if (Number.isFinite(Number(body?.file_size))) messageData.file_size = Number(body.file_size);
-    if (Number.isFinite(Number(body?.duration))) messageData.duration = Number(body.duration);
+    if (['file', 'audio', 'image'].includes(type) && !messageData.file_url) {
+      return Response.json({ error: 'Attachment messages require a file_url' }, { status: 400 });
+    }
+    if (typeof body?.file_name === 'string' && body.file_name) {
+      messageData.file_name = body.file_name.trim().slice(0, 255);
+    }
+    if (typeof body?.file_type === 'string' && body.file_type) {
+      messageData.file_type = body.file_type.trim().slice(0, 100);
+    }
+
+    const fileSize = Number(body?.file_size);
+    if (body?.file_size != null) {
+      if (!Number.isFinite(fileSize) || fileSize < 0 || fileSize > MAX_FILE_BYTES) {
+        return Response.json({ error: 'Invalid attachment size' }, { status: 400 });
+      }
+      messageData.file_size = fileSize;
+    }
+
+    const duration = Number(body?.duration);
+    if (body?.duration != null) {
+      if (!Number.isFinite(duration) || duration < 0 || duration > 24 * 60 * 60) {
+        return Response.json({ error: 'Invalid attachment duration' }, { status: 400 });
+      }
+      messageData.duration = duration;
+    }
+
+    if (typeof body?.reply_to_id === 'string' && body.reply_to_id) {
+      const replyTarget = await base44.asServiceRole.entities.Message.get(body.reply_to_id).catch(() => null);
+      if (!replyTarget || replyTarget.conversation_id !== conversationId) {
+        return Response.json({ error: 'Reply target is not in this conversation' }, { status: 400 });
+      }
+      messageData.reply_to_id = replyTarget.id;
+      messageData.reply_to_text = String(replyTarget.text || '').slice(0, 1000);
+      messageData.reply_to_sender = replyTarget.sender_name || 'User';
+    }
+
+    if (typeof body?.thread_id === 'string' && body.thread_id) {
+      const threadTarget = await base44.asServiceRole.entities.Message.get(body.thread_id).catch(() => null);
+      if (!threadTarget || threadTarget.conversation_id !== conversationId) {
+        return Response.json({ error: 'Thread target is not in this conversation' }, { status: 400 });
+      }
+      messageData.thread_id = threadTarget.id;
+    }
 
     const message = await base44.asServiceRole.entities.Message.create(messageData);
 
     if (messageData.thread_id) {
-      const replies = await base44.asServiceRole.entities.Message.filter({ thread_id: messageData.thread_id });
+      const replies = await base44.asServiceRole.entities.Message.filter({
+        thread_id: messageData.thread_id,
+        conversation_id: conversationId,
+      });
       try {
         await base44.asServiceRole.entities.Message.update(messageData.thread_id, {
           thread_reply_count: replies.length,

@@ -149,14 +149,13 @@ export default function Record() {
     setSaving(rec.id);
     const file = new File([rec.blob], `${rec.name}.webm`, { type: "audio/webm" });
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.SharedFile.create({
+    const created = await base44.functions.invoke("createSharedFileRecord", {
       name: rec.name,
       file_url,
       file_type: "audio",
-      file_size: rec.blob.size,
-      uploader_id: currentUser.id,
-      uploader_name: currentUser.display_name || currentUser.full_name,
+      file_size: file.size,
     });
+    if (created?.data?.error) throw new Error(created.data.error);
     setSaving(null);
   };
 

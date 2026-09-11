@@ -34,3 +34,10 @@ test('unknown routes render the production 404 page', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Page Not Found' })).toBeVisible();
   await expect(page.getByText(/AI hasn't implemented/i)).toHaveCount(0);
 });
+
+
+test('public shared-file route does not require login', async ({ page }) => {
+  await page.goto('/shared-file');
+  await expect(page.getByRole('heading', { name: /share link unavailable/i })).toBeVisible();
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/shared-file');
+});

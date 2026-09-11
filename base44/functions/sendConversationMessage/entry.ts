@@ -28,6 +28,37 @@ function cleanUploadedMediaUrl(value: unknown) {
   }
 }
 
+async function resolveStoredFileSize(url: string): Promise<number | null> {
+  try {
+    const head = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+    if (head.ok) {
+      const length = Number(head.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0) return length;
+    }
+  } catch {}
+
+  try {
+    const probe = await fetch(url, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-0' },
+      redirect: 'manual',
+    });
+    if (probe.ok || probe.status === 206) {
+      const range = probe.headers.get('content-range') || '';
+      const match = range.match(/\/(\d+)$/);
+      if (match) {
+        const total = Number(match[1]);
+        if (Number.isFinite(total) && total >= 0) return total;
+      }
+      const length = Number(probe.headers.get('content-length'));
+      if (Number.isFinite(length) && length >= 0 && probe.status !== 206) return length;
+    }
+    try { await probe.body?.cancel(); } catch {}
+  } catch {}
+
+  return null;
+}
+
 async function moderateText(base44: any, user: any, text: string, conversationId: string) {
   const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
     prompt: `You are a strict content moderation system for a music collaboration platform. Analyze the user message delimited by XML tags below and determine if it violates community policy.
@@ -211,7 +242,15 @@ Deno.serve(async (req) => {
       if (!fileUrl) {
         return Response.json({ error: 'Message attachment must come from trusted upload storage' }, { status: 400 });
       }
+      const storedSize = await resolveStoredFileSize(fileUrl);
+      if (storedSize === null) {
+        return Response.json({ error: 'Could not verify message attachment size' }, { status: 400 });
+      }
+      if (storedSize > MAX_FILE_BYTES) {
+        return Response.json({ error: 'Attachment is too large' }, { status: 413 });
+      }
       messageData.file_url = fileUrl;
+      messageData.file_size = storedSize;
     }
     if (['file', 'audio', 'image'].includes(type) && !messageData.file_url) {
       return Response.json({ error: 'Attachment messages require a file_url' }, { status: 400 });
@@ -221,14 +260,6 @@ Deno.serve(async (req) => {
     }
     if (typeof body?.file_type === 'string' && body.file_type) {
       messageData.file_type = body.file_type.trim().slice(0, 100);
-    }
-
-    const fileSize = Number(body?.file_size);
-    if (body?.file_size != null) {
-      if (!Number.isFinite(fileSize) || fileSize < 0 || fileSize > MAX_FILE_BYTES) {
-        return Response.json({ error: 'Invalid attachment size' }, { status: 400 });
-      }
-      messageData.file_size = fileSize;
     }
 
     const duration = Number(body?.duration);

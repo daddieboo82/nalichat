@@ -99,6 +99,29 @@ describe('release configuration', () => {
     expect(submission.properties.status.rls?.write?.user_condition?.role).toBe('admin');
   });
 
+
+  it('keeps Nali AI tiered and free of privileged admin tools', async () => {
+    const standardAgent = await readJson('base44/agents/studio_ai.jsonc');
+    const plusAgent = await readJson('base44/agents/studio_ai_plus.jsonc');
+
+    expect(standardAgent.model).toBeUndefined();
+    expect(plusAgent.model).toBe('claude_opus_4_8');
+
+    const standardFunctions = (standardAgent.tool_configs || [])
+      .map((tool) => tool.function_name)
+      .filter(Boolean);
+    const standardEntities = (standardAgent.tool_configs || [])
+      .map((tool) => tool.entity_name)
+      .filter(Boolean);
+
+    expect(standardFunctions).not.toContain('makeAdmin');
+    expect(standardFunctions).not.toContain('createSubscriptionCheckout');
+    expect(standardFunctions).not.toContain('moderateContent');
+    expect(standardEntities).not.toContain('Subscription');
+    expect(standardEntities).not.toContain('Violation');
+    expect(standardEntities).not.toContain('Notification');
+  });
+
   it('keeps the PWA manifest scoped to the serving origin', async () => {
     const manifest = await readJson('public/manifest.json');
     expect(manifest.start_url).toBe('/');

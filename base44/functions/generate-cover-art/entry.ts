@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 
 // Generates AI cover art for a track: transcribes audio, uses LLM to craft
 // an image prompt, then generates the image. All three credit-costly
@@ -52,6 +53,9 @@ Deno.serve(async (req) => {
 
     // Step 1: Transcribe only the media URL stored on the authorized track.
     let transcript = "No lyrics available.";
+    if (file_url && !isTrustedStoredMediaUrl(file_url)) {
+      return Response.json({ error: 'Stored track media host is not allowed' }, { status: 400 });
+    }
     if (file_url) {
       try {
         transcript = await base44.asServiceRole.integrations.Core.TranscribeAudio({ audio_url: file_url }) || transcript;

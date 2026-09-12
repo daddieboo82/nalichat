@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
-import { registerServiceWorker, requestPushPermission, subscribeToRemotePush, showPushNotification, getPermissionStatus } from "@/lib/pushNotifications";
+import { registerServiceWorker, requestPushPermission, subscribeToRemotePush, getPermissionStatus } from "@/lib/pushNotifications";
 import { sounds } from "@/hooks/use-sound";
 import { useLockedChats } from "@/lib/LockedChatsContext";
 import { redactLockedChatNotification } from "@/lib/lockedChatPolicy";
@@ -82,11 +82,6 @@ export default function NotificationBell({ direction = "down" }) {
             const safeNewest = redactNotification(newest);
             sounds.notification();
             toast({ title: safeNewest.actor_name || "New activity", description: safeNewest.message });
-            showPushNotification({
-              title: safeNewest.actor_name || "NaliChat",
-              body: safeNewest.message || "You have a new notification",
-              url: safeNewest.link || "/",
-            });
           }
         }
 

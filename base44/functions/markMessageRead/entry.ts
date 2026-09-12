@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 // Marks a message as read by the current user using the service role
@@ -17,7 +18,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { message_id } = await req.json();
+    const { message_id } = await readJsonBodyLimited(req, 64 * 1024);
     const messageId = String(message_id || '').trim();
     if (!messageId || messageId.length > 256) {
       return Response.json({ error: 'Valid message_id is required' }, { status: 400 });

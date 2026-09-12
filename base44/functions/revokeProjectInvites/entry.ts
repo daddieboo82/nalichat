@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
@@ -26,7 +27,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invite revocation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 8 * 1024);
     const projectId = typeof body?.projectId === 'string' ? body.projectId.trim() : '';
     const role = body?.role == null ? null : String(body.role);
     if (!projectId || projectId.length > 200) {
@@ -80,6 +81,8 @@ Deno.serve(async (req) => {
       await releaseProjectMembershipLock(entities, lockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('revokeProjectInvites error:', error);
     return Response.json({ error: error?.message || 'Could not revoke invite links' }, { status: 500 });
   }

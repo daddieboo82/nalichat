@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -24,8 +25,9 @@ Deno.serve(async (req) => {
     }
 
     const { content_type, content_id, reason } = await readJsonBodyLimited(req, 16 * 1024);
-    if (!content_type || !content_id) {
-      return Response.json({ error: 'content_type and content_id are required' }, { status: 400 });
+    const normalizedContentId = typeof content_id === 'string' ? content_id.trim() : '';
+    if (!content_type || !isBase44EntityId(normalizedContentId)) {
+      return Response.json({ error: 'Valid content_type and content_id are required' }, { status: 400 });
     }
 
     const validReasons = ['spam', 'harassment', 'hate_speech', 'violence', 'sexual_content', 'illegal_activity', 'misinformation', 'other'];
@@ -53,7 +55,7 @@ Deno.serve(async (req) => {
     let authoritativeConversationId = null;
 
     if (content_type === 'message') {
-      const message = await entities.Message.get(content_id);
+      const message = await entities.Message.get(normalizedContentId);
       if (!message) return Response.json({ error: 'Content not found' }, { status: 404 });
 
       // A reporter must actually be a participant in the conversation.
@@ -65,7 +67,7 @@ Deno.serve(async (req) => {
       authoritativeText = message.text || message.file_name || '';
       authoritativeConversationId = message.conversation_id || null;
     } else if (content_type === 'art_post') {
-      const post = await entities.ArtPost.get(content_id);
+      const post = await entities.ArtPost.get(normalizedContentId);
       if (!post) return Response.json({ error: 'Content not found' }, { status: 404 });
       reportedUserId = post.creator_id || '';
       reportedUserName = post.creator_name || '';
@@ -86,7 +88,7 @@ Deno.serve(async (req) => {
     const existing = await entities.Violation.filter({
       reported_by_id: reporter.id,
       content_type,
-      content_id,
+      content_id: normalizedContentId,
       review_status: 'pending',
     });
     if (existing.length > 0) {
@@ -99,12 +101,12 @@ Deno.serve(async (req) => {
       reported_by_id: reporter.id,
       reported_by_name: reporter.display_name || reporter.full_name || 'Reporter',
       content_type,
-      content_id,
+      content_id: normalizedContentId,
       category: categoryMap[reportReason] || 'bullying',
       severity: 'low',
-      content: `[USER REPORT — ${reportReason}]\nContent type: ${content_type}\nContent ID: ${content_id}\n\n${authoritativeText.slice(0, 800)}`,
+      content: `[USER REPORT — ${reportReason}]\nContent type: ${content_type}\nContent ID: ${normalizedContentId}\n\n${authoritativeText.slice(0, 800)}`,
       conversation_id: authoritativeConversationId,
-      message_id: content_type === 'message' ? content_id : null,
+      message_id: content_type === 'message' ? normalizedContentId : null,
       action_taken: 'warning',
       review_status: 'pending',
       explanation: `Reported by user for: ${reportReason}. Awaiting admin review.`,

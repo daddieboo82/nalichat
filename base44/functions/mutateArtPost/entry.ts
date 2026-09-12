@@ -108,6 +108,6 @@ Deno.serve(async (req) => {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('mutateArtPost error:', error);
-    return Response.json({ error: error?.message || 'ArtPost update failed' }, { status: 500 });
+    return Response.json({ error: 'ArtPost update failed' }, { status: 500 });
   }
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PullToRefresh from "@/components/layout/PullToRefresh";
@@ -7,13 +7,10 @@ import { Card } from "@/components/ui/card";
 import { TrendingUp, Eye, Heart, Music } from "lucide-react";
 import { motion } from "framer-motion";
 import { getLikeCount } from "@/lib/engagement";
+import { useAuth } from "@/lib/AuthContext";
 export default function Analytics() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
-  }, []);
 
   const { data: userPosts = [] } = useQuery({
     queryKey: ["userAnalytics", currentUser?.id],

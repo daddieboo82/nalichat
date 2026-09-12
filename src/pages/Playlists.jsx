@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Music, Trash2 } from "lucide-react";
@@ -14,16 +14,13 @@ import {
 } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
 import PullToRefresh from "@/components/layout/PullToRefresh";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Playlists() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [formData, setFormData] = useState({ name: "", description: "" });
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
-  }, []);
 
   const { data: playlists = [], isLoading } = useQuery({
     queryKey: ["playlists", currentUser?.id],

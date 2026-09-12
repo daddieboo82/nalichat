@@ -30,6 +30,7 @@ const shouldRetryAuthError = (error) => {
 export const AuthProvider = ({ children }) => {
   const queryClient = useQueryClient();
   const lastUserIdRef = useRef(null);
+  const authCheckGenerationRef = useRef(0);
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
@@ -105,10 +106,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const checkUserAuth = useCallback(async (retryCount = 0) => {
+  const checkUserAuth = useCallback(async (retryCount = 0, existingGeneration = null) => {
+    const generation = existingGeneration ?? ++authCheckGenerationRef.current;
     try {
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
+      if (generation !== authCheckGenerationRef.current) return null;
       const previousUserId = lastUserIdRef.current;
       if (previousUserId && previousUserId !== currentUser?.id) {
         queryClient.clear();
@@ -129,8 +132,10 @@ export const AuthProvider = ({ children }) => {
       if (retryCount < 3 && shouldRetryAuthError(error)) {
         const delay = retryCount === 0 ? 750 : retryCount === 1 ? 1500 : 3000;
         await new Promise((resolve) => setTimeout(resolve, delay));
-        return checkUserAuth(retryCount + 1);
+        if (generation !== authCheckGenerationRef.current) return null;
+        return checkUserAuth(retryCount + 1, generation);
       }
+      if (generation !== authCheckGenerationRef.current) return null;
       setIsLoadingAuth(false);
       if (lastUserIdRef.current) queryClient.clear();
       lastUserIdRef.current = null;
@@ -145,6 +150,10 @@ export const AuthProvider = ({ children }) => {
   }, [queryClient]);
 
   const logout = useCallback(async () => {
+    // Invalidate any profile/session refresh already in flight before logout
+    // begins so it cannot repopulate auth state after this transition.
+    authCheckGenerationRef.current += 1;
+
     // Remove this browser's remote push capability while the authenticated
     // session still exists, then terminate the server/cookie-backed session.
     try {

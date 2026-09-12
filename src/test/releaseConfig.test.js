@@ -1964,4 +1964,15 @@ describe('release configuration', () => {
   });
 
 
+  it('keeps message bubbles build-safe and shows online status on received messages', async () => {
+    const bubble = await readText('src/components/messages/MessageBubble.jsx');
+    const reactImports = bubble.match(/import React from "react";/g) || [];
+
+    expect(reactImports).toHaveLength(1);
+    expect(bubble).toContain('!isOwn && senderIsOnline');
+    expect(bubble).toContain('aria-label="Active now"');
+    expect(bubble).toContain('bg-green-500');
+  });
+
+
 });

@@ -33,6 +33,12 @@ const mockToast = vi.hoisted(() => ({
 }));
 
 vi.mock('@/api/base44Client', () => ({ base44: mockBase44 }));
+vi.mock('@/lib/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 'user-1', display_name: 'Fresh User', full_name: 'Fresh User' },
+    isLoadingAuth: false,
+  }),
+}));
 vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => ({ hasEntitlement: () => true, isLoading: false }),
 }));

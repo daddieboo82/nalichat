@@ -22,6 +22,7 @@ export default function AiAssistant() {
   const [isListening, setIsListening] = useState(false);
   const [conversation, setConversation] = useState(null);
   const { user } = useAuth();
+  const conversationStorageKey = user?.id ? `nali_ai_conversation:${user.id}:${agentName}` : null;
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef(null);
@@ -30,6 +31,47 @@ export default function AiAssistant() {
   const spokenIdsRef = useRef(new Set());
   const currentAudioRef = useRef(null);
   const loadingTimerRef = useRef(null);
+
+  const sendAgentText = async (conv, text) => {
+    const content = String(text || "").trim();
+    if (!conv?.id || !content) throw new Error("Conversation and message are required");
+    const requestKey = typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `nali-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const response = await base44.functions.invoke("sendAgentMessage", {
+      conversation_id: conv.id,
+      content,
+      request_key: requestKey,
+    });
+    if (response?.data?.error) {
+      const error = new Error(response.data.error);
+      error.code = response.data.code;
+      error.quota = response.data.quota;
+      throw error;
+    }
+    return response;
+  };
+
+  const friendlyNaliError = (error) => {
+    const data = error?.response?.data || error?.data || {};
+    const code = data.code || error?.code;
+    const message = data.error || error?.message || "";
+    if (code === "AI_DAILY_QUOTA_EXHAUSTED") {
+      const resetAt = data?.quota?.reset_at || data?.reset_at;
+      const reset = resetAt ? new Date(resetAt).toLocaleString() : "the next UTC day";
+      return `You've reached today's NALI.ai request limit. Your access resets at ${reset}.`;
+    }
+    if (code === "AI_NOT_ENTITLED" || /premium is required/i.test(message)) {
+      return "NALI.ai is available with Premium. Open Settings to review your plan.";
+    }
+    if (code === "AI_REQUEST_IN_PROGRESS" || code === "AI_REQUEST_ALREADY_DISPATCHED") {
+      return "That request is already being handled. Give me a moment to finish it.";
+    }
+    if (/timed_out|banned/i.test(message)) {
+      return "Your account can't use NALI.ai right now. Check your account status in Settings.";
+    }
+    return "I couldn't complete that request. Please try again.";
+  };
 
 
   useEffect(() => {
@@ -51,10 +93,10 @@ export default function AiAssistant() {
       try {
         let conv = conversation;
         if (!conv) conv = await initConversation();
-        await base44.agents.addMessage(conv, { role: "user", content: text });
+        await sendAgentText(conv, text);
       } catch (error) {
         console.error("Nali event send error", error);
-        toast.error("Couldn't send that message to NALI.ai. Please try again.");
+        toast.error(friendlyNaliError(error));
       }
     };
     window.addEventListener('open-ai-assistant', handleOpen);
@@ -91,7 +133,8 @@ export default function AiAssistant() {
     try {
       if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; }
       setIsSpeaking(true);
-      const res = await base44.functions.invoke('generate-speech', { text: clean, voice: "honey" });
+      const spokenText = clean.slice(0, 4800);
+      const res = await base44.functions.invoke('generate-speech', { text: spokenText, voice: "honey" });
       const audio = new Audio(res.data.url);
       currentAudioRef.current = audio;
       audio.onended = () => { setIsSpeaking(false); currentAudioRef.current = null; };
@@ -109,7 +152,7 @@ export default function AiAssistant() {
     const last = messages[messages.length - 1];
     if (last.role === "user") return;
     // Use content as a pseudo-id; skip if already spoken
-    const id = last.content?.substring(0, 80);
+    const id = last.id || last.content?.substring(0, 160);
     if (!id || spokenIdsRef.current.has(id)) return;
     spokenIdsRef.current.add(id);
     speakText(last.content);
@@ -117,27 +160,22 @@ export default function AiAssistant() {
 
   // Stop voice when toggled off or panel closes
   useEffect(() => {
-    if (!voiceEnabled && currentAudioRef.current) {
+    if ((!voiceEnabled || !open) && currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
       setIsSpeaking(false);
     }
-  }, [voiceEnabled]);
+  }, [voiceEnabled, open]);
 
   useEffect(() => () => {
     return () => { if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; } };
   }, []);
 
-  const initConversation = async () => {
-    if (subscriptionLoading) throw new Error("Subscription is still loading");
-    if (!canUseAi) {
-      toast.error("Premium is required to use NALI.ai.");
-      throw new Error("AI entitlement required");
-    }
-    if (conversation) return conversation;
-    const conv = await base44.agents.createConversation({ agent_name: agentName });
+  const bindConversation = (conv) => {
+    if (!conv?.id) return null;
+    unsubRef.current?.();
     setConversation(conv);
-    // Subscribe — stop the typing indicator once the assistant has replied
+    setMessages(conv.messages || []);
     unsubRef.current = base44.agents.subscribeToConversation(conv.id, (data) => {
       const msgs = data.messages || [];
       setMessages(msgs);
@@ -147,6 +185,36 @@ export default function AiAssistant() {
       }
     });
     return conv;
+  };
+
+  const initConversation = async () => {
+    if (subscriptionLoading) throw new Error("Subscription is still loading");
+    if (!canUseAi) {
+      toast.error("Premium is required to use NALI.ai.");
+      throw new Error("AI entitlement required");
+    }
+    if (conversation) return conversation;
+
+    if (conversationStorageKey) {
+      try {
+        const savedId = sessionStorage.getItem(conversationStorageKey);
+        if (savedId) {
+          const restored = await base44.agents.getConversation(savedId);
+          if (restored?.id && (!restored.created_by_id || restored.created_by_id === user?.id)) {
+            return bindConversation(restored);
+          }
+        }
+      } catch (error) {
+        console.warn("Nali conversation restore failed:", error);
+      }
+      try { sessionStorage.removeItem(conversationStorageKey); } catch {}
+    }
+
+    const conv = await base44.agents.createConversation({ agent_name: agentName });
+    if (conversationStorageKey) {
+      try { sessionStorage.setItem(conversationStorageKey, conv.id); } catch {}
+    }
+    return bindConversation(conv);
   };
 
   const openChat = async (greeting) => {
@@ -162,11 +230,9 @@ export default function AiAssistant() {
     setMinimized(false);
     if (!conversation) {
       const conv = await initConversation();
-      // Send greeting — custom greeting lets onboarding prime Nali with context
-      await base44.agents.addMessage(conv, {
-        role: "user",
-        content: greeting || "Hi! What can you help me with on RecordStudio?"
-      });
+      // Only send a contextual greeting when one was explicitly provided.
+      // Opening Nali by itself should not consume a model request.
+      if (greeting) await sendAgentText(conv, greeting);
     }
     setTimeout(() => inputRef.current?.focus(), 100);
   };
@@ -178,33 +244,35 @@ export default function AiAssistant() {
     let conv = conversation;
     try {
       if (!conv) conv = await initConversation();
-      await base44.agents.addMessage(conv, { role: "user", content: text.trim() });
+      await sendAgentText(conv, text.trim());
       // loading is cleared by the subscription when Nali's reply arrives,
       // but set a safety timeout in case the subscription never fires
       // (agent error, WebSocket drop, or very long tool call)
       if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-      loadingTimerRef.current = setTimeout(() => {
+      loadingTimerRef.current = setTimeout(async () => {
         loadingTimerRef.current = null;
-        setLoading(prev => {
-          if (!prev) return prev;
-          setMessages(prevMsgs => {
-            const last = prevMsgs[prevMsgs.length - 1];
-            if (last && last.role !== "user") return prevMsgs;
-            return [...prevMsgs, {
-              role: "assistant",
-              content: "I'm taking longer than expected — please try sending your message again.",
-            }];
-          });
-          return false;
-        });
-      }, 90000);
+        try {
+          const fresh = await base44.agents.getConversation(conv.id);
+          const freshMessages = fresh?.messages || [];
+          setMessages(freshMessages);
+          const last = freshMessages[freshMessages.length - 1];
+          if (last && last.role !== "user") {
+            setLoading(false);
+            return;
+          }
+          toast.info("Nali is still working on that request. I'll show the reply as soon as it arrives.");
+        } catch (refreshError) {
+          console.error("Nali conversation refresh error", refreshError);
+          toast.info("Nali is still working, but the live connection was interrupted. Reopen the assistant to refresh.");
+        }
+      }, 60000);
     } catch (err) {
       console.error("Nali send error", err);
       if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
       setLoading(false);
       setMessages(prevMsgs => [...prevMsgs, {
         role: "assistant",
-        content: "Sorry, I couldn't process that message. Please try again.",
+        content: friendlyNaliError(err),
       }]);
     }
   };
@@ -220,7 +288,7 @@ export default function AiAssistant() {
     if (isListening) return;
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
+    recognition.lang = navigator.language || 'en-US';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
@@ -279,7 +347,7 @@ export default function AiAssistant() {
                   }
                   return next;
                 });
-              }} title={voiceEnabled ? "Voice on — tap to mute Nali" : "Enable Nali's voice"} className={cn("p-2 sm:p-1 transition-colors", voiceEnabled ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+              }} aria-label={voiceEnabled ? "Mute Nali voice" : "Enable Nali voice"} title={voiceEnabled ? "Voice on — tap to mute Nali" : "Enable Nali's voice"} className={cn("p-2 sm:p-1 transition-colors", voiceEnabled ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
                 {voiceEnabled ? <Volume2 className="w-5 h-5 sm:w-4 sm:h-4" /> : <VolumeX className="w-5 h-5 sm:w-4 sm:h-4" />}
               </button>
             )}
@@ -393,13 +461,14 @@ export default function AiAssistant() {
                     ref={inputRef}
                     value={input}
                     onChange={e => setInput(e.target.value)}
-                    placeholder="Ask Nali anything about music..."
+                    placeholder="Ask Nali about your music, projects, or anything else..."
                     className="w-full bg-secondary/40 border border-primary/20 rounded-xl pl-8 pr-10 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/70"
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                   />
                   <button
                     onClick={handleMicClick}
                     title="Voice Input"
+                    aria-label="Voice input"
                     className={cn(
                       "absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-colors",
                       isListening ? "text-red-500 bg-red-500/10 animate-pulse" : "text-muted-foreground hover:text-primary hover:bg-primary/10"

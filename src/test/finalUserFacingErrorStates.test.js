@@ -43,7 +43,9 @@ describe('final user-facing error states', () => {
     const source = await readText('src/components/AiAssistant.jsx');
     expect(source).toContain('void openChat(e.detail?.greeting).catch((error) => {');
     expect(source).toContain('toast.error("Couldn\'t open NALI.ai. Please try again.")');
-    expect(source).toContain('toast.error("Couldn\'t send that message to NALI.ai. Please try again.")');
+    expect(source).toContain('toast.error(friendlyNaliError(error));');
+    expect(source).toContain('AI_DAILY_QUOTA_EXHAUSTED');
+    expect(source).toContain('AI_NOT_ENTITLED');
   });
 
   it('surfaces global message auth, directory, and send failures', async () => {

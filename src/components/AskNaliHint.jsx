@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ArrowDown } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/onboarding", "/studio"];
 
@@ -18,13 +19,15 @@ function sessionSet(key, value) {
 }
 
 export default function AskNaliHint() {
+  const { hasEntitlement, isLoading } = useSubscription();
+  const canUseAi = hasEntitlement("ai.standard");
   const [show, setShow] = useState(false);
   const timerRef = useRef(null);
   const location = useLocation();
   const onAuthPage = AUTH_ROUTES.includes(location.pathname);
 
   useEffect(() => {
-    if (onAuthPage) {
+    if (onAuthPage || isLoading || !canUseAi) {
       setShow(false);
       if (timerRef.current) clearTimeout(timerRef.current);
       return;
@@ -51,7 +54,7 @@ export default function AskNaliHint() {
         window.removeEventListener(e, reset)
       );
     };
-  }, [onAuthPage]);
+  }, [onAuthPage, isLoading, canUseAi]);
 
   const askNali = () => {
     setShow(false);

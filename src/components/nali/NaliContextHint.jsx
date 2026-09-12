@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X } from "lucide-react";
 import { useNaliPresence } from "@/lib/NaliPresenceContext";
+import { useSubscription } from "@/hooks/useSubscription";
 
 // Context-aware, proactive-but-muted suggestion chips per surface.
 // Only auto-surfaces when the user's level is 'proactive'; always dismissible.
@@ -28,6 +29,8 @@ const SURFACE_HINTS = {
 const DISMISS_KEY = (surface) => `nali_hint_dismissed_${surface}`;
 
 export default function NaliContextHint({ surface = "global", contextLabel, customHint, delayMs = 6000 }) {
+  const { hasEntitlement, isLoading } = useSubscription();
+  const canUseAi = hasEntitlement("ai.standard");
   const { isProactive, isMuted } = useNaliPresence();
   const [visible, setVisible] = useState(false);
 
@@ -41,11 +44,11 @@ export default function NaliContextHint({ surface = "global", contextLabel, cust
   }, [surface, contextLabel, customHint]);
 
   useEffect(() => {
-    if (!isProactive || isMuted || !hint) { setVisible(false); return; }
+    if (isLoading || !canUseAi || !isProactive || isMuted || !hint) { setVisible(false); return; }
     try { if (sessionStorage.getItem(DISMISS_KEY(surface))) { setVisible(false); return; } } catch {}
     const t = setTimeout(() => setVisible(true), delayMs);
     return () => clearTimeout(t);
-  }, [isProactive, isMuted, hint, surface, delayMs]);
+  }, [isLoading, canUseAi, isProactive, isMuted, hint, surface, delayMs]);
 
   const dismiss = () => {
     setVisible(false);

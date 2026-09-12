@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { readTextBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import jwt from 'npm:jsonwebtoken';
 
 async function sha256Hex(value: string) {
@@ -18,7 +19,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
 
-    const bodyText = await req.text();
+    const bodyText = await readTextBodyLimited(req, 1024 * 1024);
     let body = bodyText;
     try {
       const parsed = JSON.parse(bodyText);
@@ -206,6 +207,8 @@ Deno.serve(async (req) => {
     console.log('Unknown webhook type:', eventType);
     return Response.json({ success: true });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('Webhook error:', error);
     if (wixEventEntity && wixEventClaimId) {
       try {

@@ -39,6 +39,13 @@ describe('final user-facing error states', () => {
     expect(queue).toContain('finally {\n      setExporting(false);');
   });
 
+  it('surfaces AI assistant event entry-point failures', async () => {
+    const source = await readText('src/components/AiAssistant.jsx');
+    expect(source).toContain('void openChat(e.detail?.greeting).catch((error) => {');
+    expect(source).toContain('toast.error("Couldn\'t open NALI.ai. Please try again.")');
+    expect(source).toContain('toast.error("Couldn\'t send that message to NALI.ai. Please try again.")');
+  });
+
   it('surfaces global message auth, directory, and send failures', async () => {
     const source = await readText('src/components/GlobalMessageDialog.jsx');
     expect(source).toContain('isError: usersError');

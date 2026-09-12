@@ -71,6 +71,6 @@ export default async function(req) {
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Like update failed' }, { status: 500 });
   }
 }

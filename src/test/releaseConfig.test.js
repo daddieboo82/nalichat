@@ -2091,6 +2091,23 @@ describe('release configuration', () => {
       expect(source).not.toContain('await req.text()');
     }
 
+    const base44Dir = new URL('../../base44/', import.meta.url);
+    const scanQueue = [base44Dir];
+    const rawEnvReads = [];
+    while (scanQueue.length > 0) {
+      const dir = scanQueue.pop();
+      for (const entry of await readdir(dir, { withFileTypes: true })) {
+        const url = new URL(entry.name + (entry.isDirectory() ? '/' : ''), dir);
+        if (entry.isDirectory()) {
+          scanQueue.push(url);
+        } else if (/.(ts|tsx|js|jsx)$/.test(entry.name)) {
+          const source = await readFile(url, 'utf8');
+          if (source.includes('Deno.env.get(')) rawEnvReads.push(url.pathname);
+        }
+      }
+    }
+    expect(rawEnvReads).toEqual([]);
+
     const requestLimits = await readText('base44/shared/requestLimits.ts');
     expect(requestLimits).toContain('RequestBodyTooLargeError');
     expect(requestLimits).toContain('reader.cancel()');

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Pencil, Sparkles, Volume2, Share2, Flag, RefreshCw, AlertCircle } from "lucide-react";
 import ReactMarkdown from 'react-markdown';

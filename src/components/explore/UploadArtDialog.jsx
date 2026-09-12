@@ -1,3 +1,4 @@
+import { secureUploadFile } from "@/lib/secureUpload";
 import { useEffect, useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { X, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
@@ -59,11 +60,11 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
 
     try {
       if (imageFile) {
-        const res = await base44.integrations.Core.UploadFile({ file: imageFile });
+        const res = await secureUploadFile({ file: imageFile });
         image_url = res.file_url;
       }
       
-      const audioRes = await base44.integrations.Core.UploadFile({ file: audioFile });
+      const audioRes = await secureUploadFile({ file: audioFile });
       file_url = audioRes.file_url;
 
       const published = await base44.functions.invoke("createArtPost", {

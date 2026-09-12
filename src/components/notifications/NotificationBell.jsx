@@ -39,6 +39,7 @@ export default function NotificationBell({ direction = "down" }) {
   const [pushPermission, setPushPermission] = useState(() => getPermissionStatus());
   const { toast } = useToast();
   const panelRef = useRef(null);
+  const identityGenerationRef = useRef(0);
   const {
     isReady: lockedChatsReady,
     lockedConversationIds,
@@ -64,18 +65,22 @@ export default function NotificationBell({ direction = "down" }) {
     };
   }, []);
 
-  const load = async (uid) => {
+  const load = async (uid, generation = identityGenerationRef.current) => {
     const list = await base44.entities.Notification.filter({ recipient_id: uid }, "-created_date", 30);
+    if (generation !== identityGenerationRef.current) return;
     setItems(list);
   };
 
   useEffect(() => {
-    // Notification state is account-private. Clear it synchronously whenever
-    // identity changes so logout/account switching cannot show stale items.
+    identityGenerationRef.current += 1;
     setItems([]);
     setOpen(false);
+  }, [user?.id]);
+
+  useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
+    const generation = identityGenerationRef.current;
     let refreshInFlight = false;
     let previousIds = new Set();
 
@@ -84,7 +89,7 @@ export default function NotificationBell({ direction = "down" }) {
       refreshInFlight = true;
       try {
         const list = await base44.entities.Notification.filter({ recipient_id: user.id }, "-created_date", 30);
-        if (cancelled) return;
+        if (cancelled || generation !== identityGenerationRef.current) return;
         const nextIds = new Set((list || []).map((n) => n.id));
 
         if (previousIds.size > 0) {
@@ -125,18 +130,21 @@ export default function NotificationBell({ direction = "down" }) {
   const unread = safeItems.filter((n) => !n.read).length;
 
   const markAllRead = async () => {
+    const generation = identityGenerationRef.current;
+    const userId = user?.id;
     const unreadItems = items.filter((n) => !n.read);
     if (unreadItems.length === 0) return;
     const results = await Promise.allSettled(
       unreadItems.map((n) => base44.entities.Notification.update(n.id, { read: true })),
     );
-    if (user) {
+    if (userId && generation === identityGenerationRef.current) {
       try {
-        await load(user.id);
+        await load(userId, generation);
       } catch {
         // The poller will retry loading shortly.
       }
     }
+    if (generation !== identityGenerationRef.current) return;
     if (results.some((result) => result.status === "rejected")) {
       toast({
         title: "Some notifications weren't marked read",

@@ -56,7 +56,50 @@ export default function Record() {
   const currentTimeRef = useRef(0);
   const audioCtxRef = useRef(null);
   const recordingsRef = useRef([]);
+  const recordingGenerationRef = useRef(0);
+  const activeUserIdRef = useRef(currentUser?.id || null);
   recordingsRef.current = recordings;
+
+  useEffect(() => {
+    const nextUserId = currentUser?.id || null;
+    if (activeUserIdRef.current === nextUserId) return;
+
+    recordingGenerationRef.current += 1;
+    activeUserIdRef.current = nextUserId;
+    setCountdown(false);
+    setIsRecording(false);
+    setIsPaused(false);
+    setSaving(null);
+    setCurrentTime(0);
+    currentTimeRef.current = 0;
+    setVisualData(new Array(64).fill(0));
+    setRecLevel(0);
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try { mediaRecorderRef.current.stop(); } catch {}
+    }
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+      void audioCtxRef.current.close().catch(() => {});
+    }
+    audioCtxRef.current = null;
+
+    recordingsRef.current.forEach((recording) => {
+      if (recording.url?.startsWith("blob:")) {
+        try { URL.revokeObjectURL(recording.url); } catch {}
+      }
+    });
+    setRecordings([]);
+  }, [currentUser?.id]);
 
   useEffect(() => {
     try {
@@ -131,6 +174,7 @@ export default function Record() {
 
       const mimeType = getSupportedRecordingMimeType();
       const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const recordingGeneration = recordingGenerationRef.current;
       const recordingMimeType = recorder.mimeType || mimeType || "audio/webm";
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
@@ -141,7 +185,7 @@ export default function Record() {
         if (streamRef.current === stream) streamRef.current = null;
         if (animationRef.current) cancelAnimationFrame(animationRef.current);
         const blob = new Blob(chunksRef.current, { type: recordingMimeType });
-        if (blob.size > 0) {
+        if (blob.size > 0 && recordingGeneration === recordingGenerationRef.current) {
           const url = URL.createObjectURL(blob);
           setRecordings(prev => [...prev, {
             id: Date.now().toString(),

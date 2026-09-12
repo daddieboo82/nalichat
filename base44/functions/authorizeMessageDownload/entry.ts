@@ -1,4 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
@@ -23,8 +25,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Download authorization rate limit exceeded.' }, { status: 429 });
     }
 
-    const { messageId } = await req.json();
-    if (!messageId) return Response.json({ error: 'messageId is required' }, { status: 400 });
+    const { messageId } = await readJsonBodyLimited(req, 8 * 1024);
+    if (!isBase44EntityId(messageId)) return Response.json({ error: 'Valid messageId is required' }, { status: 400 });
 
     const message = await base44.asServiceRole.entities.Message.get(messageId);
     if (!message) return Response.json({ error: 'Message not found' }, { status: 404 });

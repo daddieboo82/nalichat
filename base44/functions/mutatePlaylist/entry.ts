@@ -3,6 +3,10 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquirePlaylistMutationLock, releasePlaylistMutationLock } from '../../shared/playlistMutationLock.ts';
+import {
+  acquireArtPostEngagementLock,
+  releaseArtPostEngagementLock,
+} from '../../shared/artPostEngagementLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -83,8 +87,17 @@ Deno.serve(async (req) => {
       }
     }
 
+    let artPostLockId: string | null = null;
+    if (action === 'add_track') {
+      artPostLockId = await acquireArtPostEngagementLock(entities, trackId);
+      if (!artPostLockId) {
+        return Response.json({ error: 'Post is being updated. Please retry.' }, { status: 409 });
+      }
+    }
+
     const lockId = await acquirePlaylistMutationLock(entities, playlistId);
     if (!lockId) {
+      await releaseArtPostEngagementLock(entities, artPostLockId);
       return Response.json({ error: 'Playlist is being updated. Please retry.' }, { status: 409 });
     }
 
@@ -126,6 +139,7 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, playlist: updated });
     } finally {
       await releasePlaylistMutationLock(entities, lockId);
+      await releaseArtPostEngagementLock(entities, artPostLockId);
     }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);

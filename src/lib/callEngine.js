@@ -25,6 +25,7 @@ export class CallEngine {
     this.muted = false;
     this.videoEnabled = true;
     this.pendingCandidates = [];
+    this.operationGeneration = 0;
 
     this.onStateChange = onStateChange;
     this.onRemoteStream = onRemoteStream;
@@ -37,14 +38,21 @@ export class CallEngine {
     this.onStateChange?.(state);
   }
 
-  async _getLocalMedia({ video }) {
+  async _getLocalMedia({ video, generation }) {
     const constraints = {
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       video: video
         ? { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
         : false,
     };
-    this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    if (generation !== this.operationGeneration) {
+      stream.getTracks().forEach((track) => track.stop());
+      const error = new Error("Call setup cancelled");
+      error.name = "AbortError";
+      throw error;
+    }
+    this.localStream = stream;
     this.onLocalStream?.(this.localStream);
     return this.localStream;
   }
@@ -82,11 +90,17 @@ export class CallEngine {
   }
 
   async startCall({ callId, type }) {
+    const generation = ++this.operationGeneration;
     this.callId = callId;
     this.role = "caller";
     const video = type === "video";
 
-    await this._getLocalMedia({ video });
+    await this._getLocalMedia({ video, generation });
+    if (generation !== this.operationGeneration || this.callId !== callId) {
+      const error = new Error("Call setup cancelled");
+      error.name = "AbortError";
+      throw error;
+    }
     this.videoEnabled = video;
     this._createPeerConnection();
 
@@ -98,11 +112,17 @@ export class CallEngine {
   }
 
   async acceptCall({ callId, type, offer }) {
+    const generation = ++this.operationGeneration;
     this.callId = callId;
     this.role = "callee";
     const video = type === "video";
 
-    await this._getLocalMedia({ video });
+    await this._getLocalMedia({ video, generation });
+    if (generation !== this.operationGeneration || this.callId !== callId) {
+      const error = new Error("Call setup cancelled");
+      error.name = "AbortError";
+      throw error;
+    }
     this.videoEnabled = video;
     this._createPeerConnection();
 
@@ -155,6 +175,7 @@ export class CallEngine {
   }
 
   _cleanup() {
+    this.operationGeneration += 1;
     this.pc?.close();
     this.pc = null;
     this.localStream?.getTracks().forEach((t) => t.stop());

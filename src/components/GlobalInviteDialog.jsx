@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Copy, Check, Mail, MessageSquare, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/lib/AuthContext";
 import { copyToClipboard } from "@/lib/clipboard";
 
 export default function GlobalInviteDialog({ open, onOpenChange }) {
@@ -12,6 +13,22 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
   const [phone, setPhone] = useState("");
   const [smsStatus, setSmsStatus] = useState(null);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const lastUserIdRef = useRef(user?.id || null);
+
+  useEffect(() => {
+    const nextUserId = user?.id || null;
+    if (lastUserIdRef.current === nextUserId) return;
+    lastUserIdRef.current = nextUserId;
+    if (copyTimerRef.current) {
+      clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = null;
+    }
+    setCopied(false);
+    setPhone("");
+    setSmsStatus(null);
+    onOpenChange(false);
+  }, [user?.id, onOpenChange]);
 
   useEffect(() => () => {
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current);

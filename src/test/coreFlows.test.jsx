@@ -107,6 +107,19 @@ vi.mock('@/api/base44Client', () => ({ base44: mockBase44 }));
 vi.mock('@/lib/AuthContext', () => ({
   useAuth: () => mockAuthState.current,
 }));
+vi.mock('@/lib/LockedChatsContext', () => ({
+  useLockedChats: () => ({
+    isReady: true,
+    isUnlocked: true,
+    lockedConversationIds: [],
+    canAccessConversation: () => true,
+    security: {},
+    isEntitled: true,
+    hasLockedChats: false,
+    lockNow: vi.fn(),
+    status: 'ready',
+  }),
+}));
 vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => mockSubscription.current,
 }));

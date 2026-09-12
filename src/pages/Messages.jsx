@@ -91,8 +91,23 @@ export default function Messages() {
   };
 
   const handleSelectConv = (convId) => {
+    if (!convId) return;
+    // On mobile, update the URL too. This makes the selected DM survive
+    // touch/click timing quirks and gives the existing deep-link resolver a
+    // second, authoritative way to restore the chat view.
+    const nextSearch = `?id=${encodeURIComponent(convId)}`;
+    if (window.location.search !== nextSearch) {
+      window.history.replaceState(window.history.state, "", `${window.location.pathname}${nextSearch}`);
+    }
     setSelectedConvId(convId);
     markConversationRead(convId);
+  };
+
+  const handleBackToConversations = () => {
+    if (window.location.search) {
+      window.history.replaceState(window.history.state, "", window.location.pathname);
+    }
+    setSelectedConvId(null);
   };
 
   useEffect(() => {
@@ -735,7 +750,7 @@ export default function Messages() {
                   conversation_id: message.conversation_id || selectedConvId,
                 });
               }}
-              onBack={() => setSelectedConvId(null)}
+              onBack={handleBackToConversations}
               onStartDM={startDM}
             />
           ) : (

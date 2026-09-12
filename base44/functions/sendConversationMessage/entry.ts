@@ -395,7 +395,11 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
     }
 
     if (typeof body?.reply_to_id === 'string' && body.reply_to_id) {
-      const replyTarget = await base44.asServiceRole.entities.Message.get(body.reply_to_id).catch(() => null);
+      const replyToId = body.reply_to_id.trim();
+      if (!isBase44EntityId(replyToId)) {
+        return Response.json({ error: 'Invalid reply_to_id' }, { status: 400 });
+      }
+      const replyTarget = await base44.asServiceRole.entities.Message.get(replyToId).catch(() => null);
       if (!replyTarget || replyTarget.conversation_id !== conversationId) {
         return Response.json({ error: 'Reply target is not in this conversation' }, { status: 400 });
       }

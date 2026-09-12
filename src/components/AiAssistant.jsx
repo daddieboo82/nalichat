@@ -31,6 +31,21 @@ export default function AiAssistant() {
   const currentAudioRef = useRef(null);
   const loadingTimerRef = useRef(null);
 
+  const sendAgentText = async (conv, text) => {
+    const content = String(text || "").trim();
+    if (!conv?.id || !content) throw new Error("Conversation and message are required");
+    const requestKey = typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `nali-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const response = await base44.functions.invoke("sendAgentMessage", {
+      conversation_id: conv.id,
+      content,
+      request_key: requestKey,
+    });
+    if (response?.data?.error) throw new Error(response.data.error);
+    return response;
+  };
+
 
   useEffect(() => {
     const handleOpen = (e) => {
@@ -51,7 +66,7 @@ export default function AiAssistant() {
       try {
         let conv = conversation;
         if (!conv) conv = await initConversation();
-        await base44.agents.addMessage(conv, { role: "user", content: text });
+        await sendAgentText(conv, text);
       } catch (error) {
         console.error("Nali event send error", error);
         toast.error("Couldn't send that message to NALI.ai. Please try again.");
@@ -162,11 +177,9 @@ export default function AiAssistant() {
     setMinimized(false);
     if (!conversation) {
       const conv = await initConversation();
-      // Send greeting — custom greeting lets onboarding prime Nali with context
-      await base44.agents.addMessage(conv, {
-        role: "user",
-        content: greeting || "Hi! What can you help me with on RecordStudio?"
-      });
+      // Only send a contextual greeting when one was explicitly provided.
+      // Opening Nali by itself should not consume a model request.
+      if (greeting) await sendAgentText(conv, greeting);
     }
     setTimeout(() => inputRef.current?.focus(), 100);
   };
@@ -178,7 +191,7 @@ export default function AiAssistant() {
     let conv = conversation;
     try {
       if (!conv) conv = await initConversation();
-      await base44.agents.addMessage(conv, { role: "user", content: text.trim() });
+      await sendAgentText(conv, text.trim());
       // loading is cleared by the subscription when Nali's reply arrives,
       // but set a safety timeout in case the subscription never fires
       // (agent error, WebSocket drop, or very long tool call)

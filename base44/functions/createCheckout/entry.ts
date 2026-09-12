@@ -49,6 +49,9 @@ function validateCallbackUrl(raw: unknown, allowedOrigins: Set<string>): string 
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
     const { items, callbackUrls } = await req.json();
 
     const base44 = createClientFromRequest(req);

@@ -2001,5 +2001,71 @@ describe('release configuration', () => {
     expect(sw).toContain("const CACHE_NAME = 'nalichat-v2';");
   });
 
+  it('classifies every backend function that intentionally runs without user auth', async () => {
+    const functionDir = new URL('../../base44/functions/', import.meta.url);
+    const names = await readdir(functionDir);
+    const unauthenticated = [];
+
+    for (const name of names) {
+      try {
+        const source = await readFile(new URL(`${name}/entry.ts`, functionDir), 'utf8');
+        if (!source.includes('Deno.serve')) continue;
+        if (source.includes('.auth.me()')) continue;
+        unauthenticated.push(name);
+      } catch {}
+    }
+
+    const signedWebhooks = new Set(['stripeWebhook', 'wixPaymentsWebhook']);
+    const capabilityEndpoints = new Set(['getSharedFileByToken', 'verifyCheckoutPayment']);
+    const publicReadEndpoints = new Set(['getChallengeLeaderboard', 'getPushConfig']);
+    const internalWorkflowHandlers = new Set([
+      'notifyOnFileUpload',
+      'notifyOnMessage',
+      'notifyOnTrackVersion',
+      'notifyOnTrackComment',
+      'notifyOnMilestoneUpdate',
+      'processDueFollowUpReminders',
+      'resolveFollowUpReminders',
+    ]);
+    const explicitlyAllowed = new Set([
+      ...signedWebhooks,
+      ...capabilityEndpoints,
+      ...publicReadEndpoints,
+      ...internalWorkflowHandlers,
+    ]);
+
+    expect(new Set(unauthenticated)).toEqual(explicitlyAllowed);
+
+    const stripe = await readText('base44/functions/stripeWebhook/entry.ts');
+    expect(stripe).toContain('verifyStripeSignature');
+    expect(stripe).toContain("req.headers.get('Stripe-Signature')");
+
+    const wix = await readText('base44/functions/wixPaymentsWebhook/entry.ts');
+    expect(wix).toContain('jwt.verify');
+    expect(wix).toContain("algorithms: [\"RS256\"]");
+
+    const shared = await readText('base44/functions/getSharedFileByToken/entry.ts');
+    expect(shared).toContain('constantTimeEqual');
+    expect(shared).toContain('/^[0-9a-f]{64}$/');
+
+    const verifyPayment = await readText('base44/functions/verifyCheckoutPayment/entry.ts');
+    expect(verifyPayment).toContain('purchase_verifier_hash');
+    expect(verifyPayment).toContain("'checkout_verification'");
+
+    const pushConfig = await readText('base44/functions/getPushConfig/entry.ts');
+    expect(pushConfig).toContain("req.method !== 'GET'");
+    expect(pushConfig).toContain('publicPushConfig()');
+
+    for (const name of internalWorkflowHandlers) {
+      const source = await readText(`base44/functions/${name}/entry.ts`);
+      expect(source).toContain("req.method !== 'POST'");
+      expect(
+        source.includes('workflowRecordIsFresh')
+        || source.includes('claimMinuteWindow')
+        || source.includes('createNotificationIdempotently'),
+      ).toBe(true);
+    }
+  });
+
 
 });

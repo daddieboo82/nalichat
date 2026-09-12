@@ -39,7 +39,7 @@ describe('release configuration', () => {
       const source = await readText(path);
       expect(source).toContain('consumeHourlyLimit');
       expect(source).toContain(key);
-      expect(source).toContain(`${key},\n      ${limit},`);
+      expect(source).toMatch(new RegExp(`${key},\\s*${limit}`));
       expect(source).toContain(`${actor}.is_banned`);
       expect(source).toContain(`${actor}.timeout_until`);
       expect(source).toContain('status: 429');
@@ -204,10 +204,10 @@ describe('release configuration', () => {
     expect(version.rls.read).not.toBeNull();
     expect(sharedFile.rls.read).not.toBeNull();
     expect(folder.rls.read).not.toBeNull();
-    expect(JSON.stringify(track.rls.update)).toContain('edit_user_ids');
-    expect(JSON.stringify(version.rls.update)).toContain('edit_user_ids');
-    expect(JSON.stringify(sharedFile.rls.update)).toContain('edit_user_ids');
-    expect(JSON.stringify(folder.rls.update)).toContain('edit_user_ids');
+    expect(track.rls.update?.user_condition?.role).toBe('admin');
+    expect(version.rls.update?.user_condition?.role).toBe('admin');
+    expect(sharedFile.rls.update?.user_condition?.role).toBe('admin');
+    expect(folder.rls.update?.user_condition?.role).toBe('admin');
   });
 
 
@@ -271,7 +271,7 @@ describe('release configuration', () => {
     const submission = await readJson('base44/entities/ChallengeSubmission.jsonc');
     const deletion = await readText('base44/functions/deleteChallengeSubmission/entry.ts');
     expect(submission.rls.delete?.user_condition?.role).toBe('admin');
-    expect(deletion).toContain('entities.ChallengeVote.filter({ submission_id: submission.id })');
+    expect(deletion).toMatch(/ChallengeVote\.filter\([\s\S]*submission_id: submission\.id[\s\S]*200/);
     expect(deletion).toContain("parent_type: 'challenge_submission'");
     expect(deletion).toContain('await entities.ChallengeSubmission.delete(submission.id)');
   });
@@ -322,9 +322,11 @@ describe('release configuration', () => {
 
   it('validates live reminder membership and source context before reschedule or cancel', async () => {
     const reminders = await readText('base44/shared/followUpReminders.ts');
-    const membershipCheck = reminders.indexOf("if (!conversation.participant_ids?.includes(ownerId))");
-    const sourceCheck = reminders.indexOf("const source = await findById(entities.Message, reminder.source_message_id)");
-    const returnConversation = reminders.indexOf('return conversation;', membershipCheck);
+    const contextStart = reminders.indexOf('async function requireCurrentReminderContext');
+    const membershipCheck = reminders.indexOf("if (!conversation.participant_ids?.includes(ownerId))", contextStart);
+    const sourceCheck = reminders.indexOf("const source = await findById(entities.Message, reminder.source_message_id)", contextStart);
+    const returnConversation = reminders.indexOf('return conversation;', contextStart);
+    expect(contextStart).toBeGreaterThan(-1);
     expect(membershipCheck).toBeGreaterThan(-1);
     expect(sourceCheck).toBeGreaterThan(membershipCheck);
     expect(returnConversation).toBeGreaterThan(sourceCheck);
@@ -501,8 +503,8 @@ describe('release configuration', () => {
 
     expect(conversation.rls.create?.user_condition?.role).toBe('admin');
     expect(manageConversation).toContain("action === 'create_dm' || action === 'create_group'");
-    expect(manageConversation).toContain('Recipient not found');
-    expect(manageConversation).toContain('One or more participants were not found');
+    expect(manageConversation).toContain('Recipient unavailable');
+    expect(manageConversation).toContain('One or more participants are unavailable');
     expect(messagesPage).not.toContain('entities.Conversation.create');
     expect(globalMessage).not.toContain('entities.Conversation.create');
   });
@@ -552,8 +554,8 @@ describe('release configuration', () => {
     const mutate = await readText('base44/functions/mutateConversationMessage/entry.ts');
     expect(mutate).toContain("'message_edit'");
     expect(mutate).toContain('status: 429');
-    expect(mutate).toContain('thread_reply_count: remainingReplies.length');
-    expect(mutate).toContain("last_message_at: latest?.created_date || null");
+    expect(mutate).toContain('$inc: { thread_reply_count: -1 }');
+    expect(mutate).toContain('repairConversationPreview');
   });
 
   it('blocks message reactions while banned or timed out', async () => {
@@ -596,7 +598,7 @@ describe('release configuration', () => {
     expect(sendMessage).toContain('conversation.participant_ids.length !== 2');
     expect(sendMessage).toContain("appealAdmin?.role !== 'admin'");
     expect(manageConversation).toContain("user.is_banned && ['create_group', 'create_public', 'join_public', 'rename'].includes(action)");
-    expect(manageConversation).toContain("user.is_banned && otherUser.role !== 'admin'");
+    expect(manageConversation).toContain('user.is_banned && !otherIsAdmin');
   });
 
   it('prevents timed-out users from creating or joining conversations', async () => {
@@ -624,7 +626,7 @@ describe('release configuration', () => {
       expect(source).toContain('workflowEntityRecordId({ event, data })');
       expect(source).toContain("Conflicting entity ids");
       expect(source).toContain('workflowRecordIsFresh');
-      expect(source).toContain('Notification.create');
+      expect(source).toContain('createNotificationIdempotently');
       expect(source).toContain('notification_');
       expect(source).not.toMatch(/\.get\(data\.id\)/);
     }
@@ -672,7 +674,7 @@ describe('release configuration', () => {
     const revoke = await readText('base44/functions/revokeProjectInvites/entry.ts');
     const jamRoom = await readText('src/components/studio/JamRoomOverlay.jsx');
     expect(revoke).toContain('project.owner_id !== user.id');
-    expect(revoke).toContain('entities.ProjectInvite.filter(filters)');
+    expect(revoke).toMatch(/ProjectInvite\.filter\([\s\S]*filters[\s\S]*200/);
     expect(revoke).toContain('entities.ProjectInvite.delete(invite.id)');
     expect(jamRoom).toContain('functions.invoke("revokeProjectInvites"');
     expect(jamRoom).toContain('Revoke All Invite Links');
@@ -859,7 +861,7 @@ describe('release configuration', () => {
     const createPost = await readText('base44/functions/createArtPost/entry.ts');
     const submitRemix = await readText('base44/functions/submitChallengeRemix/entry.ts');
 
-    expect(createPost).toContain("parsed.protocol === 'https:'");
+    expect(createPost).toContain("parsed.protocol !== 'https:'");
     expect(createPost).toContain('trusted uploaded media URL are required');
     expect(createPost).toContain('boundedNumber(body?.bpm, 1, 400)');
     expect(submitRemix).toContain("uploadedUrl.protocol === 'https:'");
@@ -992,7 +994,7 @@ describe('release configuration', () => {
 
   it('does not reveal presence from unilateral contact relationships', async () => {
     const listUsers = await readText('base44/functions/listPublicUsers/entry.ts');
-    expect(listUsers).toContain('Contact.filter({ contact_user_id: user.id })');
+    expect(listUsers).toMatch(/Contact\.filter\([\s\S]*contact_user_id: user\.id/);
     expect(listUsers).toContain('inboundContactOwners.has(contact.contact_user_id)');
     expect(listUsers).toContain('presenceVisibleTo.add(contact.contact_user_id)');
   });
@@ -1029,7 +1031,7 @@ describe('release configuration', () => {
 
     expect(milestone.properties.completed_by_id.rls?.write?.user_condition?.role).toBe('admin');
     expect(mutateMilestone).toContain('completed_by_id: completed ? user.id : null');
-    expect(squadActivity).toContain('return milestone.completed_by_id === user.id');
+    expect(squadActivity).toContain('milestone.completed_by_id !== user.id');
     expect(squadActivity).not.toContain('(milestone.edit_user_ids || []).includes(user.id)');
   });
 
@@ -1130,7 +1132,7 @@ describe('release configuration', () => {
     const bell = await readText('src/components/notifications/NotificationBell.jsx');
 
     expect(session).not.toContain('entities.Track.subscribe');
-    expect(session).toContain('Track.filter({ project_id: message.id })');
+    expect(session).toContain('Track.filter({ project_id: message.id }, "created_date", 500)');
     expect(session).toContain('setInterval(refreshTracks, 5000)');
 
     expect(bell).not.toContain('entities.Notification.subscribe');
@@ -1369,7 +1371,7 @@ describe('release configuration', () => {
       expect(source).toContain("error: 'timed_out'");
     }
     expect(external).toContain('.slice(0, 5000)');
-    expect(external).toContain('.slice(0, 320)');
+    expect(external).toContain('destination.length > 320');
     expect(external).toContain(".replace(/[\r\n]/g, ' ')");
     expect(invite).toContain(".replace(/[\r\n]/g, ' ')");
   });
@@ -1466,7 +1468,7 @@ describe('release configuration', () => {
     expect(newChat).not.toContain('u.phone');
     expect(newChat).not.toContain('email, or phone');
     expect(external).not.toContain('Recipient is not a registered NaliChat user');
-    expect(external).toContain("accepted: true");
+    expect(external).toContain("success: true, method: 'email'");
   });
 
   it('rate-limits public discovery scans and keeps chat discovery email-free', async () => {
@@ -1594,7 +1596,7 @@ describe('release configuration', () => {
   it('prevents contact ownership reassignment', async () => {
     const contact = await readJson('base44/entities/Contact.jsonc');
     expect(contact.properties.user_id.rls?.write?.user_condition?.role).toBe('admin');
-    expect(contact.rls.create?.['data.user_id']).toBe('{{user.id}}');
+    expect(contact.rls.create?.user_condition?.role).toBe('admin');
     expect(contact.rls.read?.['data.user_id']).toBe('{{user.id}}');
   });
 
@@ -1673,18 +1675,18 @@ describe('release configuration', () => {
 
   it('removes or anonymizes cross-user references during account deletion', async () => {
     const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
-    expect(deletion).toContain('entities.Contact.filter({ contact_user_id: user.id })');
-    expect(deletion).toContain('await entities.Contact.delete(contact.id)');
-    expect(deletion).toContain('entities.Violation.filter({ user_id: user.id })');
+    expect(deletion).toContain('{ contact_user_id: user.id }');
+    expect(deletion).toContain('(contact) => entities.Contact.delete(contact.id)');
+    expect(deletion).toContain('{ user_id: user.id }');
     expect(deletion).toContain("user_name: 'Deleted User'");
-    expect(deletion).toContain('entities.Violation.filter({ reported_by_id: user.id })');
+    expect(deletion).toContain('{ reported_by_id: user.id }');
     expect(deletion).toContain("reported_by_name: 'Deleted User'");
   });
 
   it('anonymizes reply sender snapshots for deleted users', async () => {
     const deletion = await readText('base44/functions/deleteMyAccount/entry.ts');
-    expect(deletion).toContain('const authoredMessageIds = new Set');
-    expect(deletion).toContain('entities.Message.filter({ reply_to_id: parentId })');
+    expect(deletion).toContain('{ sender_id: user.id }');
+    expect(deletion).toContain('{ reply_to_id: message.id }');
     expect(deletion).toContain("reply_to_sender: 'Deleted User'");
     expect(deletion).not.toContain("Message.list('-created_date', 5000)");
   });

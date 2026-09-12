@@ -111,7 +111,9 @@ Deno.serve(async (req) => {
       await releaseProjectMembershipLock(entities, projectLockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('deleteFolder error:', error);
-    return Response.json({ error: error?.message || 'Folder deletion failed' }, { status: 500 });
+    return Response.json({ error: 'Folder deletion failed' }, { status: 500 });
   }
 });

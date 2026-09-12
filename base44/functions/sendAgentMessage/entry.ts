@@ -8,6 +8,7 @@ import {
   aiCapabilityErrorResponse,
   executeRoutedAiRequest,
 } from '../../shared/aiCapability.ts';
+import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 
 const MAX_AGENT_MESSAGE_CHARS = 12_000;
 const MAX_CONVERSATION_ID_CHARS = 256;
@@ -25,6 +26,18 @@ Deno.serve(async (req) => {
     if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
       return Response.json(
         { error: 'timed_out', timeout_until: user.timeout_until },
+        { status: 403 },
+      );
+    }
+
+    const { allowed } = await requireEntitlement(
+      base44.asServiceRole.entities,
+      user.id,
+      'ai.standard',
+    );
+    if (!allowed) {
+      return Response.json(
+        { error: 'Premium is required to use NALI.ai', code: 'AI_NOT_ENTITLED' },
         { status: 403 },
       );
     }

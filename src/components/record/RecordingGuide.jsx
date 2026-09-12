@@ -31,6 +31,7 @@ export default function RecordingGuide({ open, onClose }) {
   const practiceChunksRef = useRef([]);
   const practiceStreamRef = useRef(null);
   const practiceTimerRef = useRef(null);
+  const practiceStopTimerRef = useRef(null);
 
   const steps = [
     { key: 'welcome', title: "Let's get you recording", icon: Sparkles },
@@ -98,6 +99,9 @@ export default function RecordingGuide({ open, onClose }) {
       practiceStreamRef.current = null;
     }
     if (practiceTimerRef.current) clearInterval(practiceTimerRef.current);
+    practiceTimerRef.current = null;
+    if (practiceStopTimerRef.current) clearTimeout(practiceStopTimerRef.current);
+    practiceStopTimerRef.current = null;
     practiceRecRef.current = null;
     setPracticeRecording(false);
     setPracticeTimer(0);
@@ -127,7 +131,8 @@ export default function RecordingGuide({ open, onClose }) {
       setPracticeRecording(true);
       setPracticeTimer(0);
       practiceTimerRef.current = setInterval(() => setPracticeTimer(t => t + 1), 1000);
-      setTimeout(() => {
+      practiceStopTimerRef.current = setTimeout(() => {
+        practiceStopTimerRef.current = null;
         if (rec.state !== 'inactive') { try { rec.stop(); } catch {} }
       }, 5000);
     } catch (err) {

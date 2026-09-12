@@ -389,6 +389,8 @@ describe('release configuration', () => {
     expect(callSummary).toContain("['start', 'register_capture', 'generate'].includes(body?.action)");
     expect(callSummary).toContain("jsonError(403, 'BANNED'");
     expect(callSummary).toContain("jsonError(403, 'TIMED_OUT'");
+    expect(callSummary).toContain('TRUSTED_MEDIA_HOSTS');
+    expect(callSummary).not.toContain("Deno.env.get('CALL_SUMMARY_UPLOAD_HOSTS')");
   });
 
   it('bounds Viral Moment transcription and validates premium automation/download media', async () => {

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -29,7 +30,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { type, destination, message } = await req.json();
+    const { type, destination, message } = await readJsonBodyLimited(req, 16 * 1024);
 
     if (typeof destination !== 'string' || typeof message !== 'string') {
       return Response.json({ error: 'destination and message must be strings' }, { status: 400 });
@@ -101,7 +102,9 @@ Deno.serve(async (req) => {
 
     return Response.json({ error: 'Invalid type. Use "email" or "sms"' }, { status: 400 });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('sendExternalMessage error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'External message delivery failed' }, { status: 500 });
   }
 });

@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 async function contactRecordId(userId: string, targetUserId: string) {
   const digest = await crypto.subtle.digest(
@@ -42,8 +43,8 @@ Deno.serve(async (req) => {
     const entities = base44.asServiceRole.entities;
 
     if (action === 'add') {
-      const targetUserId = String(body?.targetUserId || '');
-      if (!targetUserId || targetUserId === user.id) {
+      const targetUserId = String(body?.targetUserId || '').trim();
+      if (!isBase44EntityId(targetUserId) || targetUserId === user.id) {
         return Response.json({ error: 'Invalid contact target' }, { status: 400 });
       }
 
@@ -85,8 +86,10 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'delete') {
-      const contactId = String(body?.contactId || '');
-      if (!contactId) return Response.json({ error: 'contactId is required' }, { status: 400 });
+      const contactId = String(body?.contactId || '').trim();
+      if (!/^contact_[0-9a-f]{64}$/.test(contactId)) {
+        return Response.json({ error: 'Valid contactId is required' }, { status: 400 });
+      }
       const contact = await entities.Contact.get(contactId).catch(() => null);
       if (!contact || contact.user_id !== user.id) {
         return Response.json({ error: 'Contact not found' }, { status: 404 });

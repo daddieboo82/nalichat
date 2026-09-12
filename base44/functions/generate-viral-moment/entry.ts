@@ -232,6 +232,6 @@ Respond as JSON: {
     }
   } catch (error) {
     console.error('generate-viral-moment error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Viral moment generation failed' }, { status: 500 });
   }
 });

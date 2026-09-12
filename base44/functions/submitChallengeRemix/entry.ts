@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import {
   acquireChallengeLifecycleLock,
@@ -87,7 +88,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Challenge submission rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 64 * 1024);
     if (
       typeof body?.challenge_id !== 'string'
       || typeof body?.remix_name !== 'string'

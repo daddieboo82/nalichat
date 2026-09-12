@@ -54,9 +54,21 @@ Deno.serve(async (req) => {
       if (!emailRegex.test(cleanDestination)) {
         return Response.json({ error: 'Invalid email address' }, { status: 400 });
       }
-      const users = await base44.asServiceRole.entities.User.filter({ email: cleanDestination }, '-created_date', 1);
-      const isRegistered = users.length > 0;
-      if (!isRegistered) {
+      const normalizedDestination = cleanDestination.toLowerCase();
+      let users = await base44.asServiceRole.entities.User.filter(
+        { email: normalizedDestination },
+        '-created_date',
+        1,
+      );
+      if (users.length === 0 && normalizedDestination !== cleanDestination) {
+        users = await base44.asServiceRole.entities.User.filter(
+          { email: cleanDestination },
+          '-created_date',
+          1,
+        );
+      }
+      const registeredUser = users[0] || null;
+      if (!registeredUser) {
         // Do not disclose whether an email address is registered.
         return Response.json({ success: true, method: 'email' });
       }
@@ -65,8 +77,9 @@ Deno.serve(async (req) => {
         .replace(/[\r\n]{2,}/g, '\n\n')
         .replace(/[\r\n]/g, '\n')
         .slice(0, 5000);
+      const registeredEmail = String(registeredUser.email || cleanDestination).trim();
       await base44.asServiceRole.integrations.Core.SendEmail({
-        to: cleanDestination,
+        to: registeredEmail,
         subject: `Message from ${name} via NaliChat`,
         body: `${name} sent you a message on NaliChat:\n\n"${cleanMessage}"\n\n---\nReply by joining NaliChat to connect directly.`,
       });

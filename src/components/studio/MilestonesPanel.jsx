@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -39,11 +39,13 @@ function dueBadge(due_date, completed) {
 export default function MilestonesPanel({ projectId, canEdit }) {
   const qc = useQueryClient();
   const { user: currentUser } = useAuth();
+  const mutationGenerationRef = useRef(0);
   const [showAdd, setShowAdd] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", due_date: "", priority: "medium" });
 
   useEffect(() => {
+    mutationGenerationRef.current += 1;
     setShowAdd(false);
     setDateOpen(false);
     setForm({ title: "", description: "", due_date: "", priority: "medium" });
@@ -59,26 +61,33 @@ export default function MilestonesPanel({ projectId, canEdit }) {
 
   const addMilestone = useMutation({
     mutationFn: async () => {
+      const generation = mutationGenerationRef.current;
       const res = await base44.functions.invoke("createProjectMilestone", {
         ...form,
         project_id: projectId,
       });
+      if (generation !== mutationGenerationRef.current) return { stale: true };
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.milestone;
+      return { stale: false, milestone: res?.data?.milestone };
     },
-    onSuccess: () => { invalidate(); setShowAdd(false); setForm({ title: "", description: "", due_date: "", priority: "medium" }); },
+    onSuccess: (result) => {
+      if (result?.stale) return;
+      invalidate(); setShowAdd(false); setForm({ title: "", description: "", due_date: "", priority: "medium" }); },
   });
 
   const toggle = useMutation({
     mutationFn: async (m) => {
+      const generation = mutationGenerationRef.current;
       const res = await base44.functions.invoke("mutateMilestone", {
         action: "toggle",
         milestoneId: m.id,
       });
+      if (generation !== mutationGenerationRef.current) return { stale: true };
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.milestone;
+      return { stale: false, milestone: res?.data?.milestone };
     },
-    onSuccess: (_, m) => {
+    onSuccess: (result, m) => {
+      if (result?.stale) return;
       invalidate();
       if (!m.completed) {
         recordSquadActivity("milestone", m.id);
@@ -88,14 +97,18 @@ export default function MilestonesPanel({ projectId, canEdit }) {
 
   const remove = useMutation({
     mutationFn: async (id) => {
+      const generation = mutationGenerationRef.current;
       const res = await base44.functions.invoke("mutateMilestone", {
         action: "delete",
         milestoneId: id,
       });
+      if (generation !== mutationGenerationRef.current) return { stale: true };
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data;
+      return { stale: false, data: res?.data };
     },
-    onSuccess: invalidate,
+    onSuccess: (result) => {
+      if (!result?.stale) invalidate();
+    },
   });
 
   const done = milestones.filter(m => m.completed);

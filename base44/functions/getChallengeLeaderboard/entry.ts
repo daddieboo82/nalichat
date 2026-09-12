@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
     const challengeId = String(body?.challengeId || '').trim();
-    if (!challengeId || challengeId.length > 200) {
+    if (!/^[0-9A-F]{24}$/i.test(challengeId)) {
       return Response.json({ error: 'Valid challengeId is required' }, { status: 400 });
     }
 

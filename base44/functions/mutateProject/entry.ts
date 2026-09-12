@@ -58,23 +58,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Viewer access cannot modify this project' }, { status: 403 });
     }
 
-    const lockId = await acquireProjectMembershipLock(entities, projectId);
-    if (!lockId) {
-      return Response.json(
-        { error: 'Project is being updated. Please retry.' },
-        { status: 409 },
-      );
-    }
-
-    try {
-    const project = await entities.Project.get(projectId);
-    if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
-
-    const canEdit = user.role === 'admin'
-      || project.owner_id === user.id
-      || (project.editor_ids || []).includes(user.id);
-    if (!canEdit) return Response.json({ error: 'Viewer access cannot modify this project' }, { status: 403 });
-
     const patch: Record<string, unknown> = {};
 
     if (data.title !== undefined) {
@@ -160,6 +143,24 @@ Deno.serve(async (req) => {
     if (Object.keys(patch).length === 0) {
       return Response.json({ error: 'No supported project fields supplied' }, { status: 400 });
     }
+
+
+    const lockId = await acquireProjectMembershipLock(entities, projectId);
+    if (!lockId) {
+      return Response.json(
+        { error: 'Project is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
+    const project = await entities.Project.get(projectId);
+    if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
+
+    const canEdit = user.role === 'admin'
+      || project.owner_id === user.id
+      || (project.editor_ids || []).includes(user.id);
+    if (!canEdit) return Response.json({ error: 'Viewer access cannot modify this project' }, { status: 403 });
 
     const updated = await entities.Project.update(project.id, patch);
     return Response.json({ success: true, project: updated });

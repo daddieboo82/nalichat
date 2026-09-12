@@ -259,6 +259,13 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           (hasFile && message.type !== "audio") || message.type === "session" ? "p-2" : "px-4 py-2.5",
           message.type === "session" && isOwn && "from-transparent to-transparent bg-transparent text-foreground shadow-none border border-primary/30"
         )}>
+          {!isOwn && senderIsOnline && (
+            <span
+              className="absolute -left-1.5 -bottom-1.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"
+              aria-label="Active now"
+              title="Active now"
+            />
+          )}
           {message.type === "session" ? (
             <ChatSessionViewer message={message} currentUser={currentUser} />
           ) : hasFile ? (

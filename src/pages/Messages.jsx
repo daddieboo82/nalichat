@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { recordSquadActivity } from "@/lib/squadBonus";
@@ -74,7 +74,6 @@ export default function Messages() {
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedConvId, setSelectedConvId] = useState(null);
-  const selectedConvIdRef = useRef(null);
   const [sidebarTab, setSidebarTab] = useState("chats");
   const [lockedLinkConversationId, setLockedLinkConversationId] = useState(null);
   const [showLockedAccess, setShowLockedAccess] = useState(false);
@@ -132,38 +131,17 @@ export default function Messages() {
   const [showInvite, setShowInvite] = useState(false);
 
   useEffect(() => {
-    selectedConvIdRef.current = selectedConvId;
-  }, [selectedConvId]);
-
-  useEffect(() => {
-    const sendPresence = (isOnline) => {
-      if (!currentUser?.id) return;
-      base44.functions.invoke("updateUserPresence", { isOnline }).catch(() => {});
-    };
-
-    const handleVisibilityChange = async () => {
-      const isOnline = document.visibilityState === "visible";
-      sendPresence(isOnline);
-      if (isOnline) {
-        // Immediately refresh messages and conversations when returning to the tab
-        queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id, selectedConvIdRef.current] });
-        queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
-      }
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      // Immediately refresh the active chat and conversation list when returning
+      // to the tab. Presence itself is maintained app-wide in App.jsx.
+      queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id, selectedConvId] });
+      queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    if (currentUser) sendPresence(document.visibilityState === "visible");
-
-    const heartbeat = window.setInterval(() => {
-      if (document.visibilityState === "visible") sendPresence(true);
-    }, 60_000);
-
-    return () => {
-      window.clearInterval(heartbeat);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      sendPresence(false);
-    };
-  }, [currentUser?.id, queryClient]);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [currentUser?.id, queryClient, selectedConvId]);
 
   const { data: users = [], isError: usersError } = useQuery({
     queryKey: ["users", currentUser?.id],

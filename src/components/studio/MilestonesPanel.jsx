@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { recordSquadActivity } from "@/lib/squadBonus";
+import { useAuth } from "@/lib/AuthContext";
 
 const priorityColors = {
   low: "bg-muted text-muted-foreground",
@@ -37,17 +38,18 @@ function dueBadge(due_date, completed) {
 
 export default function MilestonesPanel({ projectId, canEdit }) {
   const qc = useQueryClient();
+  const { user: currentUser } = useAuth();
   const [showAdd, setShowAdd] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", due_date: "", priority: "medium" });
 
   const { data: milestones = [] } = useQuery({
-    queryKey: ["milestones", projectId],
+    queryKey: ["milestones", currentUser?.id, projectId],
     queryFn: () => base44.entities.Milestone.filter({ project_id: projectId }, "created_date"),
-    enabled: !!projectId,
+    enabled: !!currentUser?.id && !!projectId,
   });
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["milestones", projectId] });
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["milestones", currentUser?.id, projectId] });
 
   const addMilestone = useMutation({
     mutationFn: async () => {

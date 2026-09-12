@@ -67,22 +67,11 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      // Always resolve the user session if we have a token, regardless of
-      // whether public-settings succeeded.  This is the critical path for
-      // Google OAuth: the redirect delivers a valid access_token, but the old
-      // code skipped me() entirely when public-settings threw, so the user
-      // appeared logged out despite a successful login.
-      if (appParams.token) {
-        await checkUserAuth();
-      } else if (publicSettingsOk) {
-        setIsLoadingAuth(false);
-        setIsAuthenticated(false);
-        setAuthChecked(true);
-      } else {
-        setIsLoadingAuth(false);
-        setIsAuthenticated(false);
-        setAuthChecked(true);
-      }
+      // Always resolve the user session, even when there is no bearer token.
+      // Google/platform OAuth may complete with a same-origin cookie-backed
+      // session and no access_token in the callback URL. Requiring appParams.token
+      // here incorrectly treated that valid SSO session as logged out.
+      await checkUserAuth();
       setIsLoadingPublicSettings(false);
     } catch (error) {
       console.error('Unexpected error:', error);

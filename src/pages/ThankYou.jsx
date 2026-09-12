@@ -40,7 +40,7 @@ export default function ThankYou() {
     let active = true;
 
     const confirmSubscription = async () => {
-      sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
+      try { sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch {}
       setSubscriptionConfirmation("processing");
       const result = await pollForSubscriptionConfirmation({
         fetchStatus: async () => {
@@ -54,8 +54,13 @@ export default function ThankYou() {
       setSubscriptionConfirmation(result.outcome);
       if (result.outcome === "confirmed") {
         const analyticsKey = `nalichat_subscription_confirmation:${checkoutId || "unknown"}`;
-        const alreadyTracked = localStorage.getItem(analyticsKey) === "1";
-        localStorage.setItem(analyticsKey, "1");
+        let alreadyTracked = false;
+        try {
+          alreadyTracked = localStorage.getItem(analyticsKey) === "1";
+          localStorage.setItem(analyticsKey, "1");
+        } catch {
+          // Analytics dedupe is best-effort; never block a confirmed purchase.
+        }
         if (!alreadyTracked) {
           trackPaywallEvent(
             result.subscription.isTrialing ? "trial_started" : "purchase_completed",

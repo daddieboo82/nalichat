@@ -162,15 +162,15 @@ export default function Messages() {
   }, [currentUser?.id, queryClient, selectedConvId]);
 
   const { data: users = [], isError: usersError } = useQuery({
-    queryKey: ["users", currentUser?.id],
+    queryKey: ["users", "presence", currentUser?.id],
     queryFn: async () => {
       const res = await base44.functions.invoke('listPublicUsers', { includePresence: true });
       if (res?.data?.error) throw new Error(res.data.error);
       return res.data?.users || [];
     },
     enabled: !!currentUser?.id,
-    refetchInterval: 30_000,
-    staleTime: 15_000,
+    refetchInterval: 45_000,
+    staleTime: 20_000,
   });
 
   const { data: conversations = [], isError: conversationsError } = useQuery({

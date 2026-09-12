@@ -2,6 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const MAX_TRANSCRIBE_BYTES = 50 * 1024 * 1024;
 
@@ -71,9 +73,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { messageId, type } = await req.json();
-    if (!messageId) {
-      return Response.json({ error: 'messageId is required' }, { status: 400 });
+    const { messageId, type } = await readJsonBodyLimited(req, 8 * 1024);
+    if (!isBase44EntityId(messageId)) {
+      return Response.json({ error: 'Valid messageId is required' }, { status: 400 });
     }
     if (type !== 'meme' && type !== 'reel') {
       return Response.json({ error: 'type must be "meme" or "reel"' }, { status: 400 });
@@ -231,7 +233,9 @@ Respond as JSON: {
       });
     }
   } catch (error) {
-    console.error('generate-viral-moment error:', error.message);
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    console.error('generate-viral-moment error:', error);
     return Response.json({ error: 'Viral moment generation failed' }, { status: 500 });
   }
 });

@@ -13,6 +13,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const { event, data } = await readJsonBodyLimited(req, 64 * 1024);
     const record = workflowEntityRecordId({ event, data });
+    if (record.invalid) return Response.json({ error: 'Invalid entity id' }, { status: 400 });
     if (record.conflict) return Response.json({ error: 'Conflicting entity ids' }, { status: 400 });
     if (event?.type !== 'create' || !record.id) return Response.json({ success: true });
 

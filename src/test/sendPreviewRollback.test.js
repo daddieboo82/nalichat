@@ -11,7 +11,7 @@ describe('optimistic send preview rollback', () => {
     const source = await readText('src/pages/Messages.jsx');
 
     expect(source).toContain('const previousConversations = queryClient.getQueryData(["conversations"]);');
-    expect(source).toContain('return { previous, previousConversations, tempId, clientMessageKey };');
+    expect(source).toContain('return { previous, previousConversations, tempId, clientMessageKey, conversationId };');
     expect(source.match(/queryClient\.setQueryData\(\["conversations"\], ctx\.previousConversations\);/g)?.length).toBeGreaterThanOrEqual(2);
   });
 });

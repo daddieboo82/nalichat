@@ -10,6 +10,7 @@ import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
+import { persistAuthResult } from "@/lib/authSession";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -43,7 +44,7 @@ export default function Register() {
     setLoading(true);
     try {
       const result = await base44.auth.verifyOtp({ email, otpCode });
-      const token = typeof result === 'string' ? result : result?.access_token;
+      const token = persistAuthResult(result);
       if (token) {
         base44.auth.setToken(token);
       }

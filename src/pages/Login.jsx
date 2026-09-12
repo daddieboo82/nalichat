@@ -9,6 +9,7 @@ import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "sonner";
 import { safeReturnTo } from "@/lib/authReturnTo";
+import { persistAuthResult } from "@/lib/authSession";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -21,7 +22,11 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await base44.auth.loginViaEmailPassword(email, password);
+      const result = await base44.auth.loginViaEmailPassword(email, password);
+      const token = persistAuthResult(result);
+      if (token) {
+        base44.auth.setToken(token);
+      }
       // Skip the intro splash after login so the user lands straight in the app
       try { sessionStorage.setItem('nali_splash_shown', '1'); } catch {}
       toast.success("Logged in successfully! Welcome back.");

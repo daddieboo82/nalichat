@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
@@ -21,6 +21,23 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
   const [showDelete, setShowDelete] = useState(false);
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
+  const lastContextRef = useRef({
+    userId: currentUser?.id || null,
+    projectId: project?.id || null,
+  });
+
+  useEffect(() => {
+    const next = {
+      userId: currentUser?.id || null,
+      projectId: project?.id || null,
+    };
+    const userChanged = lastContextRef.current.userId !== next.userId;
+    const projectChanged = lastContextRef.current.projectId !== next.projectId;
+    if (!userChanged && !projectChanged) return;
+    lastContextRef.current = next;
+    setShowDelete(false);
+    if (userChanged) onOpenChange(false);
+  }, [currentUser?.id, project?.id, onOpenChange]);
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ["users", currentUser?.id],

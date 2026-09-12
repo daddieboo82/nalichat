@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -18,6 +18,15 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
   const { user: currentUser } = useAuth();
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const queryClient = useQueryClient();
+  const lastUserIdRef = useRef(currentUser?.id || null);
+
+  useEffect(() => {
+    const nextUserId = currentUser?.id || null;
+    if (lastUserIdRef.current === nextUserId) return;
+    lastUserIdRef.current = nextUserId;
+    setNewPlaylistName("");
+    onOpenChange(false);
+  }, [currentUser?.id, onOpenChange]);
 
   const { data: playlists = [] } = useQuery({
     queryKey: ["userPlaylists", currentUser?.id],

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,12 @@ export default function MilestonesPanel({ projectId, canEdit }) {
   const [showAdd, setShowAdd] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", due_date: "", priority: "medium" });
+
+  useEffect(() => {
+    setShowAdd(false);
+    setDateOpen(false);
+    setForm({ title: "", description: "", due_date: "", priority: "medium" });
+  }, [currentUser?.id, projectId]);
 
   const { data: milestones = [] } = useQuery({
     queryKey: ["milestones", currentUser?.id, projectId],

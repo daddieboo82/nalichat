@@ -44,6 +44,8 @@ interface MessageRecord {
   conversation_id: string;
   sender_id: string;
   created_date?: string;
+  type?: string;
+  text?: string;
 }
 
 interface ConversationRecord {
@@ -638,6 +640,16 @@ export async function cancelFollowUpReminder({
   return updated;
 }
 
+function isCallSignalingMessage(message: MessageRecord): boolean {
+  if (message.type !== 'session' || typeof message.text !== 'string') return false;
+  try {
+    const parsed = JSON.parse(message.text);
+    return parsed?.__nalichat_call__ === true;
+  } catch {
+    return false;
+  }
+}
+
 export async function resolveFollowUpRemindersForMessage({
   entities,
   message,
@@ -647,7 +659,12 @@ export async function resolveFollowUpRemindersForMessage({
   message: MessageRecord;
   now?: string | Date;
 }) {
-  if (!message.conversation_id || !message.sender_id || !message.created_date) return 0;
+  if (
+    !message.conversation_id
+    || !message.sender_id
+    || !message.created_date
+    || isCallSignalingMessage(message)
+  ) return 0;
   const clock = currentDate(now);
   const conversation = await findById(entities.Conversation, message.conversation_id);
   if (!conversation?.participant_ids?.includes(message.sender_id)) return 0;

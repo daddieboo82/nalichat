@@ -17,7 +17,7 @@
  *  reloads the page.
  */
 
-const CACHE_NAME = 'nalichat-v1';
+const CACHE_NAME = 'nalichat-v2';
 
 // App shell — pre-cached on install so the app works offline on first load.
 const APP_SHELL = [

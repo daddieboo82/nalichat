@@ -18,7 +18,7 @@ import { copyToClipboard } from '@/lib/clipboard';
 import { useSearchParams } from 'react-router-dom';
 
 export default function ProjectsSummary() {
-  const { user } = useAuth();
+  const { user, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
@@ -88,31 +88,53 @@ export default function ProjectsSummary() {
   };
 
   useEffect(() => {
+    if (isLoadingAuth) return undefined;
+
+    if (!user?.id) {
+      setData({ projects: [], milestones: [], sharedFiles: [] });
+      setLoadError(false);
+      setLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const requestedUserId = user.id;
+    setLoading(true);
+    setLoadError(false);
+
     async function fetchData() {
-      if (!user) return;
       try {
         const [projectsRes, milestonesRes, filesRes] = await Promise.all([
           base44.entities.Project.list("-created_date", 500),
           base44.entities.Milestone.list("-created_date", 500),
           base44.entities.SharedFile.list("-created_date", 500)
         ]);
+        if (cancelled) return;
         
-        const myProjects = projectsRes.filter(p => p.owner_id === user.id || (p.collaborator_ids && p.collaborator_ids.includes(user.id)));
+        const myProjects = projectsRes.filter(p => p.owner_id === requestedUserId || (p.collaborator_ids && p.collaborator_ids.includes(requestedUserId)));
         const projectIds = myProjects.map(p => p.id);
         
         const myMilestones = milestonesRes.filter(m => projectIds.includes(m.project_id));
         const myFiles = filesRes.filter(f => projectIds.includes(f.project_id));
 
-        setData({ projects: myProjects, milestones: myMilestones, sharedFiles: myFiles });
+        if (!cancelled) {
+          setData({ projects: myProjects, milestones: myMilestones, sharedFiles: myFiles });
+        }
       } catch (err) {
-        console.error("Projects summary load failed:", err);
-        setLoadError(true);
+        if (!cancelled) {
+          console.error("Projects summary load failed:", err);
+          setLoadError(true);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchData();
-  }, [user]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoadingAuth, user?.id]);
 
   if (loading) {
     return (

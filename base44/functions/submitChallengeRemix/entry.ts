@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import {
   acquireChallengeLifecycleLock,
   releaseChallengeLifecycleLock,
@@ -117,8 +118,7 @@ Deno.serve(async (req) => {
     const sourceType = body.source_type;
 
     if (
-      !challengeId
-      || challengeId.length > 200
+      !isBase44EntityId(challengeId)
       || !remixName
       || remixName.length > 200
       || !SOURCE_TYPES.has(sourceType)

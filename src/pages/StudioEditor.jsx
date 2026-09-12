@@ -9,11 +9,12 @@ import { motion } from "framer-motion";
 import CollaboratorPresence from "@/components/studio/CollaboratorPresence";
 import ExportBounce from "@/components/studio/ExportBounce";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function StudioEditor() {
   const { hasEntitlement } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [activeSession, setActiveSession] = useState(null);
   const [collaborators, setCollaborators] = useState([]);
   const [audioUrl, setAudioUrl] = useState("");
@@ -26,9 +27,6 @@ export default function StudioEditor() {
   const [error, setError] = useState("");
   const audioRef = useRef(null);
 
-  useEffect(() => {
-    base44.auth.me().then(setCurrentUser);
-  }, []);
 
   // Subscribe to collaboration updates
   useEffect(() => {

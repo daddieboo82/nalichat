@@ -2,6 +2,10 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import {
+  acquireArtPostEngagementLock,
+  releaseArtPostEngagementLock,
+} from '../../shared/artPostEngagementLock.ts';
 
 const ALLOWED_MEDIA = new Set(['original','remix','cover','beat','production','mixing','mastering','collab']);
 const TRUSTED_MEDIA_HOSTS = [
@@ -109,8 +113,23 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No supported ArtPost fields supplied' }, { status: 400 });
     }
 
-    const updated = await entities.ArtPost.update(post.id, patch);
-    return Response.json({ success: true, post: updated });
+    const lockId = await acquireArtPostEngagementLock(entities, postId);
+    if (!lockId) {
+      return Response.json({ error: 'Post is being updated. Please retry.' }, { status: 409 });
+    }
+
+    try {
+      const currentPost = await entities.ArtPost.get(postId).catch(() => null);
+      if (!currentPost) return Response.json({ error: 'Post not found' }, { status: 404 });
+      if (currentPost.creator_id !== user.id && user.role !== 'admin') {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+
+      const updated = await entities.ArtPost.update(currentPost.id, patch);
+      return Response.json({ success: true, post: updated });
+    } finally {
+      await releaseArtPostEngagementLock(entities, lockId);
+    }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

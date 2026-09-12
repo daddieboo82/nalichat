@@ -2,6 +2,10 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import {
+  acquireArtPostEngagementLock,
+  releaseArtPostEngagementLock,
+} from '../../shared/artPostEngagementLock.ts';
 
 const DELETE_BATCH_SIZE = 200;
 
@@ -39,11 +43,23 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Only the creator can delete this post' }, { status: 403 });
     }
 
+    const lockId = await acquireArtPostEngagementLock(entities, normalizedPostId);
+    if (!lockId) {
+      return Response.json({ error: 'Post is being updated. Please retry.' }, { status: 409 });
+    }
+
+    try {
+      const currentPost = await entities.ArtPost.get(normalizedPostId).catch(() => null);
+      if (!currentPost) return Response.json({ error: 'Post not found' }, { status: 404 });
+      if (currentPost.creator_id !== user.id && user.role !== 'admin') {
+        return Response.json({ error: 'Only the creator can delete this post' }, { status: 403 });
+      }
+
     let deletedComments = 0;
     while (true) {
       const comments = await entities.TrackComment.filter(
         {
-          track_id: post.id,
+          track_id: currentPost.id,
           parent_type: 'art_post',
         },
         '-created_date',
@@ -60,7 +76,7 @@ Deno.serve(async (req) => {
     let playlistsUpdated = 0;
     while (true) {
       const playlists = await entities.Playlist.filter(
-        { track_ids: post.id },
+        { track_ids: currentPost.id },
         '-created_date',
         200,
       );
@@ -69,7 +85,7 @@ Deno.serve(async (req) => {
       for (const playlist of playlists) {
         const trackIds = Array.isArray(playlist.track_ids) ? playlist.track_ids : [];
         await entities.Playlist.update(playlist.id, {
-          track_ids: trackIds.filter((id: string) => id !== post.id),
+          track_ids: trackIds.filter((id: string) => id !== currentPost.id),
         });
         playlistsUpdated += 1;
       }
@@ -77,13 +93,16 @@ Deno.serve(async (req) => {
       if (playlists.length < 200) break;
     }
 
-    await entities.ArtPost.delete(post.id);
+    await entities.ArtPost.delete(currentPost.id);
 
     return Response.json({
       success: true,
       deleted_comments: deletedComments,
       playlists_updated: playlistsUpdated,
     });
+    } finally {
+      await releaseArtPostEngagementLock(entities, lockId);
+    }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

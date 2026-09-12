@@ -112,7 +112,9 @@ Deno.serve(async (req) => {
       await releaseChallengeLifecycleLock(entities, challengeLockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('deleteChallenge error:', error);
-    return Response.json({ error: error?.message || 'Could not delete challenge' }, { status: 500 });
+    return Response.json({ error: 'Could not delete challenge' }, { status: 500 });
   }
 });

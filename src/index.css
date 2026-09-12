@@ -90,7 +90,21 @@
     overscroll-behavior: none;
   }
   body {
-    @apply bg-background text-foreground font-body;
+    @apply bg-background text-foreground font-body antialiased;
+    min-height: 100dvh;
+    text-rendering: optimizeLegibility;
+  }
+
+  button, a, input, textarea, select {
+    touch-action: manipulation;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline-offset: 2px;
   }
   /* Navigation and interactive controls should not be text-selectable on touch */
   nav, header, button, [role="button"], a {
@@ -116,6 +130,19 @@
 @media (max-width: 768px) {
   [class*='text-[9px'],
   [class*='text-[10px'] { font-size: 11px !important; }
+
+  /* Prevent iOS Safari from zooming the page when message/search fields receive focus. */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  button,
+  [role="button"],
+  a {
+    min-tap-target-size: 44px;
+  }
 }
 
 /* Safe-area padding so content never clips under notches / system bars */
@@ -464,4 +491,35 @@
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
+}
+
+
+/* ---- 2026 interaction polish ---- */
+@layer utilities {
+  .ui-surface {
+    background: linear-gradient(180deg, hsl(var(--card) / 0.86), hsl(var(--card) / 0.72));
+    border: 1px solid hsl(var(--border) / 0.7);
+    box-shadow: 0 18px 55px -36px hsl(0 0% 0% / 0.9);
+  }
+
+  .ui-hover {
+    transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .ui-hover:hover {
+    transform: translateY(-1px);
+  }
+
+  .ui-hover:active {
+    transform: translateY(0) scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-hover,
+  .ui-hover:hover,
+  .ui-hover:active {
+    transition: none !important;
+    transform: none !important;
+  }
 }

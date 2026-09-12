@@ -1,15 +1,10 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
-
-function isInviteExpired(squad: any) {
-  const raw = squad?.invite_expires_at || squad?.created_date;
-  if (!raw) return false;
-  const base = Date.parse(raw);
-  if (Number.isNaN(base)) return false;
-  const expiry = squad?.invite_expires_at ? base : base + 7 * 24 * 60 * 60 * 1000;
-  return expiry <= Date.now();
-}
+import {
+  findBlockingSquadMembership,
+  isSquadInviteExpired,
+} from '../../shared/squadMembership.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -43,8 +38,8 @@ Deno.serve(async (req) => {
       1,
     );
     const squad = squads[0];
-    if (!squad || squad.status !== 'pending' || squad.member_b_id || isInviteExpired(squad)) {
-      if (squad?.status === 'pending' && isInviteExpired(squad)) {
+    if (!squad || squad.status !== 'pending' || squad.member_b_id || isSquadInviteExpired(squad)) {
+      if (squad?.status === 'pending' && isSquadInviteExpired(squad)) {
         try {
           await entities.Squad.update(squad.id, { status: 'ended' });
           await entities.User.updateMany(
@@ -65,11 +60,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'You cannot join your own squad invite' }, { status: 400 });
     }
 
-    const [asA, asB] = await Promise.all([
-      entities.Squad.filter({ member_a_id: user.id }, '-created_date', 100),
-      entities.Squad.filter({ member_b_id: user.id }, '-created_date', 100),
-    ]);
-    if ([...asA, ...asB].some((candidate) => candidate.status !== 'ended')) {
+    let existingMembership = null;
+    try {
+      existingMembership = await findBlockingSquadMembership(entities, user.id);
+    } catch (cleanupError) {
+      console.error('Expired squad membership cleanup failed:', cleanupError);
+      return Response.json(
+        { error: 'Expired squad cleanup was incomplete. Please retry.', retryable: true },
+        { status: 500 },
+      );
+    }
+    if (existingMembership) {
       return Response.json({ error: 'You already have an active or pending squad.' }, { status: 409 });
     }
 

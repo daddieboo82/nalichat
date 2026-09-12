@@ -1,14 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
-
-function isInviteExpired(squad: any) {
-  const raw = squad?.invite_expires_at || squad?.created_date;
-  if (!raw) return false;
-  const base = Date.parse(raw);
-  if (Number.isNaN(base)) return false;
-  const expiry = squad?.invite_expires_at ? base : base + 7 * 24 * 60 * 60 * 1000;
-  return expiry <= Date.now();
-}
+import { findBlockingSquadMembership } from '../../shared/squadMembership.ts';
 
 function inviteCode(): string {
   // 12 random bytes = 96 bits of entropy. Hex keeps URLs simple and avoids
@@ -41,26 +33,16 @@ Deno.serve(async (req) => {
     if (!squadRate.allowed) {
       return Response.json({ error: 'Squad action rate limit exceeded. Please try again later.' }, { status: 429 });
     }
-    const [asA, asB] = await Promise.all([
-      entities.Squad.filter({ member_a_id: user.id }, '-created_date', 100),
-      entities.Squad.filter({ member_b_id: user.id }, '-created_date', 100),
-    ]);
-    for (const stale of [...asA, ...asB].filter((s) => s.status === 'pending' && isInviteExpired(s))) {
-      try {
-        await entities.Squad.update(stale.id, { status: 'ended' });
-        await entities.User.updateMany(
-          { id: user.id, squad_membership_id: stale.id },
-          { $set: { squad_membership_id: null } },
-        );
-      } catch (cleanupError) {
-        console.error('Expired squad invite cleanup failed:', cleanupError);
-        return Response.json(
-          { error: 'Expired squad cleanup was incomplete. Please retry.', retryable: true },
-          { status: 500 },
-        );
-      }
+    let existing = null;
+    try {
+      existing = await findBlockingSquadMembership(entities, user.id);
+    } catch (cleanupError) {
+      console.error('Expired squad invite cleanup failed:', cleanupError);
+      return Response.json(
+        { error: 'Expired squad cleanup was incomplete. Please retry.', retryable: true },
+        { status: 500 },
+      );
     }
-    const existing = [...asA, ...asB].find((s) => s.status !== 'ended' && !isInviteExpired(s));
     if (existing) {
       return Response.json({ error: 'You already have an active or pending squad.' }, { status: 409 });
     }

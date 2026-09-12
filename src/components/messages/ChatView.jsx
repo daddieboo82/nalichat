@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, ArrowLeft, ArrowDown, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2, LockKeyhole, LockOpen } from "lucide-react";
+import { MessageSquare, ArrowLeft, ArrowDown, Search as SearchIcon, Phone, Video, Info, MoreHorizontal, Loader2, LockKeyhole, LockOpen, AlarmClock } from "lucide-react";
 import MediaViewerModal from "@/components/explore/MediaViewerModal";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getChatTheme } from "@/lib/chatThemes";
 import { toast } from "sonner";
 import { useLockedChats } from "@/lib/LockedChatsContext";
+import FollowUpReminderDialog from "./FollowUpReminderDialog";
 
 import React from "react";
 
@@ -35,6 +36,8 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const [threadMessage, setThreadMessage] = useState(null);
   const [threadTargetId, setThreadTargetId] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
+  const [showFollowUps, setShowFollowUps] = useState(false);
+  const [followUpMessage, setFollowUpMessage] = useState(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [unreadSinceScroll, setUnreadSinceScroll] = useState(0);
   const scrollRef = useRef(null);
@@ -176,6 +179,8 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     setThreadMessage(null);
     setThreadTargetId(null);
     setShowSearch(false);
+    setShowFollowUps(false);
+    setFollowUpMessage(null);
   }, [conversation?.id]);
 
   const revealSearchResult = async (message) => {
@@ -310,6 +315,16 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
+                  onClick={() => {
+                    setFollowUpMessage(null);
+                    setShowFollowUps(true);
+                  }}
+                  className="py-2.5 rounded-lg cursor-pointer"
+                >
+                  <AlarmClock className="w-4 h-4 mr-2 text-muted-foreground" />
+                  Follow-up reminders
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={toggleConversationLock}
                   disabled={updatingLock}
                   className="py-2.5 rounded-lg cursor-pointer"
@@ -373,6 +388,10 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               }}
               onReact={onReact}
               onRetry={onRetryMessage}
+              onFollowUp={(message) => {
+                setFollowUpMessage(message);
+                setShowFollowUps(true);
+              }}
               onOpenThread={(message) => { setThreadTargetId(null); setThreadMessage(message); }}
               users={users}
               onCopy={() => copyToClipboard(item.text || "")}
@@ -392,6 +411,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                     action: "delete",
                     message_id: id,
                     conversation_id: conversation?.id,
+                    message_created_date: item.created_date,
                   });
                   if (res?.data?.error) throw new Error(res.data.error);
                   if (res?.data?.preview_refresh_failed) {
@@ -399,6 +419,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                       action: "delete",
                       message_id: id,
                       conversation_id: conversation?.id,
+                      message_created_date: item.created_date,
                     });
                     if (res?.data?.error) throw new Error(res.data.error);
                   }
@@ -498,6 +519,16 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
           }}
         />
       )}
+      <FollowUpReminderDialog
+        open={showFollowUps}
+        onOpenChange={(open) => {
+          setShowFollowUps(open);
+          if (!open) setFollowUpMessage(null);
+        }}
+        conversation={conversation}
+        sourceMessage={followUpMessage}
+      />
+
       {showSearch && (
         <MessageSearch
           conversation={conversation}

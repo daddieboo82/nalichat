@@ -19,6 +19,7 @@ import LargeFileTransfer from "@/components/files/LargeFileTransfer";
 import { sounds } from "@/hooks/use-sound";
 import { copyToClipboard } from "@/lib/clipboard";
 import PullToRefresh from "@/components/layout/PullToRefresh";
+import { useAuth } from "@/lib/AuthContext";
 
 const typeIcons = {
   audio: Music,
@@ -125,7 +126,7 @@ export default function Files() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [uploading, setUploading] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [selectedIds, setSelectedIds] = useState([]);
   const [zipping, setZipping] = useState(false);
   const [currentFolderId, setCurrentFolderId] = useState(null);
@@ -142,7 +143,6 @@ export default function Files() {
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
 
   useEffect(() => { 
-    base44.auth.me().then(setCurrentUser); 
     
     // Check for download query param
     const urlParams = new URLSearchParams(window.location.search);

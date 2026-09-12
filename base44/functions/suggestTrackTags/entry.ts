@@ -75,31 +75,15 @@ Deno.serve(async (req) => {
     const previewAuthError = await authorizeTrackRequest(trackPreview);
     if (previewAuthError) return previewAuthError;
 
-    const lockId = await acquireTrackLifecycleLock(entities, trackId);
-    if (!lockId) {
-      return Response.json(
-        { error: 'Track metadata is being updated. Please retry.' },
-        { status: 409 },
-      );
-    }
-
-    try {
-    // Re-resolve and re-authorize inside the lock so access changes that race
-    // the preview check cannot grant stale permission.
-    const track = await entities.Track.get(trackId);
-    if (!track) {
-      return Response.json({ error: 'Track not found' }, { status: 404 });
-    }
-    const lockedAuthError = await authorizeTrackRequest(track);
-    if (lockedAuthError) return lockedAuthError;
-
-    // Entity-create automations can be retried. Keep AI work idempotent so a
-    // replay or direct invocation cannot repeatedly consume model credits.
-    if (track.suggested_genre && track.suggested_bpm) {
+    // Use the authorized preview for entitlement, rate, project context, and AI work.
+    // These steps may involve network/provider latency, so keep them outside the
+    // track lifecycle lock. The lock is acquired only for the final freshness
+    // check and metadata writes.
+    if (trackPreview.suggested_genre && trackPreview.suggested_bpm) {
       return Response.json({ success: true, skipped: true, reason: 'already_suggested' });
     }
 
-    const uploaderId = track.uploaded_by;
+    const uploaderId = trackPreview.uploaded_by;
     if (!uploaderId) {
       return Response.json({ success: true, skipped: true, reason: 'missing_uploader' });
     }
@@ -134,23 +118,18 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, skipped: true, reason: 'rate_limited' });
     }
 
-    // Pull project context for a better suggestion
-    let project = null;
-    if (track.project_id) {
-      try {
-        project = await entities.Project.get(track.project_id);
-      } catch (_e) {
-        project = null;
-      }
+    let projectPreview = null;
+    if (trackPreview.project_id) {
+      projectPreview = await entities.Project.get(trackPreview.project_id).catch(() => null);
     }
 
     const prompt = `You are a professional music producer analyzing an audio track to suggest metadata.
 
-Track name: "${track.name}"
-Track type: ${track.type || 'unknown'}
-${track.duration ? `Duration: ${Math.round(track.duration)} seconds` : ''}
-${project ? `Project title: "${project.title}"` : ''}
-${project?.genre ? `Project genre: ${project.genre}` : ''}
+Track name: "${trackPreview.name}"
+Track type: ${trackPreview.type || 'unknown'}
+${trackPreview.duration ? `Duration: ${Math.round(trackPreview.duration)} seconds` : ''}
+${projectPreview ? `Project title: "${projectPreview.title}"` : ''}
+${projectPreview?.genre ? `Project genre: ${projectPreview.genre}` : ''}
 
 Based on this, suggest the most likely musical genre and a typical BPM (beats per minute).
 Return realistic values. BPM must be a whole number between 60 and 200.`;
@@ -188,22 +167,49 @@ Return realistic values. BPM must be a whole number between 60 and 200.`;
       return Response.json({ error: 'Invalid suggestion from LLM' }, { status: 502 });
     }
 
-    await entities.Track.update(trackId, {
-      suggested_genre: suggestedGenre,
-      suggested_bpm: suggestedBpm,
-    });
-
-    // Fill in project genre/bpm only if currently empty (non-destructive)
-    if (project) {
-      const projectUpdate = {};
-      if (!project.genre) projectUpdate.genre = suggestedGenre;
-      if (!project.bpm) projectUpdate.bpm = suggestedBpm;
-      if (Object.keys(projectUpdate).length > 0) {
-        await entities.Project.update(project.id, projectUpdate);
-      }
+    const lockId = await acquireTrackLifecycleLock(entities, trackId);
+    if (!lockId) {
+      return Response.json(
+        { error: 'Track metadata is being updated. Please retry.' },
+        { status: 409 },
+      );
     }
 
-    return Response.json({ success: true, suggestedGenre, suggestedBpm, quota });
+    try {
+      const track = await entities.Track.get(trackId);
+      if (!track) {
+        return Response.json({ error: 'Track not found' }, { status: 404 });
+      }
+      const lockedAuthError = await authorizeTrackRequest(track);
+      if (lockedAuthError) return lockedAuthError;
+
+      if (track.suggested_genre && track.suggested_bpm) {
+        return Response.json({
+          success: true,
+          skipped: true,
+          reason: 'already_suggested',
+          quota,
+        });
+      }
+
+      await entities.Track.update(trackId, {
+        suggested_genre: suggestedGenre,
+        suggested_bpm: suggestedBpm,
+      });
+
+      if (track.project_id) {
+        const project = await entities.Project.get(track.project_id).catch(() => null);
+        if (project) {
+          const projectUpdate: Record<string, unknown> = {};
+          if (!project.genre) projectUpdate.genre = suggestedGenre;
+          if (!project.bpm) projectUpdate.bpm = suggestedBpm;
+          if (Object.keys(projectUpdate).length > 0) {
+            await entities.Project.update(project.id, projectUpdate);
+          }
+        }
+      }
+
+      return Response.json({ success: true, suggestedGenre, suggestedBpm, quota });
     } finally {
       await releaseTrackLifecycleLock(entities, lockId);
     }

@@ -11,6 +11,25 @@ import {
   releaseTrackLifecycleLock,
 } from '../../shared/trackLifecycleLock.ts';
 
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function commentReadScope(req: Request, userId?: string): Promise<string> {
+  if (userId) return `track_comment_read_user_${userId}`;
+  const forwarded = String(
+    req.headers.get('cf-connecting-ip')
+    || req.headers.get('x-real-ip')
+    || req.headers.get('x-forwarded-for')
+    || '',
+  ).split(',')[0].trim().slice(0, 128);
+  const userAgent = String(req.headers.get('user-agent') || '').slice(0, 256);
+  return 'track_comment_read_anon_' + await sha256Hex(
+    `${forwarded || 'unknown'}:${userAgent || 'unknown'}`,
+  );
+}
+
 async function canAccessParent(entities: any, user: any, parentType: string, parentId: string) {
   if (parentType === 'art_post') {
     const parent = await entities.ArtPost.get(parentId);
@@ -61,6 +80,22 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+
+    if (action === 'list') {
+      const readScope = await commentReadScope(req, user?.id);
+      const readRate = await consumeHourlyLimit(
+        entities,
+        readScope,
+        'track_comment_list',
+        300,
+      );
+      if (!readRate.allowed) {
+        return Response.json(
+          { error: 'Comment lookup rate limit exceeded. Please try again later.' },
+          { status: 429 },
+        );
+      }
+    }
 
     if (action === 'create') {
       if (!user?.id) return Response.json({ error: 'Sign in to comment' }, { status: 401 });

@@ -18,6 +18,7 @@ import { AudioPlayerProvider } from '@/lib/AudioPlayerContext';
 import { CartProvider } from '@/lib/CartContext';
 import { NaliPresenceProvider } from '@/lib/NaliPresenceContext';
 import { LockedChatsProvider } from '@/lib/LockedChatsContext';
+import { initProductAnalytics } from '@/lib/productAnalytics';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -110,6 +111,10 @@ const AuthenticatedApp = () => {
   useEffect(() => {
     isInitialMount.current = false;
   }, []);
+
+  // First-party product analytics: SPA page views plus active/engaged session time.
+  // This lets us distinguish a true 28-second visit from analytics undercounting.
+  useEffect(() => initProductAnalytics(), []);
 
   // Fire Google Ads SIGNUP conversion once per freshly-created user.
   useEffect(() => {

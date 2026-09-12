@@ -106,9 +106,14 @@ export function writeOutboundQueue(entries, storage = browserStorage()) {
 
 export function purgeOutboundQueueForUser(userId, storage = browserStorage()) {
   if (!storage || !userId) return [];
-  const retained = readOutboundQueue(storage).filter(entry => entry.sender?.id !== userId);
-  writeOutboundQueue(retained, storage);
-  return retained;
+  try {
+    const retained = readOutboundQueue(storage).filter(entry => entry.sender?.id !== userId);
+    writeOutboundQueue(retained, storage);
+    return retained;
+  } catch (error) {
+    console.error("Unable to purge the outbound message queue:", error);
+    return [];
+  }
 }
 
 export function enqueueOutbound(entry, storage = browserStorage()) {

@@ -28,6 +28,8 @@ const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", 
 export default function Settings() {
   const { checkUserAuth } = useAuth();
   const [user, setUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [userLoadError, setUserLoadError] = useState(false);
   const [form, setForm] = useState({ display_name: "", bio: "", artist_role: "artist", location: "", genres: [], avatar_url: "" });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -37,17 +39,31 @@ export default function Settings() {
   const { osReducedMotion, userReducedMotion, reduceMotion, setUserReducedMotion } = useReducedMotionPreference();
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      setUser(u);
-      setForm({
-        display_name: u.display_name || u.full_name || "",
-        bio: u.bio || "",
-        artist_role: u.artist_role || (["artist","producer","engineer","ar"].includes(u.role) ? u.role : "artist"),
-        location: u.location || "",
-        genres: u.genres || [],
-        avatar_url: u.avatar_url || "",
+    let active = true;
+    base44.auth.me()
+      .then((u) => {
+        if (!active) return;
+        setUser(u);
+        setUserLoadError(false);
+        setForm({
+          display_name: u.display_name || u.full_name || "",
+          bio: u.bio || "",
+          artist_role: u.artist_role || (["artist","producer","engineer","ar"].includes(u.role) ? u.role : "artist"),
+          location: u.location || "",
+          genres: u.genres || [],
+          avatar_url: u.avatar_url || "",
+        });
+      })
+      .catch((error) => {
+        console.error("Settings user load failed:", error);
+        if (active) setUserLoadError(true);
+      })
+      .finally(() => {
+        if (active) setLoadingUser(false);
       });
-    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleAvatarUpload = async (e) => {
@@ -95,7 +111,23 @@ export default function Settings() {
     }
   };
 
-  if (!user) return <div className="flex items-center justify-center h-full"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  if (loadingUser) {
+    return <div className="flex items-center justify-center h-full"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  }
+
+  if (userLoadError || !user) {
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <div className="max-w-md text-center">
+          <h2 className="text-xl font-bold">Settings unavailable</h2>
+          <p className="mt-2 text-sm text-muted-foreground">We couldn't verify your account. Refresh and try again.</p>
+          <Button className="mt-4" variant="outline" onClick={() => window.location.reload()}>
+            Refresh
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <PullToRefresh onRefresh={async () => { const u = await base44.auth.me(); setUser(u); setForm({ display_name: u.display_name || u.full_name || "", bio: u.bio || "", artist_role: u.artist_role || (["artist","producer","engineer","ar"].includes(u.role) ? u.role : "artist"), location: u.location || "", genres: u.genres || [], avatar_url: u.avatar_url || "" }); }} className="h-full overflow-y-auto">

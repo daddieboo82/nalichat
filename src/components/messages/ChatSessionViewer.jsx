@@ -31,8 +31,11 @@ export default function ChatSessionViewer({ message, currentUser }) {
 
   useEffect(() => {
     let cancelled = false;
+    let refreshInFlight = false;
 
     const refreshTracks = async () => {
+      if (refreshInFlight) return;
+      refreshInFlight = true;
       try {
         const next = await base44.entities.Track.filter({ project_id: message.id }, "created_date", 500);
         if (!cancelled) {
@@ -41,6 +44,8 @@ export default function ChatSessionViewer({ message, currentUser }) {
         }
       } catch {
         if (!cancelled) setTracksError(true);
+      } finally {
+        refreshInFlight = false;
       }
     };
 

@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendPushToUser } from '../../shared/webPush.ts';
 import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
 import { createNotificationIdempotently } from '../../shared/workflowNotifications.ts';
+import { claimFixedWindow } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -32,12 +33,20 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, count: 0, skipped: 'stale_workflow_record' });
     }
     if (!milestone?.project_id) return Response.json({ success: true });
-    const project = await entities.Project.get(milestone.project_id);
-    if (!project) return Response.json({ success: true });
-
     const versionKey = String(milestone.updated_date || milestone.completed_at || milestone.due_date || 'update')
       .replace(/[^a-zA-Z0-9_-]/g, '_')
       .slice(0, 80);
+    const eventClaim = await claimFixedWindow(
+      entities,
+      `workflow-milestone:${milestone.id}:${versionKey}`,
+      10,
+    );
+    if (!eventClaim.allowed) {
+      return Response.json({ success: true, count: 0, skipped: 'already_processed' });
+    }
+
+    const project = await entities.Project.get(milestone.project_id);
+    if (!project) return Response.json({ success: true });
     const recipients = new Set<string>([
       ...(project.owner_id ? [project.owner_id] : []),
       ...(project.collaborator_ids || []),

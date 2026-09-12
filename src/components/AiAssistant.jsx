@@ -133,7 +133,8 @@ export default function AiAssistant() {
     try {
       if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; }
       setIsSpeaking(true);
-      const res = await base44.functions.invoke('generate-speech', { text: clean, voice: "honey" });
+      const spokenText = clean.slice(0, 4800);
+      const res = await base44.functions.invoke('generate-speech', { text: spokenText, voice: "honey" });
       const audio = new Audio(res.data.url);
       currentAudioRef.current = audio;
       audio.onended = () => { setIsSpeaking(false); currentAudioRef.current = null; };
@@ -151,7 +152,7 @@ export default function AiAssistant() {
     const last = messages[messages.length - 1];
     if (last.role === "user") return;
     // Use content as a pseudo-id; skip if already spoken
-    const id = last.content?.substring(0, 80);
+    const id = last.id || last.content?.substring(0, 160);
     if (!id || spokenIdsRef.current.has(id)) return;
     spokenIdsRef.current.add(id);
     speakText(last.content);
@@ -159,12 +160,12 @@ export default function AiAssistant() {
 
   // Stop voice when toggled off or panel closes
   useEffect(() => {
-    if (!voiceEnabled && currentAudioRef.current) {
+    if ((!voiceEnabled || !open) && currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
       setIsSpeaking(false);
     }
-  }, [voiceEnabled]);
+  }, [voiceEnabled, open]);
 
   useEffect(() => () => {
     return () => { if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; } };
@@ -287,7 +288,7 @@ export default function AiAssistant() {
     if (isListening) return;
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
+    recognition.lang = navigator.language || 'en-US';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
@@ -346,7 +347,7 @@ export default function AiAssistant() {
                   }
                   return next;
                 });
-              }} title={voiceEnabled ? "Voice on — tap to mute Nali" : "Enable Nali's voice"} className={cn("p-2 sm:p-1 transition-colors", voiceEnabled ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+              }} aria-label={voiceEnabled ? "Mute Nali voice" : "Enable Nali voice"} title={voiceEnabled ? "Voice on — tap to mute Nali" : "Enable Nali's voice"} className={cn("p-2 sm:p-1 transition-colors", voiceEnabled ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
                 {voiceEnabled ? <Volume2 className="w-5 h-5 sm:w-4 sm:h-4" /> : <VolumeX className="w-5 h-5 sm:w-4 sm:h-4" />}
               </button>
             )}
@@ -460,13 +461,14 @@ export default function AiAssistant() {
                     ref={inputRef}
                     value={input}
                     onChange={e => setInput(e.target.value)}
-                    placeholder="Ask Nali anything about music..."
+                    placeholder="Ask Nali about your music, projects, or anything else..."
                     className="w-full bg-secondary/40 border border-primary/20 rounded-xl pl-8 pr-10 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/70"
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                   />
                   <button
                     onClick={handleMicClick}
                     title="Voice Input"
+                    aria-label="Voice input"
                     className={cn(
                       "absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-colors",
                       isListening ? "text-red-500 bg-red-500/10 animate-pulse" : "text-muted-foreground hover:text-primary hover:bg-primary/10"

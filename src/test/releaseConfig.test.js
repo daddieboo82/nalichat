@@ -1389,15 +1389,16 @@ describe('release configuration', () => {
     expect(external).toContain('.slice(0, 5000)');
     expect(external).toContain('destination.length > 320');
     expect(external).toMatch(/\.replace\(\/\[\\r\\n\]\/g, ' '\)/);
-    expect(invite).toMatch(/\.replace\(\/\[\\r\\n\]\/g, ' '\)/);
+    expect(invite).toContain("code: 'INVITE_RELAY_DISABLED'");
+    expect(invite).toContain('Server-sent SMS invites are disabled');
   });
 
   it('rate-limits and moderation-gates email invites', async () => {
     const inviteEmail = await readText('base44/functions/send-invite-email/entry.ts');
     expect(inviteEmail).toContain('if (user.is_banned)');
     expect(inviteEmail).toContain("error: 'timed_out'");
-    expect(inviteEmail).toContain("'email_invite'");
-    expect(inviteEmail).toMatch(/'email_invite',\s*10/);
+    expect(inviteEmail).toContain("code: 'INVITE_RELAY_DISABLED'");
+    expect(inviteEmail).toContain('Server-sent email invites are disabled');
   });
 
   it('bounds and moderation-gates expensive AI workflows', async () => {
@@ -1937,8 +1938,8 @@ describe('release configuration', () => {
     expect(html).not.toContain('store-manifest.json');
 
     const download = await readText('src/pages/Download.jsx');
-    expect(download).toContain('https://nalichat.org');
-    expect(download).toContain('/releases/download/1.0.0/');
+    expect(download).toContain('Coming Soon');
+    expect(download).toContain('Downloads are temporarily unavailable');
     expect(download).not.toContain('releases/latest/download');
     expect(download).not.toContain('nalichat.base44.app');
 
@@ -1966,7 +1967,7 @@ describe('release configuration', () => {
 
   it('keeps message bubbles build-safe and shows online status on received messages', async () => {
     const bubble = await readText('src/components/messages/MessageBubble.jsx');
-    const reactImports = bubble.match(/import React from "react";/g) || [];
+    const reactImports = bubble.match(/import React(?:,\s*\{[^}]+\})? from "react";/g) || [];
 
     expect(reactImports).toHaveLength(1);
     expect(bubble).toContain('!isOwn && senderIsOnline');

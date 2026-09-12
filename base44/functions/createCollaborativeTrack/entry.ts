@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 32 * 1024);
     if (typeof body?.project_id !== 'string' || typeof body?.name !== 'string') {
       return Response.json({ error: 'project_id and a non-empty name are required' }, { status: 400 });
     }
@@ -233,6 +234,8 @@ Deno.serve(async (req) => {
       await releaseProjectMembershipLock(entities, projectLockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     return Response.json({ error: error?.message || 'Could not create track' }, { status: 500 });
   }
 });

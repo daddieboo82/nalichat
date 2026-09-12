@@ -90,9 +90,9 @@ const portableTrackState = (track, audioUrl) => {
 export default function Studio() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const studioStorageOwner = user?.id || "anonymous";
-  const masterFxStorageKey = `nalistudio_master_fx:${studioStorageOwner}`;
-  const autosaveStorageKey = `nalistudio_project_autosave:${studioStorageOwner}`;
+  const studioStorageOwner = user?.id || null;
+  const masterFxStorageKey = studioStorageOwner ? `nalistudio_master_fx:${studioStorageOwner}` : null;
+  const autosaveStorageKey = studioStorageOwner ? `nalistudio_project_autosave:${studioStorageOwner}` : null;
   const [searchParams] = useSearchParams();
   const roomId = searchParams.get('room');
   const inviteToken = searchParams.get('invite');
@@ -280,6 +280,7 @@ export default function Studio() {
   const masterFxLoadedRef = useRef(false);
 
   const loadLocalMasterFx = () => {
+    if (!masterFxStorageKey) return null;
     try {
       const saved = localStorage.getItem(masterFxStorageKey);
       if (saved) {
@@ -293,7 +294,17 @@ export default function Studio() {
   };
 
   useEffect(() => {
-    if (roomId) return; // room projects load their chain with the project below
+    if (!studioStorageOwner) return;
+    setTracks([]);
+    setSelectedTrackIds([]);
+    setMasterFx({});
+    setHasAutosave(false);
+    setShowWelcome(true);
+    masterFxLoadedRef.current = false;
+  }, [studioStorageOwner]);
+
+  useEffect(() => {
+    if (!masterFxStorageKey || roomId) return; // room projects load their chain with the project below
     masterFxLoadedRef.current = false;
     const local = loadLocalMasterFx();
     if (local) setMasterFx(local);
@@ -301,7 +312,7 @@ export default function Studio() {
   }, [roomId, masterFxStorageKey]);
 
   useEffect(() => {
-    if (!masterFxLoadedRef.current) return;
+    if (!masterFxStorageKey || !masterFxLoadedRef.current) return;
     const chain = masterFx || {};
     const timeoutId = setTimeout(() => {
       try {
@@ -321,6 +332,7 @@ export default function Studio() {
 
   useEffect(() => {
     setHasAutosave(false);
+    if (!autosaveStorageKey) return;
     try {
       const saved = localStorage.getItem(autosaveStorageKey);
       if (saved) {
@@ -423,6 +435,10 @@ export default function Studio() {
   const handleStartBlank = () => { setTracks([]); setShowWelcome(false); };
 
   const handleLoadAutosave = () => {
+    if (!autosaveStorageKey) {
+      toast.error("No autosave found");
+      return;
+    }
     try {
       const saved = localStorage.getItem(autosaveStorageKey);
       if (saved) {
@@ -456,7 +472,7 @@ export default function Studio() {
 
   // Autosave tracks (Debounced to prevent lag during rapid edits)
   useEffect(() => {
-    if (tracks && tracks.length > 0) {
+    if (autosaveStorageKey && tracks && tracks.length > 0) {
       const timeoutId = setTimeout(() => {
         try {
           localStorage.setItem(autosaveStorageKey, JSON.stringify(tracks));

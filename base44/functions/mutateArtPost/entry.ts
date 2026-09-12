@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
@@ -50,7 +51,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 32 * 1024);
     const postId = String(body?.postId || '');
     if (!postId) return Response.json({ error: 'postId is required' }, { status: 400 });
 
@@ -104,6 +105,8 @@ Deno.serve(async (req) => {
     const updated = await entities.ArtPost.update(post.id, patch);
     return Response.json({ success: true, post: updated });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('mutateArtPost error:', error);
     return Response.json({ error: error?.message || 'ArtPost update failed' }, { status: 500 });
   }

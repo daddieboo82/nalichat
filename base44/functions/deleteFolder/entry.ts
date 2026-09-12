@@ -36,6 +36,24 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const folderPreview = await entities.Folder.get(folderId).catch(() => null);
+    if (!folderPreview) return Response.json({ error: 'Folder not found' }, { status: 404 });
+    if (folderPreview.project_id && !isBase44EntityId(folderPreview.project_id)) {
+      return Response.json({ error: 'Folder has an invalid project reference' }, { status: 409 });
+    }
+
+    let previewCanEdit = user.role === 'admin';
+    if (!previewCanEdit && folderPreview.project_id) {
+      const projectPreview = await entities.Project.get(folderPreview.project_id).catch(() => null);
+      if (!projectPreview) return Response.json({ error: 'Project not found' }, { status: 404 });
+      previewCanEdit = projectPreview.owner_id === user.id || (projectPreview.editor_ids || []).includes(user.id);
+    } else if (!previewCanEdit) {
+      previewCanEdit = folderPreview.owner_id === user.id;
+    }
+    if (!previewCanEdit) {
+      return Response.json({ error: 'You cannot delete this folder' }, { status: 403 });
+    }
+
     const folderLockId = await acquireFolderMutationLock(entities, folderId);
     if (!folderLockId) {
       return Response.json({ error: 'Folder is being updated. Please retry.' }, { status: 409 });
@@ -44,21 +62,8 @@ Deno.serve(async (req) => {
     try {
     let folder = await entities.Folder.get(folderId);
     if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
-
-    if (folder.project_id && !isBase44EntityId(folder.project_id)) {
-      return Response.json({ error: 'Folder has an invalid project reference' }, { status: 409 });
-    }
-
-    let previewCanEdit = user.role === 'admin';
-    if (!previewCanEdit && folder.project_id) {
-      const projectPreview = await entities.Project.get(folder.project_id).catch(() => null);
-      if (!projectPreview) return Response.json({ error: 'Project not found' }, { status: 404 });
-      previewCanEdit = projectPreview.owner_id === user.id || (projectPreview.editor_ids || []).includes(user.id);
-    } else if (!previewCanEdit) {
-      previewCanEdit = folder.owner_id === user.id;
-    }
-    if (!previewCanEdit) {
-      return Response.json({ error: 'You cannot delete this folder' }, { status: 403 });
+    if ((folder.project_id || null) !== (folderPreview.project_id || null)) {
+      return Response.json({ error: 'Folder project changed. Please retry.' }, { status: 409 });
     }
 
     const projectLockId = folder.project_id

@@ -15,6 +15,10 @@ function isScheduledReengagementWindow(now = new Date()) {
 // Returns: { sent: number, skipped: number, errors: string[] }
 export default async function(req) {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const caller = await base44.auth.me().catch(() => null);
 

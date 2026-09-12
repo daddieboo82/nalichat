@@ -23,6 +23,9 @@ function inviteCode(): string {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -43,11 +46,19 @@ Deno.serve(async (req) => {
       entities.Squad.filter({ member_b_id: user.id }, '-created_date', 100),
     ]);
     for (const stale of [...asA, ...asB].filter((s) => s.status === 'pending' && isInviteExpired(s))) {
-      await entities.Squad.update(stale.id, { status: 'ended' });
-      await entities.User.updateMany(
-        { id: user.id, squad_membership_id: stale.id },
-        { $set: { squad_membership_id: null } },
-      ).catch(() => {});
+      try {
+        await entities.Squad.update(stale.id, { status: 'ended' });
+        await entities.User.updateMany(
+          { id: user.id, squad_membership_id: stale.id },
+          { $set: { squad_membership_id: null } },
+        );
+      } catch (cleanupError) {
+        console.error('Expired squad invite cleanup failed:', cleanupError);
+        return Response.json(
+          { error: 'Expired squad cleanup was incomplete. Please retry.', retryable: true },
+          { status: 500 },
+        );
+      }
     }
     const existing = [...asA, ...asB].find((s) => s.status !== 'ended' && !isInviteExpired(s));
     if (existing) {
@@ -85,7 +96,15 @@ Deno.serve(async (req) => {
       },
     );
     if (Number(membershipClaim?.updated || 0) !== 1) {
-      await entities.Squad.delete(squad.id).catch(() => {});
+      try {
+        await entities.Squad.delete(squad.id);
+      } catch (cleanupError) {
+        console.error('Squad invite rollback failed:', cleanupError);
+        return Response.json(
+          { error: 'Squad invite creation conflicted and rollback was incomplete. Please retry.', retryable: true },
+          { status: 500 },
+        );
+      }
       return Response.json({ error: 'You already have an active or pending squad.' }, { status: 409 });
     }
 

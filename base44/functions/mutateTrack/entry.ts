@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
 
 const MUTABLE_KEYS = new Set([
@@ -48,7 +49,7 @@ Deno.serve(async (req) => {
     const body = await readJsonBodyLimited(req, 64 * 1024);
     const trackId = typeof body?.trackId === 'string' ? body.trackId.trim() : '';
     const action = typeof body?.action === 'string' ? body.action : '';
-    if (!trackId || trackId.length > 200 || !['update', 'delete'].includes(action)) {
+    if (!isBase44EntityId(trackId) || !['update', 'delete'].includes(action)) {
       return Response.json({ error: 'Valid trackId and action are required' }, { status: 400 });
     }
 

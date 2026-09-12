@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireSharedFileMutationLock, releaseSharedFileMutationLock } from '../../shared/sharedFileMutationLock.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
@@ -29,7 +30,7 @@ Deno.serve(async (req) => {
     }
 
     const { folderId } = await readJsonBodyLimited(req, 64 * 1024);
-    if (typeof folderId !== 'string' || !folderId.trim() || folderId.length > 200) {
+    if (typeof folderId !== 'string' || !isBase44EntityId(folderId.trim())) {
       return Response.json({ error: 'folderId is required' }, { status: 400 });
     }
 

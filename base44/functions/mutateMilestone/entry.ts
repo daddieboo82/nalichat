@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 Deno.serve(async (req) => {
@@ -30,7 +31,7 @@ Deno.serve(async (req) => {
     const body = await readJsonBodyLimited(req, 64 * 1024);
     const milestoneId = typeof body?.milestoneId === 'string' ? body.milestoneId.trim() : '';
     const action = typeof body?.action === 'string' ? body.action : '';
-    if (!milestoneId || milestoneId.length > 200 || !['toggle', 'delete'].includes(action)) {
+    if (!isBase44EntityId(milestoneId) || !['toggle', 'delete'].includes(action)) {
       return Response.json({ error: 'Valid milestoneId and action are required' }, { status: 400 });
     }
 

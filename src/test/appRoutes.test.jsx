@@ -119,14 +119,14 @@ describe('app routing guards', () => {
     cleanup();
   });
 
-  it('redirects protected deep links to login without preserving a return target', async () => {
+  it('redirects protected deep links to login while preserving a return target', async () => {
     window.history.pushState({}, '', '/messages');
 
     render(<App />);
 
     await screen.findByText('Login Page');
     expect(window.location.pathname).toBe('/login');
-    expect(window.location.search).toBe('');
+    expect(window.location.search).toBe('?returnTo=%2Fmessages');
     expect(screen.getByTestId('login-state').textContent).toBe('null');
   });
 

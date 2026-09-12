@@ -132,6 +132,6 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
     return Response.json({ image_url: imgRes.url });
   } catch (error) {
     console.error('generate-cover-art error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Cover art generation failed' }, { status: 500 });
   }
 });

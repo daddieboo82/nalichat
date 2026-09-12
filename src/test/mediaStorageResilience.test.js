@@ -72,6 +72,14 @@ describe('media storage resilience', () => {
     expect(source).toContain('await ctx.close().catch(() => {})');
   });
 
+  it('consolidates the trimmed Studio buffer instead of re-exporting the original track', async () => {
+    const source = await readText('src/pages/Studio.jsx');
+    expect(source).toContain('audioBufferToWav(trimmedBuffer)');
+    expect(source).toContain('if (!response.ok) throw new Error(`Failed to load ${track.name || "clip"}: ${response.status}`)');
+    expect(source).toContain('destinationChannel.set(sourceChannel.subarray(startSample, endSample));');
+    expect(source).toContain('await audioCtx.close().catch(() => {})');
+  });
+
   it('keeps resumable transfers working when localStorage is unavailable', async () => {
     const source = await readText('src/lib/resumableUpload.js');
     expect(source).toContain('try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}');

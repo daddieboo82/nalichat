@@ -1,5 +1,4 @@
-name: CI
-
+name: NaliChat CI
 # Keep each verification stage independent so failures are immediately visible
 # in the PR checks instead of being hidden inside one monolithic job.
 on:

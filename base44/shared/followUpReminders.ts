@@ -945,6 +945,5 @@ export function followUpReminderErrorResponse(error: unknown): Response {
       { status: error.status },
     );
   }
-  const message = error instanceof Error ? error.message : 'Unable to process follow-up reminder.';
-  return Response.json({ error: message }, { status: 500 });
+  return Response.json({ error: 'Unable to process follow-up reminder.' }, { status: 500 });
 }

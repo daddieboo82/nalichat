@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('Bounce and master error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Unable to master audio' }, { status: 500 });
   }
 });
 

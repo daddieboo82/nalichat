@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
@@ -36,7 +37,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 16 * 1024);
     const displayName = String(body?.display_name || '').trim().slice(0, 120);
     const birthdate = validBirthdate(body?.birthdate);
 
@@ -55,6 +56,8 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.User.update(user.id, patch);
     return Response.json({ success: true });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('completeOnboarding error:', error);
     return Response.json({ error: error?.message || 'Could not complete onboarding' }, { status: 500 });
   }

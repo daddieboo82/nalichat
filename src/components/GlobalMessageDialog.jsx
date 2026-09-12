@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -9,27 +9,16 @@ import { Search, Loader2, Send } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { createClientMessageKey } from "@/lib/messageCache";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function GlobalMessageDialog({ open, onOpenChange }) {
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [authError, setAuthError] = useState(false);
+  const { user: currentUser, isAuthenticated, isLoadingAuth } = useAuth();
   const retryKeyRef = useRef(null);
   const retrySignatureRef = useRef("");
-
-  useEffect(() => {
-    if (!open) return;
-    setAuthError(false);
-    base44.auth.me()
-      .then(setCurrentUser)
-      .catch(() => {
-        setCurrentUser(null);
-        setAuthError(true);
-      });
-  }, [open]);
 
   const { data: users = [], isLoading, isError: usersError } = useQuery({
     queryKey: ["users-list"],
@@ -38,7 +27,7 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
       if (res?.data?.error) throw new Error(res.data.error);
       return res?.data?.users || [];
     },
-    enabled: open,
+    enabled: open && isAuthenticated,
   });
 
   const filtered = users
@@ -128,9 +117,9 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
             </div>
 
             <div className="max-h-[300px] overflow-y-auto space-y-1">
-              {authError ? (
+              {!isLoadingAuth && !isAuthenticated ? (
                 <p className="text-sm text-destructive text-center py-8" role="alert">
-                  Couldn't verify your account. Close and reopen this dialog to retry.
+                  Log in to send messages.
                 </p>
               ) : usersError ? (
                 <p className="text-sm text-destructive text-center py-8" role="alert">

@@ -33,6 +33,7 @@ export function usePwaUpdate() {
     let disposed = false;
     let installingWorker = null;
     let installingStateHandler = null;
+    let checkForUpdate = null;
 
     const handleUpdateFound = () => {
       if (disposed) return;
@@ -72,7 +73,7 @@ export function usePwaUpdate() {
 
         reg.addEventListener('updatefound', handleUpdateFound);
 
-        const checkForUpdate = () => {
+        checkForUpdate = () => {
           if (document.visibilityState === 'visible') {
             reg.update().catch(() => {});
           }
@@ -86,8 +87,6 @@ export function usePwaUpdate() {
 
         // Keep a periodic fallback as well.
         updateInterval = setInterval(checkForUpdate, 15 * 60 * 1000);
-
-        registration._naliCheckForUpdate = checkForUpdate;
       })
       .catch(() => {});
 
@@ -112,9 +111,9 @@ export function usePwaUpdate() {
       if (installingWorker && installingStateHandler) {
         installingWorker.removeEventListener('statechange', installingStateHandler);
       }
-      if (registration?._naliCheckForUpdate) {
-        document.removeEventListener('visibilitychange', registration._naliCheckForUpdate);
-        window.removeEventListener('pageshow', registration._naliCheckForUpdate);
+      if (checkForUpdate) {
+        document.removeEventListener('visibilitychange', checkForUpdate);
+        window.removeEventListener('pageshow', checkForUpdate);
       }
       if (updateInterval) clearInterval(updateInterval);
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);

@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { claimModerationStrike } from '../../shared/moderationStrikes.ts';
 import {
   acquireMessageMutationLock,
@@ -119,11 +121,11 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 32 * 1024);
     const action = typeof body?.action === 'string' ? body.action : '';
     const messageId = typeof body?.message_id === 'string' ? body.message_id.trim() : '';
     if (
-      !messageId
+      !isBase44EntityId(messageId)
       || messageId.length > 200
       || !['edit', 'react', 'delete'].includes(action)
     ) {
@@ -384,7 +386,9 @@ Deno.serve(async (req) => {
       await releaseMessageMutationLock(entities, lockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('mutateConversationMessage error:', error);
-    return Response.json({ error: error?.message || 'Message mutation failed' }, { status: 500 });
+    return Response.json({ error: 'Message mutation failed' }, { status: 500 });
   }
 });

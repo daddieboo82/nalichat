@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { APP_BASE_URL } from '../../shared/appConfig.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -51,7 +52,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'SMS is not configured', needs_setup: true }, { status: 503 });
     }
 
-    const appUrl = Deno.env.get('APP_BASE_URL') || 'https://nalichat.org';
+    const appUrl = APP_BASE_URL;
     if (!appUrl) {
       return Response.json({ error: 'Server is not configured with an app URL' }, { status: 500 });
     }

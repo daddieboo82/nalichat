@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -24,12 +25,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { isOnline } = await req.json();
+    const { isOnline } = await readJsonBodyLimited(req, 8 * 1024);
     if (typeof isOnline !== 'boolean') {
       return Response.json({ error: 'isOnline must be a boolean' }, { status: 400 });
     }
 
-    // Update user's online status
     await base44.asServiceRole.entities.User.update(user.id, {
       is_online: isOnline,
       last_seen: new Date().toISOString(),
@@ -37,7 +37,12 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('Error updating user presence:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json(
+      { error: error instanceof Error ? error.message : 'Unable to update presence' },
+      { status: 500 },
+    );
   }
 });

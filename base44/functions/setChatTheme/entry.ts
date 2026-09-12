@@ -7,6 +7,7 @@ import {
   isChatThemeId,
 } from '../../shared/chatThemes.ts';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -32,7 +33,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const payload = await req.json();
+    const payload = await readJsonBodyLimited(req, 8 * 1024);
     const themeId = payload?.theme_id;
     if (!isChatThemeId(themeId)) {
       return Response.json({ error: 'Unknown chat theme.' }, { status: 400 });
@@ -56,6 +57,8 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.User.update(user.id, { chat_theme_id: themeId });
     return Response.json({ theme_id: themeId });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('setChatTheme error:', error);
     return Response.json(
       { error: error instanceof Error ? error.message : 'Unable to save chat theme.' },

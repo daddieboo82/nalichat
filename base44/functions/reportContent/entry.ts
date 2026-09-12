@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -22,7 +23,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { content_type, content_id, reason } = await req.json();
+    const { content_type, content_id, reason } = await readJsonBodyLimited(req, 16 * 1024);
     if (!content_type || !content_id) {
       return Response.json({ error: 'content_type and content_id are required' }, { status: 400 });
     }
@@ -111,6 +112,8 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, message: 'Content reported. Thank you.' });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('reportContent error:', error);
     return Response.json({ error: error?.message || 'Report failed' }, { status: 500 });
   }

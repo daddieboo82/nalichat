@@ -58,6 +58,8 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, project });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('createProject error:', error);
     return Response.json({ error: error?.message || 'Could not create project' }, { status: 500 });
   }

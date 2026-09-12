@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import { acquirePlaylistMutationLock, releasePlaylistMutationLock } from '../../shared/playlistMutationLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -30,42 +31,102 @@ Deno.serve(async (req) => {
     if (!rate.allowed) {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
-    const playlist = await entities.Playlist.get(playlistId);
-    if (!playlist) return Response.json({ error: 'Playlist not found' }, { status: 404 });
-    if (playlist.owner_id !== user.id && user.role !== 'admin') {
+    const playlistPreview = await entities.Playlist.get(playlistId);
+    if (!playlistPreview) return Response.json({ error: 'Playlist not found' }, { status: 404 });
+    if (playlistPreview.owner_id !== user.id && user.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    if (action === 'delete') {
-      await entities.Playlist.delete(playlist.id);
-      return Response.json({ success: true, deleted: true });
-    }
-
+    let trackId = '';
     if (action === 'add_track' || action === 'remove_track') {
-      const trackId = typeof body?.trackId === 'string' ? body.trackId.trim() : '';
+      trackId = typeof body?.trackId === 'string' ? body.trackId.trim() : '';
       if (!isBase44EntityId(trackId)) {
         return Response.json({ error: 'trackId is required' }, { status: 400 });
       }
-
       if (action === 'add_track') {
         const post = await entities.ArtPost.get(trackId).catch(() => null);
         if (!post) return Response.json({ error: 'Track not found' }, { status: 404 });
-        const current = Array.isArray(playlist.track_ids) ? playlist.track_ids : [];
-        if (!current.includes(trackId) && current.length >= 500) {
-          return Response.json({ error: 'Playlist track limit reached' }, { status: 409 });
-        }
-        await entities.Playlist.updateMany(
-          { id: playlist.id },
-          { $addToSet: { track_ids: trackId } },
-        );
-      } else {
-        await entities.Playlist.updateMany(
-          { id: playlist.id },
-          { $pull: { track_ids: trackId } },
-        );
       }
-      const updated = await entities.Playlist.get(playlist.id);
+    }
+
+    const patch: Record<string, unknown> = {};
+    if (action === 'update_meta') {
+      if (body?.name !== undefined) {
+        if (typeof body.name !== 'string') {
+          return Response.json({ error: 'Playlist name must be a string' }, { status: 400 });
+        }
+        const name = body.name.trim();
+        if (!name) return Response.json({ error: 'Playlist name is required' }, { status: 400 });
+        if (name.length > 120) {
+          return Response.json({ error: 'Playlist name must be 120 characters or fewer' }, { status: 413 });
+        }
+        patch.name = name;
+      }
+      if (body?.description !== undefined) {
+        if (typeof body.description !== 'string') {
+          return Response.json({ error: 'Playlist description must be a string' }, { status: 400 });
+        }
+        const description = body.description.trim();
+        if (description.length > 1000) {
+          return Response.json({ error: 'Playlist description must be 1000 characters or fewer' }, { status: 413 });
+        }
+        patch.description = description;
+      }
+      if (body?.is_public !== undefined) {
+        if (typeof body.is_public !== 'boolean') {
+          return Response.json({ error: 'is_public must be a boolean' }, { status: 400 });
+        }
+        patch.is_public = body.is_public;
+      }
+      if (Object.keys(patch).length === 0) {
+        return Response.json({ error: 'No supported playlist fields supplied' }, { status: 400 });
+      }
+    }
+
+    const lockId = await acquirePlaylistMutationLock(entities, playlistId);
+    if (!lockId) {
+      return Response.json({ error: 'Playlist is being updated. Please retry.' }, { status: 409 });
+    }
+
+    try {
+      const playlist = await entities.Playlist.get(playlistId);
+      if (!playlist) return Response.json({ error: 'Playlist not found' }, { status: 404 });
+      if (playlist.owner_id !== user.id && user.role !== 'admin') {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+
+      if (action === 'delete') {
+        await entities.Playlist.delete(playlist.id);
+        return Response.json({ success: true, deleted: true });
+      }
+
+      if (action === 'add_track' || action === 'remove_track') {
+        if (action === 'add_track') {
+          const post = await entities.ArtPost.get(trackId).catch(() => null);
+          if (!post) return Response.json({ error: 'Track not found' }, { status: 404 });
+          const current = Array.isArray(playlist.track_ids) ? playlist.track_ids : [];
+          if (!current.includes(trackId) && current.length >= 500) {
+            return Response.json({ error: 'Playlist track limit reached' }, { status: 409 });
+          }
+          await entities.Playlist.updateMany(
+            { id: playlist.id },
+            { $addToSet: { track_ids: trackId } },
+          );
+        } else {
+          await entities.Playlist.updateMany(
+            { id: playlist.id },
+            { $pull: { track_ids: trackId } },
+          );
+        }
+        const updated = await entities.Playlist.get(playlist.id);
+        return Response.json({ success: true, playlist: updated });
+      }
+
+      const updated = await entities.Playlist.update(playlist.id, patch);
       return Response.json({ success: true, playlist: updated });
+    } finally {
+      await releasePlaylistMutationLock(entities, lockId);
+    }
     }
 
     const patch: Record<string, unknown> = {};

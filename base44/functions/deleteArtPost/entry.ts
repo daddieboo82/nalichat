@@ -73,6 +73,21 @@ Deno.serve(async (req) => {
       if (comments.length < DELETE_BATCH_SIZE) break;
     }
 
+    let deletedPlays = 0;
+    while (true) {
+      const plays = await entities.ArtPostPlay.filter(
+        { post_id: currentPost.id },
+        '-created_date',
+        DELETE_BATCH_SIZE,
+      );
+      if (plays.length === 0) break;
+      for (const play of plays) {
+        await entities.ArtPostPlay.delete(play.id);
+        deletedPlays += 1;
+      }
+      if (plays.length < DELETE_BATCH_SIZE) break;
+    }
+
     let playlistsUpdated = 0;
     while (true) {
       const playlists = await entities.Playlist.filter(
@@ -98,6 +113,7 @@ Deno.serve(async (req) => {
     return Response.json({
       success: true,
       deleted_comments: deletedComments,
+      deleted_plays: deletedPlays,
       playlists_updated: playlistsUpdated,
     });
     } finally {

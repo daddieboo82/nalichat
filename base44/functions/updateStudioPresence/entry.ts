@@ -143,6 +143,6 @@ Deno.serve(async (req) => {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('updateStudioPresence error:', error);
-    return Response.json({ error: error?.message || 'Studio presence update failed' }, { status: 500 });
+    return Response.json({ error: 'Studio presence update failed' }, { status: 500 });
   }
 });

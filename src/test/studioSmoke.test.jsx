@@ -15,6 +15,12 @@ const mockBase44 = vi.hoisted(() => ({
 }));
 
 vi.mock('@/api/base44Client', () => ({ base44: mockBase44 }));
+vi.mock('@/lib/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 'user-1', display_name: 'Fresh User', onboarding_completed: true },
+    isLoadingAuth: false,
+  }),
+}));
 vi.mock('@/hooks/useSubscription', () => ({ useSubscription: () => ({ isPro: false }) }));
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
 vi.mock('@/hooks/use-performance', () => ({ usePerformance: () => ({ isLowEnd: true }) }));

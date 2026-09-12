@@ -15,7 +15,7 @@ if (typeof document !== "undefined") {
 
 // Unregister stale service workers in dev/preview/sandbox to prevent
 // cached stale Vite/React chunks causing "Cannot read properties of null (reading 'useState')" errors.
-if ('serviceWorker' in navigator) {
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   const isUnsafeEnv = import.meta.env.DEV ||
     window.location.hostname.includes('preview') ||
     window.location.hostname.includes('sandbox') ||

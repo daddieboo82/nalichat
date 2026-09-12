@@ -77,6 +77,24 @@ Deno.serve(async (req) => {
 
     const projectLockIds: string[] = [];
     let folderLockId: string | null = null;
+
+    let folderId: string | null = null;
+    if (action === 'move') {
+      if (body?.folderId != null && typeof body.folderId !== 'string') {
+        return Response.json({ error: 'folderId must be a string or null' }, { status: 400 });
+      }
+      folderId = typeof body?.folderId === 'string' ? body.folderId.trim() : null;
+      if (folderId && !isBase44EntityId(folderId)) {
+        return Response.json({ error: 'Valid folderId is required' }, { status: 400 });
+      }
+      if (folderId) {
+        folderLockId = await acquireFolderMutationLock(entities, folderId);
+        if (!folderLockId) {
+          return Response.json({ error: 'Folder is being updated. Please retry.' }, { status: 409 });
+        }
+      }
+    }
+
     const acquireProjectLock = async (projectId: string | null | undefined) => {
       if (!projectId) return true;
       if (projectLockIds.some((id) => id === `project_membership_lock_${projectId}`)) return true;
@@ -165,23 +183,11 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, file: updated });
     }
 
-    if (body?.folderId != null && typeof body.folderId !== 'string') {
-      return Response.json({ error: 'folderId must be a string or null' }, { status: 400 });
-    }
-    const folderId = typeof body?.folderId === 'string' ? body.folderId.trim() : null;
-    if (folderId && !isBase44EntityId(folderId)) {
-      return Response.json({ error: 'Valid folderId is required' }, { status: 400 });
-    }
     let projectId = null;
     let accessUserIds = [file.uploader_id].filter(Boolean);
     let editUserIds = [file.uploader_id].filter(Boolean);
 
     if (folderId) {
-      folderLockId = await acquireFolderMutationLock(entities, folderId);
-      if (!folderLockId) {
-        return Response.json({ error: 'Folder is being updated. Please retry.' }, { status: 409 });
-      }
-
       let folder = await entities.Folder.get(folderId);
       if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
       if (folder.project_id && !isBase44EntityId(folder.project_id)) {
@@ -240,11 +246,11 @@ Deno.serve(async (req) => {
     });
     return Response.json({ success: true, file: updated });
     } finally {
-      if (folderLockId) {
-        await releaseFolderMutationLock(entities, folderLockId);
-      }
       for (const projectLockId of projectLockIds.reverse()) {
         await releaseProjectMembershipLock(entities, projectLockId);
+      }
+      if (folderLockId) {
+        await releaseFolderMutationLock(entities, folderLockId);
       }
     }
     } finally {

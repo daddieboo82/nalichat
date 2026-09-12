@@ -51,10 +51,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'SMS is not configured', needs_setup: true }, { status: 503 });
     }
 
-    const appUrl =
-      Deno.env.get('APP_BASE_URL')
-      || Deno.env.get('WIX_CHECKOUT_APP_URL')
-      || 'https://nalichat.org';
+    const appUrl = Deno.env.get('APP_BASE_URL') || 'https://nalichat.org';
     if (!appUrl) {
       return Response.json({ error: 'Server is not configured with an app URL' }, { status: 500 });
     }

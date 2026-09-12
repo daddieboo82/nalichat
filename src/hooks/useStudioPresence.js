@@ -13,6 +13,7 @@ export function useStudioPresence(roomId = 'local_studio') {
   const meRef = useRef(null);
   const activityRef = useRef('In the studio');
   const cancelledRef = useRef(false);
+  const refreshGenerationRef = useRef(0);
 
   const filterActive = useCallback((rows) => {
     const now = Date.now();
@@ -27,9 +28,10 @@ export function useStudioPresence(roomId = 'local_studio') {
     });
   }, []);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (generation = refreshGenerationRef.current) => {
     try {
       const rows = await base44.entities.StudioPresence.filter({ room_id: roomId }, '-last_heartbeat', 50);
+      if (generation !== refreshGenerationRef.current || cancelledRef.current) return;
       setPeers(filterActive(rows));
     } catch (e) {
       // non-fatal
@@ -62,15 +64,16 @@ export function useStudioPresence(roomId = 'local_studio') {
     let refreshInterval;
 
     cancelledRef.current = false;
+    const generation = ++refreshGenerationRef.current;
     meRef.current = user || null;
 
     if (user?.id) {
       void (async () => {
         await writeHeartbeat();
-        await refresh();
-        if (cancelledRef.current) return;
+        await refresh(generation);
+        if (cancelledRef.current || generation !== refreshGenerationRef.current) return;
         interval = setInterval(writeHeartbeat, HEARTBEAT_MS);
-        refreshInterval = setInterval(refresh, 5000);
+        refreshInterval = setInterval(() => refresh(generation), 5000);
       })();
     } else {
       setPeers([]);
@@ -78,6 +81,7 @@ export function useStudioPresence(roomId = 'local_studio') {
 
     return () => {
       cancelledRef.current = true;
+      refreshGenerationRef.current += 1;
       if (interval) clearInterval(interval);
       if (refreshInterval) clearInterval(refreshInterval);
       if (user?.id) {

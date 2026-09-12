@@ -31,7 +31,9 @@
           "call": "invoke_backend_function",
           "with": {
             "function_name": "reengageStalledUsers",
-            "args": {}
+            "args": {
+              "workflow_key": "6Dso8CLjcdXsU1XnaiNCsRhxCEpEoc0w_vl-h5_E3hU"
+            }
           },
           "then": "end"
         }

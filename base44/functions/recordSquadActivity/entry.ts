@@ -1,6 +1,7 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 const GOAL_MESSAGES = 20;
 const GOAL_TASKS = 3;
@@ -166,12 +167,13 @@ Deno.serve(async (req) => {
     }
 
     const { sourceType, sourceId } = await readJsonBodyLimited(req, 8 * 1024);
-    if (!['message', 'art_post', 'milestone'].includes(sourceType) || !sourceId) {
+    const normalizedSourceId = typeof sourceId === 'string' ? sourceId.trim() : '';
+    if (!['message', 'art_post', 'milestone'].includes(sourceType) || !isBase44EntityId(normalizedSourceId)) {
       return Response.json({ error: 'Valid sourceType and sourceId are required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
-    if (!(await validateSource(entities, user, sourceType, String(sourceId)))) {
+    if (!(await validateSource(entities, user, sourceType, normalizedSourceId))) {
       return Response.json({ error: 'Activity source is not valid for this user' }, { status: 403 });
     }
 

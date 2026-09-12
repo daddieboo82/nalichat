@@ -10,6 +10,7 @@ import {
 import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/subscription.ts';
 import { stripeRequest } from '../../shared/stripe.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { APP_BASE_URL } from '../../shared/appConfig.ts';
 
 const TRIAL_DAYS = 7;
 const CHECKOUT_LEASE_MS = 24 * 60 * 60 * 1000;
@@ -64,9 +65,7 @@ Deno.serve(async (req) => {
     const sku = resolveStripeSku(body?.sku, (name) => Deno.env.get(name));
     const requestKey = validateCheckoutIdempotencyKey(body?.idempotencyKey);
     cleanupRequestKey = requestKey;
-    const appBaseUrl = Deno.env.get('APP_BASE_URL');
-    if (!appBaseUrl) throw new Error('Missing APP_BASE_URL');
-    const callbackUrls = resolveCheckoutUrls(body?.callbackDestinations, appBaseUrl);
+    const callbackUrls = resolveCheckoutUrls(body?.callbackDestinations, APP_BASE_URL);
     const environment = stripeEnvironment(Deno.env.get('STRIPE_ENVIRONMENT'));
 
     const base44 = createClientFromRequest(req);

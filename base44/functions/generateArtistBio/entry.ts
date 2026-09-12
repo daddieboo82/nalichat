@@ -1,6 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireEntitlement, preferredAiModel } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import {
+  AiQuotaError,
+  aiQuotaErrorResponse,
+  executeMeteredAiRequest,
+} from '../../shared/aiQuota.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -49,15 +54,22 @@ Website: ${user.website || 'Not specified'}
 
 The bio should be written in first person, highlight their expertise, and sound authentic and inspiring. Keep it concise and suitable for a professional music network profile. Return only the bio text.`;
 
-    const bioResponse = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      ...(preferredAiModel(entitlements) ? { model: preferredAiModel(entitlements) } : {}),
-      prompt: prompt,
+    const { result: bioResponse, quota } = await executeMeteredAiRequest({
+      base44,
+      user,
+      operation: 'artist_bio',
+      requestKey: undefined,
+      dispatch: () => base44.asServiceRole.integrations.Core.InvokeLLM({
+        ...(preferredAiModel(entitlements) ? { model: preferredAiModel(entitlements) } : {}),
+        prompt,
+      }),
     });
 
     const bio = bioResponse.trim();
 
-    return Response.json({ bio });
+    return Response.json({ bio, quota });
   } catch (error) {
+    if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     console.error('generateArtistBio error:', error);
     return Response.json({ error: 'Artist bio generation failed' }, { status: 500 });
   }

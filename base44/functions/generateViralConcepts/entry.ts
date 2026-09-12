@@ -2,6 +2,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { requireEntitlement, preferredAiModel } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import {
+  AiQuotaError,
+  aiQuotaErrorResponse,
+  executeMeteredAiRequest,
+} from '../../shared/aiQuota.ts';
 
 const MOODS = new Set(['all', 'humor', 'shock', 'curiosity', 'relatable', 'controversy', 'awe']);
 
@@ -77,10 +82,16 @@ Deno.serve(async (req) => {
     const body = await readJsonBodyLimited(req, 8 * 1024);
     const mood = MOODS.has(body?.mood) ? body.mood : 'all';
 
-    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      ...(preferredAiModel(entitlements) ? { model: preferredAiModel(entitlements) } : {}),
-      prompt: buildPrompt(mood),
-      response_json_schema: RESPONSE_SCHEMA,
+    const { result, quota } = await executeMeteredAiRequest({
+      base44,
+      user,
+      operation: 'viral_seed',
+      requestKey: body?.request_key,
+      dispatch: () => base44.asServiceRole.integrations.Core.InvokeLLM({
+        ...(preferredAiModel(entitlements) ? { model: preferredAiModel(entitlements) } : {}),
+        prompt: buildPrompt(mood),
+        response_json_schema: RESPONSE_SCHEMA,
+      }),
     });
 
     const concepts = Array.isArray(result?.concepts) ? result.concepts.slice(0, 5) : [];
@@ -136,8 +147,9 @@ Deno.serve(async (req) => {
       throw updateError;
     }
 
-    return Response.json({ concepts, xp_awarded: firstGeneration ? 50 : 0 });
+    return Response.json({ concepts, xp_awarded: firstGeneration ? 50 : 0, quota });
   } catch (error) {
+    if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('generateViralConcepts error:', error);

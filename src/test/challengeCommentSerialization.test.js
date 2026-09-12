@@ -14,7 +14,7 @@ describe('challenge comment serialization', () => {
     expect(source).toContain('acquireChallengeSubmissionLock');
     expect(source).toContain('releaseChallengeSubmissionLock');
     expect(source).toContain("action === 'create' && parentType === 'challenge_submission'");
-    expect(source).toContain('parentId.length > 200');
+    expect(source).toContain('isBase44EntityId(parentId)');
     expect(source).toContain("typeof body?.text !== 'string'");
     expect(source).toContain('text.length > 2000');
     expect(source).toContain("typeof body.timestamp !== 'number'");

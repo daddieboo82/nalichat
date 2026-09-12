@@ -255,6 +255,9 @@ describe('core usage flow coverage', () => {
       if (name === 'toggleLike') {
         return { data: { liked: true, likes: 1 } };
       }
+      if (name === 'secureUploadFile') {
+        return { data: { file_url: 'https://cdn.example.com/file.mp3' } };
+      }
       if (name === 'createArtPost') {
         return { data: { success: true, post: { id: 'post-1', ...payload } } };
       }
@@ -450,7 +453,16 @@ describe('core usage flow coverage', () => {
 
   it('persists the explicit rating from the bounce dialog when publishing a song', async () => {
     mockBase44.auth.me.mockResolvedValue({ id: 'user-1', display_name: 'Fresh', full_name: 'Fresh User' });
-    mockBase44.functions.invoke.mockResolvedValue({ data: {} });
+    mockBase44.functions.invoke.mockImplementation(async (name, payload) => {
+      if (name === 'aiMasterSession') return { data: {} };
+      if (name === 'secureUploadFile') {
+        return { data: { file_url: 'https://cdn.example.com/file.mp3' } };
+      }
+      if (name === 'publishStudioBounce') {
+        return { data: { success: true, post: { id: 'post-1', ...payload } } };
+      }
+      return { data: {} };
+    });
 
     renderWithProviders(
       <BounceDialog

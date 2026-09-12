@@ -4,7 +4,7 @@ import {
   Mic, Wand2, FileText, Trophy, Settings, Gem, BarChart3,
   Home, Compass, MessageSquare, Users, Radio, Swords, Rocket, Smartphone
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/lib/AuthContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -76,7 +76,14 @@ export default function MobileHeader() {
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const lastUserIdRef = useRef(user?.id || null);
 
+  useEffect(() => {
+    const nextUserId = user?.id || null;
+    if (lastUserIdRef.current === nextUserId) return;
+    lastUserIdRef.current = nextUserId;
+    setMenuOpen(false);
+  }, [user?.id]);
 
   const path = location.pathname;
 

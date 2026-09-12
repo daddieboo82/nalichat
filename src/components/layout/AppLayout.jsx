@@ -1,8 +1,9 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/layout/PageTransition";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
+import { useAuth } from "@/lib/AuthContext";
 
 import DesktopNav from "@/components/navigation/DesktopNav";
 import MobileHeader from "@/components/navigation/MobileHeader";
@@ -19,6 +20,8 @@ export default function AppLayout() {
   const [showHelp, setShowHelp] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
+  const { user } = useAuth();
+  const lastUserIdRef = useRef(user?.id || null);
   const audioPlayer = useAudioPlayer();
   const hasAudioPlayer = !!audioPlayer?.currentTrack;
   // Both nav bars used to mount at every viewport and were only hidden with
@@ -29,6 +32,15 @@ export default function AppLayout() {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   useSystemTheme();
+
+  useEffect(() => {
+    const nextUserId = user?.id || null;
+    if (lastUserIdRef.current === nextUserId) return;
+    lastUserIdRef.current = nextUserId;
+    setShowHelp(false);
+    setShowInvite(false);
+    setShowMessage(false);
+  }, [user?.id]);
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">

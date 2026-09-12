@@ -18,6 +18,7 @@ describe('viral moment share feedback', () => {
   it('keeps user-cancel quiet but surfaces real share failures', async () => {
     const source = await readText('src/components/messages/ViralMomentDialog.jsx');
 
+    expect(source).toContain('if (!res.ok) throw new Error(`Meme fetch failed: ${res.status}`)');
     expect(source).toContain('if (error?.name !== "AbortError")');
     expect(source).toContain('toast.error("Couldn\'t share this Viral Moment. Please try again.")');
     expect(source).toContain('await handleCopy();');

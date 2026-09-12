@@ -10,6 +10,7 @@ import { registerServiceWorker, requestPushPermission, subscribeToRemotePush, ge
 import { sounds } from "@/hooks/use-sound";
 import { useLockedChats } from "@/lib/LockedChatsContext";
 import { redactLockedChatNotification } from "@/lib/lockedChatPolicy";
+import { useAuth } from "@/lib/AuthContext";
 
 const typeIcon = {
   comment: MessageCircle,
@@ -32,7 +33,7 @@ function safeNotificationPath(value) {
 }
 
 export default function NotificationBell({ direction = "down" }) {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
   const [pushPermission, setPushPermission] = useState(() => getPermissionStatus());
@@ -51,7 +52,6 @@ export default function NotificationBell({ direction = "down" }) {
     );
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
     // Register the service worker, but only request notification permission
     // from an explicit user gesture. Browsers may block permission prompts
     // triggered from timers or page load.

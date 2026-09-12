@@ -23,12 +23,12 @@ export default function PlaylistDetail() {
   const queryClient = useQueryClient();
 
   const { data: playlist, isLoading: playlistLoading } = useQuery({
-    queryKey: ["playlist", playlistId],
+    queryKey: ["playlist", currentUser?.id || "anonymous", playlistId],
     queryFn: () => base44.entities.Playlist.get(playlistId),
   });
 
   const { data: tracks = [], isLoading: tracksLoading } = useQuery({
-    queryKey: ["playlistTracks", playlist?.track_ids],
+    queryKey: ["playlistTracks", currentUser?.id || "anonymous", playlist?.track_ids],
     queryFn: async () => {
       if (!playlist?.track_ids?.length) return [];
       // Tolerate tracks that were deleted from ArtPost — skip the missing ones
@@ -84,8 +84,8 @@ export default function PlaylistDetail() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
-      queryClient.invalidateQueries({ queryKey: ["playlistTracks"] });
+      queryClient.invalidateQueries({ queryKey: ["playlist", currentUser?.id || "anonymous", playlistId] });
+      queryClient.invalidateQueries({ queryKey: ["playlistTracks", currentUser?.id || "anonymous"] });
     }
   });
 
@@ -108,8 +108,8 @@ export default function PlaylistDetail() {
       return res?.data?.playlist;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
-      queryClient.invalidateQueries({ queryKey: ["playlistTracks"] });
+      queryClient.invalidateQueries({ queryKey: ["playlist", currentUser?.id || "anonymous", playlistId] });
+      queryClient.invalidateQueries({ queryKey: ["playlistTracks", currentUser?.id || "anonymous"] });
     },
   });
 

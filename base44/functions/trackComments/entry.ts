@@ -61,6 +61,22 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+
+    if (action === 'create') {
+      if (!user?.id) return Response.json({ error: 'Sign in to comment' }, { status: 401 });
+      if (user.is_banned) {
+        return Response.json({ error: 'banned' }, { status: 403 });
+      }
+      if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+        return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+      }
+
+      const rate = await consumeHourlyLimit(entities, user.id, 'track_comment', 120);
+      if (!rate.allowed) {
+        return Response.json({ error: 'Comment rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+    }
+
     let submissionLockId: string | null = null;
     let trackLockId: string | null = null;
     if (action === 'create' && parentType === 'challenge_submission') {
@@ -107,19 +123,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'create') {
-      if (!user?.id) return Response.json({ error: 'Sign in to comment' }, { status: 401 });
-      if (user.is_banned) {
-        return Response.json({ error: 'banned' }, { status: 403 });
-      }
-      if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
-        return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
-      }
-
-      const rate = await consumeHourlyLimit(entities, user.id, 'track_comment', 120);
-      if (!rate.allowed) {
-        return Response.json({ error: 'Comment rate limit exceeded. Please try again later.' }, { status: 429 });
-      }
-
       if (typeof body?.text !== 'string') {
         return Response.json({ error: 'Comment text is required' }, { status: 400 });
       }

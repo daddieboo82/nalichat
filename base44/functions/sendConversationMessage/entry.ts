@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { claimModerationStrike } from '../../shared/moderationStrikes.ts';
 import {
   acquireMessageMutationLock,
@@ -200,8 +202,8 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
   const conversationId = typeof body?.conversation_id === 'string'
     ? body.conversation_id.trim()
     : '';
-  if (!conversationId || conversationId.length > 200) {
-    return Response.json({ error: 'conversation_id is required' }, { status: 400 });
+  if (!isBase44EntityId(conversationId)) {
+    return Response.json({ error: 'Valid conversation_id is required' }, { status: 400 });
   }
 
   const clientMessageKey = typeof body?.client_message_key === 'string'
@@ -522,7 +524,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 64 * 1024);
     const conversationId = typeof body?.conversation_id === 'string'
       ? body.conversation_id.trim()
       : '';
@@ -541,7 +543,9 @@ Deno.serve(async (req) => {
     inFlightCreates.set(lockKey, operation);
     return (await operation).clone();
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('sendConversationMessage error:', error);
-    return Response.json({ error: error?.message || 'Message send failed' }, { status: 500 });
+    return Response.json({ error: 'Message send failed' }, { status: 500 });
   }
 });

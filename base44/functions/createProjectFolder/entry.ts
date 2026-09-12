@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 Deno.serve(async (req) => {
@@ -34,8 +35,8 @@ Deno.serve(async (req) => {
     if (folderName.length > 200) {
       return Response.json({ error: 'Folder name must be 200 characters or fewer' }, { status: 413 });
     }
-    if (projectId.length > 200) {
-      return Response.json({ error: 'project_id is too long' }, { status: 400 });
+    if (projectId && !isBase44EntityId(projectId)) {
+      return Response.json({ error: 'Invalid project_id' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;

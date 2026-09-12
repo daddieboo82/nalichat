@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/lib/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,8 +27,7 @@ import {
 export default function CoverArt() {
   const { hasEntitlement } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const { user: currentUser, isLoadingAuth } = useAuth();
   const [selectedPost, setSelectedPost] = useState(null);
   const [generatedImage, setGeneratedImage] = useState(null);
   const [generatingStatus, setGeneratingStatus] = useState("");
@@ -210,12 +210,6 @@ export default function CoverArt() {
     }
   };
 
-  useEffect(() => {
-    base44.auth.me()
-      .then(setCurrentUser)
-      .catch(() => {})
-      .finally(() => setIsLoadingUser(false));
-  }, []);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["myArtPosts", currentUser?.id],
@@ -312,7 +306,7 @@ export default function CoverArt() {
     }
   };
 
-  if (isLoadingUser) return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (isLoadingAuth) return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   if (!currentUser) return <div className="p-8 text-center">Please log in to use the Cover Art Creator.</div>;
 
   return (

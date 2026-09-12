@@ -112,6 +112,10 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
       ctx.fillText("✨ Made in NaliChat", canvas.width / 2, img.naturalHeight + watermarkHeight / 2);
 
       canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error("Couldn't prepare the meme download. Please try again.");
+          return;
+        }
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;

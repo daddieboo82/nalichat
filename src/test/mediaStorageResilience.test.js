@@ -57,6 +57,14 @@ describe('media storage resilience', () => {
     expect(source).toContain("void waveformAudioCtx.close().catch(() => {})");
   });
 
+  it('cleans up AudioSuite contexts and abandoned processed blob URLs', async () => {
+    const source = await readText('src/components/studio/AudioSuiteDialog.jsx');
+    expect(source).toContain("let audioCtx = null;");
+    expect(source).toContain("let handedOffUrl = false;");
+    expect(source).toContain("URL.revokeObjectURL(newUrl)");
+    expect(source).toContain("await audioCtx.close().catch(() => {})");
+  });
+
   it('keeps resumable transfers working when localStorage is unavailable', async () => {
     const source = await readText('src/lib/resumableUpload.js');
     expect(source).toContain('try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}');

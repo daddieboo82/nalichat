@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { secrets } from 'base44:runtime';
 import { describeAiCapabilities } from '../../shared/aiCapability.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -14,6 +15,19 @@ Deno.serve(async (req) => {
     if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
     if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
+    const capabilityRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'ai_capability_read',
+      300,
+    );
+    if (!capabilityRate.allowed) {
+      return Response.json(
+        { error: 'AI capability lookup rate limit exceeded. Please try again later.' },
+        { status: 429 },
+      );
     }
 
     const capabilities = await describeAiCapabilities({

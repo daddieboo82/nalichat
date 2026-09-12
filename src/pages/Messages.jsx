@@ -324,8 +324,12 @@ export default function Messages() {
           nextAttemptAt: Date.now() + getBackoffDelay(1),
           lastError: err?.message || "Message could not be sent.",
         };
-        enqueueOutbound(failedEntry);
-        window.dispatchEvent(new Event("nalichat:outbound-queue"));
+        try {
+          enqueueOutbound(failedEntry);
+          window.dispatchEvent(new Event("nalichat:outbound-queue"));
+        } catch (queueError) {
+          console.error("Unable to persist failed message for retry:", queueError);
+        }
       }
       if (ctx?.previousConversations) {
         queryClient.setQueryData(["conversations"], ctx.previousConversations);
@@ -402,7 +406,8 @@ export default function Messages() {
     };
 
     const flushQueue = async () => {
-      await flushOutboundQueue({
+      try {
+        await flushOutboundQueue({
         userId: currentUser.id,
         send: sendQueuedEntry,
         onSending: (entry) => {
@@ -427,7 +432,10 @@ export default function Messages() {
             applySendFailure(old, entry.clientMessageKey, error?.message, true)
           );
         },
-      });
+        });
+      } catch (queueError) {
+        console.error("Unable to flush outbound message queue:", queueError);
+      }
       scheduleNext();
     };
 
@@ -654,7 +662,12 @@ export default function Messages() {
                 <motion.div key="contacts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col pt-2 bg-background/40">
                   <ContactsTab 
                     currentUserId={currentUser?.id} 
-                    onMessageContact={async (u) => {\n                      try {\n                        await startDM(u);\n                        setSidebarTab("chats");\n                      } catch {}\n                    }} 
+                    onMessageContact={async (u) => {
+                      try {
+                        await startDM(u);
+                        setSidebarTab("chats");
+                      } catch {}
+                    }} 
                   />
                 </motion.div>
               )}
@@ -693,10 +706,14 @@ export default function Messages() {
               onReact={handleReact}
               onRetryMessage={(message) => {
                 if (!message?.client_message_key) return;
-                const queued = markOutboundForRetry(message.client_message_key);
-                if (queued) {
-                  window.dispatchEvent(new Event("nalichat:outbound-queue"));
-                  return;
+                try {
+                  const queued = markOutboundForRetry(message.client_message_key);
+                  if (queued) {
+                    window.dispatchEvent(new Event("nalichat:outbound-queue"));
+                    return;
+                  }
+                } catch (queueError) {
+                  console.error("Unable to persist manual message retry:", queueError);
                 }
                 sendMessage.mutate({
                   text: message.text || "",

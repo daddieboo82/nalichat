@@ -189,7 +189,7 @@ function getErrorCode(error) {
 
 function isPermanentServerRejection(error) {
   const status = getErrorStatus(error);
-  return [400, 403, 404].includes(status);
+  return [400, 401, 403, 404, 405, 410, 413, 422].includes(status);
 }
 
 /**

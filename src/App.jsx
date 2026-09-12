@@ -68,6 +68,14 @@ const Download = lazy(() => import('@/pages/Download'));
 const OAuthConsent = lazy(() => import('@/pages/OAuthConsent'));
 const SharedFileDownload = lazy(() => import('@/pages/SharedFileDownload'));
 
+function safeLocalStorageGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function safeLocalStorageSet(key, value) {
+  try { localStorage.setItem(key, value); } catch {}
+}
+
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated, logout } = useAuth();
   const location = useLocation();
@@ -91,12 +99,12 @@ const AuthenticatedApp = () => {
     const isNewSignup = Number.isFinite(createdAtMs) &&
         Date.now() - createdAtMs < 24 * 60 * 60 * 1000;
     const key = '_aw_signup_fired_AW-18416125487/twIWCJHa5OkcEK-Mv81E_' + user.id;
-    if (!isNewSignup || localStorage.getItem(key)) return;
+    if (!isNewSignup || safeLocalStorageGet(key)) return;
     let tries = 0;
     const fire = () => {
         if (!window.gtag) { if (tries++ < 20) setTimeout(fire, 250); return; }
-        if (localStorage.getItem(key)) return;
-        localStorage.setItem(key, '1');
+        if (safeLocalStorageGet(key)) return;
+        safeLocalStorageSet(key, '1');
         window.gtag('event', 'conversion', {
             send_to: 'AW-18416125487/twIWCJHa5OkcEK-Mv81E',
             transaction_id: user.id,
@@ -108,7 +116,7 @@ const AuthenticatedApp = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const lastActive = localStorage.getItem('last_activity');
+    const lastActive = safeLocalStorageGet('last_activity');
     const parsedLastActive = lastActive ? Number.parseInt(lastActive, 10) : NaN;
     if (
       Number.isFinite(parsedLastActive)
@@ -118,7 +126,7 @@ const AuthenticatedApp = () => {
       return;
     }
 
-    const updateActivity = () => localStorage.setItem('last_activity', Date.now().toString());
+    const updateActivity = () => safeLocalStorageSet('last_activity', Date.now().toString());
     // Initialize activity only when there is no valid prior timestamp. Existing
     // timestamps must survive reloads so the 24-hour inactivity policy works.
     if (!Number.isFinite(parsedLastActive)) updateActivity();

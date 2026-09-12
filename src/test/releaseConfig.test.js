@@ -839,6 +839,43 @@ describe('release configuration', () => {
     expect(sms).not.toContain("params.append('To'");
   });
 
+  it('routes credit-consuming file uploads through an authenticated server gateway', async () => {
+    const gateway = await readText('base44/functions/secureUploadFile/entry.ts');
+    const helper = await readText('src/lib/secureUpload.js');
+    const clientUploadPaths = [
+      'src/lib/resumableUpload.js',
+      'src/pages/Profile.jsx',
+      'src/pages/CreateChallenge.jsx',
+      'src/pages/CoverArt.jsx',
+      'src/pages/Record.jsx',
+      'src/pages/Settings.jsx',
+      'src/pages/Files.jsx',
+      'src/pages/Studio.jsx',
+      'src/pages/PlaylistDetail.jsx',
+      'src/components/explore/UploadArtDialog.jsx',
+      'src/components/studio/TrackImporter.jsx',
+      'src/components/studio/BounceDialog.jsx',
+      'src/components/messages/ChatSessionViewer.jsx',
+      'src/components/messages/ChatInput.jsx',
+      'src/components/challenges/SubmitRemixModal.jsx',
+    ];
+
+    expect(gateway).toContain('await base44.auth.me()');
+    expect(gateway).toContain("'file_upload'");
+    expect(gateway).toMatch(/'file_upload',\s*60/);
+    expect(gateway).toContain('status: 429');
+    expect(gateway).toContain('req.formData()');
+    expect(gateway).toContain('asServiceRole.integrations.Core.UploadFile');
+    expect(helper).toContain('functions.invoke("secureUploadFile"');
+    expect(helper).not.toContain('integrations.Core.UploadFile');
+
+    for (const path of clientUploadPaths) {
+      const source = await readText(path);
+      expect(source).toContain('secureUploadFile');
+      expect(source).not.toContain('integrations.Core.UploadFile');
+    }
+  });
+
   it('rate-limits costly outbound and AI actions on the server', async () => {
     const limitedPaths = [
       'base44/functions/sendExternalMessage/entry.ts',

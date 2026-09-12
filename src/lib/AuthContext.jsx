@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAppState();
-  }, [queryClient]);
+  }, []);
 
   const checkAppState = async () => {
     try {
@@ -133,8 +133,6 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
       if (lastUserIdRef.current) queryClient.clear();
       lastUserIdRef.current = null;
-      queryClient.clear();
-      lastUserIdRef.current = null;
       setUser(null);
       setIsAuthenticated(false);
       setAuthChecked(true);
@@ -143,7 +141,7 @@ export const AuthProvider = ({ children }) => {
       // after a successful login.  Only logout() clears the token.
       return null;
     }
-  }, []);
+  }, [queryClient]);
 
   const logout = async () => {
     // Remove this browser's remote push capability while the authenticated
@@ -166,6 +164,8 @@ export const AuthProvider = ({ children }) => {
         sessionStorage.removeItem('base44_access_token');
         sessionStorage.removeItem('base44_token');
       } catch (e) {}
+      queryClient.clear();
+      lastUserIdRef.current = null;
       setUser(null);
       setIsAuthenticated(false);
       setAuthChecked(true);

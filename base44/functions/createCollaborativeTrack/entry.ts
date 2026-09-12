@@ -160,6 +160,28 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Viewer access cannot create tracks' }, { status: 403 });
       }
     }
+    // Media verification can involve external storage latency. Complete it
+    // before taking the project membership lock, then re-check authorization
+    // under the lock immediately before creating the track.
+    const fileUrl = body?.file_url ? cleanUploadedMediaUrl(body.file_url) : '';
+    if (body?.file_url && !fileUrl) {
+      return Response.json({ error: 'Track media must come from trusted upload storage' }, { status: 400 });
+    }
+    if (fileUrl) {
+      const storedSize = await resolveStoredFileSize(fileUrl);
+      if (storedSize === null) {
+        return Response.json({ error: 'Could not verify track media size' }, { status: 400 });
+      }
+      if (storedSize <= 0 || storedSize > MAX_TRACK_BYTES) {
+        return Response.json({ error: 'Track media must be 100MB or smaller' }, { status: 413 });
+      }
+    }
+
+    const allowedTypes = new Set(['vocal', 'instrument', 'beat', 'sample', 'fx', 'master']);
+    if (body?.type != null && !allowedTypes.has(body.type)) {
+      return Response.json({ error: 'Invalid track type' }, { status: 400 });
+    }
+
     const projectLockId = initialProject
       ? await acquireProjectMembershipLock(entities, projectId)
       : null;
@@ -200,24 +222,6 @@ Deno.serve(async (req) => {
         editUserIds = message.participant_ids;
       }
 
-    const fileUrl = body?.file_url ? cleanUploadedMediaUrl(body.file_url) : '';
-    if (body?.file_url && !fileUrl) {
-      return Response.json({ error: 'Track media must come from trusted upload storage' }, { status: 400 });
-    }
-    if (fileUrl) {
-      const storedSize = await resolveStoredFileSize(fileUrl);
-      if (storedSize === null) {
-        return Response.json({ error: 'Could not verify track media size' }, { status: 400 });
-      }
-      if (storedSize <= 0 || storedSize > MAX_TRACK_BYTES) {
-        return Response.json({ error: 'Track media must be 100MB or smaller' }, { status: 413 });
-      }
-    }
-
-    const allowedTypes = new Set(['vocal', 'instrument', 'beat', 'sample', 'fx', 'master']);
-    if (body?.type != null && !allowedTypes.has(body.type)) {
-      return Response.json({ error: 'Invalid track type' }, { status: 400 });
-    }
     const track = await entities.Track.create({
       project_id: projectId,
       name,

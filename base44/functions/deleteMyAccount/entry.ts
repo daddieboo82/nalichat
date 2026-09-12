@@ -646,9 +646,6 @@ Deno.serve(async (req) => {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('deleteMyAccount failed:', error);
-    return Response.json(
-      { error: error?.message || 'Account deletion failed' },
-      { status: 500 },
-    );
+    return Response.json({ error: 'Account deletion failed' }, { status: 500 });
   }
 });

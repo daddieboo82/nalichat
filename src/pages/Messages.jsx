@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { recordSquadActivity } from "@/lib/squadBonus";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import ConversationList from "@/components/messages/ConversationList";
@@ -72,6 +72,7 @@ function sendErrorFromResponse(response) {
 export default function Messages() {
   const { user: currentUser, checkUserAuth } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [sidebarTab, setSidebarTab] = useState("chats");
   const [lockedLinkConversationId, setLockedLinkConversationId] = useState(null);
@@ -96,16 +97,16 @@ export default function Messages() {
     // touch/click timing quirks and gives the existing deep-link resolver a
     // second, authoritative way to restore the chat view.
     const nextSearch = `?id=${encodeURIComponent(convId)}`;
-    if (window.location.search !== nextSearch) {
-      window.history.replaceState(window.history.state, "", `${window.location.pathname}${nextSearch}`);
+    if (location.search !== nextSearch) {
+      navigate(`${location.pathname}${nextSearch}`, { replace: true });
     }
     setSelectedConvId(convId);
     markConversationRead(convId);
   };
 
   const handleBackToConversations = () => {
-    if (window.location.search) {
-      window.history.replaceState(window.history.state, "", window.location.pathname);
+    if (location.search) {
+      navigate(location.pathname, { replace: true });
     }
     setSelectedConvId(null);
   };
@@ -582,7 +583,7 @@ export default function Messages() {
   ));
 
   return (
-    <div className="absolute inset-0 sm:relative sm:inset-auto sm:h-[calc(100vh-80px)] p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden">
+    <div className="relative h-full min-h-0 sm:h-[calc(100vh-80px)] p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden">
       <div className="w-full max-w-7xl h-full max-h-full flex flex-col sm:flex-row bg-card/60 sm:bg-card/40 backdrop-blur-3xl sm:border border-border/40 sm:rounded-[2.5rem] shadow-none sm:shadow-2xl overflow-hidden relative">
         
         {/* Sidebar */}

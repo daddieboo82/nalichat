@@ -115,9 +115,13 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       payload.reply_to_id = replyTo.id;
     }
     
-    onSend(payload);
-    onCancelReply?.();
-    onCancelEdit?.();
+    try {
+      await Promise.resolve(onSend(payload));
+      onCancelReply?.();
+      onCancelEdit?.();
+    } catch {
+      // Parent surfaces the send error. Keep reply/edit context intact.
+    }
   };
 
   const handleFileChange = async (e) => {
@@ -183,9 +187,13 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
           payload.reply_to_id = replyTo.id;
         }
         
-        onSend(payload);
-        onCancelReply?.();
-        onCancelEdit?.();
+        try {
+          await Promise.resolve(onSend(payload));
+          onCancelReply?.();
+          onCancelEdit?.();
+        } catch {
+          // Parent surfaces the send error. The upload itself succeeded.
+        }
       } catch (error) {
         sounds.error();
         toast.error(error?.message || "Couldn't upload the voice message. Please try again.");
@@ -202,6 +210,27 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       setRecordingTime(t => t + 1);
       recordingTimeRef.current += 1;
     }, 1000);
+  };
+
+  const sendSession = async () => {
+    const trimmed = sessionName.trim();
+    if (!trimmed) return false;
+    const payload = { text: trimmed, type: "session" };
+    if (replyTo) {
+      payload.reply_to_text = replyTo.text || `[${replyTo.type}]`;
+      payload.reply_to_sender = replyTo.sender_name;
+      payload.reply_to_id = replyTo.id;
+    }
+    try {
+      await Promise.resolve(onSend(payload));
+      setShowFeatures(false);
+      setSessionName("New Recording Session");
+      onCancelReply?.();
+      onCancelEdit?.();
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const stopRecording = () => {
@@ -326,39 +355,18 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
                         placeholder="Session name"
                         title="Session Name Input"
                         aria-label="Session Name Input"
-                        onKeyDown={e => {
+                        onKeyDown={async e => {
                           if (e.key === 'Enter' && sessionName.trim()) {
-                            const payload = { text: sessionName.trim(), type: "session" };
-                            if (replyTo) {
-                              payload.reply_to_text = replyTo.text || `[${replyTo.type}]`;
-                              payload.reply_to_sender = replyTo.sender_name;
-                              payload.reply_to_id = replyTo.id;
-                            }
-                            onSend(payload);
-                            setShowFeatures(false);
-                            setSessionName("New Recording Session");
-                            onCancelReply?.();
-                            onCancelEdit?.();
+                            e.preventDefault();
+                            await sendSession();
                           }
                         }}
                       />
                       <button 
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           sounds.click();
-                          if (sessionName.trim()) {
-                            const payload = { text: sessionName.trim(), type: "session" };
-                            if (replyTo) {
-                              payload.reply_to_text = replyTo.text || `[${replyTo.type}]`;
-                              payload.reply_to_sender = replyTo.sender_name;
-                              payload.reply_to_id = replyTo.id;
-                            }
-                            onSend(payload);
-                            setShowFeatures(false);
-                            setSessionName("New Recording Session");
-                            onCancelReply?.();
-                            onCancelEdit?.();
-                          }
+                          await sendSession();
                         }}
                         className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-md hover:bg-primary/90"
                         title="Start Live Session"

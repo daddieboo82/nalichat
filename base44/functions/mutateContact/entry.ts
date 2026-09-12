@@ -100,6 +100,6 @@ Deno.serve(async (req) => {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('mutateContact error:', error);
-    return Response.json({ error: error?.message || 'Contact mutation failed' }, { status: 500 });
+    return Response.json({ error: 'Contact mutation failed' }, { status: 500 });
   }
 });

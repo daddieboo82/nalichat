@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -13,7 +14,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { action, session_id, collaborators, changes } = await req.json();
+    const { action, session_id, collaborators, changes } = await readJsonBodyLimited(req, 64 * 1024);
 
     if (typeof session_id !== 'string' || !session_id.trim() || session_id.length > 200) {
       return Response.json({ error: 'Valid session_id is required' }, { status: 400 });
@@ -93,6 +94,8 @@ Deno.serve(async (req) => {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

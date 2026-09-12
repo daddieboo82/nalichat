@@ -2,6 +2,7 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import { acquireArtPostEngagementLock, releaseArtPostEngagementLock } from '../../shared/artPostEngagementLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -35,13 +36,24 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Reward claim rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const post = await entities.ArtPost.get(postId);
-    if (!post || post.creator_id !== user.id) {
+    const postPreview = await entities.ArtPost.get(postId);
+    if (!postPreview || postPreview.creator_id !== user.id) {
       return Response.json({ error: 'Post not found' }, { status: 404 });
     }
 
-    const rewardId = `user_reward_art_post_${post.id}`;
+    const lockId = await acquireArtPostEngagementLock(entities, postId);
+    if (!lockId) {
+      return Response.json({ error: 'Post is being updated. Please retry.' }, { status: 409 });
+    }
+
     try {
+      const post = await entities.ArtPost.get(postId).catch(() => null);
+      if (!post || post.creator_id !== user.id) {
+        return Response.json({ error: 'Post not found' }, { status: 404 });
+      }
+
+      const rewardId = `user_reward_art_post_${post.id}`;
+      try {
       await entities.UserActivityReward.create({
         id: rewardId,
         user_id: user.id,
@@ -76,8 +88,11 @@ Deno.serve(async (req) => {
         );
       }
       throw xpError;
+      }
+      return Response.json({ success: true, awarded: true, xp: 50 });
+    } finally {
+      await releaseArtPostEngagementLock(entities, lockId);
     }
-    return Response.json({ success: true, awarded: true, xp: 50 });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

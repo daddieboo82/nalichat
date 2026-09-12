@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { sendPushToUser } from '../../shared/webPush.ts';
 import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
 import { createNotificationIdempotently } from '../../shared/workflowNotifications.ts';
@@ -10,7 +11,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
     const base44 = createClientFromRequest(req);
-    const { event, data } = await req.json();
+    const { event, data } = await readJsonBodyLimited(req, 64 * 1024);
     const record = workflowEntityRecordId({ event, data });
     if (record.conflict) return Response.json({ error: 'Conflicting entity ids' }, { status: 400 });
     if (event?.type !== 'create' || !record.id) return Response.json({ success: true });
@@ -66,6 +67,8 @@ Deno.serve(async (req) => {
     }
     return Response.json({ success: true, count: 1 });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('notifyOnTrackComment error:', error);
     return Response.json({ error: 'Workflow processing failed' }, { status: 500 });
   }

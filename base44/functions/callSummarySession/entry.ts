@@ -193,6 +193,9 @@ async function authorizeSession(entities: any, session: any, userId: string) {
   if (!session || session.status === 'deleted' || !isParticipant(session.participant_ids, userId)) {
     return { error: jsonError(404, 'CALL_SUMMARY_NOT_FOUND', 'Call summary session not found.') };
   }
+  if (!isBase44EntityId(session.conversation_id)) {
+    return { error: jsonError(410, 'CALL_DELETED', 'The call conversation is no longer available.') };
+  }
   const conversation = await loadConversation(entities, session.conversation_id);
   if (!conversation) {
     return { error: jsonError(410, 'CALL_DELETED', 'The call conversation is no longer available.') };

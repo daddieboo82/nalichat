@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
@@ -26,7 +27,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { postId } = await req.json();
+    const { postId } = await readJsonBodyLimited(req, 8 * 1024);
     if (!postId) return Response.json({ error: 'postId is required' }, { status: 400 });
 
     const entities = base44.asServiceRole.entities;
@@ -82,6 +83,8 @@ Deno.serve(async (req) => {
       playlists_updated: playlistsUpdated,
     });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('deleteArtPost error:', error);
     return Response.json({ error: error?.message || 'Post deletion failed' }, { status: 500 });
   }

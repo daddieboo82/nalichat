@@ -4,6 +4,11 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import {
+  AiQuotaError,
+  aiQuotaErrorResponse,
+  executeMeteredAiRequest,
+} from '../../shared/aiQuota.ts';
 
 const MAX_TRANSCRIBE_BYTES = 50 * 1024 * 1024;
 
@@ -73,7 +78,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { messageId, type } = await readJsonBodyLimited(req, 8 * 1024);
+    const { messageId, type, request_key } = await readJsonBodyLimited(req, 8 * 1024);
     if (!isBase44EntityId(messageId)) {
       return Response.json({ error: 'Valid messageId is required' }, { status: 400 });
     }
@@ -93,22 +98,19 @@ Deno.serve(async (req) => {
       .replace(/[\r\n]/g, ' ')
       .trim()
       .slice(0, 120) || 'Someone';
-    let finalMessageText = typeof message.text === 'string'
+    const initialMessageText = typeof message.text === 'string'
       ? message.text.trim().slice(0, 12000)
       : '';
     const isVoiceNote =
-      !finalMessageText &&
+      !initialMessageText &&
       !!message.file_url &&
       (message.type === 'audio' || String(message.file_type || '').startsWith('audio'));
 
-    // Voice-note transcription only uses the media URL stored on the authorized
-    // Message record. The browser can no longer make this function fetch an
-    // arbitrary URL.
+    // Validate the stored voice-note target and plan access before reserving AI usage.
     if (isVoiceNote) {
       if (!isTrustedStoredMediaUrl(message.file_url)) {
         return Response.json({ error: 'Stored voice-note host is not allowed' }, { status: 400 });
       }
-
       const mediaSize = await storedMediaSize(message.file_url);
       if (mediaSize === null) {
         return Response.json({ error: 'Could not verify stored voice-note size' }, { status: 400 });
@@ -124,27 +126,35 @@ Deno.serve(async (req) => {
       if (!voiceAccess.allowed) {
         return Response.json({ error: 'Voice transcription is not available on your plan' }, { status: 403 });
       }
-
-      try {
-        const transcript = await base44.asServiceRole.integrations.Core.TranscribeAudio({
-          audio_url: message.file_url,
-        });
-        const transcriptText = typeof transcript === 'string' ? transcript : transcript?.text || '';
-        finalMessageText = String(transcriptText).trim().slice(0, 12000);
-      } catch (transcribeErr) {
-        console.error('Transcription failed:', transcribeErr.message);
-        return Response.json({ error: 'Could not transcribe the voice note. Try a text message instead.' }, { status: 400 });
-      }
-    }
-
-    if (!finalMessageText || finalMessageText.trim().length === 0) {
+    } else if (!initialMessageText) {
       return Response.json({ error: 'Message text or a voice note is required' }, { status: 400 });
     }
 
-    const sourceLabel = isVoiceNote ? 'a voice note' : 'a chat message';
+    const { result, quota } = await executeMeteredAiRequest({
+      base44,
+      user,
+      operation: type === 'meme' ? 'viral_moment_meme' : 'viral_moment_reel',
+      requestKey: request_key,
+      dispatch: async () => {
+        let finalMessageText = initialMessageText;
+        if (isVoiceNote) {
+          try {
+            const transcript = await base44.asServiceRole.integrations.Core.TranscribeAudio({
+              audio_url: message.file_url,
+            });
+            const transcriptText = typeof transcript === 'string' ? transcript : transcript?.text || '';
+            finalMessageText = String(transcriptText).trim().slice(0, 12000);
+          } catch (transcribeErr) {
+            console.error('Transcription failed:', transcribeErr instanceof Error ? transcribeErr.message : transcribeErr);
+            throw new Error('VOICE_TRANSCRIPTION_FAILED');
+          }
+          if (!finalMessageText) throw new Error('NO_SOURCE_TEXT');
+        }
 
-    if (type === "meme") {
-      const memePrompt = `You are a viral meme creator with a sharp, witty sense of humor. Turn ${sourceLabel} into a funny, shareable meme.
+        const sourceLabel = isVoiceNote ? 'a voice note' : 'a chat message';
+
+        if (type === "meme") {
+          const memePrompt = `You are a viral meme creator with a sharp, witty sense of humor. Turn ${sourceLabel} into a funny, shareable meme.
 
 Message: "${finalMessageText}"
 Sender: ${senderName || 'Someone'}
@@ -155,37 +165,35 @@ Create:
 
 Respond as JSON: { "caption": "the meme text", "image_prompt": "detailed visual prompt, no text, bold and colorful" }`;
 
-      const memeRes = await base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: memePrompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            caption: { type: "string" },
-            image_prompt: { type: "string" }
-          }
+          const memeRes = await base44.asServiceRole.integrations.Core.InvokeLLM({
+            prompt: memePrompt,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                caption: { type: "string" },
+                image_prompt: { type: "string" }
+              }
+            }
+          });
+
+          const caption = String(memeRes?.caption || '').trim().slice(0, 300);
+          const imagePrompt = String(memeRes?.image_prompt || '').trim().slice(0, 4000);
+          if (!caption || !imagePrompt) throw new Error('INVALID_MEME_CONCEPT');
+
+          const imgRes = await base44.asServiceRole.integrations.Core.GenerateImage({
+            prompt: imagePrompt + ". Bold, vibrant, meme-worthy, high quality, no text, no words, no typography."
+          });
+          if (!imgRes || !imgRes.url) throw new Error("Image generation failed");
+
+          return {
+            type: "meme",
+            caption,
+            image_url: imgRes.url,
+            source_text: finalMessageText
+          };
         }
-      });
 
-      const caption = String(memeRes?.caption || '').trim().slice(0, 300);
-      const imagePrompt = String(memeRes?.image_prompt || '').trim().slice(0, 4000);
-      if (!caption || !imagePrompt) {
-        return Response.json({ error: 'AI returned an invalid meme concept' }, { status: 502 });
-      }
-
-      const imgRes = await base44.asServiceRole.integrations.Core.GenerateImage({
-        prompt: imagePrompt + ". Bold, vibrant, meme-worthy, high quality, no text, no words, no typography."
-      });
-
-      if (!imgRes || !imgRes.url) throw new Error("Image generation failed");
-
-      return Response.json({
-        type: "meme",
-        caption,
-        image_url: imgRes.url,
-        source_text: finalMessageText
-      });
-    } else {
-      const reelPrompt = `You are a viral short-form video creator. Turn ${sourceLabel} into a vertical video reel script for TikTok / Instagram Reels.
+        const reelPrompt = `You are a viral short-form video creator. Turn ${sourceLabel} into a vertical video reel script for TikTok / Instagram Reels.
 
 Message: "${finalMessageText}"
 Sender: ${senderName || 'Someone'}
@@ -201,38 +209,51 @@ Respond as JSON: {
   "hashtags": ["array", "of", "hashtag", "words"]
 }`;
 
-      const reelRes = await base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: reelPrompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            scenes: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  visual: { type: "string" },
-                  text: { type: "string" },
-                  duration: { type: "string" }
+        const reelRes = await base44.asServiceRole.integrations.Core.InvokeLLM({
+          prompt: reelPrompt,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              scenes: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    visual: { type: "string" },
+                    text: { type: "string" },
+                    duration: { type: "string" }
+                  }
                 }
+              },
+              caption: { type: "string" },
+              hashtags: {
+                type: "array",
+                items: { type: "string" }
               }
-            },
-            caption: { type: "string" },
-            hashtags: {
-              type: "array",
-              items: { type: "string" }
             }
           }
-        }
-      });
+        });
 
-      return Response.json({
-        type: "reel",
-        ...reelRes,
-        source_text: finalMessageText
-      });
-    }
+        return {
+          type: "reel",
+          ...reelRes,
+          source_text: finalMessageText
+        };
+      },
+    });
+
+    return Response.json({ ...result, quota });
   } catch (error) {
+    if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
+    if (error instanceof Error && error.message === 'VOICE_TRANSCRIPTION_FAILED') {
+      return Response.json({ error: 'Could not transcribe the voice note. Try a text message instead.' }, { status: 400 });
+    }
+    if (error instanceof Error && error.message === 'NO_SOURCE_TEXT') {
+      return Response.json({ error: 'Message text or a voice note is required' }, { status: 400 });
+    }
+    if (error instanceof Error && error.message === 'INVALID_MEME_CONCEPT') {
+      return Response.json({ error: 'AI returned an invalid meme concept' }, { status: 502 });
+    }
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('generate-viral-moment error:', error);

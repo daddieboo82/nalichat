@@ -3,7 +3,7 @@ import {
   resolveCheckoutUrls,
   resolveStripeSku,
   stripeCheckoutIdempotencyKey,
-  stripeEnvironment,
+  stripeEnvironmentFromSecretKey,
   trialEligibility,
   validateCheckoutIdempotencyKey,
 } from '../../shared/stripeBilling.ts';
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     const requestKey = validateCheckoutIdempotencyKey(body?.idempotencyKey);
     cleanupRequestKey = requestKey;
     const callbackUrls = resolveCheckoutUrls(body?.callbackDestinations, APP_BASE_URL);
-    const environment = stripeEnvironment(Deno.env.get('STRIPE_ENVIRONMENT'));
+    const environment = stripeEnvironmentFromSecretKey(Deno.env.get('STRIPE_SECRET_KEY'));
 
     const base44 = createClientFromRequest(req);
     cleanupBase44 = base44;

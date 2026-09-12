@@ -22,23 +22,44 @@ export default function ChallengeLeaderboard() {
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-    base44.entities.Challenge.get(challengeId).then(setChallenge);
+    let cancelled = false;
+
+    base44.entities.Challenge.get(challengeId)
+      .then((nextChallenge) => {
+        if (!cancelled) setChallenge(nextChallenge);
+      })
+      .catch(() => {
+        if (!cancelled) setChallenge(null);
+      });
+
     base44.entities.ChallengeSubmission
       .filter(
         { challenge_id: challengeId, status: "approved" },
         "-vote_count",
         MAX_LEADERBOARD_SUBMISSIONS,
       )
-      .then(setSubmissions);
+      .then((nextSubmissions) => {
+        if (!cancelled) setSubmissions(nextSubmissions || []);
+      })
+      .catch(() => {
+        if (!cancelled) setSubmissions([]);
+      });
+
     base44.functions.invoke("getChallengeLeaderboard", { challengeId })
       .then((res) => {
+        if (cancelled) return;
         setVoteCounts(res?.data?.counts || {});
         setTruncated(res?.data?.truncated || { submissions: false, weeklyVotes: false });
       })
       .catch(() => {
+        if (cancelled) return;
         setVoteCounts({});
         setTruncated({ submissions: false, weeklyVotes: false });
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [challengeId]);
 
   const ranked = useMemo(() => {

@@ -22,25 +22,54 @@ export default function SubmissionPlayer() {
   const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     base44.entities.ChallengeSubmission
       .filter(
         { challenge_id: challengeId, status: "approved" },
         "-vote_count",
         MAX_CHALLENGE_SUBMISSIONS,
       )
-      .then(setAllSubs);
+      .then((nextSubmissions) => {
+        if (!cancelled) setAllSubs(nextSubmissions || []);
+      })
+      .catch(() => {
+        if (!cancelled) setAllSubs([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [challengeId]);
 
   useEffect(() => {
+    let cancelled = false;
     setPlaying(false);
-    base44.entities.ChallengeSubmission.get(submissionId).then(setSubmission);
+    setSubmission(null);
+    base44.entities.ChallengeSubmission.get(submissionId)
+      .then((nextSubmission) => {
+        if (!cancelled) setSubmission(nextSubmission);
+      })
+      .catch(() => {
+        if (!cancelled) setSubmission(null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [submissionId]);
 
   useEffect(() => {
-    if (!user) { setHasVoted(false); return; }
+    if (!user) { setHasVoted(false); return undefined; }
+    let cancelled = false;
     base44.entities.ChallengeVote
       .filter({ submission_id: submissionId, voter_id: user.id }, "-created_date", 1)
-      .then((v) => setHasVoted(v.length > 0));
+      .then((votes) => {
+        if (!cancelled) setHasVoted((votes || []).length > 0);
+      })
+      .catch(() => {
+        if (!cancelled) setHasVoted(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user, submissionId]);
 
   const handleVote = async () => {

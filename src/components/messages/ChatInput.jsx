@@ -34,13 +34,26 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
+  const mountedRef = useRef(true);
   const textareaRef = useRef(null);
 
-  useEffect(() => () => {
-    clearInterval(timerRef.current);
-    const recorder = mediaRecorderRef.current;
-    if (recorder?.state === "recording") recorder.stop();
-    recorder?.stream?.getTracks().forEach(track => track.stop());
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      clearInterval(timerRef.current);
+      const recorder = mediaRecorderRef.current;
+      if (recorder) {
+        recorder.ondataavailable = null;
+        recorder.onstop = null;
+        if (recorder.state !== "inactive") {
+          try { recorder.stop(); } catch {}
+        }
+        recorder.stream?.getTracks().forEach(track => track.stop());
+      }
+      mediaRecorderRef.current = null;
+      chunksRef.current = [];
+    };
   }, []);
 
   useEffect(() => {
@@ -148,6 +161,10 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!mountedRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
     } catch {
       sounds.error();
       toast.error("Microphone access was denied or unavailable.");
@@ -169,7 +186,12 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
     recorder.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
-      const mimeType = mediaRecorderRef.current.mimeType || "audio/webm";
+      if (mediaRecorderRef.current === recorder) mediaRecorderRef.current = null;
+      if (!mountedRef.current) {
+        chunksRef.current = [];
+        return;
+      }
+      const mimeType = recorder.mimeType || "audio/webm";
       const ext = mimeType.includes("mp4") ? "mp4" : mimeType.includes("ogg") ? "ogg" : mimeType.includes("wav") ? "wav" : "webm";
       const blob = new Blob(chunksRef.current, { type: mimeType });
       const file = new File([blob], `voice-${Date.now()}.${ext}`, { type: mimeType });
@@ -200,8 +222,10 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
         setUploads(u => u.map(x => x.id === id ? { ...x, error: true } : x));
         setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 3000);
       }
-      setRecordingTime(0);
-      recordingTimeRef.current = 0;
+      if (mountedRef.current) {
+        setRecordingTime(0);
+        recordingTimeRef.current = 0;
+      }
     };
     mediaRecorderRef.current = recorder;
     recorder.start();

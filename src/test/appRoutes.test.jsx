@@ -19,6 +19,7 @@ const mockAuthState = vi.hoisted(() => ({
 const mockSubscriptionState = vi.hoisted(() => ({
   current: {
     hasAccess: true,
+    hasEntitlement: vi.fn(() => true),
     isLoading: false,
   },
 }));
@@ -32,6 +33,15 @@ vi.mock('@/lib/AuthContext', async () => {
 });
 vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => mockSubscriptionState.current,
+}));
+vi.mock('@/lib/LockedChatsContext', () => ({
+  LockedChatsProvider: ({ children }) => children,
+  useLockedChats: () => ({
+    isReady: true,
+    isUnlocked: true,
+    lockedConversationIds: [],
+    canAccessConversation: () => true,
+  }),
 }));
 vi.mock('@/components/ui/toaster', () => ({ Toaster: () => null }));
 vi.mock('@/components/ui/sonner', () => ({ Toaster: () => null }));
@@ -100,6 +110,7 @@ describe('app routing guards', () => {
     };
     mockSubscriptionState.current = {
       hasAccess: true,
+      hasEntitlement: vi.fn(() => true),
       isLoading: false,
     };
   });
@@ -108,14 +119,14 @@ describe('app routing guards', () => {
     cleanup();
   });
 
-  it('redirects protected deep links to login without preserving a return target', async () => {
+  it('redirects protected deep links to login while preserving a return target', async () => {
     window.history.pushState({}, '', '/messages');
 
     render(<App />);
 
     await screen.findByText('Login Page');
     expect(window.location.pathname).toBe('/login');
-    expect(window.location.search).toBe('');
+    expect(window.location.search).toBe('?returnTo=%2Fmessages');
     expect(screen.getByTestId('login-state').textContent).toBe('null');
   });
 
@@ -196,6 +207,7 @@ describe('app routing guards', () => {
     };
     mockSubscriptionState.current = {
       hasAccess: false,
+      hasEntitlement: vi.fn((entitlement) => entitlement === 'chat.core'),
       isLoading: false,
     };
     window.history.pushState({}, '', '/messages');

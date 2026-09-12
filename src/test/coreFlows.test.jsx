@@ -107,6 +107,19 @@ vi.mock('@/api/base44Client', () => ({ base44: mockBase44 }));
 vi.mock('@/lib/AuthContext', () => ({
   useAuth: () => mockAuthState.current,
 }));
+vi.mock('@/lib/LockedChatsContext', () => ({
+  useLockedChats: () => ({
+    isReady: true,
+    isUnlocked: true,
+    lockedConversationIds: [],
+    canAccessConversation: () => true,
+    security: {},
+    isEntitled: true,
+    hasLockedChats: false,
+    lockNow: vi.fn(),
+    status: 'ready',
+  }),
+}));
 vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => mockSubscription.current,
 }));
@@ -114,16 +127,19 @@ vi.mock('@/components/layout/PullToRefresh', () => ({
   default: ({ children }) => <div>{children}</div>,
 }));
 vi.mock('@/components/messages/ConversationList', () => ({
-  default: ({ myConversations, onSelect, onStartDM, users, currentUserId }) => (
+  default: ({ myConversations, onSelect, onStartDM, users, currentUserId }) => {
+    const target = users.find((user) => user.id !== currentUserId);
+    return (
     <div>
-      <button onClick={() => onStartDM(users.find((user) => user.id !== currentUserId))}>Start DM</button>
+      <button disabled={!target} onClick={() => onStartDM(target)}>Start DM</button>
       {myConversations.map((conversation) => (
         <button key={conversation.id} onClick={() => onSelect(conversation.id)}>
           {conversation.name || conversation.id}
         </button>
       ))}
     </div>
-  ),
+    );
+  },
 }));
 vi.mock('@/components/messages/ContactsTab', () => ({ default: () => <div>Contacts</div> }));
 vi.mock('@/components/messages/NewChatDialog', () => ({ default: () => null }));
@@ -299,6 +315,11 @@ describe('core usage flow coverage', () => {
     const otherUser = { id: 'user-2', display_name: 'Producer Two', full_name: 'Producer Two' };
     const pending = createDeferred();
 
+    mockAuthState.current = {
+      user: currentUser,
+      isAuthenticated: true,
+      checkUserAuth: vi.fn(),
+    };
     mockBase44.auth.me.mockResolvedValue(currentUser);
     mockBase44.functions.invoke.mockImplementation(async (name, payload) => {
       if (name === 'listPublicUsers') {
@@ -331,7 +352,9 @@ describe('core usage flow coverage', () => {
 
     renderWithProviders(<Messages />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Start DM' }));
+    const startDmButton = await screen.findByRole('button', { name: 'Start DM' });
+    await waitFor(() => expect(startDmButton.disabled).toBe(false));
+    fireEvent.click(startDmButton);
 
     await screen.findByText('Conversation: conv-1');
     fireEvent.click(screen.getByRole('button', { name: 'Send Hello' }));
@@ -357,11 +380,15 @@ describe('core usage flow coverage', () => {
       action: 'create_dm',
       participant_ids: ['user-2'],
     });
-    expect(mockBase44.functions.invoke).toHaveBeenCalledWith('sendConversationMessage', {
-      type: 'text',
-      text: 'hello there',
-      conversation_id: 'conv-1',
-    });
+    expect(mockBase44.functions.invoke).toHaveBeenCalledWith(
+      'sendConversationMessage',
+      expect.objectContaining({
+        type: 'text',
+        text: 'hello there',
+        conversation_id: 'conv-1',
+        client_message_key: expect.any(String),
+      }),
+    );
   });
 
   it('redirects anonymous explore release actions to login and retries load failures', async () => {
@@ -506,14 +533,17 @@ describe('core usage flow coverage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save Profile' }));
 
     await waitFor(() => {
-      expect(mockBase44.auth.updateMe).toHaveBeenCalledWith(expect.objectContaining({
-        display_name: 'New Alias',
-        bio: 'Original bio',
-        artist_role: 'artist',
-        location: 'Old Town',
-        genres: ['Hip-Hop'],
-        avatar_url: 'https://cdn.example.com/avatar.png',
-      }));
+      expect(mockBase44.functions.invoke).toHaveBeenCalledWith(
+        'updateMyProfile',
+        expect.objectContaining({
+          display_name: 'New Alias',
+          bio: 'Original bio',
+          artist_role: 'artist',
+          location: 'Old Town',
+          genres: ['Hip-Hop'],
+          avatar_url: 'https://cdn.example.com/avatar.png',
+        }),
+      );
       expect(checkUserAuth).toHaveBeenCalled();
       expect(mockToast.success).toHaveBeenCalledWith('Profile updated!');
     });

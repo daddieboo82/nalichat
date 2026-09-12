@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
@@ -25,6 +25,15 @@ const push = vi.hoisted(() => ({
 }));
 
 vi.mock('@/api/base44Client', () => ({ base44 }));
+vi.mock('@/lib/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 'u1' }, isAuthenticated: true }),
+}));
+vi.mock('@/lib/LockedChatsContext', () => ({
+  useLockedChats: () => ({
+    isReady: true,
+    lockedConversationIds: [],
+  }),
+}));
 vi.mock('@/lib/pushNotifications', () => push);
 vi.mock('@/hooks/use-sound', () => ({ sounds: { notification: vi.fn() } }));
 vi.mock('@/components/ui/use-toast', () => ({ useToast: () => ({ toast: vi.fn() }) }));
@@ -41,6 +50,10 @@ describe('NotificationBell push permission', () => {
     push.getPermissionStatus.mockReturnValue('default');
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it('does not prompt for notification permission on mount', async () => {
     render(
       <MemoryRouter>
@@ -48,8 +61,7 @@ describe('NotificationBell push permission', () => {
       </MemoryRouter>,
     );
 
-    await waitFor(() => expect(base44.auth.me).toHaveBeenCalled());
-    expect(push.registerServiceWorker).toHaveBeenCalled();
+    await waitFor(() => expect(push.registerServiceWorker).toHaveBeenCalled());
     expect(push.requestPushPermission).not.toHaveBeenCalled();
   });
 

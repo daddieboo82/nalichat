@@ -36,6 +36,15 @@ Deno.serve(async (req) => {
     const version = await entities.TrackVersion.get(versionId);
     if (!version) return Response.json({ error: 'Track version not found' }, { status: 404 });
 
+    const projectPreview = await entities.Project.get(version.project_id).catch(() => null);
+    if (!projectPreview) return Response.json({ error: 'Project not found' }, { status: 404 });
+    const previewCanEdit = user.role === 'admin'
+      || projectPreview.owner_id === user.id
+      || (projectPreview.editor_ids || []).includes(user.id);
+    if (!previewCanEdit) {
+      return Response.json({ error: 'Viewer access cannot delete track versions' }, { status: 403 });
+    }
+
     const lockId = await acquireTrackLifecycleLock(entities, version.track_id);
     if (!lockId) {
       return Response.json({ error: 'Track is being updated. Please retry.' }, { status: 409 });

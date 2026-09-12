@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const SCHEDULE_WINDOW_MINUTE = 20;
 const SCHEDULE_KEY_SHA256 = '0383ab24e0c232e3d0064f1656603a9df4e0593f76cf5a25214395700503578e';
@@ -36,7 +37,7 @@ export default async function(req) {
     }
 
     const base44 = createClientFromRequest(req);
-    const body = await req.json().catch(() => ({}));
+    const body = await readJsonBodyLimited(req, 8 * 1024);
     const caller = await base44.auth.me().catch(() => null);
 
     // Manual runs require an authenticated admin. The daily workflow does not
@@ -157,7 +158,9 @@ export default async function(req) {
       errors: errors.slice(0, 10),
     });
   } catch (error) {
-    console.error('reengageStalledUsers error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    console.error('reengageStalledUsers error:', error);
+    return Response.json({ error: 'Re-engagement job failed' }, { status: 500 });
   }
 }

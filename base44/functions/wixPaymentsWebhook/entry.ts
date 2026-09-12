@@ -214,6 +214,6 @@ Deno.serve(async (req) => {
         console.error('Failed to release Wix webhook replay claim:', releaseError);
       }
     }
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 });

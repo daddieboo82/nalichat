@@ -75,6 +75,6 @@ Deno.serve(async (req) => {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('createPlaylist error:', error);
-    return Response.json({ error: error?.message || 'Could not create playlist' }, { status: 500 });
+    return Response.json({ error: 'Could not create playlist' }, { status: 500 });
   }
 });

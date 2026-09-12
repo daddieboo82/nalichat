@@ -3,6 +3,21 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
 
 const SCHEDULE_WINDOW_MINUTE = 20;
+const SCHEDULE_KEY_SHA256 = '0383ab24e0c232e3d0064f1656603a9df4e0593f76cf5a25214395700503578e';
+
+async function validScheduleKey(value: unknown) {
+  if (typeof value !== 'string' || value.length < 32 || value.length > 256) return false;
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  const actual = Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+  if (actual.length !== SCHEDULE_KEY_SHA256.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < actual.length; i += 1) {
+    mismatch |= actual.charCodeAt(i) ^ SCHEDULE_KEY_SHA256.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
 
 function isScheduledReengagementWindow(now = new Date()) {
   return now.getUTCHours() === 9 && now.getUTCMinutes() <= SCHEDULE_WINDOW_MINUTE;
@@ -21,6 +36,7 @@ export default async function(req) {
     }
 
     const base44 = createClientFromRequest(req);
+    const body = await req.json().catch(() => ({}));
     const caller = await base44.auth.me().catch(() => null);
 
     // Manual runs require an authenticated admin. The daily workflow does not
@@ -47,6 +63,9 @@ export default async function(req) {
         return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
       }
     } else {
+      if (!(await validScheduleKey(body?.workflow_key))) {
+        return Response.json({ error: 'Forbidden: invalid scheduler credential' }, { status: 403 });
+      }
       if (!isScheduledReengagementWindow()) {
         return Response.json({ error: 'Forbidden: scheduled re-engagement window required' }, { status: 403 });
       }

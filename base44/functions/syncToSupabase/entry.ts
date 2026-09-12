@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.44";
 import { supabaseUpsert } from "../../shared/supabase.ts";
 import { consumeHourlyLimit } from "../../shared/rateLimit.ts";
+import { readJsonBodyLimited, requestBodyErrorResponse } from "../../shared/requestLimits.ts";
 
 const ENTITY_TABLE_MAP = {
   User: "users",
@@ -63,8 +64,7 @@ export default async function (req) {
       return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    let body = {};
-    try { body = await req.json(); } catch {}
+    const body = await readJsonBodyLimited(req, 8 * 1024);
     const entityParam = body.entity;
 
     const results = [];
@@ -90,7 +90,9 @@ export default async function (req) {
 
     return Response.json({ results });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error("syncToSupabase error:", error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Supabase sync failed' }, { status: 500 });
   }
 }

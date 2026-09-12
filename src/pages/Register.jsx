@@ -47,7 +47,7 @@ export default function Register() {
       if (token) {
         base44.auth.setToken(token);
       }
-      sessionStorage.setItem("is_new_user", "true");
+      try { sessionStorage.setItem("is_new_user", "true"); } catch {}
       window.location.href = safeReturnTo();
     } catch (err) {
       setError(err.message || "Invalid verification code");
@@ -70,7 +70,7 @@ export default function Register() {
   };
 
   const handleGoogle = () => {
-    sessionStorage.setItem("is_new_user", "true");
+    try { sessionStorage.setItem("is_new_user", "true"); } catch {}
     base44.auth.loginWithProvider("google", safeReturnTo());
   };
 

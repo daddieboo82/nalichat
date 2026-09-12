@@ -22,6 +22,16 @@ describe('media storage resilience', () => {
     expect(source).toContain("throw new Error('Media device enumeration is not supported in this browser')");
   });
 
+  it('handles unsupported recording formats and microphone startup failures', async () => {
+    const source = await readText('src/pages/Record.jsx');
+    expect(source).toContain('function getSupportedRecordingMimeType()');
+    expect(source).toContain('MediaRecorder.isTypeSupported?.(type)');
+    expect(source).toContain('if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined")');
+    expect(source).toContain('error?.name === "NotAllowedError"');
+    expect(source).toContain('const recordingMimeType = recorder.mimeType || mimeType || "audio/webm"');
+    expect(source).toContain('const extension = recordingExtension(rec.blob.type)');
+  });
+
   it('keeps resumable transfers working when localStorage is unavailable', async () => {
     const source = await readText('src/lib/resumableUpload.js');
     expect(source).toContain('try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}');

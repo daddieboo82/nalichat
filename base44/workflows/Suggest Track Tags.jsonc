@@ -1,0 +1,36 @@
+{
+  "name": "Suggest Track Tags",
+  "description": "Suggests genre and BPM after a track is created, using a credentialed workflow invocation.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "Track"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "suggest_track_tags",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "suggestTrackTags",
+            "args": {
+              "workflow_key": "Vj3uQn8kH1zP5mRt9Cx4Ls7Yw2Fa6De0GbKcNqUvMIs"
+            }
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}

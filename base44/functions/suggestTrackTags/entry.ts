@@ -4,6 +4,9 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { validWorkflowKey } from '../../shared/workflowAuth.ts';
+
+const WORKFLOW_KEY_SHA256 = '8a23393629bd84561def878655762b9b084180d9489006d197512e223d8bd700';
 
 // Triggered by an entity automation when a Track is created.
 // Analyzes the uploaded track and suggests a genre + BPM, then saves them
@@ -58,6 +61,9 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Forbidden: track edit access required' }, { status: 403 });
       }
     } else {
+      if (!(await validWorkflowKey(body?.workflow_key, WORKFLOW_KEY_SHA256))) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
       const isCreateAutomation = body?.event?.type === 'create' && eventTrackId === track.id;
       const createdAt = Date.parse(track.created_date || '');
       const isFresh = Number.isFinite(createdAt) && Date.now() - createdAt <= 10 * 60 * 1000;

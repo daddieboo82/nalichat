@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireSharedFileMutationLock, releaseSharedFileMutationLock } from '../../shared/sharedFileMutationLock.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
@@ -31,7 +32,7 @@ Deno.serve(async (req) => {
     const body = await readJsonBodyLimited(req, 64 * 1024);
     const fileId = typeof body?.fileId === 'string' ? body.fileId.trim() : '';
     const action = typeof body?.action === 'string' ? body.action : '';
-    if (!fileId || fileId.length > 200 || !['update', 'move', 'delete'].includes(action)) {
+    if (!isBase44EntityId(fileId) || !['update', 'move', 'delete'].includes(action)) {
       return Response.json({ error: 'Valid fileId and action are required' }, { status: 400 });
     }
 

@@ -127,6 +127,6 @@ Deno.serve(async (req) => {
     }
   } catch (error) {
     console.error('getChallengeLeaderboard error:', error);
-    return Response.json({ error: error?.message || 'Could not load leaderboard' }, { status: 500 });
+    return Response.json({ error: 'Could not load leaderboard' }, { status: 500 });
   }
 });

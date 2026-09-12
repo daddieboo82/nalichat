@@ -29,6 +29,7 @@ const boundedEndpoints = [
   ["base44/functions/registerPushSubscription/entry.ts", "16 * 1024"],
   ["base44/functions/rescheduleFollowUpReminder/entry.ts", "8 * 1024"],
   ["base44/functions/unregisterPushSubscription/entry.ts", "16 * 1024"],
+  ["base44/functions/listPublicUsers/entry.ts", "8 * 1024"],
 ];
 
 describe("remaining JSON endpoints use bounded request readers", () => {

@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, FileText, Volume2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 /**
  * Fetches and displays an AI transcription of a voice message.
@@ -19,7 +20,7 @@ export default function VoiceTranscription({ message, isOwn }) {
   const [error, setError] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const audioRef = useState(null);
+  const audioRef = useRef(null);
   const retryTranscription = () => {
     setError(false);
   };
@@ -51,26 +52,41 @@ export default function VoiceTranscription({ message, isOwn }) {
   }, [message.id, message.file_url]);
 
   const speak = async () => {
-    if (!transcription) return;
+    if (!transcription || speaking) return;
     setSpeaking(true);
     try {
       const res = await base44.functions.invoke("generate-speech", {
         text: transcription,
         voice: "honey",
       });
+      if (res?.data?.error) throw new Error(res.data.error);
       const url = res?.data?.url;
-      if (!url) {
-        setSpeaking(false);
-        return;
-      }
+      if (!url) throw new Error("Speech audio was unavailable.");
+
+      audioRef.current?.pause?.();
       const audio = new Audio(url);
-      audio.onended = () => setSpeaking(false);
-      audio.onerror = () => setSpeaking(false);
+      audioRef.current = audio;
+      const finish = () => {
+        if (audioRef.current === audio) audioRef.current = null;
+        setSpeaking(false);
+      };
+      audio.onended = finish;
+      audio.onerror = () => {
+        finish();
+        toast.error("Couldn't play the transcription audio.");
+      };
       await audio.play();
-    } catch {
+    } catch (error) {
+      audioRef.current = null;
       setSpeaking(false);
+      toast.error(error?.message || "Couldn't read the transcription aloud.");
     }
   };
+
+  useEffect(() => () => {
+    audioRef.current?.pause?.();
+    audioRef.current = null;
+  }, []);
 
   if (loading) {
     return (

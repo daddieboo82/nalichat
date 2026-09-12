@@ -39,6 +39,8 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
   const [text, setText] = useState("");
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
+  const retryKeyRef = useRef(null);
+  const retryTextRef = useRef("");
   const queryClient = useQueryClient();
 
   const { data: replies = [], isLoading: repliesLoading, isError: repliesError } = useQuery({
@@ -89,11 +91,17 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
       return res?.data?.message;
     },
     onSuccess: () => {
+      retryKeyRef.current = null;
+      retryTextRef.current = "";
       setText("");
       queryClient.invalidateQueries({ queryKey: ["thread", parentMessage.id] });
       queryClient.invalidateQueries({ queryKey: ["messages"] });
     },
     onError: (error) => {
+      if (["moderated", "timed_out", "banned"].includes(error?.message)) {
+        retryKeyRef.current = null;
+        retryTextRef.current = "";
+      }
       if (error?.message === "moderated") {
         toast.error("Thread reply blocked by content moderation. Your draft was kept.");
       } else if (error?.message === "timed_out") {
@@ -109,9 +117,14 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
   const handleSend = () => {
     const trimmed = text.trim();
     if (!trimmed || sendMutation.isPending) return;
+    const clientMessageKey = retryKeyRef.current && retryTextRef.current === trimmed
+      ? retryKeyRef.current
+      : createClientMessageKey();
+    retryKeyRef.current = clientMessageKey;
+    retryTextRef.current = trimmed;
     sendMutation.mutate({
       text: trimmed,
-      clientMessageKey: createClientMessageKey(),
+      clientMessageKey,
     });
   };
 

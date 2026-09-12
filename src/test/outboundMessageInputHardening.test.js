@@ -12,6 +12,7 @@ describe('outbound message input hardening', () => {
     expect(external).toContain("req.method !== 'POST'");
     expect(external).toContain("typeof destination !== 'string'");
     expect(external).toContain("typeof message !== 'string'");
+    expect(external).toContain('destination.length > 320');
     expect(external).toContain('message.length > 5000');
 
     const email = await readText('base44/functions/send-invite-email/entry.ts');

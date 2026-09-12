@@ -1,9 +1,21 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function anonymousShareScope(req: Request): Promise<string> {
+  const forwarded = String(
+    req.headers.get('cf-connecting-ip')
+    || req.headers.get('x-real-ip')
+    || req.headers.get('x-forwarded-for')
+    || '',
+  ).split(',')[0].trim().slice(0, 128);
+  const userAgent = String(req.headers.get('user-agent') || '').slice(0, 256);
+  return 'share_read_' + await sha256Hex(`${forwarded || 'unknown'}:${userAgent || 'unknown'}`);
 }
 
 function constantTimeEqual(a: string, b: string): boolean {
@@ -47,6 +59,20 @@ Deno.serve(async (req) => {
       || !/^[0-9a-f]{64}$/.test(normalizedToken)
     ) {
       return Response.json({ error: 'Invalid share link' }, { status: 400 });
+    }
+
+    const readScope = await anonymousShareScope(req);
+    const readRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      readScope,
+      'shared_file_token_read',
+      120,
+    );
+    if (!readRate.allowed) {
+      return Response.json(
+        { error: 'Too many share-link attempts. Please try again later.' },
+        { status: 429 },
+      );
     }
 
     const file = await base44.asServiceRole.entities.SharedFile.get(normalizedFileId);

@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 const ACCESS_SYNC_BATCH_SIZE = 200;
 async function sha256Hex(value: string): Promise<string> {
@@ -34,10 +35,13 @@ Deno.serve(async (req) => {
     }
 
     const { projectId, token } = await readJsonBodyLimited(req, 8 * 1024);
-    if (typeof projectId !== 'string' || typeof token !== 'string' || !projectId.trim() || !token.trim()) {
-      return Response.json({ error: 'projectId and token are required' }, { status: 400 });
-    }
-    if (projectId.length > 200 || token.length > 256) {
+    if (
+      typeof projectId !== 'string'
+      || typeof token !== 'string'
+      || !isBase44EntityId(projectId.trim())
+      || !token.trim()
+      || token.length > 256
+    ) {
       return Response.json({ error: 'Invalid projectId or token' }, { status: 400 });
     }
 

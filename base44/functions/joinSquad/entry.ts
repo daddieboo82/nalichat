@@ -27,7 +27,10 @@ Deno.serve(async (req) => {
     }
 
     const { inviteCode } = await readJsonBodyLimited(req, 8 * 1024);
-    if (!inviteCode) return Response.json({ error: 'inviteCode is required' }, { status: 400 });
+    const normalizedInviteCode = String(inviteCode || '').trim().toUpperCase();
+    if (!/^[0-9A-F]{24}$/.test(normalizedInviteCode)) {
+      return Response.json({ error: 'Valid inviteCode is required' }, { status: 400 });
+    }
 
     const entities = base44.asServiceRole.entities;
     const squadRate = await consumeHourlyLimit(entities, user.id, 'squad_join', 60);
@@ -35,7 +38,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Squad action rate limit exceeded. Please try again later.' }, { status: 429 });
     }
     const squads = await entities.Squad.filter(
-      { invite_code: String(inviteCode).toUpperCase() },
+      { invite_code: normalizedInviteCode },
       '-created_date',
       1,
     );

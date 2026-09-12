@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { recordSquadActivity } from "@/lib/squadBonus";
@@ -74,6 +74,7 @@ export default function Messages() {
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedConvId, setSelectedConvId] = useState(null);
+  const selectedConvIdRef = useRef(null);
   const [sidebarTab, setSidebarTab] = useState("chats");
   const [lockedLinkConversationId, setLockedLinkConversationId] = useState(null);
   const [showLockedAccess, setShowLockedAccess] = useState(false);
@@ -131,8 +132,12 @@ export default function Messages() {
   const [showInvite, setShowInvite] = useState(false);
 
   useEffect(() => {
+    selectedConvIdRef.current = selectedConvId;
+  }, [selectedConvId]);
+
+  useEffect(() => {
     const sendPresence = (isOnline) => {
-      if (!currentUser) return;
+      if (!currentUser?.id) return;
       base44.functions.invoke("updateUserPresence", { isOnline }).catch(() => {});
     };
 
@@ -141,7 +146,7 @@ export default function Messages() {
       sendPresence(isOnline);
       if (isOnline) {
         // Immediately refresh messages and conversations when returning to the tab
-        queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id, selectedConvId] });
+        queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id, selectedConvIdRef.current] });
         queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       }
     };
@@ -158,7 +163,7 @@ export default function Messages() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       sendPresence(false);
     };
-  }, [currentUser, queryClient, selectedConvId]);
+  }, [currentUser?.id, queryClient]);
 
   const { data: users = [], isError: usersError } = useQuery({
     queryKey: ["users", currentUser?.id],

@@ -79,6 +79,8 @@ const getRuntimeConfigValue = (paramName, defaultValue) => {
 };
 
 const getAppParams = () => {
+  const currentHref = isNode ? undefined : window.location.href;
+  const currentOrigin = isNode ? undefined : window.location.origin;
   const clearAccessToken = getAppParamValue("clear_access_token", { removeFromUrl: true });
   // clear_access_token is a one-shot command, never persistent configuration.
   // getAppParamValue stores URL parameters by default, so remove its storage
@@ -92,10 +94,10 @@ const getAppParams = () => {
   return {
     appId: getRuntimeConfigValue("app_id", import.meta.env.VITE_BASE44_APP_ID),
     token: getAppParamValue("access_token", { removeFromUrl: true }),
-    fromUrl: getAppParamValue("from_url", { defaultValue: window.location.href }),
+    fromUrl: getAppParamValue("from_url", { defaultValue: currentHref }),
     functionsVersion: getRuntimeConfigValue("functions_version", import.meta.env.VITE_BASE44_FUNCTIONS_VERSION),
     serverUrl: getRuntimeConfigValue("backend_url", import.meta.env.VITE_BASE44_BACKEND_URL || 'https://base44.app'),
-    appBaseUrl: getRuntimeConfigValue("app_base_url", import.meta.env.VITE_BASE44_APP_BASE_URL || window.location.origin),
+    appBaseUrl: getRuntimeConfigValue("app_base_url", import.meta.env.VITE_BASE44_APP_BASE_URL || currentOrigin),
   };
 };
 

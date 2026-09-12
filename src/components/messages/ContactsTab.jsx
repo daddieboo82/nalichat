@@ -37,7 +37,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
   const { data: allUsers = [], isLoading: loadingUsers, isError: usersError } = useQuery({
     queryKey: ["users", currentUserId],
     queryFn: async () => {
-      const res = await base44.functions.invoke('listPublicUsers', {});
+      const res = await base44.functions.invoke('listPublicUsers', { includePresence: true });
       if (res?.data?.error) throw new Error(res.data.error);
       return res.data?.users || [];
     },
@@ -141,12 +141,21 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
               return (
                 <div key={user.id} className="bg-card rounded-2xl border border-border/50 p-4 hover:border-primary/30 transition-all flex flex-col gap-3 group">
                   <div className="flex items-center gap-3">
-                    <Avatar className="w-12 h-12 rounded-xl">
-                      <AvatarImage src={user.avatar_url} />
-                      <AvatarFallback className="bg-primary/20 text-primary font-bold rounded-xl">
-                        {(user.display_name || user.full_name || "?")[0]?.toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative shrink-0">
+                      <Avatar className="w-12 h-12 rounded-xl">
+                        <AvatarImage src={user.avatar_url} />
+                        <AvatarFallback className="bg-primary/20 text-primary font-bold rounded-xl">
+                          {(user.display_name || user.full_name || "?")[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      {user.is_online && (
+                        <span
+                          className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-[2.5px] border-background shadow-sm"
+                          aria-label="Active now"
+                          title="Active now"
+                        />
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="font-heading font-semibold text-sm truncate">{user.display_name || user.full_name}</p>

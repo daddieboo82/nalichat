@@ -12,9 +12,9 @@ describe('Messages cross-chat mutation scoping', () => {
 
     expect(source).toContain('const conversationId = msgData.conversation_id || selectedConvId;');
     expect(source).toContain('return { previous, previousConversations, tempId, clientMessageKey, conversationId };');
-    expect(source).toContain('queryClient.setQueryData(["messages", ctx?.conversationId]');
+    expect(source).toContain('queryClient.setQueryData(["messages", currentUser?.id, ctx?.conversationId]');
     expect(source).toContain('const conversationId = selectedConvId;');
-    expect(source).toContain('queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });');
+    expect(source).toContain('queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id, conversationId] });');
     expect(source).toContain('sendMessage.mutate({ ...data, conversation_id: selectedConvId });');
     expect(source).toContain('conversation_id: message.conversation_id || selectedConvId');
   });

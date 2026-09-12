@@ -11,7 +11,7 @@ describe('message edit conversation scoping', () => {
     const source = await readText('src/pages/Messages.jsx');
 
     expect(source).toContain('onSettled: async (_data, _error, variables) =>');
-    expect(source).toContain('queryKey: ["messages", variables.conversationId]');
+    expect(source).toContain('queryKey: ["messages", currentUser?.id, variables.conversationId]');
     expect(source).toContain('editMessage.mutateAsync({ id, text, conversationId: selectedConvId })');
   });
 });

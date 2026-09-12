@@ -10,8 +10,8 @@ describe('optimistic send preview rollback', () => {
   it('restores conversation previews when sends fail or are moderated', async () => {
     const source = await readText('src/pages/Messages.jsx');
 
-    expect(source).toContain('const previousConversations = queryClient.getQueryData(["conversations"]);');
-    expect(source).toContain('return { previous, previousConversations, tempId, clientMessageKey };');
-    expect(source.match(/queryClient\.setQueryData\(\["conversations"\], ctx\.previousConversations\);/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(source).toContain('const previousConversations = queryClient.getQueryData(["conversations", currentUser?.id]);');
+    expect(source).toContain('return { previous, previousConversations, tempId, clientMessageKey, conversationId };');
+    expect(source.match(/queryClient\.setQueryData\(\["conversations", currentUser\?\.id\], ctx\.previousConversations\);/g)?.length).toBeGreaterThanOrEqual(2);
   });
 });

@@ -96,6 +96,12 @@ export default function Messages() {
   };
 
   useEffect(() => {
+    setSelectedConvId(null);
+    setLockedLinkConversationId(null);
+    setShowLockedAccess(false);
+  }, [currentUser?.id]);
+
+  useEffect(() => {
     if (location.pathname === "/messages" && !location.search) {
       setSelectedConvId(null);
     }
@@ -119,8 +125,8 @@ export default function Messages() {
       sendPresence(isOnline);
       if (isOnline) {
         // Immediately refresh messages and conversations when returning to the tab
-        queryClient.invalidateQueries({ queryKey: ["messages", selectedConvId] });
-        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id, selectedConvId] });
+        queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       }
     };
 
@@ -150,8 +156,9 @@ export default function Messages() {
   });
 
   const { data: conversations = [], isError: conversationsError } = useQuery({
-    queryKey: ["conversations"],
+    queryKey: ["conversations", currentUser?.id],
     queryFn: () => base44.entities.Conversation.list("-last_message_at"),
+    enabled: !!currentUser?.id,
     refetchInterval: 5000,
     staleTime: 3000,
   });
@@ -199,12 +206,12 @@ export default function Messages() {
   ]);
 
   const { data: messages = [], isLoading: isLoadingMessages, isError: messagesError } = useQuery({
-    queryKey: ["messages", selectedConvId],
+    queryKey: ["messages", currentUser?.id, selectedConvId],
     queryFn: async () => {
       const msgs = await base44.entities.Message.filter({ conversation_id: selectedConvId }, "-created_date", 200);
       return msgs.reverse();
     },
-    enabled: !!selectedConvId && lockedChatsReady && canAccessConversation(selectedConvId),
+    enabled: !!currentUser?.id && !!selectedConvId && lockedChatsReady && canAccessConversation(selectedConvId),
     refetchInterval: 5000,
     staleTime: 3000,
   });
@@ -238,9 +245,9 @@ export default function Messages() {
     },
     onSettled: async (_data, _error, variables) => {
       if (variables?.conversationId) {
-        await queryClient.invalidateQueries({ queryKey: ["messages", variables.conversationId] });
+        await queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id, variables.conversationId] });
       }
-      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      await queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
     },
   });
 
@@ -264,9 +271,9 @@ export default function Messages() {
       const conversationId = msgData.conversation_id || selectedConvId;
       if (!conversationId) throw new Error("Conversation is required");
       msgData.conversation_id = conversationId;
-      queryClient.cancelQueries({ queryKey: ["messages", conversationId] });
-      const previous = queryClient.getQueryData(["messages", conversationId]);
-      const previousConversations = queryClient.getQueryData(["conversations"]);
+      queryClient.cancelQueries({ queryKey: ["messages", currentUser?.id, conversationId] });
+      const previous = queryClient.getQueryData(["messages", currentUser?.id, conversationId]);
+      const previousConversations = queryClient.getQueryData(["conversations", currentUser?.id]);
       const clientMessageKey = msgData.client_message_key || createClientMessageKey();
       msgData.client_message_key = clientMessageKey;
       const tempId = `temp-${clientMessageKey}`;
@@ -284,10 +291,10 @@ export default function Messages() {
         _deliveryState: "sending",
         _sendError: null,
       };
-      queryClient.setQueryData(["messages", conversationId], (old = []) =>
+      queryClient.setQueryData(["messages", currentUser?.id, conversationId], (old = []) =>
         applyQueuedMessage(old, tempMsg)
       );
-      queryClient.setQueryData(["conversations"], (old = []) => {
+      queryClient.setQueryData(["conversations", currentUser?.id], (old = []) => {
         const updated = old.map(c =>
           c.id === conversationId
             ? { ...c, last_message_text: msgData.text || `Sent a ${msgData.type}`, last_message_at: tempMsg.created_date }
@@ -310,7 +317,7 @@ export default function Messages() {
     onError: (err, _msgData, ctx) => {
       const status = Number(err?.status);
       const retryable = !Number.isFinite(status) || status === 429 || status >= 500;
-      queryClient.setQueryData(["messages", ctx?.conversationId], (old = []) =>
+      queryClient.setQueryData(["messages", currentUser?.id, ctx?.conversationId], (old = []) =>
         applySendFailure(old, ctx?.clientMessageKey, err?.message, retryable)
       );
       if (retryable && ctx?.outboundEntry) {
@@ -329,7 +336,7 @@ export default function Messages() {
         }
       }
       if (ctx?.previousConversations) {
-        queryClient.setQueryData(["conversations"], ctx.previousConversations);
+        queryClient.setQueryData(["conversations", currentUser?.id], ctx.previousConversations);
       }
       if (err?.message === "timed_out") {
         toast.error("You are currently timed out and cannot send messages.");
@@ -342,11 +349,11 @@ export default function Messages() {
     onSuccess: (msg, _vars, ctx) => {
       if (msg?._flagged) {
         const f = msg._flagged;
-        queryClient.setQueryData(["messages", ctx?.conversationId], (old = []) =>
+        queryClient.setQueryData(["messages", currentUser?.id, ctx?.conversationId], (old = []) =>
           old.filter(m => m._tempId !== ctx?.tempId)
         );
         if (ctx?.previousConversations) {
-          queryClient.setQueryData(["conversations"], ctx.previousConversations);
+          queryClient.setQueryData(["conversations", currentUser?.id], ctx.previousConversations);
         }
         const labels = {
           violence: "violence", racism: "racism", sexual_violence: "sexual violence",
@@ -362,10 +369,10 @@ export default function Messages() {
         void checkUserAuth();
         return;
       }
-      queryClient.setQueryData(["messages", ctx?.conversationId], (old = []) =>
+      queryClient.setQueryData(["messages", currentUser?.id, ctx?.conversationId], (old = []) =>
         applySendSuccess(old, msg, ctx?.clientMessageKey, ctx?.tempId)
       );
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       if (msg?.id && msg?.type !== "session") {
         recordSquadActivity("message", msg.id);
       }
@@ -408,24 +415,24 @@ export default function Messages() {
         userId: currentUser.id,
         send: sendQueuedEntry,
         onSending: (entry) => {
-          queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+          queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old = []) =>
             applyQueuedMessage(old, queueEntryToMessage(entry))
           );
         },
         onSent: (entry, message) => {
-          queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+          queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old = []) =>
             applySendSuccess(old, message, entry.clientMessageKey, `temp-${entry.clientMessageKey}`)
           );
-          queryClient.invalidateQueries({ queryKey: ["conversations"] });
+          queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
         },
         onRejected: (entry, rejection) => {
-          queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+          queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old = []) =>
             removeClientMessage(old, entry.clientMessageKey)
           );
           toast.error(rejection?.message || "A queued message could not be sent.");
         },
         onFailed: (entry, error) => {
-          queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+          queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old = []) =>
             applySendFailure(old, entry.clientMessageKey, error?.message, true)
           );
         },
@@ -437,7 +444,7 @@ export default function Messages() {
     };
 
     for (const entry of readOutboundQueue().filter((item) => item.sender.id === currentUser.id)) {
-      queryClient.setQueryData(["messages", entry.conversationId], (old = []) =>
+      queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old = []) =>
         applyQueuedMessage(old, queueEntryToMessage(entry))
       );
     }
@@ -461,13 +468,13 @@ export default function Messages() {
     const conversationId = selectedConvId;
     const msg = messages.find(m => m.id === messageId);
     if (!conversationId || !msg || !currentUser) return;
-    const previous = queryClient.getQueryData(["messages", conversationId]);
+    const previous = queryClient.getQueryData(["messages", currentUser?.id, conversationId]);
     const optimisticReactions = { ...(msg.reactions || {}) };
     const userKey = `${emoji}__${currentUser.id}`;
     if (optimisticReactions[userKey]) delete optimisticReactions[userKey];
     else optimisticReactions[userKey] = emoji;
 
-    queryClient.setQueryData(["messages", conversationId], (old = []) =>
+    queryClient.setQueryData(["messages", currentUser?.id, conversationId], (old = []) =>
       old.map(m => (m.id === messageId ? { ...m, reactions: optimisticReactions } : m))
     );
     try {
@@ -478,7 +485,7 @@ export default function Messages() {
       });
       if (res?.data?.error) throw new Error(res.data.error);
     } catch (err) {
-      if (previous) queryClient.setQueryData(["messages", conversationId], previous);
+      if (previous) queryClient.setQueryData(["messages", currentUser?.id, conversationId], previous);
       if (err?.message === "timed_out") {
         toast.error("You are timed out and cannot react to messages right now.");
       } else if (err?.message === "banned") {
@@ -487,7 +494,7 @@ export default function Messages() {
         toast.error("Couldn't update the reaction. Please try again.");
       }
     } finally {
-      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+      queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id, conversationId] });
     }
   };
 
@@ -505,7 +512,7 @@ export default function Messages() {
       if (created?.data?.error) throw new Error(created.data.error);
       const conv = created?.data?.conversation;
       if (!conv?.id) throw new Error("Conversation was not created");
-      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      await queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       if (lockedConversationIds.includes(conv.id) && !lockedChatsUnlocked) {
         setLockedLinkConversationId(conv.id);
         setShowLockedAccess(true);
@@ -530,7 +537,7 @@ export default function Messages() {
       if (created?.data?.error) throw new Error(created.data.error);
       const conv = created?.data?.conversation;
       if (!conv?.id) throw new Error("Group was not created");
-      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      await queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       handleSelectConv(conv.id);
     } catch (err) {
       toast.error("Couldn't create the group. Please try again.");
@@ -638,7 +645,7 @@ export default function Messages() {
             <AnimatePresence mode="wait">
               {sidebarTab === "chats" ? (
                 <motion.div key="chats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col bg-background/40">
-                  <PullToRefresh onRefresh={async () => { await queryClient.invalidateQueries({ queryKey: ["conversations"] }); }} className="flex-1 overflow-y-auto">
+                  <PullToRefresh onRefresh={async () => { await queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] }); }} className="flex-1 overflow-y-auto">
                     {conversationsError ? (
                       <div className="m-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
                         Couldn't load conversations. Pull to refresh or try again.

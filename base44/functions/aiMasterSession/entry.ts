@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireEntitlement, preferredAiModel } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 // Returns concrete, numeric mastering parameters that the client applies via WebAudio
 // to automatically produce an industry-ready master from stacked stems.
@@ -78,7 +79,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { project_title, genre, bpm, stems } = await req.json();
+    const { project_title, genre, bpm, stems } = await readJsonBodyLimited(req, 32 * 1024);
 
     const projectTitle = String(project_title || '').trim().slice(0, 200);
     const cleanGenre = String(genre || '').trim().slice(0, 100);
@@ -134,7 +135,9 @@ gain_db values should be modest (-6 to +6). ratio 1.5-4. attack 0.003-0.05. rele
 
     return Response.json(normalizeMasteringResult(result));
   } catch (error) {
-    console.error('aiMasterSession error:', error.message);
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    console.error('aiMasterSession error:', error);
     return Response.json({ error: 'AI mastering failed' }, { status: 500 });
   }
 });

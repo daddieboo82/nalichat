@@ -24,7 +24,9 @@
           "call": "invoke_backend_function",
           "with": {
             "function_name": "resolveFollowUpReminders",
-            "args": {}
+            "args": {
+              "workflow_key": "GreLX1kdv_G3XfP7zRZnRN_Nak59U-3XTlmAtxWotk4"
+            }
           },
           "then": "end"
         }

@@ -1,3 +1,12 @@
 import { publicPushConfig } from '../../shared/webPush.ts';
 
-Deno.serve(() => Response.json(publicPushConfig()));
+// Intentionally public: the browser needs the VAPID public key before push
+// registration. Keep this endpoint read-only and method constrained.
+Deno.serve((req) => {
+  if (req.method !== 'GET') {
+    return Response.json({ error: 'Method not allowed' }, { status: 405 });
+  }
+  return Response.json(publicPushConfig(), {
+    headers: { 'Cache-Control': 'public, max-age=300' },
+  });
+});

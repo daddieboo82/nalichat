@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 
 const NaliPresenceContext = createContext(null);
 
@@ -9,19 +10,18 @@ const DEFAULT_LEVEL = "proactive";
 const VALID_LEVELS = ["proactive", "minimal", "off"];
 
 export function NaliPresenceProvider({ children }) {
+  const { user } = useAuth();
   const [level, setLevelState] = useState(() => {
     try { return localStorage.getItem(STORAGE_KEY) || DEFAULT_LEVEL; } catch { return DEFAULT_LEVEL; }
   });
 
   useEffect(() => {
-    // User-saved level takes precedence over localStorage on load.
-    base44.auth.me().then(u => {
-      if (u?.nali_presence_level && VALID_LEVELS.includes(u.nali_presence_level)) {
-        setLevelState(u.nali_presence_level);
-        try { localStorage.setItem(STORAGE_KEY, u.nali_presence_level); } catch {}
-      }
-    }).catch(() => {});
-  }, []);
+    // User-saved level takes precedence over localStorage when auth resolves.
+    if (user?.nali_presence_level && VALID_LEVELS.includes(user.nali_presence_level)) {
+      setLevelState(user.nali_presence_level);
+      try { localStorage.setItem(STORAGE_KEY, user.nali_presence_level); } catch {}
+    }
+  }, [user?.nali_presence_level]);
 
   const setLevel = useCallback((newLevel) => {
     if (!VALID_LEVELS.includes(newLevel)) return;

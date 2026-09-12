@@ -11,7 +11,7 @@ describe('Messages cross-chat mutation scoping', () => {
     const source = await readText('src/pages/Messages.jsx');
 
     expect(source).toContain('const conversationId = msgData.conversation_id || selectedConvId;');
-    expect(source).toContain('return { previous, previousConversations, tempId, clientMessageKey, conversationId };');
+    expect(source).toContain('return { previous, previousConversations, tempId, clientMessageKey, conversationId, outboundEntry };');
     expect(source).toContain('queryClient.setQueryData(["messages", currentUser?.id, ctx?.conversationId]');
     expect(source).toContain('const conversationId = selectedConvId;');
     expect(source).toContain('queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id, conversationId] });');

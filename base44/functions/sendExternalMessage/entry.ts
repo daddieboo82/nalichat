@@ -37,6 +37,9 @@ Deno.serve(async (req) => {
     if (!destination.trim() || !message.trim()) {
       return Response.json({ error: 'destination and message are required' }, { status: 400 });
     }
+    if (destination.length > 320) {
+      return Response.json({ error: 'Destination must be 320 characters or fewer' }, { status: 413 });
+    }
     if (message.length > 5000) {
       return Response.json({ error: 'Message must be 5000 characters or fewer' }, { status: 413 });
     }

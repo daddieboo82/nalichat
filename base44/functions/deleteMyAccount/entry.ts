@@ -364,12 +364,10 @@ Deno.serve(async (req) => {
       entities.ChallengeVote,
       { voter_id: user.id },
       async (vote) => {
-        try {
-          await entities.ChallengeSubmission.updateMany(
-            { id: vote.submission_id, vote_count: { $gt: 0 } },
-            { $inc: { vote_count: -1 } },
-          );
-        } catch {}
+        await entities.ChallengeSubmission.updateMany(
+          { id: vote.submission_id, vote_count: { $gt: 0 } },
+          { $inc: { vote_count: -1 } },
+        );
         await entities.ChallengeVote.delete(vote.id);
       },
     );
@@ -598,7 +596,7 @@ Deno.serve(async (req) => {
           await entities.User.updateMany(
             { id: squad.member_b_id, squad_membership_id: squad.id },
             { $set: { squad_membership_id: null } },
-          ).catch(() => {});
+          );
         }
       },
     );
@@ -615,7 +613,7 @@ Deno.serve(async (req) => {
           await entities.User.updateMany(
             { id: squad.member_a_id, squad_membership_id: squad.id },
             { $set: { squad_membership_id: null } },
-          ).catch(() => {});
+          );
         }
       },
     );

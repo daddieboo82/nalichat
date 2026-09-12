@@ -149,7 +149,7 @@ const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.l
 
 import React from "react";
 
-export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onRetry, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM }) {
+export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onRetry, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM, senderIsOnline = false }) {
   const { hasEntitlement } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
   const canTranscribe = hasEntitlement("voice.transcription");
@@ -222,12 +222,20 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
       {/* Avatar */}
       <div className="w-8 shrink-0 mt-auto">
         {showAvatar && !isOwn ? (
-          <Avatar className="w-8 h-8 shadow-md">
-            <AvatarImage src={message.sender_avatar} />
-            <AvatarFallback className={cn("text-[10px] font-bold text-white bg-gradient-to-br", avatarGradient)}>
-              {message.sender_name?.[0]?.toUpperCase() || "?"}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative w-8 h-8" title={senderIsOnline ? "Active now" : undefined}>
+            <Avatar className="w-8 h-8 shadow-md">
+              <AvatarImage src={message.sender_avatar} />
+              <AvatarFallback className={cn("text-[10px] font-bold text-white bg-gradient-to-br", avatarGradient)}>
+                {message.sender_name?.[0]?.toUpperCase() || "?"}
+              </AvatarFallback>
+            </Avatar>
+            {senderIsOnline && (
+              <span
+                className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-background shadow-sm"
+                aria-label="Active now"
+              />
+            )}
+          </div>
         ) : null}
       </div>
 

@@ -279,10 +279,18 @@ Deno.serve(async (req) => {
           try {
             await entities.Message.delete(message.id);
           } catch (deleteError) {
-            await entities.Message.updateMany(
-              { id: message.thread_id },
-              { $inc: { thread_reply_count: 1 } },
-            ).catch(() => {});
+            try {
+              await entities.Message.updateMany(
+                { id: message.thread_id },
+                { $inc: { thread_reply_count: 1 } },
+              );
+            } catch (rollbackError) {
+              console.error('Thread reply-count rollback failed after delete error:', rollbackError);
+              throw new Error(
+                'Message deletion failed and thread reply-count rollback was incomplete. Please retry.',
+                { cause: deleteError },
+              );
+            }
             throw deleteError;
           }
         } else {
@@ -348,6 +356,7 @@ Deno.serve(async (req) => {
     // Keep the conversation preview in sync only if this exact message is
     // still the latest non-session message. Comparing text values can update
     // the preview incorrectly when multiple messages have identical text.
+    let previewRefreshFailed = false;
     try {
       const recent = await entities.Message.filter(
         { conversation_id: message.conversation_id },
@@ -361,9 +370,16 @@ Deno.serve(async (req) => {
           last_message_at: latest.created_date || null,
         });
       }
-    } catch {}
+    } catch (previewError) {
+      previewRefreshFailed = true;
+      console.error('Conversation preview update failed after message edit:', previewError);
+    }
 
-    return Response.json({ success: true, message: updated });
+    return Response.json({
+      success: true,
+      message: updated,
+      preview_refresh_failed: previewRefreshFailed,
+    });
     } finally {
       await releaseMessageMutationLock(entities, lockId);
     }

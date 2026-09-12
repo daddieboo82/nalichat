@@ -16,6 +16,9 @@ const mockBase44 = vi.hoisted(() => ({
     me: vi.fn(),
     updateMe: vi.fn(),
   },
+  functions: {
+    invoke: vi.fn(),
+  },
   entities: {
     Conversation: { list: vi.fn() },
     Notification: {
@@ -138,6 +141,7 @@ describe('home, navigation, and recovery flows', () => {
     mockCartState.current = { items: [], setIsOpen: vi.fn() };
     mockBase44.auth.me.mockResolvedValue(null);
     mockBase44.auth.updateMe.mockResolvedValue(undefined);
+    mockBase44.functions.invoke.mockResolvedValue({ data: { success: true } });
     mockBase44.entities.Conversation.list.mockResolvedValue([]);
     mockBase44.entities.Notification.filter.mockResolvedValue([]);
   });
@@ -234,10 +238,10 @@ describe('home, navigation, and recovery flows', () => {
     fireEvent.click(screen.getByRole('button', { name: /Browse Challenges/i }));
 
     await screen.findByText('Challenges Page');
-    expect(mockBase44.auth.updateMe).toHaveBeenCalledWith({ welcome_tour_completed: true });
+    expect(mockBase44.functions.invoke).toHaveBeenCalledWith('updateMyProfile', { welcome_tour_completed: true });
   });
 
-  it('requests push permission asynchronously without blocking the notification bell', async () => {
+  it('registers push support without prompting for permission automatically', async () => {
     vi.useFakeTimers();
     try {
       mockBase44.auth.me.mockResolvedValue({ id: 'user-1' });
@@ -248,7 +252,7 @@ describe('home, navigation, and recovery flows', () => {
       await Promise.resolve();
       expect(mockPush.registerServiceWorker).toHaveBeenCalled();
       await vi.advanceTimersByTimeAsync(3000);
-      expect(mockPush.requestPushPermission).toHaveBeenCalled();
+      expect(mockPush.requestPushPermission).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }

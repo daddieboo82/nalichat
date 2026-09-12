@@ -55,6 +55,7 @@ function entities({
   entitled = true,
   notificationOptions,
   reminderOptions,
+  lockPreferences = [],
 } = {}) {
   return {
     FollowUpReminder: entity(reminders, reminderOptions),
@@ -62,6 +63,7 @@ function entities({
     Conversation: entity(conversations),
     User: entity(users),
     Notification: entity([], notificationOptions),
+    LockedConversationPreference: entity(lockPreferences),
     Subscription: entity(entitled ? [{
       id: "subscription-1",
       user_id: "owner-1",

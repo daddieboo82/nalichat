@@ -1,4 +1,5 @@
 import { resolveUserSubscription } from './subscriptionAccess.ts';
+import { lockedNotification } from './lockedChats.ts';
 
 export const FOLLOW_UP_ENTITLEMENT = 'reminders.follow_up';
 export const MAX_REMINDER_DELAY_MS = 365 * 24 * 60 * 60 * 1000;
@@ -63,12 +64,19 @@ interface NotificationRecord {
   follow_up_reminder_id?: string;
 }
 
+interface LockedConversationPreferenceRecord {
+  id: string;
+  user_id: string;
+  conversation_id: string;
+}
+
 export interface ReminderEntities {
   FollowUpReminder: Entity<FollowUpReminderRecord>;
   Message: Entity<MessageRecord>;
   Conversation: Entity<ConversationRecord>;
   User: Entity<UserRecord>;
   Notification: Entity<NotificationRecord>;
+  LockedConversationPreference: Pick<Entity<LockedConversationPreferenceRecord>, 'filter'>;
   Subscription: Parameters<typeof resolveUserSubscription>[0];
 }
 
@@ -845,16 +853,42 @@ export async function processDueFollowUpReminders({
     ) continue;
 
     try {
-      const notification = await entities.Notification.create({
-        recipient_id: reminder.owner_id,
-        type: 'follow_up_reminder',
-        actor_id: reminder.owner_id,
-        actor_name: 'Follow-up reminder',
-        message: 'No one has replied to your message yet.',
-        link: `/messages?id=${encodeURIComponent(reminder.conversation_id)}`,
-        read: false,
-        follow_up_reminder_id: reminder.id,
-      } as unknown as Omit<NotificationRecord, 'id'>);
+      const lockPreferences = await entities.LockedConversationPreference.filter(
+        {
+          user_id: reminder.owner_id,
+          conversation_id: reminder.conversation_id,
+        },
+        '-locked_at',
+        1,
+        0,
+      );
+      const isLockedChat = lockPreferences.length > 0;
+      const notificationPayload = isLockedChat
+        ? {
+            recipient_id: reminder.owner_id,
+            type: 'follow_up_reminder',
+            ...lockedNotification(
+              reminder.conversation_id,
+              'New activity in a locked chat.',
+            ),
+            read: false,
+            follow_up_reminder_id: reminder.id,
+          }
+        : {
+            recipient_id: reminder.owner_id,
+            type: 'follow_up_reminder',
+            conversation_id: reminder.conversation_id,
+            locked_chat: false,
+            actor_id: reminder.owner_id,
+            actor_name: 'Follow-up reminder',
+            message: 'No one has replied to your message yet.',
+            link: `/messages?id=${encodeURIComponent(reminder.conversation_id)}`,
+            read: false,
+            follow_up_reminder_id: reminder.id,
+          };
+      const notification = await entities.Notification.create(
+        notificationPayload as unknown as Omit<NotificationRecord, 'id'>,
+      );
       const current = await findById(entities.FollowUpReminder, reminder.id);
       if (
         current?.status === 'triggered'

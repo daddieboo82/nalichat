@@ -4,6 +4,7 @@ import {
   type LegacySubscriptionRecord,
 } from '../../shared/subscriptionMigration.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const PAGE_SIZE = 500;
 
@@ -56,7 +57,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 8 * 1024);
     const dryRun = body.dryRun !== false;
     if (!dryRun && body.confirmation !== 'MIGRATE') {
       return Response.json({ error: 'Explicit MIGRATE confirmation is required' }, { status: 400 });
@@ -78,8 +79,9 @@ Deno.serve(async (req) => {
       updated: dryRun ? 0 : migration.operations.length,
     });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('Subscription migration error:', error);
-    const message = error instanceof Error ? error.message : 'Subscription migration failed';
-    return Response.json({ error: message }, { status: 500 });
+    return Response.json({ error: 'Subscription migration failed' }, { status: 500 });
   }
 });

@@ -8,6 +8,7 @@ import StemQueue from "./StemQueue";
 import { downloadFilesAsZip } from "@/lib/downloadZip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdate, onTrackDelete, projectTitle, canEdit = true, currentUser }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -71,9 +72,15 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
     const selected = tracks.filter(t => selectedTrackIds.includes(t.id));
     if (!selected.length) return;
     setZipping(true);
-    await downloadFilesAsZip(selected, "session-assets.zip");
-    setZipping(false);
-    clearTrackSelection();
+    try {
+      await downloadFilesAsZip(selected, "session-assets.zip");
+      clearTrackSelection();
+    } catch (error) {
+      console.error("Track ZIP export failed:", error);
+      toast.error("Couldn't export the selected tracks. Please try again.");
+    } finally {
+      setZipping(false);
+    }
   };
 
   const handleTimelineClick = (time) => {
@@ -184,8 +191,14 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
             className="h-8 gap-1.5 text-xs bg-secondary/50 border-border/50 hover:bg-secondary hover:text-foreground" 
             onClick={async () => {
               setZipping(true);
-              await downloadFilesAsZip(tracks, `${projectTitle || selectedProject?.title || "session"}-stems.zip`);
-              setZipping(false);
+              try {
+                await downloadFilesAsZip(tracks, `${projectTitle || selectedProject?.title || "session"}-stems.zip`);
+              } catch (error) {
+                console.error("Stem ZIP export failed:", error);
+                toast.error("Couldn't export all stems. Please try again.");
+              } finally {
+                setZipping(false);
+              }
             }}
             disabled={zipping}
             title="Download all stems as ZIP"

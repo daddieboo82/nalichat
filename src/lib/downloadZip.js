@@ -9,6 +9,9 @@ export async function downloadFilesAsZip(files, zipName = "tracks.zip") {
   await Promise.all(
     files.map(async (file) => {
       const res = await fetch(file.file_url);
+      if (!res.ok) {
+        throw new Error(`Failed to download ${file.name || "file"}: ${res.status}`);
+      }
       const blob = await res.blob();
 
       // Avoid name collisions inside the archive

@@ -26,6 +26,19 @@ describe('final user-facing error states', () => {
     expect(source).toContain("We couldn't verify your account. Refresh and try again.");
   });
 
+  it('recovers ZIP export progress and surfaces source download failures', async () => {
+    const helper = await readText('src/lib/downloadZip.js');
+    const editor = await readText('src/components/studio/MultiTrackEditor.jsx');
+    const queue = await readText('src/components/studio/StemQueue.jsx');
+
+    expect(helper).toContain('if (!res.ok) {');
+    expect(editor).toContain('toast.error("Couldn\'t export the selected tracks. Please try again.")');
+    expect(editor).toContain('toast.error("Couldn\'t export all stems. Please try again.")');
+    expect(editor).toContain('finally {\n      setZipping(false);');
+    expect(queue).toContain('toast.error("Couldn\'t export the stem queue. Please try again.")');
+    expect(queue).toContain('finally {\n      setExporting(false);');
+  });
+
   it('surfaces global message auth, directory, and send failures', async () => {
     const source = await readText('src/components/GlobalMessageDialog.jsx');
     expect(source).toContain('isError: usersError');

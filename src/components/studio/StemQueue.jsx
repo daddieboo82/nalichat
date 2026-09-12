@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Layers, X, Download, Loader2, Trash2, ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { downloadFilesAsZip } from "@/lib/downloadZip";
+import { toast } from "sonner";
 
 const trackTypeColors = {
   vocal: "bg-primary",
@@ -28,6 +29,9 @@ export default function StemQueue({ queue, onRemove, onClear, open, onToggle }) 
         })),
         "stems-queue.zip"
       );
+    } catch (error) {
+      console.error("Stem queue export failed:", error);
+      toast.error("Couldn't export the stem queue. Please try again.");
     } finally {
       setExporting(false);
     }

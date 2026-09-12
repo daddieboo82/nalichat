@@ -5,6 +5,7 @@ import {
   otpErrorMessage,
   registrationErrorMessage,
   resendOtpErrorMessage,
+  resetPasswordErrorMessage,
 } from '@/lib/authErrorMessages';
 
 describe('safe auth error messages', () => {
@@ -14,6 +15,7 @@ describe('safe auth error messages', () => {
     expect(otpErrorMessage(new Error('otp expired'))).toContain('expired');
     expect(resendOtpErrorMessage(new Error('429 rate limit'))).toContain('wait');
     expect(googleLoginErrorMessage(new Error('popup closed'))).toContain('canceled');
+    expect(resetPasswordErrorMessage(new Error('reset token expired'))).toContain('expired');
   });
 
   it('does not echo unknown provider/internal errors', () => {
@@ -21,5 +23,6 @@ describe('safe auth error messages', () => {
     expect(loginErrorMessage(new Error(internal))).not.toContain(internal);
     expect(registrationErrorMessage(new Error(internal))).not.toContain(internal);
     expect(otpErrorMessage(new Error(internal))).not.toContain(internal);
+    expect(resetPasswordErrorMessage(new Error(internal))).not.toContain(internal);
   });
 });

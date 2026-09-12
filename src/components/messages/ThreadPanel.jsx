@@ -44,7 +44,7 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
   const queryClient = useQueryClient();
 
   const { data: replies = [], isLoading: repliesLoading, isError: repliesError } = useQuery({
-    queryKey: ["thread", parentMessage.id],
+    queryKey: ["thread", currentUser?.id, parentMessage.id],
     queryFn: () => base44.entities.Message.filter({ thread_id: parentMessage.id }, "created_date", 500),
     refetchInterval: 3000,
   });
@@ -94,7 +94,7 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
       retryKeyRef.current = null;
       retryTextRef.current = "";
       setText("");
-      queryClient.invalidateQueries({ queryKey: ["thread", parentMessage.id] });
+      queryClient.invalidateQueries({ queryKey: ["thread", currentUser?.id, parentMessage.id] });
       queryClient.invalidateQueries({ queryKey: ["messages"] });
     },
     onError: (error) => {

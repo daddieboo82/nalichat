@@ -179,6 +179,8 @@ Deno.serve(async (req) => {
       await releaseTrackLifecycleLock(entities, lockId);
     }
   } catch (error) {
-    return Response.json({ error: error?.message || 'Track mutation failed' }, { status: 500 });
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    return Response.json({ error: 'Track mutation failed' }, { status: 500 });
   }
 });

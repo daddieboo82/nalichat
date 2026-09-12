@@ -157,7 +157,9 @@ Deno.serve(async (req) => {
       await releaseProjectMembershipLock(entities, lockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('mutateProject error:', error);
-    return Response.json({ error: error?.message || 'Project update failed' }, { status: 500 });
+    return Response.json({ error: 'Project update failed' }, { status: 500 });
   }
 });

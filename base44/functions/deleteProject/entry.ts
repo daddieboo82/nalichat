@@ -160,7 +160,9 @@ Deno.serve(async (req) => {
       await releaseProjectMembershipLock(entities, lockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('deleteProject error:', error);
-    return Response.json({ error: error?.message || 'Project deletion failed' }, { status: 500 });
+    return Response.json({ error: 'Project deletion failed' }, { status: 500 });
   }
 });

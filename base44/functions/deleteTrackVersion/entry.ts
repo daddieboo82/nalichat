@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
 
 Deno.serve(async (req) => {
@@ -28,7 +29,7 @@ Deno.serve(async (req) => {
     }
 
     const { versionId } = await readJsonBodyLimited(req, 64 * 1024);
-    if (typeof versionId !== 'string' || !versionId.trim() || versionId.length > 200) {
+    if (typeof versionId !== 'string' || !isBase44EntityId(versionId.trim())) {
       return Response.json({ error: 'versionId is required' }, { status: 400 });
     }
 

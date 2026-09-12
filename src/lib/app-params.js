@@ -78,6 +78,7 @@ const getAppParams = () => {
     token: getAppParamValue("access_token", { removeFromUrl: true }),
     fromUrl: getAppParamValue("from_url", { defaultValue: window.location.href }),
     functionsVersion: getRuntimeConfigValue("functions_version", import.meta.env.VITE_BASE44_FUNCTIONS_VERSION),
+    serverUrl: getRuntimeConfigValue("backend_url", import.meta.env.VITE_BASE44_BACKEND_URL || 'https://base44.app'),
     appBaseUrl: getRuntimeConfigValue("app_base_url", import.meta.env.VITE_BASE44_APP_BASE_URL || window.location.origin),
   };
 };

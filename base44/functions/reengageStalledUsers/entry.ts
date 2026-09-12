@@ -144,8 +144,8 @@ export default async function(req) {
         await s.User.update(user.id, { reengagement_sent_at: new Date().toISOString() });
         sent++;
       } catch (err) {
-        console.error(`Failed to re-engage user ${user.id} (${user.email}):`, err.message);
-        errors.push(`${user.email}: ${err.message}`);
+        console.error(`Failed to re-engage user ${user.id}:`, err);
+        errors.push('delivery_failed');
       }
     }
 
@@ -155,7 +155,7 @@ export default async function(req) {
       skipped: stalled.length - sent,
       totalStalledProcessed: stalled.length,
       capped: stalled.length >= MAX_REENGAGEMENTS_PER_RUN,
-      errors: errors.slice(0, 10),
+      errorCount: errors.length,
     });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);

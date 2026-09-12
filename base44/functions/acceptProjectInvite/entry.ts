@@ -140,10 +140,18 @@ Deno.serve(async (req) => {
     );
     } catch (grantError) {
       if (!membershipGranted) {
-        await base44.asServiceRole.entities.ProjectInvite.updateMany(
-          { id: invite.id, used_count: { $gt: 0 } },
-          { $inc: { used_count: -1 } },
-        ).catch(() => {});
+        try {
+          await base44.asServiceRole.entities.ProjectInvite.updateMany(
+            { id: invite.id, used_count: { $gt: 0 } },
+            { $inc: { used_count: -1 } },
+          );
+        } catch (rollbackError) {
+          console.error('Project invite usage rollback failed:', rollbackError);
+          throw new Error(
+            'Project invite acceptance failed and usage rollback was incomplete. Please retry.',
+            { cause: grantError },
+          );
+        }
       }
       throw grantError;
     }

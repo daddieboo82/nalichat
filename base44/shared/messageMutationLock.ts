@@ -25,7 +25,7 @@ export async function acquireMessageMutationLock(
     const expired = Date.parse(existing.expires_at || '') <= now.getTime();
     if (!expired) return null;
 
-    await entities.MessageMutationLock.delete(id).catch(() => {});
+    await entities.MessageMutationLock.delete(id);
     try {
       await create();
       return id;
@@ -41,6 +41,12 @@ export async function releaseMessageMutationLock(
   entities: any,
   lockId: string | null,
 ) {
-  if (!lockId) return;
-  await entities.MessageMutationLock.delete(lockId).catch(() => {});
+  if (!lockId) return true;
+  try {
+    await entities.MessageMutationLock.delete(lockId);
+    return true;
+  } catch (error) {
+    console.error('Failed to release message mutation lock:', { lockId, error });
+    return false;
+  }
 }

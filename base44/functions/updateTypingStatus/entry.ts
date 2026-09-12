@@ -78,6 +78,6 @@ Deno.serve(async (req) => {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('updateTypingStatus error:', error);
-    return Response.json({ error: error?.message || 'Typing status update failed' }, { status: 500 });
+    return Response.json({ error: 'Typing status update failed' }, { status: 500 });
   }
 });

@@ -1,16 +1,12 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
-  const [items, setItems] = useState(() => {
-    try {
-      const saved = localStorage.getItem('shopping_cart');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const { user } = useAuth();
+  const cartStorageKey = `shopping_cart:${user?.id || 'anonymous'}`;
+  const [items, setItems] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
 
   const getCartIdentity = (product) => [
@@ -19,12 +15,39 @@ export function CartProvider({ children }) {
   ].join(':');
 
   useEffect(() => {
+    let nextItems = [];
     try {
-      localStorage.setItem('shopping_cart', JSON.stringify(items));
+      const saved = localStorage.getItem(cartStorageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) nextItems = parsed;
+      } else if (!user?.id) {
+        // Migrate the old device-global cart only into the anonymous cart.
+        // Never attribute legacy contents to a signed-in account on a shared device.
+        const legacy = localStorage.getItem('shopping_cart');
+        if (legacy) {
+          const parsed = JSON.parse(legacy);
+          if (Array.isArray(parsed)) {
+            nextItems = parsed;
+            localStorage.setItem(cartStorageKey, JSON.stringify(parsed));
+          }
+          localStorage.removeItem('shopping_cart');
+        }
+      }
+    } catch {
+      nextItems = [];
+    }
+    setItems(nextItems);
+    setIsOpen(false);
+  }, [cartStorageKey, user?.id]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(cartStorageKey, JSON.stringify(items));
     } catch {
       // Cart still works in-memory when browser storage is unavailable.
     }
-  }, [items]);
+  }, [cartStorageKey, items]);
 
   const addToCart = (product) => {
     const normalizedProduct = {

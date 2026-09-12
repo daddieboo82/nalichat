@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const user = await base44.auth.me().catch(() => null);
     const { reminder_id, remind_at } = await req.json();
     const reminder = await rescheduleFollowUpReminder({
       entities: base44.asServiceRole.entities,

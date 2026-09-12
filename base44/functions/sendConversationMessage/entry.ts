@@ -472,21 +472,38 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
           throw new Error('Unable to update thread reply count');
         }
       } catch (countError) {
-        await base44.asServiceRole.entities.Message.delete(message.id).catch(() => {});
+        try {
+          await base44.asServiceRole.entities.Message.delete(message.id);
+        } catch (rollbackError) {
+          console.error('Thread reply rollback failed:', rollbackError);
+          throw new Error(
+            'Thread reply count update failed and message rollback was incomplete. Please retry.',
+            { cause: countError },
+          );
+        }
         throw countError;
       }
     }
 
+    let previewRefreshFailed = false;
     if (type !== 'session') {
       try {
         await base44.asServiceRole.entities.Conversation.update(conversationId, {
           last_message_text: text || `Sent a ${type}`,
           last_message_at: new Date().toISOString(),
         });
-      } catch (_) {}
+      } catch (previewError) {
+        previewRefreshFailed = true;
+        console.error('Conversation preview update failed after message send:', previewError);
+      }
     }
 
-  return Response.json({ success: true, message, duplicate: !createdNew });
+  return Response.json({
+    success: true,
+    message,
+    duplicate: !createdNew,
+    preview_refresh_failed: previewRefreshFailed,
+  });
   } finally {
     await releaseMessageMutationLock(base44.asServiceRole.entities, threadLockId);
   }

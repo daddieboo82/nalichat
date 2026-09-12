@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendPushToUser } from '../../shared/webPush.ts';
 import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
 import { createNotificationIdempotently } from '../../shared/workflowNotifications.ts';
+import { claimFixedWindow } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -18,6 +19,14 @@ Deno.serve(async (req) => {
     const comment = await entities.TrackComment.get(record.id);
     if (!comment || !workflowRecordIsFresh(comment, 'create')) {
       return Response.json({ success: true, count: 0, skipped: 'stale_workflow_record' });
+    }
+    const eventClaim = await claimFixedWindow(
+      entities,
+      `workflow-track-comment:${comment.id}`,
+      10,
+    );
+    if (!eventClaim.allowed) {
+      return Response.json({ success: true, count: 0, skipped: 'already_processed' });
     }
     if (!comment?.track_id || (comment.parent_type && comment.parent_type !== 'art_post')) {
       return Response.json({ success: true });

@@ -13,6 +13,11 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Failed to create checkout session';
 }
 
+function isClientError(message: string): boolean {
+  return message === 'Invalid checkout callback URL'
+    || message === 'Checkout callback URL is not allowed';
+}
+
 function randomVerifier(): string {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
@@ -212,10 +217,10 @@ Deno.serve(async (req) => {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     const message = errorMessage(error);
-    console.error('Checkout error:', message);
+    console.error('Checkout error:', error);
     return Response.json(
-      { error: message },
-      { status: 500 }
+      { error: isClientError(message) ? message : 'Unable to create checkout session' },
+      { status: isClientError(message) ? 400 : 500 }
     );
   }
 });

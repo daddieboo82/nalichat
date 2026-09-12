@@ -6,6 +6,11 @@ async function readText(path) {
   return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
 }
 
+function bodyReadIndex(source) {
+  const bounded = source.indexOf('readJsonBodyLimited(req,');
+  return bounded >= 0 ? bounded : source.indexOf('await req.json()');
+}
+
 for (const path of [
   'base44/functions/get-studio-export-url/entry.ts',
   'base44/functions/getSquadInvite/entry.ts',
@@ -14,7 +19,7 @@ for (const path of [
     it('requires POST before reading the request body', async () => {
       const source = await readText(path);
       const methodGuard = source.indexOf("if (req.method !== 'POST')");
-      const bodyRead = source.indexOf('await req.json()');
+      const bodyRead = bodyReadIndex(source);
 
       expect(methodGuard).toBeGreaterThanOrEqual(0);
       expect(source).toContain("return Response.json({ error: 'Method not allowed' }, { status: 405 });");

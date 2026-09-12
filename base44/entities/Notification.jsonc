@@ -109,6 +109,18 @@
         }
       }
     },
+    "conversation_id": {
+      "type": "string",
+      "description": "Conversation associated with a message notification",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
     "locked_chat": {
       "type": "boolean",
       "default": false,

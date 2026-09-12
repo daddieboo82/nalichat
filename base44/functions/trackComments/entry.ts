@@ -112,6 +112,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Reject unauthorized create attempts before consuming a lifecycle lock.
+    // The target is checked again under the lock below to protect against
+    // concurrent access/lifecycle changes.
+    if (action === 'create') {
+      const previewAccess = await canAccessParent(entities, user, parentType, parentId);
+      if (!previewAccess.parent) return Response.json({ error: 'Comment target not found' }, { status: 404 });
+      if (!previewAccess.allowed) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     let submissionLockId: string | null = null;
     let trackLockId: string | null = null;
     if (action === 'create' && parentType === 'challenge_submission') {

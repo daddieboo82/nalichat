@@ -2067,6 +2067,35 @@ describe('release configuration', () => {
     expect(reminderResolver).toContain('follow-up-resolver:');
     expect(reminderResolver).toContain('already_processed');
 
+    const boundedJsonFunctions = [
+      'getChallengeLeaderboard',
+      'getSharedFileByToken',
+      'verifyCheckoutPayment',
+      'notifyOnFileUpload',
+      'notifyOnMessage',
+      'notifyOnTrackVersion',
+      'notifyOnTrackComment',
+      'notifyOnMilestoneUpdate',
+      'resolveFollowUpReminders',
+    ];
+    for (const name of boundedJsonFunctions) {
+      const source = await readText(`base44/functions/${name}/entry.ts`);
+      expect(source).toContain('readJsonBodyLimited');
+      expect(source).not.toContain('await req.json()');
+    }
+
+    for (const name of ['stripeWebhook', 'wixPaymentsWebhook']) {
+      const source = await readText(`base44/functions/${name}/entry.ts`);
+      expect(source).toContain('readTextBodyLimited');
+      expect(source).toContain('1024 * 1024');
+      expect(source).not.toContain('await req.text()');
+    }
+
+    const requestLimits = await readText('base44/shared/requestLimits.ts');
+    expect(requestLimits).toContain('RequestBodyTooLargeError');
+    expect(requestLimits).toContain('reader.cancel()');
+    expect(requestLimits).toContain("status: 413");
+
     const anonymousErrorSafe = ['getChallengeLeaderboard','getSharedFileByToken','verifyCheckoutPayment','wixPaymentsWebhook','notifyOnFileUpload','notifyOnMessage','notifyOnTrackVersion','notifyOnTrackComment','notifyOnMilestoneUpdate'];
     for (const name of anonymousErrorSafe) {
       const source = await readText(`base44/functions/${name}/entry.ts`);

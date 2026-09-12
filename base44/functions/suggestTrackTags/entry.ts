@@ -121,9 +121,14 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, skipped: true, reason: 'rate_limited' });
     }
 
+    const previewProjectId = trackPreview.project_id || null;
+    if (previewProjectId && !isBase44EntityId(previewProjectId)) {
+      return Response.json({ error: 'Track has an invalid project reference' }, { status: 409 });
+    }
+
     let projectPreview = null;
-    if (trackPreview.project_id && isBase44EntityId(trackPreview.project_id)) {
-      projectPreview = await entities.Project.get(trackPreview.project_id).catch(() => null);
+    if (previewProjectId) {
+      projectPreview = await entities.Project.get(previewProjectId).catch(() => null);
     }
 
     const prompt = `You are a professional music producer analyzing an audio track to suggest metadata.
@@ -185,6 +190,12 @@ Return realistic values. BPM must be a whole number between 60 and 200.`;
       }
       const lockedAuthError = await authorizeTrackRequest(track);
       if (lockedAuthError) return lockedAuthError;
+      if (
+        (track.project_id || null) !== previewProjectId
+        || (track.project_id && !isBase44EntityId(track.project_id))
+      ) {
+        return Response.json({ error: 'Track project changed. Please retry.' }, { status: 409 });
+      }
 
       if (track.suggested_genre && track.suggested_bpm) {
         return Response.json({
@@ -200,8 +211,8 @@ Return realistic values. BPM must be a whole number between 60 and 200.`;
         suggested_bpm: suggestedBpm,
       });
 
-      if (track.project_id) {
-        const project = await entities.Project.get(track.project_id).catch(() => null);
+      if (previewProjectId) {
+        const project = await entities.Project.get(previewProjectId).catch(() => null);
         if (project) {
           const projectUpdate: Record<string, unknown> = {};
           if (!project.genre) projectUpdate.genre = suggestedGenre;

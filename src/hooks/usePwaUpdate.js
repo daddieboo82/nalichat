@@ -30,12 +30,22 @@ export function usePwaUpdate() {
 
     let registration;
     let updateInterval;
+    let disposed = false;
+    let installingWorker = null;
+    let installingStateHandler = null;
 
     const handleUpdateFound = () => {
-      const installing = registration.installing;
+      if (disposed) return;
+      const installing = registration?.installing;
       if (!installing) return;
 
-      installing.addEventListener('statechange', () => {
+      if (installingWorker && installingStateHandler) {
+        installingWorker.removeEventListener('statechange', installingStateHandler);
+      }
+
+      installingWorker = installing;
+      installingStateHandler = () => {
+        if (disposed) return;
         // A new SW has installed and is waiting — but only show the prompt
         // if there's already an active SW controlling the page (i.e. this is
         // an update, not a first-time install).
@@ -43,12 +53,14 @@ export function usePwaUpdate() {
           setWaitingWorker(installing);
           setUpdateAvailable(true);
         }
-      });
+      };
+      installing.addEventListener('statechange', installingStateHandler);
     };
 
     navigator.serviceWorker
       .register('/sw.js')
       .then((reg) => {
+        if (disposed) return;
         registration = reg;
 
         // If a SW is already waiting (e.g. user dismissed the prompt last
@@ -81,8 +93,12 @@ export function usePwaUpdate() {
     navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
 
     return () => {
+      disposed = true;
       if (registration) {
         registration.removeEventListener('updatefound', handleUpdateFound);
+      }
+      if (installingWorker && installingStateHandler) {
+        installingWorker.removeEventListener('statechange', installingStateHandler);
       }
       if (updateInterval) clearInterval(updateInterval);
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);

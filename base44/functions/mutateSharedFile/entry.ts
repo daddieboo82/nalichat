@@ -57,204 +57,211 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Viewer access cannot modify this file' }, { status: 403 });
     }
 
-    const lockId = await acquireSharedFileMutationLock(entities, fileId);
-    if (!lockId) {
-      return Response.json(
-        { error: 'File is being updated. Please retry.' },
-        { status: 409 },
-      );
-    }
+    let requestedFolderId: string | null = null;
+    let destinationFolderPreview: any = null;
+    let destinationProjectId: string | null = null;
 
-    try {
-    let file = await entities.SharedFile.get(fileId);
-    if (!file) return Response.json({ error: 'File not found' }, { status: 404 });
-    if ((file.project_id || null) !== (filePreview.project_id || null)) {
-      return Response.json({ error: 'File project changed. Please retry.' }, { status: 409 });
-    }
-    if (file.project_id && !isBase44EntityId(file.project_id)) {
-      return Response.json({ error: 'File has an invalid project reference' }, { status: 409 });
-    }
-
-    const projectLockIds: string[] = [];
-    let folderLockId: string | null = null;
-
-    let folderId: string | null = null;
     if (action === 'move') {
       if (body?.folderId != null && typeof body.folderId !== 'string') {
         return Response.json({ error: 'folderId must be a string or null' }, { status: 400 });
       }
-      folderId = typeof body?.folderId === 'string' ? body.folderId.trim() : null;
-      if (folderId && !isBase44EntityId(folderId)) {
+      requestedFolderId = typeof body?.folderId === 'string' ? body.folderId.trim() : null;
+      if (requestedFolderId && !isBase44EntityId(requestedFolderId)) {
         return Response.json({ error: 'Valid folderId is required' }, { status: 400 });
       }
-      if (folderId) {
-        folderLockId = await acquireFolderMutationLock(entities, folderId);
+
+      if (requestedFolderId) {
+        destinationFolderPreview = await entities.Folder.get(requestedFolderId).catch(() => null);
+        if (!destinationFolderPreview) {
+          return Response.json({ error: 'Folder not found' }, { status: 404 });
+        }
+        destinationProjectId = destinationFolderPreview.project_id || null;
+        if (destinationProjectId && !isBase44EntityId(destinationProjectId)) {
+          return Response.json({ error: 'Folder has an invalid project reference' }, { status: 409 });
+        }
+
+        let previewCanUseFolder = user.role === 'admin';
+        if (!previewCanUseFolder && destinationProjectId) {
+          const targetProjectPreview = await entities.Project.get(destinationProjectId).catch(() => null);
+          if (!targetProjectPreview) {
+            return Response.json({ error: 'Project not found' }, { status: 404 });
+          }
+          previewCanUseFolder = targetProjectPreview.owner_id === user.id
+            || (targetProjectPreview.editor_ids || []).includes(user.id);
+        } else if (!previewCanUseFolder) {
+          previewCanUseFolder = destinationFolderPreview.owner_id === user.id
+            || (destinationFolderPreview.edit_user_ids || []).includes(user.id);
+        }
+        if (!previewCanUseFolder) {
+          return Response.json({ error: 'You cannot move files into this folder' }, { status: 403 });
+        }
+      }
+
+      if (
+        filePreview.project_id
+        && destinationProjectId !== filePreview.project_id
+        && user.role !== 'admin'
+      ) {
+        return Response.json({
+          error: 'Project files cannot be moved outside their current project. Copy or share the file instead.',
+        }, { status: 403 });
+      }
+    }
+
+    let folderLockId: string | null = null;
+    const projectLockIds: string[] = [];
+    let fileLockId: string | null = null;
+
+    try {
+      if (requestedFolderId) {
+        folderLockId = await acquireFolderMutationLock(entities, requestedFolderId);
         if (!folderLockId) {
           return Response.json({ error: 'Folder is being updated. Please retry.' }, { status: 409 });
         }
       }
-    }
 
-    const acquireProjectLock = async (projectId: string | null | undefined) => {
-      if (!projectId) return true;
-      if (projectLockIds.some((id) => id === `project_membership_lock_${projectId}`)) return true;
-      const projectLockId = await acquireProjectMembershipLock(entities, projectId);
-      if (!projectLockId) return false;
-      projectLockIds.push(projectLockId);
-      return true;
-    };
+      const projectIdsToLock = Array.from(new Set([
+        filePreview.project_id || null,
+        destinationProjectId || null,
+      ].filter((id): id is string => Boolean(id)))).sort();
 
-    try {
-      if (file.project_id) {
-        const locked = await acquireProjectLock(file.project_id);
-        if (!locked) {
-          return Response.json(
-            { error: 'Project is being updated. Please retry.' },
-            { status: 409 },
-          );
+      for (const projectId of projectIdsToLock) {
+        const projectLockId = await acquireProjectMembershipLock(entities, projectId);
+        if (!projectLockId) {
+          return Response.json({ error: 'Project is being updated. Please retry.' }, { status: 409 });
         }
-        const currentFile = await entities.SharedFile.get(fileId).catch(() => null);
-        if (!currentFile) return Response.json({ error: 'File not found' }, { status: 404 });
-        if (currentFile.project_id !== file.project_id) {
-          return Response.json({ error: 'File project changed. Please retry.' }, { status: 409 });
-        }
-        file = currentFile;
+        projectLockIds.push(projectLockId);
       }
 
-    let canEdit = user.role === 'admin';
-    if (!canEdit && file.project_id) {
-      const project = await entities.Project.get(file.project_id).catch(() => null);
-      if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
-      canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
-    } else if (!canEdit) {
-      canEdit = file.uploader_id === user.id || (file.edit_user_ids || []).includes(user.id);
-    }
-    if (!canEdit) return Response.json({ error: 'Viewer access cannot modify this file' }, { status: 403 });
-
-    if (action === 'delete') {
-      await entities.SharedFile.delete(file.id);
-      return Response.json({ success: true, deleted: true });
-    }
-
-    if (action === 'update') {
-      const patch: Record<string, any> = {};
-
-      if (body?.name !== undefined) {
-        if (typeof body.name !== 'string') {
-          return Response.json({ error: 'File name must be a string' }, { status: 400 });
-        }
-        const name = body.name.trim();
-        if (!name) return Response.json({ error: 'File name cannot be empty' }, { status: 400 });
-        if (name.length > 255) {
-          return Response.json({ error: 'File name must be 255 characters or fewer' }, { status: 413 });
-        }
-        patch.name = name;
+      fileLockId = await acquireSharedFileMutationLock(entities, fileId);
+      if (!fileLockId) {
+        return Response.json(
+          { error: 'File is being updated. Please retry.' },
+          { status: 409 },
+        );
       }
 
-      if (body?.description !== undefined) {
-        if (typeof body.description !== 'string') {
-          return Response.json({ error: 'File description must be a string' }, { status: 400 });
-        }
-        if (body.description.length > 1000) {
-          return Response.json({ error: 'File description must be 1000 characters or fewer' }, { status: 413 });
-        }
-        patch.description = body.description;
+      const file = await entities.SharedFile.get(fileId).catch(() => null);
+      if (!file) return Response.json({ error: 'File not found' }, { status: 404 });
+      if ((file.project_id || null) !== (filePreview.project_id || null)) {
+        return Response.json({ error: 'File project changed. Please retry.' }, { status: 409 });
+      }
+      if (file.project_id && !isBase44EntityId(file.project_id)) {
+        return Response.json({ error: 'File has an invalid project reference' }, { status: 409 });
       }
 
-      if (body?.tags !== undefined) {
-        if (!Array.isArray(body.tags)) {
-          return Response.json({ error: 'tags must be an array' }, { status: 400 });
-        }
-        if (body.tags.length > 50) {
-          return Response.json({ error: 'Files support at most 50 tags' }, { status: 413 });
-        }
-        if (body.tags.some((tag: unknown) => typeof tag !== 'string' || tag.trim().length > 64)) {
-          return Response.json({ error: 'Each tag must be a string of 64 characters or fewer' }, { status: 400 });
-        }
-        patch.tags = Array.from(new Set(
-          body.tags.map((tag: string) => tag.trim()).filter(Boolean),
-        ));
+      let canEdit = user.role === 'admin';
+      if (!canEdit && file.project_id) {
+        const project = await entities.Project.get(file.project_id).catch(() => null);
+        if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
+        canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
+      } else if (!canEdit) {
+        canEdit = file.uploader_id === user.id || (file.edit_user_ids || []).includes(user.id);
+      }
+      if (!canEdit) {
+        return Response.json({ error: 'Viewer access cannot modify this file' }, { status: 403 });
       }
 
-      if (Object.keys(patch).length === 0) {
-        return Response.json({ error: 'No supported file fields supplied' }, { status: 400 });
-      }
-      const updated = await entities.SharedFile.update(file.id, patch);
-      return Response.json({ success: true, file: updated });
-    }
-
-    let projectId = null;
-    let accessUserIds = [file.uploader_id].filter(Boolean);
-    let editUserIds = [file.uploader_id].filter(Boolean);
-
-    if (folderId) {
-      let folder = await entities.Folder.get(folderId);
-      if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
-      if (folder.project_id && !isBase44EntityId(folder.project_id)) {
-        return Response.json({ error: 'Folder has an invalid project reference' }, { status: 409 });
+      if (action === 'delete') {
+        await entities.SharedFile.delete(file.id);
+        return Response.json({ success: true, deleted: true });
       }
 
-      if (folder.project_id && folder.project_id !== file.project_id) {
-        const locked = await acquireProjectLock(folder.project_id);
-        if (!locked) {
-          return Response.json(
-            { error: 'Destination project is being updated. Please retry.' },
-            { status: 409 },
-          );
+      if (action === 'update') {
+        const patch: Record<string, any> = {};
+
+        if (body?.name !== undefined) {
+          if (typeof body.name !== 'string') {
+            return Response.json({ error: 'File name must be a string' }, { status: 400 });
+          }
+          const name = body.name.trim();
+          if (!name) return Response.json({ error: 'File name cannot be empty' }, { status: 400 });
+          if (name.length > 255) {
+            return Response.json({ error: 'File name must be 255 characters or fewer' }, { status: 413 });
+          }
+          patch.name = name;
         }
-        const currentFolder = await entities.Folder.get(folderId).catch(() => null);
-        if (!currentFolder) return Response.json({ error: 'Folder not found' }, { status: 404 });
+
+        if (body?.description !== undefined) {
+          if (typeof body.description !== 'string') {
+            return Response.json({ error: 'File description must be a string' }, { status: 400 });
+          }
+          if (body.description.length > 1000) {
+            return Response.json({ error: 'File description must be 1000 characters or fewer' }, { status: 413 });
+          }
+          patch.description = body.description;
+        }
+
+        if (body?.tags !== undefined) {
+          if (!Array.isArray(body.tags)) {
+            return Response.json({ error: 'tags must be an array' }, { status: 400 });
+          }
+          if (body.tags.length > 50) {
+            return Response.json({ error: 'Files support at most 50 tags' }, { status: 413 });
+          }
+          if (body.tags.some((tag: unknown) => typeof tag !== 'string' || tag.trim().length > 64)) {
+            return Response.json({ error: 'Each tag must be a string of 64 characters or fewer' }, { status: 400 });
+          }
+          patch.tags = Array.from(new Set(
+            body.tags.map((tag: string) => tag.trim()).filter(Boolean),
+          ));
+        }
+
+        if (Object.keys(patch).length === 0) {
+          return Response.json({ error: 'No supported file fields supplied' }, { status: 400 });
+        }
+
+        const updated = await entities.SharedFile.update(file.id, patch);
+        return Response.json({ success: true, file: updated });
+      }
+
+      let projectId = destinationProjectId;
+      let accessUserIds = [file.uploader_id].filter(Boolean);
+      let editUserIds = [file.uploader_id].filter(Boolean);
+
+      if (requestedFolderId) {
+        const folder = await entities.Folder.get(requestedFolderId).catch(() => null);
+        if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
         if (
-          currentFolder.project_id !== folder.project_id
-          || (currentFolder.project_id && !isBase44EntityId(currentFolder.project_id))
+          (folder.project_id || null) !== (destinationProjectId || null)
+          || (folder.project_id && !isBase44EntityId(folder.project_id))
         ) {
           return Response.json({ error: 'Folder destination changed. Please retry.' }, { status: 409 });
         }
-        folder = currentFolder;
+
+        let canUseFolder = user.role === 'admin';
+        if (!canUseFolder && folder.project_id) {
+          const targetProject = await entities.Project.get(folder.project_id).catch(() => null);
+          if (!targetProject) return Response.json({ error: 'Project not found' }, { status: 404 });
+          canUseFolder = targetProject.owner_id === user.id
+            || (targetProject.editor_ids || []).includes(user.id);
+        } else if (!canUseFolder) {
+          canUseFolder = folder.owner_id === user.id || (folder.edit_user_ids || []).includes(user.id);
+        }
+        if (!canUseFolder) {
+          return Response.json({ error: 'You cannot move files into this folder' }, { status: 403 });
+        }
+
+        projectId = folder.project_id || null;
+        accessUserIds = Array.from(new Set(folder.access_user_ids || []));
+        editUserIds = Array.from(new Set(folder.edit_user_ids || []));
       }
 
-      let canUseFolder = user.role === 'admin';
-      if (!canUseFolder && folder.project_id) {
-        const targetProject = await entities.Project.get(folder.project_id).catch(() => null);
-        if (!targetProject) return Response.json({ error: 'Project not found' }, { status: 404 });
-        canUseFolder = targetProject.owner_id === user.id || (targetProject.editor_ids || []).includes(user.id);
-      } else if (!canUseFolder) {
-        canUseFolder = folder.owner_id === user.id || (folder.edit_user_ids || []).includes(user.id);
-      }
-      if (!canUseFolder) {
-        return Response.json({ error: 'You cannot move files into this folder' }, { status: 403 });
-      }
-
-      projectId = folder.project_id || null;
-      accessUserIds = Array.from(new Set(folder.access_user_ids || []));
-      editUserIds = Array.from(new Set(folder.edit_user_ids || []));
-    }
-
-    if (file.project_id && projectId !== file.project_id && user.role !== 'admin') {
-      return Response.json({
-        error: 'Project files cannot be moved outside their current project. Copy or share the file instead.',
-      }, { status: 403 });
-    }
-
-    const updated = await entities.SharedFile.update(file.id, {
-      folder_id: folderId,
-      project_id: projectId,
-      access_user_ids: accessUserIds,
-      edit_user_ids: editUserIds,
-      share_token_hash: null,
-      share_token_expires_at: null,
-    });
-    return Response.json({ success: true, file: updated });
+      const updated = await entities.SharedFile.update(file.id, {
+        folder_id: requestedFolderId,
+        project_id: projectId,
+        access_user_ids: accessUserIds,
+        edit_user_ids: editUserIds,
+        share_token_hash: null,
+        share_token_expires_at: null,
+      });
+      return Response.json({ success: true, file: updated });
     } finally {
+      await releaseSharedFileMutationLock(entities, fileLockId);
       for (const projectLockId of projectLockIds.reverse()) {
         await releaseProjectMembershipLock(entities, projectLockId);
       }
-      if (folderLockId) {
-        await releaseFolderMutationLock(entities, folderLockId);
-      }
-    }
-    } finally {
-      await releaseSharedFileMutationLock(entities, lockId);
+      await releaseFolderMutationLock(entities, folderLockId);
     }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);

@@ -127,39 +127,6 @@ Deno.serve(async (req) => {
     } finally {
       await releasePlaylistMutationLock(entities, lockId);
     }
-    }
-
-    const patch: Record<string, unknown> = {};
-    if (body?.name !== undefined) {
-      if (typeof body.name !== 'string') {
-        return Response.json({ error: 'Playlist name must be a string' }, { status: 400 });
-      }
-      const name = body.name.trim();
-      if (!name) return Response.json({ error: 'Playlist name is required' }, { status: 400 });
-      if (name.length > 120) {
-        return Response.json({ error: 'Playlist name must be 120 characters or fewer' }, { status: 413 });
-      }
-      patch.name = name;
-    }
-    if (body?.description !== undefined) {
-      if (typeof body.description !== 'string') {
-        return Response.json({ error: 'Playlist description must be a string' }, { status: 400 });
-      }
-      const description = body.description.trim();
-      if (description.length > 1000) {
-        return Response.json({ error: 'Playlist description must be 1000 characters or fewer' }, { status: 413 });
-      }
-      patch.description = description;
-    }
-    if (body?.is_public !== undefined) {
-      if (typeof body.is_public !== 'boolean') {
-        return Response.json({ error: 'is_public must be a boolean' }, { status: 400 });
-      }
-      patch.is_public = body.is_public;
-    }
-
-    const updated = await entities.Playlist.update(playlist.id, patch);
-    return Response.json({ success: true, playlist: updated });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

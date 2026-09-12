@@ -36,7 +36,8 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
       });
       if (res?.data?.error) throw new Error(res.data.error);
       return res?.data?.comments || [];
-    }
+    },
+    enabled: !!currentUser?.id && !!track?.id,
   });
 
   const addCommentMutation = useMutation({

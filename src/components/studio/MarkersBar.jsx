@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Flag, Plus, X } from 'lucide-react';
 import { sounds } from '@/hooks/use-sound';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * Pro Tools-style Markers / Memory Locations bar.
@@ -11,13 +12,16 @@ import { sounds } from '@/hooks/use-sound';
  * Markers are stored in localStorage per project.
  */
 export default function MarkersBar({ projectId, currentTime, onSeek, zoom, duration }) {
+  const { user } = useAuth();
   const [markers, setMarkers] = useState([]);
   const [showInput, setShowInput] = useState(false);
   const [markerName, setMarkerName] = useState('');
 
-  const storageKey = `nalistudio_markers_${projectId || 'local'}`;
+  const storageKey = user?.id ? `nalistudio_markers_${user.id}_${projectId || 'local'}` : null;
 
   useEffect(() => {
+    setMarkers([]);
+    if (!storageKey) return;
     try {
       const saved = localStorage.getItem(storageKey);
       if (saved) setMarkers(JSON.parse(saved));
@@ -26,6 +30,7 @@ export default function MarkersBar({ projectId, currentTime, onSeek, zoom, durat
 
   const saveMarkers = useCallback((next) => {
     setMarkers(next);
+    if (!storageKey) return;
     try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch {}
   }, [storageKey]);
 

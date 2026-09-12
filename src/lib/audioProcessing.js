@@ -4,11 +4,19 @@
 // Decode an audio URL into an AudioBuffer
 async function fetchAudioBuffer(url) {
   const res = await fetch(url);
+  if (!res.ok) throw new Error(`Audio fetch failed: ${res.status}`);
   const arrayBuffer = await res.arrayBuffer();
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const buffer = await ctx.decodeAudioData(arrayBuffer);
-  ctx.close();
-  return buffer;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) throw new Error("Web Audio is not supported");
+
+  const ctx = new AudioContextClass();
+  try {
+    return await ctx.decodeAudioData(arrayBuffer);
+  } finally {
+    if (ctx.state !== "closed") {
+      await ctx.close().catch(() => {});
+    }
+  }
 }
 
 // Render an AudioBuffer to a WAV Blob (16-bit PCM)

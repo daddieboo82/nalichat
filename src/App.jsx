@@ -114,7 +114,7 @@ const AuthenticatedApp = () => {
 
   // First-party product analytics: SPA page views plus active/engaged session time.
   // This lets us distinguish a true 28-second visit from analytics undercounting.
-  useEffect(() => initProductAnalytics(), []);
+  useEffect(() => initProductAnalytics(user?.id || null), [user?.id]);
 
   // Fire Google Ads SIGNUP conversion once per freshly-created user.
   useEffect(() => {

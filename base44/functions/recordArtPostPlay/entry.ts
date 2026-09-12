@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
 async function playId(postId: string, listenerId: string, day: string): Promise<string> {
@@ -27,7 +28,7 @@ export default async function(req) {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
     }
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readJsonBodyLimited(req, 8 * 1024);
     const postId = typeof body?.post_id === 'string' ? body.post_id.trim() : '';
     if (!postId || postId.length > 200) {
       return Response.json({ error: 'post_id is required' }, { status: 400 });
@@ -82,6 +83,8 @@ export default async function(req) {
     const updated = await entities.ArtPost.get(postId);
     return Response.json({ counted: true, views: Number(updated?.views || 0) });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('recordArtPostPlay error:', error);
     return Response.json({ error: error?.message || 'Could not record play' }, { status: 500 });
   }

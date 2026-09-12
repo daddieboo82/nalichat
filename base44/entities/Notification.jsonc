@@ -109,6 +109,19 @@
         }
       }
     },
+    "locked_chat": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when a message notification was redacted because this recipient locked the conversation",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
     "follow_up_reminder_id": {
       "type": "string",
       "description": "Server-owned delivery correlation for follow-up reminder recovery",

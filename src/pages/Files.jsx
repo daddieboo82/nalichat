@@ -184,24 +184,25 @@ export default function Files() {
   };
 
   const { data: files = [], isLoading } = useQuery({
-    queryKey: ["shared-files"],
+    queryKey: ["shared-files", currentUser?.id],
     queryFn: () => base44.entities.SharedFile.list("-created_date", 500),
+    enabled: !!currentUser?.id,
   });
 
   const { data: projects = [] } = useQuery({
-    queryKey: ["projects"],
+    queryKey: ["projects", currentUser?.id],
     queryFn: async () => {
       if (!currentUser) return [];
       const all = await base44.entities.Project.list("-created_date", 500);
       return all.filter(p => p.owner_id === currentUser.id || (p.collaborator_ids || []).includes(currentUser.id));
     },
-    enabled: !!currentUser,
+    enabled: !!currentUser?.id,
   });
 
   const { data: folders = [] } = useQuery({
-    queryKey: ["folders"],
+    queryKey: ["folders", currentUser?.id],
     queryFn: () => currentUser ? base44.entities.Folder.list("-created_date", 500) : [],
-    enabled: !!currentUser,
+    enabled: !!currentUser?.id,
   });
 
   const accessibleFolders = React.useMemo(() => {

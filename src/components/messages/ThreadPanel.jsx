@@ -46,6 +46,7 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
   const { data: replies = [], isLoading: repliesLoading, isError: repliesError } = useQuery({
     queryKey: ["thread", currentUser?.id, parentMessage.id],
     queryFn: () => base44.entities.Message.filter({ thread_id: parentMessage.id }, "created_date", 500),
+    enabled: !!currentUser?.id && !!parentMessage?.id,
     refetchInterval: 3000,
   });
 
@@ -95,7 +96,7 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
       retryTextRef.current = "";
       setText("");
       queryClient.invalidateQueries({ queryKey: ["thread", currentUser?.id, parentMessage.id] });
-      queryClient.invalidateQueries({ queryKey: ["messages"] });
+      queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id] });
     },
     onError: (error) => {
       if (["moderated", "timed_out", "banned"].includes(error?.message)) {

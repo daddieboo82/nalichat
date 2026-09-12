@@ -2,12 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 
 describe('Messages presence lifecycle', () => {
-  it('does not mark the user offline when switching conversations', async () => {
+  it('keeps conversation switching independent from the app-wide presence heartbeat', async () => {
     const source = await readFile('src/pages/Messages.jsx', 'utf8');
-    expect(source).toContain('const selectedConvIdRef = useRef(null);');
-    expect(source).toContain('selectedConvIdRef.current = selectedConvId;');
-    expect(source).toContain('queryKey: ["messages", currentUser?.id, selectedConvIdRef.current]');
-    expect(source).toContain('}, [currentUser?.id, queryClient]);');
-    expect(source).not.toContain('}, [currentUser, queryClient, selectedConvId]);');
+    expect(source).not.toContain('updateUserPresence');
+    expect(source).toContain('Presence itself is maintained app-wide in App.jsx.');
+    expect(source).toContain('queryKey: ["messages", currentUser?.id, selectedConvId]');
+    expect(source).toContain('}, [currentUser?.id, queryClient, selectedConvId]);');
   });
 });

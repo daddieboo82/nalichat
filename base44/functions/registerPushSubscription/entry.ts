@@ -142,6 +142,6 @@ Deno.serve(async (req) => {
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
-    return Response.json({ error: error?.message || 'Could not register push subscription' }, { status: 500 });
+    return Response.json({ error: 'Could not register push subscription' }, { status: 500 });
   }
 });

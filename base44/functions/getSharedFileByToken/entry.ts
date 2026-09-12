@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
       },
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
-    return Response.json({ error: error?.message || 'Could not load shared file' }, { status: 500 });
+    console.error('getSharedFileByToken error:', error);
+    return Response.json({ error: 'Could not load shared file' }, { status: 500 });
   }
 });

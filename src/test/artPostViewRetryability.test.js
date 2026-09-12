@@ -18,7 +18,7 @@ describe('art post view retryability', () => {
     expect(source).toContain('user.is_banned');
     expect(source).toContain('postId.length > 200');
     expect(source).toContain('releaseSingleHourlyClaim');
-    expect(source.indexOf('releaseSingleHourlyClaim')).toBeGreaterThan(
+    expect(source.indexOf('await releaseSingleHourlyClaim')).toBeGreaterThan(
       source.indexOf('$inc: { views: 1 }'),
     );
   });

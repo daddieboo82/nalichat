@@ -12,7 +12,7 @@ describe('collaborative track creation hardening', () => {
 
     expect(source).toContain("req.method !== 'POST'");
     expect(source.indexOf('user.is_banned')).toBeLessThan(
-      source.indexOf('consumeHourlyLimit'),
+      source.indexOf('await consumeHourlyLimit'),
     );
     expect(source).toContain('MAX_TRACK_BYTES = 100 * 1024 * 1024');
     expect(source).toContain('Could not verify track media size');

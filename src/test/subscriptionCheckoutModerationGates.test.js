@@ -14,7 +14,7 @@ describe('subscription checkout moderation gates', () => {
     expect(source).toContain('user.timeout_until');
     expect(source).toContain("error: 'timed_out'");
     expect(source.indexOf('user.is_banned')).toBeLessThan(
-      source.indexOf('consumeHourlyLimit'),
+      source.indexOf('await consumeHourlyLimit'),
     );
     expect(source.indexOf('user.timeout_until')).toBeLessThan(
       source.indexOf("stripe_checkout_claim_id"),

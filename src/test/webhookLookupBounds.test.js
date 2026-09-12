@@ -18,6 +18,6 @@ describe('webhook reconciliation lookup bounds', () => {
 
   it('caps legacy Wix subscription-ID lookups', async () => {
     const wix = await readText('base44/functions/wixPaymentsWebhook/entry.ts');
-    expect(wix.match(/Subscription\.filter\([\s\S]*subscription_id: subscriptionId[\s\S]*'-created_date',[\s\S]*1/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(wix.match(/Subscription\.filter\([\s\S]*?subscription_id: subscriptionId[\s\S]*?'-created_date',[\s\S]*?1/g)?.length).toBeGreaterThanOrEqual(2);
   });
 });

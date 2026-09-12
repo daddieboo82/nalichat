@@ -19,13 +19,18 @@ export function useAudioDevices() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
+    let requestId = 0;
+
     const enumerateDevices = async () => {
+      const currentRequestId = ++requestId;
       try {
-        setLoading(true);
+        if (!cancelled) setLoading(true);
         if (!navigator.mediaDevices?.enumerateDevices) {
           throw new Error('Media device enumeration is not supported in this browser');
         }
         const mediaDevices = await navigator.mediaDevices.enumerateDevices();
+        if (cancelled || currentRequestId !== requestId) return;
         
         const inputDevices = mediaDevices.filter(d => d.kind === 'audioinput');
         const outputDevices = mediaDevices.filter(d => d.kind === 'audiooutput');
@@ -40,6 +45,7 @@ export function useAudioDevices() {
         if (navigator.requestMIDIAccess) {
           try {
             const midiAccess = await navigator.requestMIDIAccess();
+            if (cancelled || currentRequestId !== requestId) return;
             const midiInputs = Array.from(midiAccess.inputs.values());
             setDevices(prev => ({ ...prev, midi: midiInputs }));
           } catch {
@@ -47,9 +53,13 @@ export function useAudioDevices() {
           }
         }
       } catch (err) {
-        setError(err.message);
+        if (!cancelled && currentRequestId === requestId) {
+          setError(err.message);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled && currentRequestId === requestId) {
+          setLoading(false);
+        }
       }
     };
 
@@ -60,6 +70,8 @@ export function useAudioDevices() {
     navigator.mediaDevices?.addEventListener?.('devicechange', handleDeviceChange);
     
     return () => {
+      cancelled = true;
+      requestId += 1;
       navigator.mediaDevices?.removeEventListener?.('devicechange', handleDeviceChange);
     };
   }, []);

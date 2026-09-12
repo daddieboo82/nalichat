@@ -238,19 +238,26 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    <Button
                      type="button"
                      size="lg"
-                     onClick={(e) => {
+                     onClick={async (e) => {
                        e.preventDefault();
                        e.stopPropagation();
                        const textToShare = `Check out this track: ${post.title} on NaliChat!`;
                        if (navigator.share) {
-                         navigator.share({
-                           title: post.title,
-                           text: textToShare,
-                           url: window.location.href,
-                         }).catch(console.error);
+                         try {
+                           await navigator.share({
+                             title: post.title,
+                             text: textToShare,
+                             url: window.location.href,
+                           });
+                         } catch (error) {
+                           if (error?.name !== "AbortError") {
+                             toast.error("Couldn't share this track. Please try again.");
+                           }
+                         }
                        } else {
-                         copyToClipboard(`${textToShare} ${window.location.href}`);
-                         toast.success("Link copied to clipboard to share in messages!");
+                         const copied = await copyToClipboard(`${textToShare} ${window.location.href}`);
+                         if (copied) toast.success("Link copied to clipboard to share in messages!");
+                         else toast.error("Couldn't copy the share link. Please copy it manually.");
                        }
                      }}
                      className="bg-white/10 text-white hover:bg-white/20 border border-white/10 shadow-lg gap-2 h-14 px-6 text-base rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95"

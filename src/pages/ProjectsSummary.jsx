@@ -21,6 +21,7 @@ export default function ProjectsSummary() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [data, setData] = useState({ projects: [], milestones: [], sharedFiles: [] });
   const [showNewProject, setShowNewProject] = useState(searchParams.get('new') === 'true');
   const [newProjectTitle, setNewProjectTitle] = useState("");
@@ -99,7 +100,8 @@ export default function ProjectsSummary() {
 
         setData({ projects: myProjects, milestones: myMilestones, sharedFiles: myFiles });
       } catch (err) {
-        console.error(err);
+        console.error("Projects summary load failed:", err);
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
@@ -111,6 +113,20 @@ export default function ProjectsSummary() {
     return (
       <div className="flex-1 flex items-center justify-center h-full">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <div className="max-w-md text-center">
+          <h2 className="text-xl font-bold">Projects unavailable</h2>
+          <p className="mt-2 text-sm text-muted-foreground">We couldn't load your projects. Refresh and try again.</p>
+          <Button className="mt-4" variant="outline" onClick={() => window.location.reload()}>
+            Refresh
+          </Button>
+        </div>
       </div>
     );
   }

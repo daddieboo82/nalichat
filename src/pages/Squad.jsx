@@ -10,7 +10,7 @@ import PullToRefresh from "@/components/layout/PullToRefresh";
 import LoadError from "@/components/layout/LoadError";
 
 export default function Squad() {
-  const { user } = useAuth();
+  const { user, checkUserAuth } = useAuth();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [squad, setSquad] = useState(null);
@@ -39,8 +39,8 @@ export default function Squad() {
         const status = await getSquadBonusStatus();
         setProgress(status.progress);
         setBonusActive(status.active);
-        const fresh = await base44.auth.me();
-        setCredits(fresh.squad_credits || 0);
+        const fresh = await checkUserAuth();
+        setCredits(fresh?.squad_credits || user.squad_credits || 0);
       } else {
         setCredits(user.squad_credits || 0);
       }
@@ -50,7 +50,7 @@ export default function Squad() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, checkUserAuth]);
 
   useEffect(() => { load(); }, [load]);
 

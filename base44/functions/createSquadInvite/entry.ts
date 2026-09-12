@@ -1,9 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
-import {
-  findBlockingSquadMembership,
-  isSquadInviteExpired,
-} from '../../shared/squadMembership.ts';
+import { findBlockingSquadMembership } from '../../shared/squadMembership.ts';
 
 function inviteCode(): string {
   // 12 random bytes = 96 bits of entropy. Hex keeps URLs simple and avoids

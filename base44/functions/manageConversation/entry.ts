@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import {
   acquireConversationMembershipLock,
   releaseConversationMembershipLock,
@@ -153,9 +154,20 @@ Deno.serve(async (req) => {
       const requestedIds = rawParticipantIds
         .map((id: string) => id.trim())
         .filter(Boolean);
-      if (requestedIds.some((id: string) => id.length > 200)) {
+      if (requestedIds.some((id: string) => !isBase44EntityId(id))) {
         return Response.json({ error: 'Invalid participant id' }, { status: 400 });
       }
+
+      const lookupRate = await consumeHourlyLimit(
+        entities,
+        user.id,
+        'conversation_target_lookup',
+        300,
+      );
+      if (!lookupRate.allowed) {
+        return Response.json({ error: 'Conversation lookup rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+
       const participantIds = Array.from(new Set([user.id, ...requestedIds]));
 
       if (action === 'create_dm') {

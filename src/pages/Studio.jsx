@@ -32,6 +32,7 @@ import StudioWelcome from '@/components/studio/StudioWelcome';
 import StudioDialogs from '@/components/studio/StudioDialogs';
 import JamRoomOverlay from '@/components/studio/JamRoomOverlay';
 import StudioToolbar2 from '@/components/studio/StudioToolbar2';
+import StudioVideoHelp from '@/components/studio/StudioVideoHelp';
 import ExportPurchaseDialog from '@/components/studio/ExportPurchaseDialog';
 const PluginRack = lazy(() => import('@/components/studio/PluginRack'));
 import TransportCounter from '@/components/studio/TransportCounter';
@@ -1795,10 +1796,16 @@ export default function Studio() {
     }
   };
 
-  if (showWelcome) return <StudioWelcome hasAutosave={hasAutosave} handleStartBlank={handleStartBlank} handleLoadAutosave={handleLoadAutosave} handleLoadDemo={handleLoadDemo} navigate={navigate} />;
+  if (showWelcome) return (
+    <>
+      <StudioWelcome hasAutosave={hasAutosave} handleStartBlank={handleStartBlank} handleLoadAutosave={handleLoadAutosave} handleLoadDemo={handleLoadDemo} navigate={navigate} />
+      <StudioVideoHelp />
+    </>
+  );
 
   return (
     <div className="flex flex-col h-screen bg-[#0D0B14] text-foreground overflow-hidden relative">
+      <StudioVideoHelp />
       {/* Ambient stage glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
         <div className="absolute -top-40 left-1/4 w-[36rem] h-[36rem] rounded-full bg-primary/15 blur-3xl" />

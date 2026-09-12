@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -12,15 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
-  }, []);
 
   const { data: playlists = [] } = useQuery({
     queryKey: ["userPlaylists", currentUser?.id],

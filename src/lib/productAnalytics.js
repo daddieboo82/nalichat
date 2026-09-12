@@ -8,6 +8,7 @@ let initialized = false;
 let session = null;
 let flushTimer = null;
 let lastRoute = null;
+let foregroundSince = null;
 
 function now() { return Date.now(); }
 function safeGet() {
@@ -41,15 +42,30 @@ function track(name, properties = {}) {
     if (result?.catch) result.catch(() => {});
   } catch {}
 }
-function markActive() {
+function accrueForegroundUntil(t = now()) {
   const s = ensureSession();
+  if (foregroundSince != null) {
+    s.engagedMs += Math.max(0, t - foregroundSince);
+  }
+  foregroundSince = document.visibilityState === "visible" ? t : null;
+  s.lastActiveAt = t;
+  safeSet(s);
+}
+function markActive() {
   const t = now();
-  if (document.visibilityState === "visible" && t - s.lastActiveAt < 60_000) s.engagedMs += Math.max(0, t - s.lastActiveAt);
+  if (document.visibilityState === "visible") {
+    if (foregroundSince == null) foregroundSince = t;
+    const s = ensureSession();
+    s.lastActiveAt = t;
+    safeSet(s);
+    return;
+  }
+  const s = ensureSession();
   s.lastActiveAt = t;
   safeSet(s);
 }
 function flush(reason = "heartbeat") {
-  markActive();
+  accrueForegroundUntil();
   const s = ensureSession();
   track("product_session_engagement", {
     reason,
@@ -65,6 +81,7 @@ export function initProductAnalytics(userId = null) {
   sessionStorageKey = sessionKeyFor(userId);
   session = null;
   lastRoute = null;
+  foregroundSince = document.visibilityState === "visible" ? now() : null;
   initialized = true;
   const s = ensureSession();
   track("product_session_started", { route: window.location.pathname, returning_tab_session: s.startedAt !== s.lastActiveAt });
@@ -82,7 +99,28 @@ export function initProductAnalytics(userId = null) {
   history.replaceState = function(...args) { const r = originalReplace.apply(this, args); routeCheck(); return r; };
   const onPop = () => routeCheck();
   const onActivity = () => markActive();
-  const onVisibility = () => { if (document.visibilityState === "hidden") flush("hidden"); else markActive(); };
+  const onVisibility = () => {
+    if (document.visibilityState === "hidden") {
+      // visibilitychange fires after the state flips, so close the foreground
+      // interval explicitly instead of relying on the current visibility state.
+      const t = now();
+      const s = ensureSession();
+      if (foregroundSince != null) s.engagedMs += Math.max(0, t - foregroundSince);
+      foregroundSince = null;
+      s.lastActiveAt = t;
+      safeSet(s);
+      track("product_session_engagement", {
+        reason: "hidden",
+        engaged_seconds: Math.round(s.engagedMs / 1000),
+        elapsed_seconds: Math.round((t - s.startedAt) / 1000),
+        route: window.location.pathname,
+        visibility: document.visibilityState,
+      });
+    } else {
+      foregroundSince = now();
+      markActive();
+    }
+  };
   const onPageHide = () => flush("pagehide");
   window.addEventListener("popstate", onPop);
   window.addEventListener("pointerdown", onActivity, { passive: true });
@@ -102,6 +140,7 @@ export function initProductAnalytics(userId = null) {
     window.removeEventListener("pagehide", onPageHide);
     history.pushState = originalPush;
     history.replaceState = originalReplace;
+    foregroundSince = null;
     initialized = false;
   };
 }

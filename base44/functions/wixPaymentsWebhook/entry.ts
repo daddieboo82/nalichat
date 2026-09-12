@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { readTextBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import jwt from 'npm:jsonwebtoken';
+import { secrets } from 'base44:runtime';
 
 async function sha256Hex(value: string) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
@@ -39,7 +40,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     // Security: always verify the JWT signature — no test bypass
-    const WEBHOOK_PUBLIC_KEY = Deno.env.get('WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY')?.replace(/\\n/g, '\n');
+    const WEBHOOK_PUBLIC_KEY = secrets.get('WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY')?.replace(/\\n/g, '\n');
     if (!WEBHOOK_PUBLIC_KEY) {
       console.error('Missing WIX_PAYMENTS_WEBHOOK_PUBLIC_KEY');
       return Response.json({ error: 'Server misconfigured' }, { status: 500 });

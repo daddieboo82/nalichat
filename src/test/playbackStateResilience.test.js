@@ -10,6 +10,9 @@ describe('playback state resilience', () => {
   it('retries playlist playback when the selected track changes and clears false playing state', async () => {
     const source = await readText('src/pages/PlaylistDetail.jsx');
     expect(source).toContain('}, [isPlaying, currentTrack?.file_url]);');
+    expect(source.indexOf('const currentTrack = tracks[currentTrackIndex];')).toBeLessThan(
+      source.indexOf('}, [isPlaying, currentTrack?.file_url]);'),
+    );
     expect(source).toContain('if (!cancelled) setIsPlaying(false);');
     expect(source).toContain('}, [currentTrack?.id]);');
   });

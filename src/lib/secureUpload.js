@@ -5,7 +5,8 @@ import { detectKind, validateUpload } from "@/lib/uploadValidation";
  * Upload through an authenticated backend function so browser code cannot
  * directly spend the workspace's Base44 integration credits.
  */
-export async function secureUploadFile(file, options = {}) {
+export async function secureUploadFile(input, options = {}) {
+  const file = input && typeof input === "object" && "file" in input ? input.file : input;
   const validation = validateUpload(file, options);
   if (!validation.ok) {
     throw new Error(validation.error);

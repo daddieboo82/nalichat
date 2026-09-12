@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -12,6 +13,22 @@ Deno.serve(async (req) => {
 
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (user.is_banned) {
+      return Response.json({ error: 'banned' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+    }
+
+    const collaborationRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'collaboration_session_action',
+      600,
+    );
+    if (!collaborationRate.allowed) {
+      return Response.json({ error: 'Collaboration action rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     const { action, session_id, collaborators, changes } = await readJsonBodyLimited(req, 64 * 1024);

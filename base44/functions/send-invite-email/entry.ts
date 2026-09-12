@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { APP_BASE_URL } from '../../shared/appConfig.ts';
 
 // Validates email format to prevent injection of malformed recipients
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -48,7 +49,7 @@ Deno.serve(async (req) => {
 
     // Construct the invite link server-side from trusted app URL — never accept
     // a client-supplied link (prevents phishing/link injection)
-    const appUrl = Deno.env.get('APP_BASE_URL') || 'https://nalichat.org';
+    const appUrl = APP_BASE_URL;
     if (!appUrl) {
       return Response.json(
         { error: 'Server is not configured with an app URL' },

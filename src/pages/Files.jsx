@@ -200,9 +200,9 @@ export default function Files() {
   });
 
   const { data: folders = [] } = useQuery({
-    queryKey: ["folders"],
+    queryKey: ["folders", currentUser?.id],
     queryFn: () => currentUser ? base44.entities.Folder.list("-created_date", 500) : [],
-    enabled: !!currentUser,
+    enabled: !!currentUser?.id,
   });
 
   const accessibleFolders = React.useMemo(() => {

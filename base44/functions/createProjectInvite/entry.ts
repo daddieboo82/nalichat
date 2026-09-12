@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 function randomToken(): string {
@@ -30,8 +31,7 @@ Deno.serve(async (req) => {
     const { projectId, role } = await readJsonBodyLimited(req, 64 * 1024);
     if (
       typeof projectId !== 'string'
-      || !projectId.trim()
-      || projectId.length > 200
+      || !isBase44EntityId(projectId.trim())
       || !['editor', 'viewer'].includes(role)
     ) {
       return Response.json({ error: 'projectId and valid role are required' }, { status: 400 });

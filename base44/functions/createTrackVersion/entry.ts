@@ -211,6 +211,8 @@ Deno.serve(async (req) => {
       await releaseTrackLifecycleLock(entities, lockId);
     }
   } catch (error) {
-    return Response.json({ error: error?.message || 'Could not save track version' }, { status: 500 });
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    return Response.json({ error: 'Could not save track version' }, { status: 500 });
   }
 });

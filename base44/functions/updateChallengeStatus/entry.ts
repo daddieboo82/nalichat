@@ -86,7 +86,9 @@ Deno.serve(async (req) => {
       await releaseChallengeLifecycleLock(entities, challengeLockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('updateChallengeStatus error:', error);
-    return Response.json({ error: error?.message || 'Challenge status update failed' }, { status: 500 });
+    return Response.json({ error: 'Challenge status update failed' }, { status: 500 });
   }
 });

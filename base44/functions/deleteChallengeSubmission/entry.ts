@@ -100,7 +100,9 @@ Deno.serve(async (req) => {
       await releaseChallengeSubmissionLock(entities, lockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('deleteChallengeSubmission error:', error);
-    return Response.json({ error: error?.message || 'Could not delete submission' }, { status: 500 });
+    return Response.json({ error: 'Could not delete submission' }, { status: 500 });
   }
 });

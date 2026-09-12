@@ -73,6 +73,8 @@ Deno.serve(async (req) => {
       await releaseProjectMembershipLock(entities, lockId);
     }
   } catch (error) {
-    return Response.json({ error: error?.message || 'Milestone mutation failed' }, { status: 500 });
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    return Response.json({ error: 'Milestone mutation failed' }, { status: 500 });
   }
 });

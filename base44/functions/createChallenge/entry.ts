@@ -199,7 +199,9 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, challenge });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('createChallenge error:', error);
-    return Response.json({ error: error?.message || 'Could not create challenge' }, { status: 500 });
+    return Response.json({ error: 'Could not create challenge' }, { status: 500 });
   }
 });

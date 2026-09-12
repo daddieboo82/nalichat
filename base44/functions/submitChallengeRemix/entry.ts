@@ -234,7 +234,9 @@ Deno.serve(async (req) => {
       await releaseChallengeLifecycleLock(entities, challengeLockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('submitChallengeRemix error:', error);
-    return Response.json({ error: error?.message || 'Could not submit remix' }, { status: 500 });
+    return Response.json({ error: 'Could not submit remix' }, { status: 500 });
   }
 });

@@ -79,6 +79,8 @@ Deno.serve(async (req) => {
       await releaseProjectMembershipLock(entities, lockId);
     }
   } catch (error) {
-    return Response.json({ error: error?.message || 'Could not create folder' }, { status: 500 });
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    return Response.json({ error: 'Could not create folder' }, { status: 500 });
   }
 });

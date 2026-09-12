@@ -149,6 +149,7 @@ export const AuthProvider = ({ children }) => {
       try {
         localStorage.removeItem('base44_access_token');
         localStorage.removeItem('base44_token');
+        localStorage.removeItem('last_activity');
         sessionStorage.removeItem('base44_access_token');
         sessionStorage.removeItem('base44_token');
       } catch (e) {}

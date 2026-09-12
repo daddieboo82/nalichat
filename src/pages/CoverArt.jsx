@@ -1,3 +1,4 @@
+import { secureUploadFile } from "@/lib/secureUpload";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -114,7 +115,7 @@ export default function CoverArt() {
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
       const file = new File([blob], "edited-cover.jpg", { type: "image/jpeg" });
       
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await secureUploadFile({ file });
       setGeneratedImage(file_url);
       setShowEditDialog(false);
       toast.success("Edits applied! Click 'Save to Track' to save changes.");
@@ -190,7 +191,7 @@ export default function CoverArt() {
     try {
       setIsImporting(true);
       toast.info('Uploading track...');
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await secureUploadFile({ file });
       const published = await base44.functions.invoke("createArtPost", {
         title: file.name.replace(/\.[^/.]+$/, ""),
         description: "Imported track",
@@ -296,7 +297,7 @@ export default function CoverArt() {
 
     try {
       setIsUploading(true);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await secureUploadFile({ file });
       setGeneratedImage(file_url);
       toast.success('Image uploaded successfully! You can now save it to your track.');
     } catch (error) {

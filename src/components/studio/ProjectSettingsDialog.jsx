@@ -21,6 +21,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
   const [showDelete, setShowDelete] = useState(false);
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
+  const mutationGenerationRef = useRef(0);
   const lastContextRef = useRef({
     userId: currentUser?.id || null,
     projectId: project?.id || null,
@@ -35,6 +36,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
     const projectChanged = lastContextRef.current.projectId !== next.projectId;
     if (!userChanged && !projectChanged) return;
     lastContextRef.current = next;
+    mutationGenerationRef.current += 1;
     setShowDelete(false);
     if (userChanged) onOpenChange(false);
   }, [currentUser?.id, project?.id, onOpenChange]);
@@ -53,11 +55,21 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
   );
 
   const updateMutation = useMutation({
-    mutationFn: (payload) => base44.functions.invoke("manageProjectCollaborator", {
-      projectId: project.id,
-      ...payload,
-    }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projects"] }),
+    mutationFn: async (payload) => {
+      const generation = mutationGenerationRef.current;
+      const response = await base44.functions.invoke("manageProjectCollaborator", {
+        projectId: project.id,
+        ...payload,
+      });
+      return {
+        stale: generation !== mutationGenerationRef.current,
+        response,
+      };
+    },
+    onSuccess: (result) => {
+      if (result?.stale) return;
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
   });
 
   const handleRoleChange = (userId, newRole) => {
@@ -176,11 +188,13 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
               <AlertDialogAction
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
                 onClick={async () => {
+                  const generation = mutationGenerationRef.current;
                   try {
                     const res = await base44.functions.invoke("deleteProject", {
                       projectId: project.id,
                       confirmation: "DELETE",
                     });
+                    if (generation !== mutationGenerationRef.current) return;
                     if (res?.data?.error) throw new Error(res.data.error);
                     onDelete?.(project.id);
                     queryClient.invalidateQueries({ queryKey: ["projects"] });

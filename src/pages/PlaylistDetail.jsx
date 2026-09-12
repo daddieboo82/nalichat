@@ -69,8 +69,20 @@ export default function PlaylistDetail() {
       } catch (playlistError) {
         // Avoid leaving a newly-published orphan if playlist membership fails.
         try {
-          await base44.functions.invoke("deleteArtPost", { postId: newPost.id });
-        } catch {}
+          const cleanup = await base44.functions.invoke("deleteArtPost", { postId: newPost.id });
+          if (cleanup?.data?.error) throw new Error(cleanup.data.error);
+        } catch (cleanupError) {
+          const playlistMessage = playlistError instanceof Error
+            ? playlistError.message
+            : "Could not add track to playlist";
+          const cleanupMessage = cleanupError instanceof Error
+            ? cleanupError.message
+            : "Could not remove the published track";
+          throw new Error(
+            `${playlistMessage}. The uploaded track was published but rollback failed: ${cleanupMessage}`,
+            { cause: playlistError },
+          );
+        }
         throw playlistError;
       }
     },

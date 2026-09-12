@@ -88,12 +88,19 @@ Deno.serve(async (req) => {
     }
 
     // Atomically claim the pending slot so only one concurrent join can win.
+    // New-style invites carry an explicit expiry; include it in the claim so an
+    // invite cannot expire between the preview check and the atomic write.
+    const claimFilter: Record<string, unknown> = {
+      id: squad.id,
+      status: 'pending',
+      member_b_id: null,
+      invite_code: normalizedInviteCode,
+    };
+    if (squad.invite_expires_at) {
+      claimFilter.invite_expires_at = { $gt: new Date().toISOString() };
+    }
     const claim = await entities.Squad.updateMany(
-      {
-        id: squad.id,
-        status: 'pending',
-        member_b_id: null,
-      },
+      claimFilter,
       {
         $set: {
           member_b_id: user.id,

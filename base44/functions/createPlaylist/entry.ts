@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
@@ -40,6 +41,9 @@ Deno.serve(async (req) => {
         .map((id: string) => id.trim())
         .filter(Boolean),
     ));
+    if (trackIds.some((id) => !isBase44EntityId(id))) {
+      return Response.json({ error: 'track_ids must contain valid track IDs' }, { status: 400 });
+    }
 
     if (!name) return Response.json({ error: 'Playlist name is required' }, { status: 400 });
     if (name.length > 120) {

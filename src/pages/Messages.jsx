@@ -157,7 +157,11 @@ export default function Messages() {
 
   const { data: conversations = [], isError: conversationsError } = useQuery({
     queryKey: ["conversations", currentUser?.id],
-    queryFn: () => base44.entities.Conversation.list("-last_message_at"),
+    queryFn: () => base44.entities.Conversation.filter(
+      { participant_ids: currentUser.id },
+      "-last_message_at",
+      500,
+    ),
     enabled: !!currentUser?.id,
     refetchInterval: 5000,
     staleTime: 3000,

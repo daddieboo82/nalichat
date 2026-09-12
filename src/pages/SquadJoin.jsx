@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -15,17 +15,24 @@ export default function SquadJoin() {
   const [loadError, setLoadError] = useState(false);
   const [squad, setSquad] = useState(null);
   const [joining, setJoining] = useState(false);
+  const loadRequestRef = useRef(0);
 
-  const loadSquad = () => {
-    // A rejection used to skip setLoading(false) and spin forever.
+  const loadSquad = async () => {
+    const requestId = ++loadRequestRef.current;
+    setLoading(true);
     setLoadError(false);
-    base44.functions.invoke("getSquadInvite", { inviteCode })
-      .then((res) => setSquad(res?.data?.squad || null))
-      .catch((e) => {
-        console.error("Failed to load squad invite", e);
-        setLoadError(true);
-      })
-      .finally(() => setLoading(false));
+    setSquad(null);
+    try {
+      const res = await base44.functions.invoke("getSquadInvite", { inviteCode });
+      if (requestId !== loadRequestRef.current) return;
+      setSquad(res?.data?.squad || null);
+    } catch (e) {
+      if (requestId !== loadRequestRef.current) return;
+      console.error("Failed to load squad invite", e);
+      setLoadError(true);
+    } finally {
+      if (requestId === loadRequestRef.current) setLoading(false);
+    }
   };
 
   useEffect(() => { loadSquad(); }, [inviteCode]);

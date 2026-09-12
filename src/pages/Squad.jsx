@@ -15,6 +15,7 @@ export default function Squad() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [squad, setSquad] = useState(null);
+  const [stateOwnerId, setStateOwnerId] = useState(null);
   const [progress, setProgress] = useState(null);
   const [bonusActive, setBonusActive] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -23,14 +24,30 @@ export default function Squad() {
   const [credits, setCredits] = useState(0);
 
   const load = useCallback(async () => {
-    if (!user) return;
+    if (!user?.id) {
+      setStateOwnerId(null);
+      setSquad(null);
+      setProgress(null);
+      setBonusActive(false);
+      setCredits(0);
+      setCopied(false);
+      setLoading(false);
+      return;
+    }
+    const requestedUserId = user.id;
     setLoading(true);
+    setStateOwnerId(requestedUserId);
+    setSquad(null);
+    setProgress(null);
+    setBonusActive(false);
+    setCredits(0);
+    setCopied(false);
     // Any rejection below used to skip setLoading(false), leaving a permanent spinner.
     setLoadError(false);
     try {
       const [asA, asB] = await Promise.all([
-        base44.entities.Squad.filter({ member_a_id: user.id }),
-        base44.entities.Squad.filter({ member_b_id: user.id }),
+        base44.entities.Squad.filter({ member_a_id: requestedUserId }),
+        base44.entities.Squad.filter({ member_b_id: requestedUserId }),
       ]);
       const mine = [...asA, ...asB]
         .filter((s) => s.status !== "ended")
@@ -104,6 +121,10 @@ export default function Squad() {
       toast.error("Couldn't update the squad.");
     }
   };
+
+  if (user?.id && stateOwnerId !== user.id) {
+    return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  }
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;

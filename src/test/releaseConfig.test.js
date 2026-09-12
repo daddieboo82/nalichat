@@ -453,13 +453,16 @@ describe('release configuration', () => {
     expect(coverArt).toContain('isTrustedStoredMediaUrl(file_url)');
   });
 
-  it('builds invite links from server-configured origins only', async () => {
+  it('builds invite links from the canonical server origin only', async () => {
+    const appConfig = await readText('base44/shared/appConfig.ts');
     const smsInvite = await readText('base44/functions/sendSmsInvite/entry.ts');
     const emailInvite = await readText('base44/functions/send-invite-email/entry.ts');
     const reengage = await readText('base44/functions/reengageStalledUsers/entry.ts');
 
+    expect(appConfig).toContain("APP_BASE_URL = 'https://nalichat.org'");
     for (const source of [smsInvite, emailInvite, reengage]) {
-      expect(source).toContain("Deno.env.get('APP_BASE_URL')");
+      expect(source).toContain('APP_BASE_URL');
+      expect(source).not.toContain("Deno.env.get('APP_BASE_URL')");
       expect(source).not.toContain("req.headers.get('X-Base44-App-Url')");
     }
     expect(smsInvite).toContain("/register");

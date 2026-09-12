@@ -35,6 +35,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
   const mountedRef = useRef(true);
+  const uploadRemovalTimersRef = useRef(new Set());
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -53,8 +54,20 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       }
       mediaRecorderRef.current = null;
       chunksRef.current = [];
+      uploadRemovalTimersRef.current.forEach((timer) => clearTimeout(timer));
+      uploadRemovalTimersRef.current.clear();
     };
   }, []);
+
+  const scheduleUploadRemoval = (id, delayMs) => {
+    const timer = setTimeout(() => {
+      uploadRemovalTimersRef.current.delete(timer);
+      if (mountedRef.current) {
+        setUploads((current) => current.filter((item) => item.id !== id));
+      }
+    }, delayMs);
+    uploadRemovalTimersRef.current.add(timer);
+  };
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -109,12 +122,12 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       sounds.error();
       toast.error(err?.message || `Couldn't upload ${file.name}.`);
       setUploads(u => u.map(x => x.id === id ? { ...x, error: true } : x));
-      setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 3000);
+      scheduleUploadRemoval(id, 3000);
       return;
     }
 
     setUploads(u => u.map(x => x.id === id ? { ...x, progress: 100, done: true } : x));
-    setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 1200);
+    scheduleUploadRemoval(id, 1200);
 
     const isImage = file.type.startsWith("image");
     const isAudio = file.type.startsWith("audio") || !!file.name.match(/\.(mp3|wav|ogg|m4a|aac)$/i);
@@ -200,7 +213,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       try {
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
         setUploads(u => u.map(x => x.id === id ? { ...x, progress: 100, done: true } : x));
-        setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 1200);
+        scheduleUploadRemoval(id, 1200);
         
         const payload = { text: "", type: "audio", file_url, file_name: "Voice Message", file_type: mimeType, duration: recordingTimeRef.current };
         if (replyTo) {
@@ -220,7 +233,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
         sounds.error();
         toast.error(error?.message || "Couldn't upload the voice message. Please try again.");
         setUploads(u => u.map(x => x.id === id ? { ...x, error: true } : x));
-        setTimeout(() => setUploads(u => u.filter(x => x.id !== id)), 3000);
+        scheduleUploadRemoval(id, 3000);
       }
       if (mountedRef.current) {
         setRecordingTime(0);

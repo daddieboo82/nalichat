@@ -15,23 +15,44 @@ export default function Squad() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [squad, setSquad] = useState(null);
+  const [stateOwnerId, setStateOwnerId] = useState(null);
   const [progress, setProgress] = useState(null);
   const [bonusActive, setBonusActive] = useState(false);
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef(null);
+  const loadGenerationRef = useRef(0);
   const [credits, setCredits] = useState(0);
 
   const load = useCallback(async () => {
-    if (!user) return;
+    if (!user?.id) {
+      setStateOwnerId(null);
+      setSquad(null);
+      setProgress(null);
+      setBonusActive(false);
+      setCredits(0);
+      setCopied(false);
+      setLoading(false);
+      return;
+    }
+    const requestedUserId = user.id;
+    const generation = ++loadGenerationRef.current;
+    const isStale = () => generation !== loadGenerationRef.current;
     setLoading(true);
+    setStateOwnerId(requestedUserId);
+    setSquad(null);
+    setProgress(null);
+    setBonusActive(false);
+    setCredits(0);
+    setCopied(false);
     // Any rejection below used to skip setLoading(false), leaving a permanent spinner.
     setLoadError(false);
     try {
       const [asA, asB] = await Promise.all([
-        base44.entities.Squad.filter({ member_a_id: user.id }),
-        base44.entities.Squad.filter({ member_b_id: user.id }),
+        base44.entities.Squad.filter({ member_a_id: requestedUserId }),
+        base44.entities.Squad.filter({ member_b_id: requestedUserId }),
       ]);
+      if (isStale()) return;
       const mine = [...asA, ...asB]
         .filter((s) => s.status !== "ended")
         .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0] || null;
@@ -39,18 +60,22 @@ export default function Squad() {
 
       if (mine && mine.status === "active") {
         const status = await getSquadBonusStatus();
+        if (isStale()) return;
         setProgress(status.progress);
         setBonusActive(status.active);
         const fresh = await checkUserAuth();
+        if (isStale()) return;
         setCredits(fresh?.squad_credits || user.squad_credits || 0);
       } else {
         setCredits(user.squad_credits || 0);
       }
     } catch (e) {
-      console.error("Failed to load squad", e);
-      setLoadError(true);
+      if (!isStale()) {
+        console.error("Failed to load squad", e);
+        setLoadError(true);
+      }
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }, [user, checkUserAuth]);
 
@@ -104,6 +129,10 @@ export default function Squad() {
       toast.error("Couldn't update the squad.");
     }
   };
+
+  if (user?.id && stateOwnerId !== user.id) {
+    return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  }
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;

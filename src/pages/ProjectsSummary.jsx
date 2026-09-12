@@ -24,6 +24,7 @@ export default function ProjectsSummary() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [data, setData] = useState({ projects: [], milestones: [], sharedFiles: [] });
+  const [dataOwnerId, setDataOwnerId] = useState(null);
   const [showNewProject, setShowNewProject] = useState(searchParams.get('new') === 'true');
   const [newProjectTitle, setNewProjectTitle] = useState("");
   const [newProjectDescription, setNewProjectDescription] = useState("");
@@ -92,6 +93,12 @@ export default function ProjectsSummary() {
 
     if (!user?.id) {
       setData({ projects: [], milestones: [], sharedFiles: [] });
+      setDataOwnerId(null);
+      setInviteLinks({});
+      setCreatingInviteId(null);
+      setShowNewProject(false);
+      setNewProjectTitle("");
+      setNewProjectDescription("");
       setLoadError(false);
       setLoading(false);
       return undefined;
@@ -101,6 +108,11 @@ export default function ProjectsSummary() {
     const requestedUserId = user.id;
     setLoading(true);
     setLoadError(false);
+    setInviteLinks({});
+    setCreatingInviteId(null);
+    setShowNewProject(false);
+    setNewProjectTitle("");
+    setNewProjectDescription("");
 
     async function fetchData() {
       try {
@@ -119,6 +131,7 @@ export default function ProjectsSummary() {
 
         if (!cancelled) {
           setData({ projects: myProjects, milestones: myMilestones, sharedFiles: myFiles });
+          setDataOwnerId(requestedUserId);
         }
       } catch (err) {
         if (!cancelled) {
@@ -135,6 +148,14 @@ export default function ProjectsSummary() {
       cancelled = true;
     };
   }, [isLoadingAuth, user?.id]);
+
+  if (user?.id && dataOwnerId !== user.id) {
+    return (
+      <div className="flex-1 flex items-center justify-center h-full">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

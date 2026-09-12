@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
 
@@ -71,7 +72,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { postId, loudnessTarget, format, bitDepth, sampleRate } = await req.json();
+    const { postId, loudnessTarget, format, bitDepth, sampleRate } = await readJsonBodyLimited(req, 16 * 1024);
 
     if (!postId) {
       return Response.json({ error: 'postId is required' }, { status: 400 });
@@ -175,6 +176,8 @@ Deno.serve(async (req) => {
       },
     });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('Bounce and master error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }

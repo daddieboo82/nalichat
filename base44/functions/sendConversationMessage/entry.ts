@@ -213,6 +213,11 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
     return Response.json({ error: 'Invalid client_message_key' }, { status: 400 });
   }
 
+  const conversation = await base44.asServiceRole.entities.Conversation.get(conversationId).catch(() => null);
+  if (!conversation || !Array.isArray(conversation.participant_ids) || !conversation.participant_ids.includes(user.id)) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   let clientSendLockId: string | null = null;
   if (clientMessageKey) {
     const messageId = await deterministicMessageId(user.id, conversationId, clientMessageKey);
@@ -229,10 +234,6 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
   }
 
   try {
-  const conversation = await base44.asServiceRole.entities.Conversation.get(conversationId);
-  if (!conversation || !Array.isArray(conversation.participant_ids) || !conversation.participant_ids.includes(user.id)) {
-    return Response.json({ error: 'Forbidden' }, { status: 403 });
-  }
 
   if (clientMessageKey) {
     const existing = await findExistingMessage(base44, user.id, conversationId, clientMessageKey);
@@ -409,9 +410,18 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
     let threadLockId: string | null = null;
     if (typeof body?.thread_id === 'string' && body.thread_id) {
       const threadId = body.thread_id.trim();
-      if (!threadId || threadId.length > 200) {
+      if (!isBase44EntityId(threadId)) {
         return Response.json({ error: 'Invalid thread_id' }, { status: 400 });
       }
+
+      const threadPreview = await base44.asServiceRole.entities.Message.get(threadId).catch(() => null);
+      if (!threadPreview || threadPreview.conversation_id !== conversationId) {
+        return Response.json({ error: 'Thread target is not in this conversation' }, { status: 400 });
+      }
+      if (threadPreview.thread_id) {
+        return Response.json({ error: 'Thread replies must target a top-level message' }, { status: 400 });
+      }
+
       threadLockId = await acquireMessageMutationLock(
         base44.asServiceRole.entities,
         threadId,

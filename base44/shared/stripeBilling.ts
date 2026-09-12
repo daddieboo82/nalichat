@@ -201,9 +201,18 @@ export function stripeCheckoutIdempotencyKey(userId: string, requestKey: string)
 
 export function stripeEnvironment(value: unknown): string {
   if (typeof value !== 'string' || !/^[a-z][a-z0-9_-]{1,31}$/.test(value)) {
-    throw new Error('Missing or invalid STRIPE_ENVIRONMENT');
+    throw new Error('Missing or invalid Stripe environment');
   }
   return value;
+}
+
+export function stripeEnvironmentFromSecretKey(value: unknown): 'test' | 'live' {
+  if (typeof value !== 'string') {
+    throw new Error('Missing or invalid STRIPE_SECRET_KEY');
+  }
+  if (/^(?:sk|rk)_test_/.test(value)) return 'test';
+  if (/^(?:sk|rk)_live_/.test(value)) return 'live';
+  throw new Error('Unable to determine Stripe environment from STRIPE_SECRET_KEY');
 }
 
 export function trialEligibility(

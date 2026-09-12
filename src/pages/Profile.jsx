@@ -24,10 +24,9 @@ const GENRES = ["Hip-Hop", "Trap", "Lo-Fi", "Electronic", "House", "Techno", "Am
 
 export default function Profile() {
   const location = useLocation();
-  const { checkUserAuth } = useAuth();
+  const { user: currentUser, checkUserAuth } = useAuth();
   const targetUserId = new URLSearchParams(location.search).get("id");
   
-  const [currentUser, setCurrentUser] = useState(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -36,12 +35,6 @@ export default function Profile() {
   const avatarRef = useRef();
   const coverRef = useRef();
   const queryClient = useQueryClient();
-
-  useEffect(() => { 
-    base44.auth.me().then(u => { 
-      setCurrentUser(u);
-    }); 
-  }, []);
 
   const { data: targetUser } = useQuery({
     queryKey: ["user", targetUserId],
@@ -101,13 +94,9 @@ export default function Profile() {
         genres: form.genres || [],
       });
       if (res?.data?.error) throw new Error(res.data.error);
-    const updated = await base44.auth.me();
-    setCurrentUser(updated);
-    setForm(updated);
-    setEditing(false);
-    // Refresh the global auth context so the new display_name propagates
-    // to the Home greeting, nav bar, and anywhere else that reads user data.
+    // Refresh the authoritative auth context and wait for any transient retry.
     await checkUserAuth();
+    setEditing(false);
     } finally { setSaving(false); }
   };
 
@@ -119,8 +108,7 @@ export default function Profile() {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const res = await base44.functions.invoke("updateMyProfile", { avatar_url: file_url });
       if (res?.data?.error) throw new Error(res.data.error);
-      const updated = await base44.auth.me();
-      setCurrentUser(updated);
+      await checkUserAuth();
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -135,8 +123,7 @@ export default function Profile() {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const res = await base44.functions.invoke("updateMyProfile", { cover_url: file_url });
       if (res?.data?.error) throw new Error(res.data.error);
-      const updated = await base44.auth.me();
-      setCurrentUser(updated);
+      await checkUserAuth();
     } finally {
       setUploading(false);
       e.target.value = "";

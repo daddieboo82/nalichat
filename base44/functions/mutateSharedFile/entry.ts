@@ -209,6 +209,9 @@ Deno.serve(async (req) => {
       await releaseSharedFileMutationLock(entities, lockId);
     }
   } catch (error) {
-    return Response.json({ error: error?.message || 'File mutation failed' }, { status: 500 });
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    console.error('mutateSharedFile error:', error);
+    return Response.json({ error: 'File mutation failed' }, { status: 500 });
   }
 });

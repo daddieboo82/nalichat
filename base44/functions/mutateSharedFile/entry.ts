@@ -39,6 +39,9 @@ Deno.serve(async (req) => {
     const entities = base44.asServiceRole.entities;
     const filePreview = await entities.SharedFile.get(fileId).catch(() => null);
     if (!filePreview) return Response.json({ error: 'File not found' }, { status: 404 });
+    if (filePreview.project_id && !isBase44EntityId(filePreview.project_id)) {
+      return Response.json({ error: 'File has an invalid project reference' }, { status: 409 });
+    }
 
     let previewCanEdit = user.role === 'admin';
     if (!previewCanEdit && filePreview.project_id) {
@@ -64,6 +67,12 @@ Deno.serve(async (req) => {
     try {
     let file = await entities.SharedFile.get(fileId);
     if (!file) return Response.json({ error: 'File not found' }, { status: 404 });
+    if ((file.project_id || null) !== (filePreview.project_id || null)) {
+      return Response.json({ error: 'File project changed. Please retry.' }, { status: 409 });
+    }
+    if (file.project_id && !isBase44EntityId(file.project_id)) {
+      return Response.json({ error: 'File has an invalid project reference' }, { status: 409 });
+    }
 
     const projectLockIds: string[] = [];
     const acquireProjectLock = async (projectId: string | null | undefined) => {
@@ -158,8 +167,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'folderId must be a string or null' }, { status: 400 });
     }
     const folderId = typeof body?.folderId === 'string' ? body.folderId.trim() : null;
-    if (folderId && folderId.length > 200) {
-      return Response.json({ error: 'folderId is too long' }, { status: 400 });
+    if (folderId && !isBase44EntityId(folderId)) {
+      return Response.json({ error: 'Valid folderId is required' }, { status: 400 });
     }
     let projectId = null;
     let accessUserIds = [file.uploader_id].filter(Boolean);
@@ -168,6 +177,9 @@ Deno.serve(async (req) => {
     if (folderId) {
       let folder = await entities.Folder.get(folderId);
       if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
+      if (folder.project_id && !isBase44EntityId(folder.project_id)) {
+        return Response.json({ error: 'Folder has an invalid project reference' }, { status: 409 });
+      }
 
       if (folder.project_id && folder.project_id !== file.project_id) {
         const locked = await acquireProjectLock(folder.project_id);
@@ -179,7 +191,10 @@ Deno.serve(async (req) => {
         }
         const currentFolder = await entities.Folder.get(folderId).catch(() => null);
         if (!currentFolder) return Response.json({ error: 'Folder not found' }, { status: 404 });
-        if (currentFolder.project_id !== folder.project_id) {
+        if (
+          currentFolder.project_id !== folder.project_id
+          || (currentFolder.project_id && !isBase44EntityId(currentFolder.project_id))
+        ) {
           return Response.json({ error: 'Folder destination changed. Please retry.' }, { status: 409 });
         }
         folder = currentFolder;

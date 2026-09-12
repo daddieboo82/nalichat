@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { APP_BASE_URL } from '../../shared/appConfig.ts';
 
 const SCHEDULE_WINDOW_MINUTE = 20;
 
@@ -61,7 +62,7 @@ export default async function(req) {
     }
 
     // App URL for the onboarding link comes only from server configuration.
-    const appUrl = Deno.env.get('APP_BASE_URL') || 'https://nalichat.org';
+    const appUrl = APP_BASE_URL;
     if (!appUrl) {
       return Response.json(
         { error: 'Server is not configured with an app URL' },

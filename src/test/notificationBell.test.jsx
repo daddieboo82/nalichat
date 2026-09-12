@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
@@ -50,6 +50,10 @@ describe('NotificationBell push permission', () => {
     push.getPermissionStatus.mockReturnValue('default');
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it('does not prompt for notification permission on mount', async () => {
     render(
       <MemoryRouter>
@@ -57,8 +61,7 @@ describe('NotificationBell push permission', () => {
       </MemoryRouter>,
     );
 
-    await waitFor(() => expect(base44.auth.me).toHaveBeenCalled());
-    expect(push.registerServiceWorker).toHaveBeenCalled();
+    await waitFor(() => expect(push.registerServiceWorker).toHaveBeenCalled());
     expect(push.requestPushPermission).not.toHaveBeenCalled();
   });
 

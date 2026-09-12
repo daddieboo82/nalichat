@@ -10,6 +10,10 @@ import {
   acquireTrackLifecycleLock,
   releaseTrackLifecycleLock,
 } from '../../shared/trackLifecycleLock.ts';
+import {
+  acquireArtPostEngagementLock,
+  releaseArtPostEngagementLock,
+} from '../../shared/artPostEngagementLock.ts';
 
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
@@ -123,11 +127,21 @@ Deno.serve(async (req) => {
 
     let submissionLockId: string | null = null;
     let trackLockId: string | null = null;
+    let artPostLockId: string | null = null;
     if (action === 'create' && parentType === 'challenge_submission') {
       submissionLockId = await acquireChallengeSubmissionLock(entities, parentId);
       if (!submissionLockId) {
         return Response.json(
           { error: 'Submission is being updated. Please retry.' },
+          { status: 409 },
+        );
+      }
+    }
+    if (action === 'create' && parentType === 'art_post') {
+      artPostLockId = await acquireArtPostEngagementLock(entities, parentId);
+      if (!artPostLockId) {
+        return Response.json(
+          { error: 'Post is being updated. Please retry.' },
           { status: 409 },
         );
       }
@@ -194,6 +208,7 @@ Deno.serve(async (req) => {
 
     return Response.json({ error: 'Unsupported comment action' }, { status: 400 });
     } finally {
+      await releaseArtPostEngagementLock(entities, artPostLockId);
       await releaseTrackLifecycleLock(entities, trackLockId);
       await releaseChallengeSubmissionLock(entities, submissionLockId);
     }

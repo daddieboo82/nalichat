@@ -6,6 +6,9 @@ import { resolve } from 'path';
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   logLevel: 'warn',
+  // Use an app-specific optimization cache so Base44 preview cannot reuse
+  // stale pre-bundled dependencies across dependency/toolchain upgrades.
+  cacheDir: 'node_modules/.vite-nalichat-v2',
   test: {
     environment: 'node',
     include: ['src/**/*.{test,spec}.{js,jsx}'],

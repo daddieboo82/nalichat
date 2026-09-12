@@ -12,7 +12,7 @@ describe('project creation hardening', () => {
 
     expect(source).toContain("req.method !== 'POST'");
     expect(source.indexOf('user.is_banned')).toBeLessThan(
-      source.indexOf('consumeHourlyLimit'),
+      source.indexOf('await consumeHourlyLimit'),
     );
     expect(source).toContain("typeof body.title !== 'string'");
     expect(source).toContain("typeof body.description !== 'string'");

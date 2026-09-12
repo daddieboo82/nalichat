@@ -93,6 +93,7 @@ Deno.serve(async (req) => {
       },
     });
   } catch (error) {
-    console.error('getAdminDashboardStats error:', error);\n    return Response.json({ error: 'Unable to load admin dashboard stats' }, { status: 500 });
+    console.error('getAdminDashboardStats error:', error);
+    return Response.json({ error: 'Unable to load admin dashboard stats' }, { status: 500 });
   }
 });

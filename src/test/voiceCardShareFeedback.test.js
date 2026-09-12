@@ -10,6 +10,7 @@ describe('voice card share feedback', () => {
   it('keeps user-cancel quiet but surfaces real share failures', async () => {
     const source = await readText('src/components/messages/VoiceCardDialog.jsx');
 
+    expect(source).toContain('if (!res.ok) throw new Error(`Voice card fetch failed: ${res.status}`)');
     expect(source).toContain('if (error?.name !== "AbortError")');
     expect(source).toContain('toast.error("Couldn\'t share the voice card. Please try again.")');
   });

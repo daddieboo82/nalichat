@@ -69,6 +69,7 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
         if (mode === "meme" && result.image_url) {
           try {
             const res = await fetch(result.image_url);
+            if (!res.ok) throw new Error(`Meme fetch failed: ${res.status}`);
             const blob = await res.blob();
             const file = new File([blob], "nalichat-meme.png", { type: "image/png" });
             if (navigator.canShare && navigator.canShare({ files: [file] })) {

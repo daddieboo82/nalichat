@@ -135,6 +135,6 @@ gain_db values should be modest (-6 to +6). ratio 1.5-4. attack 0.003-0.05. rele
     return Response.json(normalizeMasteringResult(result));
   } catch (error) {
     console.error('aiMasterSession error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'AI mastering failed' }, { status: 500 });
   }
 });

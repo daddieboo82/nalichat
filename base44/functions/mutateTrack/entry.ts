@@ -61,11 +61,19 @@ Deno.serve(async (req) => {
     const track = await entities.Track.get(trackId);
     if (!track) return Response.json({ error: 'Track not found' }, { status: 404 });
 
-    let canEdit = user.role === 'admin';
+    let canEdit = user.role === 'admin'
+      || (Array.isArray(track.edit_user_ids) && track.edit_user_ids.includes(user.id));
+
     if (!canEdit) {
       const project = await entities.Project.get(track.project_id).catch(() => null);
-      if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
-      canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
+      if (project) {
+        canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
+      } else {
+        // Chat-session tracks use the parent Message ID as project_id.
+        const sessionMessage = await entities.Message.get(track.project_id).catch(() => null);
+        canEdit = Array.isArray(sessionMessage?.participant_ids)
+          && sessionMessage.participant_ids.includes(user.id);
+      }
     }
     if (!canEdit) return Response.json({ error: 'Viewer access cannot modify this track' }, { status: 403 });
 

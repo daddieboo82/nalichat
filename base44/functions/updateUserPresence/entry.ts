@@ -3,6 +3,10 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
@@ -21,10 +25,13 @@ Deno.serve(async (req) => {
     }
 
     const { isOnline } = await req.json();
+    if (typeof isOnline !== 'boolean') {
+      return Response.json({ error: 'isOnline must be a boolean' }, { status: 400 });
+    }
 
     // Update user's online status
     await base44.asServiceRole.entities.User.update(user.id, {
-      is_online: isOnline === true,
+      is_online: isOnline,
       last_seen: new Date().toISOString(),
     });
 

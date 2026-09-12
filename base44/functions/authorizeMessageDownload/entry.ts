@@ -1,12 +1,27 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const downloadRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'message_download_authorization',
+      600,
+    );
+    if (!downloadRate.allowed) {
+      return Response.json({ error: 'Download authorization rate limit exceeded.' }, { status: 429 });
+    }
 
     const { messageId } = await req.json();
     if (!messageId) return Response.json({ error: 'messageId is required' }, { status: 400 });

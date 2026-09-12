@@ -9,7 +9,7 @@ import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "sonner";
 import { safeReturnTo } from "@/lib/authReturnTo";
-import { clearPersistedAuthTokens, persistAuthResult } from "@/lib/authSession";
+import { clearPersistedAuthTokens, markAuthActivity, persistAuthResult } from "@/lib/authSession";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -27,6 +27,9 @@ export default function Login() {
       if (token) {
         base44.auth.setToken(token);
       }
+      // A successful login starts a fresh activity window. Without this, a
+      // stale 24-hour inactivity timestamp can immediately log the user out again.
+      markAuthActivity();
       // Skip the intro splash after login so the user lands straight in the app
       try { sessionStorage.setItem('nali_splash_shown', '1'); } catch {}
       toast.success("Logged in successfully! Welcome back.");
@@ -43,6 +46,7 @@ export default function Login() {
     // A stale bearer token can override a fresh cookie-backed Google session
     // on the callback and make auth.me() report the user as logged out.
     clearPersistedAuthTokens();
+    markAuthActivity();
     base44.auth.loginWithProvider("google", safeReturnTo());
   };
 

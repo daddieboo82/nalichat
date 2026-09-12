@@ -23,12 +23,26 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Squad action rate limit exceeded. Please try again later.' }, { status: 429 });
     }
     await entities.Squad.update(squad.id, { status: 'ended' });
-    for (const memberId of [squad.member_a_id, squad.member_b_id].filter(Boolean)) {
-      await entities.User.updateMany(
+
+    const memberIds = [squad.member_a_id, squad.member_b_id].filter(Boolean);
+    const clearResults = await Promise.allSettled(
+      memberIds.map((memberId) => entities.User.updateMany(
         { id: memberId, squad_membership_id: squad.id },
         { $set: { squad_membership_id: null } },
-      ).catch(() => {});
+      )),
+    );
+    const failedClears = clearResults.filter((result) => result.status === 'rejected').length;
+    if (failedClears > 0) {
+      return Response.json(
+        {
+          error: 'Squad ended, but member cleanup was incomplete. Please retry.',
+          retryable: true,
+          failed_member_updates: failedClears,
+        },
+        { status: 500 },
+      );
     }
+
     return Response.json({ success: true });
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not leave squad' }, { status: 500 });

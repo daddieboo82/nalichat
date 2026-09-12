@@ -8,6 +8,8 @@ import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { registerServiceWorker, requestPushPermission, subscribeToRemotePush, showPushNotification, getPermissionStatus } from "@/lib/pushNotifications";
 import { sounds } from "@/hooks/use-sound";
+import { useLockedChats } from "@/lib/LockedChatsContext";
+import { redactLockedChatNotification } from "@/lib/lockedChatPolicy";
 
 const typeIcon = {
   comment: MessageCircle,
@@ -36,6 +38,17 @@ export default function NotificationBell({ direction = "down" }) {
   const [pushPermission, setPushPermission] = useState(() => getPermissionStatus());
   const { toast } = useToast();
   const panelRef = useRef(null);
+  const {
+    isReady: lockedChatsReady,
+    lockedConversationIds,
+  } = useLockedChats();
+
+  const redactNotification = (notification) =>
+    redactLockedChatNotification(
+      notification,
+      lockedConversationIds,
+      !lockedChatsReady,
+    );
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -66,12 +79,13 @@ export default function NotificationBell({ direction = "down" }) {
         if (previousIds.size > 0) {
           const newest = (list || []).find((n) => !previousIds.has(n.id));
           if (newest) {
+            const safeNewest = redactNotification(newest);
             sounds.notification();
-            toast({ title: newest.actor_name || "New activity", description: newest.message });
+            toast({ title: safeNewest.actor_name || "New activity", description: safeNewest.message });
             showPushNotification({
-              title: newest.actor_name || "NaliChat",
-              body: newest.message || "You have a new notification",
-              url: newest.link || "/",
+              title: safeNewest.actor_name || "NaliChat",
+              body: safeNewest.message || "You have a new notification",
+              url: safeNewest.link || "/",
             });
           }
         }
@@ -99,7 +113,8 @@ export default function NotificationBell({ direction = "down" }) {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  const unread = items.filter((n) => !n.read).length;
+  const safeItems = items.map(redactNotification);
+  const unread = safeItems.filter((n) => !n.read).length;
 
   const markAllRead = async () => {
     const unreadItems = items.filter((n) => !n.read);
@@ -162,13 +177,13 @@ export default function NotificationBell({ direction = "down" }) {
             )}
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {items.length === 0 ? (
+            {safeItems.length === 0 ? (
               <div className="py-10 text-center text-muted-foreground">
                 <Bell className="w-8 h-8 mx-auto mb-2 opacity-30" />
                 <p className="text-sm">No notifications yet</p>
               </div>
             ) : (
-              items.map((n) => {
+              safeItems.map((n) => {
                 const Icon = typeIcon[n.type] || Bell;
                 const inner = (
                   <div className={cn(

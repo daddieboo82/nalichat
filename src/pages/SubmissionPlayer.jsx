@@ -7,6 +7,7 @@ import { Play, Pause, Heart, ChevronLeft, ChevronRight, ArrowLeft } from "lucide
 import ShareButtons from "@/components/challenges/ShareButtons";
 import SubmissionComments from "@/components/challenges/SubmissionComments";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
 
 const MAX_CHALLENGE_SUBMISSIONS = 500;
 
@@ -14,14 +15,13 @@ export default function SubmissionPlayer() {
   const { challengeId, submissionId } = useParams();
   const navigate = useNavigate();
   const audioRef = useRef(null);
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [submission, setSubmission] = useState(null);
   const [allSubs, setAllSubs] = useState([]);
   const [hasVoted, setHasVoted] = useState(false);
   const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
     base44.entities.ChallengeSubmission
       .filter(
         { challenge_id: challengeId, status: "approved" },

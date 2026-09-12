@@ -521,13 +521,14 @@ export default function Messages() {
     }
   };
 
-  const createGroup = async ({ name, participant_ids }) => {
+  const createGroup = async ({ name, participant_ids, client_request_key }) => {
     if (!currentUser?.id || !participant_ids?.length) return;
     try {
       const created = await base44.functions.invoke("manageConversation", {
         action: "create_group",
         name,
         participant_ids,
+        client_request_key,
       });
       if (created?.data?.error) throw new Error(created.data.error);
       const conv = created?.data?.conversation;

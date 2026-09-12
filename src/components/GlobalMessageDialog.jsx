@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, Send } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { createClientMessageKey } from "@/lib/messageCache";
 
 export default function GlobalMessageDialog({ open, onOpenChange }) {
   const [search, setSearch] = useState("");
@@ -16,6 +17,8 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
   const [sending, setSending] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [authError, setAuthError] = useState(false);
+  const retryKeyRef = useRef(null);
+  const retrySignatureRef = useRef("");
 
   useEffect(() => {
     if (!open) return;
@@ -46,7 +49,15 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
     });
 
   const handleSendMessage = async () => {
-    if (!selectedUser || !message.trim()) return;
+    const trimmedMessage = message.trim();
+    if (!selectedUser || !trimmedMessage) return;
+
+    const signature = `${selectedUser.id}:${trimmedMessage}`;
+    const clientMessageKey = retryKeyRef.current && retrySignatureRef.current === signature
+      ? retryKeyRef.current
+      : createClientMessageKey();
+    retryKeyRef.current = clientMessageKey;
+    retrySignatureRef.current = signature;
 
     setSending(true);
     try {
@@ -62,12 +73,15 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
 
       const send = await base44.functions.invoke("sendConversationMessage", {
         conversation_id: conversation.id,
-        text: message,
+        text: trimmedMessage,
         type: "text",
+        client_message_key: clientMessageKey,
       });
       if (send?.data?.moderation) throw new Error("moderated");
       if (send?.data?.error) throw new Error(send.data.error);
 
+      retryKeyRef.current = null;
+      retrySignatureRef.current = "";
       setMessage("");
       setSelectedUser(null);
       onOpenChange(false);
@@ -134,7 +148,11 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
                 filtered.map(user => (
                   <button
                     key={user.id}
-                    onClick={() => setSelectedUser(user)}
+                    onClick={() => {
+                      retryKeyRef.current = null;
+                      retrySignatureRef.current = "";
+                      setSelectedUser(user);
+                    }}
                     className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors text-left"
                   >
                     <Avatar className="w-10 h-10 shrink-0">
@@ -174,6 +192,8 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
                 variant="outline"
                 className="flex-1 rounded-lg"
                 onClick={() => {
+                  retryKeyRef.current = null;
+                  retrySignatureRef.current = "";
                   setSelectedUser(null);
                   setMessage("");
                 }}

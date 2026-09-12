@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { claimModerationStrike } from '../../shared/moderationStrikes.ts';
+import { resolveFollowUpRemindersForMessage } from '../../shared/followUpReminders.ts';
 import {
   acquireMessageMutationLock,
   releaseMessageMutationLock,
@@ -11,6 +12,43 @@ const ALLOWED_TYPES = new Set(['text', 'file', 'audio', 'image', 'video', 'sessi
 const MAX_FILE_BYTES = 20 * 1024 * 1024 * 1024;
 const CLIENT_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/;
 const inFlightCreates = new Map<string, Promise<Response>>();
+
+async function updateConversationPreviewForMessage(
+  entities: any,
+  conversationId: string,
+  message: any,
+  previewText: string,
+) {
+  const nextAt = String(message?.created_date || '');
+  const nextTime = Date.parse(nextAt);
+  if (!Number.isFinite(nextTime)) {
+    throw new Error('Message timestamp is unavailable for conversation preview');
+  }
+
+  let lastError: any = null;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      const current = await entities.Conversation.get(conversationId);
+      if (!current) throw new Error('Conversation not found');
+      const currentAt = current.last_message_at || null;
+      const currentTime = Date.parse(currentAt || '');
+      if (Number.isFinite(currentTime) && currentTime > nextTime) return;
+
+      const updated = await entities.Conversation.updateMany(
+        { id: conversationId, last_message_at: currentAt },
+        {
+          last_message_text: previewText,
+          last_message_at: nextAt,
+        },
+      );
+      if (Number(updated?.updated || 0) === 1) return;
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 40 * (attempt + 1)));
+  }
+  throw lastError || new Error('Unable to update conversation preview');
+}
 
 const TRUSTED_MEDIA_HOSTS = [
   'storage.googleapis.com',
@@ -477,13 +515,20 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
       }
     }
 
+    if (createdNew) {
+      await resolveFollowUpRemindersForMessage({
+        entities: base44.asServiceRole.entities,
+        message,
+      });
+    }
+
     if (type !== 'session') {
-      try {
-        await base44.asServiceRole.entities.Conversation.update(conversationId, {
-          last_message_text: text || `Sent a ${type}`,
-          last_message_at: new Date().toISOString(),
-        });
-      } catch (_) {}
+      await updateConversationPreviewForMessage(
+        base44.asServiceRole.entities,
+        conversationId,
+        message,
+        text || `Sent a ${type}`,
+      );
     }
 
   return Response.json({ success: true, message, duplicate: !createdNew });

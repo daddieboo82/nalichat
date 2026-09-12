@@ -3,6 +3,7 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -31,8 +32,7 @@ Deno.serve(async (req) => {
     const { projectId, confirmation } = await readJsonBodyLimited(req, 64 * 1024);
     if (
       typeof projectId !== 'string'
-      || !projectId.trim()
-      || projectId.length > 200
+      || !isBase44EntityId(projectId.trim())
       || confirmation !== 'DELETE'
     ) {
       return Response.json({ error: 'projectId and DELETE confirmation are required' }, { status: 400 });

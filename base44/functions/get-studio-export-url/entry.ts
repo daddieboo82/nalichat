@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 export default async function(req) {
   try {
@@ -27,7 +28,7 @@ export default async function(req) {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 8 * 1024);
     const { fileUri } = body;
     if (!fileUri || typeof fileUri !== 'string') {
       return Response.json({ error: 'Missing fileUri' }, { status: 400 });
@@ -40,6 +41,8 @@ export default async function(req) {
 
     return Response.json({ signed_url: signedRes.signed_url });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('get-studio-export-url error:', error);
     return Response.json({ error: 'Unable to create studio export URL' }, { status: 500 });
   }

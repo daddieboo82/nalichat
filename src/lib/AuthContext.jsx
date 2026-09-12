@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { unsubscribeFromRemotePush } from '@/lib/pushNotifications';
+import { clearPersistedAuthTokens } from '@/lib/authSession';
 import { useQueryClient } from '@tanstack/react-query';
 
 const AuthContext = createContext();
@@ -157,13 +158,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Server logout failed:', error);
     } finally {
-      try {
-        localStorage.removeItem('base44_access_token');
-        localStorage.removeItem('base44_token');
-        localStorage.removeItem('last_activity');
-        sessionStorage.removeItem('base44_access_token');
-        sessionStorage.removeItem('base44_token');
-      } catch (e) {}
+      clearPersistedAuthTokens();
+      try { localStorage.removeItem('last_activity'); } catch {}
       queryClient.clear();
       lastUserIdRef.current = null;
       setUser(null);

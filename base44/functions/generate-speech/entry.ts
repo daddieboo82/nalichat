@@ -69,7 +69,10 @@ Deno.serve(async (req) => {
       }),
     });
 
-    return Response.json({ ...result, quota });
+    const payload = result && typeof result === 'object' && !Array.isArray(result)
+      ? { ...result, quota }
+      : { url: result, quota };
+    return Response.json(payload);
   } catch (error) {
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     const bodyError = requestBodyErrorResponse(error);

@@ -10,7 +10,10 @@ describe('commerce storage resilience', () => {
   it('keeps the cart usable when localStorage is unavailable', async () => {
     const source = await readText('src/lib/CartContext.jsx');
     expect(source).toContain("try {");
-    expect(source).toContain("localStorage.setItem('shopping_cart', JSON.stringify(items));");
+    expect(source).toContain("const cartStorageKey = `shopping_cart:${user?.id || 'anonymous'}`;");
+    expect(source).toContain("localStorage.setItem(cartStorageKey, JSON.stringify(items));");
+    expect(source).toContain("if (!user?.id)");
+    expect(source).toContain("localStorage.removeItem('shopping_cart');");
     expect(source).toContain('Cart still works in-memory when browser storage is unavailable.');
   });
 

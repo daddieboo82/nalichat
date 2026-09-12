@@ -86,12 +86,12 @@ Deno.serve(async (req) => {
     const data = await resp.json();
     if (!resp.ok) {
       console.error('Twilio error:', data);
-      return Response.json({ error: data.message || 'Failed to send SMS' }, { status: 500 });
+      return Response.json({ error: 'Failed to send SMS' }, { status: 502 });
     }
 
     return Response.json({ success: true, sid: data.sid });
   } catch (error) {
     console.error('sendSmsInvite error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Failed to send SMS' }, { status: 500 });
   }
 });

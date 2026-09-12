@@ -29,7 +29,7 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
         name: nameValue.trim(),
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      await queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       setEditingName(false);
     } catch {
       toast.error("Couldn't rename the group. Please try again.");
@@ -47,7 +47,7 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
         conversationId: conversation.id,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      await queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       onClose();
     } catch {
       toast.error("Couldn't leave the group. Please try again.");

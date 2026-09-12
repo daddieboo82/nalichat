@@ -60,7 +60,9 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, alreadyRead: false });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('markMessageRead error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Could not mark message read' }, { status: 500 });
   }
 });

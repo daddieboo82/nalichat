@@ -1,8 +1,17 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 const ALLOWED_MEDIA = new Set(['original','remix','cover','beat','production','mixing','mastering','collab']);
+const TRUSTED_MEDIA_HOSTS = [
+  'storage.googleapis.com',
+  'base44-user-files.s3.amazonaws.com',
+  'base44-user-files.s3.us-east-1.amazonaws.com',
+  'files.base44.com',
+  'cdn.base44.com',
+];
+
 function cleanCoverUrl(value: unknown) {
   const raw = String(value || '').trim();
   if (!raw) return '';
@@ -10,14 +19,10 @@ function cleanCoverUrl(value: unknown) {
     const parsed = new URL(raw);
     if (parsed.protocol !== 'https:') return '';
     const hostname = parsed.hostname.toLowerCase();
-    if (
-      hostname === 'localhost' ||
-      hostname === 'metadata.google.internal' ||
-      hostname.endsWith('.internal') ||
-      hostname.endsWith('.local') ||
-      /^(10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.)/.test(hostname)
-    ) return '';
-    return parsed.toString();
+    const trusted = TRUSTED_MEDIA_HOSTS.some(
+      (host) => hostname === host || hostname.endsWith('.' + host),
+    );
+    return trusted ? parsed.toString() : '';
   } catch {
     return '';
   }
@@ -52,8 +57,10 @@ Deno.serve(async (req) => {
     }
 
     const body = await readJsonBodyLimited(req, 32 * 1024);
-    const postId = String(body?.postId || '');
-    if (!postId) return Response.json({ error: 'postId is required' }, { status: 400 });
+    const postId = String(body?.postId || '').trim();
+    if (!isBase44EntityId(postId)) {
+      return Response.json({ error: 'Valid postId is required' }, { status: 400 });
+    }
 
     const entities = base44.asServiceRole.entities;
     const post = await entities.ArtPost.get(postId);
@@ -72,7 +79,7 @@ Deno.serve(async (req) => {
     if (body?.image_url !== undefined) {
       const imageUrl = body.image_url ? cleanCoverUrl(body.image_url) : '';
       if (body.image_url && !imageUrl) {
-        return Response.json({ error: 'Cover art URL must be a valid public HTTPS URL' }, { status: 400 });
+        return Response.json({ error: 'Cover art must come from trusted upload storage' }, { status: 400 });
       }
       patch.image_url = imageUrl || null;
     }

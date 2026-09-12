@@ -107,17 +107,22 @@ const AuthenticatedApp = () => {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    // Reset the activity timestamp on session start so a stale value from a
-    // previous session doesn't immediately log the user out right after login.
-    localStorage.setItem('last_activity', Date.now().toString());
-    const checkActivity = () => {
-      const lastActive = localStorage.getItem('last_activity');
-      if (lastActive && Date.now() - parseInt(lastActive, 10) > 24 * 60 * 60 * 1000) {
-        logout();
-      }
-    };
-    checkActivity();
+
+    const lastActive = localStorage.getItem('last_activity');
+    const parsedLastActive = lastActive ? Number.parseInt(lastActive, 10) : NaN;
+    if (
+      Number.isFinite(parsedLastActive)
+      && Date.now() - parsedLastActive > 24 * 60 * 60 * 1000
+    ) {
+      logout();
+      return;
+    }
+
     const updateActivity = () => localStorage.setItem('last_activity', Date.now().toString());
+    // Initialize activity only when there is no valid prior timestamp. Existing
+    // timestamps must survive reloads so the 24-hour inactivity policy works.
+    if (!Number.isFinite(parsedLastActive)) updateActivity();
+
     window.addEventListener('mousemove', updateActivity, { passive: true });
     window.addEventListener('keydown', updateActivity, { passive: true });
     window.addEventListener('touchstart', updateActivity, { passive: true });
@@ -126,7 +131,7 @@ const AuthenticatedApp = () => {
       window.removeEventListener('mousemove', updateActivity);
       window.removeEventListener('keydown', updateActivity);
       window.removeEventListener('touchstart', updateActivity);
-      window.removeEventListener('play', updateActivity);
+      window.removeEventListener('play', updateActivity, true);
     };
   }, [isAuthenticated, logout]);
 

@@ -13,7 +13,7 @@ describe('DM entry point failures', () => {
 
     expect(list).toContain('Promise.resolve(onStartDM(u)).catch((error) => {');
     expect(list).toContain('await onStartDM(user);');
-    expect(list).toContain('toast.error("Couldn\\'t start this conversation. Please try again.")');
+    expect(list).toContain(`toast.error("Couldn't start this conversation. Please try again.")`);
     expect(list).not.toContain('Promise.resolve(onStartDM(u)).catch(() => {});');
     expect(bubble).toContain('await onStartDM(otherUser);');
     expect(bubble).toContain('if (!otherUser) return;');

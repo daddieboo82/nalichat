@@ -4,6 +4,7 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireSharedFileMutationLock, releaseSharedFileMutationLock } from '../../shared/sharedFileMutationLock.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
+import { acquireFolderMutationLock, releaseFolderMutationLock } from '../../shared/folderMutationLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -174,7 +175,13 @@ Deno.serve(async (req) => {
     let accessUserIds = [file.uploader_id].filter(Boolean);
     let editUserIds = [file.uploader_id].filter(Boolean);
 
+    let folderLockId: string | null = null;
     if (folderId) {
+      folderLockId = await acquireFolderMutationLock(entities, folderId);
+      if (!folderLockId) {
+        return Response.json({ error: 'Folder is being updated. Please retry.' }, { status: 409 });
+      }
+
       let folder = await entities.Folder.get(folderId);
       if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
       if (folder.project_id && !isBase44EntityId(folder.project_id)) {
@@ -233,6 +240,9 @@ Deno.serve(async (req) => {
     });
     return Response.json({ success: true, file: updated });
     } finally {
+      if (folderLockId) {
+        await releaseFolderMutationLock(entities, folderLockId);
+      }
       for (const projectLockId of projectLockIds.reverse()) {
         await releaseProjectMembershipLock(entities, projectLockId);
       }

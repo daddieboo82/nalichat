@@ -121,13 +121,23 @@ Deno.serve(async (req) => {
     }
 
     // Remove legacy/random-ID duplicates after the deterministic record is safe.
+    let cleanupFailures = 0;
     for (const row of endpointRows) {
-      if (row.id !== deterministicId) {
-        await entity.delete(row.id).catch(() => {});
+      if (row.id === deterministicId) continue;
+      try {
+        await entity.delete(row.id);
+      } catch (cleanupError) {
+        cleanupFailures += 1;
+        console.error('Failed to remove duplicate push subscription', {
+          userId: user.id,
+          subscriptionId: row.id,
+          endpoint,
+          cleanupError: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+        });
       }
     }
 
-    return Response.json({ success: true });
+    return Response.json({ success: true, cleanup_failures: cleanupFailures });
   } catch (error) {
     return Response.json({ error: error?.message || 'Could not register push subscription' }, { status: 500 });
   }

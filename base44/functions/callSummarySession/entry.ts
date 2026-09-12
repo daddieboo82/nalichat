@@ -1,4 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import {
   AiQuotaError,
@@ -100,10 +102,13 @@ async function storedCaptureSize(url: string): Promise<number | null> {
 
 async function loadSession(entities: any, sessionId: unknown, callId: unknown) {
   if (typeof sessionId === 'string' && sessionId) {
-    return entities.CallSummarySession.get(sessionId);
+    if (!isBase44EntityId(sessionId.trim())) return null;
+    return entities.CallSummarySession.get(sessionId.trim());
   }
   if (typeof callId === 'string' && callId) {
-    const matches = await entities.CallSummarySession.filter({ call_id: callId }, '-created_date', 1);
+    const normalizedCallId = callId.trim();
+    if (normalizedCallId.length < 8 || normalizedCallId.length > 160) return null;
+    const matches = await entities.CallSummarySession.filter({ call_id: normalizedCallId }, '-created_date', 1);
     return matches[0] || null;
   }
   return null;
@@ -266,8 +271,11 @@ async function createSession(base44: any, user: any, body: any) {
   if (typeof body.call_id !== 'string' || body.call_id.length < 8 || body.call_id.length > 160) {
     return jsonError(400, 'INVALID_CALL_ID', 'A valid call_id is required.');
   }
-  if (typeof body.conversation_id !== 'string' || !body.conversation_id) {
-    return jsonError(400, 'INVALID_CONVERSATION', 'A conversation_id is required.');
+  if (
+    typeof body.conversation_id !== 'string'
+    || !isBase44EntityId(body.conversation_id.trim())
+  ) {
+    return jsonError(400, 'INVALID_CONVERSATION', 'A valid conversation_id is required.');
   }
   if (body.accept_terms !== true) {
     return jsonError(400, 'EXPLICIT_CONSENT_REQUIRED', 'You must explicitly accept before requesting consent.');
@@ -392,8 +400,11 @@ async function readSession(base44: any, user: any, body: any) {
 
 async function readLatestSession(base44: any, user: any, body: any) {
   const entities = base44.asServiceRole.entities;
-  if (typeof body.conversation_id !== 'string' || !body.conversation_id) {
-    return jsonError(400, 'INVALID_CONVERSATION', 'A conversation_id is required.');
+  if (
+    typeof body.conversation_id !== 'string'
+    || !isBase44EntityId(body.conversation_id.trim())
+  ) {
+    return jsonError(400, 'INVALID_CONVERSATION', 'A valid conversation_id is required.');
   }
   const conversation = await loadConversation(entities, body.conversation_id);
   if (!conversation || !isParticipant(conversation.participant_ids, user.id)) {
@@ -794,6 +805,17 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return jsonError(401, 'UNAUTHORIZED', 'Unauthorized');
     const body = await readJsonBodyLimited(req, 64 * 1024);
+
+    const requestRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      user.id,
+      'call_summary_request',
+      600,
+    );
+    if (!requestRate.allowed) {
+      return jsonError(429, 'RATE_LIMITED', 'Call summary request rate limit exceeded. Please try again later.');
+    }
+
     const moderatedAction = ['start', 'register_capture', 'generate'].includes(body?.action);
     if (moderatedAction && user.is_banned) {
       return jsonError(403, 'BANNED', 'This action is unavailable while the account is banned.');

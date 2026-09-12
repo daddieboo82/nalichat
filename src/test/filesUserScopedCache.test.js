@@ -11,6 +11,7 @@ describe('Files user-scoped caches', () => {
     const source = await readText('src/pages/Files.jsx');
     expect(source).toContain('queryKey: ["shared-files", currentUser?.id]');
     expect(source).toContain('queryKey: ["projects", currentUser?.id]');
+    expect(source).toContain('queryKey: ["folders", currentUser?.id]');
     expect(source).toContain('enabled: !!currentUser?.id');
   });
 });

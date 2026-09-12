@@ -215,6 +215,6 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error('backfillTrackAccess failed:', error);
-    return Response.json({ error: error?.message || 'Backfill failed' }, { status: 500 });
+    return Response.json({ error: 'Backfill failed' }, { status: 500 });
   }
 });

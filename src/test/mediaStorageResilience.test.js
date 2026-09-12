@@ -32,6 +32,15 @@ describe('media storage resilience', () => {
     expect(source).toContain('const extension = recordingExtension(rec.blob.type)');
   });
 
+  it('uses a supported MIME type in the practice recorder and cleans up failed starts', async () => {
+    const source = await readText('src/components/record/RecordingGuide.jsx');
+    expect(source).toContain('function getPracticeMimeType()');
+    expect(source).toContain("MediaRecorder.isTypeSupported?.(type)");
+    expect(source).toContain("typeof MediaRecorder === 'undefined'");
+    expect(source).toContain("const recordingMimeType = rec.mimeType || mimeType || 'audio/webm'");
+    expect(source).toContain('stream?.getTracks().forEach(t => t.stop())');
+  });
+
   it('keeps resumable transfers working when localStorage is unavailable', async () => {
     const source = await readText('src/lib/resumableUpload.js');
     expect(source).toContain('try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}');

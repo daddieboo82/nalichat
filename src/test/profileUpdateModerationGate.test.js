@@ -1,0 +1,11 @@
+import { describe, expect, it } from 'vitest';
+import { readFile } from 'node:fs/promises';
+
+describe('profile update moderation gate', () => {
+  it('blocks banned users before rate limits or service-role writes', async () => {
+    const source = await readFile('base44/functions/updateMyProfile/entry.ts', 'utf8');
+    expect(source).toContain("if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });");
+    expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('consumeHourlyLimit('));
+    expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('asServiceRole.entities.User.update'));
+  });
+});

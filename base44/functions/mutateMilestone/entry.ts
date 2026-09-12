@@ -67,6 +67,17 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Milestone project changed. Please retry.' }, { status: 409 });
       }
 
+      const lockedProject = await entities.Project.get(currentMilestone.project_id).catch(() => null);
+      if (!lockedProject) {
+        return Response.json({ error: 'Project not found' }, { status: 404 });
+      }
+      const lockedCanEdit = user.role === 'admin'
+        || lockedProject.owner_id === user.id
+        || (lockedProject.editor_ids || []).includes(user.id);
+      if (!lockedCanEdit) {
+        return Response.json({ error: 'Viewer access cannot modify milestones' }, { status: 403 });
+      }
+
     if (action === 'delete') {
       await entities.Milestone.delete(currentMilestone.id);
       return Response.json({ success: true, deleted: true });

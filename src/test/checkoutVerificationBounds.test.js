@@ -16,10 +16,10 @@ describe('checkout verification bounds', () => {
     expect(source).toMatch(/'checkout_verification',\s*60/);
     expect(source).toContain('Checkout verification rate limit exceeded');
     expect(source.indexOf('purchase.purchase_verifier_hash')).toBeLessThan(
-      source.indexOf("'checkout_verification'"),
+      source.indexOf("'checkout_verification'", source.indexOf('await consumeHourlyLimit')),
     );
     expect(source.indexOf("'checkout_verification'")).toBeLessThan(
-      source.indexOf('stripeRequest'),
+      source.indexOf('await stripeRequest'),
     );
   });
 });

@@ -189,7 +189,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     }
 
     if (!messages.some((candidate) => candidate.id === message.id)) {
-      queryClient.setQueryData(["messages", conversation?.id], (current = []) =>
+      queryClient.setQueryData(["messages", currentUser?.id, conversation?.id], (current = []) =>
         [...current, message].sort(
           (left, right) => new Date(left.created_date || 0) - new Date(right.created_date || 0),
         )
@@ -389,8 +389,8 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                 if (replyTo?.id === id) setReplyTo(null);
                 // Instant optimistic delete: remove from the cache immediately so the
                 // message vanishes from the UI with zero network delay.
-                const previous = queryClient.getQueryData(["messages", conversation?.id]);
-                queryClient.setQueryData(["messages", conversation?.id], (old = []) =>
+                const previous = queryClient.getQueryData(["messages", currentUser?.id, conversation?.id]);
+                queryClient.setQueryData(["messages", currentUser?.id, conversation?.id], (old = []) =>
                   old.filter(m => m.id !== id)
                 );
                 try {
@@ -410,7 +410,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                   }
                 } catch (e) {
                   // Restore the message and any composer context if the server delete failed.
-                  if (previous) queryClient.setQueryData(["messages", conversation?.id], previous);
+                  if (previous) queryClient.setQueryData(["messages", currentUser?.id, conversation?.id], previous);
                   if (previousEditingMessage?.id === id) setEditingMessage(previousEditingMessage);
                   if (previousReplyTo?.id === id) setReplyTo(previousReplyTo);
                   toast.error("Couldn't delete the message. Please try again.");

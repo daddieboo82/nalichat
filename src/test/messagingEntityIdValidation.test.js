@@ -4,8 +4,8 @@ import { readFile } from 'node:fs/promises';
 describe('messaging entity id validation', () => {
   it('validates conversation ids before typing-status reads', async () => {
     const source = await readFile('base44/functions/updateTypingStatus/entry.ts', 'utf8');
-    expect(source).toContain('isBase44EntityId(conversationId)');
-    expect(source.indexOf('isBase44EntityId(conversationId)')).toBeLessThan(source.indexOf('entities.Conversation.get(conversationId)'));
+    expect(source).toContain('isConversationId(conversationId)');
+    expect(source.indexOf('isConversationId(conversationId)')).toBeLessThan(source.indexOf('entities.Conversation.get(conversationId)'));
   });
 
   it('validates message ids before read-receipt reads', async () => {

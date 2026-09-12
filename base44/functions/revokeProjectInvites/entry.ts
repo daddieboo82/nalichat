@@ -1,6 +1,7 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 Deno.serve(async (req) => {
@@ -30,7 +31,7 @@ Deno.serve(async (req) => {
     const body = await readJsonBodyLimited(req, 8 * 1024);
     const projectId = typeof body?.projectId === 'string' ? body.projectId.trim() : '';
     const role = body?.role == null ? null : String(body.role);
-    if (!projectId || projectId.length > 200) {
+    if (!isBase44EntityId(projectId)) {
       return Response.json({ error: 'projectId is required' }, { status: 400 });
     }
     if (role && !['editor', 'viewer'].includes(role)) {

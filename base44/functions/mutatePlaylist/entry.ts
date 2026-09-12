@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
@@ -16,7 +17,7 @@ Deno.serve(async (req) => {
 
     if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 32 * 1024);
     const playlistId = typeof body?.playlistId === 'string' ? body.playlistId.trim() : '';
     const action = typeof body?.action === 'string' ? body.action : '';
     if (!playlistId || playlistId.length > 200 || !['add_track', 'remove_track', 'update_meta', 'delete'].includes(action)) {
@@ -98,6 +99,8 @@ Deno.serve(async (req) => {
     const updated = await entities.Playlist.update(playlist.id, patch);
     return Response.json({ success: true, playlist: updated });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('mutatePlaylist error:', error);
     return Response.json({ error: error?.message || 'Playlist update failed' }, { status: 500 });
   }

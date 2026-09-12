@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -33,7 +34,7 @@ Deno.serve(async (req) => {
 
     const { action, session_id, collaborators, changes } = await readJsonBodyLimited(req, 64 * 1024);
 
-    if (typeof session_id !== 'string' || !session_id.trim() || session_id.length > 200) {
+    if (typeof session_id !== 'string' || !isBase44EntityId(session_id.trim())) {
       return Response.json({ error: 'Valid session_id is required' }, { status: 400 });
     }
 

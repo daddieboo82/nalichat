@@ -28,6 +28,7 @@ export default function AppLoader({ onDone }) {
   // progress ramp: 0→85 in 400ms, then 85→100 in 200ms, 200ms exit
   useEffect(() => {
     let v = 0;
+    let completionTimer = null;
     const interval = setInterval(() => {
       const elapsed = Date.now() - startRef.current;
       if (elapsed < 400) {
@@ -39,11 +40,15 @@ export default function AppLoader({ onDone }) {
       if (v >= 100) {
         clearInterval(interval);
         setPhase("done");
-        setTimeout(onDone, 200);
+        completionTimer = window.setTimeout(onDone, 200);
       }
     }, 30);
-    setTimeout(() => setPhase("loading"), 100);
-    return () => clearInterval(interval);
+    const loadingTimer = window.setTimeout(() => setPhase("loading"), 100);
+    return () => {
+      clearInterval(interval);
+      window.clearTimeout(loadingTimer);
+      if (completionTimer !== null) window.clearTimeout(completionTimer);
+    };
   }, [onDone]);
 
   return (

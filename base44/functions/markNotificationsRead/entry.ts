@@ -1,0 +1,48 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+
+Deno.serve(async (req) => {
+  try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json(
+        { error: 'timed_out', timeout_until: user.timeout_until },
+        { status: 403 },
+      );
+    }
+
+    const entities = base44.asServiceRole.entities;
+    const rate = await consumeHourlyLimit(
+      entities,
+      user.id,
+      'notification_mark_read',
+      120,
+    );
+    if (!rate.allowed) {
+      return Response.json(
+        { error: 'Notification update rate limit exceeded. Please try again later.' },
+        { status: 429 },
+      );
+    }
+
+    const result = await entities.Notification.updateMany(
+      { recipient_id: user.id },
+      { $set: { read: true } },
+    );
+
+    return Response.json({
+      success: true,
+      updated: Number(result?.updated || 0),
+    });
+  } catch (error) {
+    console.error('markNotificationsRead error:', error);
+    return Response.json({ error: 'Could not update notifications' }, { status: 500 });
+  }
+});

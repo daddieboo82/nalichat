@@ -566,9 +566,6 @@ export async function rescheduleFollowUpReminder({
 }) {
   if (!user) throw new FollowUpReminderError(401, 'UNAUTHORIZED', 'Unauthorized.');
   const clock = currentDate(now);
-  if (isOwnerBlocked(user, clock)) {
-    throw new FollowUpReminderError(403, 'OWNER_BLOCKED', 'This account cannot use reminders.');
-  }
   await requireEntitlement(entities, user.id, clock);
   const reminder = await requireOwnedScheduledReminder(
     entities.FollowUpReminder,
@@ -618,6 +615,9 @@ export async function cancelFollowUpReminder({
 }) {
   if (!user) throw new FollowUpReminderError(401, 'UNAUTHORIZED', 'Unauthorized.');
   const clock = currentDate(now);
+  if (isOwnerBlocked(user, clock)) {
+    throw new FollowUpReminderError(403, 'OWNER_BLOCKED', 'This account cannot use reminders.');
+  }
   const id = requireId(reminderId, 'reminder_id');
   const existing = await findById(entities.FollowUpReminder, id);
   if (!existing) {

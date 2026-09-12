@@ -84,6 +84,9 @@ Deno.serve(async (req) => {
       await releaseSharedFileMutationLock(entities, lockId);
     }
   } catch (error) {
-    return Response.json({ error: error?.message || 'Could not create share link' }, { status: 500 });
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    console.error('createFileShareLink error:', error);
+    return Response.json({ error: 'Could not create share link' }, { status: 500 });
   }
 });

@@ -1,5 +1,6 @@
 import { resolveUserSubscription } from './subscriptionAccess.ts';
 import { lockedNotification } from './lockedChats.ts';
+import { isBase44EntityId } from './workflowEvents.ts';
 
 export const FOLLOW_UP_ENTITLEMENT = 'reminders.follow_up';
 export const MAX_REMINDER_DELAY_MS = 365 * 24 * 60 * 60 * 1000;
@@ -268,7 +269,7 @@ export function messageIdFromEntityEvent(body: {
   data?: { id?: unknown };
 }): string | null {
   const candidate = body?.event?.entity_id || body?.event?.id || body?.data?.id;
-  return typeof candidate === 'string' && candidate ? candidate : null;
+  return isBase44EntityId(candidate) ? candidate : null;
 }
 
 export async function createFollowUpReminder({

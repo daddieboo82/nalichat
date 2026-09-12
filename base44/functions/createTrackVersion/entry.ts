@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
 
 const MAX_TRACK_VERSION_BYTES = 100 * 1024 * 1024;
@@ -91,10 +92,8 @@ Deno.serve(async (req) => {
     if (
       typeof body?.track_id !== 'string'
       || typeof body?.project_id !== 'string'
-      || !body.track_id.trim()
-      || !body.project_id.trim()
-      || body.track_id.length > 200
-      || body.project_id.length > 200
+      || !isBase44EntityId(body.track_id.trim())
+      || !isBase44EntityId(body.project_id.trim())
     ) {
       return Response.json({ error: 'track_id and project_id are required' }, { status: 400 });
     }

@@ -1,6 +1,7 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 async function playId(postId: string, listenerId: string, day: string): Promise<string> {
   const digest = await crypto.subtle.digest(
@@ -31,7 +32,7 @@ export default async function(req) {
 
     const body = await readJsonBodyLimited(req, 8 * 1024);
     const postId = typeof body?.post_id === 'string' ? body.post_id.trim() : '';
-    if (!postId || postId.length > 200) {
+    if (!isBase44EntityId(postId)) {
       return Response.json({ error: 'post_id is required' }, { status: 400 });
     }
 

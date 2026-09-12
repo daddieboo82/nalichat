@@ -1,6 +1,7 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -20,8 +21,7 @@ Deno.serve(async (req) => {
     const conversationId = String(body?.conversationId || '').trim();
     const action = String(body?.action || 'heartbeat');
     if (
-      !conversationId
-      || conversationId.length > 256
+      !isBase44EntityId(conversationId)
       || !['heartbeat', 'clear'].includes(action)
     ) {
       return Response.json({ error: 'Valid conversationId and action are required' }, { status: 400 });

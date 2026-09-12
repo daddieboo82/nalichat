@@ -30,6 +30,15 @@ describe('final client auth consistency', () => {
     expect(source).not.toContain('base44.auth.me()');
   });
 
+  it('uses AuthContext in remaining admin client pages', async () => {
+    const webhook = await readText('src/pages/WebhookTest.jsx');
+    const dashboard = await readText('src/pages/AdminDashboard.jsx');
+    expect(webhook).toContain('useAuth');
+    expect(dashboard).toContain('useAuth');
+    expect(webhook).not.toContain('base44.auth.me()');
+    expect(dashboard).not.toContain('base44.auth.me()');
+  });
+
   it('uses AuthContext in the not-found page', async () => {
     const source = await readText('src/lib/PageNotFound.jsx');
     expect(source).toContain("import { useAuth } from '@/lib/AuthContext';");

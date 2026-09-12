@@ -103,6 +103,7 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, count: created });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('notifyOnMessage error:', error);
+    return Response.json({ error: 'Workflow processing failed' }, { status: 500 });
   }
 });

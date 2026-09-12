@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { isConversationId } from '../../shared/conversationIds.ts';
+import { acquireConversationMembershipLock, releaseConversationMembershipLock } from '../../shared/conversationMembershipLock.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
@@ -375,6 +376,47 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
       messageData.file_type = fileType;
     }
 
+    const conversationLockId = await acquireConversationMembershipLock(
+      base44.asServiceRole.entities,
+      conversationId,
+    );
+    if (!conversationLockId) {
+      return Response.json(
+        { error: 'Conversation is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
+      const lockedConversation = await base44.asServiceRole.entities.Conversation.get(conversationId).catch(() => null);
+      const lockedParticipantIds = Array.isArray(lockedConversation?.participant_ids)
+        ? lockedConversation.participant_ids
+        : [];
+      if (!lockedConversation || !lockedParticipantIds.includes(user.id)) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+
+      if (user.is_banned) {
+        const lockedOtherParticipantIds = lockedParticipantIds.filter((id: string) => id !== user.id);
+        if (
+          lockedConversation.type !== 'dm'
+          || lockedParticipantIds.length !== 2
+          || lockedOtherParticipantIds.length !== 1
+        ) {
+          return Response.json({ error: 'banned' }, { status: 403 });
+        }
+        const appealAdmin = await base44.asServiceRole.entities.User
+          .get(lockedOtherParticipantIds[0])
+          .catch(() => null);
+        if (appealAdmin?.role !== 'admin') {
+          return Response.json({ error: 'banned' }, { status: 403 });
+        }
+      } else if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+        return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+      }
+
+      messageData.participant_ids = lockedParticipantIds;
+
     if (clientMessageKey) {
       const messageId = await deterministicMessageId(user.id, conversationId, clientMessageKey);
       clientSendLockId = await acquireMessageMutationLock(
@@ -537,6 +579,12 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
   } finally {
     await releaseMessageMutationLock(base44.asServiceRole.entities, clientSendLockId);
   }
+    } finally {
+      await releaseConversationMembershipLock(
+        base44.asServiceRole.entities,
+        conversationLockId,
+      );
+    }
 }
 
 Deno.serve(async (req) => {

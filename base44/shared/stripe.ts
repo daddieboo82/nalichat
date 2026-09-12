@@ -1,9 +1,11 @@
+import { secrets } from 'base44:runtime';
+
 // Stripe API helper that uses REST directly to avoid SDK runtime drift in Deno.
 
 const STRIPE_API_BASE = 'https://api.stripe.com/v1';
 
 export function getStripeKey(): string {
-  const key = Deno.env.get('STRIPE_SECRET_KEY');
+  const key = secrets.get('STRIPE_SECRET_KEY');
   if (!key) throw new Error('Missing STRIPE_SECRET_KEY');
   return key;
 }

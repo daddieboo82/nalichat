@@ -449,7 +449,9 @@ export default async function(req) {
     console.log(`Nali maintenance (${mode}): ${issues.length} issues found, ${fixed.length} fixed.`);
     return Response.json(result);
   } catch (error) {
-    console.error('nali-maintenance error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    console.error('nali-maintenance error:', error);
+    return Response.json({ error: 'Maintenance operation failed' }, { status: 500 });
   }
 }

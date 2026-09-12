@@ -681,7 +681,7 @@ export default function Messages() {
               onSendMessage={(data) => {
                 if (isBlocked) {
                   toast.error(currentUser?.is_banned ? "You are banned from sending messages." : "You are timed out and cannot send messages right now.");
-                  return;
+                  throw new Error(currentUser?.is_banned ? "banned" : "timed_out");
                 }
                 sendMessage.mutate({ ...data, conversation_id: selectedConvId });
               }}

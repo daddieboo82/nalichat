@@ -4,6 +4,11 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import {
+  AiQuotaError,
+  aiQuotaErrorResponse,
+  executeMeteredAiRequest,
+} from '../../shared/aiQuota.ts';
 
 const MAX_TRANSCRIBE_BYTES = 50 * 1024 * 1024;
 
@@ -73,7 +78,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { post_id } = await readJsonBodyLimited(req, 8 * 1024);
+    const { post_id, request_key } = await readJsonBodyLimited(req, 8 * 1024);
     if (!isBase44EntityId(post_id)) {
       return Response.json({ error: 'Valid post_id is required' }, { status: 400 });
     }
@@ -91,8 +96,7 @@ Deno.serve(async (req) => {
     const genre = post.genre || 'Unknown';
     const tags = Array.isArray(post.tags) ? post.tags : [];
 
-    // Step 1: Transcribe only the media URL stored on the authorized track.
-    let transcript = "No lyrics available.";
+    // Validate stored media before reserving a daily AI request.
     if (file_url && !isTrustedStoredMediaUrl(file_url)) {
       return Response.json({ error: 'Stored track media host is not allowed' }, { status: 400 });
     }
@@ -104,17 +108,28 @@ Deno.serve(async (req) => {
       if (size <= 0 || size > MAX_TRANSCRIBE_BYTES) {
         return Response.json({ error: 'AI cover-art transcription supports tracks up to 50MB' }, { status: 413 });
       }
-      try {
-        const rawTranscript = await base44.asServiceRole.integrations.Core.TranscribeAudio({ audio_url: file_url });
-        const text = typeof rawTranscript === 'string' ? rawTranscript : rawTranscript?.text || '';
-        transcript = text ? text.slice(0, 12000) : transcript;
-      } catch (e) {
-        console.error("Transcription failed:", e.message);
-      }
     }
 
-    // Step 2: Generate image prompt with LLM
-    const prompt = `You are a visionary, avant-garde album cover designer.
+    const { result, quota } = await executeMeteredAiRequest({
+      base44,
+      user,
+      operation: 'cover_art',
+      requestKey: request_key,
+      dispatch: async () => {
+        // Step 1: Transcribe only the media URL stored on the authorized track.
+        let transcript = "No lyrics available.";
+        if (file_url) {
+          try {
+            const rawTranscript = await base44.asServiceRole.integrations.Core.TranscribeAudio({ audio_url: file_url });
+            const text = typeof rawTranscript === 'string' ? rawTranscript : rawTranscript?.text || '';
+            transcript = text ? text.slice(0, 12000) : transcript;
+          } catch (e) {
+            console.error("Transcription failed:", e instanceof Error ? e.message : e);
+          }
+        }
+
+        // Step 2: Generate image prompt with LLM.
+        const prompt = `You are a visionary, avant-garde album cover designer.
 Analyze the following track details:
 Title: ${title || 'Untitled'}
 Genre: ${genre || 'Unknown'}
@@ -125,14 +140,18 @@ Create a highly detailed, breathtaking, and completely unique image generation p
 CRITICAL: Do NOT include any text, typography, or words in the image itself. Focus entirely on the visual elements, lighting, style, and atmosphere.
 Respond with ONLY the raw image generation prompt string, nothing else.`;
 
-    const aiPrompt = await base44.asServiceRole.integrations.Core.InvokeLLM({ prompt });
+        const aiPrompt = await base44.asServiceRole.integrations.Core.InvokeLLM({ prompt });
 
-    // Step 3: Generate image
-    const imgRes = await base44.asServiceRole.integrations.Core.GenerateImage({ prompt: aiPrompt });
-    if (!imgRes || !imgRes.url) throw new Error("Image generation failed");
+        // Step 3: Generate image.
+        const imgRes = await base44.asServiceRole.integrations.Core.GenerateImage({ prompt: aiPrompt });
+        if (!imgRes || !imgRes.url) throw new Error("Image generation failed");
+        return { image_url: imgRes.url };
+      },
+    });
 
-    return Response.json({ image_url: imgRes.url });
+    return Response.json({ ...result, quota });
   } catch (error) {
+    if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('generate-cover-art error:', error);

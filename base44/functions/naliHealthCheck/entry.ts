@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const SCHEDULE_TIME_ZONE = 'America/New_York';
 const SCHEDULE_WINDOW_MINUTE = 20;
@@ -44,7 +45,7 @@ Deno.serve(async (req) => {
     }
 
     const base44 = createClientFromRequest(req);
-    const body = await req.json().catch(() => ({}));
+    const body = await readJsonBodyLimited(req, 8 * 1024);
 
     // Manual runs require an authenticated admin. Scheduled workflow runs do
     // not carry a user identity, so only permit those during the configured
@@ -193,7 +194,9 @@ ${dataSummary}`,
     console.log(`Nali health check done. Issues: ${issues.length}, admins notified: ${admins.length}`);
     return Response.json({ ok: true, headline, needsAttention, issuesCount: issues.length, adminsNotified: admins.length });
   } catch (error) {
-    console.error('naliHealthCheck error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    console.error('naliHealthCheck error:', error);
+    return Response.json({ error: 'Health check failed' }, { status: 500 });
   }
 });

@@ -144,6 +144,24 @@ export default function Files() {
   const { toast } = useToast();
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
 
+  useEffect(() => {
+    // File-management state can contain private IDs/names from the previous
+    // account even after user-scoped queries switch over. Clear it immediately
+    // whenever the authenticated identity changes.
+    setSelectedIds([]);
+    setCurrentFolderId(null);
+    setShowNewFolder(false);
+    setShowUploadModal(false);
+    setShowMoveFolder(false);
+    setNewFolderName("");
+    setNewFolderProject("none");
+    setFileToEdit(null);
+    setEditFormData({ name: "", tags: "", description: "" });
+    setSearch("");
+    setTypeFilter("all");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [currentUser?.id]);
+
   useEffect(() => { 
     
     // Check for download query param

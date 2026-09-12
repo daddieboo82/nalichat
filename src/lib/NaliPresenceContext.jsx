@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "sonner";
@@ -12,6 +12,8 @@ const VALID_LEVELS = ["proactive", "minimal", "off"];
 
 export function NaliPresenceProvider({ children }) {
   const { user } = useAuth();
+  const savingRef = useRef(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [level, setLevelState] = useState(() => {
     try { return localStorage.getItem(STORAGE_KEY) || DEFAULT_LEVEL; } catch { return DEFAULT_LEVEL; }
   });
@@ -25,7 +27,7 @@ export function NaliPresenceProvider({ children }) {
   }, [user?.nali_presence_level]);
 
   const setLevel = useCallback(async (newLevel) => {
-    if (!VALID_LEVELS.includes(newLevel)) return;
+    if (!VALID_LEVELS.includes(newLevel) || savingRef.current) return;
     const previousLevel = level;
 
     setLevelState(newLevel);
@@ -35,6 +37,8 @@ export function NaliPresenceProvider({ children }) {
     // it to the profile so it follows them across devices.
     if (!user?.id) return;
 
+    savingRef.current = true;
+    setIsSaving(true);
     try {
       const response = await base44.functions.invoke("updateMyProfile", {
         nali_presence_level: newLevel,
@@ -45,16 +49,20 @@ export function NaliPresenceProvider({ children }) {
       try { localStorage.setItem(STORAGE_KEY, previousLevel); } catch {}
       console.error("Nali presence update failed:", error);
       toast.error(error?.message || "Could not save your Nali Presence setting.");
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
     }
   }, [level, user?.id]);
 
   const value = useMemo(() => ({
     level,
     setLevel,
+    isSaving,
     isMuted: level === "off",
     isProactive: level === "proactive",
     isMinimal: level === "minimal",
-  }), [level, setLevel]);
+  }), [level, setLevel, isSaving]);
 
   return (
     <NaliPresenceContext.Provider value={value}>

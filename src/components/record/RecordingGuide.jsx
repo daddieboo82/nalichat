@@ -12,6 +12,17 @@ import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'nali_rec_guide_done';
 
+function getPracticeMimeType() {
+  if (typeof MediaRecorder === 'undefined') return '';
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+    'audio/ogg;codecs=opus',
+  ];
+  return candidates.find((type) => MediaRecorder.isTypeSupported?.(type)) || '';
+}
+
 /**
  * Guided first-time recording flow, narrated aloud via the browser's
  * speechSynthesis (warm voice when available). Walks the user through:
@@ -113,21 +124,38 @@ export default function RecordingGuide({ open, onClose }) {
 
   const doPracticeRecord = async () => {
     setPracticeUrl(null);
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setPracticeRecording(false);
+      return;
+    }
+
+    let stream = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       practiceStreamRef.current = stream;
-      const rec = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      const mimeType = getPracticeMimeType();
+      const rec = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const recordingMimeType = rec.mimeType || mimeType || 'audio/webm';
       practiceChunksRef.current = [];
-      rec.ondataavailable = (e) => practiceChunksRef.current.push(e.data);
+      rec.ondataavailable = (e) => {
+        if (e.data?.size) practiceChunksRef.current.push(e.data);
+      };
       rec.onstop = () => {
-        const blob = new Blob(practiceChunksRef.current, { type: 'audio/webm' });
-        setPracticeUrl(URL.createObjectURL(blob));
+        const blob = new Blob(practiceChunksRef.current, { type: recordingMimeType });
+        if (blob.size > 0) {
+          setPracticeUrl(URL.createObjectURL(blob));
+        } else {
+          setPracticeUrl(null);
+        }
         if (practiceStreamRef.current) {
           practiceStreamRef.current.getTracks().forEach(t => t.stop());
           practiceStreamRef.current = null;
         }
         setPracticeRecording(false);
         if (practiceTimerRef.current) clearInterval(practiceTimerRef.current);
+        practiceTimerRef.current = null;
+        if (practiceStopTimerRef.current) clearTimeout(practiceStopTimerRef.current);
+        practiceStopTimerRef.current = null;
         setPracticeTimer(0);
       };
       practiceRecRef.current = rec;
@@ -140,6 +168,15 @@ export default function RecordingGuide({ open, onClose }) {
         if (rec.state !== 'inactive') { try { rec.stop(); } catch {} }
       }, 5000);
     } catch (err) {
+      stream?.getTracks().forEach(t => t.stop());
+      if (practiceStreamRef.current === stream) practiceStreamRef.current = null;
+      practiceRecRef.current = null;
+      if (practiceTimerRef.current) clearInterval(practiceTimerRef.current);
+      practiceTimerRef.current = null;
+      if (practiceStopTimerRef.current) clearTimeout(practiceStopTimerRef.current);
+      practiceStopTimerRef.current = null;
+      setPracticeRecording(false);
+      setPracticeTimer(0);
       setPracticeUrl(null);
     }
   };

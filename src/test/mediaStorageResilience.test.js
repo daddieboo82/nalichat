@@ -49,6 +49,14 @@ describe('media storage resilience', () => {
     expect(source).toContain('const extension = recordingExtension(recordingMimeType)');
   });
 
+  it('preserves Studio recorder MIME type and closes waveform decode contexts', async () => {
+    const source = await readText('src/pages/Studio.jsx');
+    expect(source).toContain("mediaRecorderRef.current?.mimeType");
+    expect(source).toContain("audioChunksRef.current.find((chunk) => chunk?.type)?.type");
+    expect(source).toContain("if (blob.size === 0)");
+    expect(source).toContain("void waveformAudioCtx.close().catch(() => {})");
+  });
+
   it('keeps resumable transfers working when localStorage is unavailable', async () => {
     const source = await readText('src/lib/resumableUpload.js');
     expect(source).toContain('try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}');

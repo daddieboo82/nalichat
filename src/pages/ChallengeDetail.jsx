@@ -11,6 +11,7 @@ import SubmitRemixModal from "@/components/challenges/SubmitRemixModal";
 import { toast } from "sonner";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import LoadError from "@/components/layout/LoadError";
+import { useAuth } from "@/lib/AuthContext";
 
 const MAX_CHALLENGE_SUBMISSIONS = 500;
 const MAX_USER_CHALLENGE_VOTES = 500;
@@ -19,7 +20,7 @@ export default function ChallengeDetail() {
   const { challengeId } = useParams();
   const [challenge, setChallenge] = useState(null);
   const [submissions, setSubmissions] = useState([]);
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [myVotes, setMyVotes] = useState(new Set());
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -50,7 +51,6 @@ export default function ChallengeDetail() {
   };
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
     refresh();
   }, [challengeId]);
 

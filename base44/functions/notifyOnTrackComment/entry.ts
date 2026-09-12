@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { sendPushToUser } from '../../shared/webPush.ts';
-import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
+import { isBase44EntityId, workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
 import { createNotificationIdempotently } from '../../shared/workflowNotifications.ts';
 import { claimFixedWindow } from '../../shared/rateLimit.ts';
 import { validWorkflowKey } from '../../shared/workflowAuth.ts';
@@ -39,6 +39,7 @@ Deno.serve(async (req) => {
     if (!comment?.track_id || (comment.parent_type && comment.parent_type !== 'art_post')) {
       return Response.json({ success: true });
     }
+    if (!isBase44EntityId(comment.track_id)) return Response.json({ error: 'Invalid post reference' }, { status: 400 });
 
     const post = await entities.ArtPost.get(comment.track_id);
     if (!post?.creator_id || post.creator_id === comment.author_id) {

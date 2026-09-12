@@ -50,7 +50,12 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
   };
 
   const handleCopy = async () => {
-    await copyToClipboard(inviteUrl);
+    const copiedSuccessfully = await copyToClipboard(inviteUrl);
+    if (!copiedSuccessfully) {
+      setCopied(false);
+      toast({ title: "Copy failed", description: "Please copy the invite link manually.", variant: "destructive" });
+      return;
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast({ title: "Copied!", description: "Invite link copied to clipboard." });
@@ -139,7 +144,10 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
                       url: inviteUrl,
                     });
                   } catch (err) {
-                    console.error("Share failed", err);
+                    if (err?.name !== "AbortError") {
+                      console.error("Share failed", err);
+                      toast({ title: "Share failed", description: "Please try again.", variant: "destructive" });
+                    }
                   }
                 }}
               >

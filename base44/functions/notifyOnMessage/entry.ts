@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { sendPushToUser } from '../../shared/webPush.ts';
-import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
+import { isBase44EntityId, workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
 import { createNotificationIdempotently } from '../../shared/workflowNotifications.ts';
 import { claimFixedWindow } from '../../shared/rateLimit.ts';
 import { validWorkflowKey } from '../../shared/workflowAuth.ts';
@@ -38,6 +38,7 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, count: 0, skipped: 'already_processed' });
     }
     if (!message?.conversation_id) return Response.json({ success: true });
+    if (!isBase44EntityId(message.conversation_id)) return Response.json({ error: 'Invalid conversation reference' }, { status: 400 });
 
     const conversation = await entities.Conversation.get(message.conversation_id);
     if (!conversation) return Response.json({ success: true });

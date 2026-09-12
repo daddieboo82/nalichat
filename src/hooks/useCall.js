@@ -195,6 +195,7 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
           }
         }, RING_TIMEOUT_MS);
       } catch (e) {
+        if (e?.name === "AbortError") return;
         console.error("Failed to start call:", e);
         engineRef.current?.endCall();
         setCallState(null);
@@ -227,6 +228,7 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
         }
       });
     } catch (e) {
+      if (e?.name === "AbortError") return;
       console.error("Failed to accept call:", e);
       engineRef.current?.endCall();
       setCallState(null);

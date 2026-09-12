@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const MAX_PUBLISH_BYTES = 100 * 1024 * 1024;
 const ALLOWED_MEDIA = new Set(['original','remix','cover','beat','production','mixing','mastering','collab']);
@@ -83,7 +84,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Publishing rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 32 * 1024);
     const projectId = typeof body?.projectId === 'string' ? body.projectId.trim() : '';
     if (body?.projectId != null && (!projectId || projectId.length > 200)) {
       return Response.json({ error: 'Invalid projectId' }, { status: 400 });
@@ -161,6 +162,8 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, post });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     return Response.json({ error: error?.message || 'Could not publish Studio bounce' }, { status: 500 });
   }
 });

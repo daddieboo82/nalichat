@@ -10,6 +10,22 @@ function constantTimeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function checkoutLookupScope(req: Request): Promise<string> {
+  const forwarded = String(
+    req.headers.get('cf-connecting-ip')
+    || req.headers.get('x-real-ip')
+    || req.headers.get('x-forwarded-for')
+    || '',
+  ).split(',')[0].trim().slice(0, 128);
+  const userAgent = String(req.headers.get('user-agent') || '').slice(0, 256);
+  return 'checkout_verify_lookup_' + await sha256Hex(`${forwarded || 'unknown'}:${userAgent || 'unknown'}`);
+}
+
 // Client-side payment verification fallback — called from the ThankYou page.
 // If the Stripe webhook already marked the purchase as paid, this is a no-op.
 // If the webhook missed it, this fulfills the payment so the buyer gets access.
@@ -31,6 +47,19 @@ Deno.serve(async (req) => {
     }
 
     const base44 = createClientFromRequest(req);
+    const lookupScope = await checkoutLookupScope(req);
+    const lookupRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      lookupScope,
+      'checkout_verification_lookup',
+      120,
+    );
+    if (!lookupRate.allowed) {
+      return Response.json(
+        { error: 'Too many checkout verification attempts. Please try again later.' },
+        { status: 429 },
+      );
+    }
 
     // Authorize against the local opaque verifier before making any Stripe API
     // request. This prevents the public fallback endpoint from becoming an

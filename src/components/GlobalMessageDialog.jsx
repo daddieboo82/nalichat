@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -20,8 +20,18 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
   const retryKeyRef = useRef(null);
   const retrySignatureRef = useRef("");
 
+  useEffect(() => {
+    setSearch("");
+    setSelectedUser(null);
+    setMessage("");
+    setSending(false);
+    retryKeyRef.current = null;
+    retrySignatureRef.current = "";
+    if (!currentUser?.id) onOpenChange(false);
+  }, [currentUser?.id, onOpenChange]);
+
   const { data: users = [], isLoading, isError: usersError } = useQuery({
-    queryKey: ["users-list"],
+    queryKey: ["users-list", currentUser?.id],
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicUsers", {});
       if (res?.data?.error) throw new Error(res.data.error);

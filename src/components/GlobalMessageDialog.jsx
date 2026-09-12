@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, Send } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export default function GlobalMessageDialog({ open, onOpenChange }) {
   const [search, setSearch] = useState("");
@@ -14,15 +15,24 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [authError, setAuthError] = useState(false);
 
   useEffect(() => {
-    if (open) base44.auth.me().then(setCurrentUser).catch(() => {});
+    if (!open) return;
+    setAuthError(false);
+    base44.auth.me()
+      .then(setCurrentUser)
+      .catch(() => {
+        setCurrentUser(null);
+        setAuthError(true);
+      });
   }, [open]);
 
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading, isError: usersError } = useQuery({
     queryKey: ["users-list"],
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicUsers", {});
+      if (res?.data?.error) throw new Error(res.data.error);
       return res?.data?.users || [];
     },
     enabled: open,
@@ -63,6 +73,9 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
       onOpenChange(false);
     } catch (error) {
       console.error("Error sending message:", error);
+      toast.error(error?.message === "moderated"
+        ? "Message blocked by content moderation."
+        : error?.message || "Couldn't send the message. Please try again.");
     } finally {
       setSending(false);
     }
@@ -101,7 +114,15 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
             </div>
 
             <div className="max-h-[300px] overflow-y-auto space-y-1">
-              {isLoading ? (
+              {authError ? (
+                <p className="text-sm text-destructive text-center py-8" role="alert">
+                  Couldn't verify your account. Close and reopen this dialog to retry.
+                </p>
+              ) : usersError ? (
+                <p className="text-sm text-destructive text-center py-8" role="alert">
+                  Couldn't load people. Please try again.
+                </p>
+              ) : isLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                 </div>

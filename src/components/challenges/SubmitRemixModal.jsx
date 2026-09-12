@@ -24,11 +24,28 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
   const [file, setFile] = useState(null);
   const [linkUrl, setLinkUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [tracksLoading, setTracksLoading] = useState(false);
+  const [tracksError, setTracksError] = useState(false);
 
   useEffect(() => {
-    if (open && user) {
-      base44.entities.ArtPost.filter({ creator_id: user.id }, "-created_date", 25).then(setMyTracks).catch(() => {});
-    }
+    if (!open || !user) return;
+    let cancelled = false;
+    setTracksLoading(true);
+    setTracksError(false);
+    base44.entities.ArtPost.filter({ creator_id: user.id }, "-created_date", 25)
+      .then((tracks) => {
+        if (!cancelled) setMyTracks(tracks || []);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMyTracks([]);
+          setTracksError(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setTracksLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [open, user]);
 
   const reset = () => {
@@ -132,7 +149,11 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
             </TabsList>
 
             <TabsContent value="studio" className="space-y-2 pt-3">
-              {myTracks.length === 0 ? (
+              {tracksLoading ? (
+                <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
+              ) : tracksError ? (
+                <p className="text-sm text-destructive" role="alert">Couldn't load your published tracks. Close and reopen this dialog to retry.</p>
+              ) : myTracks.length === 0 ? (
                 <p className="text-sm text-muted-foreground">You have no published tracks yet. Bounce one in the Studio first.</p>
               ) : (
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">

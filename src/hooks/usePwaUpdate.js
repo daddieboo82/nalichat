@@ -58,7 +58,7 @@ export function usePwaUpdate() {
     };
 
     navigator.serviceWorker
-      .register('/sw.js')
+      .register('/sw.js', { updateViaCache: 'none' })
       .then((reg) => {
         if (disposed) return;
         registration = reg;
@@ -72,10 +72,22 @@ export function usePwaUpdate() {
 
         reg.addEventListener('updatefound', handleUpdateFound);
 
-        // Periodically check for SW updates (every 60 minutes).
-        updateInterval = setInterval(() => {
-          reg.update().catch(() => {});
-        }, 60 * 60 * 1000);
+        const checkForUpdate = () => {
+          if (document.visibilityState === 'visible') {
+            reg.update().catch(() => {});
+          }
+        };
+
+        // iPhone/PWA installs can remain open for long periods. Re-check when
+        // Safari resumes the app instead of waiting up to an hour.
+        document.addEventListener('visibilitychange', checkForUpdate);
+        window.addEventListener('pageshow', checkForUpdate);
+        checkForUpdate();
+
+        // Keep a periodic fallback as well.
+        updateInterval = setInterval(checkForUpdate, 15 * 60 * 1000);
+
+        registration._naliCheckForUpdate = checkForUpdate;
       })
       .catch(() => {});
 
@@ -99,6 +111,10 @@ export function usePwaUpdate() {
       }
       if (installingWorker && installingStateHandler) {
         installingWorker.removeEventListener('statechange', installingStateHandler);
+      }
+      if (registration?._naliCheckForUpdate) {
+        document.removeEventListener('visibilitychange', registration._naliCheckForUpdate);
+        window.removeEventListener('pageshow', registration._naliCheckForUpdate);
       }
       if (updateInterval) clearInterval(updateInterval);
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);

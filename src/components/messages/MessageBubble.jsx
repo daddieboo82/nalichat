@@ -31,15 +31,20 @@ async function speakText(text) {
   speakingAudios.clear();
   try {
     const res = await base44.functions.invoke("generate-speech", { text: text.slice(0, 1000), voice: "honey" });
+    if (res?.data?.error) throw new Error(res.data.error);
     const url = res?.data?.url;
-    if (!url) return;
+    if (!url) throw new Error("Speech audio was not generated");
     const audio = new Audio(url);
     speakingAudios.set(text, audio);
     audio.onended = () => speakingAudios.delete(text);
-    audio.onerror = () => speakingAudios.delete(text);
+    audio.onerror = () => {
+      speakingAudios.delete(text);
+      toast.error("Couldn't play this message aloud. Please try again.");
+    };
     await audio.play();
   } catch (e) {
     console.error("TTS error", e);
+    toast.error("Couldn't play this message aloud. Please try again.");
   }
 }
 

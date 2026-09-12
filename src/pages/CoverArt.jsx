@@ -63,6 +63,33 @@ export default function CoverArt() {
   }, [overlayImageRef]);
   const [isApplyingEdits, setIsApplyingEdits] = useState(false);
 
+  useEffect(() => {
+    // Generated/editing state can contain private media from the previous account.
+    // Clear it before the next identity can interact with this surface.
+    setSelectedPost(null);
+    setGeneratedImage(null);
+    setGeneratingStatus("");
+    setShowFilesDialog(false);
+    setShowPlaylistDialog(false);
+    setSelectedPlaylist(null);
+    setShowEditDialog(false);
+    setOverlayImageRef(null);
+    setEditOptions({
+      brightness: 100,
+      contrast: 100,
+      saturation: 100,
+      text: "",
+      textColor: "#ffffff",
+      textPosition: "center",
+      fontFamily: "sans-serif",
+      overlayScale: 30,
+      overlayX: 50,
+      overlayY: 50,
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (importFileInputRef.current) importFileInputRef.current.value = "";
+  }, [currentUser?.id]);
+
   const applyEdits = async () => {
     setIsApplyingEdits(true);
     try {
@@ -140,7 +167,7 @@ export default function CoverArt() {
   });
 
   const { data: playlistTracks = [], isLoading: isLoadingPlaylistTracks } = useQuery({
-    queryKey: ["playlistTracks", selectedPlaylist?.id],
+    queryKey: ["playlistTracks", currentUser?.id, selectedPlaylist?.id],
     queryFn: async () => {
       if (!selectedPlaylist?.track_ids?.length) return [];
       const tracks = [];

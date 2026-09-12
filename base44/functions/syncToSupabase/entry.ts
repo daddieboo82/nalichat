@@ -83,7 +83,8 @@ export default async function (req) {
         try {
           results.push(await syncEntity(base44, entityName, tableName));
         } catch (e) {
-          results.push({ entity: entityName, table: tableName, error: e.message });
+          console.error(`syncToSupabase ${entityName} failed:`, e);
+          results.push({ entity: entityName, table: tableName, error: 'Sync failed' });
         }
       }
     }

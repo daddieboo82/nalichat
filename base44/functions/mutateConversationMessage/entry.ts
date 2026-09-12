@@ -187,6 +187,16 @@ Deno.serve(async (req) => {
       if (!reactionRate.allowed) {
         return Response.json({ error: 'Reaction rate limit exceeded. Please try again later.' }, { status: 429 });
       }
+    } else if (action === 'edit') {
+      const editRate = await consumeHourlyLimit(entities, user.id, 'message_edit', 120);
+      if (!editRate.allowed) {
+        return Response.json({ error: 'Message edit rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+    } else if (action === 'delete') {
+      const deleteRate = await consumeHourlyLimit(entities, user.id, 'message_delete', 120);
+      if (!deleteRate.allowed) {
+        return Response.json({ error: 'Message delete rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
     }
 
     const lockId = await acquireMessageMutationLock(entities, messageId);
@@ -347,11 +357,6 @@ Deno.serve(async (req) => {
     if (!text.trim()) return Response.json({ error: 'Message text cannot be empty' }, { status: 400 });
     if (text.length > 20000) {
       return Response.json({ error: 'Message text must be 20000 characters or fewer' }, { status: 413 });
-    }
-
-    const editRate = await consumeHourlyLimit(entities, user.id, 'message_edit', 120);
-    if (!editRate.allowed) {
-      return Response.json({ error: 'Message edit rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
     const moderation = await moderateEditedText(base44, user, text, message.conversation_id);

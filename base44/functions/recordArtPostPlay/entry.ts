@@ -68,7 +68,15 @@ export default async function(req) {
     try {
       await entities.ArtPost.updateMany({ id: postId }, { $inc: { views: 1 } });
     } catch (countError) {
-      await entities.ArtPostPlay.delete(id).catch(() => {});
+      try {
+        await entities.ArtPostPlay.delete(id);
+      } catch (rollbackError) {
+        console.error('ArtPost play rollback failed:', rollbackError);
+        throw new Error(
+          'Play count update failed and play rollback was incomplete. Please retry.',
+          { cause: countError },
+        );
+      }
       throw countError;
     }
     const updated = await entities.ArtPost.get(postId);

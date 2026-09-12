@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClientMessageKey } from "@/lib/messageCache";
 
 export default function GroupChatDialog({ open, onOpenChange, users, onCreate }) {
   const [name, setName] = useState("");
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const retryKeyRef = useRef(null);
+  const retrySignatureRef = useRef("");
 
   const filtered = users.filter(u =>
     (u.display_name || u.full_name || "").toLowerCase().includes(search.toLowerCase())
@@ -19,10 +22,25 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
   const toggle = (id) => setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
 
   const handleCreate = async () => {
-    if (!name.trim() || selected.length < 1 || isCreating) return;
+    const trimmedName = name.trim();
+    if (!trimmedName || selected.length < 1 || isCreating) return;
+    const participantIds = [...selected].sort();
+    const signature = `${trimmedName}:${participantIds.join(",")}`;
+    const clientRequestKey = retryKeyRef.current && retrySignatureRef.current === signature
+      ? retryKeyRef.current
+      : createClientMessageKey();
+    retryKeyRef.current = clientRequestKey;
+    retrySignatureRef.current = signature;
+
     setIsCreating(true);
     try {
-      await onCreate({ name: name.trim(), participant_ids: selected });
+      await onCreate({
+        name: trimmedName,
+        participant_ids: participantIds,
+        client_request_key: clientRequestKey,
+      });
+      retryKeyRef.current = null;
+      retrySignatureRef.current = "";
       setName("");
       setSelected([]);
       setSearch("");

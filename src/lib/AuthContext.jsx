@@ -38,11 +38,9 @@ export const AuthProvider = ({ children }) => {
       // Fetch public settings first.  If this fails we still try to resolve the
       // user session below — a 403 on public-settings for a brand-new Google
       // user must not swallow the valid access_token and leave the app logged out.
-      let publicSettingsOk = false;
       try {
         const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
         if (publicSettings) setAppPublicSettings(publicSettings);
-        publicSettingsOk = true;
       } catch (appError) {
         console.error('App state check failed:', appError);
         if (appError?.status === 403 && appError?.data?.extra_data?.reason) {

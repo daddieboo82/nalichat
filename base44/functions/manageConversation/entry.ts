@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'banned' }, { status: 403 });
     }
 
-    if (['create_dm', 'create_group', 'create_public'].includes(action)) {
+    if (['create_dm', 'create_public'].includes(action)) {
       const rate = await consumeHourlyLimit(entities, user.id, 'conversation_create', 60);
       if (!rate.allowed) {
         return Response.json({ error: 'Conversation creation rate limit exceeded. Please try again later.' }, { status: 429 });
@@ -224,6 +224,14 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Groups require 2 to 100 participants' }, { status: 400 });
       }
 
+      if (body?.client_request_key != null && typeof body.client_request_key !== 'string') {
+        return Response.json({ error: 'client_request_key must be a string' }, { status: 400 });
+      }
+      const clientRequestKey = String(body?.client_request_key || '').trim();
+      if (clientRequestKey.length > 200) {
+        return Response.json({ error: 'client_request_key is too long' }, { status: 400 });
+      }
+
       if (body?.name != null && typeof body.name !== 'string') {
         return Response.json({ error: 'Group name must be a string' }, { status: 400 });
       }
@@ -231,6 +239,37 @@ Deno.serve(async (req) => {
       if (!name) return Response.json({ error: 'Group name is required' }, { status: 400 });
       if (name.length > 120) {
         return Response.json({ error: 'Group name must be 120 characters or fewer' }, { status: 413 });
+      }
+
+      const groupRequestId = clientRequestKey
+        ? await hashedConversationId('group_request', `${user.id}:${clientRequestKey}`)
+        : null;
+      if (groupRequestId) {
+        const existingGroup = await entities.Conversation.get(groupRequestId).catch(() => null);
+        if (existingGroup) {
+          const existingIds = Array.isArray(existingGroup.participant_ids)
+            ? [...existingGroup.participant_ids].sort()
+            : [];
+          const requestedSorted = [...participantIds].sort();
+          const sameParticipants = existingIds.length === requestedSorted.length
+            && existingIds.every((id: string, index: number) => id === requestedSorted[index]);
+          if (
+            existingGroup.type === 'group'
+            && existingGroup.name === name
+            && sameParticipants
+          ) {
+            return Response.json({ success: true, conversation: existingGroup, duplicate: true });
+          }
+          return Response.json(
+            { error: 'client_request_key was already used for a different group request' },
+            { status: 409 },
+          );
+        }
+      }
+
+      const rate = await consumeHourlyLimit(entities, user.id, 'conversation_create', 60);
+      if (!rate.allowed) {
+        return Response.json({ error: 'Conversation creation rate limit exceeded. Please try again later.' }, { status: 429 });
       }
 
       const uniqueOtherIds = participantIds.filter((id: string) => id !== user.id);
@@ -251,13 +290,32 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'One or more participants are unavailable' }, { status: 400 });
       }
 
-      const conversation = await entities.Conversation.create({
+      const groupPayload = {
+        ...(groupRequestId ? { id: groupRequestId } : {}),
         type: 'group',
         name,
         is_public: false,
         participant_ids: participantIds,
-      });
-      return Response.json({ success: true, conversation });
+      };
+      try {
+        const conversation = await entities.Conversation.create(groupPayload);
+        return Response.json({ success: true, conversation });
+      } catch (createError) {
+        if (!groupRequestId) throw createError;
+        const raced = await entities.Conversation.get(groupRequestId).catch(() => null);
+        const racedIds = Array.isArray(raced?.participant_ids) ? [...raced.participant_ids].sort() : [];
+        const requestedSorted = [...participantIds].sort();
+        const sameParticipants = racedIds.length === requestedSorted.length
+          && racedIds.every((id: string, index: number) => id === requestedSorted[index]);
+        if (
+          raced?.type === 'group'
+          && raced?.name === name
+          && sameParticipants
+        ) {
+          return Response.json({ success: true, conversation: raced, duplicate: true });
+        }
+        throw createError;
+      }
     }
 
     if (action === 'create_public') {

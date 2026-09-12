@@ -22,7 +22,7 @@ describe('final user-facing error states', () => {
 
   it('distinguishes admin auth failure from logged-out state', async () => {
     const source = await readText('src/pages/AdminDashboard.jsx');
-    expect(source).toContain('const [authError, setAuthError] = useState(false);');
+    expect(source).toContain('const { user: currentUser, isLoadingAuth: isLoadingUser, authError } = useAuth();');
     expect(source).toContain("We couldn't verify your account. Refresh and try again.");
   });
 
@@ -50,7 +50,7 @@ describe('final user-facing error states', () => {
     const source = await readText('src/components/GlobalMessageDialog.jsx');
     expect(source).toContain('isError: usersError');
     expect(source).toContain('if (res?.data?.error) throw new Error(res.data.error);');
-    expect(source).toContain("Couldn't verify your account. Close and reopen this dialog to retry.");
+    expect(source).toContain('Log in to send messages.');
     expect(source).toContain("Couldn't load people. Please try again.");
     expect(source).toContain('toast.error(error?.message === "moderated"');
   });

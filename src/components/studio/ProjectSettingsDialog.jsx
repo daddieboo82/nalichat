@@ -42,7 +42,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
   }, [currentUser?.id, project?.id, onOpenChange]);
 
   const { data: allUsers = [] } = useQuery({
-    queryKey: ["users", currentUser?.id],
+    queryKey: ["users", "directory", currentUser?.id],
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicUsers", {});
       return res?.data?.users || [];

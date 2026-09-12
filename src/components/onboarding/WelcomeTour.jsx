@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, UserCircle, Trophy, ArrowRight, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { sounds } from "@/hooks/use-sound";
+import { toast } from "sonner";
 
 const STEPS = [
   {
@@ -39,7 +40,14 @@ export default function WelcomeTour({ open, onClose }) {
   const Icon = current.icon;
 
   const complete = async () => {
-    try { await base44.functions.invoke("updateMyProfile", { welcome_tour_completed: true }); } catch {}
+    try {
+      const res = await base44.functions.invoke("updateMyProfile", { welcome_tour_completed: true });
+      if (res?.data?.error) throw new Error(res.data.error);
+      return true;
+    } catch (error) {
+      toast.error("Couldn't save your tour progress. Please try again.");
+      return false;
+    }
   };
 
   const handleAction = async (action, path) => {
@@ -47,17 +55,17 @@ export default function WelcomeTour({ open, onClose }) {
     if (action === "next") {
       setStep((s) => Math.min(s + 1, STEPS.length - 1));
     } else if (action === "navigate") {
-      await complete();
+      if (!await complete()) return;
       onClose();
       navigate(path);
     } else if (action === "complete") {
-      await complete();
+      if (!await complete()) return;
       onClose();
     }
   };
 
   const handleDismiss = async () => {
-    await complete();
+    if (!await complete()) return;
     onClose();
   };
 

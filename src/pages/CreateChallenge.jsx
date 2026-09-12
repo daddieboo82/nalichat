@@ -29,6 +29,19 @@ export default function CreateChallenge() {
   const [coverPreview, setCoverPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    setForm({
+      title: "", description: "", genre: "", bpm: "", key: "",
+      rules: "", prize_description: "",
+      start_date: "", submission_end_date: "", voting_end_date: "",
+    });
+    setSourceTrackFile(null);
+    setSourceTrackName("");
+    setCoverFile(null);
+    setCoverPreview(null);
+    setSubmitting(false);
+  }, [user?.id]);
+
   useEffect(() => () => {
     if (coverPreview) URL.revokeObjectURL(coverPreview);
   }, [coverPreview]);

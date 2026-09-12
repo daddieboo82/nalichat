@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendPushToUser } from '../../shared/webPush.ts';
 import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
 import { createNotificationIdempotently } from '../../shared/workflowNotifications.ts';
+import { lockedNotification } from '../../shared/lockedChats.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -54,23 +55,29 @@ Deno.serve(async (req) => {
     let created = 0;
     for (const recipientId of recipients) {
       const isLockedChat = lockedRecipientIds.has(recipientId);
-      const notification = {
-        id: `notification_message_${message.id}_${recipientId}`,
-        recipient_id: recipientId,
-        type: "message",
-        actor_id: isLockedChat ? "" : message.sender_id,
-        actor_name: isLockedChat ? "Locked chat" : (message.sender_name || "Someone"),
-        actor_avatar: isLockedChat ? "" : message.sender_avatar,
-        message: isLockedChat
-          ? "New message in a locked chat."
-          : callSignal
-            ? `Incoming ${callSignal.callType === 'video' ? 'video' : 'audio'} call`
-            : conversation.type === 'group'
-              ? `sent a message in ${conversation.name || 'a group'}: "${message.text ? message.text.substring(0, 30) + (message.text.length > 30 ? '...' : '') : 'an attachment'}"`
-              : `${message.text ? message.text.substring(0, 60) + (message.text.length > 60 ? '...' : '') : 'Sent you an attachment'}`,
-        link: `/messages?id=${conversation.id}`,
-        locked_chat: isLockedChat,
-      };
+      const notification = isLockedChat
+        ? {
+            id: `notification_message_${message.id}_${recipientId}`,
+            recipient_id: recipientId,
+            type: "message",
+            ...lockedNotification(conversation.id),
+          }
+        : {
+            id: `notification_message_${message.id}_${recipientId}`,
+            recipient_id: recipientId,
+            type: "message",
+            conversation_id: conversation.id,
+            locked_chat: false,
+            actor_id: message.sender_id,
+            actor_name: message.sender_name || "Someone",
+            actor_avatar: message.sender_avatar,
+            message: callSignal
+              ? `Incoming ${callSignal.callType === 'video' ? 'video' : 'audio'} call`
+              : conversation.type === 'group'
+                ? `sent a message in ${conversation.name || 'a group'}: "${message.text ? message.text.substring(0, 30) + (message.text.length > 30 ? '...' : '') : 'an attachment'}"`
+                : `${message.text ? message.text.substring(0, 60) + (message.text.length > 60 ? '...' : '') : 'Sent you an attachment'}`,
+            link: `/messages?id=${conversation.id}`,
+          };
       const result = await createNotificationIdempotently(entities.Notification, notification);
       if (!result.created) continue;
       created += 1;

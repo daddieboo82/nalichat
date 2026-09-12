@@ -1,5 +1,4 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -59,17 +58,13 @@ const NAV_GROUPS = [
 export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const { isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const handleLogout = async () => {
     await logout();
     navigate("/", { replace: true });
   };
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const isActive = (path) =>
     location.pathname === path || (path !== "/" && location.pathname.startsWith(path));

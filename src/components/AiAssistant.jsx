@@ -33,7 +33,12 @@ export default function AiAssistant() {
 
 
   useEffect(() => {
-    const handleOpen = (e) => openChat(e.detail?.greeting);
+    const handleOpen = (e) => {
+      void openChat(e.detail?.greeting).catch((error) => {
+        console.error("Nali open error", error);
+        toast.error("Couldn't open NALI.ai. Please try again.");
+      });
+    };
     const handleSendMessage = async (e) => {
       const text = e.detail?.message;
       if (!text) return;
@@ -43,9 +48,14 @@ export default function AiAssistant() {
       }
       setOpen(true);
       setMinimized(false);
-      let conv = conversation;
-      if (!conv) conv = await initConversation();
-      await base44.agents.addMessage(conv, { role: "user", content: text });
+      try {
+        let conv = conversation;
+        if (!conv) conv = await initConversation();
+        await base44.agents.addMessage(conv, { role: "user", content: text });
+      } catch (error) {
+        console.error("Nali event send error", error);
+        toast.error("Couldn't send that message to NALI.ai. Please try again.");
+      }
     };
     window.addEventListener('open-ai-assistant', handleOpen);
     window.addEventListener('nali-send-message', handleSendMessage);

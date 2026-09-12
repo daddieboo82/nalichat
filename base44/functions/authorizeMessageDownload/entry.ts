@@ -56,7 +56,9 @@ Deno.serve(async (req) => {
       file_name: message.file_name || 'file',
     });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('authorizeMessageDownload error:', error);
-    return Response.json({ error: error?.message || 'Could not authorize download' }, { status: 500 });
+    return Response.json({ error: 'Could not authorize download' }, { status: 500 });
   }
 });

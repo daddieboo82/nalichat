@@ -13,6 +13,7 @@ import TopWorksGallery from "@/components/profile/TopWorksGallery";
 import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import NaliContextHint from "@/components/nali/NaliContextHint";
 import PullToRefresh from "@/components/layout/PullToRefresh";
+import { toast } from "sonner";
 
 const ROLES = [
   { value: "artist", label: "Artist" },
@@ -97,6 +98,10 @@ export default function Profile() {
     // Refresh the authoritative auth context and wait for any transient retry.
     await checkUserAuth();
     setEditing(false);
+    toast.success("Profile updated.");
+    } catch (error) {
+      console.error("Profile update failed:", error);
+      toast.error(error?.message || "Could not update your profile. Please try again.");
     } finally { setSaving(false); }
   };
 
@@ -109,6 +114,10 @@ export default function Profile() {
       const res = await base44.functions.invoke("updateMyProfile", { avatar_url: file_url });
       if (res?.data?.error) throw new Error(res.data.error);
       await checkUserAuth();
+      toast.success("Profile photo updated.");
+    } catch (error) {
+      console.error("Avatar update failed:", error);
+      toast.error(error?.message || "Could not update your profile photo.");
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -124,6 +133,10 @@ export default function Profile() {
       const res = await base44.functions.invoke("updateMyProfile", { cover_url: file_url });
       if (res?.data?.error) throw new Error(res.data.error);
       await checkUserAuth();
+      toast.success("Profile cover updated.");
+    } catch (error) {
+      console.error("Profile cover update failed:", error);
+      toast.error(error?.message || "Could not update your profile cover.");
     } finally {
       setUploading(false);
       e.target.value = "";

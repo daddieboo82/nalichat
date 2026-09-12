@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
 
@@ -74,11 +75,12 @@ Deno.serve(async (req) => {
 
     const { postId, loudnessTarget, format, bitDepth, sampleRate } = await readJsonBodyLimited(req, 16 * 1024);
 
-    if (!postId) {
-      return Response.json({ error: 'postId is required' }, { status: 400 });
+    const normalizedPostId = typeof postId === 'string' ? postId.trim() : '';
+    if (!isBase44EntityId(normalizedPostId)) {
+      return Response.json({ error: 'Valid postId is required' }, { status: 400 });
     }
 
-    const post = await base44.asServiceRole.entities.ArtPost.get(postId);
+    const post = await base44.asServiceRole.entities.ArtPost.get(normalizedPostId);
     if (!post) {
       return Response.json({ error: 'Track not found' }, { status: 404 });
     }

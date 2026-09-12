@@ -2,6 +2,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import {
+  AiQuotaError,
+  aiQuotaErrorResponse,
+  executeMeteredAiRequest,
+} from '../../shared/aiQuota.ts';
 
 // Generates TTS audio for Nali's voice replies.
 // Moved to a backend function to protect integration credits — the client
@@ -42,7 +47,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { text, voice } = await readJsonBodyLimited(req, 16 * 1024);
+    const { text, voice, request_key } = await readJsonBodyLimited(req, 16 * 1024);
     if (typeof text !== 'string' || !text.trim()) {
       return Response.json({ error: 'Text is required' }, { status: 400 });
     }
@@ -53,16 +58,26 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unsupported voice' }, { status: 400 });
     }
 
-    const result = await base44.asServiceRole.integrations.Core.GenerateSpeech({
-      text,
-      voice: 'honey',
+    const { result, quota } = await executeMeteredAiRequest({
+      base44,
+      user,
+      operation: 'ai_speech',
+      requestKey: request_key,
+      dispatch: () => base44.asServiceRole.integrations.Core.GenerateSpeech({
+        text,
+        voice: 'honey',
+      }),
     });
 
-    return Response.json(result);
+    const payload = result && typeof result === 'object' && !Array.isArray(result)
+      ? { ...result, quota }
+      : { url: result, quota };
+    return Response.json(payload);
   } catch (error) {
+    if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
-    console.error('generate-speech error:', error.message);
+    console.error('generate-speech error:', error instanceof Error ? error.message : error);
     return Response.json({ error: 'AI speech generation failed' }, { status: 500 });
   }
 });

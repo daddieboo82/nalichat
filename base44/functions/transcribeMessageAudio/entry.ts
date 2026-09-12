@@ -4,6 +4,11 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import {
+  AiQuotaError,
+  aiQuotaErrorResponse,
+  executeMeteredAiRequest,
+} from '../../shared/aiQuota.ts';
 
 const MAX_TRANSCRIBE_BYTES = 50 * 1024 * 1024;
 
@@ -57,7 +62,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { messageId } = await readJsonBodyLimited(req, 8 * 1024);
+    const { messageId, request_key } = await readJsonBodyLimited(req, 8 * 1024);
     if (!isBase44EntityId(messageId)) return Response.json({ error: 'Valid messageId is required' }, { status: 400 });
 
     const entities = base44.asServiceRole.entities;
@@ -86,12 +91,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Premium is required for voice transcription' }, { status: 403 });
     }
 
-    const result = await base44.asServiceRole.integrations.Core.TranscribeAudio({
-      audio_url: message.file_url,
+    const { result, quota } = await executeMeteredAiRequest({
+      base44,
+      user,
+      operation: 'voice_transcription',
+      requestKey: request_key,
+      dispatch: () => base44.asServiceRole.integrations.Core.TranscribeAudio({
+        audio_url: message.file_url,
+      }),
     });
     const text = typeof result === 'string' ? result : result?.text || result?.data || '';
-    return Response.json({ text: String(text || '').trim() });
+    return Response.json({ text: String(text || '').trim(), quota });
   } catch (error) {
+    if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('transcribeMessageAudio error:', error);

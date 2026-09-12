@@ -3,7 +3,7 @@ import {
   followUpReminderErrorResponse,
   processDueFollowUpReminders,
 } from '../../shared/followUpReminders.ts';
-import { claimMinuteWindow } from '../../shared/rateLimit.ts';
+import { claimFixedWindow } from '../../shared/rateLimit.ts';
 import { sendPushToUser } from '../../shared/webPush.ts';
 
 let activeReminderRun: Promise<unknown> | null = null;
@@ -15,12 +15,13 @@ Deno.serve(async (req) => {
     }
 
     const base44 = createClientFromRequest(req);
-    const minuteClaim = await claimMinuteWindow(
+    const cadenceClaim = await claimFixedWindow(
       base44.asServiceRole.entities,
       'follow-up-reminder-processor',
+      5,
     );
-    if (!minuteClaim.allowed) {
-      return Response.json({ success: true, skipped: 'already_processed_this_minute' });
+    if (!cadenceClaim.allowed) {
+      return Response.json({ success: true, skipped: 'already_processed_this_window' });
     }
 
     if (!activeReminderRun) {

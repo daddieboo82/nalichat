@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
+import { readTextBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { secrets } from 'base44:runtime';
 import {
   loadStripeCatalog,
@@ -415,7 +416,15 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
-  const rawBody = await req.text();
+  let rawBody: string;
+  try {
+    rawBody = await readTextBodyLimited(req, 1024 * 1024);
+  } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    console.error('Stripe webhook body read failed:', error);
+    return Response.json({ error: 'Webhook processing failed' }, { status: 500 });
+  }
   if (!rawBody) {
     return Response.json({ error: 'Empty request body' }, { status: 400 });
   }

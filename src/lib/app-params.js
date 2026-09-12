@@ -1,17 +1,21 @@
 const isNode = typeof window === 'undefined';
-const windowObj = isNode ? { localStorage: new Map() } : window;
-const storage = windowObj.localStorage;
+const windowObj = isNode ? {} : window;
+
+let storage = null;
+if (!isNode) {
+  try { storage = windowObj.localStorage; } catch {}
+}
 
 const safeStorageGet = (key) => {
-  try { return storage.getItem(key); } catch { return null; }
+  try { return storage?.getItem?.(key) ?? null; } catch { return null; }
 };
 
 const safeStorageSet = (key, value) => {
-  try { storage.setItem(key, value); } catch {}
+  try { storage?.setItem?.(key, value); } catch {}
 };
 
 const safeStorageRemove = (key) => {
-  try { storage.removeItem(key); } catch {}
+  try { storage?.removeItem?.(key); } catch {}
 };
 
 const toSnakeCase = (str) => {

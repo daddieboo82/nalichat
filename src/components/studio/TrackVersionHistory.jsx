@@ -17,9 +17,9 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
   const queryClient = useQueryClient();
 
   const { data: versions = [] } = useQuery({
-    queryKey: ["track-versions", track?.id],
+    queryKey: ["track-versions", currentUser?.id, track?.id],
     queryFn: () => base44.entities.TrackVersion.filter({ track_id: track.id }, "-version_number", 500),
-    enabled: !!track?.id && open,
+    enabled: !!currentUser?.id && !!track?.id && open,
   });
 
   const deleteVersion = useMutation({
@@ -28,7 +28,7 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
       if (res?.data?.error) throw new Error(res.data.error);
       return res?.data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["track-versions", track?.id] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["track-versions", currentUser?.id, track?.id] }),
   });
 
   const handleSaveSnapshot = async () => {
@@ -46,7 +46,7 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
     if (created?.data?.error) throw new Error(created.data.error);
     setLabel("");
     setSaving(false);
-    queryClient.invalidateQueries({ queryKey: ["track-versions", track?.id] });
+    queryClient.invalidateQueries({ queryKey: ["track-versions", currentUser?.id, track?.id] });
   };
 
   const handlePlay = (version) => {

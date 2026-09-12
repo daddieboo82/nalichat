@@ -173,6 +173,6 @@ Return realistic values. BPM must be a whole number between 60 and 200.`;
     }
   } catch (error) {
     console.error('suggestTrackTags error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Track tag suggestion failed' }, { status: 500 });
   }
 });

@@ -58,6 +58,7 @@ The bio should be written in first person, highlight their expertise, and sound 
 
     return Response.json({ bio });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('generateArtistBio error:', error);
+    return Response.json({ error: 'Artist bio generation failed' }, { status: 500 });
   }
 });

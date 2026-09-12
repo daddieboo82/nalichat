@@ -5,6 +5,10 @@ import {
 } from '../../shared/followUpReminders.ts';
 import { claimFixedWindow } from '../../shared/rateLimit.ts';
 import { sendPushToUser } from '../../shared/webPush.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { validWorkflowKey } from '../../shared/workflowAuth.ts';
+
+const WORKFLOW_KEY_SHA256 = 'b348aea4087dd32c18fe78bceef177c13bdabde2a0746862c3e897f13133d98e';
 
 let activeReminderRun: Promise<unknown> | null = null;
 
@@ -15,6 +19,10 @@ Deno.serve(async (req) => {
     }
 
     const base44 = createClientFromRequest(req);
+    const body = await readJsonBodyLimited(req, 8 * 1024);
+    if (!(await validWorkflowKey(body?.workflow_key, WORKFLOW_KEY_SHA256))) {
+      return Response.json({ error: 'Forbidden: invalid workflow credential' }, { status: 403 });
+    }
     const cadenceClaim = await claimFixedWindow(
       base44.asServiceRole.entities,
       'follow-up-reminder-processor',
@@ -43,6 +51,8 @@ Deno.serve(async (req) => {
     const summary = await activeReminderRun;
     return Response.json(summary);
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('processDueFollowUpReminders error:', error);
     return followUpReminderErrorResponse(error);
   }

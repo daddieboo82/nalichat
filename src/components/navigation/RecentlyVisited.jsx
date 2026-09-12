@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/AuthContext";
 
-const STORAGE_KEY = "nali_recent_pages";
+const LEGACY_STORAGE_KEY = "nali_recent_pages";
+const storageKeyFor = (userId) => `nali_recent_pages:${userId || "anonymous"}`;
 const MAX_ITEMS = 4;
 // Paths that shouldn't be tracked (transient/auth pages)
 const EXCLUDE = ["/login", "/register", "/forgot-password", "/reset-password", "/onboarding"];
@@ -28,14 +30,23 @@ const ICONS = {
 };
 
 export default function RecentlyVisited({ onNavigate, currentPath }) {
+  const { user } = useAuth();
+  const storageKey = storageKeyFor(user?.id);
   const [recent, setRecent] = useState([]);
 
   useEffect(() => {
     try {
-      const stored = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "[]");
-      setRecent(stored);
+      let raw = sessionStorage.getItem(storageKey);
+      if (!raw && !user?.id) {
+        raw = sessionStorage.getItem(LEGACY_STORAGE_KEY);
+        if (raw) {
+          sessionStorage.setItem(storageKey, raw);
+          sessionStorage.removeItem(LEGACY_STORAGE_KEY);
+        }
+      }
+      setRecent(JSON.parse(raw || "[]"));
     } catch { setRecent([]); }
-  }, [currentPath]);
+  }, [currentPath, storageKey, user?.id]);
 
   // Track current page (skip excluded + detail/sub pages)
   useEffect(() => {
@@ -43,13 +54,13 @@ export default function RecentlyVisited({ onNavigate, currentPath }) {
     // Only track root-level pages (no dynamic segments)
     if (currentPath.split("/").filter(Boolean).length > 1) return;
     try {
-      const stored = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "[]");
+      const stored = JSON.parse(sessionStorage.getItem(storageKey) || "[]");
       const filtered = stored.filter(p => p !== currentPath);
       const updated = [currentPath, ...filtered].slice(0, MAX_ITEMS);
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      sessionStorage.setItem(storageKey, JSON.stringify(updated));
       setRecent(updated);
     } catch {}
-  }, [currentPath]);
+  }, [currentPath, storageKey]);
 
   if (recent.length === 0) return null;
 

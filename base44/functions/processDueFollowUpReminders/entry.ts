@@ -4,6 +4,7 @@ import {
   processDueFollowUpReminders,
 } from '../../shared/followUpReminders.ts';
 import { claimMinuteWindow } from '../../shared/rateLimit.ts';
+import { sendPushToUser } from '../../shared/webPush.ts';
 
 let activeReminderRun: Promise<unknown> | null = null;
 
@@ -23,8 +24,10 @@ Deno.serve(async (req) => {
     }
 
     if (!activeReminderRun) {
+      const entities = base44.asServiceRole.entities;
       const run = processDueFollowUpReminders({
-        entities: base44.asServiceRole.entities,
+        entities,
+        sendPush: (userId, payload) => sendPushToUser(entities, userId, payload),
       });
       activeReminderRun = run;
       run.then(

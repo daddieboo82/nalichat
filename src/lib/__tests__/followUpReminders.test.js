@@ -321,6 +321,56 @@ describe("due follow-up processing", () => {
     expect(store.FollowUpReminder.records[0].triggered_at).toBeTruthy();
   });
 
+  it("sends remote push using the same redacted payload as the in-app reminder", async () => {
+    const pushes = [];
+    const store = entities({
+      reminders: [scheduledReminder],
+      messages: [sourceMessage],
+      lockPreferences: [{
+        id: "lock-1",
+        user_id: "owner-1",
+        conversation_id: "conversation-1",
+      }],
+    });
+
+    const summary = await processDueFollowUpReminders({
+      entities: store,
+      now: "2026-09-10T16:00:00.000Z",
+      sendPush: async (userId, payload) => {
+        pushes.push({ userId, payload });
+      },
+    });
+
+    expect(summary.triggered).toBe(1);
+    expect(pushes).toEqual([{
+      userId: "owner-1",
+      payload: {
+        title: "Locked chat",
+        body: "New activity in a locked chat.",
+        url: "/messages?id=conversation-1",
+      },
+    }]);
+  });
+
+  it("keeps an in-app reminder successful when best-effort push delivery fails", async () => {
+    const store = entities({
+      reminders: [scheduledReminder],
+      messages: [sourceMessage],
+    });
+
+    const summary = await processDueFollowUpReminders({
+      entities: store,
+      now: "2026-09-10T16:00:00.000Z",
+      sendPush: async () => {
+        throw new Error("push unavailable");
+      },
+    });
+
+    expect(summary).toMatchObject({ triggered: 1, failed: 0 });
+    expect(store.FollowUpReminder.records[0].status).toBe("triggered");
+    expect(store.FollowUpReminder.records[0].triggered_at).toBeTruthy();
+  });
+
   it("completes instead of notifying when a later recipient reply exists", async () => {
     const store = entities({
       reminders: [scheduledReminder],

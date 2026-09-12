@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Messages from '@/pages/Messages';
 import Explore from '@/pages/Explore';
@@ -148,9 +148,10 @@ vi.mock('@/components/messages/ExternalMessageDialog', () => ({ default: () => n
 vi.mock('@/components/GlobalInviteDialog', () => ({ default: () => null }));
 vi.mock('@/components/messages/ModerationBanner', () => ({ default: () => <div>Moderation</div> }));
 vi.mock('@/components/messages/ChatView', () => ({
-  default: ({ conversation, messages, onSendMessage }) => (
+  default: ({ conversation, messages, onSendMessage, onBack }) => (
     <div>
       <div>Conversation: {conversation.name || conversation.id}</div>
+      <button onClick={onBack}>Back to chats</button>
       <button onClick={() => onSendMessage({ type: 'text', text: 'hello there' })}>Send Hello</button>
       <div data-testid="message-list">
         {messages.map((message) => `${message.id}:${message.text}:${message._optimistic ? 'temp' : 'real'}`).join('|')}
@@ -199,13 +200,18 @@ const createDeferred = () => {
   return { promise, resolve };
 };
 
+const LocationProbe = () => {
+  const location = useLocation();
+  return <div data-testid="location">{location.pathname}{location.search}</div>;
+};
+
 const renderWithProviders = (ui, initialEntries = ['/']) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={initialEntries}>{ui}</MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>{ui}<LocationProbe /></MemoryRouter>
     </QueryClientProvider>
   );
 };
@@ -311,6 +317,47 @@ describe('core usage flow coverage', () => {
 
     await screen.findByText('Your Messages');
     expect(screen.getByText(/Select a conversation from the sidebar/)).toBeTruthy();
+  });
+
+  it('opens an existing DM from the mobile list, persists it in the URL, and returns to chats', async () => {
+    const currentUser = { id: 'user-1', display_name: 'Fresh', full_name: 'Fresh User' };
+    const otherUser = { id: 'user-2', display_name: 'Producer Two', full_name: 'Producer Two' };
+    conversationStore.items = [{
+      id: 'conv-mobile',
+      type: 'dm',
+      participant_ids: [currentUser.id, otherUser.id],
+      name: 'Mobile DM',
+      last_message_at: new Date().toISOString(),
+      last_message_text: 'hello',
+    }];
+    messageStore.byConversation['conv-mobile'] = [];
+
+    mockAuthState.current = {
+      user: currentUser,
+      isAuthenticated: true,
+      checkUserAuth: vi.fn(),
+    };
+    mockBase44.functions.invoke.mockImplementation(async (name) => {
+      if (name === 'listPublicUsers') {
+        return { data: { users: [currentUser, otherUser] } };
+      }
+      return { data: {} };
+    });
+
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 375 });
+    renderWithProviders(<Messages />, ['/messages']);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Mobile DM' }));
+
+    await screen.findByText('Conversation: Mobile DM');
+    expect(screen.getByTestId('location').textContent).toBe('/messages?id=conv-mobile');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to chats' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location').textContent).toBe('/messages');
+      expect(screen.getByRole('button', { name: 'Mobile DM' })).toBeTruthy();
+    });
   });
 
   it('creates a DM, sends an optimistic message, and swaps in the saved server message', async () => {

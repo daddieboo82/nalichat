@@ -122,7 +122,15 @@ export default async function(req) {
         { $inc: { vote_count: 1 } },
       );
     } catch (countError) {
-      await entities.ChallengeVote.delete(id).catch(() => {});
+      try {
+        await entities.ChallengeVote.delete(id);
+      } catch (rollbackError) {
+        console.error('Vote rollback failed after counter update error:', rollbackError);
+        throw new Error(
+          'Vote count update failed and vote rollback was incomplete. Please retry.',
+          { cause: countError },
+        );
+      }
       throw countError;
     }
 

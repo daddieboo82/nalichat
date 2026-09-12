@@ -20,6 +20,15 @@ Deno.serve(async (req) => {
         { status: 401 },
       );
     }
+    if (user.is_banned) {
+      return Response.json({ error: 'banned', code: 'BANNED' }, { status: 403 });
+    }
+    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+      return Response.json(
+        { error: 'timed_out', code: 'TIMED_OUT', timeout_until: user.timeout_until },
+        { status: 403 },
+      );
+    }
 
     const searchRate = await consumeHourlyLimit(
       base44.asServiceRole.entities,

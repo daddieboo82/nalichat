@@ -312,6 +312,11 @@ describe('core usage flow coverage', () => {
     const otherUser = { id: 'user-2', display_name: 'Producer Two', full_name: 'Producer Two' };
     const pending = createDeferred();
 
+    mockAuthState.current = {
+      user: currentUser,
+      isAuthenticated: true,
+      checkUserAuth: vi.fn(),
+    };
     mockBase44.auth.me.mockResolvedValue(currentUser);
     mockBase44.functions.invoke.mockImplementation(async (name, payload) => {
       if (name === 'listPublicUsers') {
@@ -519,14 +524,17 @@ describe('core usage flow coverage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save Profile' }));
 
     await waitFor(() => {
-      expect(mockBase44.auth.updateMe).toHaveBeenCalledWith(expect.objectContaining({
-        display_name: 'New Alias',
-        bio: 'Original bio',
-        artist_role: 'artist',
-        location: 'Old Town',
-        genres: ['Hip-Hop'],
-        avatar_url: 'https://cdn.example.com/avatar.png',
-      }));
+      expect(mockBase44.functions.invoke).toHaveBeenCalledWith(
+        'updateMyProfile',
+        expect.objectContaining({
+          display_name: 'New Alias',
+          bio: 'Original bio',
+          artist_role: 'artist',
+          location: 'Old Town',
+          genres: ['Hip-Hop'],
+          avatar_url: 'https://cdn.example.com/avatar.png',
+        }),
+      );
       expect(checkUserAuth).toHaveBeenCalled();
       expect(mockToast.success).toHaveBeenCalledWith('Profile updated!');
     });

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import {
   acquireChallengeSubmissionLock,
@@ -29,7 +30,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { submissionId } = await req.json();
+    const { submissionId } = await readJsonBodyLimited(req, 64 * 1024);
     if (typeof submissionId !== 'string' || !submissionId.trim() || submissionId.length > 200) {
       return Response.json({ error: 'submissionId is required' }, { status: 400 });
     }

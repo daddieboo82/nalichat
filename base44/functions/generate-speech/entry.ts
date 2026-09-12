@@ -60,6 +60,6 @@ Deno.serve(async (req) => {
     return Response.json(result);
   } catch (error) {
     console.error('generate-speech error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'AI speech generation failed' }, { status: 500 });
   }
 });

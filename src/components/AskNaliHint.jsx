@@ -9,6 +9,14 @@ const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password
 // after a period of inactivity (user seems stuck / idle).
 const IDLE_MS = 20000; // 20s of no interaction
 
+function sessionGet(key) {
+  try { return sessionStorage.getItem(key); } catch { return null; }
+}
+
+function sessionSet(key, value) {
+  try { sessionStorage.setItem(key, value); } catch {}
+}
+
 export default function AskNaliHint() {
   const [show, setShow] = useState(false);
   const timerRef = useRef(null);
@@ -21,12 +29,12 @@ export default function AskNaliHint() {
       if (timerRef.current) clearTimeout(timerRef.current);
       return;
     }
-    const dismissedForever = sessionStorage.getItem("nali_hint_dismissed");
+    const dismissedForever = sessionGet("nali_hint_dismissed");
 
     const reset = () => {
       setShow(false);
       if (timerRef.current) clearTimeout(timerRef.current);
-      if (sessionStorage.getItem("nali_hint_dismissed")) return;
+      if (sessionGet("nali_hint_dismissed")) return;
       timerRef.current = setTimeout(() => setShow(true), IDLE_MS);
     };
 
@@ -47,7 +55,7 @@ export default function AskNaliHint() {
 
   const askNali = () => {
     setShow(false);
-    sessionStorage.setItem("nali_hint_dismissed", "1");
+    sessionSet("nali_hint_dismissed", "1");
     window.dispatchEvent(new Event("open-ai-assistant"));
   };
 

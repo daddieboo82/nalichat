@@ -53,7 +53,9 @@ Deno.serve(async (req) => {
     }
     return Response.json({ success: true, file_url: post.file_url, title: post.title || 'download' });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('authorizeArtPostDownload error:', error);
-    return Response.json({ error: error?.message || 'Could not authorize download' }, { status: 500 });
+    return Response.json({ error: 'Could not authorize download' }, { status: 500 });
   }
 });

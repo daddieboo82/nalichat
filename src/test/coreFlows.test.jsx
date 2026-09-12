@@ -127,16 +127,19 @@ vi.mock('@/components/layout/PullToRefresh', () => ({
   default: ({ children }) => <div>{children}</div>,
 }));
 vi.mock('@/components/messages/ConversationList', () => ({
-  default: ({ myConversations, onSelect, onStartDM, users, currentUserId }) => (
+  default: ({ myConversations, onSelect, onStartDM, users, currentUserId }) => {
+    const target = users.find((user) => user.id !== currentUserId);
+    return (
     <div>
-      <button onClick={() => onStartDM(users.find((user) => user.id !== currentUserId))}>Start DM</button>
+      <button disabled={!target} onClick={() => onStartDM(target)}>Start DM</button>
       {myConversations.map((conversation) => (
         <button key={conversation.id} onClick={() => onSelect(conversation.id)}>
           {conversation.name || conversation.id}
         </button>
       ))}
     </div>
-  ),
+    );
+  },
 }));
 vi.mock('@/components/messages/ContactsTab', () => ({ default: () => <div>Contacts</div> }));
 vi.mock('@/components/messages/NewChatDialog', () => ({ default: () => null }));
@@ -349,7 +352,9 @@ describe('core usage flow coverage', () => {
 
     renderWithProviders(<Messages />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Start DM' }));
+    const startDmButton = await screen.findByRole('button', { name: 'Start DM' });
+    await waitFor(() => expect(startDmButton.disabled).toBe(false));
+    fireEvent.click(startDmButton);
 
     await screen.findByText('Conversation: conv-1');
     fireEvent.click(screen.getByRole('button', { name: 'Send Hello' }));

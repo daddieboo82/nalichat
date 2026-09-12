@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Snowflake, Loader2, Check } from 'lucide-react';
@@ -19,6 +19,11 @@ import { toast } from 'sonner';
 export default function TrackCommitDialog({ open, onOpenChange, track, onCommit }) {
   const [committing, setCommitting] = useState(false);
   const [done, setDone] = useState(false);
+  const closeTimerRef = useRef(null);
+
+  useEffect(() => () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+  }, []);
 
   const handleCommit = async () => {
     if (!track?.audioUrl) {
@@ -37,7 +42,9 @@ export default function TrackCommitDialog({ open, onOpenChange, track, onCommit 
       const duration = track.duration || 40;
       onCommit?.(url, duration);
       setDone(true);
-      setTimeout(() => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = setTimeout(() => {
+        closeTimerRef.current = null;
         setDone(false);
         onOpenChange(false);
       }, 800);
@@ -50,8 +57,17 @@ export default function TrackCommitDialog({ open, onOpenChange, track, onCommit 
     }
   };
 
+  const handleOpenChange = (nextOpen) => {
+    if (nextOpen && closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+      setDone(false);
+    }
+    onOpenChange(nextOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[400px] bg-card border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-heading">

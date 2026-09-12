@@ -34,6 +34,7 @@ export default function Settings() {
     authError,
   } = useAuth();
   const [form, setForm] = useState({ display_name: "", bio: "", artist_role: "artist", location: "", genres: [], avatar_url: "" });
+  const [formOwnerId, setFormOwnerId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [genreInput, setGenreInput] = useState("");
@@ -42,7 +43,10 @@ export default function Settings() {
   const { osReducedMotion, userReducedMotion, reduceMotion, setUserReducedMotion } = useReducedMotionPreference();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setFormOwnerId(null);
+      return;
+    }
     setForm({
       display_name: user.display_name || user.full_name || "",
       bio: user.bio || "",
@@ -51,6 +55,10 @@ export default function Settings() {
       genres: user.genres || [],
       avatar_url: user.avatar_url || "",
     });
+    setFormOwnerId(user.id);
+    setGenreInput("");
+    setShowWizard(false);
+    if (fileRef.current) fileRef.current.value = "";
   }, [user]);
 
   const handleAvatarUpload = async (e) => {
@@ -120,6 +128,12 @@ export default function Settings() {
         </div>
       </div>
     );
+  }
+
+  // Never render a previous account's local edit form beneath a newly-resolved
+  // identity. Wait one effect cycle for the form to hydrate from this user.
+  if (formOwnerId !== user.id) {
+    return <div className="flex items-center justify-center h-full"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
   }
 
   return (

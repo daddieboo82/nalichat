@@ -22,5 +22,6 @@ describe('Nali AI account isolation', () => {
     expect(source).toContain('bindConversation(restored, generation)');
     expect(source).toContain('bindConversation(conv, generation)');
     expect(source).toContain('error?.code === "NALI_IDENTITY_CHANGED"');
+    expect(source).toContain('if (error?.code === "NALI_IDENTITY_CHANGED") throw error;');
   });
 });

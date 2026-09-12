@@ -2056,6 +2056,12 @@ describe('release configuration', () => {
     expect(pushConfig).toContain("req.method !== 'GET'");
     expect(pushConfig).toContain('publicPushConfig()');
 
+    for (const name of ['notifyOnFileUpload', 'notifyOnMessage', 'notifyOnTrackVersion', 'notifyOnTrackComment', 'notifyOnMilestoneUpdate']) {
+      const workflow = await readText();
+      expect(workflow).toContain('claimFixedWindow');
+      expect(workflow).toContain('already_processed');
+    }
+
     const reminderResolver = await readText('base44/functions/resolveFollowUpReminders/entry.ts');
     expect(reminderResolver).toContain('claimFixedWindow');
     expect(reminderResolver).toContain('follow-up-resolver:');

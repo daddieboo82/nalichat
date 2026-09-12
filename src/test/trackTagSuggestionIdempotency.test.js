@@ -13,7 +13,7 @@ describe('track tag suggestion idempotency', () => {
     expect(source).toContain('acquireTrackLifecycleLock');
     expect(source).toContain('releaseTrackLifecycleLock');
     expect(source).toContain('Track metadata is being updated. Please retry.');
-    expect(source).toContain('trackId.length > 200');
+    expect(source).toContain('isBase44EntityId(trackId)');
     expect(source.indexOf('acquireTrackLifecycleLock')).toBeLessThan(
       source.indexOf('already_suggested'),
     );

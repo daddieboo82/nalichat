@@ -7,26 +7,7 @@ import { secureUploadFile } from "@/lib/secureUpload";
 
 import { validateUpload } from "@/lib/uploadValidation";
 
-const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB chunks
-const STORAGE_KEY = "resumable_uploads";
-
-function getUploadState() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
-}
-
-function saveUploadState(state) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
-}
-
-function clearUploadState(fileId) {
-  const state = getUploadState();
-  delete state[fileId];
-  saveUploadState(state);
-}
-
-function getFileId(file) {
-  return `${file.name}_${file.size}_${file.lastModified}`;
-}
+const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB threshold for progress UX
 
 /**
  * Upload a file with resume support.
@@ -40,21 +21,6 @@ export async function resumableUpload(file, onProgress, options = {}) {
   const { ok, error } = validateUpload(file, options);
   if (!ok) throw new Error(error);
 
-  const fileId = getFileId(file);
-  const state = getUploadState();
-  const savedState = state[fileId];
-
-  // If we have all chunks already uploaded and just need to finalize
-  if (savedState?.fileUrl) {
-    clearUploadState(fileId);
-    onProgress?.(100);
-    return savedState.fileUrl;
-  }
-
-  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-  const uploadedChunks = savedState?.uploadedChunks || [];
-  const uploadedUrls = savedState?.uploadedUrls || [];
-
   // For small files (< 1MB), upload directly without chunking
   if (file.size <= CHUNK_SIZE) {
     onProgress?.(10);
@@ -63,10 +29,10 @@ export async function resumableUpload(file, onProgress, options = {}) {
     return file_url;
   }
 
-  // Large files: upload the full file directly (chunking is not supported server-side for merging)
+  // Large files: upload the full file directly (chunking is not supported server-side for merging).
+  // Do not trust or reuse legacy browser-persisted upload URLs across sessions/accounts.
   onProgress?.(10);
   const { file_url } = await secureUploadFile({ file });
-  clearUploadState(fileId);
   onProgress?.(100);
   return file_url;
 }

@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendPushToUser } from '../../shared/webPush.ts';
 import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
 import { createNotificationIdempotently } from '../../shared/workflowNotifications.ts';
+import { claimFixedWindow } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -18,6 +19,14 @@ Deno.serve(async (req) => {
     const file = await entities.SharedFile.get(record.id);
     if (!file || !workflowRecordIsFresh(file, 'create')) {
       return Response.json({ success: true, count: 0, skipped: 'stale_workflow_record' });
+    }
+    const eventClaim = await claimFixedWindow(
+      entities,
+      `workflow-file:${file.id}`,
+      10,
+    );
+    if (!eventClaim.allowed) {
+      return Response.json({ success: true, count: 0, skipped: 'already_processed' });
     }
     if (!file?.project_id) return Response.json({ success: true });
     const project = await entities.Project.get(file.project_id);

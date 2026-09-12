@@ -86,6 +86,6 @@ Deno.serve(async (req) => {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('deleteArtPost error:', error);
-    return Response.json({ error: error?.message || 'Post deletion failed' }, { status: 500 });
+    return Response.json({ error: 'Post deletion failed' }, { status: 500 });
   }
 });

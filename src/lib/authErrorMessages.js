@@ -66,3 +66,21 @@ export function resendOtpErrorMessage(error) {
   }
   return 'Could not resend the verification code. Please try again.';
 }
+
+export function resetPasswordErrorMessage(error) {
+  const msg = normalized(error);
+  if (/expired/.test(msg)) return 'This reset link has expired. Request a new link.';
+  if (/invalid|token|reset link/.test(msg)) {
+    return 'This reset link is invalid. Request a new link.';
+  }
+  if (/password/.test(msg) && /weak|short|length|character|require/.test(msg)) {
+    return 'That password does not meet the security requirements.';
+  }
+  if (/too many|rate limit|429/.test(msg)) {
+    return 'Too many reset attempts. Please try again shortly.';
+  }
+  if (/network|fetch|timeout|timed out|connection/.test(msg)) {
+    return 'Could not reach NaliChat. Check your connection and try again.';
+  }
+  return 'Could not reset your password. Please request a new link and try again.';
+}

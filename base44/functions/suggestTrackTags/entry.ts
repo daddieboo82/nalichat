@@ -2,6 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireEntitlement, preferredAiModel } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 // Triggered by an entity automation when a Track is created.
 // Analyzes the uploaded track and suggests a genre + BPM, then saves them
@@ -12,7 +14,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
     const base44 = createClientFromRequest(req);
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 64 * 1024);
     const caller = await base44.auth.me().catch(() => null);
 
     const eventTrackId = typeof body?.event?.entity_id === 'string' ? body.event.entity_id.trim() : '';
@@ -21,8 +23,8 @@ Deno.serve(async (req) => {
       : (typeof body?.track_id === 'string' ? body.track_id.trim() : '');
     const trackId = eventTrackId || directTrackId;
 
-    if (!trackId || trackId.length > 200) {
-      return Response.json({ error: 'trackId is required' }, { status: 400 });
+    if (!isBase44EntityId(trackId)) {
+      return Response.json({ error: 'Valid trackId is required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
@@ -172,7 +174,9 @@ Return realistic values. BPM must be a whole number between 60 and 200.`;
       await releaseTrackLifecycleLock(entities, lockId);
     }
   } catch (error) {
-    console.error('suggestTrackTags error:', error.message);
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    console.error('suggestTrackTags error:', error);
     return Response.json({ error: 'Track tag suggestion failed' }, { status: 500 });
   }
 });

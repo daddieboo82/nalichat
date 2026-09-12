@@ -114,6 +114,20 @@ describe('auth and onboarding flows', () => {
     cleanup();
   });
 
+  it('persists a successful email/password login before redirecting', async () => {
+    mockBase44.auth.loginViaEmailPassword.mockResolvedValueOnce({ access_token: 'session-token' });
+
+    renderInRouter(<Login />);
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'user@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'sample-pass' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Log in' }));
+
+    await waitFor(() => {
+      expect(localStorage.getItem('base44_access_token')).toBe('session-token');
+      expect(mockBase44.auth.setToken).toHaveBeenCalledWith('session-token');
+    });
+  });
+
   it('shows login errors and guidance for invalid credentials', async () => {
     mockBase44.auth.loginViaEmailPassword.mockRejectedValueOnce(new Error('Invalid email or password'));
 

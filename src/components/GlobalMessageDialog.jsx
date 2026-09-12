@@ -19,8 +19,10 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
   const { user: currentUser, isAuthenticated, isLoadingAuth } = useAuth();
   const retryKeyRef = useRef(null);
   const retrySignatureRef = useRef("");
+  const identityGenerationRef = useRef(0);
 
   useEffect(() => {
+    identityGenerationRef.current += 1;
     setSearch("");
     setSelectedUser(null);
     setMessage("");
@@ -58,6 +60,7 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
     retryKeyRef.current = clientMessageKey;
     retrySignatureRef.current = signature;
 
+    const identityGeneration = identityGenerationRef.current;
     setSending(true);
     try {
       // Let the server perform the bounded, authorization-aware lookup and
@@ -69,6 +72,7 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
       if (created?.data?.error) throw new Error(created.data.error);
       const conversation = created?.data?.conversation;
       if (!conversation?.id) throw new Error("Conversation was not created");
+      if (identityGeneration !== identityGenerationRef.current) return;
 
       const send = await base44.functions.invoke("sendConversationMessage", {
         conversation_id: conversation.id,
@@ -76,6 +80,7 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
         type: "text",
         client_message_key: clientMessageKey,
       });
+      if (identityGeneration !== identityGenerationRef.current) return;
       if (send?.data?.moderation) throw new Error("moderated");
       if (send?.data?.error) throw new Error(send.data.error);
 
@@ -90,7 +95,7 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
         ? "Message blocked by content moderation."
         : error?.message || "Couldn't send the message. Please try again.");
     } finally {
-      setSending(false);
+      if (identityGeneration === identityGenerationRef.current) setSending(false);
     }
   };
 

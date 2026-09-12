@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { requestBodyErrorResponse, readJsonBodyLimited } from '../../shared/requestLimits.ts';
 
 const LEGACY_ARTIST_ROLES = new Set(['artist', 'producer', 'engineer', 'ar']);
 
@@ -28,6 +29,8 @@ Deno.serve(async (req) => {
     if (!migrationRate.allowed) {
       return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
+
+    await readJsonBodyLimited(req, 8 * 1024);
 
     const PAGE_SIZE = 200;
     let migrated = 0;
@@ -72,6 +75,9 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, scanned, migrated, initialized });
   } catch (error) {
-    return Response.json({ error: error?.message || 'Role migration failed' }, { status: 500 });
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    console.error('migrateUserRoles error:', error);
+    return Response.json({ error: 'Role migration failed' }, { status: 500 });
   }
 });

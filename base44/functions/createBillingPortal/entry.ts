@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { resolvePortalReturnUrl } from '../../shared/stripeBilling.ts';
 import { stripeRequest } from '../../shared/stripe.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { APP_BASE_URL } from '../../shared/appConfig.ts';
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -10,9 +11,7 @@ Deno.serve(async (req) => {
 
   try {
     const { returnDestination } = await req.json();
-    const appBaseUrl = Deno.env.get('APP_BASE_URL');
-    if (!appBaseUrl) throw new Error('Missing APP_BASE_URL');
-    const returnUrl = resolvePortalReturnUrl(returnDestination, appBaseUrl);
+    const returnUrl = resolvePortalReturnUrl(returnDestination, APP_BASE_URL);
 
     const base44 = createClientFromRequest(req);
     let user;

@@ -380,11 +380,15 @@ describe('core usage flow coverage', () => {
       action: 'create_dm',
       participant_ids: ['user-2'],
     });
-    expect(mockBase44.functions.invoke).toHaveBeenCalledWith('sendConversationMessage', {
-      type: 'text',
-      text: 'hello there',
-      conversation_id: 'conv-1',
-    });
+    expect(mockBase44.functions.invoke).toHaveBeenCalledWith(
+      'sendConversationMessage',
+      expect.objectContaining({
+        type: 'text',
+        text: 'hello there',
+        conversation_id: 'conv-1',
+        client_message_key: expect.any(String),
+      }),
+    );
   });
 
   it('redirects anonymous explore release actions to login and retries load failures', async () => {

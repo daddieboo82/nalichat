@@ -116,6 +116,7 @@ describe('auth and onboarding flows', () => {
 
   it('persists a successful email/password login before redirecting', async () => {
     mockBase44.auth.loginViaEmailPassword.mockResolvedValueOnce({ access_token: 'session-token' });
+    localStorage.setItem('last_activity', '1');
 
     renderInRouter(<Login />);
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'user@example.com' } });
@@ -124,6 +125,7 @@ describe('auth and onboarding flows', () => {
 
     await waitFor(() => {
       expect(localStorage.getItem('base44_access_token')).toBe('session-token');
+      expect(Number(localStorage.getItem('last_activity'))).toBeGreaterThan(1);
       expect(mockBase44.auth.setToken).toHaveBeenCalledWith('session-token');
     });
   });
@@ -144,12 +146,14 @@ describe('auth and onboarding flows', () => {
 
   it('shows Google sign-in entry points on login and register and launches provider auth', () => {
     localStorage.setItem('base44_access_token', 'stale-token');
+    localStorage.setItem('last_activity', '1');
     sessionStorage.setItem('base44_token', 'stale-token');
 
     const { unmount } = renderInRouter(<Login />);
 
     fireEvent.click(screen.getByRole('button', { name: /Continue with Google/i }));
     expect(localStorage.getItem('base44_access_token')).toBeNull();
+    expect(Number(localStorage.getItem('last_activity'))).toBeGreaterThan(1);
     expect(sessionStorage.getItem('base44_token')).toBeNull();
     expect(mockBase44.auth.loginWithProvider).toHaveBeenCalledWith('google', '/');
 

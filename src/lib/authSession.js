@@ -28,3 +28,9 @@ export const clearPersistedAuthTokens = () => {
     sessionStorage.removeItem('token');
   } catch {}
 };
+
+export const markAuthActivity = () => {
+  try {
+    localStorage.setItem('last_activity', Date.now().toString());
+  } catch {}
+};

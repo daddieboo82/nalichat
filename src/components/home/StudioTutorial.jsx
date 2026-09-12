@@ -28,11 +28,25 @@ const demos = [
     icon: Plus,
   },
   {
+    id: "recording",
+    title: "Record a Track",
+    description: "See a real track armed and recorded inside NaliStudio using the production transport controls.",
+    video: "/tutorials/studio-recording.webm",
+    icon: PlayCircle,
+  },
+  {
     id: "mixer",
     title: "Mix Your Session",
     description: "Open the production Mixer with real track strips, sends, pan, mute/solo, FX, and master controls.",
     video: "/tutorials/studio-mixer.webm",
     icon: SlidersHorizontal,
+  },
+  {
+    id: "plugins",
+    title: "Plugins & FX",
+    description: "Open the actual NaliStudio plugin rack and work with track/master processing.",
+    video: "/tutorials/studio-plugins.webm",
+    icon: Wand2,
   },
   {
     id: "export",

@@ -11,6 +11,8 @@ const clips = [
   'public/tutorials/studio-play-edit.webm',
   'public/tutorials/studio-add-track.webm',
   'public/tutorials/studio-mixer.webm',
+  'public/tutorials/studio-recording.webm',
+  'public/tutorials/studio-plugins.webm',
   'public/tutorials/studio-export.webm',
 ];
 
@@ -30,7 +32,7 @@ describe('Studio real-video tutorial experience', () => {
 
   it('offers task-specific tutorials and a stalled-user hint', async () => {
     const help = await readText('src/components/studio/StudioVideoHelp.jsx');
-    for (const topic of ['Studio Quick Tour', 'Play & Edit Clips', 'Add a Track', 'Mixer & Levels', 'Export Your Song']) {
+    for (const topic of ['Studio Quick Tour', 'Play & Edit Clips', 'Add a Track', 'Record a Track', 'Mixer & Levels', 'Plugins & FX', 'Export Your Song']) {
       expect(help).toContain(topic);
     }
     expect(help).toContain('Stuck in Studio?');

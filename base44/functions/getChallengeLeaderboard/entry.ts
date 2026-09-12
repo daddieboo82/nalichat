@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const MAX_LEADERBOARD_SUBMISSIONS = 500;
 const MAX_WEEKLY_VOTES = 5000;
@@ -25,7 +26,7 @@ Deno.serve(async (req) => {
     }
 
     const base44 = createClientFromRequest(req);
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 8 * 1024);
     const challengeId = String(body?.challengeId || '').trim();
     if (!/^[0-9A-F]{24}$/i.test(challengeId)) {
       return Response.json({ error: 'Valid challengeId is required' }, { status: 400 });
@@ -126,6 +127,8 @@ Deno.serve(async (req) => {
       }
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('getChallengeLeaderboard error:', error);
     return Response.json({ error: 'Could not load leaderboard' }, { status: 500 });
   }

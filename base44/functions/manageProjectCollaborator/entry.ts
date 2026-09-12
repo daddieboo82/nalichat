@@ -21,38 +21,50 @@ async function rollbackChildChanges(
   }
 }
 
+const CHILD_SYNC_BATCH_SIZE = 200;
+
 async function syncChildren(entities: any, project: any, userId: string, role: string | null) {
   const changed: Array<{ entity: any; id: string; original: Record<string, any> }> = [];
   try {
     for (const entityName of ['Track', 'TrackVersion', 'SharedFile', 'Folder', 'Milestone']) {
       const entity = entities[entityName];
       if (!entity) continue;
-      const rows = await entity.filter({ project_id: project.id });
-      for (const row of rows) {
-        const accessUserIds = new Set(row.access_user_ids || []);
-        const editUserIds = new Set(row.edit_user_ids || []);
-        if (role) accessUserIds.add(userId);
-        else accessUserIds.delete(userId);
 
-        if (role === 'editor') editUserIds.add(userId);
-        else editUserIds.delete(userId);
+      for (let skip = 0; ; skip += CHILD_SYNC_BATCH_SIZE) {
+        const rows = await entity.filter(
+          { project_id: project.id },
+          '-created_date',
+          CHILD_SYNC_BATCH_SIZE,
+          skip,
+        );
+        for (const row of rows) {
+          const accessUserIds = new Set(row.access_user_ids || []);
+          const editUserIds = new Set(row.edit_user_ids || []);
+          if (role) accessUserIds.add(userId);
+          else accessUserIds.delete(userId);
 
-        const original: Record<string, any> = {
-          access_user_ids: Array.isArray(row.access_user_ids) ? row.access_user_ids : [],
-          edit_user_ids: Array.isArray(row.edit_user_ids) ? row.edit_user_ids : [],
-        };
-        const patch: Record<string, any> = {
-          access_user_ids: Array.from(accessUserIds),
-          edit_user_ids: Array.from(editUserIds),
-        };
-        if (entityName === 'SharedFile') {
-          original.share_token_hash = row.share_token_hash || null;
-          original.share_token_expires_at = row.share_token_expires_at || null;
-          patch.share_token_hash = null;
-          patch.share_token_expires_at = null;
+          if (role === 'editor') editUserIds.add(userId);
+          else editUserIds.delete(userId);
+
+          const original: Record<string, any> = {
+            access_user_ids: Array.isArray(row.access_user_ids) ? row.access_user_ids : [],
+            edit_user_ids: Array.isArray(row.edit_user_ids) ? row.edit_user_ids : [],
+          };
+          const patch: Record<string, any> = {
+            access_user_ids: Array.from(accessUserIds),
+            edit_user_ids: Array.from(editUserIds),
+          };
+          if (entityName === 'SharedFile') {
+            original.share_token_hash = row.share_token_hash || null;
+            original.share_token_expires_at = row.share_token_expires_at || null;
+            patch.share_token_hash = null;
+            patch.share_token_expires_at = null;
+          }
+          await entity.update(row.id, patch);
+          changed.push({ entity, id: row.id, original });
         }
-        await entity.update(row.id, patch);
-        changed.push({ entity, id: row.id, original });
+
+        if (rows.length < CHILD_SYNC_BATCH_SIZE) break;
       }
     }
   } catch (error) {

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -29,7 +30,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { email } = await req.json();
+    const { email } = await readJsonBodyLimited(req, 8 * 1024);
     if (!email) {
       return Response.json({ error: 'email is required' }, { status: 400 });
     }
@@ -45,7 +46,9 @@ Deno.serve(async (req) => {
     const updated = await base44.asServiceRole.entities.User.filter({ email }, '-created_date', 1);
     return Response.json({ success: true, email, role: updated[0]?.role });
   } catch (error) {
-    console.error('makeAdmin error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    console.error('makeAdmin error:', error);
+    return Response.json({ error: 'Admin promotion failed' }, { status: 500 });
   }
 });

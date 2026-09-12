@@ -3,6 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { isConversationId } from '../../shared/conversationIds.ts';
+import { acquireConversationMembershipLock, releaseConversationMembershipLock } from '../../shared/conversationMembershipLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -39,6 +40,12 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const conversationLockId = await acquireConversationMembershipLock(entities, conversationId);
+    if (!conversationLockId) {
+      return Response.json({ error: 'Conversation is being updated. Please retry.' }, { status: 409 });
+    }
+
+    try {
     const conversation = await entities.Conversation.get(conversationId);
     if (!conversation) return Response.json({ error: 'Conversation not found' }, { status: 404 });
     const participantIds = Array.isArray(conversation.participant_ids) ? conversation.participant_ids : [];
@@ -79,6 +86,9 @@ Deno.serve(async (req) => {
     }
 
     return Response.json({ success: true, typing: updated });
+    } finally {
+      await releaseConversationMembershipLock(entities, conversationLockId);
+    }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

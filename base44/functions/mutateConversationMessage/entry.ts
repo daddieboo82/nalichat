@@ -182,6 +182,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    let editedText = '';
     if (action === 'react') {
       const reactionRate = await consumeHourlyLimit(entities, user.id, 'message_reaction', 600);
       if (!reactionRate.allowed) {
@@ -192,6 +193,27 @@ Deno.serve(async (req) => {
       if (!editRate.allowed) {
         return Response.json({ error: 'Message edit rate limit exceeded. Please try again later.' }, { status: 429 });
       }
+      if (messagePreview.type === 'session') {
+        return Response.json({ error: 'Session signaling messages cannot be edited' }, { status: 400 });
+      }
+      if (typeof body?.text !== 'string') {
+        return Response.json({ error: 'Message text cannot be empty' }, { status: 400 });
+      }
+      editedText = body.text;
+      if (!editedText.trim()) {
+        return Response.json({ error: 'Message text cannot be empty' }, { status: 400 });
+      }
+      if (editedText.length > 20000) {
+        return Response.json({ error: 'Message text must be 20000 characters or fewer' }, { status: 413 });
+      }
+
+      const moderation = await moderateEditedText(
+        base44,
+        user,
+        editedText,
+        messagePreview.conversation_id,
+      );
+      if (moderation) return Response.json({ success: false, moderation });
     } else if (action === 'delete') {
       const deleteRate = await consumeHourlyLimit(entities, user.id, 'message_delete', 120);
       if (!deleteRate.allowed) {
@@ -350,18 +372,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
     }
 
-    if (typeof body?.text !== 'string') {
-      return Response.json({ error: 'Message text cannot be empty' }, { status: 400 });
-    }
-    const text = body.text;
-    if (!text.trim()) return Response.json({ error: 'Message text cannot be empty' }, { status: 400 });
-    if (text.length > 20000) {
-      return Response.json({ error: 'Message text must be 20000 characters or fewer' }, { status: 413 });
-    }
-
-    const moderation = await moderateEditedText(base44, user, text, message.conversation_id);
-    if (moderation) return Response.json({ success: false, moderation });
-
+    const text = editedText;
     const updated = await entities.Message.update(message.id, {
       text,
       is_edited: true,

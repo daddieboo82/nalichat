@@ -6,6 +6,7 @@ import { createNotificationIdempotently } from '../../shared/workflowNotificatio
 import { claimFixedWindow } from '../../shared/rateLimit.ts';
 import { validWorkflowKey } from '../../shared/workflowAuth.ts';
 import { lockedNotification } from '../../shared/lockedChats.ts';
+import { isConversationId } from '../../shared/conversationIds.ts';
 
 const WORKFLOW_KEY_SHA256 = '54b5ade964c4ca7fa5a24745116a366d97e4f90abd5b89f47f78f4b610278f7b';
 
@@ -38,7 +39,7 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, count: 0, skipped: 'already_processed' });
     }
     if (!message?.conversation_id) return Response.json({ success: true });
-    if (!isBase44EntityId(message.conversation_id)) return Response.json({ error: 'Invalid conversation reference' }, { status: 400 });
+    if (!isConversationId(message.conversation_id)) return Response.json({ error: 'Invalid conversation reference' }, { status: 400 });
 
     const conversation = await entities.Conversation.get(message.conversation_id);
     if (!conversation) return Response.json({ success: true });

@@ -41,7 +41,7 @@ export function useCallSummary({
   const lastCallRef = useRef(null);
   const endingRef = useRef(false);
   const dataRef = useRef(null);
-  const refreshInFlightRef = useRef(false);
+  const refreshInFlightScopeRef = useRef(null);
   const requestScopeRef = useRef("");
   const requestScope = `${callState?.callId || ""}:${conversation?.id || ""}`;
   requestScopeRef.current = requestScope;
@@ -64,9 +64,9 @@ export function useCallSummary({
     const callId = activeCallId || dataRef.current?.session?.call_id;
     const sessionId = isCurrentSession ? dataRef.current?.session?.id : null;
     if (!callId && !sessionId) return null;
-    if (refreshInFlightRef.current) return null;
-    refreshInFlightRef.current = true;
     const requestScopeAtStart = requestScopeRef.current;
+    if (refreshInFlightScopeRef.current === requestScopeAtStart) return null;
+    refreshInFlightScopeRef.current = requestScopeAtStart;
     try {
       const next = await invokeCallSummary("get", {
         call_id: callId,
@@ -79,7 +79,9 @@ export function useCallSummary({
       if (details.code !== "CALL_SUMMARY_NOT_FOUND") setError(details);
       return null;
     } finally {
-      refreshInFlightRef.current = false;
+      if (refreshInFlightScopeRef.current === requestScopeAtStart) {
+        refreshInFlightScopeRef.current = null;
+      }
     }
   }, [applyData, callState?.callId]);
 

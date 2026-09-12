@@ -4,6 +4,7 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireSharedFileMutationLock, releaseSharedFileMutationLock } from '../../shared/sharedFileMutationLock.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
+import { acquireFolderMutationLock, releaseFolderMutationLock } from '../../shared/folderMutationLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -35,6 +36,12 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const folderLockId = await acquireFolderMutationLock(entities, folderId);
+    if (!folderLockId) {
+      return Response.json({ error: 'Folder is being updated. Please retry.' }, { status: 409 });
+    }
+
+    try {
     let folder = await entities.Folder.get(folderId);
     if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
 
@@ -126,6 +133,9 @@ Deno.serve(async (req) => {
     });
     } finally {
       await releaseProjectMembershipLock(entities, projectLockId);
+    }
+    } finally {
+      await releaseFolderMutationLock(entities, folderLockId);
     }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);

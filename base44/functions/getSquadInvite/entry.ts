@@ -1,5 +1,23 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function inviteLookupScope(req: Request, viewerId?: string): Promise<string> {
+  if (viewerId) return `squad_invite_user_${viewerId}`;
+  const forwarded = String(
+    req.headers.get('cf-connecting-ip')
+    || req.headers.get('x-real-ip')
+    || req.headers.get('x-forwarded-for')
+    || '',
+  ).split(',')[0].trim().slice(0, 128);
+  const userAgent = String(req.headers.get('user-agent') || '').slice(0, 256);
+  return 'squad_invite_anon_' + await sha256Hex(`${forwarded || 'unknown'}:${userAgent || 'unknown'}`);
+}
 
 function isInviteExpired(squad: any) {
   const raw = squad?.invite_expires_at || squad?.created_date;
@@ -21,6 +39,20 @@ Deno.serve(async (req) => {
     const normalizedCode = String(inviteCode || '').trim().toUpperCase();
     if (!/^[0-9A-F]{24}$/.test(normalizedCode)) {
       return Response.json({ error: 'Invalid invite code' }, { status: 400 });
+    }
+
+    const lookupScope = await inviteLookupScope(req, viewer?.id);
+    const lookupRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      lookupScope,
+      'squad_invite_lookup',
+      120,
+    );
+    if (!lookupRate.allowed) {
+      return Response.json(
+        { error: 'Too many invite lookups. Please try again later.' },
+        { status: 429 },
+      );
     }
 
     const squads = await base44.asServiceRole.entities.Squad.filter(

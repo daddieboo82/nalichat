@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/AuthContext";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -19,14 +20,15 @@ const ROLE_COLORS = {
 export default function ProjectSettingsDialog({ project, open, onOpenChange, onDelete }) {
   const [showDelete, setShowDelete] = useState(false);
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
 
   const { data: allUsers = [] } = useQuery({
-    queryKey: ["users"],
+    queryKey: ["users", currentUser?.id],
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicUsers", {});
       return res?.data?.users || [];
     },
-    enabled: open,
+    enabled: open && !!currentUser?.id,
   });
 
   const collaborators = allUsers.filter(u =>

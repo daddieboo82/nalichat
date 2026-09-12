@@ -161,12 +161,13 @@ export default function Messages() {
   }, [currentUser, queryClient, selectedConvId]);
 
   const { data: users = [], isError: usersError } = useQuery({
-    queryKey: ["users"],
+    queryKey: ["users", currentUser?.id],
     queryFn: async () => {
       const res = await base44.functions.invoke('listPublicUsers', {});
       if (res?.data?.error) throw new Error(res.data.error);
       return res.data?.users || [];
     },
+    enabled: !!currentUser?.id,
     refetchInterval: 30_000,
     staleTime: 15_000,
   });

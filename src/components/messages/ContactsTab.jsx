@@ -35,12 +35,13 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
   });
 
   const { data: allUsers = [], isLoading: loadingUsers, isError: usersError } = useQuery({
-    queryKey: ["users"],
+    queryKey: ["users", currentUserId],
     queryFn: async () => {
       const res = await base44.functions.invoke('listPublicUsers', {});
       if (res?.data?.error) throw new Error(res.data.error);
       return res.data?.users || [];
     },
+    enabled: !!currentUserId,
   });
 
   const deleteContactMutation = useMutation({

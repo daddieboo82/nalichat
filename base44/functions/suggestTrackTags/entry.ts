@@ -36,36 +36,30 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
-    const lockId = await acquireTrackLifecycleLock(entities, trackId);
-    if (!lockId) {
-      return Response.json(
-        { error: 'Track metadata is being updated. Please retry.' },
-        { status: 409 },
-      );
-    }
-
-    try {
-    // Never trust automation payload record fields. Resolve the authoritative
-    // Track before checking entitlements or performing service-role writes.
-    const track = await entities.Track.get(trackId);
-    if (!track) {
+    // Resolve and authorize the caller before acquiring the lifecycle lock so
+    // invalid direct/workflow requests cannot create lock contention.
+    const trackPreview = await entities.Track.get(trackId).catch(() => null);
+    if (!trackPreview) {
       return Response.json({ error: 'Track not found' }, { status: 404 });
     }
 
-    if (caller) {
-      if (caller.is_banned) {
-        return Response.json({ error: 'Forbidden: banned account' }, { status: 403 });
+    const authorizeTrackRequest = async (track: any) => {
+      if (caller) {
+        if (caller.is_banned) {
+          return Response.json({ error: 'Forbidden: banned account' }, { status: 403 });
+        }
+        if (caller.timeout_until && Date.parse(caller.timeout_until) > Date.now()) {
+          return Response.json({ error: 'Forbidden: timed out account' }, { status: 403 });
+        }
+        const canEdit = caller.role === 'admin'
+          || track.uploaded_by === caller.id
+          || (track.edit_user_ids || []).includes(caller.id);
+        if (!canEdit) {
+          return Response.json({ error: 'Forbidden: track edit access required' }, { status: 403 });
+        }
+        return null;
       }
-      if (caller.timeout_until && Date.parse(caller.timeout_until) > Date.now()) {
-        return Response.json({ error: 'Forbidden: timed out account' }, { status: 403 });
-      }
-      const canEdit = caller.role === 'admin'
-        || track.uploaded_by === caller.id
-        || (track.edit_user_ids || []).includes(caller.id);
-      if (!canEdit) {
-        return Response.json({ error: 'Forbidden: track edit access required' }, { status: 403 });
-      }
-    } else {
+
       if (!(await validWorkflowKey(body?.workflow_key, WORKFLOW_KEY_SHA256))) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
       }
@@ -75,7 +69,29 @@ Deno.serve(async (req) => {
       if (!isCreateAutomation || !isFresh) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
       }
+      return null;
+    };
+
+    const previewAuthError = await authorizeTrackRequest(trackPreview);
+    if (previewAuthError) return previewAuthError;
+
+    const lockId = await acquireTrackLifecycleLock(entities, trackId);
+    if (!lockId) {
+      return Response.json(
+        { error: 'Track metadata is being updated. Please retry.' },
+        { status: 409 },
+      );
     }
+
+    try {
+    // Re-resolve and re-authorize inside the lock so access changes that race
+    // the preview check cannot grant stale permission.
+    const track = await entities.Track.get(trackId);
+    if (!track) {
+      return Response.json({ error: 'Track not found' }, { status: 404 });
+    }
+    const lockedAuthError = await authorizeTrackRequest(track);
+    if (lockedAuthError) return lockedAuthError;
 
     // Entity-create automations can be retried. Keep AI work idempotent so a
     // replay or direct invocation cannot repeatedly consume model credits.

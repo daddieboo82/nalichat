@@ -6,6 +6,25 @@ import { unsubscribeFromRemotePush } from '@/lib/pushNotifications';
 
 const AuthContext = createContext();
 
+const getAuthErrorStatus = (error) => {
+  const raw = error?.status ?? error?.response?.status ?? error?.data?.status;
+  const status = Number(raw);
+  return Number.isFinite(status) ? status : null;
+};
+
+const shouldRetryAuthError = (error) => {
+  const status = getAuthErrorStatus(error);
+  if (status === 401) return false;
+  if (status == null) return true;
+  return status === 403
+    || status === 404
+    || status === 408
+    || status === 409
+    || status === 425
+    || status === 429
+    || status >= 500;
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -94,12 +113,12 @@ export const AuthProvider = ({ children }) => {
       return currentUser;
     } catch (error) {
       console.error('User auth check failed:', error);
-      // Retry up to 3 times with increasing delays — right after Google OAuth
-      // the user record may not be propagated yet, causing me() to 404/403.
-      // Await the retry so callers that await checkUserAuth() do not resume
-      // before the authoritative user state has actually been refreshed.
-      if (retryCount < 3) {
-        const delay = retryCount === 0 ? 1500 : retryCount === 1 ? 3000 : 5000;
+      // Retry only transient/propagation failures. A 401 is authoritative:
+      // retrying it only leaves users staring at a spinner before they are
+      // returned to the logged-out state. Fresh OAuth user propagation can
+      // still surface as 403/404 briefly, so those remain retryable.
+      if (retryCount < 3 && shouldRetryAuthError(error)) {
+        const delay = retryCount === 0 ? 750 : retryCount === 1 ? 1500 : 3000;
         await new Promise((resolve) => setTimeout(resolve, delay));
         return checkUserAuth(retryCount + 1);
       }

@@ -38,6 +38,10 @@ Deno.serve(async (req) => {
     let folder = await entities.Folder.get(folderId);
     if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
 
+    if (folder.project_id && !isBase44EntityId(folder.project_id)) {
+      return Response.json({ error: 'Folder has an invalid project reference' }, { status: 409 });
+    }
+
     let previewCanEdit = user.role === 'admin';
     if (!previewCanEdit && folder.project_id) {
       const projectPreview = await entities.Project.get(folder.project_id).catch(() => null);

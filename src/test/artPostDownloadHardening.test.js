@@ -11,7 +11,7 @@ describe('art post download authorization hardening', () => {
     const source = await readText('base44/functions/authorizeArtPostDownload/entry.ts');
 
     const methodGuard = source.indexOf("if (req.method !== 'POST')");
-    const bodyRead = source.indexOf('await req.json()');
+    const bodyRead = source.indexOf('readJsonBodyLimited(req,');
     const rateLimit = source.indexOf("'art_post_download_authorization'");
 
     expect(methodGuard).toBeGreaterThanOrEqual(0);

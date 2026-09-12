@@ -152,6 +152,13 @@ Deno.serve(async (req) => {
     let editUserIds = [user.id];
 
     const initialProject = await entities.Project.get(projectId).catch(() => null);
+    if (initialProject) {
+      const previewCanEdit = initialProject.owner_id === user.id
+        || (initialProject.editor_ids || []).includes(user.id);
+      if (!previewCanEdit) {
+        return Response.json({ error: 'Viewer access cannot create tracks' }, { status: 403 });
+      }
+    }
     const projectLockId = initialProject
       ? await acquireProjectMembershipLock(entities, projectId)
       : null;

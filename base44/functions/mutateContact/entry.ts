@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 async function contactRecordId(userId: string, targetUserId: string) {
   const digest = await crypto.subtle.digest(
@@ -36,7 +37,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 16 * 1024);
     const action = String(body?.action || '');
     const entities = base44.asServiceRole.entities;
 
@@ -96,6 +97,8 @@ Deno.serve(async (req) => {
 
     return Response.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('mutateContact error:', error);
     return Response.json({ error: error?.message || 'Contact mutation failed' }, { status: 500 });
   }

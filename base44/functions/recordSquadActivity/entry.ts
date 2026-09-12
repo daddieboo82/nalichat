@@ -262,6 +262,6 @@ Deno.serve(async (req) => {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('recordSquadActivity error:', error);
-    return Response.json({ error: error?.message || 'Could not record squad activity' }, { status: 500 });
+    return Response.json({ error: 'Could not record squad activity' }, { status: 500 });
   }
 });

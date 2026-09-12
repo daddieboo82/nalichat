@@ -11,6 +11,6 @@ describe("Messages presence request", () => {
     expect(source).toContain(
       "functions.invoke('listPublicUsers', { includePresence: true })",
     );
-    expect(source).toContain('senderIsOnline');
+    expect(source).toContain('users={users}');
   });
 });

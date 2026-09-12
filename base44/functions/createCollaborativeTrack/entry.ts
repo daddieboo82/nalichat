@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 const MAX_TRACK_BYTES = 100 * 1024 * 1024;
@@ -110,7 +111,7 @@ Deno.serve(async (req) => {
 
     const projectId = body.project_id.trim();
     const name = body.name.trim();
-    if (!projectId || projectId.length > 200 || !name) {
+    if (!isBase44EntityId(projectId) || !name) {
       return Response.json({ error: 'project_id and a non-empty name are required' }, { status: 400 });
     }
     if (name.length > 200) {

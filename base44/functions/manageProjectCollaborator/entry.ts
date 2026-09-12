@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 async function rollbackChildChanges(
@@ -90,10 +91,8 @@ Deno.serve(async (req) => {
     if (
       typeof projectId !== 'string'
       || typeof userId !== 'string'
-      || !projectId.trim()
-      || !userId.trim()
-      || projectId.length > 200
-      || userId.length > 200
+      || !isBase44EntityId(projectId.trim())
+      || !isBase44EntityId(userId.trim())
       || !['set_role', 'remove'].includes(action)
     ) {
       return Response.json({ error: 'Invalid collaborator update' }, { status: 400 });

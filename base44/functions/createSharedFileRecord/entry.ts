@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { resolveUserSubscription } from '../../shared/subscriptionAccess.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
@@ -153,11 +154,11 @@ Deno.serve(async (req) => {
 
     let projectId = typeof body?.project_id === 'string' ? body.project_id.trim() : null;
     let folderId = typeof body?.folder_id === 'string' ? body.folder_id.trim() : null;
-    if (projectId && projectId.length > 200) {
-      return Response.json({ error: 'project_id is too long' }, { status: 400 });
+    if (projectId && !isBase44EntityId(projectId)) {
+      return Response.json({ error: 'Invalid project_id' }, { status: 400 });
     }
-    if (folderId && folderId.length > 200) {
-      return Response.json({ error: 'folder_id is too long' }, { status: 400 });
+    if (folderId && !isBase44EntityId(folderId)) {
+      return Response.json({ error: 'Invalid folder_id' }, { status: 400 });
     }
     let accessUserIds = [user.id];
     let editUserIds = [user.id];

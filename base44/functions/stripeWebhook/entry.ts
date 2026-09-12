@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
+import { secrets } from 'base44:runtime';
 import {
   loadStripeCatalog,
   normalizeStripeMetadata,
@@ -418,7 +419,7 @@ Deno.serve(async (req) => {
   if (!rawBody) {
     return Response.json({ error: 'Empty request body' }, { status: 400 });
   }
-  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+  const webhookSecret = secrets.get('STRIPE_WEBHOOK_SECRET');
   if (!webhookSecret) {
     console.error('Missing STRIPE_WEBHOOK_SECRET');
     return Response.json({ error: 'Server misconfigured' }, { status: 500 });
@@ -505,8 +506,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    const environment = stripeEnvironmentFromSecretKey(Deno.env.get('STRIPE_SECRET_KEY'));
-    const catalog = loadStripeCatalog((name) => Deno.env.get(name));
+    const environment = stripeEnvironmentFromSecretKey(secrets.get('STRIPE_SECRET_KEY'));
+    const catalog = loadStripeCatalog((name) => secrets.get(name));
     const state = await processEvent(entities, event, catalog, environment);
     await entities.StripeWebhookEvent.update(ledger.id, {
       processing_state: state,

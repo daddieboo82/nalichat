@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { stripeRequest } from '../../shared/stripe.ts';
+import { APP_ORIGIN } from '../../shared/appConfig.ts';
 
 // Server-side price catalog — never trust client-supplied prices
 const DONATION_PRESETS = [5, 10, 25, 50];
@@ -24,17 +25,7 @@ async function sha256Hex(value: string): Promise<string> {
 }
 
 function allowedCheckoutOrigins(): Set<string> {
-  const origins = new Set<string>();
-  const appBaseUrl = Deno.env.get('APP_BASE_URL');
-  if (appBaseUrl) {
-    try { origins.add(new URL(appBaseUrl).origin); } catch (_) {}
-  }
-  for (const raw of (Deno.env.get('CHECKOUT_ALLOWED_ORIGINS') || '').split(',')) {
-    const value = raw.trim();
-    if (!value) continue;
-    try { origins.add(new URL(value).origin); } catch (_) {}
-  }
-  return origins;
+  return new Set([APP_ORIGIN]);
 }
 
 function validateCallbackUrl(raw: unknown, allowedOrigins: Set<string>): string {

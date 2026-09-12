@@ -34,12 +34,12 @@ Also configure:
 
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_ENVIRONMENT` (for example, `test` or `live`)
-- `APP_BASE_URL` (the canonical HTTPS app origin; HTTP is accepted only for localhost)
 
-Do not store secret values or production price IDs in source. Checkout and
-portal redirects are resolved from server-approved destination identifiers
-against `APP_BASE_URL`; arbitrary client callback URLs are rejected.
+Do not store secret values or production price IDs in source. The Stripe environment is
+derived directly from `STRIPE_SECRET_KEY`, so metadata cannot disagree with the key
+that actually talks to Stripe. Checkout and portal redirects are resolved from
+server-approved destination identifiers against the canonical NaliChat origin;
+arbitrary client callback URLs are rejected.
 
 ## Checkout retry semantics
 
@@ -94,7 +94,7 @@ and `canceled` remains
 `canceled` until `current_period_end`, then becomes `ended`.
 
 For Stripe test mode, create four recurring Prices, set all four price secrets
-to their `price_...` IDs, set `STRIPE_ENVIRONMENT=test`, configure the webhook
+to their `price_...` IDs, use a test-mode `STRIPE_SECRET_KEY`, configure the webhook
 with the five events above, and use the endpoint's test signing secret. Exercise
 new checkout, trial checkout, replayed events, failed invoices, cancel at period
 end, immediate cancellation, and portal ownership before enabling live mode.

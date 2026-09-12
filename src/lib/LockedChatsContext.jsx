@@ -162,6 +162,9 @@ export function LockedChatsProvider({ children }) {
   const setupPin = useCallback(async (pin) => {
     const generation = lockGenerationRef.current;
     const result = await configureLockedChatPin(pin);
+    if (generation !== lockGenerationRef.current || document.visibilityState !== "visible") {
+      throw new Error("Locked chats were relocked before verification completed.");
+    }
     setState((current) => ({ ...current, security: result.security }));
     if (generation !== lockGenerationRef.current || document.visibilityState !== "visible") {
       throw new Error("Locked chats were relocked before verification completed.");
@@ -182,7 +185,11 @@ export function LockedChatsProvider({ children }) {
   }, [state.security]);
 
   const updateConversationLock = useCallback(async (conversationId, locked) => {
+    const generation = lockGenerationRef.current;
     const result = await setLockedConversation(conversationId, locked);
+    if (generation !== lockGenerationRef.current) {
+      throw new Error("Locked chats changed accounts before the update completed.");
+    }
     setState((current) => ({
       ...current,
       lockedConversationIds: result.lockedConversationIds || [],
@@ -196,6 +203,9 @@ export function LockedChatsProvider({ children }) {
   const completePinReset = useCallback(async (code, pin) => {
     const generation = lockGenerationRef.current;
     const result = await completeLockedChatPinReset(code, pin);
+    if (generation !== lockGenerationRef.current || document.visibilityState !== "visible") {
+      throw new Error("Locked chats were relocked before verification completed.");
+    }
     setState((current) => ({ ...current, security: result.security }));
     broadcastStateChange();
     if (generation !== lockGenerationRef.current || document.visibilityState !== "visible") {

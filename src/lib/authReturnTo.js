@@ -21,7 +21,7 @@ export function safeReturnTo() {
     // the token. Normal app-flow params (e.g. the OAuth consent ctx) are kept.
     // The full app-params.js bootstrap set (src/lib/app-params.js) — any of
     // these in a crafted returnTo would be persisted at next load.
-    for (const p of ["access_token", "clear_access_token", "app_id", "app_base_url", "functions_version", "from_url"]) {
+    for (const p of ["access_token", "clear_access_token", "app_id", "app_base_url", "backend_url", "functions_version", "from_url"]) {
       url.searchParams.delete(p);
     }
     const path = url.pathname + url.search;

@@ -25,7 +25,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
   const isUnread = (conv) => {
     if (!conv.last_message_at) return false;
     try {
-      const lastRead = localStorage.getItem(`lastReadAt:${conv.id}`);
+      const lastRead = localStorage.getItem(`lastReadAt:${currentUserId}:${conv.id}`);
       if (!lastRead) return true;
       return new Date(conv.last_message_at).getTime() > parseInt(lastRead);
     } catch { return false; }

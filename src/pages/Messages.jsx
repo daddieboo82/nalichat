@@ -87,7 +87,7 @@ export default function Messages() {
   // Mark a conversation as read (stores timestamp in localStorage for the unread badge).
   const markConversationRead = (convId) => {
     if (!convId) return;
-    try { localStorage.setItem(`lastReadAt:${convId}`, Date.now().toString()); } catch {}
+    try { localStorage.setItem(`lastReadAt:${currentUser?.id}:${convId}`, Date.now().toString()); } catch {}
   };
 
   const handleSelectConv = (convId) => {

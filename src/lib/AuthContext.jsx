@@ -4,6 +4,7 @@ import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { unsubscribeFromRemotePush } from '@/lib/pushNotifications';
 import { clearPersistedAuthTokens } from '@/lib/authSession';
+import { purgeOutboundQueueForUser } from '@/lib/outboundQueue';
 import { useQueryClient } from '@tanstack/react-query';
 
 const AuthContext = createContext();
@@ -114,6 +115,7 @@ export const AuthProvider = ({ children }) => {
       if (generation !== authCheckGenerationRef.current) return null;
       const previousUserId = lastUserIdRef.current;
       if (previousUserId && previousUserId !== currentUser?.id) {
+        purgeOutboundQueueForUser(previousUserId);
         queryClient.clear();
       }
       lastUserIdRef.current = currentUser?.id || null;
@@ -171,11 +173,13 @@ export const AuthProvider = ({ children }) => {
       console.error('Presence offline update failed:', error);
     }
 
+    const departingUserId = lastUserIdRef.current;
     try {
       await base44.auth.logout();
     } catch (error) {
       console.error('Server logout failed:', error);
     } finally {
+      purgeOutboundQueueForUser(departingUserId);
       clearPersistedAuthTokens();
       try { localStorage.removeItem('last_activity'); } catch {}
       queryClient.clear();

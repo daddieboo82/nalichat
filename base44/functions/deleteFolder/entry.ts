@@ -37,6 +37,18 @@ Deno.serve(async (req) => {
     let folder = await entities.Folder.get(folderId);
     if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
 
+    let previewCanEdit = user.role === 'admin';
+    if (!previewCanEdit && folder.project_id) {
+      const projectPreview = await entities.Project.get(folder.project_id).catch(() => null);
+      if (!projectPreview) return Response.json({ error: 'Project not found' }, { status: 404 });
+      previewCanEdit = projectPreview.owner_id === user.id || (projectPreview.editor_ids || []).includes(user.id);
+    } else if (!previewCanEdit) {
+      previewCanEdit = folder.owner_id === user.id;
+    }
+    if (!previewCanEdit) {
+      return Response.json({ error: 'You cannot delete this folder' }, { status: 403 });
+    }
+
     const projectLockId = folder.project_id
       ? await acquireProjectMembershipLock(entities, folder.project_id)
       : null;

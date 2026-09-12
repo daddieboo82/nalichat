@@ -1,5 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -28,8 +28,10 @@ export default function CreateChallenge() {
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const identityGenerationRef = useRef(0);
 
   useEffect(() => {
+    identityGenerationRef.current += 1;
     setForm({
       title: "", description: "", genre: "", bpm: "", key: "",
       rules: "", prize_description: "",
@@ -57,6 +59,7 @@ export default function CreateChallenge() {
 
   const handleSubmit = async () => {
     if (!user || !canSubmit) return;
+    const identityGeneration = identityGenerationRef.current;
     setSubmitting(true);
     try {
       const sourceExt = (sourceTrackFile.name.split(".").pop() || "").toLowerCase();
@@ -72,10 +75,12 @@ export default function CreateChallenge() {
       let cover_url = "";
       if (coverFile) {
         const res = await secureUploadFile({ file: coverFile });
+        if (identityGeneration !== identityGenerationRef.current) return;
         cover_url = res.file_url;
       }
 
       const trackRes = await secureUploadFile({ file: sourceTrackFile });
+      if (identityGeneration !== identityGenerationRef.current) return;
       const source_track_url = trackRes.file_url;
       const source_track_name = sourceTrackName.trim() || sourceTrackFile.name.replace(/\.[^/.]+$/, "");
 
@@ -94,16 +99,19 @@ export default function CreateChallenge() {
         submission_end_date: form.submission_end_date || undefined,
         voting_end_date: form.voting_end_date || undefined,
       });
+      if (identityGeneration !== identityGenerationRef.current) return;
       if (res?.data?.error) throw new Error(res.data.error);
       const challenge = res?.data?.challenge;
 
       toast.success("Challenge created!");
       navigate(`/challenge/${challenge.id}`);
     } catch (err) {
-      console.error(err);
-      toast.error(err?.message || "Couldn't create challenge. Please try again.");
+      if (identityGeneration === identityGenerationRef.current) {
+        console.error(err);
+        toast.error(err?.message || "Couldn't create challenge. Please try again.");
+      }
     } finally {
-      setSubmitting(false);
+      if (identityGeneration === identityGenerationRef.current) setSubmitting(false);
     }
   };
 

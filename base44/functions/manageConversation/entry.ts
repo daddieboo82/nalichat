@@ -129,13 +129,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'banned' }, { status: 403 });
     }
 
-    if (['create_dm', 'create_public'].includes(action)) {
-      const rate = await consumeHourlyLimit(entities, user.id, 'conversation_create', 60);
-      if (!rate.allowed) {
-        return Response.json({ error: 'Conversation creation rate limit exceeded. Please try again later.' }, { status: 429 });
-      }
-    }
-
     if (['join_public', 'leave', 'rename'].includes(action)) {
       const mutationRate = await consumeHourlyLimit(
         entities,
@@ -195,6 +188,11 @@ Deno.serve(async (req) => {
           return ids.length === 2 && ids.includes(user.id) && ids.includes(otherUserId);
         });
         if (existing) return Response.json({ success: true, conversation: existing });
+
+        const rate = await consumeHourlyLimit(entities, user.id, 'conversation_create', 60);
+        if (!rate.allowed) {
+          return Response.json({ error: 'Conversation creation rate limit exceeded. Please try again later.' }, { status: 429 });
+        }
 
         const id = await dmConversationId(user.id, otherUserId);
         try {
@@ -361,6 +359,11 @@ Deno.serve(async (req) => {
         } finally {
           await releaseConversationMembershipLock(entities, lockId);
         }
+      }
+
+      const rate = await consumeHourlyLimit(entities, user.id, 'conversation_create', 60);
+      if (!rate.allowed) {
+        return Response.json({ error: 'Conversation creation rate limit exceeded. Please try again later.' }, { status: 429 });
       }
 
       const id = await hashedConversationId('public_room', name);

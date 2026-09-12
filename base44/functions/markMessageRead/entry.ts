@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 // Marks a message as read by the current user using the service role
 // (bypasses RLS — the sender owns the message, so the reader can't
@@ -26,7 +27,7 @@ Deno.serve(async (req) => {
 
     const { message_id } = await readJsonBodyLimited(req, 64 * 1024);
     const messageId = String(message_id || '').trim();
-    if (!messageId || messageId.length > 256) {
+    if (!isBase44EntityId(messageId)) {
       return Response.json({ error: 'Valid message_id is required' }, { status: 400 });
     }
 

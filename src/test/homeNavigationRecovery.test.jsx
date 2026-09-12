@@ -51,6 +51,14 @@ const mockPush = vi.hoisted(() => ({
 
 vi.mock('@/api/base44Client', () => ({ base44: mockBase44 }));
 vi.mock('@/lib/AuthContext', () => ({ useAuth: () => mockAuthState.current }));
+vi.mock('@/lib/LockedChatsContext', () => ({
+  useLockedChats: () => ({
+    isReady: true,
+    isUnlocked: true,
+    lockedConversationIds: [],
+    canAccessConversation: () => true,
+  }),
+}));
 vi.mock('@/lib/CartContext', () => ({ useCart: () => mockCartState.current }));
 vi.mock('@/hooks/use-sound', () => ({
   sounds: { click: vi.fn(), nav: vi.fn(), like: vi.fn(), notification: vi.fn() },

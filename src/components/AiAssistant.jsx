@@ -246,8 +246,10 @@ export default function AiAssistant() {
           }
         }
       } catch (error) {
+        if (error?.code === "NALI_IDENTITY_CHANGED") throw error;
         console.warn("Nali conversation restore failed:", error);
       }
+      if (generation !== identityGenerationRef.current) throw staleIdentityError();
       try { sessionStorage.removeItem(conversationStorageKey); } catch {}
     }
 

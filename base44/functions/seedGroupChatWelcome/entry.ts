@@ -100,6 +100,6 @@ export default async function(req) {
       message: `Seeded ${created.length} welcome messages across 5 community chat rooms.`
     });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('seedGroupChatWelcome error:', error);\n    return Response.json({ error: 'Unable to seed group chat welcome messages' }, { status: 500 });
   }
 }

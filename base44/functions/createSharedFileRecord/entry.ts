@@ -162,8 +162,8 @@ Deno.serve(async (req) => {
     let accessUserIds = [user.id];
     let editUserIds = [user.id];
 
-    // Resolve the destination project first, then serialize the final
-    // authorization + create against project deletion/membership changes.
+    // Resolve and authorize the destination before taking a project membership
+    // lock so unauthorized callers cannot create lock contention.
     let destinationProjectId = projectId;
     if (folderId) {
       const folder = await entities.Folder.get(folderId);
@@ -172,7 +172,30 @@ Deno.serve(async (req) => {
       if (projectId && folderProjectId !== projectId) {
         return Response.json({ error: 'folder_id does not belong to project_id' }, { status: 400 });
       }
+
+      let canEditFolder = user.role === 'admin';
+      if (!canEditFolder && folderProjectId) {
+        const folderProject = await entities.Project.get(folderProjectId).catch(() => null);
+        if (!folderProject) return Response.json({ error: 'Project not found' }, { status: 404 });
+        canEditFolder = folderProject.owner_id === user.id
+          || (folderProject.editor_ids || []).includes(user.id);
+      } else if (!canEditFolder) {
+        canEditFolder = folder.owner_id === user.id
+          || (folder.edit_user_ids || []).includes(user.id);
+      }
+      if (!canEditFolder) {
+        return Response.json({ error: 'Viewer access cannot add files to this folder' }, { status: 403 });
+      }
       destinationProjectId = folderProjectId;
+    } else if (projectId) {
+      const projectPreview = await entities.Project.get(projectId).catch(() => null);
+      if (!projectPreview) return Response.json({ error: 'Project not found' }, { status: 404 });
+      const previewCanEdit = user.role === 'admin'
+        || projectPreview.owner_id === user.id
+        || (projectPreview.editor_ids || []).includes(user.id);
+      if (!previewCanEdit) {
+        return Response.json({ error: 'Viewer access cannot add project files' }, { status: 403 });
+      }
     }
 
     const projectLockId = destinationProjectId

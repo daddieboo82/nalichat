@@ -5,9 +5,9 @@ import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/work
 import { createNotificationIdempotently } from '../../shared/workflowNotifications.ts';
 import { claimFixedWindow } from '../../shared/rateLimit.ts';
 import { validWorkflowKey } from '../../shared/workflowAuth.ts';
+import { lockedNotification } from '../../shared/lockedChats.ts';
 
 const WORKFLOW_KEY_SHA256 = '54b5ade964c4ca7fa5a24745116a366d97e4f90abd5b89f47f78f4b610278f7b';
-import { lockedNotification } from '../../shared/lockedChats.ts';
 
 Deno.serve(async (req) => {
   try {

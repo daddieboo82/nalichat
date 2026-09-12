@@ -3,6 +3,7 @@ import { resolvePortalReturnUrl } from '../../shared/stripeBilling.ts';
 import { stripeRequest } from '../../shared/stripe.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -10,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { returnDestination } = await req.json();
+    const { returnDestination } = await readJsonBodyLimited(req, 8 * 1024);
     const returnUrl = resolvePortalReturnUrl(returnDestination, APP_BASE_URL);
 
     const base44 = createClientFromRequest(req);
@@ -82,6 +83,8 @@ Deno.serve(async (req) => {
     });
     return Response.json({ portalUrl: session.url });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('Billing portal error:', error);
     const message = error instanceof Error ? error.message : '';
     const clientError = message.startsWith('Unknown billing portal');

@@ -124,9 +124,9 @@ async function createReminder(overrides = {}) {
 describe("follow-up reminder authorization and creation", () => {
   it("reads Base44's canonical entity_id from trigger envelopes", () => {
     expect(messageIdFromEntityEvent({
-      event: { entity_id: "message-canonical", id: "message-legacy" },
-      data: { id: "message-data" },
-    })).toBe("message-canonical");
+      event: { entity_id: "0123456789abcdef01234567", id: "89abcdef0123456701234567" },
+      data: { id: "abcdef012345670123456789" },
+    })).toBe("0123456789abcdef01234567");
   });
 
   it("keeps core chat free while follow-up reminders stay Premium Plus only", () => {

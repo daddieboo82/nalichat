@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { isConversationId } from '../../shared/conversationIds.ts';
+import { acquireConversationMembershipLock, releaseConversationMembershipLock } from '../../shared/conversationMembershipLock.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
@@ -144,28 +145,43 @@ Deno.serve(async (req) => {
       if (!isConversationId(conversationId)) {
         return Response.json({ error: 'Message not found' }, { status: 404 });
       }
-      const conversation = await entities.Conversation.get(conversationId).catch(() => null);
-      const canRepair = conversation && (
-        isAdmin
-        || (
-          Array.isArray(conversation.participant_ids)
-          && conversation.participant_ids.includes(user.id)
-        )
-      );
-      if (!canRepair) {
-        return Response.json({ error: 'Message not found' }, { status: 404 });
+      const conversationLockId = await acquireConversationMembershipLock(entities, conversationId);
+      if (!conversationLockId) {
+        return Response.json({ error: 'Conversation is being updated. Please retry.' }, { status: 409 });
       }
-      const repaired = await repairConversationPreview(entities, conversationId);
-      if (!repaired) {
-        return Response.json(
-          { error: 'Message was deleted but conversation preview could not be refreshed.' },
-          { status: 500 },
+      try {
+        const conversation = await entities.Conversation.get(conversationId).catch(() => null);
+        const canRepair = conversation && (
+          isAdmin
+          || (
+            Array.isArray(conversation.participant_ids)
+            && conversation.participant_ids.includes(user.id)
+          )
         );
+        if (!canRepair) {
+          return Response.json({ error: 'Message not found' }, { status: 404 });
+        }
+        const repaired = await repairConversationPreview(entities, conversationId);
+        if (!repaired) {
+          return Response.json(
+            { error: 'Message was deleted but conversation preview could not be refreshed.' },
+            { status: 500 },
+          );
+        }
+        return Response.json({ success: true, deleted: true, already_deleted: true });
+      } finally {
+        await releaseConversationMembershipLock(entities, conversationLockId);
       }
-      return Response.json({ success: true, deleted: true, already_deleted: true });
     }
     if (!messagePreview) return Response.json({ error: 'Message not found' }, { status: 404 });
-    if (!Array.isArray(messagePreview.participant_ids) || !messagePreview.participant_ids.includes(user.id)) {
+    if (!isConversationId(messagePreview.conversation_id)) {
+      return Response.json({ error: 'Message has an invalid conversation reference' }, { status: 409 });
+    }
+    const conversationPreview = await entities.Conversation.get(messagePreview.conversation_id).catch(() => null);
+    const previewParticipantIds = Array.isArray(conversationPreview?.participant_ids)
+      ? conversationPreview.participant_ids
+      : [];
+    if (!conversationPreview || !previewParticipantIds.includes(user.id)) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (action === 'delete' && messagePreview.sender_id !== user.id && !isAdmin) {
@@ -222,19 +238,41 @@ Deno.serve(async (req) => {
       }
     }
 
-    const lockId = await acquireMessageMutationLock(entities, messageId);
-    if (!lockId) {
+    const conversationLockId = await acquireConversationMembershipLock(
+      entities,
+      messagePreview.conversation_id,
+    );
+    if (!conversationLockId) {
       return Response.json(
-        { error: 'Message is being updated. Please retry.' },
+        { error: 'Conversation is being updated. Please retry.' },
         { status: 409 },
       );
     }
 
     try {
+      const conversation = await entities.Conversation
+        .get(messagePreview.conversation_id)
+        .catch(() => null);
+      const participantIds = Array.isArray(conversation?.participant_ids)
+        ? conversation.participant_ids
+        : [];
+      if (!conversation || !participantIds.includes(user.id)) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+
+      const lockId = await acquireMessageMutationLock(entities, messageId);
+      if (!lockId) {
+        return Response.json(
+          { error: 'Message is being updated. Please retry.' },
+          { status: 409 },
+        );
+      }
+
+      try {
     const message = await entities.Message.get(messageId);
     if (!message) return Response.json({ error: 'Message not found' }, { status: 404 });
-    if (!Array.isArray(message.participant_ids) || !message.participant_ids.includes(user.id)) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    if (message.conversation_id !== messagePreview.conversation_id) {
+      return Response.json({ error: 'Message conversation changed. Please retry.' }, { status: 409 });
     }
 
     if (action === 'react') {
@@ -406,8 +444,11 @@ Deno.serve(async (req) => {
       message: updated,
       preview_refresh_failed: previewRefreshFailed,
     });
+      } finally {
+        await releaseMessageMutationLock(entities, lockId);
+      }
     } finally {
-      await releaseMessageMutationLock(entities, lockId);
+      await releaseConversationMembershipLock(entities, conversationLockId);
     }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);

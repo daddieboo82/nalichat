@@ -218,22 +218,10 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  // Do expensive moderation and remote attachment verification before taking
+  // the idempotency lock. Deterministic message creation remains the final
+  // duplicate guard, and we re-check replay state under the lock below.
   let clientSendLockId: string | null = null;
-  if (clientMessageKey) {
-    const messageId = await deterministicMessageId(user.id, conversationId, clientMessageKey);
-    clientSendLockId = await acquireMessageMutationLock(
-      base44.asServiceRole.entities,
-      messageId,
-    );
-    if (!clientSendLockId) {
-      return Response.json(
-        { error: 'Message send is already in progress. Please retry.' },
-        { status: 409 },
-      );
-    }
-  }
-
-  try {
 
   if (clientMessageKey) {
     const existing = await findExistingMessage(base44, user.id, conversationId, clientMessageKey);
@@ -384,6 +372,28 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
         return Response.json({ error: 'file_type must be 100 characters or fewer' }, { status: 413 });
       }
       messageData.file_type = fileType;
+    }
+
+    if (clientMessageKey) {
+      const messageId = await deterministicMessageId(user.id, conversationId, clientMessageKey);
+      clientSendLockId = await acquireMessageMutationLock(
+        base44.asServiceRole.entities,
+        messageId,
+      );
+      if (!clientSendLockId) {
+        return Response.json(
+          { error: 'Message send is already in progress. Please retry.' },
+          { status: 409 },
+        );
+      }
+      const existingAfterLock = await findExistingMessage(base44, user.id, conversationId, clientMessageKey);
+      if (existingAfterLock) {
+        return Response.json({ success: true, message: existingAfterLock, duplicate: true });
+      }
+      const moderationAfterLock = await findModerationReplay(base44, user, conversationId, clientMessageKey);
+      if (moderationAfterLock) {
+        return Response.json({ success: false, moderation: moderationAfterLock, duplicate: true });
+      }
     }
 
     const duration = Number(body?.duration);

@@ -7,6 +7,10 @@ import {
   releaseChallengeSubmissionLock,
 } from '../../shared/challengeSubmissionLock.ts';
 import {
+  acquireChallengeLifecycleLock,
+  releaseChallengeLifecycleLock,
+} from '../../shared/challengeLifecycleLock.ts';
+import {
   acquireTrackLifecycleLock,
   releaseTrackLifecycleLock,
 } from '../../shared/trackLifecycleLock.ts';
@@ -126,6 +130,7 @@ Deno.serve(async (req) => {
     }
 
     let submissionLockId: string | null = null;
+    let challengeLockId: string | null = null;
     let trackLockId: string | null = null;
     let artPostLockId: string | null = null;
     if (action === 'create' && parentType === 'challenge_submission') {
@@ -133,6 +138,28 @@ Deno.serve(async (req) => {
       if (!submissionLockId) {
         return Response.json(
           { error: 'Submission is being updated. Please retry.' },
+          { status: 409 },
+        );
+      }
+
+      const submissionForLock = await entities.ChallengeSubmission.get(parentId).catch(() => null);
+      if (!submissionForLock) {
+        await releaseChallengeSubmissionLock(entities, submissionLockId);
+        submissionLockId = null;
+        return Response.json({ error: 'Comment target not found' }, { status: 404 });
+      }
+      if (!isBase44EntityId(submissionForLock.challenge_id)) {
+        await releaseChallengeSubmissionLock(entities, submissionLockId);
+        submissionLockId = null;
+        return Response.json({ error: 'Submission has an invalid challenge reference' }, { status: 409 });
+      }
+
+      challengeLockId = await acquireChallengeLifecycleLock(entities, submissionForLock.challenge_id);
+      if (!challengeLockId) {
+        await releaseChallengeSubmissionLock(entities, submissionLockId);
+        submissionLockId = null;
+        return Response.json(
+          { error: 'Challenge is being updated. Please retry.' },
           { status: 409 },
         );
       }
@@ -210,6 +237,7 @@ Deno.serve(async (req) => {
     } finally {
       await releaseArtPostEngagementLock(entities, artPostLockId);
       await releaseTrackLifecycleLock(entities, trackLockId);
+      await releaseChallengeLifecycleLock(entities, challengeLockId);
       await releaseChallengeSubmissionLock(entities, submissionLockId);
     }
   } catch (error) {

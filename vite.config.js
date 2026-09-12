@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 import { resolve } from 'path';
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   logLevel: 'warn',
   test: {
     environment: 'node',
@@ -42,7 +42,7 @@ export default defineConfig({
     },
   },
   plugins: [
-    base44({
+    mode === 'test' ? null : base44({
       // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.
       // can be removed if the code has been updated to use the new SDK imports from @base44/sdk
       legacySDKImports: process.env.BASE44_LEGACY_SDK_IMPORTS === 'true',
@@ -52,5 +52,5 @@ export default defineConfig({
       visualEditAgent: true
     }),
     react()
-  ]
-});
+  ].filter(Boolean)
+}));

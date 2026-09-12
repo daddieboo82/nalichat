@@ -36,6 +36,9 @@ Deno.serve(async (req) => {
     const entities = base44.asServiceRole.entities;
     const version = await entities.TrackVersion.get(versionId);
     if (!version) return Response.json({ error: 'Track version not found' }, { status: 404 });
+    if (!isBase44EntityId(version.project_id) || !isBase44EntityId(version.track_id)) {
+      return Response.json({ error: 'Track version has invalid project or track references' }, { status: 409 });
+    }
 
     const projectPreview = await entities.Project.get(version.project_id).catch(() => null);
     if (!projectPreview) return Response.json({ error: 'Project not found' }, { status: 404 });

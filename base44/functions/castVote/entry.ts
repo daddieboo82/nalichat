@@ -60,6 +60,9 @@ export default async function(req) {
     if (submissionPreview.producer_id === user.id) {
       return Response.json({ error: "You can't vote on your own submission." }, { status: 403 });
     }
+    if (!isBase44EntityId(submissionPreview.challenge_id)) {
+      return Response.json({ error: 'Submission has an invalid challenge reference' }, { status: 409 });
+    }
     const challengePreview = await entities.Challenge.get(submissionPreview.challenge_id).catch(() => null);
     if (!challengePreview) return Response.json({ error: 'Challenge not found' }, { status: 404 });
     if (challengePreview.status !== 'voting') {

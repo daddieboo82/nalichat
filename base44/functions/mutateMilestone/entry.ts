@@ -38,6 +38,9 @@ Deno.serve(async (req) => {
     const entities = base44.asServiceRole.entities;
     const milestone = await entities.Milestone.get(milestoneId);
     if (!milestone) return Response.json({ error: 'Milestone not found' }, { status: 404 });
+    if (!isBase44EntityId(milestone.project_id)) {
+      return Response.json({ error: 'Milestone has an invalid project reference' }, { status: 409 });
+    }
 
     let canEdit = user.role === 'admin';
     if (!canEdit) {

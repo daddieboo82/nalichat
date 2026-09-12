@@ -859,15 +859,30 @@ export default function Studio() {
   const stopRecordingProcess = (keepPlaying = false) => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.onstop = async () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
+        const recordingMimeType =
+          mediaRecorderRef.current?.mimeType ||
+          audioChunksRef.current.find((chunk) => chunk?.type)?.type ||
+          'audio/webm';
+        const blob = new Blob(audioChunksRef.current, { type: recordingMimeType });
+        if (blob.size === 0) {
+          setTracksWithHistory(prev => prev.map(t => (
+            t.armed ? { ...t, waveform: [], armed: false } : t
+          )));
+          setRecordingStartTime(null);
+          toast.error("No audio was captured. Please check your microphone and try again.");
+          return;
+        }
         const audioUrl = URL.createObjectURL(blob);
         
         let realWaveform = generateWaveform(WAVEFORM_POINTS);
         let recordedDuration = null;
+        let waveformAudioCtx = null;
         try {
           const arrayBuffer = await blob.arrayBuffer();
-          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) throw new Error("Web Audio is not supported");
+          waveformAudioCtx = new AudioContextClass();
+          const audioBuffer = await waveformAudioCtx.decodeAudioData(arrayBuffer);
           recordedDuration = audioBuffer.duration;
           const channelData = audioBuffer.getChannelData(0);
           
@@ -895,6 +910,10 @@ export default function Studio() {
           realWaveform = maxVal > 0 ? Array.from(waveform).map(v => v / maxVal) : Array.from(waveform).map(() => 0.05);
         } catch (e) {
           console.error("Failed to parse waveform", e);
+        } finally {
+          if (waveformAudioCtx && waveformAudioCtx.state !== 'closed') {
+            void waveformAudioCtx.close().catch(() => {});
+          }
         }
         
         setTracksWithHistory(prev => prev.map(t => {

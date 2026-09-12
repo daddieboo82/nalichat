@@ -1,29 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mail, Copy, Check, MessageSquare, Loader2, X } from 'lucide-react';
+import { Mail, Copy, Check, MessageSquare, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { copyToClipboard } from '@/lib/clipboard';
 
 export default function InviteTab() {
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef(null);
+  const [phone, setPhone] = useState('');
+  const [smsStatus, setSmsStatus] = useState(null);
 
   useEffect(() => () => {
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
   }, []);
-  const [phone, setPhone] = useState('');
-  const [sendingSms, setSendingSms] = useState(false);
-  const [smsStatus, setSmsStatus] = useState(null); // { type: 'success' | 'error', message }
 
-  const getOrigin = () => {
-    if (typeof window !== 'undefined') {
-      return window.location.origin;
-    }
-    return '';
-  };
-
+  const getOrigin = () => (typeof window !== 'undefined' ? window.location.origin : '');
   const inviteLink = `${getOrigin()}/register`;
 
   const copyLink = async () => {
@@ -41,35 +33,28 @@ export default function InviteTab() {
     }, 2000);
   };
 
-  const sendSms = async () => {
+  const openSms = () => {
     setSmsStatus(null);
     const trimmed = phone.trim();
     if (!trimmed) {
       setSmsStatus({ type: 'error', message: 'Please enter a phone number.' });
       return;
     }
-    // Validate E.164-style number: optional +, 7-15 digits
     const normalized = trimmed.replace(/[\s()-]/g, '');
     if (!/^\+?\d{7,15}$/.test(normalized)) {
       setSmsStatus({ type: 'error', message: 'Enter a valid phone number with country code (e.g. +1 555 123 4567).' });
       return;
     }
-    setSendingSms(true);
-    try {
-      const res = await base44.functions.invoke('sendSmsInvite', { phone: normalized });
-      if (res.data?.success) {
-        toast.success('Invite sent via SMS!');
-        setSmsStatus({ type: 'success', message: `Invite sent to ${trimmed}!` });
-        setPhone('');
-      } else {
-        setSmsStatus({ type: 'error', message: res.data?.error || 'Failed to send SMS.' });
-      }
-    } catch (err) {
-      console.error('Failed to send SMS invite:', err);
-      setSmsStatus({ type: 'error', message: 'Failed to send SMS. Please try again.' });
-    } finally {
-      setSendingSms(false);
-    }
+
+    const body = `I'm using NaliChat to collaborate on music. Join me here: ${inviteLink}`;
+    window.location.href = `sms:${encodeURIComponent(normalized)}?&body=${encodeURIComponent(body)}`;
+    setSmsStatus({ type: 'success', message: 'Your SMS app was opened with the invite ready to send.' });
+  };
+
+  const openEmail = () => {
+    const subject = 'Join me on NaliChat';
+    const body = `I'm using NaliChat to collaborate on music. Join me here: ${inviteLink}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   return (
@@ -78,28 +63,15 @@ export default function InviteTab() {
         <div className="w-16 h-16 mx-auto mb-6 bg-primary/10 rounded-full flex items-center justify-center">
           <Mail className="w-8 h-8 text-primary" />
         </div>
-        
+
         <h2 className="text-2xl font-heading font-bold mb-2">Invite Collaborators</h2>
         <p className="text-muted-foreground mb-6">Share your unique link and start collaborating with others.</p>
 
         <div className="bg-card rounded-lg p-4 mb-6 border border-border/40">
           <div className="flex items-center gap-2">
-            <Input
-              value={inviteLink}
-              readOnly
-              className="flex-1 bg-transparent border-0 text-sm text-center"
-            />
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={copyLink}
-              className="shrink-0"
-            >
-              {copied ? (
-                <Check className="w-4 h-4 text-green-500" />
-              ) : (
-                <Copy className="w-4 h-4" />
-              )}
+            <Input value={inviteLink} readOnly className="flex-1 bg-transparent border-0 text-sm text-center" />
+            <Button size="sm" variant="ghost" onClick={copyLink} className="shrink-0">
+              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
@@ -107,11 +79,10 @@ export default function InviteTab() {
           </p>
         </div>
 
-        <Button
-          onClick={copyLink}
-          className="w-full mb-6"
-        >
-          Copy Invite Link
+        <Button onClick={copyLink} className="w-full mb-3">Copy Invite Link</Button>
+        <Button variant="outline" onClick={openEmail} className="w-full mb-6">
+          <Mail className="w-4 h-4 mr-2" />
+          Open Email App
         </Button>
 
         <div className="bg-card rounded-lg p-4 mb-3 border border-border/40 text-left">
@@ -127,9 +98,7 @@ export default function InviteTab() {
               placeholder="+1 555 123 4567"
               className="flex-1 text-sm"
             />
-            <Button onClick={sendSms} disabled={sendingSms} className="shrink-0">
-              {sendingSms ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send'}
-            </Button>
+            <Button onClick={openSms} className="shrink-0">Open SMS</Button>
           </div>
           {smsStatus ? (
             <p className={`text-xs mt-2 flex items-center gap-1.5 font-medium ${smsStatus.type === 'success' ? 'text-green-500' : 'text-destructive'}`}>
@@ -138,13 +107,13 @@ export default function InviteTab() {
             </p>
           ) : (
             <p className="text-xs text-muted-foreground mt-2">
-              Include the country code (e.g. +1 for US numbers).
+              NaliChat opens your SMS app; you review and send the invite yourself.
             </p>
           )}
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Share this link with anyone you want to invite to collaborate
+          NaliChat never sends invite email or SMS messages to arbitrary recipients on your behalf.
         </p>
       </div>
     </div>

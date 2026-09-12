@@ -8,6 +8,8 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { sounds } from "@/hooks/use-sound";
+import { useLockedChats } from "@/lib/LockedChatsContext";
+import { countVisibleUnreadConversations } from "@/lib/lockedChatPolicy";
 
 const QUICK_ITEMS = [
   { icon: MessageSquare, label: "Messages", path: "/messages", gradient: "from-primary to-pink-500", desc: "Chat & collaborate" },
@@ -22,24 +24,44 @@ const QUICK_ITEMS = [
 
 export default function QuickAccessGrid() {
   const { user } = useAuth();
+  const {
+    isReady: lockedChatsReady,
+    isUnlocked: lockedChatsUnlocked,
+    lockedConversationIds,
+  } = useLockedChats();
 
-  // Fetch unread message count for badge
-  const { data: unreadCount } = useQuery({
-    queryKey: ["quick-access-unread"],
+  // Fetch unread message count for badge. Fail closed until locked-chat privacy
+  // state is ready, and only count conversations the current user participates in.
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: [
+      "quick-access-unread",
+      user?.id,
+      lockedChatsUnlocked,
+      lockedConversationIds,
+    ],
     queryFn: async () => {
+      if (!user?.id || !lockedChatsReady) return 0;
       try {
         const conversations = await base44.entities.Conversation.list("-last_message_at", 500);
-        let count = 0;
-        for (const conv of conversations) {
-          if (!conv.last_message_at) continue;
-          try {
-            const lastRead = localStorage.getItem(`lastReadAt:${conv.id}`);
-            if (!lastRead || new Date(conv.last_message_at).getTime() > parseInt(lastRead)) count++;
-          } catch {}
-        }
-        return count;
-      } catch { return 0; }
+        return countVisibleUnreadConversations(
+          conversations,
+          user.id,
+          lockedChatsUnlocked ? [] : lockedConversationIds,
+          (conversationId) => {
+            try {
+              const raw = localStorage.getItem(`lastReadAt:${conversationId}`);
+              const parsed = raw ? Number.parseInt(raw, 10) : 0;
+              return Number.isFinite(parsed) ? parsed : 0;
+            } catch {
+              return 0;
+            }
+          },
+        );
+      } catch {
+        return 0;
+      }
     },
+    enabled: !!user?.id && lockedChatsReady,
     staleTime: 30000,
   });
 

@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 Deno.serve(async (req) => {
@@ -24,9 +25,8 @@ Deno.serve(async (req) => {
     if (
       typeof body?.project_id !== 'string'
       || typeof body?.title !== 'string'
-      || !body.project_id.trim()
+      || !isBase44EntityId(body.project_id.trim())
       || !body.title.trim()
-      || body.project_id.length > 200
     ) {
       return Response.json({ error: 'project_id and title are required' }, { status: 400 });
     }

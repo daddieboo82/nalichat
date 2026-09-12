@@ -23,7 +23,13 @@ export async function findBlockingSquadMembership(
       );
 
       for (const squad of rows) {
-        if (squad.status === 'ended') continue;
+        if (squad.status === 'ended') {
+          await entities.User.updateMany(
+            { id: userId, squad_membership_id: squad.id },
+            { $set: { squad_membership_id: null } },
+          );
+          continue;
+        }
 
         if (squad.status === 'pending' && isSquadInviteExpired(squad)) {
           await entities.Squad.update(squad.id, { status: 'ended' });

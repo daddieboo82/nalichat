@@ -41,6 +41,14 @@ describe('media storage resilience', () => {
     expect(source).toContain('stream?.getTracks().forEach(t => t.stop())');
   });
 
+  it('preserves collaborative recording MIME type and rejects empty captures', async () => {
+    const source = await readText('src/components/messages/ChatSessionViewer.jsx');
+    expect(source).toContain('const recordingMimeType = recorder.mimeType || mimeType || "audio/webm"');
+    expect(source).toContain('new Blob(chunksRef.current, { type: recordingMimeType })');
+    expect(source).toContain('if (blob.size === 0)');
+    expect(source).toContain('const extension = recordingExtension(recordingMimeType)');
+  });
+
   it('keeps resumable transfers working when localStorage is unavailable', async () => {
     const source = await readText('src/lib/resumableUpload.js');
     expect(source).toContain('try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}');

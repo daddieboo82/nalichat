@@ -11,6 +11,11 @@ import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { clearPersistedAuthTokens, markAuthActivity, persistAuthResult } from "@/lib/authSession";
+import {
+  otpErrorMessage,
+  registrationErrorMessage,
+  resendOtpErrorMessage,
+} from "@/lib/authErrorMessages";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -33,7 +38,7 @@ export default function Register() {
       await base44.auth.register({ email, password });
       setShowOtp(true);
     } catch (err) {
-      setError(err.message || "Registration failed");
+      setError(registrationErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -52,7 +57,7 @@ export default function Register() {
       try { sessionStorage.setItem("is_new_user", "true"); } catch {}
       window.location.href = safeReturnTo();
     } catch (err) {
-      setError(err.message || "Invalid verification code");
+      setError(otpErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -67,7 +72,7 @@ export default function Register() {
         description: "Check your email for the new code.",
       });
     } catch (err) {
-      setError(err.message || "Failed to resend code");
+      setError(resendOtpErrorMessage(err));
     }
   };
 

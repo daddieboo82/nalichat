@@ -10,6 +10,7 @@ import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "sonner";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { clearPersistedAuthTokens, markAuthActivity, persistAuthResult } from "@/lib/authSession";
+import { googleLoginErrorMessage, loginErrorMessage } from "@/lib/authErrorMessages";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -36,7 +37,7 @@ export default function Login() {
       toast.success("Logged in successfully! Welcome back.");
       window.location.href = safeReturnTo();
     } catch (err) {
-      const msg = err.message || "Invalid email or password";
+      const msg = loginErrorMessage(err);
       setError(msg);
       toast.error(msg);
       setLoading(false);
@@ -54,7 +55,7 @@ export default function Login() {
       markAuthActivity();
       await Promise.resolve(base44.auth.loginWithProvider("google", safeReturnTo()));
     } catch (err) {
-      const msg = err?.message || "Google sign-in could not be started.";
+      const msg = googleLoginErrorMessage(err);
       setError(msg);
       toast.error(msg);
       setGoogleLoading(false);

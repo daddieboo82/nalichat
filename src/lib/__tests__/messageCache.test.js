@@ -9,6 +9,9 @@ import {
 const temp = (tempId, text) => ({
   id: tempId, _tempId: tempId, text, type: 'text', sender_id: 'me', _optimistic: true,
 });
+const keyedTemp = (tempId, text) => ({
+  ...temp(tempId, text), client_message_key: tempId,
+});
 const saved = (id, text) => ({ id, text, type: 'text', sender_id: 'me' });
 
 describe('createTempId', () => {
@@ -21,7 +24,7 @@ describe('createTempId', () => {
 
 describe('applySendSuccess', () => {
   it('replaces the matching temp with the saved message', () => {
-    const result = applySendSuccess([temp('t1', 'hello')], saved('real-1', 'hello'), 't1');
+    const result = applySendSuccess([keyedTemp('t1', 'hello')], saved('real-1', 'hello'), 't1');
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('real-1');
     expect(result[0]._optimistic).toBeUndefined();
@@ -29,24 +32,31 @@ describe('applySendSuccess', () => {
 
   it('REGRESSION: keeps other in-flight sends when one resolves', () => {
     // Send A, then send B before A resolves. A resolving must not remove B.
-    const cache = [temp('t-a', 'first'), temp('t-b', 'second')];
+    const cache = [keyedTemp('t-a', 'first'), keyedTemp('t-b', 'second')];
     const result = applySendSuccess(cache, saved('real-a', 'first'), 't-a');
     expect(result.map(m => m.text)).toEqual(['second', 'first']);
     expect(result.some(m => m._tempId === 't-b')).toBe(true);
   });
 
   it('does not duplicate a message the realtime feed already delivered', () => {
-    const cache = [temp('t1', 'hi'), saved('real-1', 'hi')];
+    const cache = [keyedTemp('t1', 'hi'), saved('real-1', 'hi')];
     const result = applySendSuccess(cache, saved('real-1', 'hi'), 't1');
     expect(result.filter(m => m.id === 'real-1')).toHaveLength(1);
   });
 });
 
 describe('applySendFailure', () => {
-  it('removes only the failed send', () => {
-    const cache = [temp('t-a', 'first'), temp('t-b', 'second')];
-    const result = applySendFailure(cache, 't-a');
-    expect(result.map(m => m.text)).toEqual(['second']);
+  it('preserves only the failed send as retryable while leaving other sends untouched', () => {
+    const cache = [keyedTemp('t-a', 'first'), keyedTemp('t-b', 'second')];
+    const result = applySendFailure(cache, 't-a', 'network unavailable', true);
+    expect(result.map(m => m.text)).toEqual(['first', 'second']);
+    expect(result[0]).toMatchObject({
+      client_message_key: 't-a',
+      _deliveryState: 'failed',
+      _retryable: true,
+      _sendError: 'network unavailable',
+    });
+    expect(result[1]).toEqual(cache[1]);
   });
 
   it('leaves the cache untouched when no temp id is known', () => {

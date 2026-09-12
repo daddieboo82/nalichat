@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import {
   acquireChallengeLifecycleLock,
   releaseChallengeLifecycleLock,
@@ -41,8 +42,7 @@ Deno.serve(async (req) => {
     const nextStatus = typeof status === 'string' ? status : '';
     if (
       typeof challengeId !== 'string'
-      || !challengeId.trim()
-      || challengeId.length > 200
+      || !isBase44EntityId(challengeId.trim())
       || !['upcoming', 'active', 'voting', 'completed'].includes(nextStatus)
     ) {
       return Response.json({ error: 'Valid challengeId and status are required' }, { status: 400 });

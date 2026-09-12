@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { allowed } = await requireEntitlement(
+    const { allowed, entitlements } = await requireEntitlement(
       base44.asServiceRole.entities,
       user.id,
       'ai.standard',
@@ -66,6 +66,15 @@ Deno.serve(async (req) => {
     const conversation = await base44.agents.getConversation(conversationId);
     if (!conversation || conversation.created_by_id !== user.id) {
       return Response.json({ error: 'Conversation not found.' }, { status: 404 });
+    }
+    if (conversation.agent_name !== 'studio_ai' && conversation.agent_name !== 'studio_ai_plus') {
+      return Response.json({ error: 'Unsupported assistant conversation.' }, { status: 400 });
+    }
+    if (conversation.agent_name === 'studio_ai_plus' && !entitlements['ai.best_model']) {
+      return Response.json(
+        { error: 'Premium Plus is required for NALI.ai Plus', code: 'AI_BEST_MODEL_NOT_ENTITLED' },
+        { status: 403 },
+      );
     }
 
     const { result, quota } = await executeRoutedAiRequest<Record<string, unknown>>({

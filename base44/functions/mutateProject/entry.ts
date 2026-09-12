@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 const PROJECT_STATUSES = new Set(['draft','in_progress','mixing','mastering','complete']);
 
@@ -39,7 +40,7 @@ Deno.serve(async (req) => {
 
     const body = await readJsonBodyLimited(req, 64 * 1024);
     const projectId = typeof body?.projectId === 'string' ? body.projectId.trim() : '';
-    if (!projectId || projectId.length > 200) {
+    if (!isBase44EntityId(projectId)) {
       return Response.json({ error: 'projectId is required' }, { status: 400 });
     }
     if (!body?.data || typeof body.data !== 'object' || Array.isArray(body.data)) {

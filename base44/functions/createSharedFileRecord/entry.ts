@@ -130,6 +130,56 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+
+    const previewProjectId = typeof body?.project_id === 'string' ? body.project_id.trim() : null;
+    const previewFolderId = typeof body?.folder_id === 'string' ? body.folder_id.trim() : null;
+    if (previewProjectId && !isBase44EntityId(previewProjectId)) {
+      return Response.json({ error: 'Invalid project_id' }, { status: 400 });
+    }
+    if (previewFolderId && !isBase44EntityId(previewFolderId)) {
+      return Response.json({ error: 'Invalid folder_id' }, { status: 400 });
+    }
+
+    if (previewFolderId) {
+      const folderPreview = await entities.Folder.get(previewFolderId).catch(() => null);
+      if (!folderPreview) return Response.json({ error: 'Folder not found' }, { status: 404 });
+      const folderProjectId = folderPreview.project_id || null;
+      if (folderProjectId && !isBase44EntityId(folderProjectId)) {
+        return Response.json({ error: 'Folder has an invalid project reference' }, { status: 409 });
+      }
+      if (previewProjectId && folderProjectId !== previewProjectId) {
+        return Response.json({ error: 'folder_id does not belong to project_id' }, { status: 400 });
+      }
+
+      let canEditFolder = user.role === 'admin';
+      if (!canEditFolder && folderProjectId) {
+        const projectPreview = await entities.Project.get(folderProjectId).catch(() => null);
+        if (!projectPreview) return Response.json({ error: 'Project not found' }, { status: 404 });
+        canEditFolder = projectPreview.owner_id === user.id
+          || (projectPreview.editor_ids || []).includes(user.id);
+      } else if (!canEditFolder) {
+        canEditFolder = folderPreview.owner_id === user.id
+          || (folderPreview.edit_user_ids || []).includes(user.id);
+      }
+      if (!canEditFolder) {
+        return Response.json({ error: 'Viewer access cannot add files to this folder' }, { status: 403 });
+      }
+    } else if (previewProjectId) {
+      const projectPreview = await entities.Project.get(previewProjectId).catch(() => null);
+      if (!projectPreview) return Response.json({ error: 'Project not found' }, { status: 404 });
+      const canEditProject = user.role === 'admin'
+        || projectPreview.owner_id === user.id
+        || (projectPreview.editor_ids || []).includes(user.id);
+      if (!canEditProject) {
+        return Response.json({ error: 'Viewer access cannot add project files' }, { status: 403 });
+      }
+    }
+
+    const requestedFileType = typeof body.file_type === 'string' ? body.file_type.trim() : 'other';
+    if (!FILE_TYPES.has(requestedFileType)) {
+      return Response.json({ error: 'Invalid file type' }, { status: 400 });
+    }
+
     const claimedFileSize = body.file_size == null ? 0 : body.file_size;
     if (!Number.isFinite(claimedFileSize) || claimedFileSize < 0) {
       return Response.json({ error: 'file_size must be a non-negative number' }, { status: 400 });

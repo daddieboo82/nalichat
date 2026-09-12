@@ -40,28 +40,43 @@ Deno.serve(async (req) => {
       if (id !== message.sender_id) recipients.add(id);
     }
 
+    const lockPreferences = await entities.LockedConversationPreference.filter(
+      { conversation_id: conversation.id },
+      '-locked_at',
+      500,
+    );
+    const lockedRecipientIds = new Set(
+      (lockPreferences || [])
+        .map((preference: any) => preference.user_id)
+        .filter((recipientId: string) => recipients.has(recipientId)),
+    );
+
     let created = 0;
     for (const recipientId of recipients) {
+      const isLockedChat = lockedRecipientIds.has(recipientId);
       const notification = {
         id: `notification_message_${message.id}_${recipientId}`,
         recipient_id: recipientId,
         type: "message",
-        actor_id: message.sender_id,
-        actor_name: message.sender_name || "Someone",
-        actor_avatar: message.sender_avatar,
-        message: callSignal
-          ? `Incoming ${callSignal.callType === 'video' ? 'video' : 'audio'} call`
-          : conversation.type === 'group'
-            ? `sent a message in ${conversation.name || 'a group'}: "${message.text ? message.text.substring(0, 30) + (message.text.length > 30 ? '...' : '') : 'an attachment'}"`
-            : `${message.text ? message.text.substring(0, 60) + (message.text.length > 60 ? '...' : '') : 'Sent you an attachment'}`,
+        actor_id: isLockedChat ? "" : message.sender_id,
+        actor_name: isLockedChat ? "Locked chat" : (message.sender_name || "Someone"),
+        actor_avatar: isLockedChat ? "" : message.sender_avatar,
+        message: isLockedChat
+          ? "New message in a locked chat."
+          : callSignal
+            ? `Incoming ${callSignal.callType === 'video' ? 'video' : 'audio'} call`
+            : conversation.type === 'group'
+              ? `sent a message in ${conversation.name || 'a group'}: "${message.text ? message.text.substring(0, 30) + (message.text.length > 30 ? '...' : '') : 'an attachment'}"`
+              : `${message.text ? message.text.substring(0, 60) + (message.text.length > 60 ? '...' : '') : 'Sent you an attachment'}`,
         link: `/messages?id=${conversation.id}`,
+        locked_chat: isLockedChat,
       };
       const result = await createNotificationIdempotently(entities.Notification, notification);
       if (!result.created) continue;
       created += 1;
       try {
         await sendPushToUser(entities, recipientId, {
-          title: notification.actor_name || 'NaliChat',
+          title: isLockedChat ? 'NaliChat' : (notification.actor_name || 'NaliChat'),
           body: notification.message,
           url: notification.link,
         });

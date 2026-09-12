@@ -83,6 +83,8 @@ Deno.serve(async (req) => {
     return Response.json({
       status: purchase.status === 'paid' ? 'paid' : session.payment_status,
       items: purchase.items || [],
+    }, {
+      headers: { 'Cache-Control': 'no-store' },
     });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);

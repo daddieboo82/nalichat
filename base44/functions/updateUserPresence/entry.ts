@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     if (bodyError) return bodyError;
     console.error('Error updating user presence:', error);
     return Response.json(
-      { error: error instanceof Error ? error.message : 'Unable to update presence' },
+      { error: 'Unable to update presence' },
       { status: 500 },
     );
   }

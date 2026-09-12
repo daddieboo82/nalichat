@@ -6,6 +6,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
 import { getLikeCount } from "@/lib/engagement";
 
+function sessionGet(key) {
+  try { return sessionStorage.getItem(key); } catch { return null; }
+}
+
+function sessionSet(key, value) {
+  try { sessionStorage.setItem(key, value); } catch {}
+}
+
 export default function DailyRecommendation() {
   const [post, setPost] = useState(null);
   const [dismissed, setDismissed] = useState(false);
@@ -15,7 +23,7 @@ export default function DailyRecommendation() {
   useEffect(() => {
     // Check if already dismissed today
     const key = `nali_rec_dismissed_${new Date().toDateString()}`;
-    if (sessionStorage.getItem(key)) { setDismissed(true); return; }
+    if (sessionGet(key)) { setDismissed(true); return; }
 
     base44.entities.ArtPost.list("-created_date", 100).then((posts) => {
       if (!posts?.length) return;
@@ -28,7 +36,7 @@ export default function DailyRecommendation() {
 
   const dismiss = () => {
     const key = `nali_rec_dismissed_${new Date().toDateString()}`;
-    sessionStorage.setItem(key, "1");
+    sessionSet(key, "1");
     setDismissed(true);
     if (audio) { audio.pause(); audio.currentTime = 0; }
     sounds.click();

@@ -1,4 +1,5 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import {
+import { isConversationId } from '../../shared/conversationIds.ts'; createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
@@ -276,7 +277,7 @@ async function createSession(base44: any, user: any, body: any) {
   }
   if (
     typeof body.conversation_id !== 'string'
-    || !isBase44EntityId(body.conversation_id.trim())
+    || !isConversationId(body.conversation_id.trim())
   ) {
     return jsonError(400, 'INVALID_CONVERSATION', 'A valid conversation_id is required.');
   }
@@ -405,7 +406,7 @@ async function readLatestSession(base44: any, user: any, body: any) {
   const entities = base44.asServiceRole.entities;
   if (
     typeof body.conversation_id !== 'string'
-    || !isBase44EntityId(body.conversation_id.trim())
+    || !isConversationId(body.conversation_id.trim())
   ) {
     return jsonError(400, 'INVALID_CONVERSATION', 'A valid conversation_id is required.');
   }

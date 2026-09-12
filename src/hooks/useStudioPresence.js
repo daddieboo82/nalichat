@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 
 const HEARTBEAT_MS = 15000;
 const STALE_MS = 45000; // a peer is considered gone if no heartbeat in this window
@@ -7,6 +8,7 @@ const STALE_MS = 45000; // a peer is considered gone if no heartbeat in this win
 // Tracks who else is live in the same studio room, in real time.
 // Returns { peers, setActivity } where peers excludes the current user.
 export function useStudioPresence(roomId = 'local_studio') {
+  const { user } = useAuth();
   const [peers, setPeers] = useState([]);
   const meRef = useRef(null);
   const activityRef = useRef('In the studio');
@@ -58,36 +60,34 @@ export function useStudioPresence(roomId = 'local_studio') {
   useEffect(() => {
     let interval;
     let refreshInterval;
-    let cancelled = false;
 
     cancelledRef.current = false;
+    meRef.current = user || null;
 
-    (async () => {
-      try {
-        const me = await base44.auth.me();
-        if (cancelled || !me) return;
-        meRef.current = me;
+    if (user?.id) {
+      void (async () => {
         await writeHeartbeat();
         await refresh();
-
+        if (cancelledRef.current) return;
         interval = setInterval(writeHeartbeat, HEARTBEAT_MS);
         refreshInterval = setInterval(refresh, 5000);
-      } catch (e) {
-        // not logged in — no presence
-      }
-    })();
+      })();
+    } else {
+      setPeers([]);
+    }
 
     return () => {
-      cancelled = true;
       cancelledRef.current = true;
       if (interval) clearInterval(interval);
       if (refreshInterval) clearInterval(refreshInterval);
-      void base44.functions.invoke("updateStudioPresence", {
-        action: "clear",
-        roomId,
-      }).catch(() => {});
+      if (user?.id) {
+        void base44.functions.invoke("updateStudioPresence", {
+          action: "clear",
+          roomId,
+        }).catch(() => {});
+      }
     };
-  }, [roomId, writeHeartbeat, refresh]);
+  }, [roomId, user, writeHeartbeat, refresh]);
 
   return { peers, setActivity };
 }

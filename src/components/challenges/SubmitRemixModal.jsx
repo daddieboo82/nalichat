@@ -1,3 +1,4 @@
+import { secureUploadFile } from "@/lib/secureUpload";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -89,7 +90,7 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
           setSubmitting(false);
           return;
         }
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await secureUploadFile({ file });
         remix_file_url = file_url;
         file_size = file.size;
         source_type = "external_upload";

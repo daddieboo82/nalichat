@@ -4,7 +4,7 @@ import {
   Mic, Wand2, FileText, Trophy, Settings, Gem, BarChart3,
   Home, Compass, MessageSquare, Users, Radio, Swords, Rocket, Smartphone
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/lib/AuthContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";

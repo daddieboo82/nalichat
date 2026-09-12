@@ -221,7 +221,8 @@ export default function Record() {
   const saveRecording = async (rec) => {
     setSaving(rec.id);
     try {
-      const extension = recordingExtension(rec.blob.type);\n      const file = new File([rec.blob], `${rec.name}.${extension}`, { type: rec.blob.type || "audio/webm" });
+      const extension = recordingExtension(rec.blob.type);
+      const file = new File([rec.blob], `${rec.name}.${extension}`, { type: rec.blob.type || "audio/webm" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const created = await base44.functions.invoke("createSharedFileRecord", {
         name: rec.name,

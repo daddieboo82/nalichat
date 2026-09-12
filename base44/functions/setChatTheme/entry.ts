@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     if (bodyError) return bodyError;
     console.error('setChatTheme error:', error);
     return Response.json(
-      { error: error instanceof Error ? error.message : 'Unable to save chat theme.' },
+      { error: 'Unable to save chat theme.' },
       { status: 500 },
     );
   }

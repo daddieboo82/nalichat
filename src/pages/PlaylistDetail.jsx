@@ -146,11 +146,16 @@ export default function PlaylistDetail() {
   }, [volume]);
 
   useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
     setCurrentTrackIndex(0);
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-  }, [playlistId]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [playlistId, currentUser?.id]);
 
   useEffect(() => {
     setCurrentTrackIndex((index) => (

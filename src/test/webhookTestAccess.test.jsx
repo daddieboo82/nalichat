@@ -5,8 +5,11 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import WebhookTest from '@/pages/WebhookTest';
 
+const authState = vi.hoisted(() => ({
+  current: { user: null, isLoadingAuth: false, authError: null },
+}));
+
 const base44 = vi.hoisted(() => ({
-  auth: { me: vi.fn() },
   entities: {
     Subscription: {
       filter: vi.fn(),
@@ -15,6 +18,7 @@ const base44 = vi.hoisted(() => ({
 }));
 
 vi.mock('@/api/base44Client', () => ({ base44 }));
+vi.mock('@/lib/AuthContext', () => ({ useAuth: () => authState.current }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 function renderPage() {
@@ -30,17 +34,18 @@ describe('WebhookTest access control', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     base44.entities.Subscription.filter.mockResolvedValue([]);
+    authState.current = { user: null, isLoadingAuth: false, authError: null };
   });
 
   it('blocks non-admin users before loading subscription data', async () => {
-    base44.auth.me.mockResolvedValue({ id: 'u1', role: 'artist' });
+    authState.current = { user: { id: 'u1', role: 'artist' }, isLoadingAuth: false, authError: null };
     renderPage();
     expect(await screen.findByText('Admins Only')).toBeTruthy();
     expect(base44.entities.Subscription.filter).not.toHaveBeenCalled();
   });
 
   it('allows admins to load the read-only diagnostics interface', async () => {
-    base44.auth.me.mockResolvedValue({ id: 'a1', role: 'admin' });
+    authState.current = { user: { id: 'a1', role: 'admin' }, isLoadingAuth: false, authError: null };
     renderPage();
     expect(await screen.findByText('Backend Diagnostics')).toBeTruthy();
     expect(screen.queryByText('Add Mock Active Sub')).toBeNull();

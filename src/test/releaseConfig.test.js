@@ -1751,7 +1751,7 @@ describe('release configuration', () => {
 
     expect(leaderboard).toContain("created_date: { $gte: weekStart.toISOString() }");
     expect(leaderboard).toContain("'Cache-Control': 'public, max-age=15'");
-    expect(leaderboard).toContain('challengeId.length > 200');
+    expect(leaderboard).toContain('/^[0-9A-F]{24}$/i.test(challengeId)');
 
     expect(squadInvite).toContain('/^[0-9A-F]{24}$/');
     expect(squadInvite.indexOf('/^[0-9A-F]{24}$/')).toBeLessThan(
@@ -1759,7 +1759,7 @@ describe('release configuration', () => {
     );
 
     expect(sharedFile).toContain('/^[0-9a-f]{64}$/');
-    expect(sharedFile).toContain('normalizedFileId.length > 256');
+    expect(sharedFile).toContain('/^[0-9A-F]{24}$/i.test(normalizedFileId)');
     expect(sharedFile.indexOf('/^[0-9a-f]{64}$/')).toBeLessThan(
       sharedFile.indexOf('asServiceRole.entities.SharedFile.get'),
     );

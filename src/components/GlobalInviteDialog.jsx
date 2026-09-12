@@ -2,56 +2,39 @@ import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Check, Mail, MessageSquare, Loader2, X } from "lucide-react";
+import { Copy, Check, Mail, MessageSquare, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { base44 } from "@/api/base44Client";
 import { copyToClipboard } from "@/lib/clipboard";
 
 export default function GlobalInviteDialog({ open, onOpenChange }) {
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef(null);
+  const [phone, setPhone] = useState("");
+  const [smsStatus, setSmsStatus] = useState(null);
+  const { toast } = useToast();
 
   useEffect(() => () => {
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
   }, []);
-  const [phone, setPhone] = useState("");
-  const [sendingSms, setSendingSms] = useState(false);
-  const [smsStatus, setSmsStatus] = useState(null); // { type: 'success' | 'error', message: string }
-  const { toast } = useToast();
 
-  // Derive the invite URL from the current app origin so the link always points
-  // to the real app (works on custom domains, base44.app, and preview alike).
   const inviteUrl = `${window.location.origin}/register`;
 
-  const sendSms = async () => {
+  const openSms = () => {
     setSmsStatus(null);
     const trimmed = phone.trim();
     if (!trimmed) {
       setSmsStatus({ type: "error", message: "Please enter a phone number." });
       return;
     }
-    // Validate E.164-style number: optional +, 7-15 digits
     const normalized = trimmed.replace(/[\s()-]/g, "");
     if (!/^\+?\d{7,15}$/.test(normalized)) {
       setSmsStatus({ type: "error", message: "Enter a valid phone number with country code (e.g. +1 555 123 4567)." });
       return;
     }
-    setSendingSms(true);
-    try {
-      const res = await base44.functions.invoke("sendSmsInvite", { phone: normalized });
-      if (res.data?.success) {
-        toast({ title: "Invite sent via SMS!" });
-        setSmsStatus({ type: "success", message: `Invite sent to ${phone.trim()}!` });
-        setPhone("");
-      } else {
-        setSmsStatus({ type: "error", message: res.data?.error || "Failed to send SMS." });
-      }
-    } catch (err) {
-      console.error("Failed to send SMS invite:", err);
-      setSmsStatus({ type: "error", message: "Failed to send SMS. Please try again." });
-    } finally {
-      setSendingSms(false);
-    }
+
+    const body = `I'm using NaliChat to collaborate on music. Join me here: ${inviteUrl}`;
+    window.location.href = `sms:${encodeURIComponent(normalized)}?&body=${encodeURIComponent(body)}`;
+    setSmsStatus({ type: "success", message: "Your SMS app was opened with the invite ready to send." });
   };
 
   const handleCopy = async () => {
@@ -80,16 +63,8 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
 
         <div className="space-y-4">
           <div className="flex gap-2">
-            <Input
-              readOnly
-              value={inviteUrl}
-              className="flex-1 rounded-lg bg-secondary/50 border-0 text-sm"
-            />
-            <Button
-              size="icon"
-              className="w-10 h-10 rounded-lg bg-primary hover:bg-primary/90"
-              onClick={handleCopy}
-            >
+            <Input readOnly value={inviteUrl} className="flex-1 rounded-lg bg-secondary/50 border-0 text-sm" />
+            <Button size="icon" className="w-10 h-10 rounded-lg bg-primary hover:bg-primary/90" onClick={handleCopy}>
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </Button>
           </div>
@@ -111,9 +86,7 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
                 placeholder="+1 555 123 4567"
                 className="flex-1 text-sm rounded-lg bg-background border-border"
               />
-              <Button onClick={sendSms} disabled={sendingSms} className="shrink-0 rounded-lg">
-                {sendingSms ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send"}
-              </Button>
+              <Button onClick={openSms} className="shrink-0 rounded-lg">Open SMS</Button>
             </div>
             {smsStatus ? (
               <p className={`text-xs mt-2 flex items-center gap-1.5 font-medium ${smsStatus.type === "success" ? "text-green-500" : "text-destructive"}`}>
@@ -122,7 +95,7 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
               </p>
             ) : (
               <p className="text-xs text-muted-foreground mt-2">
-                Include the country code (e.g. +1 for US numbers).
+                NaliChat opens your SMS app; you review and send the invite yourself.
               </p>
             )}
           </div>
@@ -140,7 +113,7 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
               <Mail className="w-4 h-4 mr-2" />
               Email
             </Button>
-            
+
             {navigator.share && (
               <Button
                 variant="outline"

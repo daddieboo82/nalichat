@@ -1,10 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
 
-// Validates email format to prevent injection of malformed recipients
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
+// Deprecated: server-funded arbitrary-recipient email invites created an open-relay
+// and credit-abuse surface. Invites are now composed in the user's own mail client.
 Deno.serve(async (req) => {
   try {
     if (req.method !== 'POST') {
@@ -23,51 +21,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
     }
 
-    const rate = await consumeHourlyLimit(
-      base44.asServiceRole.entities,
-      user.id,
-      'email_invite',
-      10,
-    );
-    if (!rate.allowed) {
-      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
-    }
-
-    const { to } = await req.json();
-
-    // Validate recipient email
-    if (typeof to !== 'string' || !to.trim()) {
-      return Response.json({ error: 'Recipient email is required' }, { status: 400 });
-    }
-    if (to.length > 320) {
-      return Response.json({ error: 'Email address is too long' }, { status: 400 });
-    }
-    const recipient = to.trim();
-    if (!EMAIL_REGEX.test(recipient)) {
-      return Response.json({ error: 'Invalid email address' }, { status: 400 });
-    }
-
-    // Construct the invite link server-side from trusted app URL — never accept
-    // a client-supplied link (prevents phishing/link injection)
     const appUrl = APP_BASE_URL;
     if (!appUrl) {
-      return Response.json(
-        { error: 'Server is not configured with an app URL' },
-        { status: 500 }
-      );
+      return Response.json({ error: 'Server is not configured with an app URL' }, { status: 500 });
     }
-    const inviteLink = `${appUrl}/register`;
 
-    const inviterName = user.display_name || user.full_name || 'A friend';
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: recipient,
-      subject: 'Join me on NaliChat',
-      body: `Hey! ${inviterName} invited you to collaborate on NaliChat. Join here: ${inviteLink}`,
-    });
-
-    return Response.json({ success: true });
+    return Response.json({
+      error: 'Server-sent email invites are disabled. Use the share flow instead.',
+      code: 'INVITE_RELAY_DISABLED',
+      invite_url: `${appUrl.replace(/\/$/, '')}/register`,
+    }, { status: 410 });
   } catch (error) {
-    console.error('send-invite-email error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('send-invite-email error:', error);
+    return Response.json({ error: 'Invite service unavailable' }, { status: 500 });
   }
 });

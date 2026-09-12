@@ -826,10 +826,21 @@ describe('release configuration', () => {
   });
 
 
+  it('disables server-funded arbitrary-recipient invite relays', async () => {
+    const email = await readText('base44/functions/send-invite-email/entry.ts');
+    const sms = await readText('base44/functions/sendSmsInvite/entry.ts');
+
+    expect(email).toContain('INVITE_RELAY_DISABLED');
+    expect(email).not.toContain('integrations.Core.SendEmail');
+    expect(email).not.toContain('const { to } = await req.json()');
+
+    expect(sms).toContain('INVITE_RELAY_DISABLED');
+    expect(sms).not.toContain('TWILIO_ACCOUNT_SID');
+    expect(sms).not.toContain("params.append('To'");
+  });
+
   it('rate-limits costly outbound and AI actions on the server', async () => {
     const limitedPaths = [
-      'base44/functions/sendSmsInvite/entry.ts',
-      'base44/functions/send-invite-email/entry.ts',
       'base44/functions/sendExternalMessage/entry.ts',
       'base44/functions/generate-speech/entry.ts',
       'base44/functions/generateViralConcepts/entry.ts',

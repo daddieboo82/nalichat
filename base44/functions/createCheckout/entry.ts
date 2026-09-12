@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { stripeRequest } from '../../shared/stripe.ts';
 import { APP_ORIGIN } from '../../shared/appConfig.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 // Server-side price catalog — never trust client-supplied prices
 const DONATION_PRESETS = [5, 10, 25, 50];
@@ -24,6 +26,18 @@ async function sha256Hex(value: string): Promise<string> {
     .join('');
 }
 
+async function anonymousCheckoutScope(req: Request): Promise<string> {
+  const forwarded = String(
+    req.headers.get('cf-connecting-ip')
+    || req.headers.get('x-real-ip')
+    || req.headers.get('x-forwarded-for')
+    || '',
+  ).split(',')[0].trim().slice(0, 128);
+  const userAgent = String(req.headers.get('user-agent') || '').slice(0, 256);
+  const source = `${forwarded || 'unknown'}:${userAgent || 'unknown'}`;
+  return 'anon_checkout_' + await sha256Hex(source);
+}
+
 function allowedCheckoutOrigins(): Set<string> {
   return new Set([APP_ORIGIN]);
 }
@@ -43,7 +57,7 @@ Deno.serve(async (req) => {
     if (req.method !== 'POST') {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
-    const { items, callbackUrls } = await req.json();
+    const { items, callbackUrls } = await readJsonBodyLimited(req, 32 * 1024);
 
     const base44 = createClientFromRequest(req);
     let user;
@@ -51,6 +65,21 @@ Deno.serve(async (req) => {
       user = await base44.auth.me();
     } catch (_e) {
       // Checkout is public — storefront buyers may not have an account
+    }
+
+    const checkoutScope = user?.id || await anonymousCheckoutScope(req);
+    const checkoutLimit = user?.id ? 60 : 20;
+    const checkoutRate = await consumeHourlyLimit(
+      base44.asServiceRole.entities,
+      checkoutScope,
+      'checkout_create',
+      checkoutLimit,
+    );
+    if (!checkoutRate.allowed) {
+      return Response.json(
+        { error: 'Too many checkout attempts. Please try again later.' },
+        { status: 429 },
+      );
     }
 
     // Validate items
@@ -180,6 +209,8 @@ Deno.serve(async (req) => {
       checkoutId: session.id,
     });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     const message = errorMessage(error);
     console.error('Checkout error:', message);
     return Response.json(

@@ -24,6 +24,10 @@ function isScheduledHealthCheckWindow(now = new Date()) {
 // notification + email. Triggered by a scheduled automation (Sundays 4am ET).
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
 
     // Manual runs require an authenticated admin. Scheduled workflow runs do

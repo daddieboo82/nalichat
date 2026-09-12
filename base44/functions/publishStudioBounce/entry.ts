@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const MAX_PUBLISH_BYTES = 100 * 1024 * 1024;
@@ -86,7 +87,7 @@ Deno.serve(async (req) => {
 
     const body = await readJsonBodyLimited(req, 32 * 1024);
     const projectId = typeof body?.projectId === 'string' ? body.projectId.trim() : '';
-    if (body?.projectId != null && (!projectId || projectId.length > 200)) {
+    if (body?.projectId != null && !isBase44EntityId(projectId)) {
       return Response.json({ error: 'Invalid projectId' }, { status: 400 });
     }
     if (projectId) {

@@ -31,12 +31,19 @@ export default function AdminDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [adminEmail, setAdminEmail] = useState("");
+  const [authError, setAuthError] = useState(false);
   const [isMakingAdmin, setIsMakingAdmin] = useState(false);
 
   useEffect(() => {
     base44.auth.me()
-      .then(setCurrentUser)
-      .catch(() => {})
+      .then((user) => {
+        setCurrentUser(user);
+        setAuthError(false);
+      })
+      .catch(() => {
+        setCurrentUser(null);
+        setAuthError(true);
+      })
       .finally(() => setIsLoadingUser(false));
   }, []);
 
@@ -60,6 +67,16 @@ export default function AdminDashboard() {
     return (
       <div className="flex justify-center p-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center min-h-[50vh]">
+        <BarChart3 className="w-12 h-12 mb-4 opacity-50" />
+        <h2 className="text-xl font-bold mb-2">Dashboard unavailable</h2>
+        <p>We couldn't verify your account. Refresh and try again.</p>
       </div>
     );
   }

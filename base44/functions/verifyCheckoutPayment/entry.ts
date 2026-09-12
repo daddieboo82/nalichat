@@ -3,6 +3,13 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 import { stripeRequest } from '../../shared/stripe.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 // Client-side payment verification fallback — called from the ThankYou page.
 // If the Stripe webhook already marked the purchase as paid, this is a no-op.
 // If the webhook missed it, this fulfills the payment so the buyer gets access.
@@ -45,7 +52,10 @@ Deno.serve(async (req) => {
     const verifierHash = Array.from(new Uint8Array(digest))
       .map((byte) => byte.toString(16).padStart(2, '0'))
       .join('');
-    if (!purchase.purchase_verifier_hash || purchase.purchase_verifier_hash !== verifierHash) {
+    if (
+      !purchase.purchase_verifier_hash
+      || !constantTimeEqual(String(purchase.purchase_verifier_hash), verifierHash)
+    ) {
       return Response.json({ error: 'Invalid purchase verifier' }, { status: 403 });
     }
 

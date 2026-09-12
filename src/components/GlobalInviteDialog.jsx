@@ -38,7 +38,7 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
     }
     setSendingSms(true);
     try {
-      const res = await base44.functions.invoke("sendSmsInvite", { phone: phone.trim() });
+      const res = await base44.functions.invoke("sendSmsInvite", { phone: normalized });
       if (res.data?.success) {
         toast({ title: "Invite sent via SMS!" });
         setSmsStatus({ type: "success", message: `Invite sent to ${phone.trim()}!` });

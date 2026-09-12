@@ -1,3 +1,4 @@
+import { secureUploadFile } from "@/lib/secureUpload";
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -223,7 +224,7 @@ export default function Record() {
     try {
       const extension = recordingExtension(rec.blob.type);
       const file = new File([rec.blob], `${rec.name}.${extension}`, { type: rec.blob.type || "audio/webm" });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await secureUploadFile({ file });
       const created = await base44.functions.invoke("createSharedFileRecord", {
         name: rec.name,
         file_url,

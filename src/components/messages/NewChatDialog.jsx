@@ -48,6 +48,11 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
     );
   });
 
+  const contactUserIds = new Set(contactUsers.map((user) => user.id));
+  const otherUsers = search
+    ? filtered
+    : filtered.filter((user) => !contactUserIds.has(user.id));
+
   const roleColors = {
     artist: "bg-primary/20 text-primary",
     producer: "bg-accent/20 text-accent",
@@ -114,11 +119,11 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
                   </Badge>
                 </button>
               ))}
-              {filtered.length > 0 && <p className="text-xs font-semibold text-muted-foreground px-3 py-2 mt-3 uppercase">Other Users</p>}
+              {otherUsers.length > 0 && <p className="text-xs font-semibold text-muted-foreground px-3 py-2 mt-3 uppercase">Other Users</p>}
             </>
           )}
 
-          {filtered.map(user => (
+          {otherUsers.map(user => (
             <button
               key={user.id}
               onClick={() => selectUser(user)}
@@ -143,7 +148,7 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
             </button>
           ))}
 
-          {filtered.length === 0 && search && (
+          {otherUsers.length === 0 && search && (
             <div className="text-center py-8">
               <p className="text-sm text-muted-foreground mb-3">No users found matching "{search}"</p>
               <p className="text-xs text-muted-foreground/60">Try searching by name, role, genre, or location</p>

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { stripeRequest } from '../../shared/stripe.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
@@ -11,7 +12,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
 
-    const { checkoutId, purchaseToken } = await req.json();
+    const { checkoutId, purchaseToken } = await readJsonBodyLimited(req, 8 * 1024);
 
     const normalizedCheckoutId = String(checkoutId || '').trim();
     const normalizedPurchaseToken = String(purchaseToken || '').trim();
@@ -84,6 +85,8 @@ Deno.serve(async (req) => {
       items: purchase.items || [],
     });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('verifyCheckoutPayment error:', error);
     return Response.json({ error: 'Checkout verification failed' }, { status: 500 });
   }

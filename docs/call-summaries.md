@@ -71,7 +71,8 @@ fabricated.
   but not participant names or call content.
 
 Required provider capabilities are the existing Base44 `Core.TranscribeAudio`,
-`Core.InvokeLLM`, and `Core.UploadFile` integrations. Set
-`CALL_SUMMARY_UPLOAD_HOSTS` to the comma-separated exact hostnames returned by the
-production `UploadFile` integration; registration fails closed for every other host.
-No result fallback exists when a provider is unavailable.
+`Core.InvokeLLM`, and `Core.UploadFile` integrations. Capture registration reuses the
+server-owned `TRUSTED_MEDIA_HOSTS` allowlist from `base44/shared/mediaSecurity.ts` and
+fails closed for every other host. Keep that allowlist synchronized with the verified
+hosts returned by the production `UploadFile` integration. No result fallback exists
+when a provider is unavailable.

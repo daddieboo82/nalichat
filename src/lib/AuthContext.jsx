@@ -104,15 +104,17 @@ export const AuthProvider = ({ children }) => {
       setAuthError(null); // clear any stale error from a failed public-settings call
       setIsLoadingAuth(false);
       setAuthChecked(true);
+      return currentUser;
     } catch (error) {
       console.error('User auth check failed:', error);
       // Retry up to 3 times with increasing delays — right after Google OAuth
       // the user record may not be propagated yet, causing me() to 404/403.
-      // The token is valid; the record usually appears within a few seconds.
+      // Await the retry so callers that await checkUserAuth() do not resume
+      // before the authoritative user state has actually been refreshed.
       if (retryCount < 3) {
         const delay = retryCount === 0 ? 1500 : retryCount === 1 ? 3000 : 5000;
-        setTimeout(() => checkUserAuth(retryCount + 1), delay);
-        return;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return checkUserAuth(retryCount + 1);
       }
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
@@ -120,6 +122,7 @@ export const AuthProvider = ({ children }) => {
       // Do NOT clear the token — clearing it on a transient failure is the
       // race condition that causes the app to revert to logged-out right
       // after a successful login.  Only logout() clears the token.
+      return null;
     }
   };
 

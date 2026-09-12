@@ -21,6 +21,7 @@ export default function Squad() {
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef(null);
+  const loadGenerationRef = useRef(0);
   const [credits, setCredits] = useState(0);
 
   const load = useCallback(async () => {
@@ -35,6 +36,8 @@ export default function Squad() {
       return;
     }
     const requestedUserId = user.id;
+    const generation = ++loadGenerationRef.current;
+    const isStale = () => generation !== loadGenerationRef.current;
     setLoading(true);
     setStateOwnerId(requestedUserId);
     setSquad(null);
@@ -49,6 +52,7 @@ export default function Squad() {
         base44.entities.Squad.filter({ member_a_id: requestedUserId }),
         base44.entities.Squad.filter({ member_b_id: requestedUserId }),
       ]);
+      if (isStale()) return;
       const mine = [...asA, ...asB]
         .filter((s) => s.status !== "ended")
         .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0] || null;
@@ -56,18 +60,22 @@ export default function Squad() {
 
       if (mine && mine.status === "active") {
         const status = await getSquadBonusStatus();
+        if (isStale()) return;
         setProgress(status.progress);
         setBonusActive(status.active);
         const fresh = await checkUserAuth();
+        if (isStale()) return;
         setCredits(fresh?.squad_credits || user.squad_credits || 0);
       } else {
         setCredits(user.squad_credits || 0);
       }
     } catch (e) {
-      console.error("Failed to load squad", e);
-      setLoadError(true);
+      if (!isStale()) {
+        console.error("Failed to load squad", e);
+        setLoadError(true);
+      }
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }, [user, checkUserAuth]);
 

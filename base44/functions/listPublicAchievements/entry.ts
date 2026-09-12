@@ -1,6 +1,7 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -18,7 +19,7 @@ Deno.serve(async (req) => {
 
     const { userId } = await readJsonBodyLimited(req, 8 * 1024);
     const targetUserId = String(userId || '').trim();
-    if (!targetUserId || targetUserId.length > 256) {
+    if (!isBase44EntityId(targetUserId)) {
       return Response.json({ error: 'Valid userId is required' }, { status: 400 });
     }
 

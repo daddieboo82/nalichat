@@ -38,6 +38,12 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const challengePreview = await entities.Challenge.get(challengeId).catch(() => null);
+    if (!challengePreview) return Response.json({ error: 'Challenge not found' }, { status: 404 });
+    if (challengePreview.host_artist_id !== user.id && user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const challengeLockId = await acquireChallengeLifecycleLock(entities, challengeId);
     if (!challengeLockId) {
       return Response.json(

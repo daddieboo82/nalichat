@@ -1,5 +1,6 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 async function playId(postId: string, listenerId: string, day: string): Promise<string> {
   const digest = await crypto.subtle.digest(
@@ -35,6 +36,16 @@ export default async function(req) {
     }
 
     const entities = base44.asServiceRole.entities;
+    const playRate = await consumeHourlyLimit(
+      entities,
+      user.id,
+      'art_post_play',
+      600,
+    );
+    if (!playRate.allowed) {
+      return Response.json({ error: 'Play tracking rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
+
     const post = await entities.ArtPost.get(postId);
     if (!post) return Response.json({ error: 'Track not found' }, { status: 404 });
     if (post.creator_id === user.id) {

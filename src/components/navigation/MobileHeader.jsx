@@ -4,7 +4,6 @@ import {
   Mic, Wand2, FileText, Trophy, Settings, Gem, BarChart3,
   Home, Compass, MessageSquare, Users, Radio, Swords, Rocket, Smartphone
 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { useEffect, useState } from "react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/lib/AuthContext";
@@ -75,13 +74,9 @@ const MENU_GROUPS = [
 export default function MobileHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState(null);
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const path = location.pathname;
 

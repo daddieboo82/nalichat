@@ -133,26 +133,19 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
-    const lockId = await acquireMessageMutationLock(entities, messageId);
-    if (!lockId) {
-      return Response.json(
-        { error: 'Message is being updated. Please retry.' },
-        { status: 409 },
-      );
-    }
+    const isAdmin = user.role === 'admin';
+    const messagePreview = await entities.Message.get(messageId).catch(() => null);
 
-    try {
-    const message = await entities.Message.get(messageId);
-    if (!message && action === 'delete') {
+    if (!messagePreview && action === 'delete') {
       const conversationId = typeof body?.conversation_id === 'string'
         ? body.conversation_id.trim()
         : '';
-      if (!conversationId) {
+      if (!isBase44EntityId(conversationId)) {
         return Response.json({ error: 'Message not found' }, { status: 404 });
       }
       const conversation = await entities.Conversation.get(conversationId).catch(() => null);
       const canRepair = conversation && (
-        user.role === 'admin'
+        isAdmin
         || (
           Array.isArray(conversation.participant_ids)
           && conversation.participant_ids.includes(user.id)
@@ -170,6 +163,35 @@ Deno.serve(async (req) => {
       }
       return Response.json({ success: true, deleted: true, already_deleted: true });
     }
+    if (!messagePreview) return Response.json({ error: 'Message not found' }, { status: 404 });
+    if (!Array.isArray(messagePreview.participant_ids) || !messagePreview.participant_ids.includes(user.id)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (action === 'delete' && messagePreview.sender_id !== user.id && !isAdmin) {
+      return Response.json({ error: 'Only the sender or an admin can delete this message' }, { status: 403 });
+    }
+    if (action === 'edit' && messagePreview.sender_id !== user.id) {
+      return Response.json({ error: 'Only the sender can edit this message' }, { status: 403 });
+    }
+    if (action !== 'delete') {
+      if (user.is_banned) {
+        return Response.json({ error: 'banned' }, { status: 403 });
+      }
+      if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
+        return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
+      }
+    }
+
+    const lockId = await acquireMessageMutationLock(entities, messageId);
+    if (!lockId) {
+      return Response.json(
+        { error: 'Message is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
+    const message = await entities.Message.get(messageId);
     if (!message) return Response.json({ error: 'Message not found' }, { status: 404 });
     if (!Array.isArray(message.participant_ids) || !message.participant_ids.includes(user.id)) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -197,33 +219,16 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Reaction rate limit exceeded. Please try again later.' }, { status: 429 });
       }
 
-      const reactionLockId = await acquireMessageMutationLock(entities, message.id);
-      if (!reactionLockId) {
-        return Response.json(
-          { error: 'Message reactions are being updated. Please retry.' },
-          { status: 409 },
-        );
-      }
+      // The outer message lock already serializes reactions for this message.
+      // Re-acquiring the same non-reentrant lock here would always fail.
+      const reactions = { ...(message.reactions || {}) };
+      const key = `${emoji}__${user.id}`;
+      if (reactions[key]) delete reactions[key];
+      else reactions[key] = emoji;
 
-      try {
-        const freshMessage = await entities.Message.get(message.id);
-        if (!freshMessage) {
-          return Response.json({ error: 'Message not found' }, { status: 404 });
-        }
-
-        const reactions = { ...(freshMessage.reactions || {}) };
-        const key = `${emoji}__${user.id}`;
-        if (reactions[key]) delete reactions[key];
-        else reactions[key] = emoji;
-
-        const updated = await entities.Message.update(message.id, { reactions });
-        return Response.json({ success: true, message: updated, reactions });
-      } finally {
-        await releaseMessageMutationLock(entities, reactionLockId);
-      }
+      const updated = await entities.Message.update(message.id, { reactions });
+      return Response.json({ success: true, message: updated, reactions });
     }
-
-    const isAdmin = user.role === 'admin';
 
     if (action === 'delete') {
       if (message.sender_id !== user.id && !isAdmin) {

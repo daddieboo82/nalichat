@@ -3,6 +3,21 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const SCHEDULE_TIME_ZONE = 'America/New_York';
 const SCHEDULE_WINDOW_MINUTE = 20;
+const SCHEDULE_KEY_SHA256 = 'f94d780f232eda8b165c78468a5eea82633fa4bc5fd5c948f8c4b97b577f2369';
+
+async function validScheduleKey(value: unknown) {
+  if (typeof value !== 'string' || value.length < 32 || value.length > 256) return false;
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  const actual = Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+  if (actual.length !== SCHEDULE_KEY_SHA256.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < actual.length; i += 1) {
+    mismatch |= actual.charCodeAt(i) ^ SCHEDULE_KEY_SHA256.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
 
 function isScheduledHealthCheckWindow(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -29,6 +44,7 @@ Deno.serve(async (req) => {
     }
 
     const base44 = createClientFromRequest(req);
+    const body = await req.json().catch(() => ({}));
 
     // Manual runs require an authenticated admin. Scheduled workflow runs do
     // not carry a user identity, so only permit those during the configured
@@ -55,6 +71,9 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
       }
     } else {
+      if (!(await validScheduleKey(body?.workflow_key))) {
+        return Response.json({ error: 'Forbidden: invalid scheduler credential' }, { status: 403 });
+      }
       if (!isScheduledHealthCheckWindow()) {
         return Response.json({ error: 'Forbidden: scheduled health-check window required' }, { status: 403 });
       }

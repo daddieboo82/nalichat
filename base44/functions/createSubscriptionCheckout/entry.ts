@@ -12,6 +12,7 @@ import { hasPaidTierAccess, normalizePlan, normalizeStatus } from '../../shared/
 import { stripeRequest } from '../../shared/stripe.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const TRIAL_DAYS = 7;
 const CHECKOUT_LEASE_MS = 24 * 60 * 60 * 1000;
@@ -62,7 +63,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 16 * 1024);
     const sku = resolveStripeSku(body?.sku, (name) => secrets.get(name));
     const requestKey = validateCheckoutIdempotencyKey(body?.idempotencyKey);
     cleanupRequestKey = requestKey;
@@ -344,6 +345,8 @@ Deno.serve(async (req) => {
       reused: false,
     });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     if (
       cleanupBase44
       && cleanupUserId

@@ -113,6 +113,8 @@ export default function PlaylistDetail() {
     },
   });
 
+  const currentTrack = tracks[currentTrackIndex];
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return undefined;
@@ -154,8 +156,6 @@ export default function PlaylistDetail() {
       tracks.length === 0 ? 0 : Math.min(index, tracks.length - 1)
     ));
   }, [tracks.length]);
-
-  const currentTrack = tracks[currentTrackIndex];
 
   const handlePlayPause = () => {
     setIsPlaying(!isPlaying);

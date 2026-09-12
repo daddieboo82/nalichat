@@ -16,11 +16,6 @@ function safeStorageRemove(key) {
   try { localStorage.removeItem(key); } catch {}
 }
 
-// Always start with audio feedback on (reset persisted off-state).
-if (typeof window !== "undefined") {
-  safeStorageRemove("nali_sounds_off");
-}
-
 let ctx = null;
 let initialized = false;
 

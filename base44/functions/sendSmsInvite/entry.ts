@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     }
 
     // Validate E.164 phone format to prevent SMS abuse
-    const cleanPhone = phone.replace(/[\r\n]/g, '').trim();
+    const cleanPhone = phone.replace(/[\r\n\s()-]/g, '').trim();
     const e164Regex = /^\+?[1-9]\d{6,14}$/;
     if (!e164Regex.test(cleanPhone)) {
       return Response.json({ error: 'Invalid phone number format. Use E.164 format (e.g., +1234567890).' }, { status: 400 });

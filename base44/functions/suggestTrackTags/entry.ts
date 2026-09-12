@@ -87,6 +87,9 @@ Deno.serve(async (req) => {
     if (!uploaderId) {
       return Response.json({ success: true, skipped: true, reason: 'missing_uploader' });
     }
+    if (!isBase44EntityId(uploaderId)) {
+      return Response.json({ success: true, skipped: true, reason: 'invalid_uploader_reference' });
+    }
     const uploader = await entities.User.get(uploaderId).catch(() => null);
     if (!uploader) {
       return Response.json({ success: true, skipped: true, reason: 'missing_uploader_user' });
@@ -119,7 +122,7 @@ Deno.serve(async (req) => {
     }
 
     let projectPreview = null;
-    if (trackPreview.project_id) {
+    if (trackPreview.project_id && isBase44EntityId(trackPreview.project_id)) {
       projectPreview = await entities.Project.get(trackPreview.project_id).catch(() => null);
     }
 

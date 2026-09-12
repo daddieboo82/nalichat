@@ -1975,4 +1975,18 @@ describe('release configuration', () => {
   });
 
 
+  it('keeps iPhone auth state consistent and prevents duplicate Google redirects', async () => {
+    const auth = await readText('src/lib/AuthContext.jsx');
+    const login = await readText('src/pages/Login.jsx');
+
+    expect(auth).toContain('setUser(null);');
+    expect(auth).toContain('setIsAuthenticated(false);');
+
+    expect(login).toContain('const [googleLoading, setGoogleLoading] = useState(false);');
+    expect(login).toContain('if (googleLoading) return;');
+    expect(login).toContain('disabled={googleLoading || loading}');
+    expect(login).toContain('Connecting to Google...');
+  });
+
+
 });

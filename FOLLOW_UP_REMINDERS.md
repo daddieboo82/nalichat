@@ -59,10 +59,11 @@ send/reply race.
 This branch does not contain PR #19's authoritative message-send function.
 Reply resolution therefore uses the existing Base44 `Message.create` entity
 workflow, which covers the current direct browser sends and server-created
-messages. When the stacks converge, keep the entity workflow as the legacy
-compatibility path and invoke `resolveFollowUpRemindersForMessage` from the
-authoritative send function after the message has its server `created_date`.
-Both paths are idempotent, so overlapping delivery is safe.
+messages. The authoritative send function now invokes `resolveFollowUpRemindersForMessage`
+after the message has its server `created_date`. Keep the entity workflow as a
+legacy compatibility path. Both paths are idempotent, so overlapping delivery is
+safe. Hidden WebRTC signaling messages are explicitly ignored by reminder
+resolution and do not count as recipient replies.
 
 Legacy direct source-message or conversation deletion is reconciled when the
 reminder becomes due. A future authoritative delete function should cancel

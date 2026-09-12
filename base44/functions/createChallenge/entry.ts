@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const MAX_SOURCE_TRACK_BYTES = 100 * 1024 * 1024;
@@ -87,7 +88,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Challenge creation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 64 * 1024);
     for (const field of [
       'title',
       'description',

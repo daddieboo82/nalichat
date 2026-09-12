@@ -123,14 +123,17 @@ export async function hashResetCode(userId: string, code: string): Promise<strin
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-export function lockedNotification(conversationId: string) {
+export function lockedNotification(
+  conversationId: string,
+  message = 'New message in a locked chat.',
+) {
   return {
     conversation_id: conversationId,
     locked_chat: true,
     actor_id: '',
     actor_name: 'Locked chat',
     actor_avatar: '',
-    message: 'New message in a locked chat.',
+    message,
     link: `/messages?id=${encodeURIComponent(conversationId)}`,
   };
 }

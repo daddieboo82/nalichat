@@ -13,7 +13,9 @@ describe('exact-match lookup bounds', () => {
     const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');
 
     expect(makeAdmin.match(/User\.filter\(\{ email \}, '-created_date', 1\)/g)?.length).toBe(2);
-    expect(external).toContain("User.filter({ email: cleanDestination }, '-created_date', 1)");
+    expect(external).toContain('{ email: normalizedDestination }');
+    expect(external).toContain('{ email: cleanDestination }');
+    expect(external.match(/'-created_date',\s*1/g)?.length).toBeGreaterThanOrEqual(2);
     expect(checkout.match(/User\.filter\(\{ id: user\.id \}, '-created_date', 1\)/g)?.length).toBeGreaterThanOrEqual(2);
     expect(checkout).toMatch(/checkout_request_key: requestKey[\s\S]*provider: 'stripe'[\s\S]*'-created_date',[\s\S]*2/);
     expect(checkout).toMatch(/Subscription\.filter\([\s\S]*\{ user_id: user\.id \},[\s\S]*'-created_date',[\s\S]*MAX_SUBSCRIPTION_HISTORY/);

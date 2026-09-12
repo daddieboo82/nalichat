@@ -3,7 +3,7 @@ import {
   loadStripeCatalog,
   normalizeStripeMetadata,
   shouldApplyStripeEvent,
-  stripeEnvironment,
+  stripeEnvironmentFromSecretKey,
   subscriptionUpdateFromStripe,
   webhookLedgerAction,
 } from '../../shared/stripeBilling.ts';
@@ -505,7 +505,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const environment = stripeEnvironment(Deno.env.get('STRIPE_ENVIRONMENT'));
+    const environment = stripeEnvironmentFromSecretKey(Deno.env.get('STRIPE_SECRET_KEY'));
     const catalog = loadStripeCatalog((name) => Deno.env.get(name));
     const state = await processEvent(entities, event, catalog, environment);
     await entities.StripeWebhookEvent.update(ledger.id, {

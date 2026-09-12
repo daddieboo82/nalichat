@@ -138,7 +138,11 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
         setRemoteStream(null);
         callIdRef.current = null;
       } else if (engineRef.current && signal.callId === engineRef.current.callId) {
-        engineRef.current.handleSignal(signal);
+        void engineRef.current.handleSignal(signal).catch((error) => {
+          console.error("Failed to process call signal:", error);
+          engineRef.current?.endCall();
+          toast.error("Call connection failed");
+        });
       } else if (signal.callId && signal.callId === callIdRef.current) {
         // The engine doesn't exist yet (an incoming call is still ringing, so
         // acceptCall hasn't run). ICE candidates that arrive in this window used
@@ -185,7 +189,6 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
         clearTimeout(ringTimeoutRef.current);
         ringTimeoutRef.current = setTimeout(() => {
           if (callIdRef.current === callId && engineRef.current?.callId === callId) {
-            sendSignal({ type: "end", callId });
             engineRef.current?.endCall();
             setCallState(null);
             setLocalStream(null);
@@ -222,9 +225,11 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
       // Replay any ICE candidates that arrived while the call was still ringing.
       const buffered = pendingSignalsRef.current;
       pendingSignalsRef.current = [];
-      buffered.forEach(s => {
-        if (s.callId === signal.callId) {
-          try { engine.handleSignal(s); } catch (err) { console.error('Failed to replay call signal:', err); }
+      buffered.forEach((bufferedSignal) => {
+        if (bufferedSignal.callId === signal.callId) {
+          void engine.handleSignal(bufferedSignal).catch((error) => {
+            console.error("Failed to replay call signal:", error);
+          });
         }
       });
     } catch (e) {
@@ -246,7 +251,9 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
 
   const declineCall = useCallback(() => {
     clearTimeout(ringTimeoutRef.current);
-    sendSignal({ type: "end", callId: callIdRef.current });
+    void sendSignal({ type: "end", callId: callIdRef.current }).catch((error) => {
+      console.error("Failed to send call decline signal:", error);
+    });
     setCallState(null);
     callIdRef.current = null;
     pendingOfferRef.current = null;

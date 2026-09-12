@@ -1,8 +1,9 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { unsubscribeFromRemotePush } from '@/lib/pushNotifications';
+import { useQueryClient } from '@tanstack/react-query';
 
 const AuthContext = createContext();
 
@@ -26,6 +27,8 @@ const shouldRetryAuthError = (error) => {
 };
 
 export const AuthProvider = ({ children }) => {
+  const queryClient = useQueryClient();
+  const lastUserIdRef = useRef(null);
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
@@ -36,7 +39,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAppState();
-  }, []);
+  }, [queryClient]);
 
   const checkAppState = async () => {
     try {
@@ -105,6 +108,11 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
+      const previousUserId = lastUserIdRef.current;
+      if (previousUserId && previousUserId !== currentUser?.id) {
+        queryClient.clear();
+      }
+      lastUserIdRef.current = currentUser?.id || null;
       setUser(currentUser);
       setIsAuthenticated(true);
       setAuthError(null); // clear any stale error from a failed public-settings call
@@ -123,6 +131,10 @@ export const AuthProvider = ({ children }) => {
         return checkUserAuth(retryCount + 1);
       }
       setIsLoadingAuth(false);
+      if (lastUserIdRef.current) queryClient.clear();
+      lastUserIdRef.current = null;
+      queryClient.clear();
+      lastUserIdRef.current = null;
       setUser(null);
       setIsAuthenticated(false);
       setAuthChecked(true);

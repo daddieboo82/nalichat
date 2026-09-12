@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { requireEntitlement, preferredAiModel } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const MOODS = new Set(['all', 'humor', 'shock', 'curiosity', 'relatable', 'controversy', 'awe']);
 
@@ -73,7 +74,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readJsonBodyLimited(req, 8 * 1024);
     const mood = MOODS.has(body?.mood) ? body.mood : 'all';
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
@@ -137,7 +138,9 @@ Deno.serve(async (req) => {
 
     return Response.json({ concepts, xp_awarded: firstGeneration ? 50 : 0 });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('generateViralConcepts error:', error);
-    return Response.json({ error: error?.message || 'Viral generation failed' }, { status: 500 });
+    return Response.json({ error: 'Viral generation failed' }, { status: 500 });
   }
 });

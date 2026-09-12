@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import {
   AiQuotaError,
   aiQuotaErrorResponse,
@@ -792,7 +793,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return jsonError(401, 'UNAUTHORIZED', 'Unauthorized');
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 64 * 1024);
     const moderatedAction = ['start', 'register_capture', 'generate'].includes(body?.action);
     if (moderatedAction && user.is_banned) {
       return jsonError(403, 'BANNED', 'This action is unavailable while the account is banned.');
@@ -828,8 +829,10 @@ Deno.serve(async (req) => {
         return jsonError(400, 'INVALID_ACTION', 'Unknown call summary action.');
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     console.error('callSummarySession error:', error);
-    return jsonError(500, 'CALL_SUMMARY_ERROR', error instanceof Error ? error.message : 'Call summary request failed.');
+    return jsonError(500, 'CALL_SUMMARY_ERROR', 'Call summary request failed.');
   }
 });

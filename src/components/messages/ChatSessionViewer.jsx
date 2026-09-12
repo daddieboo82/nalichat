@@ -1,3 +1,4 @@
+import { secureUploadFile } from "@/lib/secureUpload";
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import MultiTrackEditor from "../studio/MultiTrackEditor";
@@ -101,7 +102,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
         const extension = recordingExtension(recordingMimeType);
         const file = new File([blob], `track-${Date.now()}.${extension}`, { type: recordingMimeType });
         try {
-          const { file_url } = await base44.integrations.Core.UploadFile({ file });
+          const { file_url } = await secureUploadFile({ file });
           const created = await base44.functions.invoke("createCollaborativeTrack", {
             project_id: message.id,
             name: `Track by ${currentUser?.full_name || "Unknown"}`,

@@ -1,3 +1,4 @@
+import { secureUploadFile } from "@/lib/secureUpload";
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile, Layers, Music } from "lucide-react";
@@ -211,7 +212,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       const id = `voice-${Date.now()}`;
       setUploads(u => [...u, { id, name: "Voice Message", progress: 0, done: false, error: false }]);
       try {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await secureUploadFile({ file });
         setUploads(u => u.map(x => x.id === id ? { ...x, progress: 100, done: true } : x));
         scheduleUploadRemoval(id, 1200);
         

@@ -1,3 +1,4 @@
+import { secureUploadFile } from "@/lib/secureUpload";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
@@ -45,7 +46,7 @@ export default function PlaylistDetail() {
 
   const uploadMutation = useMutation({
     mutationFn: async (file) => {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await secureUploadFile({ file });
       const published = await base44.functions.invoke("createArtPost", {
         title: file.name,
         file_url,

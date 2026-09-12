@@ -1,3 +1,4 @@
+import { secureUploadFile } from "@/lib/secureUpload";
 import React, { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -220,7 +221,7 @@ export default function Files() {
 
       for (const file of filesArray) {
         try {
-          const { file_url } = await base44.integrations.Core.UploadFile({ file });
+          const { file_url } = await secureUploadFile({ file });
           const created = await base44.functions.invoke("createSharedFileRecord", {
             name: file.name,
             file_url,

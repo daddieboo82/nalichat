@@ -1,3 +1,4 @@
+import { secureUploadFile } from "@/lib/secureUpload";
 /**
  * Resumable chunked file upload utility.
  * Splits files into chunks, tracks progress in localStorage,
@@ -57,16 +58,14 @@ export async function resumableUpload(file, onProgress, options = {}) {
   // For small files (< 1MB), upload directly without chunking
   if (file.size <= CHUNK_SIZE) {
     onProgress?.(10);
-    const { base44 } = await import("@/api/base44Client");
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const { file_url } = await secureUploadFile({ file });
     onProgress?.(100);
     return file_url;
   }
 
   // Large files: upload the full file directly (chunking is not supported server-side for merging)
   onProgress?.(10);
-  const { base44 } = await import("@/api/base44Client");
-  const { file_url } = await base44.integrations.Core.UploadFile({ file });
+  const { file_url } = await secureUploadFile({ file });
   clearUploadState(fileId);
   onProgress?.(100);
   return file_url;

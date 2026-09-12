@@ -1,3 +1,4 @@
+import { secureUploadFile } from "@/lib/secureUpload";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -78,8 +79,8 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
           setSubmitting(false);
           return;
         }
-        if (file.size > 100 * 1024 * 1024) {
-          toast.error("Remix files must be 100MB or smaller.");
+        if (file.size > 50 * 1024 * 1024) {
+          toast.error("Remix files must be 50MB or smaller.");
           setSubmitting(false);
           return;
         }
@@ -89,7 +90,7 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
           setSubmitting(false);
           return;
         }
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await secureUploadFile({ file });
         remix_file_url = file_url;
         file_size = file.size;
         source_type = "external_upload";
@@ -178,7 +179,7 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
                 className="w-full text-sm rounded-xl border border-border p-2 file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-1.5"
               />
               {file && <p className="text-xs text-muted-foreground truncate">{file.name}</p>}
-              <p className="text-xs text-muted-foreground">.mp3, .wav — up to 100MB</p>
+              <p className="text-xs text-muted-foreground">.mp3, .wav — up to 50MB</p>
             </TabsContent>
 
             <TabsContent value="link" className="space-y-2 pt-3">

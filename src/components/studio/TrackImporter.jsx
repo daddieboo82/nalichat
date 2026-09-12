@@ -1,3 +1,4 @@
+import { secureUploadFile } from "@/lib/secureUpload";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -62,7 +63,7 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
           )
         );
 
-        const { file_url } = await base44.integrations.Core.UploadFile({
+        const { file_url } = await secureUploadFile({
           file: item.file,
         });
 

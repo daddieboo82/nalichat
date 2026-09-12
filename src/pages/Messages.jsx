@@ -163,7 +163,7 @@ export default function Messages() {
   const { data: users = [], isError: usersError } = useQuery({
     queryKey: ["users", currentUser?.id],
     queryFn: async () => {
-      const res = await base44.functions.invoke('listPublicUsers', {});
+      const res = await base44.functions.invoke('listPublicUsers', { includePresence: true });
       if (res?.data?.error) throw new Error(res.data.error);
       return res.data?.users || [];
     },

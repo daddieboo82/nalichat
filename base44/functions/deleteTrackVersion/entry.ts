@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
 
@@ -26,7 +27,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { versionId } = await req.json();
+    const { versionId } = await readJsonBodyLimited(req, 64 * 1024);
     if (typeof versionId !== 'string' || !versionId.trim() || versionId.length > 200) {
       return Response.json({ error: 'versionId is required' }, { status: 400 });
     }

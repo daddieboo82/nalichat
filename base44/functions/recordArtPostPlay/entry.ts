@@ -86,6 +86,6 @@ export default async function(req) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('recordArtPostPlay error:', error);
-    return Response.json({ error: error?.message || 'Could not record play' }, { status: 500 });
+    return Response.json({ error: 'Could not record play' }, { status: 500 });
   }
 }

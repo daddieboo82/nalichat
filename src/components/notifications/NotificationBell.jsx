@@ -70,6 +70,10 @@ export default function NotificationBell({ direction = "down" }) {
   };
 
   useEffect(() => {
+    // Notification state is account-private. Clear it synchronously whenever
+    // identity changes so logout/account switching cannot show stale items.
+    setItems([]);
+    setOpen(false);
     if (!user?.id) return;
     let cancelled = false;
     let refreshInFlight = false;
@@ -107,7 +111,7 @@ export default function NotificationBell({ direction = "down" }) {
       cancelled = true;
       window.clearInterval(poll);
     };
-  }, [user, lockedChatsReady, lockedConversationIds]);
+  }, [user?.id, lockedChatsReady, lockedConversationIds]);
 
   useEffect(() => {
     const onClick = (e) => {

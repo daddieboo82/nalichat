@@ -16,6 +16,7 @@ export const SIGNAL_SENTINEL = "__nalichat_call__";
 
 /** How long an outgoing call rings before it is auto-cancelled as unanswered. */
 const RING_TIMEOUT_MS = 45000;
+const INCOMING_OFFER_MAX_AGE_MS = RING_TIMEOUT_MS + 15000;
 
 /** Returns true if a message text is a call-signaling envelope. */
 export function isCallSignal(text) {
@@ -118,8 +119,15 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
         continue;
       }
 
-      // Incoming offer — show the incoming-call UI.
+      // Incoming offer — show the incoming-call UI only while it is fresh.
+      // Historical signaling messages are kept in chat storage, so an unmatched
+      // offer from a dropped/abandoned call must not ring again every time the
+      // conversation is reopened.
       if (signal.type === "offer" && !callIdRef.current) {
+        const createdAt = Date.parse(msg.created_date || "");
+        const offerIsFresh = Number.isFinite(createdAt)
+          && Date.now() - createdAt <= INCOMING_OFFER_MAX_AGE_MS;
+        if (!offerIsFresh) continue;
         pendingOfferRef.current = signal;
         callIdRef.current = signal.callId;
         setCallState({

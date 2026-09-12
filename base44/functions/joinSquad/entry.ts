@@ -15,6 +15,9 @@ Deno.serve(async (req) => {
     if (req.method !== 'POST') {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -41,11 +44,19 @@ Deno.serve(async (req) => {
     const squad = squads[0];
     if (!squad || squad.status !== 'pending' || squad.member_b_id || isInviteExpired(squad)) {
       if (squad?.status === 'pending' && isInviteExpired(squad)) {
-        await entities.Squad.update(squad.id, { status: 'ended' }).catch(() => {});
-        await entities.User.updateMany(
-          { id: squad.member_a_id, squad_membership_id: squad.id },
-          { $set: { squad_membership_id: null } },
-        ).catch(() => {});
+        try {
+          await entities.Squad.update(squad.id, { status: 'ended' });
+          await entities.User.updateMany(
+            { id: squad.member_a_id, squad_membership_id: squad.id },
+            { $set: { squad_membership_id: null } },
+          );
+        } catch (cleanupError) {
+          console.error('Expired squad cleanup failed:', cleanupError);
+          return Response.json(
+            { error: 'Expired squad cleanup was incomplete. Please retry.', retryable: true },
+            { status: 500 },
+          );
+        }
       }
       return Response.json({ error: 'Invite already used or unavailable' }, { status: 409 });
     }
@@ -90,19 +101,35 @@ Deno.serve(async (req) => {
       },
     );
     if (Number(claim?.updated || 0) !== 1) {
-      await entities.User.updateMany(
-        { id: user.id, squad_membership_id: squad.id },
-        { $set: { squad_membership_id: null } },
-      ).catch(() => {});
+      try {
+        await entities.User.updateMany(
+          { id: user.id, squad_membership_id: squad.id },
+          { $set: { squad_membership_id: null } },
+        );
+      } catch (cleanupError) {
+        console.error('Squad join rollback failed:', cleanupError);
+        return Response.json(
+          { error: 'Invite was claimed, but membership rollback was incomplete. Please retry.', retryable: true },
+          { status: 500 },
+        );
+      }
       return Response.json({ error: 'Invite was claimed by another user' }, { status: 409 });
     }
 
     const claimed = await entities.Squad.get(squad.id);
     if (claimed?.member_b_id !== user.id || claimed?.status !== 'active') {
-      await entities.User.updateMany(
-        { id: user.id, squad_membership_id: squad.id },
-        { $set: { squad_membership_id: null } },
-      ).catch(() => {});
+      try {
+        await entities.User.updateMany(
+          { id: user.id, squad_membership_id: squad.id },
+          { $set: { squad_membership_id: null } },
+        );
+      } catch (cleanupError) {
+        console.error('Squad join verification rollback failed:', cleanupError);
+        return Response.json(
+          { error: 'Squad verification failed and membership rollback was incomplete. Please retry.', retryable: true },
+          { status: 500 },
+        );
+      }
       return Response.json({ error: 'Invite was claimed by another user' }, { status: 409 });
     }
 

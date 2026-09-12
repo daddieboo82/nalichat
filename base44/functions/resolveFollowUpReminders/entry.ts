@@ -5,6 +5,7 @@ import {
   resolveFollowUpRemindersForMessage,
 } from '../../shared/followUpReminders.ts';
 import { workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
+import { claimFixedWindow } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -32,6 +33,14 @@ Deno.serve(async (req) => {
     }
     if (!workflowRecordIsFresh(message, 'create')) {
       return Response.json({ success: true, completed: 0, skipped: 'stale_workflow_record' });
+    }
+    const eventClaim = await claimFixedWindow(
+      base44.asServiceRole.entities,
+      `follow-up-resolver:${message.id}`,
+      10,
+    );
+    if (!eventClaim.allowed) {
+      return Response.json({ success: true, completed: 0, skipped: 'already_processed' });
     }
     const completed = await resolveFollowUpRemindersForMessage({
       entities: base44.asServiceRole.entities,

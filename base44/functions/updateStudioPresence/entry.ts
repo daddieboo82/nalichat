@@ -78,13 +78,22 @@ Deno.serve(async (req) => {
     if (action === 'clear') {
       const ids = new Set([deterministicId, ...legacyRows.map((row: any) => row.id)]);
       let cleared = 0;
+      let cleanupFailures = 0;
       for (const id of ids) {
         try {
           await entities.StudioPresence.delete(id);
           cleared += 1;
-        } catch {}
+        } catch (cleanupError) {
+          cleanupFailures += 1;
+          console.error('Failed to clear Studio presence row', {
+            userId: user.id,
+            roomId,
+            presenceId: id,
+            cleanupError: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+          });
+        }
       }
-      return Response.json({ success: true, cleared });
+      return Response.json({ success: true, cleared, cleanup_failures: cleanupFailures });
     }
 
     const payload = {
@@ -112,13 +121,23 @@ Deno.serve(async (req) => {
       }
     }
 
+    let cleanupFailures = 0;
     for (const duplicate of legacyRows) {
-      if (duplicate.id !== deterministicId) {
-        await entities.StudioPresence.delete(duplicate.id).catch(() => {});
+      if (duplicate.id === deterministicId) continue;
+      try {
+        await entities.StudioPresence.delete(duplicate.id);
+      } catch (cleanupError) {
+        cleanupFailures += 1;
+        console.error('Failed to remove duplicate Studio presence row', {
+          userId: user.id,
+          roomId,
+          presenceId: duplicate.id,
+          cleanupError: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+        });
       }
     }
 
-    return Response.json({ success: true, presence: updated });
+    return Response.json({ success: true, presence: updated, cleanup_failures: cleanupFailures });
   } catch (error) {
     console.error('updateStudioPresence error:', error);
     return Response.json({ error: error?.message || 'Studio presence update failed' }, { status: 500 });

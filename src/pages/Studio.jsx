@@ -1632,8 +1632,12 @@ export default function Studio() {
         timeSignature,
       };
 
-      localStorage.setItem('nalistudio_project_autosave', JSON.stringify(portableTracks));
-      localStorage.setItem('nalistudio_master_fx', JSON.stringify(masterFx || {}));
+      if (autosaveStorageKey) {
+        localStorage.setItem(autosaveStorageKey, JSON.stringify(portableTracks));
+      }
+      if (masterFxStorageKey) {
+        localStorage.setItem(masterFxStorageKey, JSON.stringify(masterFx || {}));
+      }
 
       if (roomId) {
         if (!canEditProject) {

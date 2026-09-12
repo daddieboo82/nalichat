@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const MAX_LEADERBOARD_SUBMISSIONS = 500;
 const MAX_WEEKLY_VOTES = 5000;
@@ -7,6 +8,22 @@ const CACHE_TTL_MS = 15_000;
 const MAX_CACHE_ENTRIES = 100;
 const leaderboardCache = new Map<string, { expiresAt: number; payload: unknown; status?: number }>();
 const leaderboardInFlight = new Map<string, Promise<unknown>>();
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function leaderboardClientScope(req: Request): Promise<string> {
+  const forwarded = String(
+    req.headers.get('cf-connecting-ip')
+    || req.headers.get('x-real-ip')
+    || req.headers.get('x-forwarded-for')
+    || '',
+  ).split(',')[0].trim().slice(0, 128);
+  const userAgent = String(req.headers.get('user-agent') || '').slice(0, 256);
+  return 'leaderboard_read_' + await sha256Hex(`${forwarded || 'unknown'}:${userAgent || 'unknown'}`);
+}
 
 function pruneLeaderboardCache(now: number) {
   for (const [key, value] of leaderboardCache) {
@@ -45,6 +62,20 @@ Deno.serve(async (req) => {
 
     let pending = leaderboardInFlight.get(challengeId);
     if (!pending) {
+      const readScope = await leaderboardClientScope(req);
+      const readRate = await consumeHourlyLimit(
+        entities,
+        readScope,
+        'challenge_leaderboard_read',
+        240,
+      );
+      if (!readRate.allowed) {
+        return Response.json(
+          { error: 'Too many leaderboard requests. Please try again later.' },
+          { status: 429 },
+        );
+      }
+
       pending = (async () => {
         const challenge = await entities.Challenge.get(challengeId);
         if (!challenge) {

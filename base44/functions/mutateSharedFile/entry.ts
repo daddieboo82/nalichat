@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
     }
 
     const projectLockIds: string[] = [];
+    let folderLockId: string | null = null;
     const acquireProjectLock = async (projectId: string | null | undefined) => {
       if (!projectId) return true;
       if (projectLockIds.some((id) => id === `project_membership_lock_${projectId}`)) return true;
@@ -175,7 +176,6 @@ Deno.serve(async (req) => {
     let accessUserIds = [file.uploader_id].filter(Boolean);
     let editUserIds = [file.uploader_id].filter(Boolean);
 
-    let folderLockId: string | null = null;
     if (folderId) {
       folderLockId = await acquireFolderMutationLock(entities, folderId);
       if (!folderLockId) {

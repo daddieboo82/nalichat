@@ -5,8 +5,8 @@ await page.goto('http://127.0.0.1:4173/studio-capture',{waitUntil:'networkidle'}
 console.log('TITLE', await page.title());
 console.log('buttons before', await page.getByRole('button').allTextContents());
 await page.getByRole('button',{name:/Load Demo Project/i}).click();
-await page.waitForTimeout(5000);
+await page.waitForTimeout(6000);
 console.log('URL', page.url());
-console.log('buttons after', (await page.getByRole('button').allTextContents()).slice(0,120));
-console.log('text', (await page.locator('body').innerText()).slice(0,5000));
+console.log('buttons after', (await page.getByRole('button').allTextContents()).slice(0,160));
+console.log('text', (await page.locator('body').innerText()).slice(0,7000));
 await browser.close();

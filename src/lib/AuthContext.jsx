@@ -153,6 +153,15 @@ export const AuthProvider = ({ children }) => {
       console.error('Push unsubscribe failed:', error);
     }
 
+    // Mark this account offline while the authenticated session is still valid.
+    // The app-shell presence cleanup runs after auth state flips and may no longer
+    // have permission to update the server record.
+    try {
+      await base44.functions.invoke('updateUserPresence', { isOnline: false });
+    } catch (error) {
+      console.error('Presence offline update failed:', error);
+    }
+
     try {
       await base44.auth.logout();
     } catch (error) {

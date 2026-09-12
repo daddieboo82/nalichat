@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { useAuth } from '@/lib/AuthContext';
 
 const HEARTBEAT_MS = 15000;
 const STALE_MS = 45000; // a peer is considered gone if no heartbeat in this window

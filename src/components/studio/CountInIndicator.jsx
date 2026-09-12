@@ -11,6 +11,7 @@ export default function CountInIndicator({ active, beatsPerBar = 4, bpm = 120, o
   const rafRef = useRef(null);
   const nextClickTimeRef = useRef(0);
   const currentBeatRef = useRef(0);
+  const completionTimerRef = useRef(null);
 
   useEffect(() => {
     if (!active) {
@@ -52,7 +53,11 @@ export default function CountInIndicator({ active, beatsPerBar = 4, bpm = 120, o
         nextClickTimeRef.current += secondsPerBeat;
 
         if (currentBeatRef.current >= beatsPerBar) {
-          setTimeout(() => onComplete?.(), (nextClickTimeRef.current - ctx.currentTime) * 1000 + 50);
+          if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
+          completionTimerRef.current = setTimeout(() => {
+            completionTimerRef.current = null;
+            onComplete?.();
+          }, (nextClickTimeRef.current - ctx.currentTime) * 1000 + 50);
           return;
         }
       }
@@ -60,7 +65,11 @@ export default function CountInIndicator({ active, beatsPerBar = 4, bpm = 120, o
     };
 
     schedule();
-    return () => cancelAnimationFrame(rafRef.current);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
+      completionTimerRef.current = null;
+    };
   }, [active, beatsPerBar, bpm, onComplete, audioCtxRef]);
 
   if (!active) return null;

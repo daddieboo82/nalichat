@@ -17,12 +17,14 @@ describe('outbound message input hardening', () => {
 
     const email = await readText('base44/functions/send-invite-email/entry.ts');
     expect(email).toContain("req.method !== 'POST'");
-    expect(email).toContain("typeof to !== 'string'");
-    expect(email).toContain('to.length > 320');
+    expect(email).toContain("INVITE_RELAY_DISABLED");
+    expect(email).not.toContain('integrations.Core.SendEmail');
+    expect(email).not.toContain('const { to } = await req.json()');
 
     const sms = await readText('base44/functions/sendSmsInvite/entry.ts');
     expect(sms).toContain("req.method !== 'POST'");
-    expect(sms).toContain("typeof phone !== 'string'");
-    expect(sms).toContain('phone.length > 32');
+    expect(sms).toContain("INVITE_RELAY_DISABLED");
+    expect(sms).not.toContain('TWILIO_ACCOUNT_SID');
+    expect(sms).not.toContain("params.append('To'");
   });
 });

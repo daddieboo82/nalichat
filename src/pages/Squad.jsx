@@ -8,6 +8,7 @@ import SquadMemberProgress from "@/components/squad/SquadMemberProgress";
 import { getSquadBonusStatus, BONUS_MULTIPLIER, CREDITS_REWARD } from "@/lib/squadBonus";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import LoadError from "@/components/layout/LoadError";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export default function Squad() {
   const { user, checkUserAuth } = useAuth();
@@ -77,18 +78,10 @@ export default function Squad() {
   };
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteLink);
-    } catch {
-      // Fallback for when Clipboard API is unavailable (e.g. document not focused)
-      const ta = document.createElement("textarea");
-      ta.value = inviteLink;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
+    const copiedSuccessfully = await copyToClipboard(inviteLink);
+    if (!copiedSuccessfully) {
+      toast.error("Couldn't copy the squad invite. Please copy it manually.");
+      return;
     }
     setCopied(true);
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current);

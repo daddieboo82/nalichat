@@ -7,6 +7,17 @@ async function readText(path) {
 }
 
 describe('invite link copy feedback', () => {
+  it('verifies squad invite copy before showing success state', async () => {
+    const source = await readText('src/pages/Squad.jsx');
+
+    expect(source).toContain('const copiedSuccessfully = await copyToClipboard(inviteLink);');
+    expect(source).toContain('if (!copiedSuccessfully) {');
+    expect(source).toContain('toast.error("Couldn\'t copy the squad invite. Please copy it manually.")');
+    expect(source.indexOf('setCopied(true);')).toBeGreaterThan(
+      source.indexOf('if (!copiedSuccessfully) {'),
+    );
+  });
+
   it('only reports copied after clipboard success', async () => {
     const source = await readText('src/components/messages/InviteTab.jsx');
 

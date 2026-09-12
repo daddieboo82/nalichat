@@ -13,12 +13,18 @@ describe('repo copy/share failure feedback', () => {
     const viral = await readText('src/components/viralseed/ViralConceptCard.jsx');
     const files = await readText('src/pages/Files.jsx');
     const media = await readText('src/components/explore/MediaViewerModal.jsx');
+    const projects = await readText('src/pages/ProjectsSummary.jsx');
+    const transfer = await readText('src/components/files/LargeFileTransfer.jsx');
 
     expect(challenge).toContain('const copied = await copyToClipboard(url);');
     expect(jam).toContain('const copied = await copyToClipboard(url.toString());');
     expect(viral).toContain('const copiedSuccessfully = await copyToClipboard(content || "");');
     expect(files).toContain('const copied = await copyToClipboard(url);');
     expect(media).toContain('const copied = await copyToClipboard');
+    expect(projects).toContain('const copied = await copyToClipboard(url);');
+    expect(projects).toContain("Invite created, but couldn't copy it. The link is shown below.");
+    expect(transfer).toContain('const copied = await copyToClipboard(shareLink);');
+    expect(transfer).toContain("Couldn't copy the link. Please copy it manually.");
   });
 
   it('surfaces download/share failures while keeping user-cancel quiet', async () => {

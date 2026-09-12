@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { stripeRequest } from '../../shared/stripe.ts';
 import { acquireAccountDeletionLock, releaseAccountDeletionLock } from '../../shared/accountDeletionLock.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
+import { secrets } from 'base44:runtime';
 
 const CLEANUP_BATCH_SIZE = 200;
 
@@ -176,8 +177,8 @@ Deno.serve(async (req) => {
           && subscription.subscription_id
           && !['canceled', 'ended'].includes(String(subscription.status || ''))
         ) {
-          const wixApiKey = Deno.env.get('WIX_PAYMENTS_API_KEY');
-          const wixSiteId = Deno.env.get('WIX_PAYMENTS_SITE_ID');
+          const wixApiKey = secrets.get('WIX_PAYMENTS_API_KEY');
+          const wixSiteId = secrets.get('WIX_PAYMENTS_SITE_ID');
           if (!wixApiKey || !wixSiteId) {
             return Response.json(
               { error: 'Legacy Wix billing must be canceled before account deletion. Please contact support.' },

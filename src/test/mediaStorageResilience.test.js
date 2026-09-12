@@ -7,10 +7,11 @@ async function readText(path) {
 }
 
 describe('media storage resilience', () => {
-  it('does not touch localStorage unsafely at sound-module import time', async () => {
+  it('keeps sound storage safe without clearing the persisted preference at import time', async () => {
     const source = await readText('src/hooks/use-sound.js');
     expect(source).toContain('function safeStorageGet(key)');
-    expect(source).toContain('safeStorageRemove("nali_sounds_off")');
+    expect(source).toContain('function safeStorageRemove(key)');
+    expect(source).not.toContain('safeStorageRemove("nali_sounds_off");\n}');
     expect(source).not.toContain('localStorage.removeItem("nali_sounds_off");\n}');
   });
 

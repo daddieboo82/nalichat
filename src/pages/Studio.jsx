@@ -90,6 +90,9 @@ const portableTrackState = (track, audioUrl) => {
 export default function Studio() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const studioStorageOwner = user?.id || "anonymous";
+  const masterFxStorageKey = `nalistudio_master_fx:${studioStorageOwner}`;
+  const autosaveStorageKey = `nalistudio_project_autosave:${studioStorageOwner}`;
   const [searchParams] = useSearchParams();
   const roomId = searchParams.get('room');
   const inviteToken = searchParams.get('invite');
@@ -278,7 +281,7 @@ export default function Studio() {
 
   const loadLocalMasterFx = () => {
     try {
-      const saved = localStorage.getItem('nalistudio_master_fx');
+      const saved = localStorage.getItem(masterFxStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') return parsed;
@@ -295,14 +298,14 @@ export default function Studio() {
     const local = loadLocalMasterFx();
     if (local) setMasterFx(local);
     masterFxLoadedRef.current = true;
-  }, [roomId]);
+  }, [roomId, masterFxStorageKey]);
 
   useEffect(() => {
     if (!masterFxLoadedRef.current) return;
     const chain = masterFx || {};
     const timeoutId = setTimeout(() => {
       try {
-        localStorage.setItem('nalistudio_master_fx', JSON.stringify(chain));
+        localStorage.setItem(masterFxStorageKey, JSON.stringify(chain));
       } catch (e) {
         console.error('Failed to autosave master FX chain', e);
       }
@@ -314,17 +317,18 @@ export default function Studio() {
       }
     }, 1000);
     return () => clearTimeout(timeoutId);
-  }, [masterFx, roomId, canEditProject]);
+  }, [masterFx, roomId, canEditProject, masterFxStorageKey]);
 
   useEffect(() => {
+    setHasAutosave(false);
     try {
-      const saved = localStorage.getItem('nalistudio_project_autosave');
+      const saved = localStorage.getItem(autosaveStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.length > 0) setHasAutosave(true);
       }
     } catch (e) {}
-  }, []);
+  }, [autosaveStorageKey]);
 
   useEffect(() => {
     if (!roomId || !user?.id) return;
@@ -420,7 +424,7 @@ export default function Studio() {
 
   const handleLoadAutosave = () => {
     try {
-      const saved = localStorage.getItem('nalistudio_project_autosave');
+      const saved = localStorage.getItem(autosaveStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.length > 0) { setTracks(parsed); setShowWelcome(false); return; }
@@ -455,14 +459,14 @@ export default function Studio() {
     if (tracks && tracks.length > 0) {
       const timeoutId = setTimeout(() => {
         try {
-          localStorage.setItem('nalistudio_project_autosave', JSON.stringify(tracks));
+          localStorage.setItem(autosaveStorageKey, JSON.stringify(tracks));
         } catch (e) {
           console.error("Failed to autosave project", e);
         }
       }, 1000);
       return () => clearTimeout(timeoutId);
     }
-  }, [tracks]);
+  }, [tracks, autosaveStorageKey]);
 
   const [historyIndex, setHistoryIndex] = useState(-1);
   const historyRef = useRef([]);

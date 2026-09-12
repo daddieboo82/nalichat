@@ -49,7 +49,7 @@ export default function QuickAccessGrid() {
           lockedChatsUnlocked ? [] : lockedConversationIds,
           (conversationId) => {
             try {
-              const raw = localStorage.getItem(`lastReadAt:${conversationId}`);
+              const raw = localStorage.getItem(`lastReadAt:${user.id}:${conversationId}`);
               const parsed = raw ? Number.parseInt(raw, 10) : 0;
               return Number.isFinite(parsed) ? parsed : 0;
             } catch {

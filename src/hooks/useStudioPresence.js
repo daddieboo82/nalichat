@@ -82,12 +82,10 @@ export function useStudioPresence(roomId = 'local_studio') {
       cancelledRef.current = true;
       if (interval) clearInterval(interval);
       if (refreshInterval) clearInterval(refreshInterval);
-      setTimeout(() => {
-        base44.functions.invoke("updateStudioPresence", {
-          action: "clear",
-          roomId,
-        }).catch(() => {});
-      }, 2000);
+      void base44.functions.invoke("updateStudioPresence", {
+        action: "clear",
+        roomId,
+      }).catch(() => {});
     };
   }, [roomId, writeHeartbeat, refresh]);
 

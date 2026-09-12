@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import TutorialTopics from "@/components/ai/TutorialTopics";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function AiAssistant() {
   const { hasEntitlement, isLoading: subscriptionLoading } = useSubscription();
@@ -20,7 +21,7 @@ export default function AiAssistant() {
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [conversation, setConversation] = useState(null);
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef(null);
@@ -30,7 +31,6 @@ export default function AiAssistant() {
   const currentAudioRef = useRef(null);
   const loadingTimerRef = useRef(null);
 
-  useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
   useEffect(() => {
     const handleOpen = (e) => openChat(e.detail?.greeting);

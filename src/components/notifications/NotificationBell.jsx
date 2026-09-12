@@ -55,9 +55,13 @@ export default function NotificationBell({ direction = "down" }) {
     // Register the service worker, but only request notification permission
     // from an explicit user gesture. Browsers may block permission prompts
     // triggered from timers or page load.
+    let cancelled = false;
     registerServiceWorker().finally(() => {
-      setPushPermission(getPermissionStatus());
+      if (!cancelled) setPushPermission(getPermissionStatus());
     });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const load = async (uid) => {
@@ -68,9 +72,12 @@ export default function NotificationBell({ direction = "down" }) {
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
+    let refreshInFlight = false;
     let previousIds = new Set();
 
     const refreshNotifications = async () => {
+      if (refreshInFlight) return;
+      refreshInFlight = true;
       try {
         const list = await base44.entities.Notification.filter({ recipient_id: user.id }, "-created_date", 30);
         if (cancelled) return;
@@ -89,6 +96,8 @@ export default function NotificationBell({ direction = "down" }) {
         setItems(list || []);
       } catch {
         // Notifications are non-critical; retry on the next poll.
+      } finally {
+        refreshInFlight = false;
       }
     };
 

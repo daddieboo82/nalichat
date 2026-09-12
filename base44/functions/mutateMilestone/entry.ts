@@ -60,6 +60,12 @@ Deno.serve(async (req) => {
       if (!currentMilestone) {
         return Response.json({ error: 'Milestone not found' }, { status: 404 });
       }
+      if (
+        !isBase44EntityId(currentMilestone.project_id)
+        || currentMilestone.project_id !== milestone.project_id
+      ) {
+        return Response.json({ error: 'Milestone project changed. Please retry.' }, { status: 409 });
+      }
 
     if (action === 'delete') {
       await entities.Milestone.delete(currentMilestone.id);

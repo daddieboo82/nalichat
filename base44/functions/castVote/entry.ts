@@ -83,6 +83,12 @@ export default async function(req) {
     if (submission.status !== 'approved') {
       return Response.json({ error: 'This submission is not eligible for voting.' }, { status: 409 });
     }
+    if (
+      !isBase44EntityId(submission.challenge_id)
+      || submission.challenge_id !== submissionPreview.challenge_id
+    ) {
+      return Response.json({ error: 'Submission challenge changed. Please retry.' }, { status: 409 });
+    }
 
     const challengeLockId = await acquireChallengeLifecycleLock(entities, submission.challenge_id);
     if (!challengeLockId) {

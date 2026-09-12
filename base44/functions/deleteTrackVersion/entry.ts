@@ -59,6 +59,14 @@ Deno.serve(async (req) => {
       if (!currentVersion) {
         return Response.json({ error: 'Track version not found' }, { status: 404 });
       }
+      if (
+        !isBase44EntityId(currentVersion.project_id)
+        || !isBase44EntityId(currentVersion.track_id)
+        || currentVersion.project_id !== version.project_id
+        || currentVersion.track_id !== version.track_id
+      ) {
+        return Response.json({ error: 'Track version references changed. Please retry.' }, { status: 409 });
+      }
 
       const project = await entities.Project.get(currentVersion.project_id).catch(() => null);
       if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });

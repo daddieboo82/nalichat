@@ -75,6 +75,12 @@ Deno.serve(async (req) => {
     try {
     const file = await entities.SharedFile.get(fileId);
     if (!file) return Response.json({ error: 'File not found' }, { status: 404 });
+    if ((file.project_id || null) !== (filePreview.project_id || null)) {
+      return Response.json({ error: 'File project changed. Please retry.' }, { status: 409 });
+    }
+    if (file.project_id && !isBase44EntityId(file.project_id)) {
+      return Response.json({ error: 'File has an invalid project reference' }, { status: 409 });
+    }
 
     let canShare = user.role === 'admin';
     if (!canShare && file.project_id) {

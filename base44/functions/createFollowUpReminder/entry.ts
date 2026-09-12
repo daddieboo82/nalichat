@@ -1,5 +1,6 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import {
   createFollowUpReminder,
   followUpReminderErrorResponse,
@@ -13,6 +14,20 @@ Deno.serve(async (req) => {
 
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me().catch(() => null);
+    if (user?.id) {
+      const rate = await consumeHourlyLimit(
+        base44.asServiceRole.entities,
+        user.id,
+        'follow_up_reminder_mutation',
+        120,
+      );
+      if (!rate.allowed) {
+        return Response.json(
+          { error: 'Follow-up reminder rate limit exceeded. Please try again later.' },
+          { status: 429 },
+        );
+      }
+    }
     const { source_message_id, remind_at, client_request_key } = await readJsonBodyLimited(req, 16 * 1024);
     const result = await createFollowUpReminder({
       entities: base44.asServiceRole.entities,

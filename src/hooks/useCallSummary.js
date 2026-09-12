@@ -42,6 +42,9 @@ export function useCallSummary({
   const endingRef = useRef(false);
   const dataRef = useRef(null);
   const refreshInFlightRef = useRef(false);
+  const requestScopeRef = useRef("");
+  const requestScope = `${callState?.callId || ""}:${conversation?.id || ""}`;
+  requestScopeRef.current = requestScope;
 
   const entitled = hasEntitlement("calls.summary");
   dataRef.current = data;
@@ -63,11 +66,14 @@ export function useCallSummary({
     if (!callId && !sessionId) return null;
     if (refreshInFlightRef.current) return null;
     refreshInFlightRef.current = true;
+    const requestScopeAtStart = requestScopeRef.current;
     try {
-      return applyData(await invokeCallSummary("get", {
+      const next = await invokeCallSummary("get", {
         call_id: callId,
         session_id: sessionId,
-      }));
+      });
+      if (requestScopeRef.current !== requestScopeAtStart) return null;
+      return applyData(next);
     } catch (requestError) {
       const details = requestError.callSummary || callSummaryError(requestError);
       if (details.code !== "CALL_SUMMARY_NOT_FOUND") setError(details);
@@ -94,12 +100,20 @@ export function useCallSummary({
       || loadedConversationId === conversation?.id
       || !conversation?.id
     ) return;
-    invokeCallSummary("list", { conversation_id: conversation.id })
-      .then(applyData)
+    let cancelled = false;
+    const requestedConversationId = conversation.id;
+    invokeCallSummary("list", { conversation_id: requestedConversationId })
+      .then((next) => {
+        if (!cancelled && conversation?.id === requestedConversationId) applyData(next);
+      })
       .catch((requestError) => {
+        if (cancelled) return;
         const details = requestError.callSummary || callSummaryError(requestError);
         if (details.code !== "CALL_SUMMARY_NOT_FOUND") setError(details);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [
     applyData,
     callState?.callId,

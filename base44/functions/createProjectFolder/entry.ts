@@ -46,6 +46,16 @@ Deno.serve(async (req) => {
     let accessUserIds = [user.id];
     let editUserIds = [user.id];
 
+    if (projectId) {
+      const projectPreview = await entities.Project.get(projectId).catch(() => null);
+      if (!projectPreview) return Response.json({ error: 'Project not found' }, { status: 404 });
+      const previewCanEdit = projectPreview.owner_id === user.id
+        || (projectPreview.editor_ids || []).includes(user.id);
+      if (!previewCanEdit) {
+        return Response.json({ error: 'Viewer access cannot create folders' }, { status: 403 });
+      }
+    }
+
     let lockId: string | null = null;
     if (projectId) {
       lockId = await acquireProjectMembershipLock(entities, projectId);

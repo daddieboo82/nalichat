@@ -117,16 +117,30 @@ Deno.serve(async (req) => {
     const trackId = body.track_id.trim();
     const projectId = body.project_id.trim();
     const entities = base44.asServiceRole.entities;
+    const rate = await consumeHourlyLimit(entities, user.id, 'track_version_create', 120);
+    if (!rate.allowed) {
+      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
+
+    const [projectPreview, trackPreview] = await Promise.all([
+      entities.Project.get(projectId).catch(() => null),
+      entities.Track.get(trackId).catch(() => null),
+    ]);
+    if (!projectPreview || !trackPreview || trackPreview.project_id !== projectPreview.id) {
+      return Response.json({ error: 'Project/track not found' }, { status: 404 });
+    }
+    const previewCanEdit = projectPreview.owner_id === user.id
+      || (projectPreview.editor_ids || []).includes(user.id);
+    if (!previewCanEdit) {
+      return Response.json({ error: 'Viewer access cannot save versions' }, { status: 403 });
+    }
+
     const lockId = await acquireTrackLifecycleLock(entities, trackId);
     if (!lockId) {
       return Response.json({ error: 'Track is being updated. Please retry.' }, { status: 409 });
     }
 
     try {
-    const rate = await consumeHourlyLimit(entities, user.id, 'track_version_create', 120);
-    if (!rate.allowed) {
-      return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
-    }
     const [project, track] = await Promise.all([
       entities.Project.get(projectId),
       entities.Track.get(trackId),

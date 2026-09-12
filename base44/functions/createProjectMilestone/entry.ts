@@ -52,6 +52,14 @@ Deno.serve(async (req) => {
     if (!rate.allowed) {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
+    const projectPreview = await entities.Project.get(projectId).catch(() => null);
+    if (!projectPreview) return Response.json({ error: 'Project not found' }, { status: 404 });
+    const previewCanEdit = projectPreview.owner_id === user.id
+      || (projectPreview.editor_ids || []).includes(user.id);
+    if (!previewCanEdit) {
+      return Response.json({ error: 'Viewer access cannot create milestones' }, { status: 403 });
+    }
+
     const lockId = await acquireProjectMembershipLock(entities, projectId);
     if (!lockId) {
       return Response.json({ error: 'Project is being updated. Please retry.' }, { status: 409 });

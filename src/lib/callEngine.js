@@ -186,7 +186,8 @@ export class CallEngine {
 
   endCall() {
     if (this.callId) {
-      this.onSignal?.({ type: "end", callId: this.callId });
+      Promise.resolve(this.onSignal?.({ type: "end", callId: this.callId }))
+        .catch((error) => console.error("Failed to send call end signal:", error));
     }
     this._cleanup();
     this._setState("ended");

@@ -42,7 +42,11 @@ export default function QuickAccessGrid() {
     queryFn: async () => {
       if (!user?.id || !lockedChatsReady) return 0;
       try {
-        const conversations = await base44.entities.Conversation.list("-last_message_at", 500);
+        const conversations = await base44.entities.Conversation.filter(
+          { participant_ids: user.id },
+          "-last_message_at",
+          500,
+        );
         return countVisibleUnreadConversations(
           conversations,
           user.id,

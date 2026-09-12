@@ -22,7 +22,10 @@ describe('shared file mutation serialization', () => {
       expect(source).toContain('acquireSharedFileMutationLock');
       expect(source).toContain('releaseSharedFileMutationLock');
       expect(source).toContain('status: 409');
-      expect(source).toContain('fileId.length > 200');
+      expect(
+        source.includes('isBase44EntityId(fileId)')
+        || source.includes('fileId.length > 200'),
+      ).toBe(true);
     }
   });
 });

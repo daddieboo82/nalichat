@@ -17,7 +17,7 @@ describe('lazy public presence enrichment', () => {
     expect(backend).toContain('includePresence\n          ? base44.asServiceRole.entities.Contact.filter');
     expect(backend).toContain('includePresence\n        ? base44.asServiceRole.entities.Contact.filter');
     expect(backend).toContain('includePresence\n        ? base44.asServiceRole.entities.Conversation.filter');
-    expect(messages).not.toContain('includePresence: true');
+    expect(messages).toContain('includePresence: true');
     expect(profile).not.toContain('includePresence: true');
     expect(leaderboard).not.toContain('includePresence: true');
   });

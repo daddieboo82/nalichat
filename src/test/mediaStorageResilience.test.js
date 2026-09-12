@@ -85,9 +85,10 @@ describe('media storage resilience', () => {
     expect(source).toContain('if (!response.ok) throw new Error(`Cover art download failed: ${response.status}`)');
   });
 
-  it('keeps resumable transfers working when localStorage is unavailable', async () => {
+  it('keeps resumable downloads storage-safe and avoids persisting upload URLs across accounts', async () => {
     const source = await readText('src/lib/resumableUpload.js');
-    expect(source).toContain('try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}');
+    expect(source).not.toContain('const STORAGE_KEY =');
+    expect(source).not.toContain('localStorage.setItem(STORAGE_KEY,');
     expect(source).toContain('try { localStorage.setItem(STORAGE_KEY_DL, String(received)); } catch {}');
     expect(source).toContain('try { localStorage.removeItem(STORAGE_KEY_DL); } catch {}');
   });

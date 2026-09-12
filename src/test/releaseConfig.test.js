@@ -2159,7 +2159,7 @@ describe('release configuration', () => {
 
     const reminderProcessor = await readText('base44/functions/processDueFollowUpReminders/entry.ts');
     expect(reminderProcessor).toContain('claimFixedWindow');
-    expect(reminderProcessor).toContain("'follow-up-reminder-processor',\n      5,");
+    expect(reminderProcessor).toContain("'follow-up-reminder-processor',\n      5 * 60,");
     expect(reminderProcessor).toContain('already_processed_this_window');
 
     for (const name of internalWorkflowHandlers) {

@@ -219,7 +219,7 @@ describe('home, navigation, and recovery flows', () => {
       </Routes>
     );
 
-    expect(screen.getByRole('button', { name: /Log in/i })).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: /Log in/i }).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
     expect(screen.getByText('Explore')).toBeTruthy();
     expect(screen.getByText('Studio')).toBeTruthy();

@@ -17,7 +17,7 @@ describe('conversation message create idempotency', () => {
     expect(source).toContain('createdNew = false');
     expect(source).toContain('if (createdNew && messageData.thread_id)');
     expect(source).toContain("req.method !== 'POST'");
-    expect(source).toContain('conversationId.length > 200');
+    expect(source).toContain('isBase44EntityId(conversationId)');
     expect(source).toContain('text.length > 20000');
     expect(source).not.toContain('text.slice(0, 20000)');
   });

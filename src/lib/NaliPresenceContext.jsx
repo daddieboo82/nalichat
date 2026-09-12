@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { toast } from "sonner";
 
 const NaliPresenceContext = createContext(null);
 
@@ -23,12 +24,29 @@ export function NaliPresenceProvider({ children }) {
     }
   }, [user?.nali_presence_level]);
 
-  const setLevel = useCallback((newLevel) => {
+  const setLevel = useCallback(async (newLevel) => {
     if (!VALID_LEVELS.includes(newLevel)) return;
+    const previousLevel = level;
+
     setLevelState(newLevel);
     try { localStorage.setItem(STORAGE_KEY, newLevel); } catch {}
-    base44.functions.invoke("updateMyProfile", { nali_presence_level: newLevel }).catch(() => {});
-  }, []);
+
+    // Anonymous users keep this preference locally. Signed-in users also persist
+    // it to the profile so it follows them across devices.
+    if (!user?.id) return;
+
+    try {
+      const response = await base44.functions.invoke("updateMyProfile", {
+        nali_presence_level: newLevel,
+      });
+      if (response?.data?.error) throw new Error(response.data.error);
+    } catch (error) {
+      setLevelState(previousLevel);
+      try { localStorage.setItem(STORAGE_KEY, previousLevel); } catch {}
+      console.error("Nali presence update failed:", error);
+      toast.error(error?.message || "Could not save your Nali Presence setting.");
+    }
+  }, [level, user?.id]);
 
   const value = useMemo(() => ({
     level,

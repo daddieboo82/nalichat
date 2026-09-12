@@ -103,7 +103,7 @@ export default function NotificationBell({ direction = "down" }) {
       cancelled = true;
       window.clearInterval(poll);
     };
-  }, [user]);
+  }, [user, lockedChatsReady, lockedConversationIds]);
 
   useEffect(() => {
     const onClick = (e) => {

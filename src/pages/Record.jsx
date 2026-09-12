@@ -11,6 +11,7 @@ import RecordingCountdown from "@/components/record/RecordingCountdown";
 import RecordingTips from "@/components/record/RecordingTips";
 import RecordingGuide from "@/components/record/RecordingGuide";
 import { useAuth } from "@/lib/AuthContext";
+import { toast } from "sonner";
 
 const GUIDE_KEY = "nali_rec_guide_done";
 
@@ -35,6 +36,9 @@ export default function Record() {
   const animationRef = useRef(null);
   const streamRef = useRef(null);
   const currentTimeRef = useRef(0);
+  const audioCtxRef = useRef(null);
+  const recordingsRef = useRef([]);
+  recordingsRef.current = recordings;
 
   useEffect(() => {
     try {
@@ -42,7 +46,19 @@ export default function Record() {
     } catch {}
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        try { mediaRecorderRef.current.stop(); } catch {}
+      }
       streamRef.current?.getTracks().forEach(t => t.stop());
+      if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+        void audioCtxRef.current.close().catch(() => {});
+      }
+      recordingsRef.current.forEach((recording) => {
+        if (recording.url?.startsWith("blob:")) {
+          try { URL.revokeObjectURL(recording.url); } catch {}
+        }
+      });
     };
   }, []);
 
@@ -77,6 +93,7 @@ export default function Record() {
     streamRef.current = stream;
 
     const audioCtx = new AudioContext();
+    audioCtxRef.current = audioCtx;
     const source = audioCtx.createMediaStreamSource(stream);
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
@@ -98,6 +115,10 @@ export default function Record() {
         duration: currentTimeRef.current,
         name: `Recording ${prev.length + 1}`,
       }]);
+      if (audioCtxRef.current === audioCtx && audioCtx.state !== "closed") {
+        void audioCtx.close().catch(() => {});
+        audioCtxRef.current = null;
+      }
       setCurrentTime(0);
       currentTimeRef.current = 0;
       setVisualData(new Array(64).fill(0));
@@ -167,7 +188,13 @@ export default function Record() {
   };
 
   const deleteRecording = (id) => {
-    setRecordings(prev => prev.filter(r => r.id !== id));
+    setRecordings((prev) => {
+      const recording = prev.find((item) => item.id === id);
+      if (recording?.url?.startsWith("blob:")) {
+        try { URL.revokeObjectURL(recording.url); } catch {}
+      }
+      return prev.filter((item) => item.id !== id);
+    });
   };
 
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;

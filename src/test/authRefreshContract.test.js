@@ -9,6 +9,8 @@ async function readText(path) {
 describe('auth refresh contract', () => {
   it('awaits retry delays and returns the refreshed user', async () => {
     const source = await readText('src/lib/AuthContext.jsx');
+    expect(source).toContain('const checkUserAuth = useCallback(async (retryCount = 0) => {');
+    expect(source).toContain('}, []);');
     expect(source).toContain('return currentUser;');
     expect(source).toContain('await new Promise((resolve) => setTimeout(resolve, delay));');
     expect(source).toContain('return checkUserAuth(retryCount + 1);');

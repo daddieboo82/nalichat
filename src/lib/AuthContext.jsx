@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const checkUserAuth = async (retryCount = 0) => {
+  const checkUserAuth = useCallback(async (retryCount = 0) => {
     try {
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
@@ -124,7 +124,7 @@ export const AuthProvider = ({ children }) => {
       // after a successful login.  Only logout() clears the token.
       return null;
     }
-  };
+  }, []);
 
   const logout = async () => {
     // Remove this browser's remote push capability while the authenticated

@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import {
   acquireChallengeSubmissionLock,
@@ -33,7 +34,7 @@ export default async function(req) {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
     }
 
-    const { submission_id } = await req.json();
+    const { submission_id } = await readJsonBodyLimited(req, 8 * 1024);
     if (typeof submission_id !== 'string' || !submission_id.trim() || submission_id.length > 200) {
       return Response.json({ error: 'submission_id is required' }, { status: 400 });
     }
@@ -143,6 +144,8 @@ export default async function(req) {
       await releaseChallengeSubmissionLock(entities, lockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('castVote error:', error);
     return Response.json({ error: error?.message || 'Vote failed' }, { status: 500 });
   }

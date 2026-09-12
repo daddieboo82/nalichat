@@ -143,7 +143,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [queryClient]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     // Remove this browser's remote push capability while the authenticated
     // session still exists, then terminate the server/cookie-backed session.
     try {
@@ -170,7 +170,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setAuthChecked(true);
     }
-  };
+  }, [queryClient]);
 
   const navigateToLogin = () => {
     // Navigate to the custom login page if available

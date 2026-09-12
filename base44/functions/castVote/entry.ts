@@ -1,5 +1,6 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import {
   acquireChallengeSubmissionLock,
   releaseChallengeSubmissionLock,
@@ -40,6 +41,30 @@ export default async function(req) {
     }
 
     const entities = base44.asServiceRole.entities;
+    const voteRate = await consumeHourlyLimit(
+      entities,
+      user.id,
+      'challenge_vote',
+      120,
+    );
+    if (!voteRate.allowed) {
+      return Response.json({ error: 'Vote rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
+
+    const submissionPreview = await entities.ChallengeSubmission.get(submission_id).catch(() => null);
+    if (!submissionPreview) return Response.json({ error: 'Submission not found' }, { status: 404 });
+    if (submissionPreview.status !== 'approved') {
+      return Response.json({ error: 'This submission is not eligible for voting.' }, { status: 409 });
+    }
+    if (submissionPreview.producer_id === user.id) {
+      return Response.json({ error: "You can't vote on your own submission." }, { status: 403 });
+    }
+    const challengePreview = await entities.Challenge.get(submissionPreview.challenge_id).catch(() => null);
+    if (!challengePreview) return Response.json({ error: 'Challenge not found' }, { status: 404 });
+    if (challengePreview.status !== 'voting') {
+      return Response.json({ error: 'Voting is not open for this challenge.' }, { status: 409 });
+    }
+
     const lockId = await acquireChallengeSubmissionLock(entities, submission_id);
     if (!lockId) {
       return Response.json(

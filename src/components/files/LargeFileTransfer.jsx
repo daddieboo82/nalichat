@@ -8,6 +8,7 @@ import { base44 } from "@/api/base44Client";
 import { resumableUpload } from "@/lib/resumableUpload";
 import { UploadCloud, FileText, CheckCircle2 } from "lucide-react";
 import { EntitlementGate } from "@/components/subscription/EntitlementGate";
+import { copyToClipboard } from "@/lib/clipboard";
 
 function LargeFileTransferContent({ currentUser }) {
   const [file, setFile] = useState(null);
@@ -98,9 +99,10 @@ function LargeFileTransferContent({ currentUser }) {
               <p className="text-muted-foreground mb-6">Your transfer is complete and ready to share.</p>
               <div className="flex gap-2">
                 <Input value={shareLink} readOnly className="bg-secondary/50" />
-                <Button onClick={() => {
-                  navigator.clipboard.writeText(shareLink);
-                  toast.success("Link copied!");
+                <Button onClick={async () => {
+                  const copied = await copyToClipboard(shareLink);
+                  if (copied) toast.success("Link copied!");
+                  else toast.error("Couldn't copy the link. Please copy it manually.");
                 }}>Copy</Button>
               </div>
             </div>

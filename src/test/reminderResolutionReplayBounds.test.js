@@ -13,8 +13,8 @@ describe('follow-up reminder resolution replay bounds', () => {
     expect(source).toContain('workflowRecordIsFresh');
     expect(source).toContain("workflowRecordIsFresh(message, 'create')");
     expect(source).toContain("skipped: 'stale_workflow_record'");
-    expect(source.indexOf("workflowRecordIsFresh(message, 'create')")).toBeLessThan(
-      source.indexOf('resolveFollowUpRemindersForMessage'),
+    expect(source.indexOf("workflowRecordIsFresh(message, 'create')", source.indexOf('Deno.serve'))).toBeLessThan(
+      source.indexOf('resolveFollowUpRemindersForMessage({', source.indexOf('Deno.serve')),
     );
   });
 });

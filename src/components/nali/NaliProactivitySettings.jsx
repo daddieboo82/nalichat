@@ -9,7 +9,7 @@ const LEVELS = [
 ];
 
 export default function NaliProactivitySettings() {
-  const { level, setLevel } = useNaliPresence();
+  const { level, setLevel, isSaving } = useNaliPresence();
 
   return (
     <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 border border-white/[0.06]">
@@ -25,9 +25,11 @@ export default function NaliProactivitySettings() {
           <button
             key={value}
             onClick={() => setLevel(value)}
+            disabled={isSaving}
             className={cn(
               "w-full text-left flex items-start gap-3 p-3 rounded-xl border transition-all",
-              level === value ? "border-primary/50 bg-primary/10" : "border-border hover:border-primary/30 hover:bg-secondary/50"
+              level === value ? "border-primary/50 bg-primary/10" : "border-border hover:border-primary/30 hover:bg-secondary/50",
+              isSaving && "opacity-60 cursor-wait"
             )}
           >
             <Icon className={cn("w-5 h-5 mt-0.5 shrink-0", level === value ? "text-primary" : "text-muted-foreground")} />

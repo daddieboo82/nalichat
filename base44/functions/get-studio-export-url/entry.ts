@@ -41,6 +41,6 @@ export default async function(req) {
     return Response.json({ signed_url: signedRes.signed_url });
   } catch (error) {
     console.error('get-studio-export-url error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Unable to create studio export URL' }, { status: 500 });
   }
 }

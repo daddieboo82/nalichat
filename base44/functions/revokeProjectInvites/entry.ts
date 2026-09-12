@@ -84,6 +84,6 @@ Deno.serve(async (req) => {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('revokeProjectInvites error:', error);
-    return Response.json({ error: error?.message || 'Could not revoke invite links' }, { status: 500 });
+    return Response.json({ error: 'Could not revoke invite links' }, { status: 500 });
   }
 });

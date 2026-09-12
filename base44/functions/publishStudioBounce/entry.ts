@@ -164,6 +164,6 @@ Deno.serve(async (req) => {
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
-    return Response.json({ error: error?.message || 'Could not publish Studio bounce' }, { status: 500 });
+    return Response.json({ error: 'Could not publish Studio bounce' }, { status: 500 });
   }
 });

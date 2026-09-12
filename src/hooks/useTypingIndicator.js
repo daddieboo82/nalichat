@@ -67,8 +67,11 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
   useEffect(() => {
     if (!conversationId || !currentUser || !supportedRef.current) return;
     let cancelled = false;
+    let refreshInFlight = false;
 
     const refreshTyping = async () => {
+      if (refreshInFlight) return;
+      refreshInFlight = true;
       try {
         const existing = await base44.entities.TypingStatus.filter({ conversation_id: conversationId });
         if (cancelled) return;
@@ -78,6 +81,8 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
         applyRows();
       } catch {
         supportedRef.current = false;
+      } finally {
+        refreshInFlight = false;
       }
     };
 

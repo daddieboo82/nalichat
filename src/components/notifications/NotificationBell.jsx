@@ -113,14 +113,30 @@ export default function NotificationBell({ direction = "down" }) {
 
   const markAllRead = async () => {
     const unreadItems = items.filter((n) => !n.read);
-    await Promise.all(unreadItems.map((n) => base44.entities.Notification.update(n.id, { read: true })));
-    if (user) load(user.id);
+    if (unreadItems.length === 0) return;
+    const results = await Promise.allSettled(
+      unreadItems.map((n) => base44.entities.Notification.update(n.id, { read: true })),
+    );
+    if (user) {
+      try {
+        await load(user.id);
+      } catch {
+        // The poller will retry loading shortly.
+      }
+    }
+    if (results.some((result) => result.status === "rejected")) {
+      toast({
+        title: "Some notifications weren't marked read",
+        description: "We'll retry when notifications refresh.",
+        variant: "destructive",
+      });
+    }
   };
 
   const toggle = () => {
     const next = !open;
     setOpen(next);
-    if (next && unread > 0 && user) markAllRead();
+    if (next && unread > 0 && user) void markAllRead();
   };
 
   const enableNotifications = async () => {

@@ -134,6 +134,25 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Viewer access cannot save versions' }, { status: 403 });
     }
 
+    // Remote storage verification can be slow, so perform it before acquiring
+    // the track lifecycle lock. Authorization and track/project freshness are
+    // rechecked under the lock before the version record is created.
+    const previewInheritedFileUrl = trackPreview.file_url ? cleanUploadedMediaUrl(trackPreview.file_url) : '';
+    const previewFallbackFileUrl = body?.file_url ? cleanUploadedMediaUrl(body.file_url) : '';
+    if ((trackPreview.file_url && !previewInheritedFileUrl) || (body?.file_url && !previewFallbackFileUrl)) {
+      return Response.json({ error: 'Track version media must come from trusted upload storage' }, { status: 400 });
+    }
+    const verifiedVersionFileUrl = previewInheritedFileUrl || previewFallbackFileUrl;
+    if (verifiedVersionFileUrl) {
+      const storedSize = await resolveStoredFileSize(verifiedVersionFileUrl);
+      if (storedSize === null) {
+        return Response.json({ error: 'Could not verify track version media size' }, { status: 400 });
+      }
+      if (storedSize <= 0 || storedSize > MAX_TRACK_VERSION_BYTES) {
+        return Response.json({ error: 'Track version media must be 100MB or smaller' }, { status: 413 });
+      }
+    }
+
     const lockId = await acquireTrackLifecycleLock(entities, trackId);
     if (!lockId) {
       return Response.json({ error: 'Track is being updated. Please retry.' }, { status: 409 });
@@ -167,16 +186,11 @@ Deno.serve(async (req) => {
     if ((track.file_url && !inheritedFileUrl) || (body?.file_url && !fallbackFileUrl)) {
       return Response.json({ error: 'Track version media must come from trusted upload storage' }, { status: 400 });
     }
-
     const versionFileUrl = inheritedFileUrl || fallbackFileUrl;
-    if (versionFileUrl) {
-      const storedSize = await resolveStoredFileSize(versionFileUrl);
-      if (storedSize === null) {
-        return Response.json({ error: 'Could not verify track version media size' }, { status: 400 });
-      }
-      if (storedSize <= 0 || storedSize > MAX_TRACK_VERSION_BYTES) {
-        return Response.json({ error: 'Track version media must be 100MB or smaller' }, { status: 413 });
-      }
+    // If the track's media changed between preview and lock acquisition, avoid
+    // using media that was not verified by this request.
+    if (versionFileUrl !== verifiedVersionFileUrl) {
+      return Response.json({ error: 'Track media changed. Please retry saving the version.' }, { status: 409 });
     }
 
     let version = null;

@@ -22,6 +22,7 @@ export default function AiAssistant() {
   const [isListening, setIsListening] = useState(false);
   const [conversation, setConversation] = useState(null);
   const { user } = useAuth();
+  const conversationStorageKey = user?.id ? `nali_ai_conversation:${user.id}:${agentName}` : null;
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef(null);
@@ -42,8 +43,34 @@ export default function AiAssistant() {
       content,
       request_key: requestKey,
     });
-    if (response?.data?.error) throw new Error(response.data.error);
+    if (response?.data?.error) {
+      const error = new Error(response.data.error);
+      error.code = response.data.code;
+      error.quota = response.data.quota;
+      throw error;
+    }
     return response;
+  };
+
+  const friendlyNaliError = (error) => {
+    const data = error?.response?.data || error?.data || {};
+    const code = data.code || error?.code;
+    const message = data.error || error?.message || "";
+    if (code === "AI_DAILY_QUOTA_EXHAUSTED") {
+      const resetAt = data?.quota?.reset_at || data?.reset_at;
+      const reset = resetAt ? new Date(resetAt).toLocaleString() : "the next UTC day";
+      return `You've reached today's NALI.ai request limit. Your access resets at ${reset}.`;
+    }
+    if (code === "AI_NOT_ENTITLED" || /premium is required/i.test(message)) {
+      return "NALI.ai is available with Premium. Open Settings to review your plan.";
+    }
+    if (code === "AI_REQUEST_IN_PROGRESS" || code === "AI_REQUEST_ALREADY_DISPATCHED") {
+      return "That request is already being handled. Give me a moment to finish it.";
+    }
+    if (/timed_out|banned/i.test(message)) {
+      return "Your account can't use NALI.ai right now. Check your account status in Settings.";
+    }
+    return "I couldn't complete that request. Please try again.";
   };
 
 
@@ -69,7 +96,7 @@ export default function AiAssistant() {
         await sendAgentText(conv, text);
       } catch (error) {
         console.error("Nali event send error", error);
-        toast.error("Couldn't send that message to NALI.ai. Please try again.");
+        toast.error(friendlyNaliError(error));
       }
     };
     window.addEventListener('open-ai-assistant', handleOpen);
@@ -143,16 +170,11 @@ export default function AiAssistant() {
     return () => { if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; } };
   }, []);
 
-  const initConversation = async () => {
-    if (subscriptionLoading) throw new Error("Subscription is still loading");
-    if (!canUseAi) {
-      toast.error("Premium is required to use NALI.ai.");
-      throw new Error("AI entitlement required");
-    }
-    if (conversation) return conversation;
-    const conv = await base44.agents.createConversation({ agent_name: agentName });
+  const bindConversation = (conv) => {
+    if (!conv?.id) return null;
+    unsubRef.current?.();
     setConversation(conv);
-    // Subscribe — stop the typing indicator once the assistant has replied
+    setMessages(conv.messages || []);
     unsubRef.current = base44.agents.subscribeToConversation(conv.id, (data) => {
       const msgs = data.messages || [];
       setMessages(msgs);
@@ -162,6 +184,36 @@ export default function AiAssistant() {
       }
     });
     return conv;
+  };
+
+  const initConversation = async () => {
+    if (subscriptionLoading) throw new Error("Subscription is still loading");
+    if (!canUseAi) {
+      toast.error("Premium is required to use NALI.ai.");
+      throw new Error("AI entitlement required");
+    }
+    if (conversation) return conversation;
+
+    if (conversationStorageKey) {
+      try {
+        const savedId = sessionStorage.getItem(conversationStorageKey);
+        if (savedId) {
+          const restored = await base44.agents.getConversation(savedId);
+          if (restored?.id && (!restored.created_by_id || restored.created_by_id === user?.id)) {
+            return bindConversation(restored);
+          }
+        }
+      } catch (error) {
+        console.warn("Nali conversation restore failed:", error);
+      }
+      try { sessionStorage.removeItem(conversationStorageKey); } catch {}
+    }
+
+    const conv = await base44.agents.createConversation({ agent_name: agentName });
+    if (conversationStorageKey) {
+      try { sessionStorage.setItem(conversationStorageKey, conv.id); } catch {}
+    }
+    return bindConversation(conv);
   };
 
   const openChat = async (greeting) => {
@@ -196,28 +248,30 @@ export default function AiAssistant() {
       // but set a safety timeout in case the subscription never fires
       // (agent error, WebSocket drop, or very long tool call)
       if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-      loadingTimerRef.current = setTimeout(() => {
+      loadingTimerRef.current = setTimeout(async () => {
         loadingTimerRef.current = null;
-        setLoading(prev => {
-          if (!prev) return prev;
-          setMessages(prevMsgs => {
-            const last = prevMsgs[prevMsgs.length - 1];
-            if (last && last.role !== "user") return prevMsgs;
-            return [...prevMsgs, {
-              role: "assistant",
-              content: "I'm taking longer than expected — please try sending your message again.",
-            }];
-          });
-          return false;
-        });
-      }, 90000);
+        try {
+          const fresh = await base44.agents.getConversation(conv.id);
+          const freshMessages = fresh?.messages || [];
+          setMessages(freshMessages);
+          const last = freshMessages[freshMessages.length - 1];
+          if (last && last.role !== "user") {
+            setLoading(false);
+            return;
+          }
+          toast.info("Nali is still working on that request. I'll show the reply as soon as it arrives.");
+        } catch (refreshError) {
+          console.error("Nali conversation refresh error", refreshError);
+          toast.info("Nali is still working, but the live connection was interrupted. Reopen the assistant to refresh.");
+        }
+      }, 60000);
     } catch (err) {
       console.error("Nali send error", err);
       if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
       setLoading(false);
       setMessages(prevMsgs => [...prevMsgs, {
         role: "assistant",
-        content: "Sorry, I couldn't process that message. Please try again.",
+        content: friendlyNaliError(err),
       }]);
     }
   };

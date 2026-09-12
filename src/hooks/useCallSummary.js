@@ -37,8 +37,7 @@ export function useCallSummary({
   const [busy, setBusy] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const recorderRef = useRef(null);
-   const uploadPromiseRef = useRef(Promise.resolve());
-  const completeUploadRef = useRef(null);
+  const uploadPromiseRef = useRef(Promise.resolve());
   const lastCallRef = useRef(null);
   const endingRef = useRef(false);
   const dataRef = useRef(null);
@@ -158,8 +157,9 @@ export function useCallSummary({
     const captureSessionId = data?.session?.id;
     const captureStartedAt = new Date().toISOString();
     const captureChunks = [];
+    let resolveUpload;
     uploadPromiseRef.current = new Promise((resolve) => {
-      completeUploadRef.current = resolve;
+      resolveUpload = resolve;
     });
     recorder.ondataavailable = (event) => {
       if (event.data?.size) captureChunks.push(event.data);
@@ -174,8 +174,7 @@ export function useCallSummary({
         || captureChunks.length === 0
         || !canUploadCallCapture(currentData, currentUser?.id)
       ) {
-        completeUploadRef.current?.();
-        completeUploadRef.current = null;
+        resolveUpload?.();
         return;
       }
       const file = captureFile(captureChunks, recorder.mimeType, captureSessionId);
@@ -195,8 +194,7 @@ export function useCallSummary({
           setError(requestError.callSummary || callSummaryError(requestError));
           await pauseForCaptureFailure("capture_failed");
         } finally {
-          completeUploadRef.current?.();
-          completeUploadRef.current = null;
+          resolveUpload?.();
         }
       })();
     };

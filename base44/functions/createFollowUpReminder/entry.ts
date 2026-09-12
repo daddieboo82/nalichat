@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
     }
 
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const user = await base44.auth.me().catch(() => null);
     const { source_message_id, remind_at, client_request_key } = await req.json();
     const result = await createFollowUpReminder({
       entities: base44.asServiceRole.entities,

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useSubscription } from "@/hooks/useSubscription";
 
 /**
  * Auto-opens Nali on the onboarding page and walks the user through each step.
@@ -9,12 +10,14 @@ import { useEffect, useRef } from "react";
  *  - profileComplete: true when the user has filled in required profile fields
  */
 export default function OnboardingNaliGuide({ step, profileComplete }) {
+  const { hasEntitlement, isLoading } = useSubscription();
+  const canUseAi = hasEntitlement("ai.standard");
   const openedRef = useRef(false);
   const lastStepRef = useRef(0);
 
   // Open Nali once on mount with an onboarding-specific greeting
   useEffect(() => {
-    if (openedRef.current) return;
+    if (isLoading || !canUseAi || openedRef.current) return;
     openedRef.current = true;
     const greeting =
       "I'm a brand-new user who just landed on the onboarding screen. " +
@@ -24,14 +27,14 @@ export default function OnboardingNaliGuide({ step, profileComplete }) {
     window.dispatchEvent(
       new CustomEvent("open-ai-assistant", { detail: { greeting } })
     );
-  }, []);
+  }, [isLoading, canUseAi]);
 
   // Guide the user when they advance to the tutorial step
   useEffect(() => {
     if (step === lastStepRef.current) return;
     lastStepRef.current = step;
 
-    if (step === 2 && profileComplete) {
+    if (canUseAi && step === 2 && profileComplete) {
       window.dispatchEvent(
         new CustomEvent("nali-send-message", {
           detail: {
@@ -43,7 +46,7 @@ export default function OnboardingNaliGuide({ step, profileComplete }) {
         })
       );
     }
-  }, [step, profileComplete]);
+  }, [step, profileComplete, canUseAi]);
 
   return null;
 }

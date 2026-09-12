@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ export default function Squad() {
   const [bonusActive, setBonusActive] = useState(false);
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef(null);
   const [credits, setCredits] = useState(0);
 
   const load = useCallback(async () => {
@@ -54,6 +55,10 @@ export default function Squad() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => () => {
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+  }, []);
+
   const inviteLink = squad ? `${window.location.origin}/squad/join/${squad.invite_code}` : "";
 
   const handleCreate = async () => {
@@ -86,7 +91,11 @@ export default function Squad() {
       document.body.removeChild(ta);
     }
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => {
+      copyTimerRef.current = null;
+      setCopied(false);
+    }, 2000);
   };
 
   const handleLeave = async () => {

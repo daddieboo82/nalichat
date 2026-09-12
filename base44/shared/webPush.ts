@@ -1,4 +1,5 @@
 import webpush from 'npm:web-push@3.6.7';
+import { secrets } from 'base44:runtime';
 
 export interface PushPayload {
   title: string;
@@ -7,9 +8,9 @@ export interface PushPayload {
 }
 
 function vapidConfig() {
-  const publicKey = Deno.env.get('VAPID_PUBLIC_KEY') || '';
-  const privateKey = Deno.env.get('VAPID_PRIVATE_KEY') || '';
-  const subject = Deno.env.get('VAPID_SUBJECT') || 'https://nalichat.org';
+  const publicKey = secrets.get('VAPID_PUBLIC_KEY') || '';
+  const privateKey = secrets.get('VAPID_PRIVATE_KEY') || '';
+  const subject = secrets.get('VAPID_SUBJECT') || 'https://nalichat.org';
   return { publicKey, privateKey, subject, configured: Boolean(publicKey && privateKey) };
 }
 

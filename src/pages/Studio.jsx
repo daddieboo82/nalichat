@@ -90,6 +90,9 @@ const portableTrackState = (track, audioUrl) => {
 export default function Studio() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const studioStorageOwner = user?.id || null;
+  const masterFxStorageKey = studioStorageOwner ? `nalistudio_master_fx:${studioStorageOwner}` : null;
+  const autosaveStorageKey = studioStorageOwner ? `nalistudio_project_autosave:${studioStorageOwner}` : null;
   const [searchParams] = useSearchParams();
   const roomId = searchParams.get('room');
   const inviteToken = searchParams.get('invite');
@@ -277,8 +280,9 @@ export default function Studio() {
   const masterFxLoadedRef = useRef(false);
 
   const loadLocalMasterFx = () => {
+    if (!masterFxStorageKey) return null;
     try {
-      const saved = localStorage.getItem('nalistudio_master_fx');
+      const saved = localStorage.getItem(masterFxStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') return parsed;
@@ -290,19 +294,29 @@ export default function Studio() {
   };
 
   useEffect(() => {
-    if (roomId) return; // room projects load their chain with the project below
+    if (!studioStorageOwner) return;
+    setTracks([]);
+    setSelectedTrackIds([]);
+    setMasterFx({});
+    setHasAutosave(false);
+    setShowWelcome(true);
+    masterFxLoadedRef.current = false;
+  }, [studioStorageOwner]);
+
+  useEffect(() => {
+    if (!masterFxStorageKey || roomId) return; // room projects load their chain with the project below
     masterFxLoadedRef.current = false;
     const local = loadLocalMasterFx();
     if (local) setMasterFx(local);
     masterFxLoadedRef.current = true;
-  }, [roomId]);
+  }, [roomId, masterFxStorageKey]);
 
   useEffect(() => {
-    if (!masterFxLoadedRef.current) return;
+    if (!masterFxStorageKey || !masterFxLoadedRef.current) return;
     const chain = masterFx || {};
     const timeoutId = setTimeout(() => {
       try {
-        localStorage.setItem('nalistudio_master_fx', JSON.stringify(chain));
+        localStorage.setItem(masterFxStorageKey, JSON.stringify(chain));
       } catch (e) {
         console.error('Failed to autosave master FX chain', e);
       }
@@ -314,17 +328,19 @@ export default function Studio() {
       }
     }, 1000);
     return () => clearTimeout(timeoutId);
-  }, [masterFx, roomId, canEditProject]);
+  }, [masterFx, roomId, canEditProject, masterFxStorageKey]);
 
   useEffect(() => {
+    setHasAutosave(false);
+    if (!autosaveStorageKey) return;
     try {
-      const saved = localStorage.getItem('nalistudio_project_autosave');
+      const saved = localStorage.getItem(autosaveStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.length > 0) setHasAutosave(true);
       }
     } catch (e) {}
-  }, []);
+  }, [autosaveStorageKey]);
 
   useEffect(() => {
     if (!roomId || !user?.id) return;
@@ -419,8 +435,12 @@ export default function Studio() {
   const handleStartBlank = () => { setTracks([]); setShowWelcome(false); };
 
   const handleLoadAutosave = () => {
+    if (!autosaveStorageKey) {
+      toast.error("No autosave found");
+      return;
+    }
     try {
-      const saved = localStorage.getItem('nalistudio_project_autosave');
+      const saved = localStorage.getItem(autosaveStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.length > 0) { setTracks(parsed); setShowWelcome(false); return; }
@@ -452,17 +472,17 @@ export default function Studio() {
 
   // Autosave tracks (Debounced to prevent lag during rapid edits)
   useEffect(() => {
-    if (tracks && tracks.length > 0) {
+    if (autosaveStorageKey && tracks && tracks.length > 0) {
       const timeoutId = setTimeout(() => {
         try {
-          localStorage.setItem('nalistudio_project_autosave', JSON.stringify(tracks));
+          localStorage.setItem(autosaveStorageKey, JSON.stringify(tracks));
         } catch (e) {
           console.error("Failed to autosave project", e);
         }
       }, 1000);
       return () => clearTimeout(timeoutId);
     }
-  }, [tracks]);
+  }, [tracks, autosaveStorageKey]);
 
   const [historyIndex, setHistoryIndex] = useState(-1);
   const historyRef = useRef([]);

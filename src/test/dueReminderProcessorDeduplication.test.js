@@ -7,13 +7,14 @@ async function readText(path) {
 }
 
 describe('due reminder processor deduplication', () => {
-  it('durably limits processing to one claim per UTC minute', async () => {
+  it('limits processing to the five-minute workflow cadence', async () => {
     const source = await readText('base44/functions/processDueFollowUpReminders/entry.ts');
 
-    expect(source).toContain('claimMinuteWindow');
-        expect(source).toContain("'follow-up-reminder-processor'");
-        expect(source).toContain("skipped: 'already_processed_this_minute'");
-    expect(source.indexOf('claimMinuteWindow')).toBeLessThan(
+    expect(source).toContain('claimFixedWindow');
+    expect(source).toContain("'follow-up-reminder-processor'");
+    expect(source).toContain('5 * 60');
+    expect(source).toContain("skipped: 'already_processed_this_window'");
+    expect(source.indexOf('claimFixedWindow')).toBeLessThan(
       source.indexOf('processDueFollowUpReminders({'),
     );
   });

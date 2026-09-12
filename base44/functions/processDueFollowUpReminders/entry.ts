@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     const cadenceClaim = await claimFixedWindow(
       base44.asServiceRole.entities,
       'follow-up-reminder-processor',
-      5,
+      5 * 60,
     );
     if (!cadenceClaim.allowed) {
       return Response.json({ success: true, skipped: 'already_processed_this_window' });

@@ -2056,6 +2056,11 @@ describe('release configuration', () => {
     expect(pushConfig).toContain("req.method !== 'GET'");
     expect(pushConfig).toContain('publicPushConfig()');
 
+    const reminderResolver = await readText('base44/functions/resolveFollowUpReminders/entry.ts');
+    expect(reminderResolver).toContain('claimFixedWindow');
+    expect(reminderResolver).toContain('follow-up-resolver:');
+    expect(reminderResolver).toContain('already_processed');
+
     const reminderProcessor = await readText('base44/functions/processDueFollowUpReminders/entry.ts');
     expect(reminderProcessor).toContain('claimFixedWindow');
     expect(reminderProcessor).toContain("'follow-up-reminder-processor',\n      5,");

@@ -16,9 +16,9 @@ describe('polling request overlap', () => {
 
   it('serializes call-summary polls', async () => {
     const source = await readText('src/hooks/useCallSummary.js');
-    expect(source).toContain('const refreshInFlightRef = useRef(false);');
-    expect(source).toContain('if (refreshInFlightRef.current) return null;');
-    expect(source).toContain('refreshInFlightRef.current = false;');
+    expect(source).toContain('const refreshInFlightScopeRef = useRef(null);');
+    expect(source).toContain('if (refreshInFlightScopeRef.current === requestScopeAtStart) return null;');
+    expect(source).toContain('refreshInFlightScopeRef.current = null;');
   });
 
   it('serializes live-session track polls', async () => {

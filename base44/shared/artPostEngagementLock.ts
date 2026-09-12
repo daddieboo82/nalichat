@@ -25,7 +25,7 @@ export async function acquireArtPostEngagementLock(
     const expired = Date.parse(existing.expires_at || '') <= now.getTime();
     if (!expired) return null;
 
-    await entities.ArtPostEngagementLock.delete(id).catch(() => {});
+    await entities.ArtPostEngagementLock.delete(id);
     try {
       await create();
       return id;
@@ -41,6 +41,12 @@ export async function releaseArtPostEngagementLock(
   entities: any,
   lockId: string | null,
 ) {
-  if (!lockId) return;
-  await entities.ArtPostEngagementLock.delete(lockId).catch(() => {});
+  if (!lockId) return true;
+  try {
+    await entities.ArtPostEngagementLock.delete(lockId);
+    return true;
+  } catch (error) {
+    console.error('Failed to release ArtPost engagement lock:', { lockId, error });
+    return false;
+  }
 }

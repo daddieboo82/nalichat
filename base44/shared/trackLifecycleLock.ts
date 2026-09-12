@@ -25,7 +25,7 @@ export async function acquireTrackLifecycleLock(
     const expired = Date.parse(existing.expires_at || '') <= now.getTime();
     if (!expired) return null;
 
-    await entities.TrackLifecycleLock.delete(id).catch(() => {});
+    await entities.TrackLifecycleLock.delete(id);
     try {
       await create();
       return id;
@@ -41,6 +41,12 @@ export async function releaseTrackLifecycleLock(
   entities: any,
   lockId: string | null,
 ) {
-  if (!lockId) return;
-  await entities.TrackLifecycleLock.delete(lockId).catch(() => {});
+  if (!lockId) return true;
+  try {
+    await entities.TrackLifecycleLock.delete(lockId);
+    return true;
+  } catch (error) {
+    console.error('Failed to release track lifecycle lock:', { lockId, error });
+    return false;
+  }
 }

@@ -25,7 +25,7 @@ export async function acquireConversationMembershipLock(
     const expired = Date.parse(existing.expires_at || '') <= now.getTime();
     if (!expired) return null;
 
-    await entities.ConversationMembershipLock.delete(id).catch(() => {});
+    await entities.ConversationMembershipLock.delete(id);
     try {
       await create();
       return id;
@@ -41,6 +41,12 @@ export async function releaseConversationMembershipLock(
   entities: any,
   lockId: string | null,
 ) {
-  if (!lockId) return;
-  await entities.ConversationMembershipLock.delete(lockId).catch(() => {});
+  if (!lockId) return true;
+  try {
+    await entities.ConversationMembershipLock.delete(lockId);
+    return true;
+  } catch (error) {
+    console.error('Failed to release conversation membership lock:', { lockId, error });
+    return false;
+  }
 }

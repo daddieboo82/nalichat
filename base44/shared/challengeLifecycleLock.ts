@@ -25,7 +25,7 @@ export async function acquireChallengeLifecycleLock(
     const expired = Date.parse(existing.expires_at || '') <= now.getTime();
     if (!expired) return null;
 
-    await entities.ChallengeLifecycleLock.delete(id).catch(() => {});
+    await entities.ChallengeLifecycleLock.delete(id);
     try {
       await create();
       return id;
@@ -41,6 +41,12 @@ export async function releaseChallengeLifecycleLock(
   entities: any,
   lockId: string | null,
 ) {
-  if (!lockId) return;
-  await entities.ChallengeLifecycleLock.delete(lockId).catch(() => {});
+  if (!lockId) return true;
+  try {
+    await entities.ChallengeLifecycleLock.delete(lockId);
+    return true;
+  } catch (error) {
+    console.error('Failed to release challenge lifecycle lock:', { lockId, error });
+    return false;
+  }
 }

@@ -53,6 +53,26 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const trackPreview = await entities.Track.get(trackId).catch(() => null);
+    if (!trackPreview) return Response.json({ error: 'Track not found' }, { status: 404 });
+
+    let previewCanEdit = user.role === 'admin'
+      || (Array.isArray(trackPreview.edit_user_ids) && trackPreview.edit_user_ids.includes(user.id));
+    if (!previewCanEdit) {
+      const projectPreview = await entities.Project.get(trackPreview.project_id).catch(() => null);
+      if (projectPreview) {
+        previewCanEdit = projectPreview.owner_id === user.id
+          || (projectPreview.editor_ids || []).includes(user.id);
+      } else {
+        const sessionMessagePreview = await entities.Message.get(trackPreview.project_id).catch(() => null);
+        previewCanEdit = Array.isArray(sessionMessagePreview?.participant_ids)
+          && sessionMessagePreview.participant_ids.includes(user.id);
+      }
+    }
+    if (!previewCanEdit) {
+      return Response.json({ error: 'Viewer access cannot modify this track' }, { status: 403 });
+    }
+
     const lockId = await acquireTrackLifecycleLock(entities, trackId);
     if (!lockId) {
       return Response.json({ error: 'Track is being updated. Please retry.' }, { status: 409 });

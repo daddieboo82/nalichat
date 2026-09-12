@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CustomMediaPlayer from "@/components/audio/CustomMediaPlayer";
 import { Slider } from "@/components/ui/slider";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function PlaylistDetail() {
   const { playlistId } = useParams();
@@ -16,14 +17,10 @@ export default function PlaylistDetail() {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(100);
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const audioRef = useRef(null);
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    base44.auth.me().then(setCurrentUser);
-  }, []);
 
   const { data: playlist, isLoading: playlistLoading } = useQuery({
     queryKey: ["playlist", playlistId],

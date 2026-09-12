@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { secrets } from 'base44:runtime';
 import { describeAiCapabilities } from '../../shared/aiCapability.ts';
 
 Deno.serve(async (req) => {
@@ -10,7 +11,7 @@ Deno.serve(async (req) => {
     const capabilities = await describeAiCapabilities({
       base44,
       user,
-      readEnvironment: (name) => Deno.env.get(name),
+      readEnvironment: (name) => secrets.get(name),
     });
     return Response.json(capabilities);
   } catch (error) {

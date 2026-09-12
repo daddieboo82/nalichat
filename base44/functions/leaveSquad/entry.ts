@@ -13,15 +13,20 @@ Deno.serve(async (req) => {
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { squadId } = await readJsonBodyLimited(req, 8 * 1024);
-    const squad = await base44.asServiceRole.entities.Squad.get(squadId);
-    if (!squad || (squad.member_a_id !== user.id && squad.member_b_id !== user.id)) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const normalizedSquadId = String(squadId || '').trim();
+    if (!normalizedSquadId || normalizedSquadId.length > 256) {
+      return Response.json({ error: 'Valid squadId is required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
     const squadRate = await consumeHourlyLimit(entities, user.id, 'squad_leave', 60);
     if (!squadRate.allowed) {
       return Response.json({ error: 'Squad action rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
+
+    const squad = await entities.Squad.get(normalizedSquadId);
+    if (!squad || (squad.member_a_id !== user.id && squad.member_b_id !== user.id)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
     await entities.Squad.update(squad.id, { status: 'ended' });
 

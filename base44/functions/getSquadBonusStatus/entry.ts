@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
 function weekKey(date = new Date()): string {
@@ -12,6 +13,9 @@ function weekKey(date = new Date()): string {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -21,6 +25,10 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const readRate = await consumeHourlyLimit(entities, user.id, 'squad_bonus_status', 300);
+    if (!readRate.allowed) {
+      return Response.json({ error: 'Squad status rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
     const [asA, asB] = await Promise.all([
       entities.Squad.filter({ member_a_id: user.id, status: 'active' }, '-created_date', 1),
       entities.Squad.filter({ member_b_id: user.id, status: 'active' }, '-created_date', 1),

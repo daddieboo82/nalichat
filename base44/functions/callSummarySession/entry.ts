@@ -19,6 +19,7 @@ import {
   summaryRequestDisposition,
 } from '../../shared/callSummary.ts';
 import { resolveUserSubscription } from '../../shared/subscriptionAccess.ts';
+import { TRUSTED_MEDIA_HOSTS } from '../../shared/mediaSecurity.ts';
 import {
   acquireCallSummaryStartLock,
   releaseCallSummaryStartLock,
@@ -531,11 +532,7 @@ async function registerCapture(base44: any, user: any, body: any) {
   if (!Number.isSafeInteger(size) || size <= 0 || size > MAX_CAPTURE_BYTES) {
     return jsonError(400, 'INVALID_CAPTURE_SIZE', 'Capture size is invalid.');
   }
-  const allowedHosts = (Deno.env.get('CALL_SUMMARY_UPLOAD_HOSTS') || '').split(',');
-  if (allowedHosts.every((host) => !host.trim())) {
-    return jsonError(503, 'CALL_SUMMARY_STORAGE_NOT_CONFIGURED', 'Call summary storage is not configured.');
-  }
-  if (typeof body.audio_url !== 'string' || !isAllowedCaptureUrl(body.audio_url, allowedHosts)) {
+  if (typeof body.audio_url !== 'string' || !isAllowedCaptureUrl(body.audio_url, TRUSTED_MEDIA_HOSTS)) {
     return jsonError(400, 'INVALID_CAPTURE_URL', 'Capture URL is not from an approved upload host.');
   }
   const url = new URL(body.audio_url);

@@ -128,6 +128,19 @@ export default function PlaylistDetail() {
     }
   }, [volume]);
 
+  useEffect(() => {
+    setCurrentTrackIndex(0);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+  }, [playlistId]);
+
+  useEffect(() => {
+    setCurrentTrackIndex((index) => (
+      tracks.length === 0 ? 0 : Math.min(index, tracks.length - 1)
+    ));
+  }, [tracks.length]);
+
   const currentTrack = tracks[currentTrackIndex];
 
   const handlePlayPause = () => {

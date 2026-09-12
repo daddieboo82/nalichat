@@ -13,7 +13,7 @@ describe('auth refresh contract', () => {
     expect(source).toContain('}, []);');
     expect(source).toContain('return currentUser;');
     expect(source).toContain('await new Promise((resolve) => setTimeout(resolve, delay));');
-    expect(source).toContain('return checkUserAuth(retryCount + 1);');
+    expect(source).toContain('return checkUserAuth(retryCount + 1, generation);');
     expect(source).not.toContain('setTimeout(() => checkUserAuth(retryCount + 1), delay);');
   });
 

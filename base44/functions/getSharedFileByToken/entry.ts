@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
@@ -38,7 +39,7 @@ Deno.serve(async (req) => {
     }
 
     const base44 = createClientFromRequest(req);
-    const { fileId, token } = await req.json();
+    const { fileId, token } = await readJsonBodyLimited(req, 8 * 1024);
     const normalizedFileId = String(fileId || '').trim();
     const normalizedToken = String(token || '').trim();
     if (
@@ -74,6 +75,8 @@ Deno.serve(async (req) => {
       },
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('getSharedFileByToken error:', error);
     return Response.json({ error: 'Could not load shared file' }, { status: 500 });
   }

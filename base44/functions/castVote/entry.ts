@@ -147,6 +147,6 @@ export default async function(req) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('castVote error:', error);
-    return Response.json({ error: error?.message || 'Vote failed' }, { status: 500 });
+    return Response.json({ error: 'Vote failed' }, { status: 500 });
   }
 }

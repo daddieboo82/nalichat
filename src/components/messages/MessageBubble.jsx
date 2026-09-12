@@ -147,8 +147,6 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
 const gradients = ["from-primary to-pink-500","from-accent to-cyan-400","from-yellow-500 to-orange-500","from-green-400 to-emerald-600","from-purple-500 to-indigo-500"];
 const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.length];
 
-import React from "react";
-
 export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onRetry, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM, senderIsOnline = false }) {
   const { hasEntitlement } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
@@ -339,6 +337,13 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         )}
 
         <div className={cn("flex items-center gap-1.5 mt-1", isOwn ? "justify-end mr-1" : "ml-1")}>
+          {!isOwn && senderIsOnline && (
+            <span
+              className="w-2 h-2 rounded-full bg-green-500 shadow-sm shrink-0"
+              aria-label="Active now"
+              title="Active now"
+            />
+          )}
           <p className="chat-delivery-state text-[11px] text-muted-foreground/50 font-medium">
             {message.created_date && !isNaN(new Date(message.created_date).getTime()) ? format(new Date(message.created_date), "h:mm a") : "..."}
             {message.is_edited && " • Edited"}

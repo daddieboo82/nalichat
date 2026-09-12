@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -25,28 +25,43 @@ export default function ChallengeDetail() {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const challengeIdRef = useRef(challengeId);
+  challengeIdRef.current = challengeId;
 
-  const loadSubmissions = () =>
-    base44.entities.ChallengeSubmission
-      .filter(
-        { challenge_id: challengeId, status: "approved" },
+  const loadSubmissions = async () => {
+    const requestedChallengeId = challengeId;
+    try {
+      const nextSubmissions = await base44.entities.ChallengeSubmission.filter(
+        { challenge_id: requestedChallengeId, status: "approved" },
         "-vote_count",
         MAX_CHALLENGE_SUBMISSIONS,
-      )
-      .then(setSubmissions)
-      .catch((e) => console.error("Failed to load submissions", e));
+      );
+      if (challengeIdRef.current === requestedChallengeId) {
+        setSubmissions(nextSubmissions || []);
+      }
+      return nextSubmissions || [];
+    } catch (e) {
+      if (challengeIdRef.current === requestedChallengeId) {
+        console.error("Failed to load submissions", e);
+      }
+      throw e;
+    }
+  };
 
   const refresh = async () => {
+    const requestedChallengeId = challengeId;
     setLoadError(false);
     try {
-      const c = await base44.entities.Challenge.get(challengeId);
+      const c = await base44.entities.Challenge.get(requestedChallengeId);
+      if (challengeIdRef.current !== requestedChallengeId) return;
       setChallenge(c);
       await loadSubmissions();
     } catch (e) {
+      if (challengeIdRef.current !== requestedChallengeId) return;
       console.error("Failed to load challenge", e);
       setLoadError(true);
     } finally {
-      setLoading(false);
+      if (challengeIdRef.current === requestedChallengeId) setLoading(false);
     }
   };
 
@@ -55,7 +70,8 @@ export default function ChallengeDetail() {
   }, [challengeId]);
 
   useEffect(() => {
-    if (!user) { setMyVotes(new Set()); return; }
+    if (!user) { setMyVotes(new Set()); return undefined; }
+    let cancelled = false;
     base44.entities.ChallengeVote
       .filter(
         { challenge_id: challengeId, voter_id: user.id },
@@ -63,9 +79,16 @@ export default function ChallengeDetail() {
         MAX_USER_CHALLENGE_VOTES,
       )
       .then((votes) => {
-        setMyVotes(new Set(votes.map((v) => v.submission_id)));
+        if (!cancelled) {
+          setMyVotes(new Set((votes || []).map((v) => v.submission_id)));
+        }
       })
-      .catch((e) => console.error("Failed to load votes", e));
+      .catch((e) => {
+        if (!cancelled) console.error("Failed to load votes", e);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user, challengeId]);
 
   const handleVote = async (submissionId) => {

@@ -62,7 +62,7 @@ async function listAccessibleLockedIds(base44: any, userId: string) {
   const preferences = await listPreferences(base44, userId);
   const ids: string[] = [];
   for (const preference of preferences) {
-    if (!isBase44EntityId(preference.conversation_id)) {
+    if (!isConversationId(preference.conversation_id)) {
       await base44.asServiceRole.entities.LockedConversationPreference.delete(preference.id);
       continue;
     }

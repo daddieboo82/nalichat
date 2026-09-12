@@ -2056,12 +2056,18 @@ describe('release configuration', () => {
     expect(pushConfig).toContain("req.method !== 'GET'");
     expect(pushConfig).toContain('publicPushConfig()');
 
+    const reminderProcessor = await readText('base44/functions/processDueFollowUpReminders/entry.ts');
+    expect(reminderProcessor).toContain('claimFixedWindow');
+    expect(reminderProcessor).toContain("'follow-up-reminder-processor',\n      5,");
+    expect(reminderProcessor).toContain('already_processed_this_window');
+
     for (const name of internalWorkflowHandlers) {
       const source = await readText(`base44/functions/${name}/entry.ts`);
       expect(source).toContain("req.method !== 'POST'");
       expect(
         source.includes('workflowRecordIsFresh')
         || source.includes('claimMinuteWindow')
+        || source.includes('claimFixedWindow')
         || source.includes('createNotificationIdempotently'),
       ).toBe(true);
     }

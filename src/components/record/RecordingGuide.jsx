@@ -32,6 +32,7 @@ export default function RecordingGuide({ open, onClose }) {
   const practiceStreamRef = useRef(null);
   const practiceTimerRef = useRef(null);
   const practiceStopTimeoutRef = useRef(null);
+  const practiceUrlRef = useRef(null);
 
   const steps = [
     { key: 'welcome', title: "Let's get you recording", icon: Sparkles },
@@ -110,17 +111,18 @@ export default function RecordingGuide({ open, onClose }) {
 
   useEffect(() => () => {
     stopPractice();
-    setPracticeUrl((current) => {
-      if (current) URL.revokeObjectURL(current);
-      return null;
-    });
+    if (practiceUrlRef.current) {
+      URL.revokeObjectURL(practiceUrlRef.current);
+      practiceUrlRef.current = null;
+    }
   }, []);
 
   const doPracticeRecord = async () => {
-    setPracticeUrl((current) => {
-      if (current) URL.revokeObjectURL(current);
-      return null;
-    });
+    if (practiceUrlRef.current) {
+      URL.revokeObjectURL(practiceUrlRef.current);
+      practiceUrlRef.current = null;
+    }
+    setPracticeUrl(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       practiceStreamRef.current = stream;
@@ -133,10 +135,9 @@ export default function RecordingGuide({ open, onClose }) {
           practiceStopTimeoutRef.current = null;
         }
         const blob = new Blob(practiceChunksRef.current, { type: 'audio/webm' });
-        setPracticeUrl((current) => {
-          if (current) URL.revokeObjectURL(current);
-          return URL.createObjectURL(blob);
-        });
+        const nextUrl = URL.createObjectURL(blob);
+        practiceUrlRef.current = nextUrl;
+        setPracticeUrl(nextUrl);
         if (practiceStreamRef.current) {
           practiceStreamRef.current.getTracks().forEach(t => t.stop());
           practiceStreamRef.current = null;

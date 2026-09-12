@@ -6,6 +6,10 @@ import {
   acquireChallengeSubmissionLock,
   releaseChallengeSubmissionLock,
 } from '../../shared/challengeSubmissionLock.ts';
+import {
+  acquireChallengeLifecycleLock,
+  releaseChallengeLifecycleLock,
+} from '../../shared/challengeLifecycleLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -42,6 +46,9 @@ Deno.serve(async (req) => {
     if (submissionPreview.producer_id !== user.id && user.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
+    if (!isBase44EntityId(submissionPreview.challenge_id)) {
+      return Response.json({ error: 'Submission has an invalid challenge reference' }, { status: 409 });
+    }
 
     const lockId = await acquireChallengeSubmissionLock(entities, submissionId);
     if (!lockId) {
@@ -58,6 +65,24 @@ Deno.serve(async (req) => {
     if (submission.producer_id !== user.id && user.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
+    if (
+      !isBase44EntityId(submission.challenge_id)
+      || submission.challenge_id !== submissionPreview.challenge_id
+    ) {
+      return Response.json({ error: 'Submission challenge changed. Please retry.' }, { status: 409 });
+    }
+
+    const challengeLockId = await acquireChallengeLifecycleLock(entities, submission.challenge_id);
+    if (!challengeLockId) {
+      return Response.json(
+        { error: 'Challenge is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
+    const challenge = await entities.Challenge.get(submission.challenge_id).catch(() => null);
+    if (!challenge) return Response.json({ error: 'Challenge not found' }, { status: 404 });
 
     let deletedVotes = 0;
     while (true) {
@@ -103,6 +128,9 @@ Deno.serve(async (req) => {
       deleted_votes: deletedVotes,
       deleted_comments: deletedComments,
     });
+    } finally {
+      await releaseChallengeLifecycleLock(entities, challengeLockId);
+    }
     } finally {
       await releaseChallengeSubmissionLock(entities, lockId);
     }

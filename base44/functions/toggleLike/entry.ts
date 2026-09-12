@@ -1,6 +1,7 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import {
   acquireArtPostEngagementLock,
   releaseArtPostEngagementLock,
@@ -32,11 +33,14 @@ export default async function(req) {
 
     const body = await readJsonBodyLimited(req, 8 * 1024);
     const postId = typeof body?.postId === 'string' ? body.postId.trim() : '';
-    if (!postId || postId.length > 200) {
-      return Response.json({ error: 'postId required' }, { status: 400 });
+    if (!isBase44EntityId(postId)) {
+      return Response.json({ error: 'Valid postId is required' }, { status: 400 });
     }
 
     const entities = base44.asServiceRole.entities;
+    const postPreview = await entities.ArtPost.get(postId).catch(() => null);
+    if (!postPreview) return Response.json({ error: 'Post not found' }, { status: 404 });
+
     const lockId = await acquireArtPostEngagementLock(entities, postId);
     if (!lockId) {
       return Response.json(

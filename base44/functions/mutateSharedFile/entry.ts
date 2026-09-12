@@ -36,6 +36,22 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const filePreview = await entities.SharedFile.get(fileId).catch(() => null);
+    if (!filePreview) return Response.json({ error: 'File not found' }, { status: 404 });
+
+    let previewCanEdit = user.role === 'admin';
+    if (!previewCanEdit && filePreview.project_id) {
+      const projectPreview = await entities.Project.get(filePreview.project_id).catch(() => null);
+      if (!projectPreview) return Response.json({ error: 'Project not found' }, { status: 404 });
+      previewCanEdit = projectPreview.owner_id === user.id || (projectPreview.editor_ids || []).includes(user.id);
+    } else if (!previewCanEdit) {
+      previewCanEdit = filePreview.uploader_id === user.id
+        || (filePreview.edit_user_ids || []).includes(user.id);
+    }
+    if (!previewCanEdit) {
+      return Response.json({ error: 'Viewer access cannot modify this file' }, { status: 403 });
+    }
+
     const lockId = await acquireSharedFileMutationLock(entities, fileId);
     if (!lockId) {
       return Response.json(

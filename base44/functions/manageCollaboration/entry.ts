@@ -15,6 +15,30 @@ Deno.serve(async (req) => {
 
     const { action, session_id, collaborators, changes } = await req.json();
 
+    if (typeof session_id !== 'string' || !session_id.trim() || session_id.length > 200) {
+      return Response.json({ error: 'Valid session_id is required' }, { status: 400 });
+    }
+
+    const entities = base44.asServiceRole.entities;
+    const project = await entities.Project.get(session_id).catch(() => null);
+    if (!project) {
+      return Response.json({ error: 'Session not found' }, { status: 404 });
+    }
+
+    const collaboratorIds = Array.isArray(project.collaborator_ids)
+      ? project.collaborator_ids
+      : [];
+    const isOwner = project.owner_id === user.id;
+    const isCollaborator = collaboratorIds.includes(user.id);
+    const isAdmin = user.role === 'admin';
+
+    if (!isOwner && !isCollaborator && !isAdmin) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const collaboratorRole = project.collaborator_roles?.[user.id];
+    const canEdit = isOwner || isAdmin || collaboratorRole === 'editor';
+
     // Handle different collaboration actions
     if (action === 'join_session') {
       // User joins a studio session
@@ -30,6 +54,10 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'broadcast_changes') {
+      if (!canEdit) {
+        return Response.json({ error: 'Editor access required' }, { status: 403 });
+      }
+
       // Broadcast changes to all collaborators
       // Changes include: volume adjustments, panning, effects, etc.
       return Response.json({

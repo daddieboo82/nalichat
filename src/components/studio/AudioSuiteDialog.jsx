@@ -32,12 +32,17 @@ export default function AudioSuiteDialog({ open, onOpenChange, track, onProcess 
       return;
     }
     setIsProcessing(true);
+    let audioCtx = null;
+    let newUrl = null;
+    let handedOffUrl = false;
     try {
       // Fetch and decode the audio — works for both blob: and https: URLs
       const response = await fetch(track.audioUrl);
       if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
       const arrayBuffer = await response.arrayBuffer();
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) throw new Error("Web Audio is not supported");
+      audioCtx = new AudioContextClass();
       const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
 
       let processedBuffer = audioBuffer;
@@ -104,7 +109,7 @@ export default function AudioSuiteDialog({ open, onOpenChange, track, onProcess 
 
       // Encode to WAV
       const wavBlob = bufferToWav(processedBuffer);
-      const newUrl = URL.createObjectURL(wavBlob);
+      newUrl = URL.createObjectURL(wavBlob);
 
       // Generate new waveform
       const numPoints = 8000;
@@ -123,14 +128,20 @@ export default function AudioSuiteDialog({ open, onOpenChange, track, onProcess 
       }
       const normalizedWaveform = maxVal > 0 ? Array.from(waveform).map(v => v / maxVal) : Array.from(waveform).map(() => 0.05);
 
-      audioCtx.close();
       onProcess({ audioUrl: newUrl, waveform: normalizedWaveform, duration: newDuration });
+      handedOffUrl = true;
       toast.success(`${processes.find(p => p.id === processType).label} applied!`);
       onOpenChange(false);
     } catch (e) {
+      if (newUrl && !handedOffUrl) {
+        try { URL.revokeObjectURL(newUrl); } catch {}
+      }
       console.error('AudioSuite error:', e);
       toast.error("Processing failed — couldn't decode the audio.");
     } finally {
+      if (audioCtx && audioCtx.state !== 'closed') {
+        await audioCtx.close().catch(() => {});
+      }
       setIsProcessing(false);
     }
   };

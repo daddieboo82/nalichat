@@ -159,9 +159,13 @@ export default function NotificationBell({ direction = "down" }) {
     const userId = user?.id;
     const unreadItems = items.filter((n) => !n.read);
     if (unreadItems.length === 0) return;
-    const results = await Promise.allSettled(
-      unreadItems.map((n) => base44.entities.Notification.update(n.id, { read: true })),
-    );
+    let failed = false;
+    try {
+      const result = await base44.functions.invoke("markNotificationsRead", {});
+      if (result?.data?.error) failed = true;
+    } catch {
+      failed = true;
+    }
     if (userId && generation === identityGenerationRef.current) {
       try {
         await load(userId, generation);
@@ -170,9 +174,9 @@ export default function NotificationBell({ direction = "down" }) {
       }
     }
     if (generation !== identityGenerationRef.current) return;
-    if (results.some((result) => result.status === "rejected")) {
+    if (failed) {
       toast({
-        title: "Some notifications weren't marked read",
+        title: "Notifications weren't marked read",
         description: "We'll retry when notifications refresh.",
         variant: "destructive",
       });

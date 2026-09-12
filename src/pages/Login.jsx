@@ -16,6 +16,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,12 +43,22 @@ export default function Login() {
     }
   };
 
-  const handleGoogle = () => {
-    // A stale bearer token can override a fresh cookie-backed Google session
-    // on the callback and make auth.me() report the user as logged out.
-    clearPersistedAuthTokens();
-    markAuthActivity();
-    base44.auth.loginWithProvider("google", safeReturnTo());
+  const handleGoogle = async () => {
+    if (googleLoading) return;
+    setGoogleLoading(true);
+    setError("");
+    try {
+      // A stale bearer token can override a fresh cookie-backed Google session
+      // on the callback and make auth.me() report the user as logged out.
+      clearPersistedAuthTokens();
+      markAuthActivity();
+      await Promise.resolve(base44.auth.loginWithProvider("google", safeReturnTo()));
+    } catch (err) {
+      const msg = err?.message || "Google sign-in could not be started.";
+      setError(msg);
+      toast.error(msg);
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -68,9 +79,20 @@ export default function Login() {
         variant="outline"
         className="w-full h-12 text-sm font-medium mb-6"
         onClick={handleGoogle}
+        disabled={googleLoading || loading}
+        aria-busy={googleLoading ? "true" : undefined}
       >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        Continue with Google
+        {googleLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Connecting to Google...
+          </>
+        ) : (
+          <>
+            <GoogleIcon className="w-5 h-5 mr-2" />
+            Continue with Google
+          </>
+        )}
       </Button>
 
       <div className="relative mb-6">

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 
 const AudioPlayerContext = createContext();
 // Playback position updates fire ~4x/second. Keeping them in the main context
@@ -7,6 +8,8 @@ const AudioPlayerContext = createContext();
 const AudioPlayerTimeContext = createContext({ currentTime: 0, duration: 0 });
 
 export function AudioPlayerProvider({ children }) {
+  const { user } = useAuth();
+  const lastUserIdRef = useRef(user?.id || null);
   const [currentTrack, setCurrentTrack] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -131,6 +134,16 @@ export function AudioPlayerProvider({ children }) {
     setCurrentTrack(null);
     setIsPlaying(false);
   }, []);
+
+  useEffect(() => {
+    const nextUserId = user?.id || null;
+    if (lastUserIdRef.current !== nextUserId) {
+      closePlayer();
+      setCurrentTime(0);
+      setDuration(0);
+    }
+    lastUserIdRef.current = nextUserId;
+  }, [user?.id, closePlayer]);
 
   const value = useMemo(() => ({
     currentTrack,

@@ -9,9 +9,9 @@ const MB = 1024 * 1024;
 
 export const UPLOAD_LIMITS = {
   image: { maxBytes: 15 * MB, label: 'image' },
-  audio: { maxBytes: 100 * MB, label: 'audio file' },
-  video: { maxBytes: 200 * MB, label: 'video' },
-  file: { maxBytes: 250 * MB, label: 'file' },
+  audio: { maxBytes: 50 * MB, label: 'audio file' },
+  video: { maxBytes: 100 * MB, label: 'video' },
+  file: { maxBytes: 50 * MB, label: 'file' },
 };
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/heic', 'image/heif'];

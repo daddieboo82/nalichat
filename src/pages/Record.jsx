@@ -10,6 +10,7 @@ import MicCheckPanel from "@/components/record/MicCheckPanel";
 import RecordingCountdown from "@/components/record/RecordingCountdown";
 import RecordingTips from "@/components/record/RecordingTips";
 import RecordingGuide from "@/components/record/RecordingGuide";
+import { useAuth } from "@/lib/AuthContext";
 
 const GUIDE_KEY = "nali_rec_guide_done";
 
@@ -19,7 +20,7 @@ export default function Record() {
   const [recordings, setRecordings] = useState([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [saving, setSaving] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [visualData, setVisualData] = useState(new Array(64).fill(0));
   const [recLevel, setRecLevel] = useState(0);
   const [countdown, setCountdown] = useState(false);
@@ -36,7 +37,6 @@ export default function Record() {
   const currentTimeRef = useRef(0);
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
     try {
       if (localStorage.getItem(GUIDE_KEY) !== "1") setShowGuide(true);
     } catch {}

@@ -95,6 +95,43 @@ export async function claimMinuteWindow(
   return { allowed: true, key };
 }
 
+export async function claimFixedWindow(
+  entities: any,
+  scope: string,
+  windowMinutes: number,
+) {
+  const minutes = Math.max(1, Math.floor(windowMinutes));
+  const now = new Date();
+  const windowMs = minutes * 60 * 1000;
+  const startMs = Math.floor(now.getTime() / windowMs) * windowMs;
+  const key = new Date(startMs).toISOString();
+  const previousKey = new Date(startMs - windowMs).toISOString();
+  const expires = new Date(startMs + (2 * windowMs)).toISOString();
+  const id = 'window_' + await sha256Hex(`${scope}:${minutes}:${key}`);
+  const previousId = 'window_' + await sha256Hex(`${scope}:${minutes}:${previousKey}`);
+
+  try {
+    await entities.UsageRateLimit.create({
+      id,
+      user_id: scope,
+      action: `fixed_window_${minutes}m`,
+      window_key: key,
+      count: 1,
+      expires_at: expires,
+    });
+  } catch {
+    return { allowed: false, key };
+  }
+
+  try {
+    await entities.UsageRateLimit.delete(previousId);
+  } catch {
+    // Missing prior claims are expected.
+  }
+
+  return { allowed: true, key };
+}
+
 
 export async function releaseSingleHourlyClaim(
   entities: any,

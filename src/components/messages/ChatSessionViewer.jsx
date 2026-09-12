@@ -11,7 +11,23 @@ export default function ChatSessionViewer({ message, currentUser }) {
   const [uploading, setUploading] = useState(false);
   const [tracksError, setTracksError] = useState(false);
   const mediaRecorderRef = useRef(null);
+  const streamRef = useRef(null);
+  const mountedRef = useRef(true);
   const chunksRef = useRef([]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        try { recorder.stop(); } catch {}
+      }
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      mediaRecorderRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,11 +55,22 @@ export default function ChatSessionViewer({ message, currentUser }) {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!mountedRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      streamRef.current = stream;
       const recorder = new MediaRecorder(stream);
       chunksRef.current = [];
       recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
       recorder.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
+        if (streamRef.current === stream) streamRef.current = null;
+        if (mediaRecorderRef.current === recorder) mediaRecorderRef.current = null;
+        if (!mountedRef.current) {
+          chunksRef.current = [];
+          return;
+        }
         setUploading(true);
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
         const file = new File([blob], `track-${Date.now()}.webm`, { type: "audio/webm" });
@@ -58,20 +85,24 @@ export default function ChatSessionViewer({ message, currentUser }) {
           if (created?.data?.error) throw new Error(created.data.error);
           const track = created?.data?.track;
           if (!track?.id) throw new Error("Track was not created");
-          setTracks((current) => [
-            ...current.filter((existing) => existing.id !== track.id),
-            track,
-          ]);
+          if (mountedRef.current) {
+            setTracks((current) => [
+              ...current.filter((existing) => existing.id !== track.id),
+              track,
+            ]);
+          }
         } catch (e) {
           console.error(e);
-          toast.error("Couldn't add the recorded track. Please try again.");
+          if (mountedRef.current) {
+            toast.error("Couldn't add the recorded track. Please try again.");
+          }
         } finally {
-          setUploading(false);
+          if (mountedRef.current) setUploading(false);
         }
       };
       mediaRecorderRef.current = recorder;
       recorder.start();
-      setIsRecording(true);
+      if (mountedRef.current) setIsRecording(true);
     } catch (e) {
       console.error(e);
       toast.error("Couldn't start recording. Check microphone access and try again.");

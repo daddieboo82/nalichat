@@ -1,5 +1,7 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -18,9 +20,21 @@ Deno.serve(async (req) => {
     }
 
     const { postId } = await readJsonBodyLimited(req, 8 * 1024);
-    if (!postId) return Response.json({ error: 'postId is required' }, { status: 400 });
+    if (!isBase44EntityId(postId)) {
+      return Response.json({ error: 'Valid postId is required' }, { status: 400 });
+    }
 
     const entities = base44.asServiceRole.entities;
+    const rewardRate = await consumeHourlyLimit(
+      entities,
+      user.id,
+      'published_post_reward_claim',
+      60,
+    );
+    if (!rewardRate.allowed) {
+      return Response.json({ error: 'Reward claim rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
+
     const post = await entities.ArtPost.get(postId);
     if (!post || post.creator_id !== user.id) {
       return Response.json({ error: 'Post not found' }, { status: 404 });

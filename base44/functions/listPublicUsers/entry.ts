@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 const MAX_DISCOVERY_USERS = 1000;
 const MAX_DISCOVERY_ACHIEVEMENTS = 5000;
@@ -63,7 +64,7 @@ export default async function(req) {
     const requestedUserId = String(body?.userId || '').trim();
     const includeAchievementCounts = body?.includeAchievementCounts === true;
     const includePresence = body?.includePresence === true;
-    if (requestedUserId.length > 256) {
+    if (requestedUserId && !isBase44EntityId(requestedUserId)) {
       return Response.json({ error: 'Invalid userId' }, { status: 400 });
     }
 

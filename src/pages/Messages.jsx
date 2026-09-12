@@ -96,6 +96,12 @@ export default function Messages() {
   };
 
   useEffect(() => {
+    setSelectedConvId(null);
+    setLockedLinkConversationId(null);
+    setShowLockedAccess(false);
+  }, [currentUser?.id]);
+
+  useEffect(() => {
     if (location.pathname === "/messages" && !location.search) {
       setSelectedConvId(null);
     }
@@ -152,6 +158,7 @@ export default function Messages() {
   const { data: conversations = [], isError: conversationsError } = useQuery({
     queryKey: ["conversations", currentUser?.id],
     queryFn: () => base44.entities.Conversation.list("-last_message_at"),
+    enabled: !!currentUser?.id,
     refetchInterval: 5000,
     staleTime: 3000,
   });
@@ -204,7 +211,7 @@ export default function Messages() {
       const msgs = await base44.entities.Message.filter({ conversation_id: selectedConvId }, "-created_date", 200);
       return msgs.reverse();
     },
-    enabled: !!selectedConvId && lockedChatsReady && canAccessConversation(selectedConvId),
+    enabled: !!currentUser?.id && !!selectedConvId && lockedChatsReady && canAccessConversation(selectedConvId),
     refetchInterval: 5000,
     staleTime: 3000,
   });

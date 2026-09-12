@@ -1,6 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
 import { useState, useRef, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
 import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile, Layers, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resumableUpload } from "@/lib/resumableUpload";

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 async function presenceId(roomId: string, userId: string) {
@@ -36,7 +37,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 16 * 1024);
     const roomId = typeof body?.roomId === 'string' ? body.roomId.trim() : '';
     const action = body?.action == null
       ? 'heartbeat'
@@ -139,6 +140,8 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, presence: updated, cleanup_failures: cleanupFailures });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('updateStudioPresence error:', error);
     return Response.json({ error: error?.message || 'Studio presence update failed' }, { status: 500 });
   }

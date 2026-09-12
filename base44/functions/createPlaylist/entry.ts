@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
@@ -16,7 +17,7 @@ Deno.serve(async (req) => {
 
     if (user.is_banned) return Response.json({ error: 'banned' }, { status: 403 });
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 32 * 1024);
     if (body?.name != null && typeof body.name !== 'string') {
       return Response.json({ error: 'Playlist name must be a string' }, { status: 400 });
     }
@@ -71,6 +72,8 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, playlist });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('createPlaylist error:', error);
     return Response.json({ error: error?.message || 'Could not create playlist' }, { status: 500 });
   }

@@ -1,4 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireSharedFileMutationLock, releaseSharedFileMutationLock } from '../../shared/sharedFileMutationLock.ts';
 
@@ -37,8 +39,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { fileId } = await req.json();
-    if (typeof fileId !== 'string' || !fileId.trim() || fileId.length > 200) {
+    const { fileId } = await readJsonBodyLimited(req, 8 * 1024);
+    if (!isBase44EntityId(fileId)) {
       return Response.json({ error: 'fileId is required' }, { status: 400 });
     }
 

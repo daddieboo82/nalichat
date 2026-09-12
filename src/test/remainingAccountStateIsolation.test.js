@@ -9,6 +9,8 @@ describe('remaining account-state isolation', () => {
     expect(source).toContain('setSelectedUser(null);');
     expect(source).toContain('setMessage("");');
     expect(source).toContain('retryKeyRef.current = null;');
+    expect(source).toContain('const identityGenerationRef = useRef(0);');
+    expect(source).toContain('if (identityGeneration !== identityGenerationRef.current) return;');
     expect(source).toContain('}, [currentUser?.id, onOpenChange]);');
   });
 
@@ -24,6 +26,8 @@ describe('remaining account-state isolation', () => {
     expect(source).toContain('setSourceTrackFile(null);');
     expect(source).toContain('setCoverFile(null);');
     expect(source).toContain('setCoverPreview(null);');
+    expect(source).toContain('const identityGenerationRef = useRef(0);');
+    expect(source).toContain('if (identityGeneration !== identityGenerationRef.current) return;');
     expect(source).toContain('}, [user?.id]);');
   });
 });

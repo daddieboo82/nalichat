@@ -2,6 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const MAX_TRANSCRIBE_BYTES = 50 * 1024 * 1024;
 
@@ -71,9 +73,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { post_id } = await req.json();
-    if (!post_id) {
-      return Response.json({ error: 'post_id is required' }, { status: 400 });
+    const { post_id } = await readJsonBodyLimited(req, 8 * 1024);
+    if (!isBase44EntityId(post_id)) {
+      return Response.json({ error: 'Valid post_id is required' }, { status: 400 });
     }
 
     const post = await base44.asServiceRole.entities.ArtPost.get(post_id);
@@ -131,7 +133,9 @@ Respond with ONLY the raw image generation prompt string, nothing else.`;
 
     return Response.json({ image_url: imgRes.url });
   } catch (error) {
-    console.error('generate-cover-art error:', error.message);
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    console.error('generate-cover-art error:', error);
     return Response.json({ error: 'Cover art generation failed' }, { status: 500 });
   }
 });

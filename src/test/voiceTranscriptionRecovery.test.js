@@ -13,7 +13,7 @@ describe('voice transcription recovery', () => {
     expect(source).toContain('const retryTranscription = () =>');
     expect(source).toContain('Transcription unavailable.');
     expect(source).toContain('Retry');
-    expect(source).toContain('if (!url) {');
+    expect(source).toContain('if (!url) throw new Error("Speech audio was unavailable.");');
     expect(source).toContain('setSpeaking(false);');
   });
 });

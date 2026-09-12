@@ -56,6 +56,10 @@ export default function CoverArt() {
     overlayY: 50,
   });
   const [overlayImageRef, setOverlayImageRef] = useState(null);
+
+  useEffect(() => () => {
+    if (overlayImageRef) URL.revokeObjectURL(overlayImageRef);
+  }, [overlayImageRef]);
   const [isApplyingEdits, setIsApplyingEdits] = useState(false);
 
   const applyEdits = async () => {

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { X, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,10 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
   const [imageFile, setImageFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
   const [preview, setPreview] = useState(null);
+
+  useEffect(() => () => {
+    if (preview) URL.revokeObjectURL(preview);
+  }, [preview]);
   const [loading, setLoading] = useState(false);
   const [customTag, setCustomTag] = useState("");
   const imageRef = useRef();

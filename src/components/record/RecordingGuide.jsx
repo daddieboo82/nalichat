@@ -33,6 +33,10 @@ export default function RecordingGuide({ open, onClose }) {
   const practiceTimerRef = useRef(null);
   const practiceStopTimerRef = useRef(null);
 
+  useEffect(() => () => {
+    if (practiceUrl) URL.revokeObjectURL(practiceUrl);
+  }, [practiceUrl]);
+
   const steps = [
     { key: 'welcome', title: "Let's get you recording", icon: Sparkles },
     { key: 'permission', title: 'Allow microphone access', icon: ShieldCheck },

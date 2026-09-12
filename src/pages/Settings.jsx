@@ -26,10 +26,12 @@ import { useReducedMotionPreference } from "@/hooks/useReducedMotionPreference";
 const GENRES = ["Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Jazz", "Latin", "Afrobeats", "Country", "Classical", "Reggae", "Gospel", "Indie", "Metal", "Soul", "Funk", "Trap", "Lo-fi", "Alternative"];
 
 export default function Settings() {
-  const { checkUserAuth } = useAuth();
-  const [user, setUser] = useState(null);
-  const [loadingUser, setLoadingUser] = useState(true);
-  const [userLoadError, setUserLoadError] = useState(false);
+  const {
+    user,
+    checkUserAuth,
+    isLoadingAuth: loadingUser,
+    authError,
+  } = useAuth();
   const [form, setForm] = useState({ display_name: "", bio: "", artist_role: "artist", location: "", genres: [], avatar_url: "" });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -39,32 +41,16 @@ export default function Settings() {
   const { osReducedMotion, userReducedMotion, reduceMotion, setUserReducedMotion } = useReducedMotionPreference();
 
   useEffect(() => {
-    let active = true;
-    base44.auth.me()
-      .then((u) => {
-        if (!active) return;
-        setUser(u);
-        setUserLoadError(false);
-        setForm({
-          display_name: u.display_name || u.full_name || "",
-          bio: u.bio || "",
-          artist_role: u.artist_role || (["artist","producer","engineer","ar"].includes(u.role) ? u.role : "artist"),
-          location: u.location || "",
-          genres: u.genres || [],
-          avatar_url: u.avatar_url || "",
-        });
-      })
-      .catch((error) => {
-        console.error("Settings user load failed:", error);
-        if (active) setUserLoadError(true);
-      })
-      .finally(() => {
-        if (active) setLoadingUser(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+    if (!user) return;
+    setForm({
+      display_name: user.display_name || user.full_name || "",
+      bio: user.bio || "",
+      artist_role: user.artist_role || (["artist","producer","engineer","ar"].includes(user.role) ? user.role : "artist"),
+      location: user.location || "",
+      genres: user.genres || [],
+      avatar_url: user.avatar_url || "",
+    });
+  }, [user]);
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -121,7 +107,7 @@ export default function Settings() {
     return <div className="flex items-center justify-center h-full"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
   }
 
-  if (userLoadError || !user) {
+  if (authError || !user) {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="max-w-md text-center">
@@ -136,7 +122,7 @@ export default function Settings() {
   }
 
   return (
-    <PullToRefresh onRefresh={async () => { const u = await base44.auth.me(); setUser(u); setForm({ display_name: u.display_name || u.full_name || "", bio: u.bio || "", artist_role: u.artist_role || (["artist","producer","engineer","ar"].includes(u.role) ? u.role : "artist"), location: u.location || "", genres: u.genres || [], avatar_url: u.avatar_url || "" }); }} className="h-full overflow-y-auto">
+    <PullToRefresh onRefresh={async () => { await checkUserAuth(); }} className="h-full overflow-y-auto">
       <div className={`max-w-xl mx-auto p-6 py-12 ${reduceMotion ? "reduce-motion-surface" : ""}`}>
         <h1 className="text-2xl font-heading font-bold mb-8">Profile Settings</h1>
 
@@ -234,7 +220,6 @@ export default function Settings() {
           <ChatThemeSettings
             user={user}
             onPreferenceSaved={async (themeId) => {
-              setUser((current) => ({ ...current, chat_theme_id: themeId }));
               await checkUserAuth();
             }}
           />

@@ -27,7 +27,7 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
   const queryClient = useQueryClient();
 
   const { data: comments = [] } = useQuery({
-    queryKey: ["trackComments", track.id],
+    queryKey: ["trackComments", currentUser?.id, track.id],
     queryFn: async () => {
       const res = await base44.functions.invoke("trackComments", {
         action: "list",
@@ -51,7 +51,7 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
       if (res?.data?.error) throw new Error(res.data.error);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["trackComments", track.id] });
+      queryClient.invalidateQueries({ queryKey: ["trackComments", currentUser?.id, track.id] });
       setCommentText("");
       setActiveCommentTime(null);
     }

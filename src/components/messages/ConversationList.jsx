@@ -142,7 +142,12 @@ export default React.memo(function ConversationList({ conversations, myConversat
             {onlineUsers.map(u => (
               <button
                 key={u.id}
-                onClick={() => { Promise.resolve(onStartDM(u)).catch(() => {}); }}
+                onClick={() => {
+                  Promise.resolve(onStartDM(u)).catch((error) => {
+                    console.error("Failed to start DM from Active Now:", error);
+                    toast.error("Couldn't start this conversation. Please try again.");
+                  });
+                }}
                 className="flex flex-col items-center gap-1 shrink-0 group"
                 title={`Message ${u.display_name || u.full_name}`}
                 aria-label={`Message ${u.display_name || u.full_name}`}
@@ -262,7 +267,10 @@ export default React.memo(function ConversationList({ conversations, myConversat
                   try {
                     await onStartDM(user);
                     setSearch("");
-                  } catch {}
+                  } catch (error) {
+                    console.error("Failed to start discovered-user DM:", error);
+                    toast.error("Couldn't start this conversation. Please try again.");
+                  }
                 }}
                 className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-secondary/40 transition-all text-left group"
                 title={`Start conversation with ${user.display_name || user.full_name}`}

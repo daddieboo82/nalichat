@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Trophy, Star, Heart, Award, Crown, Medal, Music, Image as ImageIcon, Video } from "lucide-react";
@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import { useQueryClient } from "@tanstack/react-query";
 import { getLikeCount } from "@/lib/engagement";
+import { useAuth } from "@/lib/AuthContext";
 
 const USER_TABS = ["xp", "likes", "posts", "achievements", "viral"];
 const CONTENT_TABS = ["songs"];
@@ -16,14 +17,13 @@ const CONTENT_TABS = ["songs"];
 export default function Leaderboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [mode, setMode] = useState("users");
   const [userTab, setUserTab] = useState("xp");
   const [contentTab, setContentTab] = useState("songs");
   const [selectedItem, setSelectedItem] = useState(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
-  useEffect(() => { base44.auth.me().then(setCurrentUser); }, []);
 
   const { data: users = [] } = useQuery({
     queryKey: ["leaderboard-users"],

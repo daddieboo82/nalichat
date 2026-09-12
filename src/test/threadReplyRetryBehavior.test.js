@@ -12,7 +12,9 @@ describe('thread reply retry behavior', () => {
 
     expect(source).toContain('createClientMessageKey');
     expect(source).toContain('client_message_key: clientMessageKey');
-    expect(source).toContain('clientMessageKey: createClientMessageKey()');
+    expect(source).toContain('retryKeyRef.current && retryTextRef.current === trimmed');
+    expect(source).toContain('retryKeyRef.current = clientMessageKey;');
+    expect(source).toContain('retryTextRef.current = trimmed;');
     expect(source).toContain('if (!trimmed || sendMutation.isPending) return');
     expect(source.indexOf('setText("")')).toBeGreaterThan(
       source.indexOf('onSuccess: () =>'),

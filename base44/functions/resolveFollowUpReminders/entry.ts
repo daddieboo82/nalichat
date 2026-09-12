@@ -7,6 +7,9 @@ import {
 } from '../../shared/followUpReminders.ts';
 import { workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
 import { claimFixedWindow } from '../../shared/rateLimit.ts';
+import { validWorkflowKey } from '../../shared/workflowAuth.ts';
+
+const WORKFLOW_KEY_SHA256 = '12a50aaf8f80cfa38533646a950c347d5bd149b43d8e4e15219ebfeae333d3dc';
 
 Deno.serve(async (req) => {
   try {
@@ -14,7 +17,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
     const base44 = createClientFromRequest(req);
-    const { event, data } = await readJsonBodyLimited(req, 64 * 1024);
+    const { event, data, workflow_key } = await readJsonBodyLimited(req, 64 * 1024);
+    if (!(await validWorkflowKey(workflow_key, WORKFLOW_KEY_SHA256))) {
+      return Response.json({ error: 'Forbidden: invalid workflow credential' }, { status: 403 });
+    }
     if (event?.type !== 'create') {
       return Response.json({ success: true, completed: 0 });
     }

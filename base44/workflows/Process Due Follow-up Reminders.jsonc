@@ -31,7 +31,9 @@
           "call": "invoke_backend_function",
           "with": {
             "function_name": "processDueFollowUpReminders",
-            "args": {}
+            "args": {
+              "workflow_key": "kEoiq54YBtHjPktyxdcbxDUJIALlpooT8G6M7j5zeLk"
+            }
           },
           "then": "end"
         }

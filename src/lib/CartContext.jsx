@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 
 const CartContext = createContext();
@@ -8,6 +8,7 @@ export function CartProvider({ children }) {
   const cartStorageKey = `shopping_cart:${user?.id || 'anonymous'}`;
   const [items, setItems] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
+  const skipNextPersistRef = useRef(true);
 
   const getCartIdentity = (product) => [
     product?.type || 'item',
@@ -15,6 +16,10 @@ export function CartProvider({ children }) {
   ].join(':');
 
   useEffect(() => {
+    // The persist effect runs in the same commit as this identity-change load.
+    // Skip that one write so the previous account's in-memory cart can never be
+    // copied into the new account's storage key before setItems takes effect.
+    skipNextPersistRef.current = true;
     let nextItems = [];
     try {
       const saved = localStorage.getItem(cartStorageKey);
@@ -42,6 +47,10 @@ export function CartProvider({ children }) {
   }, [cartStorageKey, user?.id]);
 
   useEffect(() => {
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
+      return;
+    }
     try {
       localStorage.setItem(cartStorageKey, JSON.stringify(items));
     } catch {

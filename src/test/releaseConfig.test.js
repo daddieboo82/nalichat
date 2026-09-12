@@ -2067,6 +2067,13 @@ describe('release configuration', () => {
     expect(reminderResolver).toContain('follow-up-resolver:');
     expect(reminderResolver).toContain('already_processed');
 
+    const anonymousErrorSafe = ['getChallengeLeaderboard','getSharedFileByToken','verifyCheckoutPayment','wixPaymentsWebhook','notifyOnFileUpload','notifyOnMessage','notifyOnTrackVersion','notifyOnTrackComment','notifyOnMilestoneUpdate'];
+    for (const name of anonymousErrorSafe) {
+      const source = await readText();
+      expect(source).not.toContain('Response.json({ error: error.message }');
+      expect(source).not.toContain('Response.json({ error: error?.message');
+    }
+
     const reminderProcessor = await readText('base44/functions/processDueFollowUpReminders/entry.ts');
     expect(reminderProcessor).toContain('claimFixedWindow');
     expect(reminderProcessor).toContain("'follow-up-reminder-processor',\n      5,");

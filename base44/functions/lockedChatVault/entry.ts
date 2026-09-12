@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { resolveUserSubscription } from '../../shared/subscriptionAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import {
   constantTimeEqual,
   canConfigureLockedConversation,
@@ -148,7 +150,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return errorResponse('Unauthorized', 401, 'unauthorized');
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 32 * 1024);
     const action = body?.action;
 
     if (action === 'state') {
@@ -270,8 +272,8 @@ Deno.serve(async (req) => {
     if (action === 'set_locked') {
       const access = await requireEntitlement(base44, user.id);
       const conversationId = typeof body.conversationId === 'string' ? body.conversationId : '';
-      if (!conversationId) {
-        return errorResponse('conversationId is required.', 400, 'conversation_required');
+      if (!isBase44EntityId(conversationId)) {
+        return errorResponse('Valid conversationId is required.', 400, 'conversation_required');
       }
       const conversation = await base44.asServiceRole.entities.Conversation.get(conversationId);
       if (!canConfigureLockedConversation(
@@ -428,10 +430,15 @@ Deno.serve(async (req) => {
 
     return errorResponse('Unknown locked-chat action.', 400, 'unknown_action');
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     const status = Number((error as { status?: number })?.status) || 500;
     const code = (error as { code?: string })?.code;
     const message = error instanceof Error ? error.message : 'Locked chat request failed.';
-    if (status >= 500) console.error('lockedChatVault error:', message);
+    if (status >= 500) {
+      console.error('lockedChatVault error:', error);
+      return errorResponse('Locked chat request failed.', status, code);
+    }
     return errorResponse(message, status, code);
   }
 });

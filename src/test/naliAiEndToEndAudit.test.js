@@ -72,4 +72,35 @@ describe('Nali AI end-to-end audit invariants', () => {
     expect(assistant).toContain('if (greeting) await sendAgentText(conv, greeting);');
     expect(assistant).not.toContain('Hi! What can you help me with on RecordStudio?');
   });
+
+  it('locks guarded messaging to Nali agents and the entitled model tier', async () => {
+    const sender = await readText('base44/functions/sendAgentMessage/entry.ts');
+    expect(sender).toContain("conversation.agent_name !== 'studio_ai'");
+    expect(sender).toContain("conversation.agent_name !== 'studio_ai_plus'");
+    expect(sender).toContain("conversation.agent_name === 'studio_ai_plus'");
+    expect(sender).toContain("entitlements['ai.best_model']");
+    expect(sender).toContain("AI_BEST_MODEL_NOT_ENTITLED");
+  });
+
+  it('keeps voice bounded, locale-aware, accessible, and stops it when the panel closes', async () => {
+    const assistant = await readText('src/components/AiAssistant.jsx');
+    expect(assistant).toContain('const spokenText = clean.slice(0, 4800);');
+    expect(assistant).toContain("recognition.lang = navigator.language || 'en-US';");
+    expect(assistant).toContain('(!voiceEnabled || !open)');
+    expect(assistant).toContain('aria-label={voiceEnabled ? "Mute Nali voice" : "Enable Nali voice"}');
+    expect(assistant).toContain('aria-label="Voice input"');
+  });
+
+  it('does not proactively summon an assistant the current account cannot use', async () => {
+    const onboarding = await readText('src/components/onboarding/OnboardingNaliGuide.jsx');
+    const idleHint = await readText('src/components/AskNaliHint.jsx');
+    const contextHint = await readText('src/components/nali/NaliContextHint.jsx');
+    for (const source of [onboarding, idleHint, contextHint]) {
+      expect(source).toContain('hasEntitlement');
+      expect(source).toContain('"ai.standard"');
+    }
+    expect(onboarding).toContain('if (isLoading || !canUseAi || openedRef.current) return;');
+    expect(idleHint).toContain('onAuthPage || isLoading || !canUseAi');
+    expect(contextHint).toContain('isLoading || !canUseAi || !isProactive');
+  });
 });

@@ -715,9 +715,14 @@ async function cancelForReason(
 export async function processDueFollowUpReminders({
   entities,
   now = new Date(),
+  sendPush,
 }: {
   entities: ReminderEntities;
   now?: string | Date;
+  sendPush?: (
+    userId: string,
+    payload: { title: string; body: string; url: string },
+  ) => Promise<unknown>;
 }) {
   const clock = currentDate(now);
   const staleClaimCutoff = new Date(clock.getTime() - 5 * 60 * 1000).toISOString();
@@ -889,6 +894,17 @@ export async function processDueFollowUpReminders({
       const notification = await entities.Notification.create(
         notificationPayload as unknown as Omit<NotificationRecord, 'id'>,
       );
+      if (sendPush) {
+        try {
+          await sendPush(reminder.owner_id, {
+            title: String(notificationPayload.actor_name || 'NaliChat'),
+            body: String(notificationPayload.message || 'You have a reminder'),
+            url: String(notificationPayload.link || '/'),
+          });
+        } catch (pushError) {
+          console.error('Follow-up reminder push delivery failed:', pushError);
+        }
+      }
       const current = await findById(entities.FollowUpReminder, reminder.id);
       if (
         current?.status === 'triggered'

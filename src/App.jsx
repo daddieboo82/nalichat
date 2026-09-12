@@ -59,37 +59,37 @@ const AiAssistant = lazyWithReloadRecovery(() => import('@/components/AiAssistan
 
 // Lazily-loaded routes — each downloads on demand so initial load & tab-switching are fastest.
 const Messages = lazyWithReloadRecovery(() => import('@/pages/Messages'), 'messages');
-const Files = lazy(() => import('@/pages/Files'));
-const Settings = lazy(() => import('@/pages/Settings'));
-const Explore = lazy(() => import('@/pages/Explore'));
-const Leaderboard = lazy(() => import('@/pages/Leaderboard'));
-const Profile = lazy(() => import('@/pages/Profile'));
-const Playlists = lazy(() => import('@/pages/Playlists'));
-const PlaylistDetail = lazy(() => import('@/pages/PlaylistDetail'));
-const Analytics = lazy(() => import('@/pages/Analytics'));
-const ThankYou = lazy(() => import('@/pages/ThankYou'));
-const Onboarding = lazy(() => import('@/pages/Onboarding'));
-const PricingPlans = lazy(() => import('@/components/pricing/PricingPlans'));
-const Privacy = lazy(() => import('@/pages/Privacy'));
-const Terms = lazy(() => import('@/pages/Terms'));
-const EncryptionDocumentation = lazy(() => import('@/pages/EncryptionDocumentation'));
-const Studio = lazy(() => import('@/pages/Studio'));
-const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
-const Record = lazy(() => import('@/pages/Record'));
-const CoverArt = lazy(() => import('@/pages/CoverArt'));
-const WebhookTest = lazy(() => import('@/pages/WebhookTest'));
-const ProjectsSummary = lazy(() => import('@/pages/ProjectsSummary'));
-const ChallengeHub = lazy(() => import('@/pages/ChallengeHub'));
-const CreateChallenge = lazy(() => import('@/pages/CreateChallenge'));
-const ChallengeDetail = lazy(() => import('@/pages/ChallengeDetail'));
-const ChallengeLeaderboard = lazy(() => import('@/pages/ChallengeLeaderboard'));
-const SubmissionPlayer = lazy(() => import('@/pages/SubmissionPlayer'));
-const Squad = lazy(() => import('@/pages/Squad'));
-const SquadJoin = lazy(() => import('@/pages/SquadJoin'));
-const ViralSeed = lazy(() => import('@/pages/ViralSeed'));
-const Download = lazy(() => import('@/pages/Download'));
-const OAuthConsent = lazy(() => import('@/pages/OAuthConsent'));
-const SharedFileDownload = lazy(() => import('@/pages/SharedFileDownload'));
+const Files = lazyWithReloadRecovery(() => import('@/pages/Files'), 'files');
+const Settings = lazyWithReloadRecovery(() => import('@/pages/Settings'), 'settings');
+const Explore = lazyWithReloadRecovery(() => import('@/pages/Explore'), 'explore');
+const Leaderboard = lazyWithReloadRecovery(() => import('@/pages/Leaderboard'), 'leaderboard');
+const Profile = lazyWithReloadRecovery(() => import('@/pages/Profile'), 'profile');
+const Playlists = lazyWithReloadRecovery(() => import('@/pages/Playlists'), 'playlists');
+const PlaylistDetail = lazyWithReloadRecovery(() => import('@/pages/PlaylistDetail'), 'playlist-detail');
+const Analytics = lazyWithReloadRecovery(() => import('@/pages/Analytics'), 'analytics');
+const ThankYou = lazyWithReloadRecovery(() => import('@/pages/ThankYou'), 'thank-you');
+const Onboarding = lazyWithReloadRecovery(() => import('@/pages/Onboarding'), 'onboarding');
+const PricingPlans = lazyWithReloadRecovery(() => import('@/components/pricing/PricingPlans'), 'pricing');
+const Privacy = lazyWithReloadRecovery(() => import('@/pages/Privacy'), 'privacy');
+const Terms = lazyWithReloadRecovery(() => import('@/pages/Terms'), 'terms');
+const EncryptionDocumentation = lazyWithReloadRecovery(() => import('@/pages/EncryptionDocumentation'), 'encryption-documentation');
+const Studio = lazyWithReloadRecovery(() => import('@/pages/Studio'), 'studio');
+const AdminDashboard = lazyWithReloadRecovery(() => import('@/pages/AdminDashboard'), 'admin-dashboard');
+const Record = lazyWithReloadRecovery(() => import('@/pages/Record'), 'record');
+const CoverArt = lazyWithReloadRecovery(() => import('@/pages/CoverArt'), 'cover-art');
+const WebhookTest = lazyWithReloadRecovery(() => import('@/pages/WebhookTest'), 'webhook-test');
+const ProjectsSummary = lazyWithReloadRecovery(() => import('@/pages/ProjectsSummary'), 'projects-summary');
+const ChallengeHub = lazyWithReloadRecovery(() => import('@/pages/ChallengeHub'), 'challenge-hub');
+const CreateChallenge = lazyWithReloadRecovery(() => import('@/pages/CreateChallenge'), 'create-challenge');
+const ChallengeDetail = lazyWithReloadRecovery(() => import('@/pages/ChallengeDetail'), 'challenge-detail');
+const ChallengeLeaderboard = lazyWithReloadRecovery(() => import('@/pages/ChallengeLeaderboard'), 'challenge-leaderboard');
+const SubmissionPlayer = lazyWithReloadRecovery(() => import('@/pages/SubmissionPlayer'), 'submission-player');
+const Squad = lazyWithReloadRecovery(() => import('@/pages/Squad'), 'squad');
+const SquadJoin = lazyWithReloadRecovery(() => import('@/pages/SquadJoin'), 'squad-join');
+const ViralSeed = lazyWithReloadRecovery(() => import('@/pages/ViralSeed'), 'viral-seed');
+const Download = lazyWithReloadRecovery(() => import('@/pages/Download'), 'download');
+const OAuthConsent = lazyWithReloadRecovery(() => import('@/pages/OAuthConsent'), 'oauth-consent');
+const SharedFileDownload = lazyWithReloadRecovery(() => import('@/pages/SharedFileDownload'), 'shared-file-download');
 
 function safeLocalStorageGet(key) {
   try { return localStorage.getItem(key); } catch { return null; }

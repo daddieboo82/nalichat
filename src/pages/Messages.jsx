@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { recordSquadActivity } from "@/lib/squadBonus";
@@ -111,24 +111,42 @@ export default function Messages() {
     setSelectedConvId(null);
   };
 
+  const [showNewDM, setShowNewDM] = useState(false);
+  const [showNewGroup, setShowNewGroup] = useState(false);
+  const [showExternal, setShowExternal] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const queryClient = useQueryClient();
+  const lastMessagesUserIdRef = useRef(undefined);
+
   useEffect(() => {
+    const nextUserId = currentUser?.id || null;
+    const previousUserId = lastMessagesUserIdRef.current;
+    lastMessagesUserIdRef.current = nextUserId;
+
+    // Preserve a valid deep link on the first authenticated load, but scrub
+    // the previous account's conversation URL and transient dialogs on a real
+    // identity transition.
+    const isInitialIdentityResolution = previousUserId === undefined;
+    if (!isInitialIdentityResolution && previousUserId !== nextUserId) {
+      if (location.pathname === "/messages" && location.search) {
+        navigate(location.pathname, { replace: true });
+      }
+      setShowNewDM(false);
+      setShowNewGroup(false);
+      setShowExternal(false);
+      setShowInvite(false);
+    }
+
     setSelectedConvId(null);
     setLockedLinkConversationId(null);
     setShowLockedAccess(false);
-  }, [currentUser?.id]);
+  }, [currentUser?.id, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     if (location.pathname === "/messages" && !location.search) {
       setSelectedConvId(null);
     }
   }, [location.pathname, location.search]);
-
-  const [showNewDM, setShowNewDM] = useState(false);
-  const [showNewGroup, setShowNewGroup] = useState(false);
-  const [showExternal, setShowExternal] = useState(false);
-  const queryClient = useQueryClient();
-
-  const [showInvite, setShowInvite] = useState(false);
 
   useEffect(() => {
     const handleVisibilityChange = () => {

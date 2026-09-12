@@ -1,4 +1,5 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import {
+import { isConversationId } from '../../shared/conversationIds.ts'; createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
@@ -8,13 +9,6 @@ import {
 } from '../../shared/conversationMembershipLock.ts';
 
 const PAGE_SIZE = 200;
-
-function isConversationId(value: unknown): value is string {
-  if (typeof value !== 'string') return false;
-  const id = value.trim();
-  return isBase44EntityId(id)
-    || /^(?:dm|group_request|public_room)_[0-9a-f]{64}$/.test(id);
-}
 
 async function hashedConversationId(prefix: string, value: string) {
   const digest = await crypto.subtle.digest(

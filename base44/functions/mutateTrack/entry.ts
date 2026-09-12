@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
 
@@ -44,7 +45,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 64 * 1024);
     const trackId = typeof body?.trackId === 'string' ? body.trackId.trim() : '';
     const action = typeof body?.action === 'string' ? body.action : '';
     if (!trackId || trackId.length > 200 || !['update', 'delete'].includes(action)) {

@@ -89,7 +89,15 @@ async function awardOnce(entities: any, userId: string, squad: any, progress: an
     await entities.User.updateMany({ id: userId }, { $inc: { squad_credits: CREDITS_REWARD } });
   } catch (creditError) {
     // Keep the reward retryable if the protected user-credit update fails.
-    await entities.SquadReward.delete(rewardId).catch(() => {});
+    try {
+      await entities.SquadReward.delete(rewardId);
+    } catch (rollbackError) {
+      console.error('Squad reward rollback failed:', rollbackError);
+      throw new Error(
+        'Squad reward credit update failed and rollback was incomplete. Please retry.',
+        { cause: creditError },
+      );
+    }
     throw creditError;
   }
   return true;
@@ -208,7 +216,15 @@ Deno.serve(async (req) => {
         );
       } catch (progressError) {
         // Keep the activity retryable if its progress increment did not land.
-        await entities.SquadActivity.delete(ledgerId).catch(() => {});
+        try {
+          await entities.SquadActivity.delete(ledgerId);
+        } catch (rollbackError) {
+          console.error('Squad activity rollback failed:', rollbackError);
+          throw new Error(
+            'Squad progress update failed and activity rollback was incomplete. Please retry.',
+            { cause: progressError },
+          );
+        }
         throw progressError;
       }
     }

@@ -8,25 +8,55 @@ import {
 
 const TIMEOUT_48H_MINUTES = 48 * 60;
 
-async function repairConversationPreview(entities: any, conversationId: string) {
+async function repairConversationPreview(
+  entities: any,
+  conversationId: string,
+  removedCreatedAt: string | null = null,
+) {
   let lastError: any = null;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
-      const recent = await entities.Message.filter(
-        { conversation_id: conversationId },
-        '-created_date',
-        200,
-      );
+      const [recent, current] = await Promise.all([
+        entities.Message.filter(
+          { conversation_id: conversationId },
+          '-created_date',
+          200,
+        ),
+        entities.Conversation.get(conversationId),
+      ]);
+      if (!current) throw new Error('Conversation not found');
       const latest = recent.find((candidate: any) => candidate.type !== 'session') || null;
-      await entities.Conversation.update(conversationId, {
-        last_message_text: latest?.text || (latest ? `Sent a ${latest.type || 'message'}` : ''),
-        last_message_at: latest?.created_date || null,
-      });
-      return true;
+      const nextAt = latest?.created_date || null;
+      const currentAt = current.last_message_at || null;
+      const removedTime = Date.parse(removedCreatedAt || '');
+      const currentTime = Date.parse(currentAt || '');
+      const nextTime = Date.parse(nextAt || '');
+
+      if (
+        Number.isFinite(removedTime)
+        && Number.isFinite(currentTime)
+        && currentTime > removedTime
+      ) return true;
+      if (currentAt === nextAt) return true;
+      if (
+        Number.isFinite(currentTime)
+        && Number.isFinite(nextTime)
+        && currentTime > nextTime
+        && currentAt !== removedCreatedAt
+      ) return true;
+
+      const updated = await entities.Conversation.updateMany(
+        { id: conversationId, last_message_at: currentAt },
+        {
+          last_message_text: latest?.text || (latest ? `Sent a ${latest.type || 'message'}` : ''),
+          last_message_at: nextAt,
+        },
+      );
+      if (Number(updated?.updated || 0) === 1) return true;
     } catch (error) {
       lastError = error;
-      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 75 * (attempt + 1)));
     }
+    await new Promise((resolve) => setTimeout(resolve, 40 * (attempt + 1)));
   }
   console.error('Unable to repair conversation preview:', lastError);
   return false;
@@ -159,7 +189,14 @@ Deno.serve(async (req) => {
       if (!canRepair) {
         return Response.json({ error: 'Message not found' }, { status: 404 });
       }
-      const repaired = await repairConversationPreview(entities, conversationId);
+      const removedCreatedAt = typeof body?.message_created_date === 'string'
+        ? body.message_created_date
+        : null;
+      const repaired = await repairConversationPreview(
+        entities,
+        conversationId,
+        removedCreatedAt,
+      );
       if (!repaired) {
         return Response.json(
           { error: 'Message was deleted but conversation preview could not be refreshed.' },
@@ -297,6 +334,7 @@ Deno.serve(async (req) => {
         previewRefreshFailed = !await repairConversationPreview(
           entities,
           message.conversation_id,
+          message.created_date || null,
         );
       }
 

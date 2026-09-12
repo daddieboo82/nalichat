@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
+import { secrets } from 'base44:runtime';
 import {
   resolveCheckoutUrls,
   resolveStripeSku,
@@ -62,11 +63,11 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const sku = resolveStripeSku(body?.sku, (name) => Deno.env.get(name));
+    const sku = resolveStripeSku(body?.sku, (name) => secrets.get(name));
     const requestKey = validateCheckoutIdempotencyKey(body?.idempotencyKey);
     cleanupRequestKey = requestKey;
     const callbackUrls = resolveCheckoutUrls(body?.callbackDestinations, APP_BASE_URL);
-    const environment = stripeEnvironmentFromSecretKey(Deno.env.get('STRIPE_SECRET_KEY'));
+    const environment = stripeEnvironmentFromSecretKey(secrets.get('STRIPE_SECRET_KEY'));
 
     const base44 = createClientFromRequest(req);
     cleanupBase44 = base44;

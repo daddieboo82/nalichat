@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState(null); // null | "success" | "error"
   const [errorMsg, setErrorMsg] = useState("");
+  const operationGenerationRef = useRef(0);
 
   const reset = () => {
     setDestination("");
@@ -20,8 +21,16 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
     setErrorMsg("");
   };
 
+  useEffect(() => {
+    if (open) return;
+    operationGenerationRef.current += 1;
+    reset();
+    setSending(false);
+  }, [open]);
+
   const handleSend = async () => {
     if (!destination.trim() || !message.trim()) return;
+    const generation = operationGenerationRef.current;
     setSending(true);
     setStatus(null);
     try {
@@ -30,6 +39,7 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
         destination: destination.trim(),
         message: message.trim(),
       });
+      if (generation !== operationGenerationRef.current) return;
       if (res.data?.success) {
         setStatus("success");
       } else {
@@ -37,10 +47,11 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
         setErrorMsg(res.data?.error || "Failed to send");
       }
     } catch (err) {
+      if (generation !== operationGenerationRef.current) return;
       setStatus("error");
-      setErrorMsg(err.message);
+      setErrorMsg("Couldn't send the external message. Please try again.");
     } finally {
-      setSending(false);
+      if (generation === operationGenerationRef.current) setSending(false);
     }
   };
 

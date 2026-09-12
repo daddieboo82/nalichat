@@ -115,6 +115,6 @@ Deno.serve(async (req) => {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('reportContent error:', error);
-    return Response.json({ error: error?.message || 'Report failed' }, { status: 500 });
+    return Response.json({ error: 'Report failed' }, { status: 500 });
   }
 });

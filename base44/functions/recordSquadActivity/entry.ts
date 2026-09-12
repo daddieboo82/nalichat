@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
@@ -164,7 +165,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Squad activity rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { sourceType, sourceId } = await req.json();
+    const { sourceType, sourceId } = await readJsonBodyLimited(req, 8 * 1024);
     if (!['message', 'art_post', 'milestone'].includes(sourceType) || !sourceId) {
       return Response.json({ error: 'Valid sourceType and sourceId are required' }, { status: 400 });
     }
@@ -258,6 +259,8 @@ Deno.serve(async (req) => {
       progress: updated,
     });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('recordSquadActivity error:', error);
     return Response.json({ error: error?.message || 'Could not record squad activity' }, { status: 500 });
   }

@@ -15,6 +15,23 @@ import { toast } from "sonner";
 
 const GUIDE_KEY = "nali_rec_guide_done";
 
+function getSupportedRecordingMimeType() {
+  if (typeof MediaRecorder === "undefined") return "";
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4",
+    "audio/ogg;codecs=opus",
+  ];
+  return candidates.find((type) => MediaRecorder.isTypeSupported?.(type)) || "";
+}
+
+function recordingExtension(mimeType = "") {
+  if (mimeType.includes("mp4")) return "m4a";
+  if (mimeType.includes("ogg")) return "ogg";
+  return "webm";
+}
+
 export default function Record() {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -86,55 +103,90 @@ export default function Record() {
 
   const startRecording = async () => {
     setCountdown(false);
-    sounds.recStart();
-    const devId = selectedDevices.input && selectedDevices.input !== "default" ? selectedDevices.input : undefined;
-    const constraints = { audio: devId ? { deviceId: { exact: devId } } : true };
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    streamRef.current = stream;
 
-    const audioCtx = new AudioContext();
-    audioCtxRef.current = audioCtx;
-    const source = audioCtx.createMediaStreamSource(stream);
-    const analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256;
-    source.connect(analyser);
-    analyserRef.current = analyser;
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      toast.error("Audio recording is not supported in this browser.");
+      return;
+    }
 
-    const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-    chunksRef.current = [];
-    recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
-    recorder.onstop = () => {
-      stream.getTracks().forEach(t => t.stop());
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-      const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-      const url = URL.createObjectURL(blob);
-      setRecordings(prev => [...prev, {
-        id: Date.now().toString(),
-        blob,
-        url,
-        duration: currentTimeRef.current,
-        name: `Recording ${prev.length + 1}`,
-      }]);
-      if (audioCtxRef.current === audioCtx && audioCtx.state !== "closed") {
-        void audioCtx.close().catch(() => {});
-        audioCtxRef.current = null;
-      }
-      setCurrentTime(0);
+    let stream = null;
+    let audioCtx = null;
+    try {
+      const devId = selectedDevices.input && selectedDevices.input !== "default" ? selectedDevices.input : undefined;
+      const constraints = { audio: devId ? { deviceId: { exact: devId } } : true };
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) throw new Error("Web Audio is not supported in this browser");
+
+      audioCtx = new AudioContextClass();
+      audioCtxRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      const mimeType = getSupportedRecordingMimeType();
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const recordingMimeType = recorder.mimeType || mimeType || "audio/webm";
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data?.size) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        if (streamRef.current === stream) streamRef.current = null;
+        if (animationRef.current) cancelAnimationFrame(animationRef.current);
+        const blob = new Blob(chunksRef.current, { type: recordingMimeType });
+        if (blob.size > 0) {
+          const url = URL.createObjectURL(blob);
+          setRecordings(prev => [...prev, {
+            id: Date.now().toString(),
+            blob,
+            url,
+            duration: currentTimeRef.current,
+            name: `Recording ${prev.length + 1}`,
+          }]);
+        } else {
+          toast.error("No audio was captured. Please check your microphone and try again.");
+        }
+        if (audioCtxRef.current === audioCtx && audioCtx.state !== "closed") {
+          void audioCtx.close().catch(() => {});
+          audioCtxRef.current = null;
+        }
+        setCurrentTime(0);
+        currentTimeRef.current = 0;
+        setVisualData(new Array(64).fill(0));
+        setRecLevel(0);
+      };
+
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      sounds.recStart();
+      setIsRecording(true);
+      setIsPaused(false);
       currentTimeRef.current = 0;
-      setVisualData(new Array(64).fill(0));
-      setRecLevel(0);
-    };
-
-    mediaRecorderRef.current = recorder;
-    recorder.start();
-    setIsRecording(true);
-    setIsPaused(false);
-    currentTimeRef.current = 0;
-    timerRef.current = setInterval(() => {
-      setCurrentTime(t => t + 1);
-      currentTimeRef.current += 1;
-    }, 1000);
-    updateVisualizer();
+      timerRef.current = setInterval(() => {
+        setCurrentTime(t => t + 1);
+        currentTimeRef.current += 1;
+      }, 1000);
+      updateVisualizer();
+    } catch (error) {
+      stream?.getTracks().forEach((track) => track.stop());
+      if (streamRef.current === stream) streamRef.current = null;
+      if (audioCtx && audioCtx.state !== "closed") {
+        void audioCtx.close().catch(() => {});
+      }
+      if (audioCtxRef.current === audioCtx) audioCtxRef.current = null;
+      mediaRecorderRef.current = null;
+      console.error("Recording start failed:", error);
+      const denied = error?.name === "NotAllowedError" || error?.name === "SecurityError";
+      toast.error(denied
+        ? "Microphone access was denied. Allow microphone access and try again."
+        : "Recording could not start. Check your microphone and browser permissions.");
+    }
   };
 
   const beginRecording = () => {
@@ -169,7 +221,7 @@ export default function Record() {
   const saveRecording = async (rec) => {
     setSaving(rec.id);
     try {
-      const file = new File([rec.blob], `${rec.name}.webm`, { type: "audio/webm" });
+      const extension = recordingExtension(rec.blob.type);\n      const file = new File([rec.blob], `${rec.name}.${extension}`, { type: rec.blob.type || "audio/webm" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const created = await base44.functions.invoke("createSharedFileRecord", {
         name: rec.name,

@@ -42,29 +42,41 @@ export default function DailyRecommendation() {
     sounds.click();
   };
 
-  const togglePlay = (e) => {
+  const togglePlay = async (e) => {
     e.preventDefault();
     if (!post?.file_url) return;
     sounds.click();
     if (playing) {
       audio?.pause();
       setPlaying(false);
-    } else {
-      if (!audio) {
-        const a = new Audio(post.file_url);
-        a.volume = 0.7;
-        a.onended = () => setPlaying(false);
-        a.play().catch(() => {});
-        setAudio(a);
-      } else {
-        audio.play().catch(() => {});
-      }
+      return;
+    }
+
+    let player = audio;
+    if (!player) {
+      player = new Audio(post.file_url);
+      player.volume = 0.7;
+      player.onended = () => setPlaying(false);
+      player.onerror = () => setPlaying(false);
+      setAudio(player);
+    }
+
+    try {
+      await player.play();
       setPlaying(true);
+    } catch {
+      setPlaying(false);
     }
   };
 
-  // Cleanup on unmount
-  useEffect(() => () => { if (audio) { audio.pause(); } }, [audio]);
+  // Cleanup on unmount / player replacement.
+  useEffect(() => () => {
+    if (audio) {
+      audio.pause();
+      audio.onended = null;
+      audio.onerror = null;
+    }
+  }, [audio]);
 
   if (!post || dismissed) return null;
 

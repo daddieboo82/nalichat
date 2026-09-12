@@ -114,13 +114,27 @@ export default function PlaylistDetail() {
   });
 
   useEffect(() => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
+    if (!audio) return undefined;
+    let cancelled = false;
+
     if (isPlaying) {
-      audioRef.current.play().catch(() => {});
+      audio.play().catch(() => {
+        if (!cancelled) setIsPlaying(false);
+      });
     } else {
-      audioRef.current.pause();
+      audio.pause();
     }
-  }, [isPlaying]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isPlaying, currentTrack?.file_url]);
+
+  useEffect(() => {
+    setCurrentTime(0);
+    setDuration(0);
+  }, [currentTrack?.id]);
 
   useEffect(() => {
     if (audioRef.current) {

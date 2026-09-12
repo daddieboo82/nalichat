@@ -51,7 +51,15 @@ Deno.serve(async (req) => {
     } catch (xpError) {
       // Compensate the deterministic dedupe record so a transient user-update
       // failure does not permanently consume an unawarded reward.
-      await entities.UserActivityReward.delete(rewardId).catch(() => {});
+      try {
+        await entities.UserActivityReward.delete(rewardId);
+      } catch (rollbackError) {
+        console.error('Published-post reward rollback failed:', rollbackError);
+        throw new Error(
+          'Post XP update failed and reward rollback was incomplete. Please retry.',
+          { cause: xpError },
+        );
+      }
       throw xpError;
     }
     return Response.json({ success: true, awarded: true, xp: 50 });

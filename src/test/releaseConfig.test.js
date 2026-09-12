@@ -94,7 +94,7 @@ describe('release configuration', () => {
       const source = await readText(path);
       expect(source).toContain('consumeHourlyLimit');
       expect(source).toContain(key);
-      expect(source).toContain(`${key},\n      ${limit},`);
+      expect(source).toMatch(new RegExp(`${key},\\s*${limit}`));
       expect(source).toContain('Admin operation rate limit exceeded');
       expect(source).toContain('status: 429');
     }

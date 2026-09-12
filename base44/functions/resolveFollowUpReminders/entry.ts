@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import {
   followUpReminderErrorResponse,
   messageIdFromEntityEvent,
@@ -13,7 +14,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
     const base44 = createClientFromRequest(req);
-    const { event, data } = await req.json();
+    const { event, data } = await readJsonBodyLimited(req, 64 * 1024);
     if (event?.type !== 'create') {
       return Response.json({ success: true, completed: 0 });
     }
@@ -48,6 +49,8 @@ Deno.serve(async (req) => {
     });
     return Response.json({ success: true, completed });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('resolveFollowUpReminders error:', error);
     return followUpReminderErrorResponse(error);
   }

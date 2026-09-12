@@ -26,6 +26,7 @@ on:
     branches: [main]
     paths:
       - 'electron/**'
+      - 'src/pages/Download.jsx'
       - '.github/workflows/desktop-builds.yml'
   workflow_dispatch:
 

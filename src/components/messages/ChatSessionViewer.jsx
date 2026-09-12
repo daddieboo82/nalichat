@@ -5,6 +5,12 @@ import { Mic, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+function recordingExtension(mimeType = "") {
+  if (mimeType.includes("mp4")) return "m4a";
+  if (mimeType.includes("ogg")) return "ogg";
+  return "webm";
+}
+
 export default function ChatSessionViewer({ message, currentUser }) {
   const [tracks, setTracks] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -65,9 +71,19 @@ export default function ChatSessionViewer({ message, currentUser }) {
         return;
       }
       streamRef.current = stream;
-      const recorder = new MediaRecorder(stream);
+      if (typeof MediaRecorder === "undefined") {
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        throw new Error("MediaRecorder is not supported");
+      }
+      const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
+      const mimeType = mimeTypes.find((type) => MediaRecorder.isTypeSupported?.(type)) || "";
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const recordingMimeType = recorder.mimeType || mimeType || "audio/webm";
       chunksRef.current = [];
-      recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
+      recorder.ondataavailable = (e) => {
+        if (e.data?.size) chunksRef.current.push(e.data);
+      };
       recorder.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         if (streamRef.current === stream) streamRef.current = null;
@@ -76,9 +92,14 @@ export default function ChatSessionViewer({ message, currentUser }) {
           chunksRef.current = [];
           return;
         }
+        const blob = new Blob(chunksRef.current, { type: recordingMimeType });
+        if (blob.size === 0) {
+          toast.error("No audio was captured. Please check your microphone and try again.");
+          return;
+        }
         setUploading(true);
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        const file = new File([blob], `track-${Date.now()}.webm`, { type: "audio/webm" });
+        const extension = recordingExtension(recordingMimeType);
+        const file = new File([blob], `track-${Date.now()}.${extension}`, { type: recordingMimeType });
         try {
           const { file_url } = await base44.integrations.Core.UploadFile({ file });
           const created = await base44.functions.invoke("createCollaborativeTrack", {

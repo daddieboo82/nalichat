@@ -62,6 +62,22 @@ async function resolveStoredFileSize(url: string): Promise<number | null> {
   return null;
 }
 
+function challengeSubmissionStateError(challenge: any, now = Date.now()) {
+  const startsAt = challenge?.start_date ? new Date(challenge.start_date).getTime() : null;
+  const endsAt = challenge?.submission_end_date ? new Date(challenge.submission_end_date).getTime() : null;
+
+  if (challenge?.status !== 'active') {
+    return 'This challenge is not accepting submissions';
+  }
+  if (startsAt && Number.isFinite(startsAt) && startsAt > now) {
+    return 'Challenge submissions have not opened yet';
+  }
+  if (endsAt && Number.isFinite(endsAt) && endsAt < now) {
+    return 'Challenge submission deadline has passed';
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   try {
     if (req.method !== 'POST') {
@@ -117,30 +133,13 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
-    const challengeLockId = await acquireChallengeLifecycleLock(entities, challengeId);
-    if (!challengeLockId) {
-      return Response.json(
-        { error: 'Challenge is being updated. Please retry.' },
-        { status: 409 },
-      );
+    const challengePreview = await entities.Challenge.get(challengeId).catch(() => null);
+    if (!challengePreview) {
+      return Response.json({ error: 'Challenge not found' }, { status: 404 });
     }
-
-    try {
-    const challenge = await entities.Challenge.get(challengeId);
-    if (!challenge) return Response.json({ error: 'Challenge not found' }, { status: 404 });
-
-    const now = Date.now();
-    const startsAt = challenge.start_date ? new Date(challenge.start_date).getTime() : null;
-    const endsAt = challenge.submission_end_date ? new Date(challenge.submission_end_date).getTime() : null;
-
-    if (challenge.status !== 'active') {
-      return Response.json({ error: 'This challenge is not accepting submissions' }, { status: 409 });
-    }
-    if (startsAt && Number.isFinite(startsAt) && startsAt > now) {
-      return Response.json({ error: 'Challenge submissions have not opened yet' }, { status: 409 });
-    }
-    if (endsAt && Number.isFinite(endsAt) && endsAt < now) {
-      return Response.json({ error: 'Challenge submission deadline has passed' }, { status: 409 });
+    const previewStateError = challengeSubmissionStateError(challengePreview);
+    if (previewStateError) {
+      return Response.json({ error: previewStateError }, { status: 409 });
     }
 
     let remixFileUrl = '';
@@ -212,6 +211,24 @@ Deno.serve(async (req) => {
     }
 
     const deviceType = DEVICE_TYPES.has(body?.device_type) ? body.device_type : 'desktop';
+
+    // Media validation above can perform network I/O. Only hold the challenge
+    // lifecycle lock for the final state re-check and submission write.
+    const challengeLockId = await acquireChallengeLifecycleLock(entities, challengeId);
+    if (!challengeLockId) {
+      return Response.json(
+        { error: 'Challenge is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
+    try {
+    const challenge = await entities.Challenge.get(challengeId);
+    if (!challenge) return Response.json({ error: 'Challenge not found' }, { status: 404 });
+    const lockedStateError = challengeSubmissionStateError(challenge);
+    if (lockedStateError) {
+      return Response.json({ error: lockedStateError }, { status: 409 });
+    }
 
     const submission = await entities.ChallengeSubmission.create({
       challenge_id: challenge.id,

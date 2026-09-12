@@ -6,6 +6,11 @@ async function readText(path) {
   return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
 }
 
+function bodyReadIndex(source) {
+  const bounded = source.indexOf('readJsonBodyLimited(req,');
+  return bounded >= 0 ? bounded : source.indexOf('await req.json()');
+}
+
 for (const path of [
   'base44/functions/updateMyProfile/entry.ts',
   'base44/functions/completeOnboarding/entry.ts',
@@ -15,10 +20,11 @@ for (const path of [
       const source = await readText(path);
       const methodGuard = source.indexOf("if (req.method !== 'POST')");
       const auth = source.indexOf('const base44 = createClientFromRequest(req)');
-      const bodyRead = source.indexOf('await req.json()');
+      const bodyRead = bodyReadIndex(source);
 
       expect(methodGuard).toBeGreaterThanOrEqual(0);
       expect(source).toContain("return Response.json({ error: 'Method not allowed' }, { status: 405 });");
+      expect(bodyRead).toBeGreaterThanOrEqual(0);
       expect(methodGuard).toBeLessThan(auth);
       expect(methodGuard).toBeLessThan(bodyRead);
     });

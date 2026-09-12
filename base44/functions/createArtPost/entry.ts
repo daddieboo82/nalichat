@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
@@ -93,7 +94,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 64 * 1024);
     for (const field of ['title', 'description', 'file_url', 'image_url', 'medium', 'genre']) {
       if (body?.[field] != null && typeof body[field] !== 'string') {
         return Response.json({ error: `${field} must be a string` }, { status: 400 });
@@ -162,6 +163,8 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, post });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('createArtPost error:', error);
     return Response.json({ error: error?.message || 'Could not publish track' }, { status: 500 });
   }

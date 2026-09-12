@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
 Deno.serve(async (req) => {
@@ -16,7 +17,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
     }
 
-    const { postId } = await req.json();
+    const { postId } = await readJsonBodyLimited(req, 8 * 1024);
     if (!postId) return Response.json({ error: 'postId is required' }, { status: 400 });
 
     const entities = base44.asServiceRole.entities;
@@ -64,6 +65,8 @@ Deno.serve(async (req) => {
     }
     return Response.json({ success: true, awarded: true, xp: 50 });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     return Response.json({ error: error?.message || 'Could not award post XP' }, { status: 500 });
   }
 });

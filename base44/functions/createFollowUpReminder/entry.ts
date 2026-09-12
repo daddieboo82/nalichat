@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import {
   createFollowUpReminder,
@@ -12,7 +13,7 @@ Deno.serve(async (req) => {
 
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me().catch(() => null);
-    const { source_message_id, remind_at, client_request_key } = await req.json();
+    const { source_message_id, remind_at, client_request_key } = await readJsonBodyLimited(req, 16 * 1024);
     const result = await createFollowUpReminder({
       entities: base44.asServiceRole.entities,
       user,
@@ -22,6 +23,8 @@ Deno.serve(async (req) => {
     });
     return Response.json(result);
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('createFollowUpReminder error:', error);
     return followUpReminderErrorResponse(error);
   }

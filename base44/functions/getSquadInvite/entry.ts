@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
 function isInviteExpired(squad: any) {
@@ -16,7 +17,7 @@ Deno.serve(async (req) => {
     }
     const base44 = createClientFromRequest(req);
     const viewer = await base44.auth.me().catch(() => null);
-    const { inviteCode } = await req.json();
+    const { inviteCode } = await readJsonBodyLimited(req, 8 * 1024);
     const normalizedCode = String(inviteCode || '').trim().toUpperCase();
     if (!/^[0-9A-F]{24}$/.test(normalizedCode)) {
       return Response.json({ error: 'Invalid invite code' }, { status: 400 });
@@ -42,6 +43,8 @@ Deno.serve(async (req) => {
       },
     });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     return Response.json({ error: error?.message || 'Could not load squad invite' }, { status: 500 });
   }
 });

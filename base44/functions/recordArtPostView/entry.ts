@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit, releaseSingleHourlyClaim } from '../../shared/rateLimit.ts';
 
@@ -15,7 +16,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
     }
 
-    const { postId } = await req.json();
+    const { postId } = await readJsonBodyLimited(req, 8 * 1024);
     if (typeof postId !== 'string' || !postId.trim() || postId.length > 200) {
       return Response.json({ error: 'postId is required' }, { status: 400 });
     }
@@ -59,6 +60,8 @@ Deno.serve(async (req) => {
     const updated = await entities.ArtPost.get(post.id);
     return Response.json({ success: true, counted: true, views: Number(updated?.views || 0) });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('recordArtPostView error:', error);
     return Response.json({ error: error?.message || 'Could not record view' }, { status: 500 });
   }

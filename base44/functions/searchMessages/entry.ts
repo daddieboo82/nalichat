@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import {
   executeMessageSearch,
@@ -33,7 +34,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 16 * 1024);
     const result = await executeMessageSearch({
       conversationEntity: base44.asServiceRole.entities.Conversation,
       messageEntity: base44.asServiceRole.entities.Message,
@@ -42,6 +43,8 @@ Deno.serve(async (req) => {
 
     return Response.json(result);
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     if (error instanceof MessageSearchError) {
       return Response.json(
         { error: error.message, code: error.code },

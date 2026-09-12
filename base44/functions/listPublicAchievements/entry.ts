@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
@@ -11,7 +12,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { userId } = await req.json();
+    const { userId } = await readJsonBodyLimited(req, 8 * 1024);
     const targetUserId = String(userId || '').trim();
     if (!targetUserId || targetUserId.length > 256) {
       return Response.json({ error: 'Valid userId is required' }, { status: 400 });
@@ -49,6 +50,8 @@ Deno.serve(async (req) => {
       achievements: rows.map((a) => ({ key: a.key })),
     });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     return Response.json({ error: error?.message || 'Could not load achievements' }, { status: 500 });
   }
 });

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
 const ACCESS_SYNC_BATCH_SIZE = 200;
@@ -32,7 +33,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invite acceptance rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { projectId, token } = await req.json();
+    const { projectId, token } = await readJsonBodyLimited(req, 8 * 1024);
     if (typeof projectId !== 'string' || typeof token !== 'string' || !projectId.trim() || !token.trim()) {
       return Response.json({ error: 'projectId and token are required' }, { status: 400 });
     }
@@ -159,6 +160,8 @@ Deno.serve(async (req) => {
       await releaseProjectMembershipLock(base44.asServiceRole.entities, lockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     return Response.json({ error: error?.message || 'Could not accept project invite' }, { status: 500 });
   }
 });

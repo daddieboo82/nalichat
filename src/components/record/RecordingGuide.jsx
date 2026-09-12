@@ -31,6 +31,7 @@ export default function RecordingGuide({ open, onClose }) {
   const practiceChunksRef = useRef([]);
   const practiceStreamRef = useRef(null);
   const practiceTimerRef = useRef(null);
+  const practiceStopTimeoutRef = useRef(null);
 
   const steps = [
     { key: 'welcome', title: "Let's get you recording", icon: Sparkles },
@@ -90,6 +91,10 @@ export default function RecordingGuide({ open, onClose }) {
   }, [open]);
 
   const stopPractice = () => {
+    if (practiceStopTimeoutRef.current) {
+      clearTimeout(practiceStopTimeoutRef.current);
+      practiceStopTimeoutRef.current = null;
+    }
     if (practiceRecRef.current && practiceRecRef.current.state !== 'inactive') {
       try { practiceRecRef.current.stop(); } catch {}
     }
@@ -103,8 +108,19 @@ export default function RecordingGuide({ open, onClose }) {
     setPracticeTimer(0);
   };
 
+  useEffect(() => () => {
+    stopPractice();
+    setPracticeUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return null;
+    });
+  }, []);
+
   const doPracticeRecord = async () => {
-    setPracticeUrl(null);
+    setPracticeUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return null;
+    });
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       practiceStreamRef.current = stream;
@@ -112,8 +128,15 @@ export default function RecordingGuide({ open, onClose }) {
       practiceChunksRef.current = [];
       rec.ondataavailable = (e) => practiceChunksRef.current.push(e.data);
       rec.onstop = () => {
+        if (practiceStopTimeoutRef.current) {
+          clearTimeout(practiceStopTimeoutRef.current);
+          practiceStopTimeoutRef.current = null;
+        }
         const blob = new Blob(practiceChunksRef.current, { type: 'audio/webm' });
-        setPracticeUrl(URL.createObjectURL(blob));
+        setPracticeUrl((current) => {
+          if (current) URL.revokeObjectURL(current);
+          return URL.createObjectURL(blob);
+        });
         if (practiceStreamRef.current) {
           practiceStreamRef.current.getTracks().forEach(t => t.stop());
           practiceStreamRef.current = null;
@@ -127,7 +150,8 @@ export default function RecordingGuide({ open, onClose }) {
       setPracticeRecording(true);
       setPracticeTimer(0);
       practiceTimerRef.current = setInterval(() => setPracticeTimer(t => t + 1), 1000);
-      setTimeout(() => {
+      practiceStopTimeoutRef.current = setTimeout(() => {
+        practiceStopTimeoutRef.current = null;
         if (rec.state !== 'inactive') { try { rec.stop(); } catch {} }
       }, 5000);
     } catch (err) {

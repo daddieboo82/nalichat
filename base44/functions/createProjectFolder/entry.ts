@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
@@ -19,7 +20,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'banned' }, { status: 403 });
     }
 
-    const { name, project_id } = await req.json();
+    const { name, project_id } = await readJsonBodyLimited(req, 64 * 1024);
     if (typeof name !== 'string') {
       return Response.json({ error: 'name is required' }, { status: 400 });
     }

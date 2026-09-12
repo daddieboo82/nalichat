@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { copyToClipboard } from '@/lib/clipboard';
 
 import { useSearchParams } from 'react-router-dom';
 
@@ -49,8 +50,12 @@ export default function ProjectsSummary() {
       if (!token) throw new Error("Invite token was not created");
       const url = `${window.location.origin}/studio?room=${projectId}&invite=${encodeURIComponent(token)}`;
       setInviteLinks((prev) => ({ ...prev, [projectId]: url }));
-      await navigator.clipboard.writeText(url);
-      toast.success("Secure invite link copied to clipboard!");
+      const copied = await copyToClipboard(url);
+      if (copied) {
+        toast.success("Secure invite link copied to clipboard!");
+      } else {
+        toast.error("Invite created, but couldn't copy it. The link is shown below.");
+      }
     } catch (error) {
       toast.error(error?.message || "Could not create invite link");
     } finally {
@@ -210,8 +215,9 @@ export default function ProjectsSummary() {
                                         size="sm"
                                         className="h-8 px-3 shrink-0 bg-primary hover:bg-primary/90 text-white"
                                         onClick={async () => {
-                                          await navigator.clipboard.writeText(inviteLinks[project.id]);
-                                          toast.success("Invite link copied to clipboard!");
+                                          const copied = await copyToClipboard(inviteLinks[project.id]);
+                                          if (copied) toast.success("Invite link copied to clipboard!");
+                                          else toast.error("Couldn't copy the invite link. Please copy it manually.");
                                         }}
                                       >
                                         <Copy className="w-3 h-3" />

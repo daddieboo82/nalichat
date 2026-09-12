@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { secrets } from 'base44:runtime';
 import {
   AiQuotaError,
   aiQuotaErrorResponse,
@@ -83,7 +84,7 @@ Deno.serve(async (req) => {
       operation: 'assistant',
       requestKey: body?.request_key,
       requestBody: body,
-      readEnvironment: (name) => Deno.env.get(name),
+      readEnvironment: (name) => secrets.get(name),
       supportsDeepMode: false,
       dispatch: () => base44.agents.addMessage(conversation, {
         role: 'user',

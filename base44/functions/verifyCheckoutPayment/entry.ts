@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       items: purchase.items || [],
     });
   } catch (error) {
-    console.error('verifyCheckoutPayment error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('verifyCheckoutPayment error:', error);
+    return Response.json({ error: 'Checkout verification failed' }, { status: 500 });
   }
 });

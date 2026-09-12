@@ -5,7 +5,8 @@ import { toast } from "sonner";
 
 const NaliPresenceContext = createContext(null);
 
-const STORAGE_KEY = "nali_presence_level";
+const LEGACY_STORAGE_KEY = "nali_presence_level";
+const storageKeyFor = (userId) => `nali_presence_level:${userId || "anonymous"}`;
 // level: 'proactive' (subtle auto hints) | 'minimal' (on-demand only) | 'off' (hidden)
 const DEFAULT_LEVEL = "proactive";
 const VALID_LEVELS = ["proactive", "minimal", "off"];
@@ -14,24 +15,47 @@ export function NaliPresenceProvider({ children }) {
   const { user } = useAuth();
   const savingRef = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [level, setLevelState] = useState(() => {
-    try { return localStorage.getItem(STORAGE_KEY) || DEFAULT_LEVEL; } catch { return DEFAULT_LEVEL; }
-  });
+  const storageKey = storageKeyFor(user?.id);
+  const [level, setLevelState] = useState(DEFAULT_LEVEL);
 
   useEffect(() => {
-    // User-saved level takes precedence over localStorage when auth resolves.
+    // Server profile wins for signed-in users. Otherwise use only this account's
+    // device-local preference; never inherit another account's setting.
     if (user?.nali_presence_level && VALID_LEVELS.includes(user.nali_presence_level)) {
       setLevelState(user.nali_presence_level);
-      try { localStorage.setItem(STORAGE_KEY, user.nali_presence_level); } catch {}
+      try { localStorage.setItem(storageKey, user.nali_presence_level); } catch {}
+      return;
     }
-  }, [user?.nali_presence_level]);
+
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved && VALID_LEVELS.includes(saved)) {
+        setLevelState(saved);
+        return;
+      }
+
+      // One-time compatibility for anonymous users only. Never migrate the old
+      // global value into a signed-in account because it may belong to someone else.
+      if (!user?.id) {
+        const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+        if (legacy && VALID_LEVELS.includes(legacy)) {
+          setLevelState(legacy);
+          localStorage.setItem(storageKey, legacy);
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+          return;
+        }
+      }
+    } catch {}
+
+    setLevelState(DEFAULT_LEVEL);
+  }, [storageKey, user?.id, user?.nali_presence_level]);
 
   const setLevel = useCallback(async (newLevel) => {
     if (!VALID_LEVELS.includes(newLevel) || savingRef.current) return;
     const previousLevel = level;
 
     setLevelState(newLevel);
-    try { localStorage.setItem(STORAGE_KEY, newLevel); } catch {}
+    try { localStorage.setItem(storageKey, newLevel); } catch {}
 
     // Anonymous users keep this preference locally. Signed-in users also persist
     // it to the profile so it follows them across devices.
@@ -46,14 +70,14 @@ export function NaliPresenceProvider({ children }) {
       if (response?.data?.error) throw new Error(response.data.error);
     } catch (error) {
       setLevelState(previousLevel);
-      try { localStorage.setItem(STORAGE_KEY, previousLevel); } catch {}
+      try { localStorage.setItem(storageKey, previousLevel); } catch {}
       console.error("Nali presence update failed:", error);
       toast.error(error?.message || "Could not save your Nali Presence setting.");
     } finally {
       savingRef.current = false;
       setIsSaving(false);
     }
-  }, [level, user?.id]);
+  }, [level, storageKey, user?.id]);
 
   const value = useMemo(() => ({
     level,

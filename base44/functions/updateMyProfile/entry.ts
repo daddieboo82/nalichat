@@ -129,6 +129,6 @@ Deno.serve(async (req) => {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('updateMyProfile error:', error);
-    return Response.json({ error: error?.message || 'Profile update failed' }, { status: 500 });
+    return Response.json({ error: 'Profile update failed' }, { status: 500 });
   }
 });

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const MAX_DISCOVERY_USERS = 1000;
 const MAX_DISCOVERY_ACHIEVEMENTS = 5000;
@@ -54,7 +55,7 @@ export default async function(req) {
       return Response.json({ error: 'Discovery rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readJsonBodyLimited(req, 8 * 1024);
     const requestedUserId = String(body?.userId || '').trim();
     const includeAchievementCounts = body?.includeAchievementCounts === true;
     const includePresence = body?.includePresence === true;
@@ -198,6 +199,8 @@ export default async function(req) {
       },
     });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('listPublicUsers error:', error);
     return Response.json({ error: error?.message || 'Could not list public users' }, { status: 500 });
   }

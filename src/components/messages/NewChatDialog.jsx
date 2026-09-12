@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -10,18 +10,28 @@ import { Search, Loader2 } from "lucide-react";
 export default function NewChatDialog({ open, onOpenChange, users, onSelectUser, currentUserId }) {
   const [search, setSearch] = useState("");
   const [pendingUserId, setPendingUserId] = useState(null);
+  const operationGenerationRef = useRef(0);
+
+  useEffect(() => {
+    if (open) return;
+    operationGenerationRef.current += 1;
+    setSearch("");
+    setPendingUserId(null);
+  }, [open]);
 
   const selectUser = async (user) => {
     if (!user?.id || pendingUserId) return;
+    const generation = operationGenerationRef.current;
     setPendingUserId(user.id);
     try {
       await onSelectUser(user);
+      if (generation !== operationGenerationRef.current) return;
       onOpenChange(false);
       setSearch("");
     } catch {
       // Parent surfaces the user-facing error. Keep the dialog open.
     } finally {
-      setPendingUserId(null);
+      if (generation === operationGenerationRef.current) setPendingUserId(null);
     }
   };
 

@@ -349,9 +349,24 @@ function App() {
     window.__gads_loaded = true;
     window.dataLayer = window.dataLayer || [];
     const inIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+    const analyticsRelayOrigin = (() => {
+      if (!inIframe) return null;
+      const host = window.location.hostname.toLowerCase();
+      const relayAllowed = host === 'localhost'
+        || host === '127.0.0.1'
+        || host.includes('preview')
+        || host.includes('sandbox');
+      if (!relayAllowed) return null;
+      try {
+        const origin = new URL(document.referrer).origin;
+        return origin && origin !== 'null' ? origin : null;
+      } catch {
+        return null;
+      }
+    })();
     window.gtag = function gtag() {
       window.dataLayer.push(arguments);
-      if (inIframe) {
+      if (analyticsRelayOrigin) {
         try {
           const args = Array.prototype.slice.call(arguments);
           const cmd = args[0];
@@ -364,7 +379,7 @@ function App() {
               params: args.slice(1),
               type: cmd === 'event' ? (args[1] || 'event') : cmd,
             },
-          }, '*');
+          }, analyticsRelayOrigin);
         } catch (_e) {}
       }
     };

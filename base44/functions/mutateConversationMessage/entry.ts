@@ -1,4 +1,5 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import {
+import { isConversationId } from '../../shared/conversationIds.ts'; createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
@@ -140,7 +141,7 @@ Deno.serve(async (req) => {
       const conversationId = typeof body?.conversation_id === 'string'
         ? body.conversation_id.trim()
         : '';
-      if (!isBase44EntityId(conversationId)) {
+      if (!isConversationId(conversationId)) {
         return Response.json({ error: 'Message not found' }, { status: 404 });
       }
       const conversation = await entities.Conversation.get(conversationId).catch(() => null);

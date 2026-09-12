@@ -29,13 +29,36 @@ import Home from '@/pages/Home';
 import AskNaliHint from '@/components/AskNaliHint';
 import PwaUpdatePrompt from '@/components/PwaUpdatePrompt';
 
+function lazyWithReloadRecovery(importer, key) {
+  return lazy(async () => {
+    const retryKey = `nali:lazy-retry:${key}`;
+    try {
+      const module = await importer();
+      try { sessionStorage.removeItem(retryKey); } catch {}
+      return module;
+    } catch (error) {
+      const message = String(error?.message || error || '');
+      const isDynamicImportFailure = /failed to fetch dynamically imported module|error loading dynamically imported module|importing a module script failed/i.test(message);
+      let alreadyRetried = false;
+      try { alreadyRetried = sessionStorage.getItem(retryKey) === '1'; } catch {}
+
+      if (isDynamicImportFailure && !alreadyRetried && typeof window !== 'undefined') {
+        try { sessionStorage.setItem(retryKey, '1'); } catch {}
+        window.location.reload();
+        return new Promise(() => {});
+      }
+      throw error;
+    }
+  });
+}
+
 // The assistant pulls in the whole react-markdown/unified stack, which added
 // ~150 kB to the entry chunk even though the panel only renders once the user
 // opens it. Load it after first paint instead.
-const AiAssistant = lazy(() => import('@/components/AiAssistant'));
+const AiAssistant = lazyWithReloadRecovery(() => import('@/components/AiAssistant'), 'ai-assistant');
 
 // Lazily-loaded routes — each downloads on demand so initial load & tab-switching are fastest.
-const Messages = lazy(() => import('@/pages/Messages'));
+const Messages = lazyWithReloadRecovery(() => import('@/pages/Messages'), 'messages');
 const Files = lazy(() => import('@/pages/Files'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const Explore = lazy(() => import('@/pages/Explore'));

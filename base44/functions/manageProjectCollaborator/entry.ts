@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
@@ -85,7 +86,7 @@ Deno.serve(async (req) => {
     }
 
 
-    const { projectId, userId, action, role } = await req.json();
+    const { projectId, userId, action, role } = await readJsonBodyLimited(req, 64 * 1024);
     if (
       typeof projectId !== 'string'
       || typeof userId !== 'string'

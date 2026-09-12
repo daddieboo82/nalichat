@@ -47,7 +47,7 @@ export default function InviteTab() {
     }
     setSendingSms(true);
     try {
-      const res = await base44.functions.invoke('sendSmsInvite', { phone: trimmed });
+      const res = await base44.functions.invoke('sendSmsInvite', { phone: normalized });
       if (res.data?.success) {
         toast.success('Invite sent via SMS!');
         setSmsStatus({ type: 'success', message: `Invite sent to ${trimmed}!` });

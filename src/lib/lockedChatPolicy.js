@@ -1,4 +1,5 @@
 export const LOCKED_CHAT_NOTIFICATION_MESSAGE = "New message in a locked chat.";
+export const LOCKED_CHAT_ACTIVITY_NOTIFICATION_MESSAGE = "New activity in a locked chat.";
 
 export function partitionUserConversations(conversations, userId, lockedConversationIds) {
   const lockedIds = new Set(lockedConversationIds);
@@ -18,12 +19,16 @@ export function notificationConversationId(notification) {
 export function redactLockedChatNotification(
   notification,
   lockedConversationIds = [],
-  redactAllMessages = false,
+  redactAllConversationNotifications = false,
 ) {
-  if (!notification || notification.type !== "message") return notification;
+  if (!notification) return notification;
+  const isConversationNotification = notification.type === "message"
+    || notification.type === "follow_up_reminder";
+  if (!isConversationNotification) return notification;
+
   const conversationId = notificationConversationId(notification);
   if (
-    !redactAllMessages
+    !redactAllConversationNotifications
     && !notification.locked_chat
     && !lockedConversationIds.includes(conversationId)
   ) {
@@ -34,7 +39,9 @@ export function redactLockedChatNotification(
     actor_id: "",
     actor_name: "Locked chat",
     actor_avatar: "",
-    message: LOCKED_CHAT_NOTIFICATION_MESSAGE,
+    message: notification.type === "message"
+      ? LOCKED_CHAT_NOTIFICATION_MESSAGE
+      : LOCKED_CHAT_ACTIVITY_NOTIFICATION_MESSAGE,
   };
 }
 

@@ -122,7 +122,15 @@ Deno.serve(async (req) => {
       // If the first award failed to reach the user record, remove the
       // achievement claim so a retry can award it correctly.
       if (firstGeneration) {
-        await entities.Achievement.delete(achievementId).catch(() => {});
+        try {
+          await entities.Achievement.delete(achievementId);
+        } catch (rollbackError) {
+          console.error('ViralSeed achievement rollback failed:', rollbackError);
+          throw new Error(
+            'ViralSeed XP update failed and achievement rollback was incomplete. Please retry.',
+            { cause: updateError },
+          );
+        }
       }
       throw updateError;
     }

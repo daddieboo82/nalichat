@@ -14,7 +14,7 @@ function getUploadState() {
 }
 
 function saveUploadState(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
 }
 
 function clearUploadState(fileId) {
@@ -84,8 +84,13 @@ export async function resumableDownload(url, fileName, onProgress) {
   // Partial bytes are not persisted, so a saved offset cannot be safely
   // resumed: concatenating the response would produce a corrupt file.
   // Clear stale progress and restart from the beginning instead.
-  const savedBytes = parseInt(localStorage.getItem(STORAGE_KEY_DL) || "0", 10);
-  if (savedBytes > 0) localStorage.removeItem(STORAGE_KEY_DL);
+  let savedBytes = 0;
+  try {
+    savedBytes = parseInt(localStorage.getItem(STORAGE_KEY_DL) || "0", 10);
+    if (savedBytes > 0) localStorage.removeItem(STORAGE_KEY_DL);
+  } catch {
+    savedBytes = 0;
+  }
 
   const triggerFallback = () => {
     const a = document.createElement("a");
@@ -127,7 +132,7 @@ export async function resumableDownload(url, fileName, onProgress) {
     if (done) break;
     chunks.push(value);
     received += value.length;
-    localStorage.setItem(STORAGE_KEY_DL, String(received));
+    try { localStorage.setItem(STORAGE_KEY_DL, String(received)); } catch {}
     if (total > 0) onProgress?.(Math.round((received / total) * 100));
   }
 
@@ -142,6 +147,6 @@ export async function resumableDownload(url, fileName, onProgress) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(dlUrl);
-  localStorage.removeItem(STORAGE_KEY_DL);
+  try { localStorage.removeItem(STORAGE_KEY_DL); } catch {}
   onProgress?.(100);
 }

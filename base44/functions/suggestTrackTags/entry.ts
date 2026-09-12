@@ -5,6 +5,11 @@ import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shar
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { validWorkflowKey } from '../../shared/workflowAuth.ts';
+import {
+  AiQuotaError,
+  aiQuotaErrorResponse,
+  executeMeteredAiRequest,
+} from '../../shared/aiQuota.ts';
 
 const WORKFLOW_KEY_SHA256 = '8a23393629bd84561def878655762b9b084180d9489006d197512e223d8bd700';
 
@@ -134,17 +139,24 @@ ${project?.genre ? `Project genre: ${project.genre}` : ''}
 Based on this, suggest the most likely musical genre and a typical BPM (beats per minute).
 Return realistic values. BPM must be a whole number between 60 and 200.`;
 
-    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      ...(preferredAiModel(entitlements) ? { model: preferredAiModel(entitlements) } : {}),
-      prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          genre: { type: 'string' },
-          bpm: { type: 'number' },
+    const quotaUser = { id: entitlementUserId };
+    const { result, quota } = await executeMeteredAiRequest({
+      base44,
+      user: quotaUser,
+      operation: 'track_tag_suggestion',
+      requestKey: body?.request_key || `track-tags:${trackId}`,
+      dispatch: () => base44.asServiceRole.integrations.Core.InvokeLLM({
+        ...(preferredAiModel(entitlements) ? { model: preferredAiModel(entitlements) } : {}),
+        prompt,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            genre: { type: 'string' },
+            bpm: { type: 'number' },
+          },
+          required: ['genre', 'bpm'],
         },
-        required: ['genre', 'bpm'],
-      },
+      }),
     });
 
     const suggestedGenre = String(result?.genre || '').trim().slice(0, 100);
@@ -175,11 +187,12 @@ Return realistic values. BPM must be a whole number between 60 and 200.`;
       }
     }
 
-    return Response.json({ success: true, suggestedGenre, suggestedBpm });
+    return Response.json({ success: true, suggestedGenre, suggestedBpm, quota });
     } finally {
       await releaseTrackLifecycleLock(entities, lockId);
     }
   } catch (error) {
+    if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('suggestTrackTags error:', error);

@@ -31,6 +31,7 @@ export default function Profile() {
   
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
+  const [formOwnerId, setFormOwnerId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState("posts");
   const [uploading, setUploading] = useState(false);
@@ -54,7 +55,14 @@ export default function Profile() {
   useEffect(() => {
     if (user && isMe) {
       setForm(user);
+      setFormOwnerId(user.id);
+      setEditing(false);
+      if (avatarRef.current) avatarRef.current.value = "";
+      if (coverRef.current) coverRef.current.value = "";
+      return;
     }
+    setFormOwnerId(null);
+    setEditing(false);
   }, [user, isMe]);
 
   const { data: myPosts = [] } = useQuery({
@@ -154,6 +162,9 @@ export default function Profile() {
   const xpProgress = ((user?.xp || 0) % 200) / 200 * 100;
 
   if (!user) return <div className="h-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
+  if (isMe && formOwnerId !== user.id) {
+    return <div className="h-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
+  }
 
   return (
     <PullToRefresh onRefresh={async () => { queryClient.invalidateQueries({ queryKey: ["my-posts"] }); queryClient.invalidateQueries({ queryKey: ["my-achievements"] }); }} className="h-full overflow-y-auto bg-background">

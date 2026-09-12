@@ -37,9 +37,7 @@ export function useCallSummary({
   const [busy, setBusy] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const recorderRef = useRef(null);
-  const chunksRef = useRef([]);
-  const captureStartedAtRef = useRef(null);
-  const uploadPromiseRef = useRef(Promise.resolve());
+   const uploadPromiseRef = useRef(Promise.resolve());
   const completeUploadRef = useRef(null);
   const lastCallRef = useRef(null);
   const endingRef = useRef(false);
@@ -157,41 +155,39 @@ export function useCallSummary({
       return undefined;
     }
 
-    chunksRef.current = [];
-    captureStartedAtRef.current = new Date().toISOString();
+    const captureSessionId = data?.session?.id;
+    const captureStartedAt = new Date().toISOString();
+    const captureChunks = [];
     uploadPromiseRef.current = new Promise((resolve) => {
       completeUploadRef.current = resolve;
     });
     recorder.ondataavailable = (event) => {
-      if (event.data?.size) chunksRef.current.push(event.data);
+      if (event.data?.size) captureChunks.push(event.data);
     };
     recorder.onstop = () => {
       const stoppedAt = new Date().toISOString();
-      const sessionId = dataRef.current?.session?.id;
-      const startedAt = captureStartedAtRef.current;
+      const currentData = dataRef.current;
       recorderRef.current = null;
       if (
-        !sessionId
-        || !startedAt
-        || chunksRef.current.length === 0
-        || !canUploadCallCapture(dataRef.current, currentUser?.id)
+        !captureSessionId
+        || currentData?.session?.id !== captureSessionId
+        || captureChunks.length === 0
+        || !canUploadCallCapture(currentData, currentUser?.id)
       ) {
-        chunksRef.current = [];
         completeUploadRef.current?.();
         completeUploadRef.current = null;
         return;
       }
-      const file = captureFile(chunksRef.current, recorder.mimeType, sessionId);
-      chunksRef.current = [];
+      const file = captureFile(captureChunks, recorder.mimeType, captureSessionId);
       (async () => {
         try {
           const uploaded = await authorizedUpload(file, { accept: "audio" });
           const next = await invokeCallSummary("register_capture", {
-            session_id: sessionId,
+            session_id: captureSessionId,
             audio_url: uploaded.file_url,
             mime_type: file.type,
             byte_size: file.size,
-            capture_started_at: startedAt,
+            capture_started_at: captureStartedAt,
             capture_ended_at: stoppedAt,
           });
           applyData(next);
@@ -215,6 +211,7 @@ export function useCallSummary({
     applyData,
     callState?.status,
     data?.capture_allowed,
+    data?.session?.id,
     localStream,
     pauseForCaptureFailure,
     stopCapture,

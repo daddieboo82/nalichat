@@ -65,7 +65,6 @@ export async function resumableUpload(file, onProgress, options = {}) {
 
   // Large files: upload the full file directly (chunking is not supported server-side for merging)
   onProgress?.(10);
-  const { base44 } = await import("@/api/base44Client");
   const { file_url } = await secureUploadFile({ file });
   clearUploadState(fileId);
   onProgress?.(100);

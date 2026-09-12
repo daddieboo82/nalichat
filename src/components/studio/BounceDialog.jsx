@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,11 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
   const [showManualParams, setShowManualParams] = useState(false);
   const [params, setParams] = useState(FLAT_PARAMS);
   const [savedParams, setSavedParams] = useState(null);
+  const finishTimerRef = useRef(null);
+
+  useEffect(() => () => {
+    if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
+  }, []);
 
   const handleBounce = async () => {
     if (!canPublish) {
@@ -128,7 +133,9 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
       }
 
       setDone(true);
-      setTimeout(() => {
+      if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
+      finishTimerRef.current = setTimeout(() => {
+        finishTimerRef.current = null;
         setOpen(false);
         setDone(false);
         setBouncing(false);

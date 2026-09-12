@@ -22,14 +22,17 @@ export async function sendPushToUser(
   entities: any,
   userId: string,
   payload: PushPayload,
-): Promise<{ sent: number; configured: boolean }> {
+): Promise<{ sent: number; configured: boolean; staleCleanupFailures: number }> {
   const config = vapidConfig();
-  if (!config.configured || !userId) return { sent: 0, configured: false };
+  if (!config.configured || !userId) {
+    return { sent: 0, configured: false, staleCleanupFailures: 0 };
+  }
 
   webpush.setVapidDetails(config.subject, config.publicKey, config.privateKey);
 
   const subscriptions = await entities.PushSubscription.filter({ user_id: userId });
   let sent = 0;
+  let staleCleanupFailures = 0;
 
   for (const subscription of subscriptions) {
     try {
@@ -52,7 +55,17 @@ export async function sendPushToUser(
     } catch (error) {
       const statusCode = Number(error?.statusCode || error?.status);
       if (statusCode === 404 || statusCode === 410) {
-        try { await entities.PushSubscription.delete(subscription.id); } catch (_) {}
+        try {
+          await entities.PushSubscription.delete(subscription.id);
+        } catch (cleanupError) {
+          staleCleanupFailures += 1;
+          console.error('Failed to remove stale Web Push subscription', {
+            userId,
+            subscriptionId: subscription.id,
+            statusCode,
+            cleanupError: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+          });
+        }
       } else {
         console.error('Web Push delivery failed', {
           userId,
@@ -63,5 +76,5 @@ export async function sendPushToUser(
     }
   }
 
-  return { sent, configured: true };
+  return { sent, configured: true, staleCleanupFailures };
 }

@@ -11,7 +11,7 @@ describe('challenge creation hardening', () => {
     const source = await readText('base44/functions/createChallenge/entry.ts');
 
     expect(source).toContain("req.method !== 'POST'");
-    expect(source).toContain("title must be a string");
+    expect(source).toContain("error: `${field} must be a string`");
     expect(source).toContain('title.length > 200');
     expect(source).toContain('description.length > 3000');
     expect(source).toContain('sourceTrackName.length > 255');

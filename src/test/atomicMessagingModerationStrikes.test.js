@@ -19,7 +19,8 @@ describe('atomic messaging moderation strikes', () => {
     for (const source of [send, mutate]) {
       expect(source).toContain('claimModerationStrike');
       expect(source).toContain('const newCount = strike.violationCount');
-      expect(source).not.toContain('violation_count: newCount');
+      expect(source).toContain('violation_count: newCount');
+      expect(source).not.toMatch(/User\.update\([\s\S]*violation_count:\s*newCount/);
     }
   });
 });

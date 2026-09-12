@@ -17,6 +17,7 @@ describe('leaderboard request coalescing', () => {
     expect(cacheLookup).toBeGreaterThan(-1);
     expect(inFlightLookup).toBeGreaterThan(cacheLookup);
     expect(challengeRead).toBeGreaterThan(inFlightLookup);
-    expect(source).toContain("return { error: 'Challenge not found', status: 404 }");
+    expect(source).toContain("const payload = { error: 'Challenge not found' };");
+    expect(source).toContain("return { ...payload, status: 404 };");
   });
 });

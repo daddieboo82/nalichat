@@ -31,10 +31,16 @@ export async function sendPushToUser(
   webpush.setVapidDetails(config.subject, config.publicKey, config.privateKey);
 
   const subscriptions = await entities.PushSubscription.filter({ user_id: userId });
+  const byEndpoint = new Map<string, any>();
+  for (const subscription of subscriptions) {
+    if (!subscription?.endpoint || byEndpoint.has(subscription.endpoint)) continue;
+    byEndpoint.set(subscription.endpoint, subscription);
+  }
+
   let sent = 0;
   let staleCleanupFailures = 0;
 
-  for (const subscription of subscriptions) {
+  for (const subscription of byEndpoint.values()) {
     try {
       await webpush.sendNotification(
         {
@@ -55,16 +61,19 @@ export async function sendPushToUser(
     } catch (error) {
       const statusCode = Number(error?.statusCode || error?.status);
       if (statusCode === 404 || statusCode === 410) {
-        try {
-          await entities.PushSubscription.delete(subscription.id);
-        } catch (cleanupError) {
-          staleCleanupFailures += 1;
-          console.error('Failed to remove stale Web Push subscription', {
-            userId,
-            subscriptionId: subscription.id,
-            statusCode,
-            cleanupError: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
-          });
+        const staleRows = subscriptions.filter((row: any) => row.endpoint === subscription.endpoint);
+        for (const staleRow of staleRows) {
+          try {
+            await entities.PushSubscription.delete(staleRow.id);
+          } catch (cleanupError) {
+            staleCleanupFailures += 1;
+            console.error('Failed to remove stale Web Push subscription', {
+              userId,
+              subscriptionId: staleRow.id,
+              statusCode,
+              cleanupError: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+            });
+          }
         }
       } else {
         console.error('Web Push delivery failed', {

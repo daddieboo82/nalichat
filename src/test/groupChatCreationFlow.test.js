@@ -12,7 +12,7 @@ describe('group chat creation flow', () => {
     const page = await readText('src/pages/Messages.jsx');
 
     expect(dialog).toContain('const [isCreating, setIsCreating] = useState(false)');
-    expect(dialog).toContain('if (!name.trim() || selected.length < 1 || isCreating) return');
+    expect(dialog).toContain('if (!trimmedName || selected.length < 1 || isCreating) return');
     expect(dialog).toContain('await onCreate');
     expect(dialog).toContain('setIsCreating(true)');
     expect(dialog).toContain('setIsCreating(false)');

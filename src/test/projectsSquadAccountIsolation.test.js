@@ -16,6 +16,9 @@ describe('projects and squad account-state isolation', () => {
     const source = await readFile('src/pages/Squad.jsx', 'utf8');
     expect(source).toContain('const [stateOwnerId, setStateOwnerId] = useState(null);');
     expect(source).toContain('setStateOwnerId(requestedUserId);');
+    expect(source).toContain('const loadGenerationRef = useRef(0);');
+    expect(source).toContain('const generation = ++loadGenerationRef.current;');
+    expect(source).toContain('if (isStale()) return;');
     expect(source).toContain('setSquad(null);');
     expect(source).toContain('setProgress(null);');
     expect(source).toContain('setCredits(0);');

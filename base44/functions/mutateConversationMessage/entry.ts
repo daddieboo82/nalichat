@@ -182,6 +182,13 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (action === 'react') {
+      const reactionRate = await consumeHourlyLimit(entities, user.id, 'message_reaction', 600);
+      if (!reactionRate.allowed) {
+        return Response.json({ error: 'Reaction rate limit exceeded. Please try again later.' }, { status: 429 });
+      }
+    }
+
     const lockId = await acquireMessageMutationLock(entities, messageId);
     if (!lockId) {
       return Response.json(
@@ -212,11 +219,6 @@ Deno.serve(async (req) => {
       if (!emoji) return Response.json({ error: 'emoji is required' }, { status: 400 });
       if (emoji.length > 32) {
         return Response.json({ error: 'emoji must be 32 characters or fewer' }, { status: 413 });
-      }
-
-      const reactionRate = await consumeHourlyLimit(entities, user.id, 'message_reaction', 600);
-      if (!reactionRate.allowed) {
-        return Response.json({ error: 'Reaction rate limit exceeded. Please try again later.' }, { status: 429 });
       }
 
       // The outer message lock already serializes reactions for this message.

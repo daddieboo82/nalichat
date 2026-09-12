@@ -10,6 +10,7 @@ import {
   executeRoutedAiRequest,
 } from '../../shared/aiCapability.ts';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const MAX_AGENT_MESSAGE_CHARS = 12_000;
 const MAX_CONVERSATION_ID_CHARS = 256;
@@ -43,7 +44,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 24 * 1024);
     const conversationId = typeof body?.conversation_id === 'string'
       ? body.conversation_id.trim()
       : '';
@@ -94,6 +95,8 @@ Deno.serve(async (req) => {
 
     return Response.json({ message: result, quota });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     if (error instanceof AiCapabilityError) return aiCapabilityErrorResponse(error);
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     console.error('sendAgentMessage error:', error);

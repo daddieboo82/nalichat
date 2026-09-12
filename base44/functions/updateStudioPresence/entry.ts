@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 async function presenceId(roomId: string, userId: string) {
   const digest = await crypto.subtle.digest(
@@ -42,7 +43,7 @@ Deno.serve(async (req) => {
     const action = body?.action == null
       ? 'heartbeat'
       : (typeof body.action === 'string' ? body.action : '');
-    if (!roomId || roomId.length > 200 || !['heartbeat', 'clear'].includes(action)) {
+    if ((roomId !== 'local_studio' && !isBase44EntityId(roomId)) || !['heartbeat', 'clear'].includes(action)) {
       return Response.json({ error: 'Valid roomId and action are required' }, { status: 400 });
     }
     if (body?.activity != null && typeof body.activity !== 'string') {

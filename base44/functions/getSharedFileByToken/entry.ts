@@ -41,7 +41,10 @@ Deno.serve(async (req) => {
     const { fileId, token } = await req.json();
     const normalizedFileId = String(fileId || '').trim();
     const normalizedToken = String(token || '').trim();
-    if (!normalizedFileId || normalizedFileId.length > 256 || !/^[0-9a-f]{64}$/.test(normalizedToken)) {
+    if (
+      !/^[0-9A-F]{24}$/i.test(normalizedFileId)
+      || !/^[0-9a-f]{64}$/.test(normalizedToken)
+    ) {
       return Response.json({ error: 'Invalid share link' }, { status: 400 });
     }
 

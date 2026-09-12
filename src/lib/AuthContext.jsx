@@ -123,6 +123,7 @@ export const AuthProvider = ({ children }) => {
         return checkUserAuth(retryCount + 1);
       }
       setIsLoadingAuth(false);
+      setUser(null);
       setIsAuthenticated(false);
       setAuthChecked(true);
       // Do NOT clear the token — clearing it on a transient failure is the

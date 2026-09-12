@@ -2069,7 +2069,7 @@ describe('release configuration', () => {
 
     const anonymousErrorSafe = ['getChallengeLeaderboard','getSharedFileByToken','verifyCheckoutPayment','wixPaymentsWebhook','notifyOnFileUpload','notifyOnMessage','notifyOnTrackVersion','notifyOnTrackComment','notifyOnMilestoneUpdate'];
     for (const name of anonymousErrorSafe) {
-      const source = await readText();
+      const source = await readText(`base44/functions/${name}/entry.ts`);
       expect(source).not.toContain('Response.json({ error: error.message }');
       expect(source).not.toContain('Response.json({ error: error?.message');
     }

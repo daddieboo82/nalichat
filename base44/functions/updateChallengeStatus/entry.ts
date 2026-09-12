@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import {
   acquireChallengeLifecycleLock,
@@ -36,7 +37,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { challengeId, status } = await req.json();
+    const { challengeId, status } = await readJsonBodyLimited(req, 64 * 1024);
     const nextStatus = typeof status === 'string' ? status : '';
     if (
       typeof challengeId !== 'string'

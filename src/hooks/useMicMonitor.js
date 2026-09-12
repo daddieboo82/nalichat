@@ -17,8 +17,10 @@ export function useMicMonitor() {
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const rafRef = useRef(null);
+  const startRequestRef = useRef(0);
 
   const stop = useCallback(() => {
+    startRequestRef.current += 1;
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     if (streamRef.current) {
@@ -35,6 +37,7 @@ export function useMicMonitor() {
   }, []);
 
   const start = useCallback(async (deviceId) => {
+    const requestId = ++startRequestRef.current;
     setError(null);
     try {
       const constraints = {
@@ -43,11 +46,20 @@ export function useMicMonitor() {
           : true
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (requestId !== startRequestRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
       setPermission('granted');
 
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       const audioCtx = new AudioContext();
+      if (requestId !== startRequestRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        void audioCtx.close().catch(() => {});
+        return;
+      }
       audioCtxRef.current = audioCtx;
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
@@ -70,6 +82,7 @@ export function useMicMonitor() {
       };
       loop();
     } catch (err) {
+      if (requestId !== startRequestRef.current) return;
       if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.name === 'SecurityError')) {
         setPermission('denied');
       } else if (err && (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError' || err.name === 'OverconstrainedError')) {

@@ -121,26 +121,25 @@ export default function Messages() {
   useEffect(() => {
     const nextUserId = currentUser?.id || null;
     const previousUserId = lastMessagesUserIdRef.current;
+    const isInitialIdentityResolution = previousUserId === undefined;
     lastMessagesUserIdRef.current = nextUserId;
 
-    // Preserve a valid deep link on the first authenticated load, but scrub
-    // the previous account's conversation URL and transient dialogs on a real
-    // identity transition.
-    const isInitialIdentityResolution = previousUserId === undefined;
+    // Identity changes clear previous-account UI state. URL/query changes for
+    // the same user must not reset selectedConvId; on iOS that created a
+    // clear-then-restore race every time a DM updated ?id=.
     if (!isInitialIdentityResolution && previousUserId !== nextUserId) {
-      if (location.pathname === "/messages" && location.search) {
-        navigate(location.pathname, { replace: true });
+      if (window.location.pathname === "/messages" && window.location.search) {
+        navigate("/messages", { replace: true });
       }
       setShowNewDM(false);
       setShowNewGroup(false);
       setShowExternal(false);
       setShowInvite(false);
+      setSelectedConvId(null);
+      setLockedLinkConversationId(null);
+      setShowLockedAccess(false);
     }
-
-    setSelectedConvId(null);
-    setLockedLinkConversationId(null);
-    setShowLockedAccess(false);
-  }, [currentUser?.id, location.pathname, location.search, navigate]);
+  }, [currentUser?.id, navigate]);
 
   useEffect(() => {
     if (location.pathname === "/messages" && !location.search) {

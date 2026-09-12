@@ -50,6 +50,7 @@ function detectFileType(file) {
 
 function FileDownloadButton({ file }) {
   const [dlProgress, setDlProgress] = useState(null);
+  const { toast } = useToast();
 
   const handleDownload = async (e) => {
     e.preventDefault();

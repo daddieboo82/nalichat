@@ -25,6 +25,8 @@ describe('repo copy/share failure feedback', () => {
     const files = await readText('src/pages/Files.jsx');
     const media = await readText('src/components/explore/MediaViewerModal.jsx');
 
+    expect(files).toContain('function FileDownloadButton({ file })');
+    expect(files).toContain('const { toast } = useToast();');
     expect(files).toContain('title: "Download failed"');
     expect(media).toContain('if (error?.name !== "AbortError")');
     expect(media).toContain("Couldn't share this track. Please try again.");

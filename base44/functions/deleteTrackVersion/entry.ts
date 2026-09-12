@@ -63,7 +63,9 @@ Deno.serve(async (req) => {
       await releaseTrackLifecycleLock(entities, lockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('deleteTrackVersion error:', error);
-    return Response.json({ error: error?.message || 'Track version deletion failed' }, { status: 500 });
+    return Response.json({ error: 'Track version deletion failed' }, { status: 500 });
   }
 });

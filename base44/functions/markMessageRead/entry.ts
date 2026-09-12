@@ -2,6 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import { isConversationId } from '../../shared/conversationIds.ts';
+import { acquireConversationMembershipLock, releaseConversationMembershipLock } from '../../shared/conversationMembershipLock.ts';
 
 // Marks a message as read by the current user using the service role
 // (bypasses RLS — the sender owns the message, so the reader can't
@@ -41,12 +43,24 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Read receipt rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const message = await base44.asServiceRole.entities.Message.get(messageId);
+    const entities = base44.asServiceRole.entities;
+    const message = await entities.Message.get(messageId);
     if (!message) {
       return Response.json({ error: 'Message not found' }, { status: 404 });
     }
+    if (!isConversationId(message.conversation_id)) {
+      return Response.json({ error: 'Message has an invalid conversation reference' }, { status: 409 });
+    }
 
-    if (!Array.isArray(message.participant_ids) || !message.participant_ids.includes(user.id)) {
+    const conversationLockId = await acquireConversationMembershipLock(entities, message.conversation_id);
+    if (!conversationLockId) {
+      return Response.json({ error: 'Conversation is being updated. Please retry.' }, { status: 409 });
+    }
+
+    try {
+    const conversation = await entities.Conversation.get(message.conversation_id).catch(() => null);
+    const participantIds = Array.isArray(conversation?.participant_ids) ? conversation.participant_ids : [];
+    if (!conversation || !participantIds.includes(user.id)) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -60,12 +74,15 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, alreadyRead: true });
     }
 
-    await base44.asServiceRole.entities.Message.updateMany(
+    await entities.Message.updateMany(
       { id: messageId },
       { $addToSet: { read_by: user.id } },
     );
 
     return Response.json({ success: true, alreadyRead: false });
+    } finally {
+      await releaseConversationMembershipLock(entities, conversationLockId);
+    }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

@@ -35,6 +35,7 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
     rowsRef.current = new Map();
     setTypingUsers([]);
     lastSentRef.current = 0;
+    supportedRef.current = true;
   }, [conversationId]);
 
   const applyRows = useCallback(() => {
@@ -71,6 +72,7 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
       try {
         const existing = await base44.entities.TypingStatus.filter({ conversation_id: conversationId });
         if (cancelled) return;
+        supportedRef.current = true;
         rowsRef.current = new Map();
         (existing || []).forEach(ingest);
         applyRows();

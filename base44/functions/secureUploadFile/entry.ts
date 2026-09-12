@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities,
       user.id,
       'file_upload',
-      120,
+      60,
     );
     if (!rate.allowed) {
       return Response.json({ error: 'Upload rate limit exceeded. Please try again later.' }, { status: 429 });
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     if (!(file instanceof File)) {
       return Response.json({ error: 'A file is required' }, { status: 400 });
     }
-    if (!file.name || file.size <= 0) {
+    if (!file.name || file.name.length > 255 || file.size <= 0) {
       return Response.json({ error: 'The selected file is empty or invalid' }, { status: 400 });
     }
 

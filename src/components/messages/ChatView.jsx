@@ -270,12 +270,17 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
             <ArrowLeft className="w-4 h-4" />
           </button>
           
-          <Avatar className="w-10 h-10 shadow-md">
-            <AvatarImage src={avatarSrc} />
-            <AvatarFallback className={cn("font-bold text-sm text-white bg-gradient-to-br", avatarGradient)}>
-              {displayName?.[0]?.toUpperCase() || "?"}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative shrink-0">
+            <Avatar className="w-10 h-10 shadow-md">
+              <AvatarImage src={avatarSrc} />
+              <AvatarFallback className={cn("font-bold text-sm text-white bg-gradient-to-br", avatarGradient)}>
+                {displayName?.[0]?.toUpperCase() || "?"}
+              </AvatarFallback>
+            </Avatar>
+            {conversation?.type !== "group" && other?.is_online && (
+              <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-[2.5px] border-background shadow-sm" aria-label="Active now" />
+            )}
+          </div>
           
           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => conversation?.type === "group" && setShowGroupInfo(true)}>
             <p className="font-heading font-semibold text-[15px] leading-tight truncate">{displayName}</p>
@@ -375,6 +380,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               onRetry={onRetryMessage}
               onOpenThread={(message) => { setThreadTargetId(null); setThreadMessage(message); }}
               users={users}
+              senderIsOnline={!!users?.find((user) => user.id === item.sender_id)?.is_online}
               onCopy={() => copyToClipboard(item.text || "")}
               onDelete={async (id) => {
                 const previousEditingMessage = editingMessage;

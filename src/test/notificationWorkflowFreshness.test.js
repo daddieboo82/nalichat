@@ -23,8 +23,8 @@ describe('notification workflow freshness', () => {
       const source = await readText(path);
       expect(source).toContain('workflowRecordIsFresh');
       expect(source).toContain("skipped: 'stale_workflow_record'");
-      expect(source.indexOf('workflowRecordIsFresh')).toBeLessThan(
-        source.indexOf('Notification.create'),
+      expect(source.indexOf('workflowRecordIsFresh(', source.indexOf('Deno.serve'))).toBeLessThan(
+        source.indexOf('createNotificationIdempotently('),
       );
     }
   });

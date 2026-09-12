@@ -3,6 +3,7 @@ import { Copy, Check, ChevronDown, Hash, MessageCircle, Video, FileText, Send, Y
 import { cn } from "@/lib/utils";
 import { copyToClipboard } from "@/lib/clipboard";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 const PLATFORMS = [
   { key: "tiktok_script", label: "TikTok / Reels", icon: Video, color: "text-pink-400" },
@@ -16,9 +17,14 @@ function CopyBlock({ label, content, icon: Icon, color }) {
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const handleCopy = (e) => {
+  const handleCopy = async (e) => {
     e.stopPropagation();
-    copyToClipboard(content || "");
+    const copiedSuccessfully = await copyToClipboard(content || "");
+    if (!copiedSuccessfully) {
+      setCopied(false);
+      toast.error("Couldn't copy this content. Please copy it manually.");
+      return;
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

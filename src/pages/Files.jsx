@@ -60,6 +60,7 @@ function FileDownloadButton({ file }) {
       await resumableDownload(file.file_url, file.name || "file", (pct) => setDlProgress(pct));
     } catch (error) {
       console.error("Download failed", error);
+      toast({ title: "Download failed", description: "Please try again.", variant: "destructive" });
     }
     setDlProgress(null);
   };
@@ -98,7 +99,8 @@ function FileShareButton({ file, canShare }) {
       const token = res?.data?.token;
       if (!token) throw new Error("No share token returned");
       const url = `${window.location.origin}/shared-file?id=${encodeURIComponent(file.id)}&token=${encodeURIComponent(token)}`;
-      copyToClipboard(url);
+      const copied = await copyToClipboard(url);
+      if (!copied) throw new Error("The secure link was created, but clipboard copy failed.");
       toast({ title: "Link copied", description: "Secure share link copied to clipboard" });
     } catch (error) {
       console.error("Could not create share link", error);

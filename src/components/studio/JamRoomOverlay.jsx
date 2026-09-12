@@ -42,7 +42,8 @@ export default function JamRoomOverlay({ jamRoomActive, defaultRole, setDefaultR
       const url = new URL("/studio", window.location.origin);
       url.searchParams.set("room", roomId);
       url.searchParams.set("invite", res.data.token);
-      copyToClipboard(url.toString());
+      const copied = await copyToClipboard(url.toString());
+      if (!copied) throw new Error("Couldn't copy the invite link. Please copy it manually.");
       toast.success(`${defaultRole === "editor" ? "Editor" : "Viewer"} invite link copied!`);
     } catch (error) {
       toast.error(error?.message || "Couldn't create an invite link.");

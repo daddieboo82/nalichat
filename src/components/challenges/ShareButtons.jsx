@@ -4,9 +4,10 @@ import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboard";
 
 export default function ShareButtons({ url, text }) {
-  const copy = () => {
-    copyToClipboard(url);
-    toast.success("Link copied — paste it anywhere!");
+  const copy = async () => {
+    const copied = await copyToClipboard(url);
+    if (copied) toast.success("Link copied — paste it anywhere!");
+    else toast.error("Couldn't copy the link. Please copy it manually.");
   };
 
   return (

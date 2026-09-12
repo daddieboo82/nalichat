@@ -23,7 +23,7 @@ describe('locked chat vault integration', () => {
     expect(messages).toContain('useLockedChats()');
     expect(messages).toContain('lockedChatsUnlocked ? [] : lockedConversationIds');
     expect(messages).toContain(': { visible: [], locked: [] }');
-    expect(messages).toContain('enabled: !!selectedConvId && lockedChatsReady && canAccessConversation(selectedConvId)');
+    expect(messages).toContain('enabled: !!currentUser?.id && !!selectedConvId && lockedChatsReady && canAccessConversation(selectedConvId)');
     expect(messages).toContain('if (!lockedChatsReady || !canAccessConversation(selectedConvId))');
   });
 });

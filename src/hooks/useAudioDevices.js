@@ -1,11 +1,19 @@
 import { useState, useEffect } from 'react';
 
+function safeGet(key, fallback = null) {
+  try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
+}
+
+function safeSet(key, value) {
+  try { localStorage.setItem(key, value); } catch {}
+}
+
 export function useAudioDevices() {
   const [devices, setDevices] = useState({ input: [], output: [], midi: [] });
   const [selectedDevices, setSelectedDevices] = useState({
-    input: localStorage.getItem('audioInputDevice') || 'default',
-    output: localStorage.getItem('audioOutputDevice') || 'default',
-    midi: localStorage.getItem('midiInputDevice') || null,
+    input: safeGet('audioInputDevice', 'default'),
+    output: safeGet('audioOutputDevice', 'default'),
+    midi: safeGet('midiInputDevice', null),
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,6 +22,9 @@ export function useAudioDevices() {
     const enumerateDevices = async () => {
       try {
         setLoading(true);
+        if (!navigator.mediaDevices?.enumerateDevices) {
+          throw new Error('Media device enumeration is not supported in this browser');
+        }
         const mediaDevices = await navigator.mediaDevices.enumerateDevices();
         
         const inputDevices = mediaDevices.filter(d => d.kind === 'audioinput');
@@ -46,18 +57,18 @@ export function useAudioDevices() {
 
     // Listen for device changes
     const handleDeviceChange = () => enumerateDevices();
-    navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
+    navigator.mediaDevices?.addEventListener?.('devicechange', handleDeviceChange);
     
     return () => {
-      navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
+      navigator.mediaDevices?.removeEventListener?.('devicechange', handleDeviceChange);
     };
   }, []);
 
   const selectDevice = (type, deviceId) => {
     setSelectedDevices(prev => ({ ...prev, [type]: deviceId }));
-    if (type === 'input') localStorage.setItem('audioInputDevice', deviceId);
-    if (type === 'output') localStorage.setItem('audioOutputDevice', deviceId);
-    if (type === 'midi') localStorage.setItem('midiInputDevice', deviceId);
+    if (type === 'input') safeSet('audioInputDevice', deviceId);
+    if (type === 'output') safeSet('audioOutputDevice', deviceId);
+    if (type === 'midi') safeSet('midiInputDevice', deviceId);
   };
 
   const getDeviceName = (type) => {

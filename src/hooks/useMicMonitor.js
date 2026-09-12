@@ -38,6 +38,8 @@ export function useMicMonitor() {
 
   const start = useCallback(async (deviceId) => {
     const requestId = ++startRequestRef.current;
+    let acquiredStream = null;
+    let acquiredAudioCtx = null;
     setError(null);
     try {
       const constraints = {
@@ -46,6 +48,7 @@ export function useMicMonitor() {
           : true
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      acquiredStream = stream;
       if (requestId !== startRequestRef.current) {
         stream.getTracks().forEach((track) => track.stop());
         return;
@@ -54,7 +57,9 @@ export function useMicMonitor() {
       setPermission('granted');
 
       const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) throw new Error('Web Audio is not supported in this browser');
       const audioCtx = new AudioContext();
+      acquiredAudioCtx = audioCtx;
       if (requestId !== startRequestRef.current) {
         stream.getTracks().forEach((track) => track.stop());
         void audioCtx.close().catch(() => {});
@@ -82,6 +87,15 @@ export function useMicMonitor() {
       };
       loop();
     } catch (err) {
+      acquiredStream?.getTracks().forEach((track) => track.stop());
+      if (streamRef.current === acquiredStream) streamRef.current = null;
+      if (acquiredAudioCtx && acquiredAudioCtx.state !== 'closed') {
+        void acquiredAudioCtx.close().catch(() => {});
+      }
+      if (audioCtxRef.current === acquiredAudioCtx) audioCtxRef.current = null;
+      analyserRef.current = null;
+      setMonitoring(false);
+      setLevel(0);
       if (requestId !== startRequestRef.current) return;
       if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.name === 'SecurityError')) {
         setPermission('denied');

@@ -2,6 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const MAX_TRANSCRIBE_BYTES = 50 * 1024 * 1024;
 
@@ -55,8 +57,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { messageId } = await req.json();
-    if (!messageId) return Response.json({ error: 'messageId is required' }, { status: 400 });
+    const { messageId } = await readJsonBodyLimited(req, 8 * 1024);
+    if (!isBase44EntityId(messageId)) return Response.json({ error: 'Valid messageId is required' }, { status: 400 });
 
     const entities = base44.asServiceRole.entities;
     const message = await entities.Message.get(String(messageId));
@@ -90,7 +92,9 @@ Deno.serve(async (req) => {
     const text = typeof result === 'string' ? result : result?.text || result?.data || '';
     return Response.json({ text: String(text || '').trim() });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('transcribeMessageAudio error:', error);
-    return Response.json({ error: error?.message || 'Transcription failed' }, { status: 500 });
+    return Response.json({ error: 'Transcription failed' }, { status: 500 });
   }
 });

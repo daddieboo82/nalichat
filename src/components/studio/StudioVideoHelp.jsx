@@ -26,11 +26,25 @@ export const STUDIO_TUTORIALS = [
     steps: ["Click Add Track", "Choose the track type", "Name and configure the new track"],
   },
   {
+    id: "recording",
+    title: "Record a Track",
+    description: "Arm a real Studio track, use the transport Record button, and stop the take when you are done.",
+    video: "/tutorials/studio-recording.webm",
+    steps: ["Choose a microphone/input", "Arm the track with the red-circle track control", "Press Record in the transport, then Stop when the take is finished"],
+  },
+  {
     id: "mixer",
     title: "Mixer & Levels",
     description: "Open the real Mixer to control volume, pan, sends, mute/solo, FX, and the master bus.",
     video: "/tutorials/studio-mixer.webm",
     steps: ["Open Mixer", "Adjust each track strip", "Use FX and the master output to shape the mix"],
+  },
+  {
+    id: "plugins",
+    title: "Plugins & FX",
+    description: "Open the real Plugins rack to work with track and master effects without leaving the Studio session.",
+    video: "/tutorials/studio-plugins.webm",
+    steps: ["Select the track you want to process", "Open Plugins", "Choose or adjust the track/master FX chain"],
   },
   {
     id: "export",
@@ -124,7 +138,7 @@ export default function StudioVideoHelp() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open Studio video tutorials"
-        className="fixed right-4 bottom-4 sm:bottom-3 z-[140] flex items-center gap-2 rounded-full border border-primary/30 bg-card/95 px-3.5 py-2.5 text-sm font-semibold shadow-xl backdrop-blur-xl hover:bg-primary/10 hover:border-primary/50 transition-colors"
+        className="fixed right-4 bottom-20 lg:bottom-4 z-[140] flex items-center gap-2 rounded-full border border-primary/30 bg-card/95 px-3.5 py-2.5 text-sm font-semibold shadow-xl backdrop-blur-xl hover:bg-primary/10 hover:border-primary/50 transition-colors"
       >
         <CircleHelp className="w-4 h-4 text-primary" />
         <span className="hidden sm:inline">Video Help</span>

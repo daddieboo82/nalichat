@@ -78,6 +78,31 @@ export default function NotificationBell({ direction = "down" }) {
   }, [user?.id]);
 
   useEffect(() => {
+    if (!user?.id || getPermissionStatus() !== 'granted') return;
+    const generation = identityGenerationRef.current;
+    let cancelled = false;
+
+    // Permission is already granted, so this does not trigger a browser prompt.
+    // Re-register the browser's push endpoint for the newly active account after
+    // logout/login or a direct identity switch.
+    void subscribeToRemotePush()
+      .then(() => {
+        if (!cancelled && generation === identityGenerationRef.current) {
+          setPushPermission(getPermissionStatus());
+        }
+      })
+      .catch((error) => {
+        if (!cancelled && generation === identityGenerationRef.current) {
+          console.error('Push re-registration failed:', error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
     const generation = identityGenerationRef.current;

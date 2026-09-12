@@ -4,6 +4,7 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { resolveUserSubscription } from '../../shared/subscriptionAccess.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
+import { acquireFolderMutationLock, releaseFolderMutationLock } from '../../shared/folderMutationLock.ts';
 
 const FREE_FILE_LIMIT = 250 * 1024 * 1024;
 const PREMIUM_FILE_LIMIT = 20 * 1024 * 1024 * 1024;
@@ -202,10 +203,21 @@ Deno.serve(async (req) => {
       }
     }
 
+    const folderLockId = folderId
+      ? await acquireFolderMutationLock(entities, folderId)
+      : null;
+    if (folderId && !folderLockId) {
+      return Response.json(
+        { error: 'Folder is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
     const projectLockId = destinationProjectId
       ? await acquireProjectMembershipLock(entities, destinationProjectId)
       : null;
     if (destinationProjectId && !projectLockId) {
+      await releaseFolderMutationLock(entities, folderLockId);
       return Response.json(
         { error: 'Project is being updated. Please retry.' },
         { status: 409 },
@@ -284,6 +296,7 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, file });
     } finally {
       await releaseProjectMembershipLock(entities, projectLockId);
+      await releaseFolderMutationLock(entities, folderLockId);
     }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);

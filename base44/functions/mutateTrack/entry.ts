@@ -56,6 +56,9 @@ Deno.serve(async (req) => {
     const entities = base44.asServiceRole.entities;
     const trackPreview = await entities.Track.get(trackId).catch(() => null);
     if (!trackPreview) return Response.json({ error: 'Track not found' }, { status: 404 });
+    if (!isBase44EntityId(trackPreview.project_id)) {
+      return Response.json({ error: 'Track has an invalid parent reference' }, { status: 409 });
+    }
 
     let previewCanEdit = user.role === 'admin'
       || (Array.isArray(trackPreview.edit_user_ids) && trackPreview.edit_user_ids.includes(user.id));
@@ -82,6 +85,12 @@ Deno.serve(async (req) => {
     try {
     const track = await entities.Track.get(trackId);
     if (!track) return Response.json({ error: 'Track not found' }, { status: 404 });
+    if (
+      !isBase44EntityId(track.project_id)
+      || track.project_id !== trackPreview.project_id
+    ) {
+      return Response.json({ error: 'Track parent changed. Please retry.' }, { status: 409 });
+    }
 
     let canEdit = user.role === 'admin'
       || (Array.isArray(track.edit_user_ids) && track.edit_user_ids.includes(user.id));

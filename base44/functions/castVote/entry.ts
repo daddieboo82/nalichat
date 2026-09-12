@@ -1,6 +1,7 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import {
   acquireChallengeSubmissionLock,
   releaseChallengeSubmissionLock,
@@ -36,7 +37,7 @@ export default async function(req) {
     }
 
     const { submission_id } = await readJsonBodyLimited(req, 8 * 1024);
-    if (typeof submission_id !== 'string' || !submission_id.trim() || submission_id.length > 200) {
+    if (typeof submission_id !== 'string' || !isBase44EntityId(submission_id.trim())) {
       return Response.json({ error: 'submission_id is required' }, { status: 400 });
     }
 

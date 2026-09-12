@@ -1,6 +1,7 @@
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 const DELETE_BATCH_SIZE = 200;
 
@@ -28,10 +29,11 @@ Deno.serve(async (req) => {
     }
 
     const { postId } = await readJsonBodyLimited(req, 8 * 1024);
-    if (!postId) return Response.json({ error: 'postId is required' }, { status: 400 });
+    const normalizedPostId = typeof postId === 'string' ? postId.trim() : '';
+    if (!isBase44EntityId(normalizedPostId)) return Response.json({ error: 'Valid postId is required' }, { status: 400 });
 
     const entities = base44.asServiceRole.entities;
-    const post = await entities.ArtPost.get(String(postId));
+    const post = await entities.ArtPost.get(normalizedPostId);
     if (!post) return Response.json({ error: 'Post not found' }, { status: 404 });
     if (post.creator_id !== user.id && user.role !== 'admin') {
       return Response.json({ error: 'Only the creator can delete this post' }, { status: 403 });

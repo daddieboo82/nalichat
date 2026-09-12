@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -20,7 +21,7 @@ Deno.serve(async (req) => {
     const body = await readJsonBodyLimited(req, 32 * 1024);
     const playlistId = typeof body?.playlistId === 'string' ? body.playlistId.trim() : '';
     const action = typeof body?.action === 'string' ? body.action : '';
-    if (!playlistId || playlistId.length > 200 || !['add_track', 'remove_track', 'update_meta', 'delete'].includes(action)) {
+    if (!isBase44EntityId(playlistId) || !['add_track', 'remove_track', 'update_meta', 'delete'].includes(action)) {
       return Response.json({ error: 'Valid playlistId and action are required' }, { status: 400 });
     }
 
@@ -42,7 +43,7 @@ Deno.serve(async (req) => {
 
     if (action === 'add_track' || action === 'remove_track') {
       const trackId = typeof body?.trackId === 'string' ? body.trackId.trim() : '';
-      if (!trackId || trackId.length > 200) {
+      if (!isBase44EntityId(trackId)) {
         return Response.json({ error: 'trackId is required' }, { status: 400 });
       }
 

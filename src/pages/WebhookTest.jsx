@@ -1,45 +1,26 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Webhook, ExternalLink, ShieldAlert } from "lucide-react";
 
 export default function WebhookTest() {
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [fetchingSubs, setFetchingSubs] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [checkingAccess, setCheckingAccess] = useState(true);
+  const { user: currentUser, isLoadingAuth, authError } = useAuth();
+  const {
+    data: subscriptions = [],
+    isLoading: fetchingSubs,
+  } = useQuery({
+    queryKey: ["webhookTestSubscriptions", currentUser?.id],
+    queryFn: () => base44.entities.Subscription.filter({ user_id: currentUser.id }),
+    enabled: currentUser?.role === "admin",
+    retry: false,
+  });
 
-  const fetchSubscriptions = async () => {
-    setFetchingSubs(true);
-    try {
-      const user = await base44.auth.me();
-      if (user?.role === "admin") {
-        const subs = await base44.entities.Subscription.filter({ user_id: user.id });
-        setSubscriptions(subs);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setFetchingSubs(false);
-    }
-  };
-
-  useEffect(() => {
-    base44.auth.me()
-      .then((u) => {
-        setCurrentUser(u);
-        if (u?.role === "admin") return fetchSubscriptions();
-        setFetchingSubs(false);
-      })
-      .catch(() => setFetchingSubs(false))
-      .finally(() => setCheckingAccess(false));
-  }, []);
-
-  if (checkingAccess) {
+  if (isLoadingAuth) {
     return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
-  if (!currentUser || currentUser.role !== "admin") {
+  if (authError || !currentUser || currentUser.role !== "admin") {
     return (
       <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center min-h-[50vh]">
         <ShieldAlert className="w-12 h-12 mb-4 opacity-50" />

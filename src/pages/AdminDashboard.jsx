@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
@@ -28,24 +29,9 @@ const EMPTY_STATS = {
 };
 
 export default function AdminDashboard() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const { user: currentUser, isLoadingAuth: isLoadingUser, authError } = useAuth();
   const [adminEmail, setAdminEmail] = useState("");
-  const [authError, setAuthError] = useState(false);
   const [isMakingAdmin, setIsMakingAdmin] = useState(false);
-
-  useEffect(() => {
-    base44.auth.me()
-      .then((user) => {
-        setCurrentUser(user);
-        setAuthError(false);
-      })
-      .catch(() => {
-        setCurrentUser(null);
-        setAuthError(true);
-      })
-      .finally(() => setIsLoadingUser(false));
-  }, []);
 
   const {
     data: stats = EMPTY_STATS,

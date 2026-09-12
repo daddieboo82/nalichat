@@ -5,12 +5,16 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminDashboard from '@/pages/AdminDashboard';
 
+const authState = vi.hoisted(() => ({
+  current: { user: null, isLoadingAuth: false, authError: null },
+}));
+
 const base44 = vi.hoisted(() => ({
-  auth: { me: vi.fn() },
   functions: { invoke: vi.fn() },
 }));
 
 vi.mock('@/api/base44Client', () => ({ base44 }));
+vi.mock('@/lib/AuthContext', () => ({ useAuth: () => authState.current }));
 vi.mock('@/components/admin/NaliMaintenancePanel', () => ({
   default: () => <div>Maintenance</div>,
 }));
@@ -32,10 +36,11 @@ function renderDashboard() {
 describe('AdminDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authState.current = { user: null, isLoadingAuth: false, authError: null };
   });
 
   it('renders the aggregate stats returned by the admin function', async () => {
-    base44.auth.me.mockResolvedValue({ id: 'admin-1', role: 'admin' });
+    authState.current = { user: { id: 'admin-1', role: 'admin' }, isLoadingAuth: false, authError: null };
     base44.functions.invoke.mockResolvedValue({
       data: {
         stats: {
@@ -64,7 +69,7 @@ describe('AdminDashboard', () => {
   });
 
   it('does not request platform stats for a non-admin user', async () => {
-    base44.auth.me.mockResolvedValue({ id: 'user-1', role: 'artist' });
+    authState.current = { user: { id: 'user-1', role: 'artist' }, isLoadingAuth: false, authError: null };
 
     renderDashboard();
 

@@ -116,6 +116,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     let file_url;
     try {
       file_url = await resumableUpload(file, updateProgress);
+      if (!mountedRef.current) return;
     } catch (err) {
       // Previously this failed silently apart from a red bar, leaving the user
       // with no idea why the attachment never sent.
@@ -142,7 +143,9 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     }
     
     try {
+      if (!mountedRef.current) return;
       await Promise.resolve(onSend(payload));
+      if (!mountedRef.current) return;
       onCancelReply?.();
       onCancelEdit?.();
     } catch {
@@ -212,6 +215,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       setUploads(u => [...u, { id, name: "Voice Message", progress: 0, done: false, error: false }]);
       try {
         const { file_url } = await secureUploadFile({ file });
+        if (!mountedRef.current) return;
         setUploads(u => u.map(x => x.id === id ? { ...x, progress: 100, done: true } : x));
         scheduleUploadRemoval(id, 1200);
         
@@ -223,7 +227,9 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
         }
         
         try {
+          if (!mountedRef.current) return;
           await Promise.resolve(onSend(payload));
+          if (!mountedRef.current) return;
           onCancelReply?.();
           onCancelEdit?.();
         } catch {

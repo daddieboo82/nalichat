@@ -19,7 +19,11 @@ export function CartProvider({ children }) {
   ].join(':');
 
   useEffect(() => {
-    localStorage.setItem('shopping_cart', JSON.stringify(items));
+    try {
+      localStorage.setItem('shopping_cart', JSON.stringify(items));
+    } catch {
+      // Cart still works in-memory when browser storage is unavailable.
+    }
   }, [items]);
 
   const addToCart = (product) => {

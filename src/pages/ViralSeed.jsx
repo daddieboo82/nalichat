@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Rocket, Sparkles, Loader2, RefreshCw, Zap } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ViralConceptCard from "@/components/viralseed/ViralConceptCard";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/lib/AuthContext";
 
 const MOODS = [
   { id: "humor", label: "😂 Funny" },
@@ -19,7 +20,10 @@ const MOODS = [
 
 export default function ViralSeed() {
   const { hasEntitlement } = useSubscription();
+  const { user } = useAuth();
   const canUseAi = hasEntitlement("ai.standard");
+  const generationRef = useRef(0);
+  const xpTimerRef = useRef(null);
   const [concepts, setConcepts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [mood, setMood] = useState("all");
@@ -27,27 +31,53 @@ export default function ViralSeed() {
   const [xpAwarded, setXpAwarded] = useState(null);
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    generationRef.current += 1;
+    if (xpTimerRef.current) {
+      clearTimeout(xpTimerRef.current);
+      xpTimerRef.current = null;
+    }
+    setConcepts([]);
+    setLoading(false);
+    setMood("all");
+    setError(null);
+    setXpAwarded(null);
+  }, [user?.id]);
+
+  useEffect(() => () => {
+    if (xpTimerRef.current) clearTimeout(xpTimerRef.current);
+  }, []);
+
   const generate = async () => {
     if (!canUseAi) {
       setError("Premium is required to use ViralSeed AI.");
       return;
     }
+    const generation = generationRef.current;
     setLoading(true);
     setError(null);
     try {
       const res = await base44.functions.invoke("generateViralConcepts", { mood });
+      if (generation !== generationRef.current) return;
       if (res?.data?.error) throw new Error(res.data.error);
       setConcepts(res?.data?.concepts || []);
       if (res?.data?.xp_awarded) {
         setXpAwarded(res.data.xp_awarded);
-        setTimeout(() => setXpAwarded(null), 3000);
+        if (xpTimerRef.current) clearTimeout(xpTimerRef.current);
+        xpTimerRef.current = setTimeout(() => {
+          if (generation === generationRef.current) setXpAwarded(null);
+          xpTimerRef.current = null;
+        }, 3000);
       }
       queryClient.invalidateQueries({ queryKey: ["leaderboard-users"] });
       queryClient.invalidateQueries({ queryKey: ["all-achievements"] });
     } catch (err) {
-      setError("Failed to generate viral concepts. Please try again.");
+      if (generation === generationRef.current) {
+        setError("Failed to generate viral concepts. Please try again.");
+      }
+    } finally {
+      if (generation === generationRef.current) setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

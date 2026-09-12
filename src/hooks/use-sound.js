@@ -4,9 +4,21 @@
  * Users can disable sounds via localStorage key "nali_sounds_off".
  */
 
-// Always start with audio feedback on (reset persisted off-state)
+function safeStorageGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function safeStorageSet(key, value) {
+  try { localStorage.setItem(key, value); } catch {}
+}
+
+function safeStorageRemove(key) {
+  try { localStorage.removeItem(key); } catch {}
+}
+
+// Always start with audio feedback on (reset persisted off-state).
 if (typeof window !== "undefined") {
-  localStorage.removeItem("nali_sounds_off");
+  safeStorageRemove("nali_sounds_off");
 }
 
 let ctx = null;
@@ -56,7 +68,7 @@ if (typeof document !== "undefined") {
 
 function playTone({ frequency = 440, type = "sine", duration = 0.12, volume = 0.18, attack = 0.005, decay = 0.08, delay = 0 }) {
   if (typeof window === "undefined") return;
-  if (localStorage.getItem("nali_sounds_off") === "1") return;
+  if (safeStorageGet("nali_sounds_off") === "1") return;
   
   try {
     const ac = getCtx();
@@ -180,13 +192,13 @@ export const sounds = {
  */
 export function useSound() {
   function isSoundEnabled() {
-    return localStorage.getItem("nali_sounds_off") !== "1";
+    return safeStorageGet("nali_sounds_off") !== "1";
   }
   function toggleSound() {
     if (isSoundEnabled()) {
-      localStorage.setItem("nali_sounds_off", "1");
+      safeStorageSet("nali_sounds_off", "1");
     } else {
-      localStorage.removeItem("nali_sounds_off");
+      safeStorageRemove("nali_sounds_off");
       sounds.success();
     }
     // Force re-render in caller if they track this in state

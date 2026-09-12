@@ -137,12 +137,6 @@
   select {
     font-size: 16px;
   }
-
-  button,
-  [role="button"],
-  a {
-    min-tap-target-size: 44px;
-  }
 }
 
 /* Safe-area padding so content never clips under notches / system bars */

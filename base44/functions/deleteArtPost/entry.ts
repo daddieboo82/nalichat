@@ -83,10 +83,10 @@ Deno.serve(async (req) => {
       if (playlists.length === 0) break;
 
       for (const playlist of playlists) {
-        const trackIds = Array.isArray(playlist.track_ids) ? playlist.track_ids : [];
-        await entities.Playlist.update(playlist.id, {
-          track_ids: trackIds.filter((id: string) => id !== currentPost.id),
-        });
+        await entities.Playlist.updateMany(
+          { id: playlist.id },
+          { $pull: { track_ids: currentPost.id } },
+        );
         playlistsUpdated += 1;
       }
 

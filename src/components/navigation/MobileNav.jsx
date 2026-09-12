@@ -4,6 +4,7 @@ import { Home, Compass, MessageSquare, User, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
+import { useAuth } from "@/lib/AuthContext";
 
 const TABS = [
   { icon: Home, label: "Home", path: "/" },
@@ -13,7 +14,8 @@ const TABS = [
   { icon: User, label: "Profile", path: "/profile" },
 ];
 
-const STORAGE_KEY = "mobile_nav_stacks";
+const LEGACY_STORAGE_KEY = "mobile_nav_stacks";
+const storageKeyFor = (userId) => `mobile_nav_stacks:${userId || "anonymous"}`;
 
 function getTabForPath(pathname) {
   if (pathname === "/" || pathname.startsWith("/playlist")) return "/";
@@ -23,15 +25,29 @@ function getTabForPath(pathname) {
   return null;
 }
 
-function loadStacks() {
-  try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
+function loadStacks(storageKey, userId) {
+  try {
+    const saved = sessionStorage.getItem(storageKey);
+    if (saved) return JSON.parse(saved);
+    if (!userId) {
+      const legacy = sessionStorage.getItem(LEGACY_STORAGE_KEY);
+      if (legacy) {
+        sessionStorage.setItem(storageKey, legacy);
+        sessionStorage.removeItem(LEGACY_STORAGE_KEY);
+        return JSON.parse(legacy);
+      }
+    }
+  } catch {}
+  return {};
 }
 
-function saveStacks(stacks) {
-  try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stacks)); } catch {}
+function saveStacks(storageKey, stacks) {
+  try { sessionStorage.setItem(storageKey, JSON.stringify(stacks)); } catch {}
 }
 
 export default function MobileNav() {
+  const { user } = useAuth();
+  const storageKey = storageKeyFor(user?.id);
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
@@ -39,8 +55,13 @@ export default function MobileNav() {
 
   const isActive = (tabPath) => tabPath === "/" ? path === "/" : path.startsWith(tabPath);
 
-  const [stacks, setStacks] = useState(loadStacks);
+  const [stacks, setStacks] = useState(() => loadStacks(storageKey, user?.id));
   const activeTabRef = useRef(getTabForPath(path));
+
+  useEffect(() => {
+    setStacks(loadStacks(storageKey, user?.id));
+    activeTabRef.current = getTabForPath(path);
+  }, [storageKey, user?.id]);
 
   // Track which tab is active and push navigation entries to the correct tab stack
   useEffect(() => {
@@ -69,10 +90,10 @@ export default function MobileNav() {
           next[tab] = [...stack, currentEntry];
         }
       }
-      saveStacks(next);
+      saveStacks(storageKey, next);
       return next;
     });
-  }, [path, location.search]);
+  }, [path, location.search, storageKey]);
 
   const handleTap = (tabPath) => {
     const active = isActive(tabPath);
@@ -86,7 +107,7 @@ export default function MobileNav() {
         const newStack = [stack[0]];
         const next = { ...stacks, [tabPath]: newStack };
         setStacks(next);
-        saveStacks(next);
+        saveStacks(storageKey, next);
         navigate(newStack[0]);
       } else {
         const scroller = document.querySelector("main");

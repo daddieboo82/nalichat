@@ -11,7 +11,19 @@ import {
 import { resolveEntitlements } from "../../../base44/shared/subscription.ts";
 
 function matches(record, query) {
-  return Object.entries(query).every(([key, value]) => record[key] === value);
+  return Object.entries(query).every(([key, value]) => {
+    const actual = record[key];
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      if ("$lte" in value && !(actual <= value.$lte)) return false;
+      if ("$lt" in value && !(actual < value.$lt)) return false;
+      if ("$gte" in value && !(actual >= value.$gte)) return false;
+      if ("$gt" in value && !(actual > value.$gt)) return false;
+      if ("$ne" in value && !(actual !== value.$ne)) return false;
+      if ("$in" in value && !value.$in.includes(actual)) return false;
+      return true;
+    }
+    return actual === value;
+  });
 }
 
 function entity(initial = [], options = {}) {

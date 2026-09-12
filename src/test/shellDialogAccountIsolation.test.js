@@ -13,6 +13,8 @@ describe('shell and dialog account isolation', () => {
 
   it('clears add-to-playlist drafts on identity changes', async () => {
     const source = await readFile('src/components/explore/AddToPlaylistDialog.jsx', 'utf8');
+    expect(source).toContain('const lastUserIdRef = useRef(currentUser?.id || null);');
+    expect(source).toContain('if (lastUserIdRef.current === nextUserId) return;');
     expect(source).toContain('setNewPlaylistName("");');
     expect(source).toContain('}, [currentUser?.id, onOpenChange]);');
   });
@@ -25,7 +27,10 @@ describe('shell and dialog account isolation', () => {
 
   it('closes destructive project state when identity or project changes', async () => {
     const source = await readFile('src/components/studio/ProjectSettingsDialog.jsx', 'utf8');
+    expect(source).toContain('const lastContextRef = useRef({');
+    expect(source).toContain('if (!userChanged && !projectChanged) return;');
     expect(source).toContain('setShowDelete(false);');
+    expect(source).toContain('if (userChanged) onOpenChange(false);');
     expect(source).toContain('}, [currentUser?.id, project?.id, onOpenChange]);');
   });
 });

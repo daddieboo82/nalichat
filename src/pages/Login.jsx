@@ -9,7 +9,7 @@ import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "sonner";
 import { safeReturnTo } from "@/lib/authReturnTo";
-import { persistAuthResult } from "@/lib/authSession";
+import { clearPersistedAuthTokens, persistAuthResult } from "@/lib/authSession";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -40,6 +40,9 @@ export default function Login() {
   };
 
   const handleGoogle = () => {
+    // A stale bearer token can override a fresh cookie-backed Google session
+    // on the callback and make auth.me() report the user as logged out.
+    clearPersistedAuthTokens();
     base44.auth.loginWithProvider("google", safeReturnTo());
   };
 

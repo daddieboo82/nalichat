@@ -1989,4 +1989,16 @@ describe('release configuration', () => {
   });
 
 
+  it('refreshes production PWA updates promptly on iPhone resume', async () => {
+    const hook = await readText('src/hooks/usePwaUpdate.js');
+    const sw = await readText('public/sw.js');
+
+    expect(hook).toContain(".register('/sw.js', { updateViaCache: 'none' })");
+    expect(hook).toContain("document.addEventListener('visibilitychange', checkForUpdate)");
+    expect(hook).toContain("window.addEventListener('pageshow', checkForUpdate)");
+    expect(hook).toContain('15 * 60 * 1000');
+    expect(sw).toContain("const CACHE_NAME = 'nalichat-v2';");
+  });
+
+
 });

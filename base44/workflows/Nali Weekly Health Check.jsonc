@@ -31,7 +31,9 @@
           "call": "invoke_backend_function",
           "with": {
             "function_name": "naliHealthCheck",
-            "args": {}
+            "args": {
+              "workflow_key": "pMq5FSwSz9AzATFPgJRziKzOFGI1VJjcjQ5_QgpMd1U"
+            }
           },
           "then": "end"
         }

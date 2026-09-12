@@ -61,10 +61,7 @@ export default async function(req) {
     }
 
     // App URL for the onboarding link comes only from server configuration.
-    const appUrl =
-      Deno.env.get('APP_BASE_URL') ||
-      Deno.env.get('WIX_CHECKOUT_APP_URL') ||
-      'https://nalichat.org';
+    const appUrl = Deno.env.get('APP_BASE_URL') || 'https://nalichat.org';
     if (!appUrl) {
       return Response.json(
         { error: 'Server is not configured with an app URL' },

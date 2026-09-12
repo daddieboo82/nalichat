@@ -147,8 +147,10 @@ Deno.serve(async (req) => {
     let fileFormat = '';
 
     if (sourceType === 'nalichat_studio') {
-      const sourcePostId = String(body?.source_post_id || '');
-      if (!sourcePostId) return Response.json({ error: 'Select one of your published tracks' }, { status: 400 });
+      const sourcePostId = String(body?.source_post_id || '').trim();
+      if (!isBase44EntityId(sourcePostId)) {
+        return Response.json({ error: 'Select one of your published tracks' }, { status: 400 });
+      }
       const post = await entities.ArtPost.get(sourcePostId);
       if (!post || post.creator_id !== user.id || !post.file_url) {
         return Response.json({ error: 'Selected track is not available to submit' }, { status: 403 });

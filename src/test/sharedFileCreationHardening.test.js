@@ -12,7 +12,7 @@ describe('shared file creation hardening', () => {
 
     expect(source).toContain("req.method !== 'POST'");
     expect(source.indexOf('user.is_banned')).toBeLessThan(
-      source.indexOf('consumeHourlyLimit'),
+      source.indexOf('await consumeHourlyLimit'),
     );
     expect(source).toContain("typeof body?.name !== 'string'");
     expect(source).toContain("typeof body?.file_url !== 'string'");

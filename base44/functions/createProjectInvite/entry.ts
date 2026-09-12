@@ -48,6 +48,12 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const projectPreview = await entities.Project.get(projectId).catch(() => null);
+    if (!projectPreview) return Response.json({ error: 'Project not found' }, { status: 404 });
+    if (projectPreview.owner_id !== user.id) {
+      return Response.json({ error: 'Only the project owner can create invite links' }, { status: 403 });
+    }
+
     const lockId = await acquireProjectMembershipLock(entities, projectId);
     if (!lockId) {
       return Response.json(

@@ -80,6 +80,11 @@ describe('media storage resilience', () => {
     expect(source).toContain('await audioCtx.close().catch(() => {})');
   });
 
+  it('rejects failed cover-art responses before creating download blobs', async () => {
+    const source = await readText('src/pages/CoverArt.jsx');
+    expect(source).toContain('if (!response.ok) throw new Error(`Cover art download failed: ${response.status}`)');
+  });
+
   it('keeps resumable transfers working when localStorage is unavailable', async () => {
     const source = await readText('src/lib/resumableUpload.js');
     expect(source).toContain('try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}');

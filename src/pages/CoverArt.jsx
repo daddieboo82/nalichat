@@ -268,6 +268,7 @@ export default function CoverArt() {
     if (!imageUrl) return;
     try {
       const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error(`Cover art download failed: ${response.status}`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');

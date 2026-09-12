@@ -25,6 +25,15 @@ const push = vi.hoisted(() => ({
 }));
 
 vi.mock('@/api/base44Client', () => ({ base44 }));
+vi.mock('@/lib/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 'u1' }, isAuthenticated: true }),
+}));
+vi.mock('@/lib/LockedChatsContext', () => ({
+  useLockedChats: () => ({
+    isReady: true,
+    lockedConversationIds: [],
+  }),
+}));
 vi.mock('@/lib/pushNotifications', () => push);
 vi.mock('@/hooks/use-sound', () => ({ sounds: { notification: vi.fn() } }));
 vi.mock('@/components/ui/use-toast', () => ({ useToast: () => ({ toast: vi.fn() }) }));

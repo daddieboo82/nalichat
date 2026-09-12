@@ -21,6 +21,7 @@ import { separateStems, generateMelody, renderMixToWav, renderMixToMp3 } from '@
 import { createMixEngine, needsCrossOrigin } from '@/lib/studioMixEngine';
 import { renderInstrumentPhrase, isSynthesizable, getInstrument } from '@/lib/instruments';
 import { useStudioPresence } from '@/hooks/useStudioPresence';
+import { useAuth } from '@/lib/AuthContext';
 import LivePresenceBar from '@/components/studio/LivePresenceBar';
 import HardwarePreferencesDialog from '@/components/studio/HardwarePreferencesDialog';
 const MixerPanel = lazy(() => import('@/components/studio/MixerPanel'));
@@ -86,6 +87,7 @@ const portableTrackState = (track, audioUrl) => {
 
 export default function Studio() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const roomId = searchParams.get('room');
   const inviteToken = searchParams.get('invite');
@@ -323,7 +325,7 @@ export default function Studio() {
   }, []);
 
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId || !user?.id) return;
 
     let cancelled = false;
     masterFxLoadedRef.current = false;
@@ -337,13 +339,10 @@ export default function Studio() {
           });
           if (accepted?.data?.error) throw new Error(accepted.data.error);
         }
-        const [project, me] = await Promise.all([
-          base44.entities.Project.get(roomId),
-          base44.auth.me(),
-        ]);
+        const project = await base44.entities.Project.get(roomId);
         if (!project || cancelled) return;
 
-        const canEdit = project.owner_id === me?.id || (project.editor_ids || []).includes(me?.id);
+        const canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
         setCanEditProject(Boolean(canEdit));
         setProjectName(project.title || "Untitled Project");
         if (project.bpm) {
@@ -413,7 +412,7 @@ export default function Studio() {
     })();
 
     return () => { cancelled = true; };
-  }, [roomId, inviteToken, WAVEFORM_POINTS]);
+  }, [roomId, inviteToken, WAVEFORM_POINTS, user?.id]);
 
   const handleStartBlank = () => { setTracks([]); setShowWelcome(false); };
 

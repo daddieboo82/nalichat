@@ -19,6 +19,7 @@ import { CartProvider } from '@/lib/CartContext';
 import { NaliPresenceProvider } from '@/lib/NaliPresenceContext';
 import { LockedChatsProvider } from '@/lib/LockedChatsContext';
 import { initProductAnalytics } from '@/lib/productAnalytics';
+import { base44 } from '@/api/base44Client';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -115,6 +116,29 @@ const AuthenticatedApp = () => {
   // First-party product analytics: SPA page views plus active/engaged session time.
   // This lets us distinguish a true 28-second visit from analytics undercounting.
   useEffect(() => initProductAnalytics(user?.id || null), [user?.id]);
+
+  // Presence is app-wide, not Messages-only. A user actively working in Studio,
+  // Files, Explore, etc. should still appear online to their chat partners.
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return undefined;
+
+    const sendPresence = (isOnline) => {
+      base44.functions.invoke('updateUserPresence', { isOnline }).catch(() => {});
+    };
+    const syncVisibility = () => sendPresence(document.visibilityState === 'visible');
+
+    document.addEventListener('visibilitychange', syncVisibility);
+    syncVisibility();
+    const heartbeat = window.setInterval(() => {
+      if (document.visibilityState === 'visible') sendPresence(true);
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(heartbeat);
+      document.removeEventListener('visibilitychange', syncVisibility);
+      sendPresence(false);
+    };
+  }, [isAuthenticated, user?.id]);
 
   // Fire Google Ads SIGNUP conversion once per freshly-created user.
   useEffect(() => {

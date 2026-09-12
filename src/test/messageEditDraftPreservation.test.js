@@ -18,7 +18,7 @@ describe('message edit draft preservation', () => {
       input.indexOf('await Promise.resolve(onSend(payload));'),
     );
     expect(chat).toContain('return onEditMessage(editingMessage.id, payload.text);');
-    expect(page).toContain('editMessage.mutateAsync({ id, text })');
+    expect(page).toContain('editMessage.mutateAsync({ id, text, conversationId: selectedConvId })');
     expect(page).toContain('toast.error("Message edit failed. Your draft was kept so you can retry.")');
   });
 });

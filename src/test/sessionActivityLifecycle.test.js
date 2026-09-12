@@ -10,7 +10,7 @@ describe('session activity lifecycle', () => {
   it('checks persisted inactivity before refreshing the activity timestamp', async () => {
     const source = await readText('src/App.jsx');
 
-    const readExisting = source.indexOf("const lastActive = localStorage.getItem('last_activity')");
+    const readExisting = source.indexOf("const lastActive = safeLocalStorageGet('last_activity')");
     const timeoutCheck = source.indexOf('Date.now() - parsedLastActive > 24 * 60 * 60 * 1000');
     const initialize = source.indexOf('if (!Number.isFinite(parsedLastActive)) updateActivity();');
 

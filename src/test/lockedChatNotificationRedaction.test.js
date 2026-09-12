@@ -9,14 +9,15 @@ async function readText(path) {
 describe('locked chat notification redaction', () => {
   it('redacts stored and pushed message notifications for locked recipients', async () => {
     const source = await readText('base44/functions/notifyOnMessage/entry.ts');
+    const helper = await readText('base44/shared/lockedChats.ts');
 
     expect(source).toContain('LockedConversationPreference.filter(');
     expect(source).toContain('const isLockedChat = lockedRecipientIds.has(recipientId);');
-    expect(source).toContain('actor_name: isLockedChat ? "Locked chat"');
-    expect(source).toContain('message: isLockedChat');
-    expect(source).toContain('"New message in a locked chat."');
-    expect(source).toContain('locked_chat: isLockedChat');
+    expect(source).toContain('...lockedNotification(conversation.id)');
     expect(source).toContain("title: isLockedChat ? 'NaliChat'");
+    expect(helper).toContain("actor_name: 'Locked chat'");
+    expect(helper).toContain("message = 'New message in a locked chat.'");
+    expect(helper).toContain('locked_chat: true');
   });
 
   it('defensively redacts client previews and fails closed before vault state is ready', async () => {

@@ -94,7 +94,7 @@ describe('release configuration', () => {
       const source = await readText(path);
       expect(source).toContain('consumeHourlyLimit');
       expect(source).toContain(key);
-      expect(source).toContain(`${key},\n      ${limit},`);
+      expect(source).toMatch(new RegExp(`${key},\\s*${limit}`));
       expect(source).toContain('Admin operation rate limit exceeded');
       expect(source).toContain('status: 429');
     }
@@ -1124,7 +1124,7 @@ describe('release configuration', () => {
     expect(typing).not.toContain('entities.TypingStatus.subscribe');
     expect(typing).toContain('TypingStatus.filter({ conversation_id: conversationId })');
     expect(studioPresence).not.toContain('entities.StudioPresence.subscribe');
-    expect(studioPresence).toContain('setInterval(refresh, 5000)');
+    expect(studioPresence).toContain('setInterval(() => refresh(generation), 5000)');
   });
 
   it('avoids raw realtime subscriptions for tracks and notifications', async () => {
@@ -1372,8 +1372,8 @@ describe('release configuration', () => {
     }
     expect(external).toContain('.slice(0, 5000)');
     expect(external).toContain('destination.length > 320');
-    expect(external).toContain(".replace(/[\r\n]/g, ' ')");
-    expect(invite).toContain(".replace(/[\r\n]/g, ' ')");
+    expect(external).toMatch(/\.replace\(\/\[\\r\\n\]\/g, ' '\)/);
+    expect(invite).toMatch(/\.replace\(\/\[\\r\\n\]\/g, ' '\)/);
   });
 
   it('rate-limits and moderation-gates email invites', async () => {

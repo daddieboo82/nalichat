@@ -11,6 +11,7 @@ import ResetPassword from '@/pages/ResetPassword';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 const mockBase44 = vi.hoisted(() => ({
+  functions: { invoke: vi.fn() },
   auth: {
     loginViaEmailPassword: vi.fn(),
     loginWithProvider: vi.fn(),
@@ -191,7 +192,7 @@ describe('auth and onboarding flows', () => {
     await waitFor(() => {
       expect(mockToast.error).toHaveBeenCalledWith('Please fill in your name and birthdate');
     });
-    expect(mockBase44.auth.updateMe).not.toHaveBeenCalled();
+    expect(mockBase44.functions.invoke).not.toHaveBeenCalled();
   });
 
   it('saves onboarding profile data and refreshes auth state', async () => {
@@ -202,7 +203,7 @@ describe('auth and onboarding flows', () => {
       isAuthenticated: true,
       checkUserAuth,
     };
-    mockBase44.auth.updateMe.mockResolvedValueOnce(undefined);
+    mockBase44.functions.invoke.mockResolvedValueOnce({ data: { success: true } });
 
     const { container } = renderInRouter(<Onboarding />);
     fireEvent.change(screen.getByPlaceholderText('How should we call you?'), { target: { value: 'Fresh Artist' } });
@@ -211,12 +212,11 @@ describe('auth and onboarding flows', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Get Started' }));
 
     await waitFor(() => {
-      expect(mockBase44.auth.updateMe).toHaveBeenCalledWith({
+      expect(mockBase44.functions.invoke).toHaveBeenCalledWith('completeOnboarding', {
         display_name: 'Fresh Artist',
         birthdate: '2000-01-01',
         bio: 'Hello world',
         location: '',
-        onboarding_completed: true,
       });
       expect(checkUserAuth).toHaveBeenCalled();
     });

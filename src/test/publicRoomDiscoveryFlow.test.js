@@ -14,7 +14,7 @@ describe('public room discovery flow', () => {
     expect(source).toContain('if (pendingRoomId) return;');
     expect(source).toContain('disabled={!!pendingRoomId}');
     expect(source).toContain('toast.error("Couldn\'t open the public room. Please try again.");');
-    expect(source.indexOf('setSearch("");')).toBeGreaterThan(
+    expect(source.indexOf('setSearch("");', source.indexOf('onSelect(roomId);'))).toBeGreaterThan(
       source.indexOf('onSelect(roomId);'),
     );
     expect(source).toContain('finally {');

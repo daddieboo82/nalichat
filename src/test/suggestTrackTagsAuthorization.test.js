@@ -10,7 +10,8 @@ describe('track tag suggestion authorization', () => {
   it('supports authenticated agent calls without weakening create automation safety', async () => {
     const source = await readText('base44/functions/suggestTrackTags/entry.ts');
 
-    expect(source).toContain('body?.trackId || body?.track_id');
+    expect(source).toContain("const directTrackId = typeof body?.trackId === 'string'");
+    expect(source).toContain("typeof body?.track_id === 'string'");
     expect(source).toContain('base44.auth.me().catch(() => null)');
     expect(source).toContain('track.uploaded_by === caller.id');
     expect(source).toContain('(track.edit_user_ids || []).includes(caller.id)');

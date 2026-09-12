@@ -65,6 +65,13 @@ describe('media storage resilience', () => {
     expect(source).toContain("await audioCtx.close().catch(() => {})");
   });
 
+  it('rejects failed audio fetches and always closes decoder contexts', async () => {
+    const source = await readText('src/lib/audioProcessing.js');
+    expect(source).toContain('if (!res.ok) throw new Error(`Audio fetch failed: ${res.status}`)');
+    expect(source).toContain('if (!AudioContextClass) throw new Error("Web Audio is not supported")');
+    expect(source).toContain('await ctx.close().catch(() => {})');
+  });
+
   it('keeps resumable transfers working when localStorage is unavailable', async () => {
     const source = await readText('src/lib/resumableUpload.js');
     expect(source).toContain('try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}');

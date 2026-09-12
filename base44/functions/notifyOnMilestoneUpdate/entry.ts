@@ -4,6 +4,9 @@ import { sendPushToUser } from '../../shared/webPush.ts';
 import { workflowEntityRecordId, workflowRecordIsFresh } from '../../shared/workflowEvents.ts';
 import { createNotificationIdempotently } from '../../shared/workflowNotifications.ts';
 import { claimFixedWindow } from '../../shared/rateLimit.ts';
+import { validWorkflowKey } from '../../shared/workflowAuth.ts';
+
+const WORKFLOW_KEY_SHA256 = '9e2c4169ede24d4054ee6d75251617c8f97769de817b8b76d672ef47fa8d80dd';
 
 Deno.serve(async (req) => {
   try {
@@ -11,7 +14,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
     const base44 = createClientFromRequest(req);
-    const { event, data, changed_fields } = await readJsonBodyLimited(req, 64 * 1024);
+    const { event, data, changed_fields, workflow_key } = await readJsonBodyLimited(req, 64 * 1024);
+    if (!(await validWorkflowKey(workflow_key, WORKFLOW_KEY_SHA256))) {
+      return Response.json({ error: 'Forbidden: invalid workflow credential' }, { status: 403 });
+    }
     const record = workflowEntityRecordId({ event, data });
     if (record.invalid) return Response.json({ error: 'Invalid entity id' }, { status: 400 });
     if (record.conflict) return Response.json({ error: 'Conflicting entity ids' }, { status: 400 });

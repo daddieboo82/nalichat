@@ -24,7 +24,9 @@
           "call": "invoke_backend_function",
           "with": {
             "function_name": "notifyOnTrackVersion",
-            "args": {}
+            "args": {
+              "workflow_key": "CNAFtwnc2KrkrkYZd45Y6il8dip4L_TxEHpZOgFTQzE"
+            }
           },
           "then": "end"
         }

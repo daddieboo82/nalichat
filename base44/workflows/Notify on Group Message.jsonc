@@ -24,7 +24,9 @@
           "call": "invoke_backend_function",
           "with": {
             "function_name": "notifyOnMessage",
-            "args": {}
+            "args": {
+              "workflow_key": "T7Bbfzu8ahvcSa6O3yFK1Y__8JZVjYxjq8KwSqhoaIU"
+            }
           },
           "then": "end"
         }

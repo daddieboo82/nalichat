@@ -24,7 +24,9 @@
           "call": "invoke_backend_function",
           "with": {
             "function_name": "notifyOnTrackComment",
-            "args": {}
+            "args": {
+              "workflow_key": "3AtC62tmpI6I9q2G_-Pz6rOqm0Sy2pIeEk9ALFSxaRQ"
+            }
           },
           "then": "end"
         }

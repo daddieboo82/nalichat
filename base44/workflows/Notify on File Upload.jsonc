@@ -24,7 +24,9 @@
           "call": "invoke_backend_function",
           "with": {
             "function_name": "notifyOnFileUpload",
-            "args": {}
+            "args": {
+              "workflow_key": "9UETOXLnqkrU97-IpWyC2ju5A0_HEsntt5vp0P04DYo"
+            }
           },
           "then": "end"
         }

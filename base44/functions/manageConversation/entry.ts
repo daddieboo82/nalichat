@@ -9,6 +9,13 @@ import {
 
 const PAGE_SIZE = 200;
 
+function isConversationId(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const id = value.trim();
+  return /^[0-9A-F]{24}$/i.test(id)
+    || /^(?:dm|group_request|public_room)_[0-9a-f]{64}$/.test(id);
+}
+
 async function hashedConversationId(prefix: string, value: string) {
   const digest = await crypto.subtle.digest(
     'SHA-256',
@@ -428,9 +435,24 @@ Deno.serve(async (req) => {
       }
     }
 
-    const conversationId = String(body?.conversationId || '');
-    if (!conversationId) {
-      return Response.json({ error: 'conversationId is required' }, { status: 400 });
+    const conversationId = String(body?.conversationId || '').trim();
+    if (!isConversationId(conversationId)) {
+      return Response.json({ error: 'Valid conversationId is required' }, { status: 400 });
+    }
+
+    const conversationPreview = await entities.Conversation.get(conversationId).catch(() => null);
+    if (!conversationPreview) {
+      return Response.json({ error: 'Conversation not found' }, { status: 404 });
+    }
+    const previewIsParticipant = Array.isArray(conversationPreview.participant_ids)
+      && conversationPreview.participant_ids.includes(user.id);
+
+    if (action === 'join_public') {
+      if (conversationPreview.type !== 'group' || conversationPreview.is_public !== true) {
+        return Response.json({ error: 'This group is not public' }, { status: 403 });
+      }
+    } else if (['leave', 'rename'].includes(action) && !previewIsParticipant) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     let membershipLockId: string | null = null;

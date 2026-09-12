@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Copy, Check, ChevronDown, Hash, MessageCircle, Video, FileText, Send, Youtube, Repeat2, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -16,6 +16,11 @@ const PLATFORMS = [
 function CopyBlock({ label, content, icon: Icon, color }) {
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
+  const copyTimerRef = useRef(null);
+
+  useEffect(() => () => {
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+  }, []);
 
   const handleCopy = async (e) => {
     e.stopPropagation();
@@ -26,7 +31,11 @@ function CopyBlock({ label, content, icon: Icon, color }) {
       return;
     }
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => {
+      copyTimerRef.current = null;
+      setCopied(false);
+    }, 2000);
   };
 
   return (

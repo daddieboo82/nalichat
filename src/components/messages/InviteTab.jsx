@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,11 @@ import { copyToClipboard } from '@/lib/clipboard';
 
 export default function InviteTab() {
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef(null);
+
+  useEffect(() => () => {
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+  }, []);
   const [phone, setPhone] = useState('');
   const [sendingSms, setSendingSms] = useState(false);
   const [smsStatus, setSmsStatus] = useState(null); // { type: 'success' | 'error', message }
@@ -29,7 +34,11 @@ export default function InviteTab() {
       return;
     }
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => {
+      copyTimerRef.current = null;
+      setCopied(false);
+    }, 2000);
   };
 
   const sendSms = async () => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,11 @@ import { copyToClipboard } from "@/lib/clipboard";
 
 export default function GlobalInviteDialog({ open, onOpenChange }) {
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef(null);
+
+  useEffect(() => () => {
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+  }, []);
   const [phone, setPhone] = useState("");
   const [sendingSms, setSendingSms] = useState(false);
   const [smsStatus, setSmsStatus] = useState(null); // { type: 'success' | 'error', message: string }
@@ -57,7 +62,11 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
       return;
     }
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => {
+      copyTimerRef.current = null;
+      setCopied(false);
+    }, 2000);
     toast({ title: "Copied!", description: "Invite link copied to clipboard." });
   };
 

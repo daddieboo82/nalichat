@@ -19,11 +19,13 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const queryClient = useQueryClient();
   const lastUserIdRef = useRef(currentUser?.id || null);
+  const identityGenerationRef = useRef(0);
 
   useEffect(() => {
     const nextUserId = currentUser?.id || null;
     if (lastUserIdRef.current === nextUserId) return;
     lastUserIdRef.current = nextUserId;
+    identityGenerationRef.current += 1;
     setNewPlaylistName("");
     onOpenChange(false);
   }, [currentUser?.id, onOpenChange]);
@@ -39,15 +41,19 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
 
   const addToPlaylistMutation = useMutation({
     mutationFn: async (playlistId) => {
+      const generation = identityGenerationRef.current;
       const res = await base44.functions.invoke("mutatePlaylist", {
         action: "add_track",
         playlistId,
         trackId,
       });
+      if (generation !== identityGenerationRef.current) return { stale: true };
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.playlist;
+      return { stale: false, playlist: res?.data?.playlist };
     },
-    onSuccess: (playlist) => {
+    onSuccess: (result) => {
+      if (result?.stale) return;
+      const playlist = result?.playlist;
       queryClient.invalidateQueries({ queryKey: ["userPlaylists"] });
       toast.success(`Added to "${playlist.name}"`);
       onOpenChange(false);
@@ -57,14 +63,18 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
 
   const createAndAddMutation = useMutation({
     mutationFn: async () => {
+      const generation = identityGenerationRef.current;
       const created = await base44.functions.invoke("createPlaylist", {
         name: newPlaylistName,
         track_ids: [trackId],
       });
+      if (generation !== identityGenerationRef.current) return { stale: true };
       if (created?.data?.error) throw new Error(created.data.error);
-      return created?.data?.playlist;
+      return { stale: false, playlist: created?.data?.playlist };
     },
-    onSuccess: (newPlaylist) => {
+    onSuccess: (result) => {
+      if (result?.stale) return;
+      const newPlaylist = result?.playlist;
       queryClient.invalidateQueries({ queryKey: ["userPlaylists"] });
       toast.success(`Created "${newPlaylist.name}" and added the track`);
       setNewPlaylistName("");

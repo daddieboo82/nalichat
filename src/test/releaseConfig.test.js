@@ -684,10 +684,12 @@ describe('release configuration', () => {
     expect(collaborator).toContain('const privilegeIncrease');
     expect(collaborator).toContain('originalProjectPatch');
     expect(collaborator).toContain('await entities.Project.update(project.id, projectPatch)');
-    expect(collaborator).toContain('await entities.Project.update(project.id, originalProjectPatch).catch(() => {})');
+    expect(collaborator).toContain('await entities.Project.update(project.id, originalProjectPatch)');
     expect(collaborator).toContain('const rollbackChildren = await syncChildren');
     expect(collaborator).toContain('await rollbackChildren()');
-    expect(collaborator).toContain('changed.reverse()');
+    expect(collaborator).toContain('rollbackChildChanges');
+    expect(collaborator).toContain('Project collaborator child rollback failures');
+    expect(collaborator).not.toContain('change.entity.update(change.id, change.original).catch(() => {})');
   });
 
   it('authorizes project-folder deletion from the current project role', async () => {

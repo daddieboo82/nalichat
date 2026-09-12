@@ -2,6 +2,23 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 
+async function rollbackChildChanges(
+  changes: Array<{ entity: any; id: string; original: Record<string, any> }>,
+) {
+  const failures: Array<{ id: string; error: unknown }> = [];
+  for (const change of [...changes].reverse()) {
+    try {
+      await change.entity.update(change.id, change.original);
+    } catch (error) {
+      failures.push({ id: change.id, error });
+    }
+  }
+  if (failures.length > 0) {
+    console.error('Project collaborator child rollback failures:', failures);
+    throw new Error(`Could not restore ${failures.length} project record(s)`);
+  }
+}
+
 async function syncChildren(entities: any, project: any, userId: string, role: string | null) {
   const changed: Array<{ entity: any; id: string; original: Record<string, any> }> = [];
   try {
@@ -37,16 +54,19 @@ async function syncChildren(entities: any, project: any, userId: string, role: s
       }
     }
   } catch (error) {
-    for (const change of changed.reverse()) {
-      await change.entity.update(change.id, change.original).catch(() => {});
+    try {
+      await rollbackChildChanges(changed);
+    } catch (rollbackError) {
+      throw new Error(
+        'Collaborator child update failed and rollback was incomplete. Please retry.',
+        { cause: error },
+      );
     }
     throw error;
   }
 
   return async () => {
-    for (const change of changed.reverse()) {
-      await change.entity.update(change.id, change.original).catch(() => {});
-    }
+    await rollbackChildChanges(changed);
   };
 }
 
@@ -143,7 +163,15 @@ Deno.serve(async (req) => {
       try {
         await syncChildren(entities, project, userId, role);
       } catch (error) {
-        await entities.Project.update(project.id, originalProjectPatch).catch(() => {});
+        try {
+          await entities.Project.update(project.id, originalProjectPatch);
+        } catch (rollbackError) {
+          console.error('Project collaborator privilege rollback failed:', rollbackError);
+          throw new Error(
+            'Collaborator role update failed and project rollback was incomplete. Please retry.',
+            { cause: error },
+          );
+        }
         throw error;
       }
     } else {
@@ -156,7 +184,15 @@ Deno.serve(async (req) => {
       try {
         await entities.Project.update(project.id, projectPatch);
       } catch (error) {
-        await rollbackChildren();
+        try {
+          await rollbackChildren();
+        } catch (rollbackError) {
+          console.error('Project collaborator child rollback failed:', rollbackError);
+          throw new Error(
+            'Project update failed and collaborator child rollback was incomplete. Please retry.',
+            { cause: error },
+          );
+        }
         throw error;
       }
     }

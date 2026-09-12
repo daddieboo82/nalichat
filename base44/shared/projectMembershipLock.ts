@@ -25,7 +25,7 @@ export async function acquireProjectMembershipLock(
     const expired = Date.parse(existing.expires_at || '') <= now.getTime();
     if (!expired) return null;
 
-    await entities.ProjectMembershipLock.delete(id).catch(() => {});
+    await entities.ProjectMembershipLock.delete(id);
     try {
       await create();
       return id;
@@ -41,6 +41,12 @@ export async function releaseProjectMembershipLock(
   entities: any,
   lockId: string | null,
 ) {
-  if (!lockId) return;
-  await entities.ProjectMembershipLock.delete(lockId).catch(() => {});
+  if (!lockId) return true;
+  try {
+    await entities.ProjectMembershipLock.delete(lockId);
+    return true;
+  } catch (error) {
+    console.error('Failed to release project membership lock:', { lockId, error });
+    return false;
+  }
 }

@@ -744,7 +744,7 @@ async function generateSummary(base44: any, user: any, body: any) {
       });
     }
     console.error('call summary generation failed:', error);
-    return jsonError(502, errorCode(error), error instanceof Error ? error.message : 'Summary generation failed.');
+    return jsonError(502, errorCode(error), 'Summary generation failed.');
   }
 }
 

@@ -138,7 +138,6 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error('Check subscription error:', error);
-    const message = error instanceof Error ? error.message : 'Unable to check subscription';
-    return Response.json({ error: message }, { status: 500 });
+    return Response.json({ error: 'Unable to check subscription' }, { status: 500 });
   }
 });

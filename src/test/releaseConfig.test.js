@@ -1947,4 +1947,21 @@ describe('release configuration', () => {
     expect(electron).toContain("https://nalichat.org");
     expect(electronError).toContain('https://nalichat.org');
   });
+  it('keeps iPhone mobile auth actions and DM navigation reachable', async () => {
+    const mobileHeader = await readText('src/components/navigation/MobileHeader.jsx');
+    const messages = await readText('src/pages/Messages.jsx');
+
+    expect(mobileHeader).toContain('const { user, isAuthenticated, logout } = useAuth()');
+    expect(mobileHeader).toContain('await logout()');
+    expect(mobileHeader).toContain('Log out');
+    expect(mobileHeader).toContain('handleNavigate("/login")');
+    expect(mobileHeader).toContain('handleNavigate("/register")');
+
+    expect(messages).toContain('useLocation, useNavigate');
+    expect(messages).toContain('navigate(\`\${location.pathname}\${nextSearch}\`, { replace: true })');
+    expect(messages).toContain('className="relative h-full min-h-0 sm:h-[calc(100vh-80px)]');
+    expect(messages).not.toContain('className="absolute inset-0 sm:relative');
+  });
+
+
 });

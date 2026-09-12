@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import {
   acquireChallengeSubmissionLock,
   releaseChallengeSubmissionLock,
@@ -46,15 +48,14 @@ Deno.serve(async (req) => {
     let user = null;
     try { user = await base44.auth.me(); } catch {}
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 16 * 1024);
     const action = typeof body?.action === 'string' ? body.action : '';
     const parentType = typeof body?.parentType === 'string' ? body.parentType : '';
     const parentId = typeof body?.parentId === 'string' ? body.parentId.trim() : '';
     if (
       !['list', 'create'].includes(action)
       || !['art_post', 'challenge_submission', 'track'].includes(parentType)
-      || !parentId
-      || parentId.length > 200
+      || !isBase44EntityId(parentId)
     ) {
       return Response.json({ error: 'Valid action, parentType, and parentId are required' }, { status: 400 });
     }
@@ -150,7 +151,9 @@ Deno.serve(async (req) => {
       await releaseChallengeSubmissionLock(entities, submissionLockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('trackComments error:', error);
-    return Response.json({ error: error?.message || 'Comment action failed' }, { status: 500 });
+    return Response.json({ error: 'Comment action failed' }, { status: 500 });
   }
 });

@@ -2057,7 +2057,7 @@ describe('release configuration', () => {
     expect(pushConfig).toContain('publicPushConfig()');
 
     for (const name of ['notifyOnFileUpload', 'notifyOnMessage', 'notifyOnTrackVersion', 'notifyOnTrackComment', 'notifyOnMilestoneUpdate']) {
-      const workflow = await readText();
+      const workflow = await readText(`base44/functions/${name}/entry.ts`);
       expect(workflow).toContain('claimFixedWindow');
       expect(workflow).toContain('already_processed');
     }

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 // Nali's comprehensive app maintenance & repair function.
 // Scans every entity for data issues and can either just report (diagnose)
@@ -36,7 +37,7 @@ export default async function(req) {
       return Response.json({ error: 'Admin operation rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readJsonBodyLimited(req, 16 * 1024);
     const mode = body.mode === 'repair' ? 'repair' : 'diagnose';
     const scope = Array.isArray(body.scope) && body.scope.length > 0 ? body.scope : null;
     const wants = (name) => !scope || scope.includes(name);

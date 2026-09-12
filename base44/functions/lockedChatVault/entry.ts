@@ -140,6 +140,10 @@ async function requireEntitlement(base44: any, userId: string) {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return errorResponse('Method not allowed', 405, 'method_not_allowed');
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return errorResponse('Unauthorized', 401, 'unauthorized');

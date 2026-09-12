@@ -36,6 +36,12 @@ Deno.serve(async (req) => {
     }
 
     const entities = base44.asServiceRole.entities;
+    const submissionPreview = await entities.ChallengeSubmission.get(submissionId).catch(() => null);
+    if (!submissionPreview) return Response.json({ error: 'Submission not found' }, { status: 404 });
+    if (submissionPreview.producer_id !== user.id && user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const lockId = await acquireChallengeSubmissionLock(entities, submissionId);
     if (!lockId) {
       return Response.json(

@@ -24,7 +24,9 @@
           "call": "invoke_backend_function",
           "with": {
             "function_name": "notifyOnMilestoneUpdate",
-            "args": {}
+            "args": {
+              "workflow_key": "kcRx1xe5UH8HP2fLZoKoT-mEhfifXBZHDhhvnFmz2SE"
+            }
           },
           "then": "end"
         }

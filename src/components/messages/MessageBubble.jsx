@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Pencil, Sparkles, Volume2, Share2, Flag, RefreshCw, AlertCircle } from "lucide-react";
+import { Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Pencil, Sparkles, Volume2, Share2, Flag, RefreshCw, AlertCircle, AlarmClock } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -144,7 +144,7 @@ const getGradient = (name) => gradients[(name?.charCodeAt(0) || 0) % gradients.l
 
 import React from "react";
 
-export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onRetry, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM }) {
+export default React.memo(function MessageBubble({ message, isOwn, canDelete, showAvatar, onReply, onEdit, onReact, onRetry, onFollowUp, onOpenThread, users, onCopy, onDelete, currentUser, onPlayAudio, onStartDM }) {
   const { hasEntitlement } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
   const canTranscribe = hasEntitlement("voice.transcription");
@@ -394,6 +394,17 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           <Reply className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
 
+        {isOwn && !message._optimistic && onFollowUp && (
+          <button
+            onClick={() => onFollowUp(message)}
+            className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
+            title="Follow-up reminder"
+            aria-label="Follow-up reminder"
+          >
+            <AlarmClock className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+        )}
+
         {canGoViral && (
           <button
             onClick={() => setViralOpen(true)}
@@ -503,6 +514,9 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           ...(canGoViral ? [{ icon: Sparkles, label: "Create Viral Moment", onClick: () => setViralOpen(true), highlight: true }] : []),
           ...(canShareVoiceCard ? [{ icon: Share2, label: "Share Voice Card", onClick: () => setVoiceCardOpen(true), highlight: true }] : []),
           { icon: Reply, label: "Reply", onClick: () => { if (navigator.vibrate) navigator.vibrate(20); onReply?.(message); } },
+          ...(isOwn && !message._optimistic && onFollowUp
+            ? [{ icon: AlarmClock, label: "Follow-up reminder", onClick: () => onFollowUp(message) }]
+            : []),
           { icon: MessageSquareQuote, label: "Open Thread", onClick: () => onOpenThread?.(message) },
           ...(message.text ? [{ icon: Copy, label: "Copy", onClick: () => onCopy?.(message) }] : []),
           ...(canUseAi && message.text ? [{ icon: Volume2, label: "Read Aloud", onClick: () => speakText(message.text) }] : []),

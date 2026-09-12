@@ -489,7 +489,9 @@ Deno.serve(async (req) => {
       await releaseConversationMembershipLock(entities, membershipLockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('manageConversation error:', error);
-    return Response.json({ error: error?.message || 'Conversation action failed' }, { status: 500 });
+    return Response.json({ error: 'Conversation action failed' }, { status: 500 });
   }
 });

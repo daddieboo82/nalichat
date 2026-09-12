@@ -129,9 +129,23 @@ export default function NotificationBell({ direction = "down" }) {
     setPushPermission(getPermissionStatus());
     if (granted) {
       try {
-        await subscribeToRemotePush();
+        const result = await subscribeToRemotePush();
+        if (!result?.subscribed) {
+          toast({
+            title: "Notifications not enabled",
+            description: result?.reason === "not_configured"
+              ? "Push notifications are not configured on this server."
+              : "This browser could not register for push notifications.",
+            variant: "destructive",
+          });
+        }
       } catch (error) {
         console.error('Remote push registration failed:', error);
+        toast({
+          title: "Notifications not enabled",
+          description: error?.message || "Push registration failed. Please try again.",
+          variant: "destructive",
+        });
       }
     }
   };

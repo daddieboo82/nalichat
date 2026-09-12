@@ -85,12 +85,14 @@ export async function subscribeToRemotePush() {
 
   const { base44 } = await import('@/api/base44Client');
   const configResponse = await base44.functions.invoke('getPushConfig', {});
+  if (configResponse?.data?.error) throw new Error(configResponse.data.error);
   const config = configResponse?.data ?? configResponse;
   if (!config?.configured || !config?.publicKey) {
     return { subscribed: false, reason: 'not_configured' };
   }
 
   let subscription = await reg.pushManager.getSubscription();
+  const createdSubscription = !subscription;
   if (!subscription) {
     subscription = await reg.pushManager.subscribe({
       userVisibleOnly: true,
@@ -99,11 +101,19 @@ export async function subscribeToRemotePush() {
   }
 
   const json = subscription.toJSON();
-  await base44.functions.invoke('registerPushSubscription', {
-    endpoint: json.endpoint,
-    keys: json.keys,
-    userAgent: navigator.userAgent,
-  });
+  try {
+    const registerResponse = await base44.functions.invoke('registerPushSubscription', {
+      endpoint: json.endpoint,
+      keys: json.keys,
+      userAgent: navigator.userAgent,
+    });
+    if (registerResponse?.data?.error) throw new Error(registerResponse.data.error);
+  } catch (error) {
+    if (createdSubscription) {
+      try { await subscription.unsubscribe(); } catch {}
+    }
+    throw error;
+  }
 
   return { subscribed: true };
 }
@@ -117,13 +127,25 @@ export async function unsubscribeFromRemotePush() {
   if (!subscription) return { unsubscribed: false, reason: 'none' };
 
   const { base44 } = await import('@/api/base44Client');
+  let serverError = null;
   try {
-    await base44.functions.invoke('unregisterPushSubscription', {
+    const unregisterResponse = await base44.functions.invoke('unregisterPushSubscription', {
       endpoint: subscription.endpoint,
     });
-  } finally {
-    try { await subscription.unsubscribe(); } catch {}
+    if (unregisterResponse?.data?.error) {
+      serverError = new Error(unregisterResponse.data.error);
+    }
+  } catch (error) {
+    serverError = error;
   }
 
-  return { unsubscribed: true };
+  let localUnsubscribed = false;
+  try {
+    localUnsubscribed = await subscription.unsubscribe();
+  } catch {
+    localUnsubscribed = false;
+  }
+
+  if (serverError) throw serverError;
+  return { unsubscribed: localUnsubscribed !== false };
 }

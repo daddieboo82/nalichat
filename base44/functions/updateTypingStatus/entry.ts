@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
@@ -11,7 +12,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json();
+    const body = await readJsonBodyLimited(req, 8 * 1024);
     const conversationId = String(body?.conversationId || '').trim();
     const action = String(body?.action || 'heartbeat');
     if (
@@ -74,6 +75,8 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, typing: updated });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('updateTypingStatus error:', error);
     return Response.json({ error: error?.message || 'Typing status update failed' }, { status: 500 });
   }

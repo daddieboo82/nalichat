@@ -1,3 +1,4 @@
+import { secureUploadFile } from "@/lib/secureUpload";
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -57,7 +58,7 @@ export default function Settings() {
     if (!file) return;
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await secureUploadFile({ file });
       setForm(f => ({ ...f, avatar_url: file_url }));
     } catch (error) {
       console.error("Settings avatar upload failed:", error);

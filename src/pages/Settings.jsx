@@ -73,6 +73,9 @@ export default function Settings() {
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       setForm(f => ({ ...f, avatar_url: file_url }));
+    } catch (error) {
+      console.error("Settings avatar upload failed:", error);
+      toast.error(error?.message || "Could not upload your profile photo.");
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -106,6 +109,9 @@ export default function Settings() {
       await checkUserAuth();
       sounds.success();
       toast.success("Profile updated!");
+    } catch (error) {
+      console.error("Settings profile save failed:", error);
+      toast.error(error?.message || "Could not save your profile. Please try again.");
     } finally {
       setSaving(false);
     }

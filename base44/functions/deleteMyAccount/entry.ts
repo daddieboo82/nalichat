@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { stripeRequest } from '../../shared/stripe.ts';
 import { acquireAccountDeletionLock, releaseAccountDeletionLock } from '../../shared/accountDeletionLock.ts';
@@ -113,7 +114,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readJsonBodyLimited(req, 8 * 1024);
     if (body?.confirmation !== 'DELETE') {
       return Response.json({ error: 'Confirmation required' }, { status: 400 });
     }
@@ -642,6 +643,8 @@ Deno.serve(async (req) => {
       await releaseAccountDeletionLock(entities, lockId);
     }
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('deleteMyAccount failed:', error);
     return Response.json(
       { error: error?.message || 'Account deletion failed' },

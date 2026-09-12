@@ -22,7 +22,9 @@ export default function AiAssistant() {
   const [isListening, setIsListening] = useState(false);
   const [conversation, setConversation] = useState(null);
   const { user } = useAuth();
+  const identityKey = user?.id ? `${user.id}:${agentName}` : null;
   const conversationStorageKey = user?.id ? `nali_ai_conversation:${user.id}:${agentName}` : null;
+  const [assistantOwnerKey, setAssistantOwnerKey] = useState(() => identityKey);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef(null);
@@ -31,6 +33,39 @@ export default function AiAssistant() {
   const spokenIdsRef = useRef(new Set());
   const currentAudioRef = useRef(null);
   const loadingTimerRef = useRef(null);
+  const identityGenerationRef = useRef(0);
+
+  const staleIdentityError = () => {
+    const error = new Error("NALI.ai identity changed");
+    error.code = "NALI_IDENTITY_CHANGED";
+    return error;
+  };
+
+  useEffect(() => {
+    identityGenerationRef.current += 1;
+    unsubRef.current?.();
+    unsubRef.current = null;
+    if (loadingTimerRef.current) {
+      clearTimeout(loadingTimerRef.current);
+      loadingTimerRef.current = null;
+    }
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+    spokenIdsRef.current.clear();
+    setConversation(null);
+    setMessages([]);
+    setInput("");
+    setLoading(false);
+    setIsListening(false);
+    setVoiceEnabled(false);
+    setIsSpeaking(false);
+    setOpen(false);
+    setMinimized(false);
+    setExpanded(false);
+    setAssistantOwnerKey(identityKey);
+  }, [identityKey]);
 
   const sendAgentText = async (conv, text) => {
     const content = String(text || "").trim();
@@ -77,6 +112,7 @@ export default function AiAssistant() {
   useEffect(() => {
     const handleOpen = (e) => {
       void openChat(e.detail?.greeting).catch((error) => {
+        if (error?.code === "NALI_IDENTITY_CHANGED") return;
         console.error("Nali open error", error);
         toast.error("Couldn't open NALI.ai. Please try again.");
       });
@@ -95,6 +131,7 @@ export default function AiAssistant() {
         if (!conv) conv = await initConversation();
         await sendAgentText(conv, text);
       } catch (error) {
+        if (error?.code === "NALI_IDENTITY_CHANGED") return;
         console.error("Nali event send error", error);
         toast.error(friendlyNaliError(error));
       }
@@ -171,12 +208,14 @@ export default function AiAssistant() {
     return () => { if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; } };
   }, []);
 
-  const bindConversation = (conv) => {
+  const bindConversation = (conv, generation = identityGenerationRef.current) => {
     if (!conv?.id) return null;
+    if (generation !== identityGenerationRef.current) throw staleIdentityError();
     unsubRef.current?.();
     setConversation(conv);
     setMessages(conv.messages || []);
     unsubRef.current = base44.agents.subscribeToConversation(conv.id, (data) => {
+      if (generation !== identityGenerationRef.current) return;
       const msgs = data.messages || [];
       setMessages(msgs);
       if (msgs.length && msgs[msgs.length - 1].role !== "user") {
@@ -188,6 +227,7 @@ export default function AiAssistant() {
   };
 
   const initConversation = async () => {
+    const generation = identityGenerationRef.current;
     if (subscriptionLoading) throw new Error("Subscription is still loading");
     if (!canUseAi) {
       toast.error("Premium is required to use NALI.ai.");
@@ -200,21 +240,25 @@ export default function AiAssistant() {
         const savedId = sessionStorage.getItem(conversationStorageKey);
         if (savedId) {
           const restored = await base44.agents.getConversation(savedId);
+          if (generation !== identityGenerationRef.current) throw staleIdentityError();
           if (restored?.id && (!restored.created_by_id || restored.created_by_id === user?.id)) {
-            return bindConversation(restored);
+            return bindConversation(restored, generation);
           }
         }
       } catch (error) {
+        if (error?.code === "NALI_IDENTITY_CHANGED") throw error;
         console.warn("Nali conversation restore failed:", error);
       }
+      if (generation !== identityGenerationRef.current) throw staleIdentityError();
       try { sessionStorage.removeItem(conversationStorageKey); } catch {}
     }
 
     const conv = await base44.agents.createConversation({ agent_name: agentName });
+    if (generation !== identityGenerationRef.current) throw staleIdentityError();
     if (conversationStorageKey) {
       try { sessionStorage.setItem(conversationStorageKey, conv.id); } catch {}
     }
-    return bindConversation(conv);
+    return bindConversation(conv, generation);
   };
 
   const openChat = async (greeting) => {
@@ -239,20 +283,25 @@ export default function AiAssistant() {
 
   const sendText = async (text) => {
     if (!text.trim() || loading) return;
+    const generation = identityGenerationRef.current;
     setInput("");
     setLoading(true);
     let conv = conversation;
     try {
       if (!conv) conv = await initConversation();
+      if (generation !== identityGenerationRef.current) throw staleIdentityError();
       await sendAgentText(conv, text.trim());
+      if (generation !== identityGenerationRef.current) throw staleIdentityError();
       // loading is cleared by the subscription when Nali's reply arrives,
       // but set a safety timeout in case the subscription never fires
       // (agent error, WebSocket drop, or very long tool call)
       if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
       loadingTimerRef.current = setTimeout(async () => {
         loadingTimerRef.current = null;
+        if (generation !== identityGenerationRef.current) return;
         try {
           const fresh = await base44.agents.getConversation(conv.id);
+          if (generation !== identityGenerationRef.current) return;
           const freshMessages = fresh?.messages || [];
           setMessages(freshMessages);
           const last = freshMessages[freshMessages.length - 1];
@@ -267,6 +316,7 @@ export default function AiAssistant() {
         }
       }, 60000);
     } catch (err) {
+      if (err?.code === "NALI_IDENTITY_CHANGED") return;
       console.error("Nali send error", err);
       if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
       setLoading(false);
@@ -306,6 +356,8 @@ export default function AiAssistant() {
 
     recognition.start();
   };
+
+  if (assistantOwnerKey !== identityKey) return null;
 
   return (
     <>

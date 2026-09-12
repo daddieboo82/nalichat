@@ -2,6 +2,18 @@ const isNode = typeof window === 'undefined';
 const windowObj = isNode ? { localStorage: new Map() } : window;
 const storage = windowObj.localStorage;
 
+const safeStorageGet = (key) => {
+  try { return storage.getItem(key); } catch { return null; }
+};
+
+const safeStorageSet = (key, value) => {
+  try { storage.setItem(key, value); } catch {}
+};
+
+const safeStorageRemove = (key) => {
+  try { storage.removeItem(key); } catch {}
+};
+
 const toSnakeCase = (str) => {
   return str.replace(/([A-Z])/g, '_$1').toLowerCase();
 };
@@ -19,14 +31,14 @@ const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl =
     window.history.replaceState({}, document.title, newUrl);
   }
   if (searchParam) {
-    storage.setItem(storageKey, searchParam);
+    safeStorageSet(storageKey, searchParam);
     return searchParam;
   }
   if (defaultValue) {
-    storage.setItem(storageKey, defaultValue);
+    safeStorageSet(storageKey, defaultValue);
     return defaultValue;
   }
-  const storedValue = storage.getItem(storageKey);
+  const storedValue = safeStorageGet(storageKey);
   if (storedValue) {
     return storedValue;
   }
@@ -55,10 +67,10 @@ const getRuntimeConfigValue = (paramName, defaultValue) => {
   // build-time value instead of allowing a crafted same-origin link to repoint
   // the SDK at another app/backend.
   if (defaultValue) {
-    storage.setItem(storageKey, defaultValue);
+    safeStorageSet(storageKey, defaultValue);
     return defaultValue;
   }
-  storage.removeItem(storageKey);
+  safeStorageRemove(storageKey);
   return null;
 };
 
@@ -67,11 +79,11 @@ const getAppParams = () => {
   // clear_access_token is a one-shot command, never persistent configuration.
   // getAppParamValue stores URL parameters by default, so remove its storage
   // key immediately or every future app load would keep clearing the session.
-  storage.removeItem('base44_clear_access_token');
+  safeStorageRemove('base44_clear_access_token');
   if (clearAccessToken === 'true') {
-    storage.removeItem('base44_access_token');
-    storage.removeItem('base44_token');
-    storage.removeItem('token');
+    safeStorageRemove('base44_access_token');
+    safeStorageRemove('base44_token');
+    safeStorageRemove('token');
   }
   return {
     appId: getRuntimeConfigValue("app_id", import.meta.env.VITE_BASE44_APP_ID),

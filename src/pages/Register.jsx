@@ -15,6 +15,7 @@ import {
   otpErrorMessage,
   registrationErrorMessage,
   resendOtpErrorMessage,
+  googleLoginErrorMessage,
 } from "@/lib/authErrorMessages";
 
 export default function Register() {
@@ -25,6 +26,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -76,11 +78,20 @@ export default function Register() {
     }
   };
 
-  const handleGoogle = () => {
-    try { sessionStorage.setItem("is_new_user", "true"); } catch {}
-    clearPersistedAuthTokens();
-    markAuthActivity();
-    base44.auth.loginWithProvider("google", safeReturnTo());
+  const handleGoogle = async () => {
+    if (googleLoading) return;
+    setGoogleLoading(true);
+    setError("");
+    try {
+      try { sessionStorage.setItem("is_new_user", "true"); } catch {}
+      clearPersistedAuthTokens();
+      markAuthActivity();
+      await Promise.resolve(base44.auth.loginWithProvider("google", safeReturnTo()));
+    } catch (err) {
+      const msg = googleLoginErrorMessage(err);
+      setError(msg);
+      setGoogleLoading(false);
+    }
   };
 
   if (showOtp) {
@@ -155,9 +166,20 @@ export default function Register() {
         variant="outline"
         className="w-full h-12 text-sm font-medium mb-6"
         onClick={handleGoogle}
+        disabled={googleLoading || loading}
+        aria-busy={googleLoading ? "true" : undefined}
       >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        Continue with Google
+        {googleLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Connecting to Google...
+          </>
+        ) : (
+          <>
+            <GoogleIcon className="w-5 h-5 mr-2" />
+            Continue with Google
+          </>
+        )}
       </Button>
 
       <div className="relative mb-6">

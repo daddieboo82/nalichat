@@ -110,9 +110,13 @@ export default function PricingPlans({
 
   useEffect(() => {
     trackPaywallEvent("paywall_view", { variant, source: "pricing" });
-    if (sessionStorage.getItem(CHECKOUT_RETURN_KEY) === "1") {
-      sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
-      setCheckoutCanceled(true);
+    try {
+      if (sessionStorage.getItem(CHECKOUT_RETURN_KEY) === "1") {
+        sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
+        setCheckoutCanceled(true);
+      }
+    } catch {
+      // Checkout remains usable even when session storage is blocked.
     }
   }, [variant]);
 
@@ -160,7 +164,7 @@ export default function PricingPlans({
       if (!requestKeys.current.has(sku)) {
         requestKeys.current.set(sku, createCheckoutRequestKey());
       }
-      sessionStorage.setItem(CHECKOUT_RETURN_KEY, "1");
+      try { sessionStorage.setItem(CHECKOUT_RETURN_KEY, "1"); } catch {}
       trackPaywallEvent("checkout_started", {
         variant,
         plan: planId,
@@ -172,7 +176,7 @@ export default function PricingPlans({
         idempotencyKey: requestKeys.current.get(sku),
       });
     } catch (checkoutError) {
-      sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
+      try { sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch {}
       trackPaywallEvent("purchase_failed", {
         variant,
         plan: planId,

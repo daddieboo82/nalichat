@@ -32,6 +32,7 @@ import {
 import { useSubscription } from "@/hooks/useSubscription";
 import { CHAT_THEME_ENTITLEMENT, getChatTheme, resolveEffectiveChatThemeId } from "@/lib/chatThemes";
 import { useLockedChats } from "@/lib/LockedChatsContext";
+import { useAuth } from "@/lib/AuthContext";
 import { partitionUserConversations, resolveRequestedConversation } from "@/lib/lockedChatPolicy";
 import LockedChatAccessDialog from "@/components/messages/LockedChatAccessDialog";
 
@@ -69,7 +70,7 @@ function sendErrorFromResponse(response) {
 }
 
 export default function Messages() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser, checkUserAuth } = useAuth();
   const location = useLocation();
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [sidebarTab, setSidebarTab] = useState("chats");
@@ -106,10 +107,6 @@ export default function Messages() {
   const queryClient = useQueryClient();
 
   const [showInvite, setShowInvite] = useState(false);
-
-  useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
-  }, []);
 
   useEffect(() => {
     const sendPresence = (isOnline) => {
@@ -236,7 +233,7 @@ export default function Messages() {
         if (f.is_banned) toast.error("Edit blocked. Your account is now banned for repeated policy violations.");
         else if (f.action_taken === "timeout") toast.error("Edit blocked. You are timed out for 48 hours.");
         else toast.error("Edit blocked for a policy violation.");
-        base44.auth.me().then(setCurrentUser).catch(() => {});
+        void checkUserAuth();
       }
     },
     onSettled: async (_data, _error, variables) => {
@@ -362,7 +359,7 @@ export default function Messages() {
         } else {
           toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. This is your 1st warning — a 2nd offence is a 48-hour timeout.`);
         }
-        base44.auth.me().then(setCurrentUser).catch(() => {});
+        void checkUserAuth();
         return;
       }
       queryClient.setQueryData(["messages", ctx?.conversationId], (old = []) =>

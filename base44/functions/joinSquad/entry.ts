@@ -1,3 +1,4 @@
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
@@ -25,7 +26,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
     }
 
-    const { inviteCode } = await req.json();
+    const { inviteCode } = await readJsonBodyLimited(req, 8 * 1024);
     if (!inviteCode) return Response.json({ error: 'inviteCode is required' }, { status: 400 });
 
     const entities = base44.asServiceRole.entities;
@@ -132,6 +133,8 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, squad: claimed });
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     return Response.json({ error: error?.message || 'Could not join squad' }, { status: 500 });
   }
 });

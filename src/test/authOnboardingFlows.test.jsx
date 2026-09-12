@@ -143,9 +143,14 @@ describe('auth and onboarding flows', () => {
   });
 
   it('shows Google sign-in entry points on login and register and launches provider auth', () => {
+    localStorage.setItem('base44_access_token', 'stale-token');
+    sessionStorage.setItem('base44_token', 'stale-token');
+
     const { unmount } = renderInRouter(<Login />);
 
     fireEvent.click(screen.getByRole('button', { name: /Continue with Google/i }));
+    expect(localStorage.getItem('base44_access_token')).toBeNull();
+    expect(sessionStorage.getItem('base44_token')).toBeNull();
     expect(mockBase44.auth.loginWithProvider).toHaveBeenCalledWith('google', '/');
 
     unmount();

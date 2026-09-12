@@ -10,7 +10,7 @@ import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
-import { persistAuthResult } from "@/lib/authSession";
+import { clearPersistedAuthTokens, persistAuthResult } from "@/lib/authSession";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -72,6 +72,7 @@ export default function Register() {
 
   const handleGoogle = () => {
     try { sessionStorage.setItem("is_new_user", "true"); } catch {}
+    clearPersistedAuthTokens();
     base44.auth.loginWithProvider("google", safeReturnTo());
   };
 

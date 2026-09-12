@@ -17,3 +17,14 @@ export const persistAuthResult = (result) => {
 
   return token;
 };
+
+export const clearPersistedAuthTokens = () => {
+  try {
+    localStorage.removeItem('base44_access_token');
+    localStorage.removeItem('base44_token');
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('base44_access_token');
+    sessionStorage.removeItem('base44_token');
+    sessionStorage.removeItem('token');
+  } catch {}
+};

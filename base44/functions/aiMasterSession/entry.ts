@@ -2,6 +2,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireEntitlement, preferredAiModel } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import {
+  AiQuotaError,
+  aiQuotaErrorResponse,
+  executeMeteredAiRequest,
+} from '../../shared/aiQuota.ts';
 
 // Returns concrete, numeric mastering parameters that the client applies via WebAudio
 // to automatically produce an industry-ready master from stacked stems.
@@ -79,7 +84,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { project_title, genre, bpm, stems } = await readJsonBodyLimited(req, 32 * 1024);
+    const { project_title, genre, bpm, stems, request_key } = await readJsonBodyLimited(req, 32 * 1024);
 
     const projectTitle = String(project_title || '').trim().slice(0, 200);
     const cleanGenre = String(genre || '').trim().slice(0, 100);
@@ -99,7 +104,12 @@ Deno.serve(async (req) => {
       stems: cleanStems,
     });
 
-    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+    const { result, quota } = await executeMeteredAiRequest({
+      base44,
+      user,
+      operation: 'ai_master_session',
+      requestKey: request_key,
+      dispatch: () => base44.asServiceRole.integrations.Core.InvokeLLM({
       ...(preferredAiModel(entitlements) ? { model: preferredAiModel(entitlements) } : {}),
       prompt: `You are a world-class mastering engineer. Produce concrete, numeric processing settings to turn a multi-stem mix into an industry-ready, streaming-loud master.
 
@@ -131,10 +141,12 @@ gain_db values should be modest (-6 to +6). ratio 1.5-4. attack 0.003-0.05. rele
         },
         required: ["low_shelf", "low_mid", "presence", "high_shelf", "compressor", "makeup_gain_db", "limiter_ceiling_db"]
       }
+      }),
     });
 
-    return Response.json(normalizeMasteringResult(result));
+    return Response.json({ ...normalizeMasteringResult(result), quota });
   } catch (error) {
+    if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;
     console.error('aiMasterSession error:', error);

@@ -256,6 +256,8 @@ Deno.serve(async (req) => {
       await releaseProjectMembershipLock(entities, projectLockId);
     }
   } catch (error) {
-    return Response.json({ error: error?.message || 'Could not create shared file' }, { status: 500 });
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
+    return Response.json({ error: 'Could not create shared file' }, { status: 500 });
   }
 });

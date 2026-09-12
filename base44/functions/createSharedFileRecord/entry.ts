@@ -170,6 +170,9 @@ Deno.serve(async (req) => {
       const folder = await entities.Folder.get(folderId);
       if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
       const folderProjectId = folder.project_id || null;
+      if (folderProjectId && !isBase44EntityId(folderProjectId)) {
+        return Response.json({ error: 'Folder has an invalid project reference' }, { status: 409 });
+      }
       if (projectId && folderProjectId !== projectId) {
         return Response.json({ error: 'folder_id does not belong to project_id' }, { status: 400 });
       }
@@ -213,7 +216,10 @@ Deno.serve(async (req) => {
       if (folderId) {
         const folder = await entities.Folder.get(folderId);
         if (!folder) return Response.json({ error: 'Folder not found' }, { status: 404 });
-        if ((folder.project_id || null) !== (destinationProjectId || null)) {
+        if (
+          (folder.project_id || null) !== (destinationProjectId || null)
+          || (folder.project_id && !isBase44EntityId(folder.project_id))
+        ) {
           return Response.json({ error: 'Folder destination changed. Please retry.' }, { status: 409 });
         }
 

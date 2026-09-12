@@ -104,6 +104,13 @@ export function writeOutboundQueue(entries, storage = browserStorage()) {
   return entries;
 }
 
+export function purgeOutboundQueueForUser(userId, storage = browserStorage()) {
+  if (!storage || !userId) return [];
+  const retained = readOutboundQueue(storage).filter(entry => entry.sender?.id !== userId);
+  writeOutboundQueue(retained, storage);
+  return retained;
+}
+
 export function enqueueOutbound(entry, storage = browserStorage()) {
   const entries = readOutboundQueue(storage);
   const existingIndex = entries.findIndex(item =>

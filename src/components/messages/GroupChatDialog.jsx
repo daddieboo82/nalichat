@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,18 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
   const [isCreating, setIsCreating] = useState(false);
   const retryKeyRef = useRef(null);
   const retrySignatureRef = useRef("");
+  const operationGenerationRef = useRef(0);
+
+  useEffect(() => {
+    if (open) return;
+    operationGenerationRef.current += 1;
+    setName("");
+    setSelected([]);
+    setSearch("");
+    setIsCreating(false);
+    retryKeyRef.current = null;
+    retrySignatureRef.current = "";
+  }, [open]);
 
   const filtered = users.filter(u =>
     (u.display_name || u.full_name || "").toLowerCase().includes(search.toLowerCase())
@@ -32,6 +44,7 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
     retryKeyRef.current = clientRequestKey;
     retrySignatureRef.current = signature;
 
+    const generation = operationGenerationRef.current;
     setIsCreating(true);
     try {
       await onCreate({
@@ -39,6 +52,7 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
         participant_ids: participantIds,
         client_request_key: clientRequestKey,
       });
+      if (generation !== operationGenerationRef.current) return;
       retryKeyRef.current = null;
       retrySignatureRef.current = "";
       setName("");
@@ -48,7 +62,7 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
     } catch {
       // Parent surfaces the user-facing error. Keep the dialog state intact.
     } finally {
-      setIsCreating(false);
+      if (generation === operationGenerationRef.current) setIsCreating(false);
     }
   };
 

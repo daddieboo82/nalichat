@@ -1,12 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/AuthContext";
 import {
   DEFAULT_AI_CAPABILITIES,
   getAiCapabilities,
 } from "@/lib/aiCapabilities";
 
 export function useAiCapabilities() {
+  const { user } = useAuth();
   const query = useQuery({
-    queryKey: ["ai-capabilities"],
+    queryKey: ["ai-capabilities", user?.id || "anonymous"],
     queryFn: getAiCapabilities,
     retry: false,
     staleTime: 60_000,

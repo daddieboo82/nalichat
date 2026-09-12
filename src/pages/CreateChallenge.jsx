@@ -1,3 +1,4 @@
+import { secureUploadFile } from "@/lib/secureUpload";
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
@@ -57,11 +58,11 @@ export default function CreateChallenge() {
 
       let cover_url = "";
       if (coverFile) {
-        const res = await base44.integrations.Core.UploadFile({ file: coverFile });
+        const res = await secureUploadFile({ file: coverFile });
         cover_url = res.file_url;
       }
 
-      const trackRes = await base44.integrations.Core.UploadFile({ file: sourceTrackFile });
+      const trackRes = await secureUploadFile({ file: sourceTrackFile });
       const source_track_url = trackRes.file_url;
       const source_track_name = sourceTrackName.trim() || sourceTrackFile.name.replace(/\.[^/.]+$/, "");
 

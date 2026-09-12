@@ -14,11 +14,16 @@ const VALID_LEVELS = ["proactive", "minimal", "off"];
 export function NaliPresenceProvider({ children }) {
   const { user } = useAuth();
   const savingRef = useRef(false);
+  const identityGenerationRef = useRef(0);
   const [isSaving, setIsSaving] = useState(false);
   const storageKey = storageKeyFor(user?.id);
   const [level, setLevelState] = useState(DEFAULT_LEVEL);
 
   useEffect(() => {
+    identityGenerationRef.current += 1;
+    savingRef.current = false;
+    setIsSaving(false);
+
     // Server profile wins for signed-in users. Otherwise use only this account's
     // device-local preference; never inherit another account's setting.
     if (user?.nali_presence_level && VALID_LEVELS.includes(user.nali_presence_level)) {
@@ -53,6 +58,7 @@ export function NaliPresenceProvider({ children }) {
   const setLevel = useCallback(async (newLevel) => {
     if (!VALID_LEVELS.includes(newLevel) || savingRef.current) return;
     const previousLevel = level;
+    const generation = identityGenerationRef.current;
 
     setLevelState(newLevel);
     try { localStorage.setItem(storageKey, newLevel); } catch {}
@@ -67,15 +73,19 @@ export function NaliPresenceProvider({ children }) {
       const response = await base44.functions.invoke("updateMyProfile", {
         nali_presence_level: newLevel,
       });
+      if (generation !== identityGenerationRef.current) return;
       if (response?.data?.error) throw new Error(response.data.error);
     } catch (error) {
+      if (generation !== identityGenerationRef.current) return;
       setLevelState(previousLevel);
       try { localStorage.setItem(storageKey, previousLevel); } catch {}
       console.error("Nali presence update failed:", error);
       toast.error(error?.message || "Could not save your Nali Presence setting.");
     } finally {
-      savingRef.current = false;
-      setIsSaving(false);
+      if (generation === identityGenerationRef.current) {
+        savingRef.current = false;
+        setIsSaving(false);
+      }
     }
   }, [level, storageKey, user?.id]);
 

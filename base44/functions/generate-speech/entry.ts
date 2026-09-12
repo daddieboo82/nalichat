@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 // Generates TTS audio for Nali's voice replies.
 // Moved to a backend function to protect integration credits — the client
@@ -41,7 +42,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const { text, voice } = await req.json();
+    const { text, voice } = await readJsonBodyLimited(req, 16 * 1024);
     if (typeof text !== 'string' || !text.trim()) {
       return Response.json({ error: 'Text is required' }, { status: 400 });
     }
@@ -59,6 +60,8 @@ Deno.serve(async (req) => {
 
     return Response.json(result);
   } catch (error) {
+    const bodyError = requestBodyErrorResponse(error);
+    if (bodyError) return bodyError;
     console.error('generate-speech error:', error.message);
     return Response.json({ error: 'AI speech generation failed' }, { status: 500 });
   }

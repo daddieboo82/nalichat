@@ -244,7 +244,6 @@ const AuthenticatedApp = () => {
         <Route path="/ThankYou" element={<ThankYou />} />
         <Route path="/thankyou" element={<ThankYou />} />
       </Route>
-      <Route path="/studio-capture" element={<Studio />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`} replace />} />}>
         <Route path="/studio" element={<Studio />} />
         <Route element={<AppLayout />}>

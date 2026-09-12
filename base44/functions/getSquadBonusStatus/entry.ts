@@ -49,6 +49,6 @@ Deno.serve(async (req) => {
       progress,
     });
   } catch (error) {
-    return Response.json({ error: error?.message || 'Could not load squad bonus status' }, { status: 500 });
+    return Response.json({ error: 'Could not load squad bonus status' }, { status: 500 });
   }
 });

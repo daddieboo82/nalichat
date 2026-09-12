@@ -27,6 +27,6 @@ Deno.serve(async (req) => {
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('listMyLikedPostIds error:', error);
-    return Response.json({ error: error?.message || 'Could not load likes' }, { status: 500 });
+    return Response.json({ error: 'Could not load likes' }, { status: 500 });
   }
 });

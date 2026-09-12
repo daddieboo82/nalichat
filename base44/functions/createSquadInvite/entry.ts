@@ -110,6 +110,6 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, squad });
   } catch (error) {
-    return Response.json({ error: error?.message || 'Could not create squad invite' }, { status: 500 });
+    return Response.json({ error: 'Could not create squad invite' }, { status: 500 });
   }
 });

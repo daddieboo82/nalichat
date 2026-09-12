@@ -288,6 +288,7 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
     if (!cardUrl) return;
     try {
       const res = await fetch(cardUrl);
+      if (!res.ok) throw new Error(`Voice card fetch failed: ${res.status}`);
       const blob = await res.blob();
       const file = new File([blob], "nalichat-voice-card.png", { type: "image/png" });
       const shareText = `Voice note from ${message?.sender_name || "NaliChat"} — transcribed & shared via NaliChat`;

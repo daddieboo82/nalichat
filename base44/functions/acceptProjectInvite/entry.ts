@@ -72,6 +72,18 @@ Deno.serve(async (req) => {
     const project = await base44.asServiceRole.entities.Project.get(projectId);
     if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
 
+    const lockedInvite = await base44.asServiceRole.entities.ProjectInvite.get(invite.id).catch(() => null);
+    if (
+      !lockedInvite
+      || lockedInvite.project_id !== projectId
+      || lockedInvite.token_hash !== tokenHash
+      || !['editor', 'viewer'].includes(lockedInvite.role)
+      || new Date(lockedInvite.expires_at).getTime() < Date.now()
+    ) {
+      return Response.json({ error: 'Invite is invalid or expired' }, { status: 403 });
+    }
+    const lockedMaxUses = Number(lockedInvite.max_uses || 25);
+
     if (project.owner_id === user.id) {
       return Response.json({ success: true, role: 'owner', already_member: true }, { headers: { 'Cache-Control': 'no-store' } });
     }
@@ -85,8 +97,8 @@ Deno.serve(async (req) => {
 
     const claim = await base44.asServiceRole.entities.ProjectInvite.updateMany(
       {
-        id: invite.id,
-        used_count: { $lt: maxUses },
+        id: lockedInvite.id,
+        used_count: { $lt: lockedMaxUses },
       },
       { $inc: { used_count: 1 } },
     );
@@ -98,9 +110,9 @@ Deno.serve(async (req) => {
     try {
       if (project.owner_id !== user.id) {
       const collaboratorIds = Array.from(new Set([...(project.collaborator_ids || []), user.id]));
-      const roles = { ...(project.collaborator_roles || {}), [user.id]: invite.role };
+      const roles = { ...(project.collaborator_roles || {}), [user.id]: lockedInvite.role };
       const editorIds = new Set(project.editor_ids || []);
-      if (invite.role === 'editor') editorIds.add(user.id);
+      if (lockedInvite.role === 'editor') editorIds.add(user.id);
       else editorIds.delete(user.id);
 
       await base44.asServiceRole.entities.Project.update(project.id, {
@@ -128,7 +140,7 @@ Deno.serve(async (req) => {
             const patch: Record<string, any> = { access_user_ids: accessUserIds };
             if ('edit_user_ids' in row || entityName === 'Track' || entityName === 'TrackVersion' || entityName === 'Folder' || entityName === 'Milestone') {
               const editUserIds = new Set(row.edit_user_ids || []);
-              if (invite.role === 'editor') editUserIds.add(user.id);
+              if (lockedInvite.role === 'editor') editUserIds.add(user.id);
               else editUserIds.delete(user.id);
               patch.edit_user_ids = Array.from(editUserIds);
             }
@@ -140,7 +152,7 @@ Deno.serve(async (req) => {
     }
 
     return Response.json(
-      { success: true, role: invite.role },
+      { success: true, role: lockedInvite.role },
       { headers: { 'Cache-Control': 'no-store' } },
     );
     } catch (grantError) {

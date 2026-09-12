@@ -7,6 +7,7 @@ import {
   resolvePortalReturnUrl,
   resolveStripeSku,
   shouldApplyStripeEvent,
+  stripeEnvironmentFromSecretKey,
   subscriptionUpdateFromStripe,
   trialEligibility,
   validateCheckoutIdempotencyKey,
@@ -99,6 +100,16 @@ describe('checkout and trial replay controls', () => {
       .toEqual({ eligible: false, reason: 'prior_record' });
     expect(trialEligibility(null, [{ status: 'trialing' }]))
       .toEqual({ eligible: false, reason: 'prior_record' });
+  });
+});
+
+describe('Stripe environment detection', () => {
+  it('derives the environment from the configured Stripe secret key', () => {
+    expect(stripeEnvironmentFromSecretKey('sk_test_123')).toBe('test');
+    expect(stripeEnvironmentFromSecretKey('rk_test_123')).toBe('test');
+    expect(stripeEnvironmentFromSecretKey('sk_live_123')).toBe('live');
+    expect(stripeEnvironmentFromSecretKey('rk_live_123')).toBe('live');
+    expect(() => stripeEnvironmentFromSecretKey('invalid')).toThrow('Stripe environment');
   });
 });
 

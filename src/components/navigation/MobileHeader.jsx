@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  ChevronLeft, Music, AudioLines, LogIn, Menu,
+  ChevronLeft, Music, AudioLines, LogIn, LogOut, Menu,
   Mic, Wand2, FileText, Trophy, Settings, Gem, BarChart3,
   Home, Compass, MessageSquare, Users, Radio, Swords, Rocket, Smartphone
 } from "lucide-react";
@@ -74,7 +74,7 @@ const MENU_GROUPS = [
 export default function MobileHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
 
@@ -108,6 +108,12 @@ export default function MobileHeader() {
     sounds.nav();
     setMenuOpen(false);
     navigate(dest);
+  };
+
+  const handleLogout = async () => {
+    setMenuOpen(false);
+    await logout();
+    navigate("/", { replace: true });
   };
 
   const isActive = (p) => path === p || (p !== "/" && path.startsWith(p));
@@ -215,6 +221,51 @@ export default function MobileHeader() {
                 </div>
               </div>
             ))}
+
+            {/* Account actions — always reachable on iPhone/mobile. */}
+            <div className="pt-3 border-t border-white/[0.06] space-y-1">
+              {isAuthenticated ? (
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-destructive/10 text-left transition-all"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                    <LogOut className="w-4.5 h-4.5 text-destructive" style={{ width: 18, height: 18 }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-destructive">Log out</p>
+                    <p className="text-[11px] text-muted-foreground">Sign out of this device</p>
+                  </div>
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleNavigate("/login")}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-primary/10 text-left transition-all"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <LogIn className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Log in</p>
+                      <p className="text-[11px] text-muted-foreground">Access your NaliChat account</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleNavigate("/register")}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-primary/10 text-left transition-all"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Users className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Sign up</p>
+                      <p className="text-[11px] text-muted-foreground">Create a NaliChat account</p>
+                    </div>
+                  </button>
+                </>
+              )}
+            </div>
 
             {/* Footer items */}
             <div className="pt-3 border-t border-white/[0.06] space-y-1">

@@ -52,18 +52,25 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
     async (signal) => {
       if (!conversationId || !currentUser) return;
       try {
+        const clientMessageKey = `call-${currentUser.id}-${signal.callId || "unknown"}-${signal.type || "signal"}-${Date.now()}`;
         const res = await base44.functions.invoke("sendConversationMessage", {
           conversation_id: conversationId,
           type: "session",
           text: JSON.stringify({ [SIGNAL_SENTINEL]: true, ...signal }),
+          client_message_key: clientMessageKey,
         });
         if (res?.data?.error) throw new Error(res.data.error);
         const sent = res?.data?.message;
         if (
           res?.data?.success !== true ||
+          res?.data?.action !== "send" ||
+          res?.data?.userId !== currentUser.id ||
+          res?.data?.conversationId !== conversationId ||
+          res?.data?.clientMessageKey !== clientMessageKey ||
           !sent?.id ||
           sent?.conversation_id !== conversationId ||
           sent?.sender_id !== currentUser.id ||
+          sent?.client_message_key !== clientMessageKey ||
           sent?.type !== "session" ||
           !isCallSignal(sent?.text)
         ) {

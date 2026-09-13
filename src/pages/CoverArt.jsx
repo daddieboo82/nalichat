@@ -25,6 +25,16 @@ import {
 } from "@/components/ui/dialog";
 
 
+async function filterAllRows(entity, query, sort = "-created_date") {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entity.filter(query, sort, pageSize, skip);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function CoverArt() {
   const { hasEntitlement } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
@@ -156,13 +166,13 @@ export default function CoverArt() {
 
   const { data: sharedFiles = [], isLoading: isLoadingFiles } = useQuery({
     queryKey: ["mySharedFiles", currentUser?.id],
-    queryFn: () => currentUser ? base44.entities.SharedFile.filter({ uploader_id: currentUser.id }) : [],
+    queryFn: () => currentUser ? filterAllRows(base44.entities.SharedFile, { uploader_id: currentUser.id }) : [],
     enabled: showFilesDialog && !!currentUser,
   });
 
   const { data: myPlaylists = [], isLoading: isLoadingPlaylists } = useQuery({
     queryKey: ["myPlaylists", currentUser?.id],
-    queryFn: () => currentUser ? base44.entities.Playlist.filter({ owner_id: currentUser.id }) : [],
+    queryFn: () => currentUser ? filterAllRows(base44.entities.Playlist, { owner_id: currentUser.id }) : [],
     enabled: showPlaylistDialog && !!currentUser,
   });
 
@@ -245,7 +255,7 @@ export default function CoverArt() {
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["myArtPosts", currentUser?.id],
-    queryFn: () => currentUser ? base44.entities.ArtPost.filter({ creator_id: currentUser.id }) : [],
+    queryFn: () => currentUser ? filterAllRows(base44.entities.ArtPost, { creator_id: currentUser.id }) : [],
     enabled: !!currentUser,
   });
 

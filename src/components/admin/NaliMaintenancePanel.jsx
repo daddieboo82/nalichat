@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Wrench, Stethoscope, Loader2, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
@@ -7,6 +8,7 @@ import { Wrench, Stethoscope, Loader2, AlertTriangle, CheckCircle2, ChevronDown,
 // Nali Maintenance Panel — lets the app owner run Nali's diagnostic scan
 // and trigger automatic repairs for safe, non-destructive data issues.
 export default function NaliMaintenancePanel() {
+  const { user } = useAuth();
   const [mode, setMode] = useState(null); // 'diagnose' | 'repair'
   const [result, setResult] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -20,7 +22,15 @@ export default function NaliMaintenancePanel() {
     try {
       const res = await base44.functions.invoke('nali-maintenance', { mode: runMode });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (!res?.data || typeof res.data.totalIssues !== 'number') {
+      if (
+        !res?.data ||
+        res.data.success !== true ||
+        res.data.adminUserId !== user?.id ||
+        res.data.mode !== runMode ||
+        typeof res.data.totalIssues !== 'number' ||
+        !Number.isFinite(res.data.totalIssues) ||
+        res.data.totalIssues < 0
+      ) {
         throw new Error("Maintenance response was invalid");
       }
       setResult(res.data);

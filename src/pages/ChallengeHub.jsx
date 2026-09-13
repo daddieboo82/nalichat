@@ -80,22 +80,22 @@ export default function ChallengeHub() {
   }
 
   return (
-    <PullToRefresh onRefresh={refresh} className="max-w-5xl mx-auto p-4 sm:p-6 space-y-8">
+    <PullToRefresh onRefresh={refresh} className="mx-auto max-w-5xl space-y-7 px-4 py-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:p-6 sm:space-y-8">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-heading text-2xl sm:text-3xl font-bold text-gradient-animate">Remix Challenges</h1>
           <p className="text-muted-foreground text-sm mt-1">Upload a source track, remix, and vote for the community's best.</p>
         </div>
         {user && (
-          <Button className="rounded-full gap-1.5 bg-gradient-to-r from-primary to-accent text-white" asChild>
+          <Button className="ui-hover min-h-11 gap-1.5 rounded-xl bg-gradient-to-r from-primary to-accent px-4 font-semibold text-white shadow-lg shadow-primary/10" asChild>
             <Link to="/create-challenge"><Plus className="w-4 h-4" /> Create Challenge</Link>
             </Button>
         )}
       </div>
 
       {featured && (
-        <Link to={`/challenge/${featured.id}`} className="block rounded-3xl overflow-hidden border border-primary/30 bg-gradient-to-br from-primary/10 to-accent/10 hover:border-primary/60 transition-all">
-          <div className="relative aspect-[16/7] bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+        <Link to={`/challenge/${featured.id}`} className="ui-surface ui-hover block overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 to-accent/10 transition-all hover:border-primary/60 focus-visible:ring-2 focus-visible:ring-primary/40">
+          <div className="relative flex aspect-[16/9] items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 sm:aspect-[16/7]">
             {featured.cover_url ? (
               <img src={featured.cover_url} alt={featured.title} className="w-full h-full object-cover" />
             ) : (
@@ -113,7 +113,7 @@ export default function ChallengeHub() {
       {upcoming.length > 0 && (
         <section>
           <h2 className="font-heading font-bold text-lg mb-3">Upcoming</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 sm:grid-cols-3">
             {upcoming.map((c) => <ChallengeCard key={c.id} challenge={c} dimmed />)}
           </div>
         </section>
@@ -122,14 +122,14 @@ export default function ChallengeHub() {
       {past.length > 0 && (
         <section>
           <h2 className="font-heading font-bold text-lg mb-3 flex items-center gap-2"><Trophy className="w-5 h-5 text-yellow-500" /> Past Challenges</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 sm:grid-cols-3">
             {past.map((c) => <ChallengeCard key={c.id} challenge={c} winner={winners[c.id]} />)}
           </div>
         </section>
       )}
 
       {challenges.length === 0 && (
-        <p className="text-center text-muted-foreground py-12">No challenges yet — check back soon!</p>
+        <p className="ui-surface rounded-3xl border border-dashed border-border px-5 py-12 text-center text-muted-foreground">No challenges yet — check back soon!</p>
       )}
     </PullToRefresh>
   );

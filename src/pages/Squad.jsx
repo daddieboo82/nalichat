@@ -190,14 +190,14 @@ export default function Squad() {
   const partnerName = isMemberA ? squad?.member_b_name : squad?.member_a_name;
 
   return (
-    <PullToRefresh onRefresh={load} className="max-w-2xl mx-auto p-4 sm:p-6 space-y-6">
+    <PullToRefresh onRefresh={load} className="mx-auto max-w-2xl space-y-6 px-4 py-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:p-6">
       <div>
         <h1 className="font-heading text-2xl sm:text-3xl font-bold text-gradient-animate">Squad & Scale</h1>
         <p className="text-muted-foreground text-sm mt-1">Link up with a partner — hit your weekly goals together and unlock a 1.5x weekend bonus.</p>
       </div>
 
       {/* Credits */}
-      <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
+      <div className="ui-surface flex items-center justify-between rounded-2xl border border-white/[0.06] bg-secondary/40 px-4 py-3">
         <div className="flex items-center gap-2 text-sm font-medium">
           <Sparkles className="w-4 h-4 text-primary" /> Squad Credits
         </div>
@@ -205,13 +205,13 @@ export default function Squad() {
       </div>
 
       {!squad && (
-        <div className="rounded-2xl border border-dashed border-border p-8 text-center space-y-4">
+        <div className="ui-surface space-y-4 rounded-3xl border border-dashed border-border p-6 text-center sm:p-8">
           <Users className="w-10 h-10 mx-auto text-primary/60" />
           <div>
             <h2 className="font-heading font-bold text-lg">Form a Squad</h2>
             <p className="text-sm text-muted-foreground mt-1">Invite a friend to team up. Both of you hitting your weekly chat or task goals unlocks a {BONUS_MULTIPLIER}x weekend bonus and {CREDITS_REWARD} squad credits each.</p>
           </div>
-          <Button onClick={handleCreate} disabled={creating} className="rounded-full bg-gradient-to-r from-primary to-accent text-white">
+          <Button onClick={handleCreate} disabled={creating} className="ui-hover min-h-12 rounded-xl bg-gradient-to-r from-primary to-accent px-5 font-semibold text-white shadow-lg shadow-primary/10">
             {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Users className="w-4 h-4 mr-2" />}
             Create Squad Invite
           </Button>
@@ -219,16 +219,16 @@ export default function Squad() {
       )}
 
       {squad && squad.status === "pending" && (
-        <div className="rounded-2xl bg-secondary/40 p-6 space-y-4">
+        <div className="ui-surface space-y-4 rounded-3xl border border-white/[0.06] bg-secondary/40 p-5 sm:p-6">
           <h2 className="font-heading font-bold text-lg">Waiting for your partner</h2>
           <p className="text-sm text-muted-foreground">Share this link — as soon as they join, your squad goes active.</p>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 truncate bg-background rounded-xl px-3 py-2 text-xs text-muted-foreground">{inviteLink}</div>
-            <Button size="icon" variant="outline" onClick={handleCopy} className="rounded-xl shrink-0" aria-label="Copy invite link">
+          <div className="flex items-stretch gap-2">
+            <div className="flex min-h-11 flex-1 items-center truncate rounded-xl border border-border/50 bg-background px-3 py-2 text-xs text-muted-foreground">{inviteLink}</div>
+            <Button size="icon" variant="outline" onClick={handleCopy} className="ui-hover h-11 w-11 shrink-0 rounded-xl" aria-label="Copy invite link">
               {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
             </Button>
           </div>
-          <Button variant="ghost" onClick={handleLeave} className="text-muted-foreground hover:text-destructive gap-1.5 px-0">
+          <Button variant="ghost" onClick={handleLeave} className="ui-hover min-h-10 gap-1.5 rounded-xl px-3 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
             <LogOut className="w-4 h-4" /> Cancel invite
           </Button>
         </div>
@@ -252,7 +252,7 @@ export default function Squad() {
             <SquadMemberProgress name={partnerName || "Your partner"} member={isMemberA ? "b" : "a"} progress={progress} />
           </div>
 
-          <Button variant="ghost" onClick={handleLeave} className="text-muted-foreground hover:text-destructive gap-1.5 px-0">
+          <Button variant="ghost" onClick={handleLeave} className="ui-hover min-h-10 gap-1.5 rounded-xl px-3 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
             <LogOut className="w-4 h-4" /> Leave squad
           </Button>
         </div>

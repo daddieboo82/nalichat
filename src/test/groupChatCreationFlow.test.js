@@ -18,5 +18,9 @@ describe('group chat creation flow', () => {
     expect(dialog).toContain('setIsCreating(false)');
     expect(dialog).toContain('Creating...');
     expect(page).toContain('throw err;');
+    expect(page).toContain('created?.data?.success !== true');
+    expect(page).toContain('conv?.type !== "group"');
+    expect(page).toContain('conv?.name !== name');
+    expect(page).toContain('![...expectedParticipantIds].every((id) => conv.participant_ids.includes(id))');
   });
 });

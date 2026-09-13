@@ -187,6 +187,7 @@ export default function Explore() {
               onClick={() => {
                 if (!currentUser) {
                   if (typeof navigateToLogin === "function") navigateToLogin();
+                  else if (typeof base44?.auth?.redirectToLogin === "function") base44.auth.redirectToLogin();
                   else navigate("/login", { state: { returnTo: location.pathname + location.search } });
                   return;
                 }
@@ -279,6 +280,7 @@ export default function Explore() {
               <button onClick={() => {
                 if (!currentUser) {
                   if (typeof navigateToLogin === "function") navigateToLogin();
+                  else if (typeof base44?.auth?.redirectToLogin === "function") base44.auth.redirectToLogin();
                   else navigate("/login", { state: { returnTo: location.pathname + location.search } });
                   return;
                 }

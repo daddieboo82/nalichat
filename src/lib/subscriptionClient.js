@@ -95,7 +95,7 @@ export function subscriptionQueryKey(userId) {
   return [SUBSCRIPTION_QUERY_KEY, userId || "anonymous"];
 }
 
-export async function checkSubscriptionStatus() {
+export async function checkSubscriptionStatus(expectedUserId) {
   const response = await base44.functions.invoke("checkSubscriptionStatus");
   const payload = response?.data ?? response;
   if (
@@ -104,7 +104,8 @@ export async function checkSubscriptionStatus() {
     payload.error ||
     payload.success !== true ||
     typeof payload.userId !== "string" ||
-    !payload.userId.trim()
+    !payload.userId.trim() ||
+    (expectedUserId && payload.userId !== expectedUserId)
   ) {
     throw new Error(payload?.error || "Unable to load subscription status");
   }

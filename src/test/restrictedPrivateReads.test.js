@@ -10,11 +10,12 @@ describe('restricted private read gates', () => {
     expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('executeMessageSearch({'));
   });
 
-  it('blocks restricted users before locked-chat service-role reads', async () => {
+  it('keeps locked-chat account-security controls available while still requiring authentication and rate limits', async () => {
     const source = await readFile('base44/functions/lockedChatVault/entry.ts', 'utf8');
-    expect(source).toContain("return errorResponse('banned', 403, 'banned')");
-    expect(source).toContain("code: 'timed_out'");
-    expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('readJsonBodyLimited(req, 32 * 1024)'));
-    expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('consumeHourlyLimit('));
+    expect(source).toContain("if (!user) return errorResponse('Unauthorized', 401, 'unauthorized')");
+    expect(source).toContain('private account-security operations');
+    expect(source).toContain("'locked_chat_state'");
+    expect(source).toContain("'locked_chat_mutation'");
+    expect(source).not.toContain('if (user.is_banned)');
   });
 });

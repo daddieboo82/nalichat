@@ -1,4 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
+import { validateUpload } from "@/lib/uploadValidation";
 import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -204,7 +205,18 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
               <input
                 type="file"
                 accept=".mp3,.wav"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                onChange={(e) => {
+                  const selected = e.target.files?.[0] || null;
+                  if (!selected) return setFile(null);
+                  const validation = validateUpload(selected);
+                  if (!validation.ok) {
+                    toast.error(validation.error);
+                    setFile(null);
+                    e.target.value = "";
+                    return;
+                  }
+                  setFile(selected);
+                }}
                 className="w-full text-sm rounded-xl border border-border p-2 file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-1.5"
               />
               {file && <p className="text-xs text-muted-foreground truncate">{file.name}</p>}

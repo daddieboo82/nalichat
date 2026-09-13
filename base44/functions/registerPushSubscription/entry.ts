@@ -75,7 +75,13 @@ Deno.serve(async (req) => {
 
     const entity = base44.asServiceRole.entities.PushSubscription;
     const deterministicId = await pushSubscriptionId(endpoint);
-    const endpointRows = await entity.filter({ endpoint }, '-created_date', 10);
+    const endpointRows: any[] = [];
+    const pageSize = 200;
+    for (let skip = 0; ; skip += pageSize) {
+      const page = await entity.filter({ endpoint }, '-created_date', pageSize, skip);
+      endpointRows.push(...page);
+      if (page.length < pageSize) break;
+    }
 
     // A browser PushManager subscription is device/browser scoped rather than
     // account scoped. Reusing the same subscription after sign-out must transfer

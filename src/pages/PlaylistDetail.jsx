@@ -119,7 +119,11 @@ export default function PlaylistDetail() {
         trackId,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.playlist;
+      const updatedPlaylist = res?.data?.playlist;
+      if (res?.data?.success !== true || !updatedPlaylist?.id) {
+        throw new Error("Playlist update was not confirmed");
+      }
+      return updatedPlaylist;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlist", currentUser?.id || "anonymous", playlistId] });

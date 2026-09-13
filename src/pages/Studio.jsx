@@ -108,7 +108,7 @@ export default function Studio() {
   const studioStorageOwner = user?.id || null;
   const masterFxStorageKey = studioStorageOwner ? `nalistudio_master_fx:${studioStorageOwner}` : null;
   const autosaveStorageKey = studioStorageOwner ? `nalistudio_project_autosave:${studioStorageOwner}` : null;
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const roomId = searchParams.get('room');
   const inviteToken = searchParams.get('invite');
   const isMobile = useIsMobile();
@@ -380,6 +380,11 @@ export default function Studio() {
             token: inviteToken,
           });
           if (accepted?.data?.error) throw new Error(accepted.data.error);
+          if (!cancelled) {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete("invite");
+            setSearchParams(nextParams, { replace: true });
+          }
         }
         const project = await base44.entities.Project.get(roomId);
         if (!project || cancelled) return;
@@ -459,7 +464,7 @@ export default function Studio() {
     })();
 
     return () => { cancelled = true; };
-  }, [roomId, inviteToken, WAVEFORM_POINTS, user?.id, projectLoadRetryKey]);
+  }, [roomId, inviteToken, WAVEFORM_POINTS, user?.id, projectLoadRetryKey, searchParams, setSearchParams]);
 
   const handleStartBlank = () => { setTracks([]); setShowWelcome(false); };
 

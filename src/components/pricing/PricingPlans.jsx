@@ -154,7 +154,7 @@ export default function PricingPlans({
     });
 
     if (!isAuthenticated) {
-      navigate("/register", { state: { from: "/pricing" } });
+      navigate(`/register?returnTo=${encodeURIComponent("/pricing")}`);
       return;
     }
 

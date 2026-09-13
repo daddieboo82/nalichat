@@ -98,7 +98,7 @@ export default function Onboarding() {
       <div className="ui-surface w-full max-w-md rounded-3xl border border-border/80 bg-card/90 p-5 shadow-2xl backdrop-blur-xl sm:p-8">
         <div className="mb-6 flex items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/20">
-            <Music className="w-5 h-5 text-primary" className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
+            <Music className="h-5 w-5 text-primary" />
           </div>
           <div>
             <p className="font-heading font-bold text-lg leading-tight">Welcome to NaliChat</p>

@@ -57,7 +57,14 @@ export default function ProjectsSummary() {
       });
       if (res?.data?.error) throw new Error(res.data.error);
       const token = res?.data?.token;
-      if (!token) throw new Error("Invite token was not created");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "create_project_invite" ||
+        res?.data?.userId !== user?.id ||
+        res?.data?.projectId !== projectId ||
+        res?.data?.role !== "viewer" ||
+        !/^[0-9a-f]{64}$/i.test(String(token || ""))
+      ) throw new Error("Invite token was not created");
       const url = `${window.location.origin}/studio?room=${projectId}&invite=${encodeURIComponent(token)}`;
       setInviteLinks((prev) => ({ ...prev, [projectId]: url }));
       const copied = await copyToClipboard(url);

@@ -67,7 +67,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
                     if (isActive && isPlaying && audioPlayer?.togglePlay) {
                       audioPlayer.togglePlay();
                     } else if (typeof playTrack === 'function') {
-                      void recordArtPostPlay(post.id);
+                      void recordArtPostPlay(post.id, currentUser?.id);
                       base44.functions.invoke("recordArtPostView", { postId: post.id }).catch(() => {});
                       playTrack({
                         id: post.id,

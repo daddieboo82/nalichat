@@ -64,6 +64,9 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
         ...payload,
       });
       if (response?.data?.error) throw new Error(response.data.error);
+      if (response?.data?.success !== true) {
+        throw new Error("Collaborator update was not confirmed.");
+      }
       return {
         stale: generation !== mutationGenerationRef.current,
         response,
@@ -216,6 +219,9 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
                     });
                     if (generation !== mutationGenerationRef.current) return;
                     if (res?.data?.error) throw new Error(res.data.error);
+                    if (res?.data?.success !== true || res?.data?.project_id !== project.id) {
+                      throw new Error("Project deletion was not confirmed.");
+                    }
                     onDelete?.(project.id);
                     queryClient.invalidateQueries({ queryKey: ["projects"] });
                     setShowDelete(false);

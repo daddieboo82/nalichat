@@ -7,6 +7,10 @@ describe('Studio project settings failures', () => {
     expect(s).toContain('isError: usersError');
     expect(s).toContain("Couldn't load collaborators");
     expect(s).toContain('if (response?.data?.error) throw new Error(response.data.error);');
+    expect(s).toContain('response?.data?.success !== true');
+    expect(s).toContain('Collaborator update was not confirmed.');
+    expect(s).toContain('res?.data?.success !== true || res?.data?.project_id !== project.id');
+    expect(s).toContain('Project deletion was not confirmed.');
     expect(s).toContain("Couldn't update this collaborator. Please try again.");
     expect(s).toContain("Couldn't delete this project. Please try again.");
   });

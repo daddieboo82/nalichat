@@ -234,7 +234,7 @@ export default function NotificationBell({ direction = "down" }) {
     <div className="relative" ref={panelRef}>
       <button
         onClick={toggle}
-        className="relative w-11 h-11 lg:w-10 lg:h-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-all"
+        className="ui-hover relative flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-primary/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 lg:h-10 lg:w-10"
         title="Notifications"
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
         aria-expanded={open}
@@ -250,22 +250,22 @@ export default function NotificationBell({ direction = "down" }) {
 
       {open && (
         <div className={cn(
-          "absolute right-0 w-80 max-w-[90vw] bg-card border border-border rounded-xl shadow-2xl shadow-black/40 z-50 overflow-hidden",
+          "absolute right-0 z-50 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-2xl shadow-black/40 backdrop-blur-xl",
           direction === "up" ? "bottom-full mb-2" : "top-full mt-2"
         )}>
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-secondary/20 px-4 py-3.5">
             <p className="font-heading font-bold text-sm">Notifications</p>
             {pushPermission === 'default' && (
               <button
                 type="button"
                 onClick={enableNotifications}
-                className="text-xs font-semibold text-primary hover:underline"
+                className="ui-hover min-h-9 rounded-lg px-2.5 text-xs font-semibold text-primary hover:bg-primary/10"
               >
                 Enable alerts
               </button>
             )}
           </div>
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-[min(28rem,70vh)] overflow-y-auto overscroll-contain">
             {loadError && safeItems.length === 0 ? (
               <div className="py-10 px-4 text-center" role="alert">
                 <Bell className="w-8 h-8 mx-auto mb-2 opacity-30 text-muted-foreground" />
@@ -273,7 +273,7 @@ export default function NotificationBell({ direction = "down" }) {
                 <p className="mt-1 text-xs text-muted-foreground">Your notifications may still be available.</p>
                 <button
                   type="button"
-                  className="mt-3 text-xs font-semibold text-primary hover:underline"
+                  className="ui-hover mt-3 min-h-10 rounded-xl border border-border px-4 text-xs font-semibold text-primary hover:bg-secondary/50"
                   onClick={() => user?.id && void load(user.id)}
                 >
                   Retry
@@ -289,11 +289,11 @@ export default function NotificationBell({ direction = "down" }) {
                 const Icon = typeIcon[n.type] || Bell;
                 const inner = (
                   <div className={cn(
-                    "flex items-start gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors border-b border-border/50",
+                    "ui-hover flex min-h-[68px] items-start gap-3 border-b border-border/50 px-4 py-3 transition-colors hover:bg-secondary/50 focus-within:bg-secondary/50",
                     !n.read && "bg-primary/5"
                   )}>
                     <div className="relative shrink-0">
-                      <Avatar className="w-8 h-8">
+                      <Avatar className="h-9 w-9">
                         <AvatarImage src={n.actor_avatar} />
                         <AvatarFallback className="bg-primary/20 text-primary text-xs">{n.actor_name?.[0] || "?"}</AvatarFallback>
                       </Avatar>

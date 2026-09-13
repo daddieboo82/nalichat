@@ -42,7 +42,15 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
     mutationFn: async (id) => {
       const res = await base44.functions.invoke("deleteTrackVersion", { versionId: id });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true || res?.data?.deleted !== true) {
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "delete_track_version" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.projectId !== track?.project_id ||
+        res?.data?.trackId !== track?.id ||
+        res?.data?.versionId !== id ||
+        res?.data?.deleted !== true
+      ) {
         throw new Error("Track version deletion was not confirmed.");
       }
       return res.data;
@@ -70,7 +78,18 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
         solo: track.solo,
       });
       if (created?.data?.error) throw new Error(created.data.error);
-      if (created?.data?.success !== true || !created?.data?.version?.id) {
+      const version = created?.data?.version;
+      if (
+        created?.data?.success !== true ||
+        created?.data?.action !== "create_track_version" ||
+        created?.data?.userId !== currentUser?.id ||
+        created?.data?.projectId !== track.project_id ||
+        created?.data?.trackId !== track.id ||
+        created?.data?.versionId !== version?.id ||
+        version?.track_id !== track.id ||
+        version?.project_id !== track.project_id ||
+        version?.saved_by_id !== currentUser?.id
+      ) {
         throw new Error("Track version save was not confirmed.");
       }
       setLabel("");

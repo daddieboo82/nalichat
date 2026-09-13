@@ -16,6 +16,21 @@ import { Link } from "react-router-dom";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import { useAuth } from "@/lib/AuthContext";
 
+async function listAllOwnedPlaylists(userId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.Playlist.filter(
+      { owner_id: userId },
+      "-created_date",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function Playlists() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [formData, setFormData] = useState({ name: "", description: "" });
@@ -31,7 +46,7 @@ export default function Playlists() {
     queryKey: ["playlists", currentUser?.id],
     queryFn: () =>
       currentUser
-        ? base44.entities.Playlist.filter({ owner_id: currentUser.id }, "-created_date")
+        ? listAllOwnedPlaylists(currentUser.id)
         : [],
     enabled: !!currentUser,
   });

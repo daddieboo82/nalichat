@@ -13,8 +13,8 @@ describe('targeted public profile lookup', () => {
 
     expect(backend).toContain("req.method !== 'POST'");
     expect(backend).toContain("const requestedUserId = String(body?.userId || '').trim()");
-    expect(backend).toContain('requestedUserId.length > 256');
-    expect(backend).toContain('entities.User.get(requestedUserId)');
+    expect(backend).toContain('!isBase44EntityId(requestedUserId)');
+    expect(backend).toContain('base44.asServiceRole.entities.User.get(requestedUserId)');
     expect(backend).toContain('users: [publicUserProjection(target');
     expect(profile).toContain('functions.invoke("listPublicUsers", { userId: targetUserId })');
     expect(profile).toContain('res?.data?.viewerUserId !== currentUser?.id');

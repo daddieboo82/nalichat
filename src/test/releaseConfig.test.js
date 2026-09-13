@@ -2761,3 +2761,18 @@ describe('subscription trial history source', () => {
     expect(source).toContain('trialUsedAt: user.trial_used_at || selected?.trial_used_at || null');
   });
 });
+
+
+describe('admin promotion response contract', () => {
+  it('binds admin promotion responses to the caller and exact target', async () => {
+    const backend = await readText('base44/functions/makeAdmin/entry.ts');
+    const page = await readText('src/pages/AdminDashboard.jsx');
+    expect(backend).toContain("action: 'promote_admin'");
+    expect(backend).toContain('adminUserId: caller.id');
+    expect(backend).toContain('targetUserId: target.id');
+    expect(page).toContain('res?.data?.action === "promote_admin"');
+    expect(page).toContain('res?.data?.adminUserId === currentUser?.id');
+    expect(page).toContain('res?.data?.email === email');
+    expect(page).toContain('res?.data?.role === "admin"');
+  });
+});

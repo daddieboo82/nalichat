@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.User.update(target.id, { role: 'admin' });
 
     const updated = await base44.asServiceRole.entities.User.filter({ email }, '-created_date', 1);
-    return Response.json({ success: true, email, role: updated[0]?.role });
+    return Response.json({ success: true, action: 'promote_admin', adminUserId: caller.id, targetUserId: target.id, email, role: updated[0]?.role });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Play, Pause, Heart, Share2 } from "lucide-react";
 import ShareButtons from "./ShareButtons";
 
-export default function SubmissionCard({ submission, challengeId, hasVoted, isOwn, onVote }) {
+export default function SubmissionCard({ submission, challengeId, hasVoted, isOwn, onVote, voteDisabled = false }) {
   const [playing, setPlaying] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const audioRef = useRef(null);
@@ -43,7 +43,7 @@ export default function SubmissionCard({ submission, challengeId, hasVoted, isOw
         <Button
           size="sm"
           variant={hasVoted ? "secondary" : "outline"}
-          disabled={hasVoted || isOwn}
+          disabled={hasVoted || isOwn || voteDisabled}
           onClick={() => onVote(submission.id)}
           className="rounded-full gap-1.5"
         >

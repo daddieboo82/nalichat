@@ -21,7 +21,10 @@ export {
   resolveEffectiveChatThemeId,
 };
 
-export async function persistChatThemePreference(themeId) {
+export async function persistChatThemePreference(themeId, userId) {
+  if (!userId) {
+    throw new Error("Unable to save chat theme.");
+  }
   if (!isChatThemeId(themeId)) {
     throw new Error("Unknown chat theme.");
   }

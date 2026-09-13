@@ -15,6 +15,18 @@ import { getLikeCount } from "@/lib/engagement";
 
 const MEDIUMS = ["all", "original", "remix", "cover", "beat", "production", "mixing", "mastering", "collab"];
 
+async function listAllArtPosts(filter) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = filter === "all"
+      ? await base44.entities.ArtPost.list("-created_date", pageSize, skip)
+      : await base44.entities.ArtPost.filter({ medium: filter }, "-created_date", pageSize, skip);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function Explore() {
   // Use the already-resolved app-wide auth state instead of a fresh per-page
   // fetch — a local base44.auth.me() call left currentUser null for a brief
@@ -42,9 +54,7 @@ export default function Explore() {
     queryKey: ["artposts", filter, currentUser?.id],
     queryFn: async () => {
       const [rows, likedRes] = await Promise.all([
-        filter === "all"
-          ? base44.entities.ArtPost.list("-created_date", 100)
-          : base44.entities.ArtPost.filter({ medium: filter }, "-created_date", 100),
+        listAllArtPosts(filter),
         currentUser
           ? base44.functions.invoke("listMyLikedPostIds", {})
           : Promise.resolve({ data: { post_ids: [] } }),

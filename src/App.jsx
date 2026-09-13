@@ -123,6 +123,7 @@ const AuthenticatedApp = () => {
     if (!isAuthenticated || !user?.id) return undefined;
 
     const sendPresence = (isOnline) => {
+      if (typeof base44?.functions?.invoke !== 'function') return;
       base44.functions.invoke('updateUserPresence', { isOnline })
         .then((res) => {
           if (

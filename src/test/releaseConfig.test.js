@@ -2472,3 +2472,16 @@ describe('subscription status response contract', () => {
     expect(backend).toContain('userId: user.id');
   });
 });
+
+
+describe('checkout payment verification response contract', () => {
+  it('clears the cart only after the exact checkout is explicitly confirmed paid', async () => {
+    const page = await readText('src/pages/ThankYou.jsx');
+    const backend = await readText('base44/functions/verifyCheckoutPayment/entry.ts');
+    expect(page).toContain('res?.data?.success !== true');
+    expect(page).toContain('res?.data?.checkoutId !== checkoutId');
+    expect(page).toContain('!Array.isArray(res?.data?.items)');
+    expect(backend).toContain('success: true');
+    expect(backend).toContain('checkoutId: normalizedCheckoutId');
+  });
+});

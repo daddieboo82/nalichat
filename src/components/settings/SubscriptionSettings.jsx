@@ -50,7 +50,7 @@ export default function SubscriptionSettings() {
 
   if (isLoading) {
     return (
-      <div className="ui-surface rounded-2xl border border-border bg-card/50 p-5 sm:p-6" aria-live="polite">
+      <div className="ui-surface min-h-28 rounded-3xl border border-border bg-card/50 p-5 sm:p-6" aria-live="polite">
         <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
         <span className="sr-only">Loading subscription</span>
       </div>
@@ -59,7 +59,7 @@ export default function SubscriptionSettings() {
 
   if (isError) {
     return (
-      <div className="ui-surface rounded-2xl border border-destructive/50 bg-card/50 p-5 sm:p-6" role="alert">
+      <div className="ui-surface rounded-3xl border border-destructive/50 bg-card/50 p-5 sm:p-6" role="alert">
         <h3 className="font-heading text-lg font-semibold">Subscription unavailable</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           We could not verify your plan. Paid access remains locked until verification succeeds.
@@ -84,9 +84,9 @@ export default function SubscriptionSettings() {
             <h3 className="font-heading text-xl font-semibold">
               {subscriptionPlanLabel(subscription.plan)}
             </h3>
-            <Badge variant="outline">{subscription.status}</Badge>
+            <Badge className="rounded-lg px-2.5 py-1 capitalize" variant="outline">{subscription.status}</Badge>
             {subscription.grandfathered && (
-              <Badge className="bg-primary/20 text-primary hover:bg-primary/20">
+              <Badge className="rounded-lg bg-primary/20 px-2.5 py-1 text-primary hover:bg-primary/20">
                 Grandfathered
               </Badge>
             )}
@@ -94,19 +94,19 @@ export default function SubscriptionSettings() {
 
           <dl className="mt-4 space-y-2 text-sm">
             {subscription.billingPeriod && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-x-2 gap-y-0.5">
                 <dt className="text-muted-foreground">Billing period:</dt>
                 <dd className="capitalize">{subscription.billingPeriod === "annual" ? "Yearly" : subscription.billingPeriod}</dd>
               </div>
             )}
             {subscription.isTrialing && trialEnd && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-x-2 gap-y-0.5">
                 <dt className="text-muted-foreground">Trial ends:</dt>
                 <dd>{trialEnd}</dd>
               </div>
             )}
             {periodEnd && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-x-2 gap-y-0.5">
                 <dt className="text-muted-foreground">
                   {subscription.cancelAtPeriodEnd ? "Access until:" : "Renews on:"}
                 </dt>
@@ -114,7 +114,7 @@ export default function SubscriptionSettings() {
               </div>
             )}
             {subscription.cancelAtPeriodEnd && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-x-2 gap-y-0.5">
                 <dt className="text-muted-foreground">Renewal:</dt>
                 <dd>Ends at the current period</dd>
               </div>
@@ -131,7 +131,7 @@ export default function SubscriptionSettings() {
         </div>
 
         {canManageBilling ? (
-          <Button onClick={manageBilling} disabled={openingPortal} className="ui-hover min-h-11 w-full shrink-0 gap-2 rounded-xl font-semibold sm:w-auto">
+          <Button onClick={manageBilling} disabled={openingPortal} className="ui-hover min-h-12 w-full shrink-0 gap-2 rounded-xl font-semibold focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-auto">
             {openingPortal ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (

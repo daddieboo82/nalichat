@@ -22,6 +22,21 @@ const roleIcons = {
   ar: "📋",
 };
 
+async function listAllContacts(userId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.Contact.filter(
+      { user_id: userId },
+      "-created_date",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function ContactsTab({ currentUserId, onMessageContact }) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -30,7 +45,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
 
   const { data: contacts = [], isLoading: loadingContacts, isError: contactsError } = useQuery({
     queryKey: ["contacts", currentUserId],
-    queryFn: () => currentUserId ? base44.entities.Contact.filter({ user_id: currentUserId }, "-created_date", 500) : [],
+    queryFn: () => currentUserId ? listAllContacts(currentUserId) : [],
     enabled: !!currentUserId,
   });
 

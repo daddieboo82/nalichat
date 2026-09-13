@@ -27,7 +27,7 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
         <DialogHeader>
           <DialogTitle>Hardware Preferences</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4 text-sm max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+        <div className="space-y-4 py-4 text-sm max-h-[60dvh] overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] pr-2 custom-scrollbar">
           <div className="flex flex-col gap-1.5">
             <span className="font-medium">Driver Type</span>
             <Select 

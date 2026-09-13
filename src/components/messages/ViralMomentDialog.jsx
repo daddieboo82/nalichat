@@ -37,13 +37,29 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
       });
       if (response?.data?.error) throw new Error(response.data.error);
       if (type === "meme") {
-        if (!response?.data?.image_url || !response?.data?.caption) {
+        if (
+          response?.data?.type !== "meme" ||
+          typeof response?.data?.image_url !== "string" ||
+          !response.data.image_url.trim() ||
+          typeof response?.data?.caption !== "string" ||
+          !response.data.caption.trim()
+        ) {
           throw new Error("Nali returned an incomplete meme. Try again!");
         }
       } else if (
-        !Array.isArray(response?.data?.scenes)
+        response?.data?.type !== "reel"
+        || !Array.isArray(response?.data?.scenes)
         || response.data.scenes.length < 3
-        || !response?.data?.caption
+        || !response.data.scenes.every((scene) =>
+          typeof scene?.visual === "string" && scene.visual.trim()
+          && typeof scene?.text === "string" && scene.text.trim()
+          && typeof scene?.duration === "string" && scene.duration.trim()
+        )
+        || typeof response?.data?.caption !== "string"
+        || !response.data.caption.trim()
+        || !Array.isArray(response?.data?.hashtags)
+        || response.data.hashtags.length === 0
+        || !response.data.hashtags.every((tag) => typeof tag === "string" && tag.trim())
       ) {
         throw new Error("Nali returned an incomplete reel script. Try again!");
       }

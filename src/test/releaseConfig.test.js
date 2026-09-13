@@ -2318,3 +2318,16 @@ describe('voice AI response contracts', () => {
     expect(card).toContain('Transcription response was invalid.');
   });
 });
+
+
+describe('viral moment response contracts', () => {
+  it('validates complete typed meme and reel payloads before rendering', async () => {
+    const source = await readText('src/components/messages/ViralMomentDialog.jsx');
+    expect(source).toContain('response?.data?.type !== "meme"');
+    expect(source).toContain('typeof response?.data?.image_url !== "string"');
+    expect(source).toContain('response?.data?.type !== "reel"');
+    expect(source).toContain('response.data.scenes.every((scene) =>');
+    expect(source).toContain('!Array.isArray(response?.data?.hashtags)');
+    expect(source).toContain('response.data.hashtags.every((tag) => typeof tag === "string" && tag.trim())');
+  });
+});

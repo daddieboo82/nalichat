@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/responsive-select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Save, Loader2, X, Plus, BarChart3, Users, Palette } from "lucide-react";
+import { Camera, Save, Loader2, X, Plus, BarChart3, Users, Palette, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import DeleteAccountDialog from "@/components/settings/DeleteAccountDialog";
@@ -173,10 +173,10 @@ export default function Settings() {
   return (
     <PullToRefresh onRefresh={async () => { await checkUserAuth(); }} className="h-full overflow-y-auto">
       <div className={`mx-auto max-w-2xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 sm:px-6 sm:py-10 ${reduceMotion ? "reduce-motion-surface" : ""}`}>
-        <h1 className="mb-6 font-heading text-2xl font-bold tracking-tight sm:text-3xl">Profile Settings</h1>
+        <div className="mb-6"><div className="mb-1 flex items-center gap-2 text-primary"><UserRound className="h-5 w-5" aria-hidden="true" /><span className="text-xs font-bold uppercase tracking-[0.16em]">Account</span></div><h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">Profile Settings</h1><p className="mt-1 text-sm text-muted-foreground">Manage your public artist profile, preferences, privacy, subscription, and devices.</p></div>
 
         {/* Avatar */}
-        <div className="ui-surface relative mb-8 flex flex-col items-center gap-4 overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-5 text-center shadow-lg backdrop-blur-xl sm:flex-row sm:gap-6 sm:p-6 sm:text-left">
+        <div className="ui-surface relative mb-7 flex flex-col items-center gap-4 overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-5 text-center shadow-lg backdrop-blur-xl sm:flex-row sm:gap-6 sm:p-6 sm:text-left">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-pink-500/20 blur-3xl rounded-full pointer-events-none" />
           <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/20 blur-3xl rounded-full pointer-events-none" />
           
@@ -206,7 +206,7 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="ui-surface space-y-5 rounded-3xl border border-white/[0.06] bg-card/40 p-4 backdrop-blur-xl sm:p-6">
           <div>
             <label className="mb-2 block text-sm font-semibold text-foreground">Display Name / Artist Name</label>
             <Input value={form.display_name} onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))} className="h-12 rounded-xl border border-border/50 bg-secondary/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" placeholder="Your stage name..." />
@@ -262,7 +262,7 @@ export default function Settings() {
         </div>
 
         <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
-          <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6 flex items-center gap-2">
+          <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">
             <Palette className="h-5 w-5 text-primary" aria-hidden="true" />
             Appearance
           </h2>
@@ -286,7 +286,7 @@ export default function Settings() {
 
         <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
           <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Accessibility</h2>
-          <div className="ui-surface flex flex-col items-start justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
+          <div className="ui-surface flex flex-col items-start justify-between gap-4 rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
             <div>
               <label htmlFor="reduce-motion" className="font-heading font-semibold text-lg text-foreground">
                 Reduce Motion
@@ -297,6 +297,7 @@ export default function Settings() {
               </p>
             </div>
             <Switch
+              className="shrink-0"
               id="reduce-motion"
               checked={userReducedMotion}
               onCheckedChange={setUserReducedMotion}
@@ -309,7 +310,7 @@ export default function Settings() {
         <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
           <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Onboarding & Tutorial</h2>
           <div className="flex flex-col gap-4">
-            <div className="ui-surface flex flex-col justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
+            <div className="ui-surface flex flex-col justify-between gap-4 rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
               <div>
                 <h3 className="font-heading font-semibold text-lg text-foreground">Interactive Tutorial</h3>
                 <p className="text-sm text-muted-foreground mt-1">Take an interactive tour to learn how to use NaliChat's studio and collaboration tools.</p>
@@ -319,7 +320,7 @@ export default function Settings() {
               </Button>
             </div>
 
-            <div className="ui-surface flex flex-col justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
+            <div className="ui-surface flex flex-col justify-between gap-4 rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
               <div>
                 <h3 className="font-heading font-semibold text-lg text-foreground">Profile Setup & Onboarding</h3>
                 <p className="text-sm text-muted-foreground mt-1">Revisit the initial onboarding process to set up your profile and complete the tutorial.</p>
@@ -335,7 +336,7 @@ export default function Settings() {
 
         <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
           <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Creator Tools</h2>
-          <div className="ui-surface flex flex-col justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
+          <div className="ui-surface flex flex-col justify-between gap-4 rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
             <div>
               <h3 className="font-heading font-semibold text-lg text-foreground">Analytics Dashboard</h3>
               <p className="text-sm text-muted-foreground mt-1">Track plays, reach, audience growth & listener engagement.</p>
@@ -351,7 +352,7 @@ export default function Settings() {
 
         <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
           <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Squad & Scale</h2>
-          <div className="ui-surface flex flex-col justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
+          <div className="ui-surface flex flex-col justify-between gap-4 rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
             <div>
               <h3 className="font-heading font-semibold text-lg text-foreground">Link Up With a Partner</h3>
               <p className="text-sm text-muted-foreground mt-1">Team up with a friend — hit your weekly chat or task goals together and unlock a 1.5x weekend bonus.</p>

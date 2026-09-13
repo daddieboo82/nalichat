@@ -363,7 +363,16 @@ export default function Messages() {
       });
       if (res?.data?.moderation) return { _flagged: res.data.moderation };
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.message;
+      const updated = res?.data?.message;
+      if (
+        res?.data?.success !== true ||
+        updated?.id !== id ||
+        updated?.sender_id !== currentUser?.id ||
+        updated?.text !== text
+      ) {
+        throw new Error("Message edit was not confirmed.");
+      }
+      return updated;
     },
     onError: () => {
       toast.error("Message edit failed. Your draft was kept so you can retry.");
@@ -399,7 +408,19 @@ export default function Messages() {
       if (res?.data?.error) {
         throw sendErrorFromResponse(res);
       }
-      return res?.data?.message;
+      const sent = res?.data?.message;
+      if (
+        res?.data?.success !== true ||
+        !sent?.id ||
+        sent?.conversation_id !== conversationId ||
+        sent?.sender_id !== currentUser?.id ||
+        sent?.client_message_key !== msgData.client_message_key
+      ) {
+        const error = new Error("Message send was not confirmed.");
+        error.status = 500;
+        throw error;
+      }
+      return sent;
     },
     onMutate: (msgData) => {
       const conversationId = msgData.conversation_id || selectedConvId;

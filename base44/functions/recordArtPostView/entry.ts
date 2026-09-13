@@ -43,6 +43,9 @@ Deno.serve(async (req) => {
     if (postPreview.creator_id === user.id) {
       return Response.json({
         success: true,
+        action: 'record_art_post_view',
+        userId: user.id,
+        postId,
         counted: false,
         reason: 'owner',
         views: Number(postPreview.views || 0),
@@ -73,7 +76,7 @@ Deno.serve(async (req) => {
         1,
       );
       if (!rate.allowed) {
-        return Response.json({ success: true, counted: false, views: Number(post.views || 0) });
+        return Response.json({ success: true, action: 'record_art_post_view', userId: user.id, postId, counted: false, reason: 'already_counted', views: Number(post.views || 0) });
       }
 
       try {
@@ -93,7 +96,7 @@ Deno.serve(async (req) => {
         throw countError;
       }
       const updated = await entities.ArtPost.get(post.id);
-      return Response.json({ success: true, counted: true, views: Number(updated?.views || 0) });
+      return Response.json({ success: true, action: 'record_art_post_view', userId: user.id, postId, counted: true, views: Number(updated?.views || 0) });
     } finally {
       await releaseArtPostEngagementLock(entities, lockId);
     }

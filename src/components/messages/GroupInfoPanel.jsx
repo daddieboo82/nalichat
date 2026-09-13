@@ -30,7 +30,15 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
       });
       if (res?.data?.error) throw new Error(res.data.error);
       const updated = res?.data?.conversation;
-      if (res?.data?.success !== true || updated?.id !== conversation.id || updated?.name !== nameValue.trim()) {
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "rename" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.conversationId !== conversation.id ||
+        res?.data?.name !== nameValue.trim() ||
+        updated?.id !== conversation.id ||
+        updated?.name !== nameValue.trim()
+      ) {
         throw new Error("Group rename was not confirmed.");
       }
       await queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
@@ -52,7 +60,11 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
       });
       if (res?.data?.error) throw new Error(res.data.error);
       const updated = res?.data?.conversation;
-      const leaveConfirmed = res?.data?.success === true && (
+      const leaveConfirmed =
+        res?.data?.success === true &&
+        res?.data?.action === "leave" &&
+        res?.data?.userId === currentUser.id &&
+        res?.data?.conversationId === conversation.id && (
         res?.data?.deleted === true ||
         (updated?.id === conversation.id && Array.isArray(updated?.participant_ids) && !updated.participant_ids.includes(currentUser.id))
       );

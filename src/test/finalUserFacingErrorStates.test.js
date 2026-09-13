@@ -10,7 +10,10 @@ describe('final user-facing error states', () => {
   it('does not close onboarding until completion persists', async () => {
     const source = await readText('src/components/onboarding/WelcomeTour.jsx');
     expect(source).toContain('if (res?.data?.error) throw new Error(res.data.error);');
-    expect(source).toContain('if (res?.data?.success !== true) throw new Error("Tour completion was not confirmed.");');
+    expect(source).toContain('res?.data?.action !== "update_my_profile"');
+    expect(source).toContain('res?.data?.userId !== user?.id');
+    expect(source).toContain('!res?.data?.updatedFields?.includes("welcome_tour_completed")');
+    expect(source).toContain('Tour completion was not confirmed.');
     expect(source).toContain('if (!await complete()) return;');
     expect(source).toContain("Couldn't save your tour progress. Please try again.");
   });

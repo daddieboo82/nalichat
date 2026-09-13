@@ -31,6 +31,8 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
+      action: 'mark_notifications_read',
+      userId: user.id,
       updated: Number(result?.updated || 0),
     });
   } catch (error) {

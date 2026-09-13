@@ -169,7 +169,12 @@ export default function NotificationBell({ direction = "down" }) {
     let failed = false;
     try {
       const result = await base44.functions.invoke("markNotificationsRead", {});
-      if (result?.data?.error) failed = true;
+      if (
+        result?.data?.error ||
+        result?.data?.success !== true ||
+        !Number.isFinite(Number(result?.data?.updated)) ||
+        Number(result.data.updated) < 0
+      ) failed = true;
     } catch {
       failed = true;
     }

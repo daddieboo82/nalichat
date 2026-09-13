@@ -2355,3 +2355,13 @@ describe('push subscription response contracts', () => {
     expect(source).toContain('Push unregistration was not confirmed.');
   });
 });
+
+
+describe('notification read response contract', () => {
+  it('requires explicit success and a valid update count', async () => {
+    const source = await readText('src/components/notifications/NotificationBell.jsx');
+    expect(source).toContain('result?.data?.success !== true');
+    expect(source).toContain('!Number.isFinite(Number(result?.data?.updated))');
+    expect(source).toContain('Number(result.data.updated) < 0');
+  });
+});

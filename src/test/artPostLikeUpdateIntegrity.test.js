@@ -7,5 +7,6 @@ describe('ArtPost like update integrity', () => {
     expect(s).toContain('const likeUpdate = alreadyLiked');
     expect(s).toContain('Number(likeUpdate?.updated || 0) !== 1');
     expect(s).toContain('Like update did not apply. Please retry.');
+    expect(s).toContain('userId: user.id');
   });
 });

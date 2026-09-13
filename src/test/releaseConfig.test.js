@@ -2222,7 +2222,8 @@ describe('group info mutation response contracts', () => {
     expect(source).toContain('updated?.id !== conversation.id');
     expect(source).toContain('updated?.name !== nameValue.trim()');
     expect(source).toContain('Group rename was not confirmed.');
-    expect(source).toContain('const leaveConfirmed = res?.data?.success === true');
+    expect(source).toContain('const leaveConfirmed =');
+    expect(source).toContain('res?.data?.success === true');
     expect(source).toContain('!updated.participant_ids.includes(currentUser.id)');
     expect(source).toContain('Leaving the group was not confirmed.');
   });

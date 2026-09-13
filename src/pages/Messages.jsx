@@ -78,6 +78,15 @@ function sendErrorFromResponse(response) {
   return error;
 }
 
+async function filterAll(entity, query, sort, pageSize = 200) {
+  const rows = [];
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entity.filter(query, sort, pageSize, skip);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function Messages() {
   const { user: currentUser, checkUserAuth } = useAuth();
   const location = useLocation();
@@ -183,10 +192,10 @@ export default function Messages() {
 
   const { data: conversations = [], isError: conversationsError } = useQuery({
     queryKey: ["conversations", currentUser?.id],
-    queryFn: () => base44.entities.Conversation.filter(
+    queryFn: () => filterAll(
+      base44.entities.Conversation,
       { participant_ids: currentUser.id },
       "-last_message_at",
-      500,
     ),
     enabled: !!currentUser?.id,
     refetchInterval: 5000,

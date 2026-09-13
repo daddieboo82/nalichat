@@ -87,6 +87,21 @@ const portableTrackState = (track, audioUrl) => {
   };
 };
 
+async function listPersistedTracks(projectId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.Track.filter(
+      { project_id: projectId },
+      "created_date",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function Studio() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -389,7 +404,7 @@ export default function Studio() {
           if (Number.isFinite(savedState.masterVolume)) setMasterVolume(savedState.masterVolume);
           if (savedState.timeSignature) setTimeSignature(savedState.timeSignature);
         } else {
-          const persistedTracks = await base44.entities.Track.filter({ project_id: roomId }, "created_date", 500);
+          const persistedTracks = await listPersistedTracks(roomId);
           if (!cancelled && persistedTracks.length > 0) {
             setTracks(persistedTracks.map((track) => ({
               id: track.id,

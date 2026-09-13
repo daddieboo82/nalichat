@@ -35,6 +35,21 @@ function ThreadMessage({ msg, isOwn }) {
   );
 }
 
+async function listThreadReplies(threadId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.Message.filter(
+      { thread_id: threadId },
+      "created_date",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function ThreadPanel({ parentMessage, currentUser, targetMessageId, onClose }) {
   const [text, setText] = useState("");
   const scrollRef = useRef(null);
@@ -45,7 +60,7 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
 
   const { data: replies = [], isLoading: repliesLoading, isError: repliesError } = useQuery({
     queryKey: ["thread", currentUser?.id, parentMessage.id],
-    queryFn: () => base44.entities.Message.filter({ thread_id: parentMessage.id }, "created_date", 500),
+    queryFn: () => listThreadReplies(parentMessage.id),
     enabled: !!currentUser?.id && !!parentMessage?.id,
     refetchInterval: 3000,
   });

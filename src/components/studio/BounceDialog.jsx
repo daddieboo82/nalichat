@@ -12,6 +12,7 @@ import { base44 } from "@/api/base44Client";
 import { renderMasteredMix } from "@/lib/autoMaster";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/lib/AuthContext";
 
 // Neutral params = straight mix with no EQ/loudness coloring (used when mastering is off)
 const FLAT_PARAMS = {
@@ -34,6 +35,7 @@ const STEPS = [
 export default function BounceDialog({ projectTitle, project, tracks, trigger, open: controlledOpen, onOpenChange, redirectAfter, mixOptions, canPublish = true }) {
   const navigate = useNavigate();
   const { hasEntitlement } = useSubscription();
+  const { user } = useAuth();
   const canUseAi = hasEntitlement("ai.standard");
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -136,7 +138,17 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
       const postId = published?.data?.post?.id;
       if (postId) {
         await Promise.allSettled([
-          base44.functions.invoke("claimPublishedPostReward", { postId }),
+          base44.functions.invoke("claimPublishedPostReward", { postId }).then((reward) => {
+            if (
+              reward?.data?.success !== true ||
+              reward?.data?.action !== "claim_publish_reward" ||
+              reward?.data?.userId !== user?.id ||
+              reward?.data?.postId !== postId
+            ) {
+              throw new Error("Publish reward was not confirmed.");
+            }
+            return reward;
+          }),
           base44.functions.invoke("recordSquadActivity", { sourceType: "art_post", sourceId: postId }),
         ]);
       }

@@ -66,11 +66,11 @@ export default function Login() {
     <AuthLayout
       icon={LogIn}
       title="Welcome back"
-      subtitle="Log in to your account"
+      subtitle="Pick up where you left off in NaliChat."
       footer={
         <>
           Don't have an account?{" "}
-          <Link to={`/register?returnTo=${encodeURIComponent(safeReturnTo())}`} className="ui-hover rounded-lg px-1 py-1 font-medium text-primary hover:bg-primary/10">
+          <Link to={`/register?returnTo=${encodeURIComponent(safeReturnTo())}`} className="ui-hover min-h-9 rounded-lg px-2 py-1 font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40">
             Create one
           </Link>
         </>
@@ -106,7 +106,7 @@ export default function Login() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive space-y-1">
+        <div className="mb-4 space-y-1 rounded-2xl border border-destructive/20 bg-destructive/10 p-3.5 text-sm leading-relaxed text-destructive">
           <p>{error}</p>
           <p className="text-muted-foreground">
             If you originally signed up with Google, use "Continue with Google" above instead of a password. Otherwise, try "Forgot password?" to set one.
@@ -114,7 +114,7 @@ export default function Login() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4"><p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Use the same sign-in method you used when you created your account.</p>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <div className="relative">
@@ -135,7 +135,7 @@ export default function Login() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
-            <Link to="/forgot-password" className="ui-hover min-h-9 rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10">
+            <Link to="/forgot-password" className="ui-hover inline-flex min-h-9 items-center rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40">
               Forgot password?
             </Link>
           </div>

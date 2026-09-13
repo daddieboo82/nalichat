@@ -1,16 +1,18 @@
 import React from 'react';
-import { Clock3, Smartphone, Monitor, Laptop, Shield } from 'lucide-react';
+import { Clock3, Smartphone, Monitor, Laptop, Shield, Globe2, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default function Download() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] text-foreground sm:py-12">
-      <div className="w-full max-w-lg space-y-6 text-center sm:space-y-8">
+    <div className="flex min-h-screen min-h-[100dvh] items-center justify-center bg-background px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] text-foreground sm:py-12">
+      <div className="w-full max-w-xl space-y-6 text-center sm:space-y-8">
         <div className="space-y-4">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 glow-primary sm:h-20 sm:w-20 sm:rounded-3xl">
             <Clock3 className="w-10 h-10 text-primary" />
           </div>
-          <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">NaliChat Downloads</h1>
+          <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">NaliChat Downloads</h1>
           <p className="text-muted-foreground">
             New NaliChat apps for Android, Windows, and macOS are being prepared now.
           </p>
@@ -25,16 +27,16 @@ export default function Download() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-2 xs:grid-cols-3 sm:gap-3">
-              <div className="rounded-2xl border border-border/50 bg-muted/50 p-3 sm:p-4">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+              <div className="ui-surface rounded-2xl border border-border/50 bg-muted/50 p-4">
                 <Smartphone className="w-6 h-6 mx-auto mb-2 text-primary" />
                 <span className="text-sm font-medium">Android</span>
               </div>
-              <div className="rounded-2xl border border-border/50 bg-muted/50 p-3 sm:p-4">
+              <div className="ui-surface rounded-2xl border border-border/50 bg-muted/50 p-4">
                 <Monitor className="w-6 h-6 mx-auto mb-2 text-primary" />
                 <span className="text-sm font-medium">Windows</span>
               </div>
-              <div className="rounded-2xl border border-border/50 bg-muted/50 p-3 sm:p-4">
+              <div className="ui-surface rounded-2xl border border-border/50 bg-muted/50 p-4">
                 <Laptop className="w-6 h-6 mx-auto mb-2 text-primary" />
                 <span className="text-sm font-medium">macOS</span>
               </div>
@@ -48,6 +50,8 @@ export default function Download() {
             </div>
           </CardContent>
         </Card>
+
+        <Button asChild className="ui-hover min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/10 sm:w-auto sm:px-6"><Link to="/"><Globe2 className="mr-2 h-4 w-4" />Continue in the web app<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
 
         <p className="text-xs text-muted-foreground">
           The NaliChat web app remains available while native downloads are being prepared.

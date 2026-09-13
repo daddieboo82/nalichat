@@ -13,6 +13,7 @@ describe('user and tag reference validation', () => {
   it('validates stored uploader and project references before tag lookups', async () => {
     const s=await readFile('base44/functions/suggestTrackTags/entry.ts','utf8');
     expect(s.indexOf('!isBase44EntityId(uploaderId)')).toBeLessThan(s.indexOf('User.get(uploaderId)'));
-    expect(s).toContain('trackPreview.project_id && isBase44EntityId(trackPreview.project_id)');
+    expect(s).toContain('const previewProjectId = trackPreview.project_id || null');
+    expect(s).toContain('previewProjectId && !isBase44EntityId(previewProjectId)');
   });
 });

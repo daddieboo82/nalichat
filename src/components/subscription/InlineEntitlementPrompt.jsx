@@ -15,7 +15,7 @@ export default function InlineEntitlementPrompt({
   }, [entitlement, source]);
 
   return (
-    <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5" role="note">
+    <div className="ui-surface rounded-2xl border border-primary/30 bg-primary/5 p-4 sm:p-5" role="note">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-3">
           <LockKeyhole className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
@@ -26,7 +26,7 @@ export default function InlineEntitlementPrompt({
         </div>
         <Button
           asChild
-          className="shrink-0"
+          className="ui-hover min-h-11 w-full shrink-0 rounded-xl font-semibold sm:w-auto"
           onClick={() => trackPaywallEvent("entitlement_prompt_convert", { entitlement, source })}
         >
           <Link to="/pricing">View plans</Link>

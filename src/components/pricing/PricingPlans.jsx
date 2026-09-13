@@ -40,7 +40,7 @@ function PlanCard({
 
   return (
     <article
-      className={`relative flex h-full flex-col rounded-2xl border p-6 ${
+      className={`ui-surface relative flex h-full flex-col rounded-3xl border p-5 sm:p-6 ${
         badge ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-border bg-card"
       }`}
       aria-labelledby={`${plan.id}-plan-title`}
@@ -74,7 +74,7 @@ function PlanCard({
 
       {paid ? (
         <Button
-          className="w-full rounded-xl"
+          className="ui-hover min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/10"
           disabled={isStarting || isCurrent || isPaidSubscriber}
           onClick={() => onSelect(plan.id)}
         >
@@ -82,7 +82,7 @@ function PlanCard({
           {isCurrent ? "Current plan" : isPaidSubscriber ? "Manage in Settings" : cta}
         </Button>
       ) : (
-        <Button className="w-full rounded-xl" variant="outline" onClick={onContinueFree}>
+        <Button className="ui-hover min-h-12 w-full rounded-xl font-semibold" variant="outline" onClick={onContinueFree}>
           Continue with Free
         </Button>
       )}
@@ -192,11 +192,11 @@ export default function PricingPlans({
 
   if (!enabled) {
     return (
-      <div className="h-full min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background px-6 py-16">
-        <div className="mx-auto max-w-xl rounded-2xl border border-border bg-card p-8 text-center">
+      <div className="h-full min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background px-4 py-10 sm:px-6 sm:py-16">
+        <div className="ui-surface mx-auto max-w-xl rounded-3xl border border-border bg-card p-6 text-center sm:p-8">
           <h1 className="font-heading text-3xl font-black">Plans are temporarily unavailable</h1>
           <p className="mt-3 text-muted-foreground">Core chat is free forever.</p>
-          <Button className="mt-6" onClick={continueFree}>Continue with Free</Button>
+          <Button className="ui-hover mt-6 min-h-12 rounded-xl px-6 font-semibold" onClick={continueFree}>Continue with Free</Button>
         </div>
       </div>
     );
@@ -207,11 +207,11 @@ export default function PricingPlans({
 
   return (
     <div className="h-full min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background">
-      <section className="mx-auto max-w-6xl px-6 py-14">
+      <section className="mx-auto max-w-6xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:py-14">
         <div className="text-center">
           <p className="text-sm font-bold uppercase tracking-widest text-primary">NaliChat plans</p>
-          <h1 className="mt-3 font-heading text-4xl font-black sm:text-5xl">{copy.headline}</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">{copy.subhead}</p>
+          <h1 className="mt-3 font-heading text-3xl font-black tracking-tight sm:text-5xl">{copy.headline}</h1>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">{copy.subhead}</p>
           <p className="mt-4 font-semibold">Core chat is free forever</p>
         </div>
 
@@ -224,7 +224,7 @@ export default function PricingPlans({
         {isError && (
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-destructive/50 p-4 text-center" role="alert">
             <p>We could not verify your subscription. Paid access has not been granted.</p>
-            <Button className="mt-3" size="sm" variant="outline" onClick={() => refetch()}>
+            <Button className="ui-hover mt-3 min-h-10 rounded-xl" size="sm" variant="outline" onClick={() => refetch()}>
               Try again
             </Button>
             {error?.message && <p className="sr-only">{error.message}</p>}
@@ -233,12 +233,12 @@ export default function PricingPlans({
 
         <fieldset className="mt-10">
           <legend className="sr-only">Billing period</legend>
-          <div className="mx-auto flex w-fit rounded-xl border border-border bg-card p-1">
+          <div className="mx-auto flex w-full max-w-sm rounded-2xl border border-border bg-card p-1.5">
             {Object.values(BILLING_PERIODS).map((option) => (
               <button
                 key={option.id}
                 type="button"
-                className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${
+                className={`ui-hover min-h-11 flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                   period === option.id ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                 }`}
                 aria-pressed={period === option.id}
@@ -250,7 +250,7 @@ export default function PricingPlans({
           </div>
         </fieldset>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <div className="mt-8 grid gap-4 sm:mt-10 sm:gap-6 md:grid-cols-3">
           <PlanCard
             plan={SUBSCRIPTION_CATALOG.free}
             period={period}
@@ -280,7 +280,7 @@ export default function PricingPlans({
           </p>
         )}
         <div className="mt-8 text-center">
-          <Button variant="ghost" onClick={continueFree}>Continue with Free</Button>
+          <Button className="ui-hover min-h-11 rounded-xl px-5" variant="ghost" onClick={continueFree}>Continue with Free</Button>
           <p className="mt-2 text-sm text-muted-foreground">Cancel anytime in settings.</p>
         </div>
       </section>

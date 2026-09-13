@@ -187,8 +187,8 @@ export default function ThankYou() {
     const timedOut = subscriptionConfirmation === "timeout";
     const failed = subscriptionConfirmation === "failed";
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
-        <div className="text-center max-w-2xl" aria-live="polite">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] sm:px-6 sm:py-12">
+        <div className="ui-surface w-full max-w-2xl rounded-3xl border border-white/[0.06] bg-card/30 p-5 text-center sm:p-8" aria-live="polite">
           <div className="mb-6 inline-block">
             {subscriptionConfirmation === "processing" ? (
               <Loader2 className="w-20 h-20 text-primary animate-spin" />
@@ -199,7 +199,7 @@ export default function ThankYou() {
             )}
           </div>
 
-          <h1 className="font-heading font-black text-5xl mb-4">
+          <h1 className="mb-4 font-heading text-3xl font-black tracking-tight sm:text-5xl">
             {subscriptionConfirmation === "processing"
               ? "Confirming subscription..."
               : confirmed
@@ -209,7 +209,7 @@ export default function ThankYou() {
                   : "We could not verify your subscription"}
           </h1>
 
-          <p className="text-xl text-muted-foreground mb-8">
+          <p className="mb-8 text-base leading-relaxed text-muted-foreground sm:text-xl">
             {subscriptionConfirmation === "processing"
               ? "We are checking the authoritative account status. This can take a moment."
               : confirmed
@@ -220,19 +220,19 @@ export default function ThankYou() {
           </p>
 
           {confirmed && (
-            <div className="flex gap-4 justify-center flex-wrap">
-              <Button size="lg" className="rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 h-14 px-8 text-lg font-bold" asChild>
+            <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
+              <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 px-8 text-base font-bold hover:opacity-90 sm:w-auto sm:h-14 sm:text-lg" asChild>
                 <Link to="/messages">
                   Open chat
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="rounded-xl" asChild>
+              <Button size="lg" variant="outline" className="ui-hover min-h-12 w-full rounded-xl sm:w-auto" asChild>
                 <Link to="/settings">Manage Billing</Link>
               </Button>
             </div>
           )}
           {(timedOut || failed) && (
-            <div className="flex gap-4 justify-center flex-wrap">
+            <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
               <Button size="lg" onClick={() => window.location.reload()}>Try again</Button>
               <Button size="lg" variant="outline" asChild>
                 <Link to="/pricing">Back to plans</Link>
@@ -250,14 +250,14 @@ export default function ThankYou() {
   // ── Standard cart purchase view ──
   if (!processing && purchaseVerification === "failed") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
-        <div className="text-center max-w-2xl" aria-live="polite">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] sm:px-6 sm:py-12">
+        <div className="ui-surface w-full max-w-2xl rounded-3xl border border-white/[0.06] bg-card/30 p-5 text-center sm:p-8" aria-live="polite">
           <CircleAlert className="w-20 h-20 text-amber-500 mx-auto mb-6" />
-          <h1 className="font-heading font-black text-5xl mb-4">Payment not verified</h1>
-          <p className="text-xl text-muted-foreground mb-8">
+          <h1 className="mb-4 font-heading text-3xl font-black tracking-tight sm:text-5xl">Payment not verified</h1>
+          <p className="mb-8 text-base leading-relaxed text-muted-foreground sm:text-xl">
             We could not verify a completed payment for this checkout. Your cart has not been cleared.
           </p>
-          <div className="flex gap-4 justify-center flex-wrap">
+          <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
             <Button size="lg" onClick={() => window.location.reload()}>Try again</Button>
             <Button size="lg" variant="outline" asChild>
               <Link to="/">Back to NaliChat</Link>
@@ -269,12 +269,12 @@ export default function ThankYou() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] sm:px-6 sm:py-12">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="text-center max-w-2xl"
+        className="ui-surface w-full max-w-2xl rounded-3xl border border-white/[0.06] bg-card/30 p-5 text-center sm:p-8"
       >
         <motion.div
           animate={{ rotate: processing ? 360 : 0 }}
@@ -288,11 +288,11 @@ export default function ThankYou() {
           )}
         </motion.div>
 
-        <h1 className="font-heading font-black text-5xl mb-4">
+        <h1 className="mb-4 font-heading text-3xl font-black tracking-tight sm:text-5xl">
           {processing ? "Confirming Purchase..." : "Purchase Complete!"}
         </h1>
 
-        <p className="text-xl text-muted-foreground mb-8">
+        <p className="mb-8 text-base leading-relaxed text-muted-foreground sm:text-xl">
           {processing
             ? "Confirming your payment. This takes just a moment..."
             : purchasedTracks.length > 0
@@ -305,16 +305,16 @@ export default function ThankYou() {
         </p>
 
         {!processing && purchasedTracks.length > 0 && (
-          <div className="bg-card border border-primary/30 rounded-2xl p-6 mb-8 text-left space-y-3">
+          <div className="ui-surface mb-8 space-y-3 rounded-2xl border border-primary/30 bg-card p-4 text-left sm:p-6">
             {purchasedTracks.map((track) => (
-              <div key={track.id} className="flex items-center justify-between gap-4 bg-secondary/30 rounded-xl p-4">
+              <div key={track.id} className="flex flex-col gap-3 rounded-xl bg-secondary/30 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="font-semibold truncate">{track.title || "Purchased track"}</p>
                   <p className="text-xs text-muted-foreground">License purchased</p>
                 </div>
                 {track.file_url ? (
                   <a href={track.file_url} download className="shrink-0">
-                    <Button size="sm" className="rounded-xl bg-primary hover:bg-primary/90 gap-2">
+                    <Button size="sm" className="ui-hover min-h-10 rounded-xl bg-primary gap-2 hover:bg-primary/90">
                       <Download className="w-4 h-4" /> Download
                     </Button>
                   </a>
@@ -327,7 +327,7 @@ export default function ThankYou() {
         )}
 
         {!processing && purchasedTracks.length === 0 && (
-          <div className="bg-card border border-primary/30 rounded-2xl p-8 mb-8">
+          <div className="ui-surface mb-8 rounded-2xl border border-primary/30 bg-card p-5 sm:p-8">
             <h2 className="font-heading font-bold text-2xl mb-4 flex items-center justify-center gap-2">
               <Music className="w-6 h-6 text-primary" />
               What's Next?
@@ -342,15 +342,15 @@ export default function ThankYou() {
         )}
 
         {!processing && (
-          <div className="flex gap-4 justify-center flex-wrap">
-            <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90" asChild>
+          <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
+            <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-primary hover:bg-primary/90 sm:w-auto" asChild>
               <Link to="/studio">
                 <Music className="w-5 h-5 mr-2" />
                 Open Studio
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
               </Button>
-            <Button size="lg" variant="outline" className="rounded-xl" asChild>
+            <Button size="lg" variant="outline" className="ui-hover min-h-12 w-full rounded-xl sm:w-auto" asChild>
               <Link to="/explore">
                 Explore Tracks
               </Link>

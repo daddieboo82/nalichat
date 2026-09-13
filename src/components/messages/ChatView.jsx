@@ -498,7 +498,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
               }}
             />
           )
-        ))}
+        )}
           </>
         )}
       </div>

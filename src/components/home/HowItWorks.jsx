@@ -84,10 +84,10 @@ const steps = [
 export default function HowItWorks() {
   return (
     <div>
-      <div className="text-center mb-10 md:mb-12">
+      <div className="mb-8 text-center md:mb-12">
         <span className="text-xs font-bold tracking-widest text-primary uppercase bg-primary/10 px-3 py-1 rounded-full">The Full Journey</span>
-        <h2 className="font-heading font-bold text-3xl md:text-4xl mt-4 mb-3">How It Works</h2>
-        <p className="text-foreground/90 text-lg max-w-2xl mx-auto">From signing up to selling your sound — NaliChat covers every step of your creative process in one place.</p>
+        <h2 className="mb-3 mt-4 font-heading text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">How It Works</h2>
+        <p className="mx-auto max-w-2xl text-base leading-relaxed text-foreground/90 sm:text-lg">From signing up to selling your sound — NaliChat covers every step of your creative process in one place.</p>
       </div>
 
       <motion.div
@@ -95,14 +95,14 @@ export default function HowItWorks() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-80px" }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6"
       >
         {steps.map((step) => {
           const Icon = step.icon;
           return (
             <motion.div key={step.number} variants={itemVariants} className="relative h-full">
-              <div className="bg-card border border-border rounded-2xl p-6 h-full hover:border-primary/40 transition-colors duration-300 flex flex-col">
-                <div className="flex items-center justify-between mb-5">
+              <div className="ui-surface flex h-full flex-col rounded-3xl border border-border bg-card p-5 transition-colors duration-300 hover:border-primary/40 sm:p-6">
+                <div className="mb-4 flex items-center justify-between sm:mb-5">
                   <div className={`w-12 h-12 rounded-xl ${step.bg} flex items-center justify-center`}>
                     <Icon className={`w-6 h-6 ${step.color}`} />
                   </div>

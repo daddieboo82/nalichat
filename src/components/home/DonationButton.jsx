@@ -53,8 +53,8 @@ export default function DonationButton({ variant = "hero" }) {
         size="lg"
         className={
           variant === "hero"
-            ? "rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:opacity-90 text-base shimmer-hover px-7"
-            : "rounded-2xl h-14 px-8 text-lg font-bold bg-gradient-to-r from-rose-500 to-pink-500 hover:opacity-90 transition-all hover:scale-105"
+            ? "ui-hover min-h-12 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-7 text-base font-semibold shimmer-hover hover:opacity-90"
+            : "ui-hover h-14 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 px-8 text-lg font-bold transition-all hover:opacity-90"
         }
       >
         <Heart className="w-5 h-5 mr-2" />
@@ -62,7 +62,7 @@ export default function DonationButton({ variant = "hero" }) {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Heart className="w-5 h-5 text-rose-500" />
@@ -73,12 +73,12 @@ export default function DonationButton({ variant = "hero" }) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-3 py-4">
+          <div className="grid grid-cols-2 gap-2 py-4 sm:gap-3">
             {PRESETS.map((preset) => (
               <button
                 key={preset}
                 onClick={() => setAmount(preset)}
-                className={`relative rounded-xl border p-4 text-center font-bold text-lg transition-all ${
+                className={`ui-hover relative min-h-14 rounded-xl border p-3 text-center text-lg font-bold transition-all sm:p-4 ${
                   amount === preset
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border bg-card hover:border-primary/50"
@@ -92,14 +92,14 @@ export default function DonationButton({ variant = "hero" }) {
             ))}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button className="ui-hover min-h-11 rounded-xl" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
               Cancel
             </Button>
             <Button
               onClick={handleDonate}
               disabled={loading}
-              className="bg-gradient-to-r from-rose-500 to-pink-500 hover:opacity-90"
+              className="ui-hover min-h-11 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 font-semibold hover:opacity-90"
             >
               {loading ? (
                 <>

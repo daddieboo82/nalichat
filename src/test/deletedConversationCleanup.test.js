@@ -13,6 +13,9 @@ describe('deleted conversation data cleanup', () => {
     expect(s).toContain("transcript: ''");
     expect(s).toContain("summary: ''");
     expect(s).toContain("failure_code: 'CONVERSATION_DELETED'");
+    expect(s).toContain('async function listAllRows');
+    expect(s).toContain('for (let skip = 0; ; skip += PAGE_SIZE)');
+    expect(s).not.toContain("'-created_date',\n    500,");
 
     const cleanup = s.indexOf('await cleanupDeletedConversationData(entities, conversation.id)');
     const parentDelete = s.indexOf('await entities.Conversation.delete(conversation.id)', cleanup);

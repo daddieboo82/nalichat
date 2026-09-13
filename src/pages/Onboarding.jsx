@@ -83,7 +83,7 @@ export default function Onboarding() {
 
   if (initializing || (user?.id && formOwnerId !== user.id)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-screen min-h-[100dvh] items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -94,7 +94,7 @@ export default function Onboarding() {
   return (
     <>
     <OnboardingNaliGuide step={1} profileComplete={profileComplete} />
-    <div className="flex min-h-screen items-center justify-center bg-background p-4 lg:justify-start lg:pl-[6%] xl:pl-[12%]">
+    <div className="flex min-h-screen min-h-[100dvh] items-start sm:items-center justify-center overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] lg:justify-start lg:pl-[6%] xl:pl-[12%]">
       <div className="w-full max-w-md bg-card border rounded-2xl p-8 shadow-xl">
         <div className="flex items-center gap-2 mb-6">
           <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">

@@ -12,7 +12,7 @@ describe('deleteArtPost method guard', () => {
 
     const methodGuard = source.indexOf("if (req.method !== 'POST')");
     const authCheck = source.indexOf('const base44 = createClientFromRequest(req)');
-    const deleteCall = source.indexOf('await entities.ArtPost.delete(post.id)');
+    const deleteCall = source.indexOf('await entities.ArtPost.delete(currentPost.id)');
 
     expect(methodGuard).toBeGreaterThanOrEqual(0);
     expect(source).toContain("return Response.json({ error: 'Method not allowed' }, { status: 405 });");

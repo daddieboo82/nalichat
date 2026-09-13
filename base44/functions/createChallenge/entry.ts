@@ -197,7 +197,12 @@ Deno.serve(async (req) => {
       voting_end_date: votingEnd ? new Date(votingEnd).toISOString() : undefined,
     });
 
-    return Response.json({ success: true, challenge });
+    return Response.json({
+      success: true,
+      action: 'create_challenge',
+      userId: user.id,
+      challenge,
+    });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

@@ -26,12 +26,16 @@ export function memberGoalMet(progress, member) {
   return messages >= GOAL_MESSAGES || tasks >= GOAL_TASKS;
 }
 
-export async function recordSquadActivity(sourceType, sourceId) {
+export async function recordSquadActivity(sourceType, sourceId, expectedUserId) {
   try {
     const res = await base44.functions.invoke("recordSquadActivity", { sourceType, sourceId });
     const data = res?.data;
     if (
       data?.success !== true ||
+      data?.action !== "record_squad_activity" ||
+      data?.userId !== expectedUserId ||
+      data?.sourceType !== sourceType ||
+      data?.sourceId !== sourceId ||
       typeof data?.tracked !== "boolean" ||
       (data?.duplicate !== undefined && typeof data.duplicate !== "boolean")
     ) {

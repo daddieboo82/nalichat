@@ -549,7 +549,7 @@ export default function Messages() {
       );
       queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       if (msg?.id && msg?.type !== "session") {
-        recordSquadActivity("message", msg.id);
+        recordSquadActivity("message", msg.id, currentUser?.id);
       }
     },
   });

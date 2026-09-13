@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
     }
 
     const squad = await activeSquad(entities, user.id);
-    if (!squad) return Response.json({ success: true, tracked: false });
+    if (!squad) return Response.json({ success: true, action: 'record_squad_activity', userId: user.id, sourceType, sourceId: normalizedSourceId, tracked: false, duplicate: false });
 
     const progress = await getOrCreateProgress(entities, squad);
     const ledgerId = await activityId(user.id, sourceType, String(sourceId));
@@ -265,6 +265,10 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
+      action: 'record_squad_activity',
+      userId: user.id,
+      sourceType,
+      sourceId: normalizedSourceId,
       tracked: !duplicate,
       duplicate,
       progress: updated,

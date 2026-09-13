@@ -106,7 +106,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
       } catch (err) {
         console.error("Failed to award publish XP:", err);
       }
-      recordSquadActivity("art_post", createdPost.id);
+      recordSquadActivity("art_post", createdPost.id, currentUser?.id);
     }
 
     setLoading(false);

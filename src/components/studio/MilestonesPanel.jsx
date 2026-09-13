@@ -111,7 +111,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
       if (result?.stale) return;
       invalidate();
       if (!m.completed) {
-        recordSquadActivity("milestone", m.id);
+        recordSquadActivity("milestone", m.id, currentUser?.id);
       }
     },
     onError: (error) => toast.error(error?.message || "Couldn't update milestone. Please try again."),

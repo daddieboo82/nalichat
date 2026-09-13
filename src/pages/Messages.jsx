@@ -424,6 +424,10 @@ export default function Messages() {
       const sent = res?.data?.message;
       if (
         res?.data?.success !== true ||
+        res?.data?.action !== "send" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.conversationId !== conversationId ||
+        res?.data?.clientMessageKey !== msgData.client_message_key ||
         !sent?.id ||
         sent?.conversation_id !== conversationId ||
         sent?.sender_id !== currentUser?.id ||

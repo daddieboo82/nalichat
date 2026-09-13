@@ -228,7 +228,7 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
   if (clientMessageKey) {
     const existing = await findExistingMessage(base44, user.id, conversationId, clientMessageKey);
     if (existing) {
-      return Response.json({ success: true, message: existing, duplicate: true });
+      return Response.json({ success: true, action: 'send', userId: user.id, conversationId, clientMessageKey, message: existing, duplicate: true });
     }
     const priorModeration = await findModerationReplay(base44, user, conversationId, clientMessageKey);
     if (priorModeration) {
@@ -349,6 +349,10 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
             if (existingAfterModerationLock) {
               return Response.json({
                 success: true,
+                action: 'send',
+                userId: user.id,
+                conversationId,
+                clientMessageKey,
                 message: existingAfterModerationLock,
                 duplicate: true,
               });
@@ -493,7 +497,7 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
       }
       const existingAfterLock = await findExistingMessage(base44, user.id, conversationId, clientMessageKey);
       if (existingAfterLock) {
-        return Response.json({ success: true, message: existingAfterLock, duplicate: true });
+        return Response.json({ success: true, action: 'send', userId: user.id, conversationId, clientMessageKey, message: existingAfterLock, duplicate: true });
       }
       const moderationAfterLock = await findModerationReplay(base44, user, conversationId, clientMessageKey);
       if (moderationAfterLock) {
@@ -631,6 +635,10 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
 
   return Response.json({
     success: true,
+    action: 'send',
+    userId: user.id,
+    conversationId,
+    clientMessageKey,
     message,
     duplicate: !createdNew,
     preview_refresh_failed: previewRefreshFailed,

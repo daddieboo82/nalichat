@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     ]);
     const squad = asA[0] || asB[0] || null;
     if (!squad) {
-      return Response.json({ active: false, multiplier: 1, squad: null, progress: null });
+      return Response.json({ success: true, userId: user.id, active: false, multiplier: 1, squad: null, progress: null });
     }
 
     const key = weekKey();
@@ -55,6 +55,8 @@ Deno.serve(async (req) => {
     );
 
     return Response.json({
+      success: true,
+      userId: user.id,
       active,
       multiplier: active ? 1.5 : 1,
       squad,

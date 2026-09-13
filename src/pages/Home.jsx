@@ -192,7 +192,7 @@ export default function Home() {
           initial={{ opacity: 0, y: -20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
-          className="relative z-10 text-center max-w-5xl mx-auto"
+          className="relative z-10 mx-auto max-w-5xl text-center"
         >
           {/* Logo icon */}
           <div className="relative mb-6 flex justify-center sm:mb-8">
@@ -222,7 +222,7 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/20 to-pink-500/20 border border-primary/40 text-foreground text-xs font-bold px-5 py-2 rounded-full mb-6 backdrop-blur-md"
+              className="mb-6 inline-flex min-h-10 items-center gap-2 rounded-xl border border-primary/40 bg-gradient-to-r from-primary/20 to-pink-500/20 px-4 py-2 text-xs font-bold text-foreground backdrop-blur-md sm:px-5"
             >
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
@@ -281,7 +281,7 @@ export default function Home() {
 
           {/* Trust strip */}
           {!user && (
-            <p className="mt-5 text-sm text-muted-foreground">
+            <p className="mx-auto mt-5 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
              ✅ One plan unlocks the app · 🚀 Exports and stems included · 💻 Desktop downloads included
             </p>
           )}
@@ -310,14 +310,14 @@ export default function Home() {
         </motion.div>
       </section>
 
-      <section className="relative z-10 max-w-7xl mx-auto px-6 py-20 space-y-24">
+      <section className="relative z-10 mx-auto max-w-7xl space-y-14 px-4 py-12 sm:space-y-20 sm:px-6 sm:py-16 lg:space-y-24 lg:py-20">
 
         {/* ── What You Can Do ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative w-full bg-card/50 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8 md:p-12 overflow-hidden"
+          className="ui-surface relative w-full overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:p-8 md:p-12"
         >
           <div className="absolute -inset-px bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-2xl pointer-events-none" />
           <div className="relative z-10">
@@ -363,7 +363,7 @@ export default function Home() {
                   linkLabel: "View Profile"
                 }
               ].map((block) => (
-                <div key={block.title} className="h-full flex flex-col border border-white/[0.06] rounded-2xl p-6 bg-card/40 backdrop-blur-xl transition-all duration-300 min-w-0 break-words group hover:border-white/[0.12] hover:bg-card/60 hover:-translate-y-0.5">
+                <div key={block.title} className="ui-surface ui-hover group flex h-full min-w-0 flex-col break-words rounded-3xl border border-white/[0.06] bg-card/40 p-5 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] hover:bg-card/60 focus-within:ring-2 focus-within:ring-primary/30 sm:p-6">
                   <h3 className="font-heading font-bold text-xl mb-4">{block.title}</h3>
                   <ul className="space-y-2 flex-1 mb-6">
                     {block.items.map((item) => (
@@ -374,7 +374,7 @@ export default function Home() {
                     ))}
                   </ul>
                   {block.link && (
-                    <Link to={block.link} className="inline-flex items-center gap-2 text-primary font-medium group-hover:underline mt-auto">
+                    <Link to={block.link} className="ui-hover mt-auto inline-flex min-h-10 w-fit items-center gap-2 rounded-xl px-2 text-sm font-semibold text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40">
                       {block.linkLabel} <ArrowRight className="w-4 h-4" />
                     </Link>
                   )}
@@ -397,7 +397,7 @@ export default function Home() {
           transition={{ duration: 0.6 }}
         >
           <Link to={user ? "/messages" : "/register"}>
-            <div className="group relative overflow-hidden rounded-2xl bg-card/50 backdrop-blur-xl border border-white/[0.06] p-6 sm:p-8 md:p-12 hover:border-white/[0.12] hover:bg-card/70 transition-all duration-300 cursor-pointer hover:-translate-y-1">
+            <div className="ui-surface ui-hover group relative cursor-pointer overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40 sm:p-8 md:p-12">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/8 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors duration-500" />
 
@@ -418,7 +418,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 md:grid-cols-1 gap-3 md:w-48 shrink-0">
+                <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-3 md:w-48 md:grid-cols-1 md:gap-3 shrink-0">
                   <div className="bg-primary/10 rounded-2xl p-4 text-center">
                     <p className="text-2xl font-black text-primary">1K+</p>
                     <p className="text-xs text-muted-foreground mt-0.5">Active Collabs</p>
@@ -443,7 +443,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="relative overflow-hidden rounded-2xl bg-card/50 backdrop-blur-xl border border-white/[0.06] p-8 md:p-10 hover:border-white/[0.12] transition-all duration-300">
+          <div className="ui-surface relative overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] sm:p-8 md:p-10">
             <div className="absolute -top-20 -right-20 w-72 h-72 bg-primary/15 rounded-full blur-3xl" />
             <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-yellow-500/10 rounded-full blur-2xl" />
 
@@ -484,7 +484,7 @@ export default function Home() {
                return (
                  <motion.div key={feature.label} variants={itemVariants} className="h-full">
                    <Link to={feature.path} onClick={() => sounds.click()} className="block h-full">
-                     <div className="group relative rounded-2xl border border-white/[0.06] bg-card/50 backdrop-blur-xl h-full transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.12] hover:bg-card/70 hover:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] overflow-hidden">
+                     <div className="ui-surface ui-hover group relative h-full overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] hover:bg-card/70 hover:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] focus-visible:ring-2 focus-visible:ring-primary/40">
                        <div className={`absolute -inset-20 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-[0.08] blur-3xl transition-opacity duration-500 pointer-events-none`} />
                        <div className="relative h-full p-6 flex flex-col justify-between">
                          <div className="flex-1">
@@ -518,17 +518,17 @@ export default function Home() {
           transition={{ duration: 0.6 }}
           className="mb-10"
         >
-          <div className="bg-card/50 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-white/[0.12] transition-all duration-300">
+          <div className="ui-surface flex flex-col items-start justify-between gap-6 rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] sm:p-8 md:flex-row md:items-center">
             <div>
               <h3 className="font-heading font-bold text-2xl mb-2 text-foreground">Interactive Tutorial</h3>
               <p className="text-muted-foreground text-lg">New to NaliChat? Take our interactive onboarding wizard to get up to speed in seconds.</p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-              <Button onClick={() => setShowWizard(true)} size="lg" className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl h-14 px-8 text-lg font-bold shadow-lg shadow-indigo-500/20">
+            <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row">
+              <Button onClick={() => setShowWizard(true)} size="lg" className="ui-hover h-12 w-full rounded-xl bg-indigo-500 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 focus-visible:ring-2 focus-visible:ring-indigo-400/50 sm:h-14 sm:w-auto sm:px-8 sm:text-base">
                 Start Onboarding Wizard
               </Button>
               {user && (
-                <Button onClick={() => setShowTour(true)} variant="outline" size="lg" className="rounded-xl h-14 px-8 text-lg font-bold">
+                <Button onClick={() => setShowTour(true)} variant="outline" size="lg" className="ui-hover h-12 w-full rounded-xl px-5 text-sm font-bold focus-visible:ring-2 focus-visible:ring-primary/40 sm:h-14 sm:w-auto sm:px-8 sm:text-base">
                   Take Welcome Tour
                 </Button>
               )}
@@ -618,7 +618,7 @@ export default function Home() {
           transition={{ duration: 0.6, type: "spring" }}
           className="mb-24"
         >
-          <div className="relative overflow-hidden bg-card/50 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8 sm:p-12 md:p-16 text-center hover:border-white/[0.12] transition-all duration-300">
+          <div className="ui-surface relative overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-5 text-center backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] sm:p-12 md:p-16">
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
               <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/40 rounded-full blur-[100px] animate-pulse" />
               <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent/40 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />

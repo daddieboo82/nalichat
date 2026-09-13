@@ -375,6 +375,10 @@ export default function Messages() {
       const updated = res?.data?.message;
       if (
         res?.data?.success !== true ||
+        res?.data?.action !== "edit" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.messageId !== id ||
+        res?.data?.clientRequestKey !== clientRequestKey ||
         updated?.id !== id ||
         updated?.sender_id !== currentUser?.id ||
         updated?.text !== text

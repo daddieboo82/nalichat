@@ -7,6 +7,9 @@ describe('message edit moderation idempotency', () => {
     expect(s).toContain('async function messageEditRequestKey(messageId, text)');
     expect(s).toContain('crypto.subtle.digest("SHA-256", input)');
     expect(s).toContain('client_request_key: clientRequestKey');
+    expect(s).toContain('res?.data?.action !== "edit"');
+    expect(s).toContain('res?.data?.userId !== currentUser?.id');
+    expect(s).toContain('res?.data?.clientRequestKey !== clientRequestKey');
   });
 
   it('replays prior edit moderation under the message lock before re-moderating', async () => {

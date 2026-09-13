@@ -280,9 +280,32 @@ Respond as JSON: {
           }
         });
 
+        const scenes = Array.isArray(reelRes?.scenes)
+          ? reelRes.scenes
+              .slice(0, 5)
+              .map((scene: any) => ({
+                visual: String(scene?.visual || '').trim().slice(0, 1000),
+                text: String(scene?.text || '').trim().slice(0, 1000),
+                duration: String(scene?.duration || '').trim().slice(0, 50),
+              }))
+              .filter((scene: any) => scene.visual && scene.text && scene.duration)
+          : [];
+        const caption = String(reelRes?.caption || '').trim().slice(0, 1000);
+        const hashtags = Array.isArray(reelRes?.hashtags)
+          ? reelRes.hashtags
+              .map((tag: unknown) => String(tag || '').replace(/^#/, '').trim().slice(0, 80))
+              .filter(Boolean)
+              .slice(0, 8)
+          : [];
+        if (scenes.length < 3 || !caption || hashtags.length === 0) {
+          throw new Error('INVALID_REEL_CONCEPT');
+        }
+
         return {
           type: "reel",
-          ...reelRes,
+          scenes,
+          caption,
+          hashtags,
           source_text: finalMessageText
         };
       },
@@ -302,6 +325,9 @@ Respond as JSON: {
     }
     if (error instanceof Error && error.message === 'INVALID_MEME_CONCEPT') {
       return Response.json({ error: 'AI returned an invalid meme concept' }, { status: 502 });
+    }
+    if (error instanceof Error && error.message === 'INVALID_REEL_CONCEPT') {
+      return Response.json({ error: 'AI returned an invalid reel concept' }, { status: 502 });
     }
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

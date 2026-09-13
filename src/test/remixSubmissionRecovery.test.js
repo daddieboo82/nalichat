@@ -6,7 +6,12 @@ describe('remix submission recovery', () => {
     const s = await readFile('src/components/challenges/SubmitRemixModal.jsx', 'utf8');
     expect(s).toContain('const loadTracks = useCallback(async () => {');
     expect(s).toContain('onClick={() => void loadTracks()}');
-    expect(s).toContain('if (!submission?.id) throw new Error("Remix submission was not confirmed");');
+    expect(s).toContain('res?.data?.action !== "submit_remix"');
+    expect(s).toContain('res?.data?.userId !== user?.id');
+    expect(s).toContain('res?.data?.challengeId !== challenge.id');
+    expect(s).toContain('!submission?.id');
+    expect(s).toContain('submission.challenge_id !== challenge.id');
+    expect(s).toContain('submission.producer_id !== user?.id');
     expect(s).not.toContain('Close and reopen this dialog to retry.');
   });
 });

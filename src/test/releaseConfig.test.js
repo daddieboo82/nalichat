@@ -1588,6 +1588,9 @@ describe('release configuration', () => {
     expect(external).toContain('External SMS messaging is temporarily unavailable');
     expect(external).not.toContain("accepted: true");
     expect(dialog).toContain('Request Accepted');
+    expect(dialog).toContain('res?.data?.success !== true || res?.data?.method !== "email"');
+    expect(dialog).toContain('External message request was not confirmed.');
+    expect(dialog).toContain('setErrorMsg(err?.message ||');
     expect(dialog).toContain('If that address can receive NaliChat messages, it will be delivered.');
     expect(dialog).not.toContain('Send SMS');
     expect(dialog).not.toContain('Phone number');

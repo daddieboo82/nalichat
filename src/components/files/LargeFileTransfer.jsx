@@ -59,6 +59,13 @@ function LargeFileTransferContent({ currentUser }) {
       });
       if (created?.data?.error) throw new Error(created.data.error);
       const newFile = created.data.file;
+      if (
+        created?.data?.success !== true ||
+        created?.data?.action !== "create_shared_file" ||
+        created?.data?.userId !== currentUser?.id ||
+        created?.data?.fileId !== newFile?.id ||
+        newFile?.uploader_id !== currentUser?.id
+      ) throw new Error("Shared file creation was not confirmed.");
 
       // 3. Generate a tokenized public link. The file record itself is not
       // globally readable.

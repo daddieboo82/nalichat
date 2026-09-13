@@ -89,7 +89,16 @@ export async function subscribeToRemotePush() {
   const configResponse = await base44.functions.invoke('getPushConfig', {});
   if (configResponse?.data?.error) throw new Error(configResponse.data.error);
   const config = configResponse?.data ?? configResponse;
-  if (!config?.configured || !config?.publicKey) {
+  if (
+    !config ||
+    config.success !== true ||
+    config.action !== "get_push_config" ||
+    typeof config.configured !== "boolean" ||
+    typeof config.publicKey !== "string"
+  ) {
+    throw new Error("Push configuration was not confirmed.");
+  }
+  if (!config.configured || !config.publicKey.trim()) {
     return { subscribed: false, reason: 'not_configured' };
   }
 

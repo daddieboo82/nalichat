@@ -15,7 +15,7 @@ describe('folder mutation serialization', () => {
     const mutation = await readFile('base44/functions/mutateSharedFile/entry.ts', 'utf8');
     expect(deletion).toContain('acquireFolderMutationLock(entities, folderId)');
     expect(deletion).toContain('releaseFolderMutationLock(entities, folderLockId)');
-    expect(mutation).toContain('acquireFolderMutationLock(entities, folderId)');
+    expect(mutation).toContain('acquireFolderMutationLock(entities, requestedFolderId)');
     expect(mutation).toContain('releaseFolderMutationLock(entities, folderLockId)');
   });
 

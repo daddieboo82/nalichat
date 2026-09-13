@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/lib/AuthContext";
 import {
   cancelFollowUpReminder,
   createFollowUpReminder,
@@ -61,6 +62,7 @@ export default function FollowUpReminderDialog({
   sourceMessage,
 }) {
   const subscription = useSubscription();
+  const { user } = useAuth();
   const isEntitled = subscription.hasEntitlement("reminders.follow_up");
   const [reminders, setReminders] = useState([]);
   const [localTime, setLocalTime] = useState(() => defaultReminderTime());
@@ -75,7 +77,7 @@ export default function FollowUpReminderDialog({
     setIsLoading(true);
     setLoadError(false);
     try {
-      const loaded = await listFollowUpReminders();
+      const loaded = await listFollowUpReminders(user?.id);
       setReminders(loaded.filter((reminder) => (
         !conversation?.id || reminder.conversation_id === conversation.id
       )));
@@ -121,6 +123,7 @@ export default function FollowUpReminderDialog({
           sourceMessageId: sourceMessage.id,
           remindAt,
           requestKey: requestKeyRef.current,
+          userId: user?.id,
         });
         trackFollowUpEvent("follow_up_create", {
           outcome: "scheduled",

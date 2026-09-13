@@ -4,6 +4,11 @@ import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { isConversationId } from '../../shared/conversationIds.ts';
+import {
+  acquireConversationMembershipLock,
+  releaseConversationMembershipLock,
+} from '../../shared/conversationMembershipLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -32,33 +37,66 @@ Deno.serve(async (req) => {
     const { messageId } = await readJsonBodyLimited(req, 8 * 1024);
     if (!isBase44EntityId(messageId)) return Response.json({ error: 'Valid messageId is required' }, { status: 400 });
 
-    const message = await base44.asServiceRole.entities.Message.get(messageId);
-    if (!message) return Response.json({ error: 'Message not found' }, { status: 404 });
-    if (!Array.isArray(message.participant_ids) || !message.participant_ids.includes(user.id)) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const entities = base44.asServiceRole.entities;
+    const messagePreview = await entities.Message.get(messageId).catch(() => null);
+    if (!messagePreview) return Response.json({ error: 'Message not found' }, { status: 404 });
+    if (!isConversationId(messagePreview.conversation_id)) {
+      return Response.json({ error: 'Message has an invalid conversation reference' }, { status: 409 });
     }
 
-    const isSender = message.sender_id === user.id;
-    if (!isSender) {
-      const { allowed } = await requireEntitlement(
-        base44.asServiceRole.entities,
-        user.id,
-        'chat.export',
-      );
-      if (!allowed) {
-        return Response.json({ error: 'Download entitlement required' }, { status: 403 });
+    // Cached message participant_ids are a convenience projection, not the
+    // authority for private attachment access. Serialize with conversation
+    // membership changes and authorize against the current Conversation row.
+    const conversationLockId = await acquireConversationMembershipLock(
+      entities,
+      messagePreview.conversation_id,
+    );
+    if (!conversationLockId) {
+      return Response.json({ error: 'Conversation is being updated. Please retry.' }, { status: 409 });
+    }
+
+    try {
+      const [conversation, message] = await Promise.all([
+        entities.Conversation.get(messagePreview.conversation_id).catch(() => null),
+        entities.Message.get(messageId).catch(() => null),
+      ]);
+      if (!conversation || !message) {
+        return Response.json({ error: 'Message not found' }, { status: 404 });
       }
-    }
+      if (message.conversation_id !== conversation.id) {
+        return Response.json({ error: 'Message conversation changed. Please retry.' }, { status: 409 });
+      }
+      const participantIds = Array.isArray(conversation.participant_ids)
+        ? conversation.participant_ids
+        : [];
+      if (!participantIds.includes(user.id)) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
 
-    if (!message.file_url) return Response.json({ error: 'Message has no downloadable media' }, { status: 400 });
-    if (!isTrustedStoredMediaUrl(message.file_url)) {
-      return Response.json({ error: 'Stored message media host is not allowed' }, { status: 400 });
+      const isSender = message.sender_id === user.id;
+      if (!isSender) {
+        const { allowed } = await requireEntitlement(
+          entities,
+          user.id,
+          'chat.export',
+        );
+        if (!allowed) {
+          return Response.json({ error: 'Download entitlement required' }, { status: 403 });
+        }
+      }
+
+      if (!message.file_url) return Response.json({ error: 'Message has no downloadable media' }, { status: 400 });
+      if (!isTrustedStoredMediaUrl(message.file_url)) {
+        return Response.json({ error: 'Stored message media host is not allowed' }, { status: 400 });
+      }
+      return Response.json({
+        success: true,
+        file_url: message.file_url,
+        file_name: message.file_name || 'file',
+      });
+    } finally {
+      await releaseConversationMembershipLock(entities, conversationLockId);
     }
-    return Response.json({
-      success: true,
-      file_url: message.file_url,
-      file_name: message.file_name || 'file',
-    });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

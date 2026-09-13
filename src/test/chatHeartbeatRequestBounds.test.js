@@ -15,13 +15,13 @@ describe('chat heartbeat request bounds', () => {
       expect(source).toContain("req.method !== 'POST'");
     }
 
-    expect(read).toContain('messageId.length > 256');
-    expect(read.indexOf('messageId.length > 256')).toBeLessThan(
+    expect(read).toContain('isBase44EntityId(messageId)');
+    expect(read.indexOf('isBase44EntityId(messageId)')).toBeLessThan(
       read.indexOf("'message_read_receipt'"),
     );
 
-    expect(typing).toContain('conversationId.length > 256');
-    expect(typing.indexOf('conversationId.length > 256')).toBeLessThan(
+    expect(typing).toContain('isConversationId(conversationId)');
+    expect(typing.indexOf('isConversationId(conversationId)')).toBeLessThan(
       typing.indexOf("'typing_status'"),
     );
   });

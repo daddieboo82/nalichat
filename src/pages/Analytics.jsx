@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Card } from "@/components/ui/card";
-import { TrendingUp, Eye, Heart, Music } from "lucide-react";
+import { TrendingUp, Eye, Heart, Music, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getLikeCount } from "@/lib/engagement";
 import { useAuth } from "@/lib/AuthContext";
@@ -27,7 +27,7 @@ export default function Analytics() {
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: userPosts = [] } = useQuery({
+  const { data: userPosts = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["userAnalytics", currentUser?.id],
     queryFn: () =>
       currentUser
@@ -88,6 +88,25 @@ export default function Analytics() {
 
       {/* Content */}
       <div className="flex-1 p-6 space-y-6">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20" aria-live="polite">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
+            <span className="sr-only">Loading analytics</span>
+          </div>
+        ) : isError ? (
+          <div className="rounded-2xl border border-destructive/40 bg-card/60 p-6 text-center" role="alert">
+            <h2 className="font-heading text-lg font-semibold">Analytics unavailable</h2>
+            <p className="mt-2 text-sm text-muted-foreground">We couldn't load your release data, so the app won't show misleading zero totals.</p>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="mt-4 rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary/50"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <>
         {/* Stat Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((stat, i) => {
@@ -185,6 +204,8 @@ export default function Analytics() {
               </table>
             </div>
           </Card>
+        )}
+          </>
         )}
       </div>
     </PullToRefresh>

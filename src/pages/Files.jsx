@@ -260,6 +260,7 @@ export default function Files() {
             project_id: currentFolderObj?.project_id || null,
           });
           if (created?.data?.error) throw new Error(created.data.error);
+          if (!created?.data?.file?.id) throw new Error("File upload was not confirmed");
           uploaded += 1;
         } catch (error) {
           failures.push({ name: file.name, message: error?.message || "Upload failed" });
@@ -294,7 +295,10 @@ export default function Files() {
     mutationFn: async (id) => {
       const res = await base44.functions.invoke("mutateSharedFile", { action: "delete", fileId: id });
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data;
+      if (res?.data?.success !== true || res?.data?.deleted !== true) {
+        throw new Error("File deletion was not confirmed");
+      }
+      return res.data;
     },
     onSuccess: () => {
       sounds.error();
@@ -310,7 +314,11 @@ export default function Files() {
         ...data,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.file;
+      const updatedFile = res?.data?.file;
+      if (res?.data?.success !== true || !updatedFile?.id) {
+        throw new Error("File update was not confirmed");
+      }
+      return updatedFile;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shared-files"] });

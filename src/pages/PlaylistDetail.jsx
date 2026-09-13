@@ -1,4 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
+import { validateUpload } from "@/lib/uploadValidation";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
@@ -121,7 +122,12 @@ export default function PlaylistDetail() {
   const handleUpload = (e) => {
     const file = e.target.files?.[0];
     if (file && currentUser) {
-      uploadMutation.mutate(file);
+      const validation = validateUpload(file);
+      if (!validation.ok) {
+        toast.error(validation.error);
+      } else {
+        uploadMutation.mutate(file);
+      }
     }
     e.target.value = "";
   };

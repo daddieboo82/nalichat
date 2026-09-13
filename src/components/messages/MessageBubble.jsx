@@ -81,6 +81,15 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
     try {
       const auth = await base44.functions.invoke("authorizeMessageDownload", { messageId: message.id });
       if (auth?.data?.error) throw new Error(auth.data.error);
+      if (
+        auth?.data?.success !== true ||
+        auth?.data?.action !== "authorize_message_download" ||
+        auth?.data?.userId !== currentUser?.id ||
+        auth?.data?.messageId !== message.id ||
+        auth?.data?.conversationId !== message.conversation_id
+      ) {
+        throw new Error("Download authorization was not confirmed.");
+      }
       const downloadUrl = auth?.data?.file_url;
       if (auth?.data?.success !== true || !downloadUrl) {
         throw new Error("Download authorization was not confirmed");
@@ -512,6 +521,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
         canDownload={canDownload}
+        currentUser={currentUser}
       />
 
       <ViralMomentDialog

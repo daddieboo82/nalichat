@@ -225,7 +225,15 @@ Deno.serve(async (req) => {
             { status: 500 },
           );
         }
-        return Response.json({ success: true, deleted: true, already_deleted: true });
+        return Response.json({
+          success: true,
+          action: 'delete',
+          userId: user.id,
+          messageId,
+          conversationId,
+          deleted: true,
+          already_deleted: true,
+        });
       } finally {
         await releaseConversationMembershipLock(entities, conversationLockId);
       }
@@ -447,6 +455,10 @@ Deno.serve(async (req) => {
 
       return Response.json({
         success: true,
+        action: 'delete',
+        userId: user.id,
+        messageId: message.id,
+        conversationId: message.conversation_id,
         deleted: !tombstoned,
         tombstoned,
         preserved_replies: childReplies.length,

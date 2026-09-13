@@ -13,8 +13,14 @@ import PullToRefresh from "@/components/layout/PullToRefresh";
 import LoadError from "@/components/layout/LoadError";
 import { useAuth } from "@/lib/AuthContext";
 
-const MAX_CHALLENGE_SUBMISSIONS = 500;
-const MAX_USER_CHALLENGE_VOTES = 500;
+async function filterAllRows(entity, query, sort, pageSize = 200) {
+  const rows = [];
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entity.filter(query, sort, pageSize, skip);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
 
 export default function ChallengeDetail() {
   const { challengeId } = useParams();
@@ -31,10 +37,10 @@ export default function ChallengeDetail() {
   const loadSubmissions = async () => {
     const requestedChallengeId = challengeId;
     try {
-      const nextSubmissions = await base44.entities.ChallengeSubmission.filter(
+      const nextSubmissions = await filterAllRows(
+        base44.entities.ChallengeSubmission,
         { challenge_id: requestedChallengeId, status: "approved" },
         "-vote_count",
-        MAX_CHALLENGE_SUBMISSIONS,
       );
       if (challengeIdRef.current === requestedChallengeId) {
         setSubmissions(nextSubmissions || []);
@@ -72,12 +78,11 @@ export default function ChallengeDetail() {
   useEffect(() => {
     if (!user) { setMyVotes(new Set()); return undefined; }
     let cancelled = false;
-    base44.entities.ChallengeVote
-      .filter(
-        { challenge_id: challengeId, voter_id: user.id },
-        "-created_date",
-        MAX_USER_CHALLENGE_VOTES,
-      )
+    filterAllRows(
+      base44.entities.ChallengeVote,
+      { challenge_id: challengeId, voter_id: user.id },
+      "-created_date",
+    )
       .then((votes) => {
         if (!cancelled) {
           setMyVotes(new Set((votes || []).map((v) => v.submission_id)));

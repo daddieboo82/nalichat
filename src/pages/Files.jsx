@@ -886,6 +886,7 @@ export default function Files() {
           <div className="space-y-4">
             <div className="relative border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-8 flex flex-col items-center justify-center text-center bg-secondary/20">
               <input 
+                data-testid="files-upload-input"
                 type="file" 
                 multiple 
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 

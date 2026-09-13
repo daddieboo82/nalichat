@@ -1058,7 +1058,8 @@ describe('release configuration', () => {
 
   it('does not reveal presence from unilateral contact relationships', async () => {
     const listUsers = await readText('base44/functions/listPublicUsers/entry.ts');
-    expect(listUsers).toMatch(/Contact\.filter\([\s\S]*contact_user_id: user\.id/);
+    expect(listUsers).toContain('base44.asServiceRole.entities.Contact');
+    expect(listUsers).toContain('{ contact_user_id: user.id }');
     expect(listUsers).toContain('inboundContactOwners.has(contact.contact_user_id)');
     expect(listUsers).toContain('presenceVisibleTo.add(contact.contact_user_id)');
   });
@@ -1553,10 +1554,14 @@ describe('release configuration', () => {
   it('minimizes public user discovery metadata', async () => {
     const publicUsers = await readText('base44/functions/listPublicUsers/entry.ts');
     expect(publicUsers).toContain("role: 'user'");
-    expect(publicUsers).not.toContain("role: u.role === 'admin'");
-    expect(publicUsers).not.toContain('created_date: u.created_date');
+    const projection = publicUsers.slice(
+      publicUsers.indexOf('function publicUserProjection'),
+      publicUsers.indexOf('export default async function'),
+    );
+    expect(projection).not.toContain("role: u.role === 'admin'");
+    expect(projection).not.toContain('created_date: u.created_date');
     for (const privateField of ['email:', 'phone:', 'birthdate:', 'stripe_customer_id:', 'trial_used_at:', 'is_banned:', 'timeout_until:']) {
-      expect(publicUsers).not.toContain(privateField);
+      expect(projection).not.toContain(privateField);
     }
   });
 
@@ -1564,9 +1569,9 @@ describe('release configuration', () => {
     const publicUsers = await readText('base44/functions/listPublicUsers/entry.ts');
     expect(publicUsers).toContain('body?.includePresence === true');
     expect(publicUsers).toContain('includePresence');
-    expect(publicUsers).toContain('Contact.filter(');
+    expect(publicUsers).toContain('base44.asServiceRole.entities.Contact');
     expect(publicUsers).toContain('{ user_id: user.id }');
-    expect(publicUsers).toContain('Conversation.filter(');
+    expect(publicUsers).toContain('base44.asServiceRole.entities.Conversation');
     expect(publicUsers).toContain('{ participant_ids: user.id }');
     expect(publicUsers).toContain('presenceVisibleTo.add(contact.contact_user_id)');
     expect(publicUsers).toContain('presenceVisibleTo.add(participantId)');

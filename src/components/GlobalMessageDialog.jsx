@@ -160,7 +160,7 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
               />
             </div>
 
-            <div className="max-h-[300px] overflow-y-auto space-y-1">
+            <div className="max-h-[300px] overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] space-y-1">
               {!isLoadingAuth && !isAuthenticated ? (
                 <p className="text-sm text-destructive text-center py-8" role="alert">
                   Log in to send messages.

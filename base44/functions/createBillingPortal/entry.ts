@@ -5,6 +5,21 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { APP_BASE_URL } from '../../shared/appConfig.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
+async function loadStripeSubscriptions(entity: any, userId: string) {
+  const rows: any[] = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entity.filter(
+      { user_id: userId, provider: 'stripe' },
+      '-created_date',
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
@@ -38,13 +53,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const subscriptions = await base44.asServiceRole.entities.Subscription.filter(
-      {
-        user_id: user.id,
-        provider: 'stripe',
-      },
-      '-created_date',
-      100,
+    const subscriptions = await loadStripeSubscriptions(
+      base44.asServiceRole.entities.Subscription,
+      user.id,
     );
     const associatedCustomerIds = new Set(
       subscriptions

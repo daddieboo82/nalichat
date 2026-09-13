@@ -2232,3 +2232,17 @@ describe('messages response integrity follow-up', () => {
     expect(conversations).toContain('!joinedRoom.participant_ids.includes(currentUserId)');
   });
 });
+
+
+describe('message mutation response contracts', () => {
+  it('validates edit, send, and delete confirmations before committing UI state', async () => {
+    const messages = await readText('src/pages/Messages.jsx');
+    const chatView = await readText('src/components/messages/ChatView.jsx');
+    expect(messages).toContain('Message edit was not confirmed.');
+    expect(messages).toContain('updated?.sender_id !== currentUser?.id');
+    expect(messages).toContain('Message send was not confirmed.');
+    expect(messages).toContain('sent?.client_message_key !== msgData.client_message_key');
+    expect(chatView).toContain('Message deletion was not confirmed.');
+    expect(chatView).toContain('res?.data?.deleted !== true && res?.data?.tombstoned !== true');
+  });
+});

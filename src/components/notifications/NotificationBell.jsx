@@ -36,6 +36,7 @@ export default function NotificationBell({ direction = "down" }) {
   const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [pushPermission, setPushPermission] = useState(() => getPermissionStatus());
   const { toast } = useToast();
   const panelRef = useRef(null);
@@ -69,11 +70,13 @@ export default function NotificationBell({ direction = "down" }) {
     const list = await base44.entities.Notification.filter({ recipient_id: uid }, "-created_date", 30);
     if (generation !== identityGenerationRef.current) return;
     setItems(list);
+    setLoadError(false);
   };
 
   useEffect(() => {
     identityGenerationRef.current += 1;
     setItems([]);
+    setLoadError(false);
     setOpen(false);
   }, [user?.id]);
 
@@ -128,7 +131,11 @@ export default function NotificationBell({ direction = "down" }) {
 
         previousIds = nextIds;
         setItems(list || []);
+        setLoadError(false);
       } catch {
+        if (!cancelled && generation === identityGenerationRef.current) {
+          setLoadError(true);
+        }
         // Notifications are non-critical; retry on the next poll.
       } finally {
         refreshInFlight = false;
@@ -252,7 +259,20 @@ export default function NotificationBell({ direction = "down" }) {
             )}
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {safeItems.length === 0 ? (
+            {loadError && safeItems.length === 0 ? (
+              <div className="py-10 px-4 text-center" role="alert">
+                <Bell className="w-8 h-8 mx-auto mb-2 opacity-30 text-muted-foreground" />
+                <p className="text-sm font-semibold">Couldn't load notifications</p>
+                <p className="mt-1 text-xs text-muted-foreground">Your notifications may still be available.</p>
+                <button
+                  type="button"
+                  className="mt-3 text-xs font-semibold text-primary hover:underline"
+                  onClick={() => user?.id && void load(user.id)}
+                >
+                  Retry
+                </button>
+              </div>
+            ) : safeItems.length === 0 ? (
               <div className="py-10 text-center text-muted-foreground">
                 <Bell className="w-8 h-8 mx-auto mb-2 opacity-30" />
                 <p className="text-sm">No notifications yet</p>

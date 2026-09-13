@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import TrackVersionHistory from "./TrackVersionHistory";
+import { toast } from "sonner";
 
 const trackTypeColors = {
   vocal: "bg-primary",
@@ -26,7 +27,7 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
   const [activeCommentTime, setActiveCommentTime] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: comments = [] } = useQuery({
+  const { data: comments = [], isError: commentsError, refetch: refetchComments } = useQuery({
     queryKey: ["trackComments", currentUser?.id, track.id],
     queryFn: async () => {
       const res = await base44.functions.invoke("trackComments", {
@@ -55,7 +56,10 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
       queryClient.invalidateQueries({ queryKey: ["trackComments", currentUser?.id, track.id] });
       setCommentText("");
       setActiveCommentTime(null);
-    }
+    },
+    onError: (error) => {
+      toast.error(error?.message || "Couldn't add track comment. Please try again.");
+    },
   });
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   // Stable waveform bar heights — regenerated only when track id changes
@@ -193,6 +197,19 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
           </Popover>
         )}
       </div>
+
+      {commentsError && (
+        <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-2 text-[10px]" role="alert">
+          <span>Couldn't load track comments.</span>
+          <button
+            type="button"
+            className="font-semibold text-primary hover:underline"
+            onClick={() => void refetchComments()}
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">

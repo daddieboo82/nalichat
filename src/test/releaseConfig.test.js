@@ -2523,3 +2523,16 @@ describe('admin dashboard account isolation response contract', () => {
     expect(backend).toContain('adminUserId: user.id');
   });
 });
+
+
+describe('squad bonus status response contract', () => {
+  it('fails closed unless bonus state is confirmed for the expected user', async () => {
+    const client = await readText('src/lib/squadBonus.js');
+    const backend = await readText('base44/functions/getSquadBonusStatus/entry.ts');
+    expect(client).toContain('getSquadBonusStatus(expectedUserId)');
+    expect(client).toContain('data?.success !== true');
+    expect(client).toContain('expectedUserId && data.userId !== expectedUserId');
+    expect(client).toContain('![1, BONUS_MULTIPLIER].includes(Number(data?.multiplier))');
+    expect(backend).toContain('success: true, userId: user.id');
+  });
+});

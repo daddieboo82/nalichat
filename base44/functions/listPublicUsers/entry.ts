@@ -5,8 +5,20 @@ import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 const MAX_DISCOVERY_USERS = 1000;
 const MAX_DISCOVERY_ACHIEVEMENTS = 5000;
-const MAX_DISCOVERY_CONTACTS = 1000;
-const MAX_DISCOVERY_CONVERSATIONS = 1000;
+
+async function filterAllRows(
+  entity: any,
+  query: Record<string, unknown>,
+  sort: string,
+  pageSize = 200,
+) {
+  const rows: any[] = [];
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entity.filter(query, sort, pageSize, skip);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
 
 function publicUserProjection(
   u: any,
@@ -84,21 +96,21 @@ export default async function(req) {
               500,
             )
           : Promise.resolve([]),
-        base44.asServiceRole.entities.Contact.filter(
+        filterAllRows(
+          base44.asServiceRole.entities.Contact,
           { user_id: user.id },
           '-created_date',
-          MAX_DISCOVERY_CONTACTS,
         ),
-        base44.asServiceRole.entities.Contact.filter(
+        filterAllRows(
+          base44.asServiceRole.entities.Contact,
           { contact_user_id: user.id },
           '-created_date',
-          MAX_DISCOVERY_CONTACTS,
         ),
         includePresence
-          ? base44.asServiceRole.entities.Conversation.filter(
+          ? filterAllRows(
+              base44.asServiceRole.entities.Conversation,
               { participant_ids: user.id },
               '-last_message_at',
-              MAX_DISCOVERY_CONVERSATIONS,
             )
           : Promise.resolve([]),
       ]);
@@ -152,21 +164,21 @@ export default async function(req) {
       includeAchievementCounts
         ? base44.asServiceRole.entities.Achievement.list('-created_date', MAX_DISCOVERY_ACHIEVEMENTS)
         : Promise.resolve([]),
-      base44.asServiceRole.entities.Contact.filter(
+      filterAllRows(
+        base44.asServiceRole.entities.Contact,
         { user_id: user.id },
         '-created_date',
-        MAX_DISCOVERY_CONTACTS,
       ),
-      base44.asServiceRole.entities.Contact.filter(
+      filterAllRows(
+        base44.asServiceRole.entities.Contact,
         { contact_user_id: user.id },
         '-created_date',
-        MAX_DISCOVERY_CONTACTS,
       ),
       includePresence
-        ? base44.asServiceRole.entities.Conversation.filter(
+        ? filterAllRows(
+            base44.asServiceRole.entities.Conversation,
             { participant_ids: user.id },
             '-last_message_at',
-            MAX_DISCOVERY_CONVERSATIONS,
           )
         : Promise.resolve([]),
     ]);

@@ -17,6 +17,9 @@ describe('targeted public profile lookup', () => {
     expect(backend).toContain('entities.User.get(requestedUserId)');
     expect(backend).toContain('users: [publicUserProjection(target');
     expect(profile).toContain('functions.invoke("listPublicUsers", { userId: targetUserId })');
-    expect(profile).toContain('(res?.data?.users || [])[0] || null');
+    expect(profile).toContain('res?.data?.viewerUserId !== currentUser?.id');
+    expect(profile).toContain('res?.data?.requestedUserId !== targetUserId');
+    expect(profile).toContain('!Array.isArray(res?.data?.users)');
+    expect(profile).toContain('return res.data.users[0] || null');
   });
 });

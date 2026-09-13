@@ -1828,7 +1828,9 @@ describe('release configuration', () => {
     const squadInvite = await readText('base44/functions/getSquadInvite/entry.ts');
     const sharedFile = await readText('base44/functions/getSharedFileByToken/entry.ts');
 
-    expect(leaderboard).toContain("created_date: { $gte: weekStart.toISOString() }");
+    expect(leaderboard).toContain('async function loadWeeklyVotes');
+    expect(leaderboard).toContain('created_date: { $gte: weekStartIso }');
+    expect(leaderboard).toContain('weekStart.toISOString()');
     expect(leaderboard).toContain("'Cache-Control': 'public, max-age=15'");
     expect(leaderboard).toContain('/^[0-9A-F]{24}$/i.test(challengeId)');
 

@@ -91,10 +91,16 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
         throw new Error("Download authorization was not confirmed.");
       }
       const downloadUrl = auth?.data?.file_url;
-      if (typeof downloadUrl !== "string" || !downloadUrl.trim()) {
+      const downloadName = auth?.data?.file_name;
+      if (
+        typeof downloadUrl !== "string" ||
+        !downloadUrl.trim() ||
+        typeof downloadName !== "string" ||
+        !downloadName.trim()
+      ) {
         throw new Error("Download authorization was not confirmed");
       }
-      await resumableDownload(downloadUrl, auth?.data?.file_name || message.file_name || "file", (pct) => setDlProgress(pct));
+      await resumableDownload(downloadUrl, downloadName, (pct) => setDlProgress(pct));
     } catch (error) {
       toast.error(error?.message || "Couldn't download the attachment. Please try again.");
     } finally {

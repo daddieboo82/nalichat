@@ -7,7 +7,7 @@ async function readText(path) {
 }
 
 describe('exact-match lookup bounds', () => {
-  it('limits exact user and checkout-record lookups', async () => {
+  it('keeps exact lookups bounded while checkout history is complete', async () => {
     const makeAdmin = await readText('base44/functions/makeAdmin/entry.ts');
     const external = await readText('base44/functions/sendExternalMessage/entry.ts');
     const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');
@@ -18,7 +18,8 @@ describe('exact-match lookup bounds', () => {
     expect(external.match(/'-created_date',\s*1/g)?.length).toBeGreaterThanOrEqual(2);
     expect(checkout.match(/User\.filter\(\{ id: user\.id \}, '-created_date', 1\)/g)?.length).toBeGreaterThanOrEqual(2);
     expect(checkout).toMatch(/checkout_request_key: requestKey[\s\S]*provider: 'stripe'[\s\S]*'-created_date',[\s\S]*2/);
-    expect(checkout).toMatch(/Subscription\.filter\([\s\S]*\{ user_id: user\.id \},[\s\S]*'-created_date',[\s\S]*MAX_SUBSCRIPTION_HISTORY/);
-    expect(checkout).toContain('const MAX_SUBSCRIPTION_HISTORY = 500;');
+    expect(checkout).toContain('async function loadUserSubscriptions(entity: any, userId: string)');
+    expect(checkout).toContain('for (let skip = 0; ; skip += pageSize)');
+    expect(checkout).not.toContain('MAX_SUBSCRIPTION_HISTORY');
   });
 });

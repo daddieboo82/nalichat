@@ -2550,3 +2550,14 @@ describe('squad invite preview response contract', () => {
     expect(backend).toContain('viewerUserId: viewer?.id || null');
   });
 });
+
+
+describe('Squad account refresh isolation', () => {
+  it('binds bonus and credit refreshes to the load generation user', async () => {
+    const source = await readText('src/pages/Squad.jsx');
+    expect(source).toContain('getSquadBonusStatus(requestedUserId)');
+    expect(source).toContain('fresh.id !== requestedUserId');
+    expect(source).toContain('Squad account refresh was not confirmed.');
+    expect(source).toContain('setCredits(fresh.squad_credits || 0)');
+  });
+});

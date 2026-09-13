@@ -2709,3 +2709,17 @@ describe('comment surface response isolation', () => {
     }
   });
 });
+
+
+describe('typing heartbeat response identity contract', () => {
+  it('accepts typing confirmation only for the current user and conversation', async () => {
+    const backend = await readText('base44/functions/updateTypingStatus/entry.ts');
+    const hook = await readText('src/hooks/useTypingIndicator.js');
+    expect(backend).toContain("action: 'heartbeat'");
+    expect(backend).toContain("action: 'clear'");
+    expect(backend).toContain('userId: user.id');
+    expect(hook).toContain('response?.data?.action !== "heartbeat"');
+    expect(hook).toContain('response?.data?.userId !== currentUser.id');
+    expect(hook).toContain('response?.data?.conversationId !== conversationId');
+  });
+});

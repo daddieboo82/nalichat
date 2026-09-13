@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
 
     if (action === 'clear') {
       for (const item of existing) await entities.TypingStatus.delete(item.id);
-      return Response.json({ success: true, cleared: existing.length });
+      return Response.json({ success: true, action: 'clear', userId: user.id, conversationId, cleared: existing.length });
     }
 
     const payload = {
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
       await entities.TypingStatus.delete(duplicate.id);
     }
 
-    return Response.json({ success: true, typing: updated });
+    return Response.json({ success: true, action: 'heartbeat', userId: user.id, conversationId, typing: updated });
     } finally {
       await releaseConversationMembershipLock(entities, conversationLockId);
     }

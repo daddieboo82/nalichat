@@ -124,6 +124,9 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
         const typing = response?.data?.typing;
         if (
           response?.data?.success !== true ||
+          response?.data?.action !== "heartbeat" ||
+          response?.data?.userId !== currentUser.id ||
+          response?.data?.conversationId !== conversationId ||
           !typing?.id ||
           typing?.conversation_id !== conversationId ||
           typing?.user_id !== currentUser.id

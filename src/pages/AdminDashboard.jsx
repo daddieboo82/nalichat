@@ -101,11 +101,19 @@ export default function AdminDashboard() {
     setIsMakingAdmin(true);
     try {
       const res = await base44.functions.invoke("makeAdmin", { email });
-      if (res.data?.success) {
+      if (
+        res?.data?.success === true &&
+        res?.data?.action === "promote_admin" &&
+        res?.data?.adminUserId === currentUser?.id &&
+        typeof res?.data?.targetUserId === "string" &&
+        res.data.targetUserId &&
+        res?.data?.email === email &&
+        res?.data?.role === "admin"
+      ) {
         toast.success(`${email} is now an admin!`);
         setAdminEmail("");
       } else {
-        toast.error(res.data?.error || "Failed to make admin");
+        toast.error(res?.data?.error || "Admin promotion was not confirmed");
       }
     } catch {
       toast.error("Error calling makeAdmin");

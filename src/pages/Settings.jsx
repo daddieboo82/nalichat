@@ -1,4 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
+import { validateUpload } from "@/lib/uploadValidation";
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -70,6 +71,12 @@ export default function Settings() {
     const file = e.target.files?.[0];
     const uploadOwnerId = user?.id;
     if (!file || !uploadOwnerId || formOwnerId !== uploadOwnerId) return;
+    const validation = validateUpload(file);
+    if (!validation.ok) {
+      toast.error(validation.error);
+      e.target.value = "";
+      return;
+    }
     setUploading(true);
     try {
       const { file_url } = await secureUploadFile({ file });

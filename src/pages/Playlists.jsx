@@ -15,6 +15,7 @@ import {
 import { Link } from "react-router-dom";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import { useAuth } from "@/lib/AuthContext";
+import { toast } from "sonner";
 
 async function listAllOwnedPlaylists(userId) {
   const rows = [];
@@ -42,7 +43,7 @@ export default function Playlists() {
     setFormData({ name: "", description: "" });
   }, [currentUser?.id]);
 
-  const { data: playlists = [], isLoading } = useQuery({
+  const { data: playlists = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["playlists", currentUser?.id],
     queryFn: () =>
       currentUser
@@ -61,6 +62,10 @@ export default function Playlists() {
       queryClient.invalidateQueries({ queryKey: ["playlists"] });
       setShowCreateDialog(false);
       setFormData({ name: "", description: "" });
+      toast.success("Playlist created.");
+    },
+    onError: (error) => {
+      toast.error(error?.message || "Couldn't create playlist. Please try again.");
     },
   });
 
@@ -75,6 +80,10 @@ export default function Playlists() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlists"] });
+      toast.success("Playlist deleted.");
+    },
+    onError: (error) => {
+      toast.error(error?.message || "Couldn't delete playlist. Please try again.");
     },
   });
 
@@ -91,6 +100,20 @@ export default function Playlists() {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="h-full flex items-center justify-center p-6">
+        <div className="max-w-sm text-center">
+          <h2 className="font-heading text-xl font-bold">Playlists unavailable</h2>
+          <p className="mt-2 text-sm text-muted-foreground">We couldn't load your playlists. Your saved playlists have not been removed.</p>
+          <Button className="mt-4" variant="outline" onClick={() => void refetch()}>
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }

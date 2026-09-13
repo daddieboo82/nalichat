@@ -55,11 +55,19 @@ export default async function(req) {
 
     const alreadyLiked = (post.liked_by || []).includes(user.id);
 
-    // Use atomic $addToSet/$pull to prevent race conditions on concurrent likes
-    if (alreadyLiked) {
-      await entities.ArtPost.updateMany({ id: postId }, { $pull: { liked_by: user.id } });
-    } else {
-      await entities.ArtPost.updateMany({ id: postId }, { $addToSet: { liked_by: user.id } });
+    // Use atomic $addToSet/$pull to prevent race conditions on concurrent likes.
+    // Verify the write actually reached this post before reporting the toggled state.
+    const likeUpdate = alreadyLiked
+      ? await entities.ArtPost.updateMany(
+          { id: postId },
+          { $pull: { liked_by: user.id } },
+        )
+      : await entities.ArtPost.updateMany(
+          { id: postId },
+          { $addToSet: { liked_by: user.id } },
+        );
+    if (Number(likeUpdate?.updated || 0) !== 1) {
+      return Response.json({ error: 'Like update did not apply. Please retry.' }, { status: 409 });
     }
 
     // Read back to sync the likes count with the actual liked_by array

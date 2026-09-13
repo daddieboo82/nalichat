@@ -7,11 +7,13 @@ async function readText(path) {
 }
 
 describe('final Messages backend hardening', () => {
-  it('allows valid chat-session participants to mutate session tracks', async () => {
+  it('authorizes chat-session track mutations from current Conversation membership', async () => {
     const source = await readText('base44/functions/mutateTrack/entry.ts');
-    expect(source).toContain('track.edit_user_ids');
-    expect(source).toContain('const sessionMessage = await entities.Message.get(track.project_id)');
-    expect(source).toContain('sessionMessage.participant_ids.includes(user.id)');
+    expect(source).toContain('acquireConversationMembershipLock');
+    expect(source).toContain('entities.Message.get(track.project_id)');
+    expect(source).toContain('entities.Conversation.get(sessionConversationId)');
+    expect(source).toContain('participantIds.includes(user.id)');
+    expect(source).not.toContain('sessionMessage.participant_ids.includes(user.id)');
   });
 
   it('requires POST on message-related mutation/read endpoints', async () => {

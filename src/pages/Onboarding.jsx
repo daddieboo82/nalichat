@@ -49,7 +49,12 @@ export default function Onboarding() {
         location: form.location,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true) throw new Error("Profile setup was not confirmed");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "complete_onboarding" ||
+        res?.data?.userId !== user?.id ||
+        res?.data?.onboardingCompleted !== true
+      ) throw new Error("Profile setup was not confirmed");
       
       const refreshedUser = await checkUserAuth();
       if (

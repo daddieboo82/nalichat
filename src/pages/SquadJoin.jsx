@@ -55,7 +55,16 @@ export default function SquadJoin() {
     try {
       const res = await base44.functions.invoke("joinSquad", { inviteCode });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true || !res?.data?.squad?.id || res.data.squad.status !== "active") {
+      const data = res?.data;
+      const normalizedInviteCode = String(inviteCode || "").trim().toUpperCase();
+      if (
+        data?.success !== true ||
+        data?.userId !== user.id ||
+        data?.inviteCode !== normalizedInviteCode ||
+        !data?.squad?.id ||
+        data.squad.status !== "active" ||
+        data.squad.member_b_id !== user.id
+      ) {
         throw new Error("Squad join was not confirmed.");
       }
       toast.success("You're linked up! Bonus tracking starts now.");

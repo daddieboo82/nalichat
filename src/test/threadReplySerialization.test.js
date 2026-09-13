@@ -14,12 +14,14 @@ describe('thread reply serialization', () => {
     expect(source).toContain('releaseMessageMutationLock');
     expect(source).toContain('threadLockId');
     expect(source).toContain("error: 'Thread is being updated. Please retry.'");
-    expect(source).toContain('threadId.length > 200');
-    expect(source.indexOf('acquireMessageMutationLock')).toBeLessThan(
-      source.indexOf('Message.get(threadId)'),
-    );
-    expect(source.indexOf('Message.get(threadId)')).toBeLessThan(
-      source.indexOf('Message.create({'),
-    );
+    expect(source).toContain('if (!isBase44EntityId(threadId))');
+    const preview = source.indexOf('Message.get(threadId).catch(() => null)');
+    const lock = source.indexOf('threadLockId = await acquireMessageMutationLock', preview);
+    const revalidate = source.indexOf('Message.get(threadId).catch(() => null)', lock);
+    const create = source.indexOf('Message.create({', revalidate);
+    expect(preview).toBeGreaterThan(-1);
+    expect(lock).toBeGreaterThan(preview);
+    expect(revalidate).toBeGreaterThan(lock);
+    expect(create).toBeGreaterThan(revalidate);
   });
 });

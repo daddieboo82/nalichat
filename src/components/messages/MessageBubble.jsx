@@ -468,7 +468,10 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
               if (!otherUser) return;
               try {
                 await onStartDM(otherUser);
-              } catch {}
+              } catch (error) {
+                console.error("Failed to start private conversation:", error);
+                toast.error(error?.message || "Couldn't open a private conversation. Please try again.");
+              }
             }}
             className="w-11 h-11 rounded-full bg-card border border-border/60 flex items-center justify-center hover:bg-secondary hover:border-primary/30 transition-all shadow-sm"
             title="Message privately"

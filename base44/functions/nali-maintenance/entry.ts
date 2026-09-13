@@ -470,6 +470,8 @@ export default async function(req) {
     });
 
     const result = {
+      success: true,
+      adminUserId: user.id,
       mode,
       scanned: stats,
       totalIssues: issues.length,

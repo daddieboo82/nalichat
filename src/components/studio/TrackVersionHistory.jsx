@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { History, RotateCcw, Play, Pause, Save, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 export default function TrackVersionHistory({ track, open, onOpenChange, onRevert, canEdit, currentUser }) {
   const [playingId, setPlayingId] = useState(null);
@@ -16,7 +17,7 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: versions = [] } = useQuery({
+  const { data: versions = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["track-versions", currentUser?.id, track?.id],
     queryFn: () => base44.entities.TrackVersion.filter({ track_id: track.id }, "-version_number", 500),
     enabled: !!currentUser?.id && !!track?.id && open,
@@ -28,25 +29,38 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
       if (res?.data?.error) throw new Error(res.data.error);
       return res?.data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["track-versions", currentUser?.id, track?.id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["track-versions", currentUser?.id, track?.id] });
+      toast.success("Version deleted.");
+    },
+    onError: (error) => {
+      toast.error(error?.message || "Couldn't delete this version. Please try again.");
+    },
   });
 
   const handleSaveSnapshot = async () => {
-    if (!track) return;
+    if (!track || saving) return;
     setSaving(true);
-    const created = await base44.functions.invoke("createTrackVersion", {
-      track_id: track.id,
-      project_id: track.project_id,
-      label: label.trim() || undefined,
-      volume: track.volume,
-      pan: track.pan,
-      muted: track.muted,
-      solo: track.solo,
-    });
-    if (created?.data?.error) throw new Error(created.data.error);
-    setLabel("");
-    setSaving(false);
-    queryClient.invalidateQueries({ queryKey: ["track-versions", currentUser?.id, track?.id] });
+    try {
+      const created = await base44.functions.invoke("createTrackVersion", {
+        track_id: track.id,
+        project_id: track.project_id,
+        label: label.trim() || undefined,
+        volume: track.volume,
+        pan: track.pan,
+        muted: track.muted,
+        solo: track.solo,
+      });
+      if (created?.data?.error) throw new Error(created.data.error);
+      setLabel("");
+      await queryClient.invalidateQueries({ queryKey: ["track-versions", currentUser?.id, track?.id] });
+      toast.success("Version saved.");
+    } catch (error) {
+      console.error("Track version save failed", error);
+      toast.error(error?.message || "Couldn't save this version. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handlePlay = (version) => {
@@ -111,7 +125,16 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
         )}
 
         <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-          {versions.length === 0 ? (
+          {isLoading ? (
+            <div className="text-center text-muted-foreground py-8 text-sm">Loading versions...</div>
+          ) : isError ? (
+            <div className="text-center py-8" role="alert">
+              <p className="text-sm font-semibold">Couldn't load version history</p>
+              <Button type="button" size="sm" variant="outline" className="mt-3" onClick={() => void refetch()}>
+                Retry
+              </Button>
+            </div>
+          ) : versions.length === 0 ? (
             <div className="text-center text-muted-foreground py-8 text-sm">
               No saved versions yet.{canEdit && " Click Save to snapshot the current state."}
             </div>

@@ -308,7 +308,7 @@ describe('core usage flow coverage', () => {
         };
         conversationStore.items = [...conversationStore.items, created];
         messageStore.byConversation[created.id] = [];
-        return { data: { success: true, conversation: created } };
+        return { data: { success: true, action: 'create_dm', userId: 'user-1', conversationId: created.id, conversation: created } };
       }
       if (name === 'sendConversationMessage') {
         return { data: { message: { id: 'msg-1', ...payload } } };
@@ -413,7 +413,7 @@ describe('core usage flow coverage', () => {
         };
         conversationStore.items = [created];
         messageStore.byConversation[created.id] = [];
-        return { data: { success: true, conversation: created } };
+        return { data: { success: true, action: 'create_dm', userId: 'user-1', conversationId: created.id, conversation: created } };
       }
       if (name === 'sendConversationMessage') {
         const result = await pending.promise;

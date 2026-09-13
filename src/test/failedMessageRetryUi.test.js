@@ -12,7 +12,7 @@ describe('failed message retry UI', () => {
     const chat = await readText('src/components/messages/ChatView.jsx');
     const bubble = await readText('src/components/messages/MessageBubble.jsx');
 
-    expect(page).toContain('applyQueuedMessage(old, tempMsg)');
+    expect(page).toContain('updateMessageHistory(old, (rows) => applyQueuedMessage(rows, tempMsg))');
     expect(page).toContain('_deliveryState: "sending"');
     expect(page).toContain('client_message_key: message.client_message_key');
     expect(chat).toContain('onRetry={onRetryMessage}');

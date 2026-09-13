@@ -50,6 +50,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const scrollRef = useRef(null);
   const prevLenRef = useRef(0);
   const prevLatestIdRef = useRef(null);
+  const historyAnchorRef = useRef(null);
   const isNearBottomRef = useRef(true);
   const markedRef = useRef(new Set());
   const [selectedMedia, setSelectedMedia] = useState(null);
@@ -135,6 +136,15 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     setUnreadSinceScroll(0);
   };
 
+  const loadOlderMessages = () => {
+    if (!scrollRef.current || isLoadingOlderMessages) return;
+    historyAnchorRef.current = {
+      height: scrollRef.current.scrollHeight,
+      top: scrollRef.current.scrollTop,
+    };
+    onLoadOlderMessages?.();
+  };
+
   // Auto-scroll to bottom only when already near bottom (Messenger pattern).
   // If the user is reading older messages, don't yank them down — just badge the FAB.
   useEffect(() => {
@@ -152,6 +162,13 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     }
     prevLenRef.current = messages.length;
     prevLatestIdRef.current = latestId;
+
+    if (historyAnchorRef.current) {
+      const { height, top } = historyAnchorRef.current;
+      const addedHeight = scrollRef.current.scrollHeight - height;
+      scrollRef.current.scrollTop = top + Math.max(0, addedHeight);
+      historyAnchorRef.current = null;
+    }
   }, [messages]);
 
   // Route a call to the device's native calling app when supported; fall back
@@ -370,7 +387,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                   type="button"
                   variant="secondary"
                   size="sm"
-                  onClick={onLoadOlderMessages}
+                  onClick={loadOlderMessages}
                   disabled={isLoadingOlderMessages}
                   className="rounded-full px-4"
                 >

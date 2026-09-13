@@ -11,7 +11,7 @@ const TAGS_SUGGESTIONS = ["hip-hop", "trap", "lofi", "electronic", "ambient", "h
 
 import { Music } from "lucide-react";
 
-export default function UploadArtDialog({ open, onClose, currentUser, onSuccess }) {
+export default function UploadArtDialog({ open, onClose, currentUser, onSuccess, sourceFile = null }) {
   const [form, setForm] = useState({ title: "", description: "", medium: "original", tags: [], is_explicit: false });
   const [imageFile, setImageFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
@@ -24,6 +24,14 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
   const [customTag, setCustomTag] = useState("");
   const imageRef = useRef();
   const audioRef = useRef();
+
+  useEffect(() => {
+    if (!open || !sourceFile?.file_url) return;
+    setForm((prev) => ({
+      ...prev,
+      title: prev.title || sourceFile.name?.replace(/\.[^/.]+$/, "") || "Untitled Track",
+    }));
+  }, [open, sourceFile?.file_url, sourceFile?.name]);
 
   if (!open) return null;
 
@@ -52,10 +60,10 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
   };
 
   const submit = async () => {
-    if (!currentUser || !form.title || !audioFile) return;
+    if (!currentUser || !form.title || (!audioFile && !sourceFile?.file_url)) return;
     setLoading(true);
     let image_url = null;
-    let file_url = null;
+    let file_url = sourceFile?.file_url || null;
     let createdPost = null;
 
     try {
@@ -64,8 +72,10 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
         image_url = res.file_url;
       }
       
-      const audioRes = await secureUploadFile({ file: audioFile });
-      file_url = audioRes.file_url;
+      if (audioFile) {
+        const audioRes = await secureUploadFile({ file: audioFile });
+        file_url = audioRes.file_url;
+      }
 
       const published = await base44.functions.invoke("createArtPost", {
         ...form,
@@ -110,6 +120,11 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess 
           
           {/* Audio Upload (Required) */}
           <div>
+            {sourceFile?.file_url && !audioFile && (
+              <div className="mb-3 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs">
+                Publishing from Files: <span className="font-semibold">{sourceFile.name || "Selected audio"}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground block">Audio File *</span>
               <div className="flex gap-2">

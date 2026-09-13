@@ -21,6 +21,7 @@ import { sounds } from "@/hooks/use-sound";
 import { copyToClipboard } from "@/lib/clipboard";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import { useAuth } from "@/lib/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const typeIcons = {
   audio: Music,
@@ -134,6 +135,7 @@ function FileShareButton({ file, canShare }) {
 }
 
 export default function Files() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [uploading, setUploading] = useState(false);
@@ -436,7 +438,7 @@ export default function Files() {
                 variant="default"
                 size="sm"
                 className="bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 transition-all text-white"
-                onClick={() => window.location.href = '/explore?upload=true'}
+                onClick={() => navigate('/explore?upload=true', { state: { publishFile: file } })}
                 title="Publish Track to Explore"
               >
                 Publish Track

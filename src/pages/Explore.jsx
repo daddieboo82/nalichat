@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Sparkles } from "lucide-react";
@@ -28,6 +29,8 @@ async function listAllArtPosts(filter) {
 }
 
 export default function Explore() {
+  const location = useLocation();
+  const navigate = useNavigate();
   // Use the already-resolved app-wide auth state instead of a fresh per-page
   // fetch — a local base44.auth.me() call left currentUser null for a brief
   // window on mount, wrongly redirecting logged-in users to login.
@@ -36,6 +39,14 @@ export default function Explore() {
   const [filter, setFilter] = useState(urlParams.get("filter") || "all");
   const [search, setSearch] = useState(urlParams.get("search") || "");
   const [showUpload, setShowUpload] = useState(urlParams.get("upload") === "true");
+  const [publishFile, setPublishFile] = useState(location.state?.publishFile || null);
+
+  useEffect(() => {
+    if (!location.state?.publishFile) return;
+    setPublishFile(location.state.publishFile);
+    setShowUpload(true);
+    navigate(location.pathname + location.search, { replace: true, state: null });
+  }, [location.pathname, location.search, location.state, navigate]);
 
   // Update URL when search or filter changes
   useEffect(() => {
@@ -266,8 +277,9 @@ export default function Explore() {
         </div>
       </div>
 
-      <UploadArtDialog open={showUpload} onClose={() => setShowUpload(false)} currentUser={currentUser} onSuccess={() => {
+      <UploadArtDialog sourceFile={publishFile} open={showUpload} onClose={() => { setShowUpload(false); setPublishFile(null); }} currentUser={currentUser} onSuccess={() => {
         setShowUpload(false);
+        setPublishFile(null);
         queryClient.invalidateQueries({ queryKey: ["artposts"] });
       }} />
 

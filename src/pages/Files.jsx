@@ -1,4 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
+import { validateUpload } from "@/lib/uploadValidation";
 import React, { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -496,7 +497,15 @@ export default function Files() {
 
   const handleUpload = (e) => {
     const files = Array.from(e.target.files || []);
-    if (files.length > 0 && currentUser) uploadMutation.mutate(files);
+    if (files.length > 0 && currentUser) {
+      const validFiles = [];
+      for (const file of files) {
+        const validation = validateUpload(file);
+        if (validation.ok) validFiles.push(file);
+        else toast.error(`${file.name}: ${validation.error}`);
+      }
+      if (validFiles.length > 0) uploadMutation.mutate(validFiles);
+    }
     e.target.value = "";
   };
 

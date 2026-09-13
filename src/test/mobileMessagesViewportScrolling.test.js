@@ -25,4 +25,10 @@ describe('mobile Messages viewport scrolling', () => {
     expect(pull).toContain('activeScrollerRef.current = scroller || wrapper');
     expect(pull).toContain('activeScrollerRef.current.scrollTop <= 0');
   });
+
+  it('keeps message search inside the dynamic viewport with native touch scrolling', async () => {
+    const search = await readFile('src/components/messages/MessageSearch.jsx', 'utf8');
+    expect(search).toContain('max-h-[85dvh]');
+    expect(search).toContain('overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]');
+  });
 });

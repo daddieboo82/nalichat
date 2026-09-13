@@ -84,7 +84,17 @@ export default function MilestonesPanel({ projectId, canEdit }) {
       });
       if (generation !== mutationGenerationRef.current) return { stale: true };
       if (res?.data?.error) throw new Error(res.data.error);
-      return { stale: false, milestone: res?.data?.milestone };
+      const milestone = res?.data?.milestone;
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "create_project_milestone" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.projectId !== projectId ||
+        res?.data?.milestoneId !== milestone?.id ||
+        milestone?.project_id !== projectId ||
+        milestone?.created_by_id !== currentUser?.id
+      ) throw new Error("Milestone creation was not confirmed.");
+      return { stale: false, milestone };
     },
     onSuccess: (result) => {
       if (result?.stale) return;
@@ -105,7 +115,17 @@ export default function MilestonesPanel({ projectId, canEdit }) {
       });
       if (generation !== mutationGenerationRef.current) return { stale: true };
       if (res?.data?.error) throw new Error(res.data.error);
-      return { stale: false, milestone: res?.data?.milestone };
+      const milestone = res?.data?.milestone;
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "toggle" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.projectId !== projectId ||
+        res?.data?.milestoneId !== m.id ||
+        milestone?.id !== m.id ||
+        milestone?.project_id !== projectId
+      ) throw new Error("Milestone update was not confirmed.");
+      return { stale: false, milestone };
     },
     onSuccess: (result, m) => {
       if (result?.stale) return;
@@ -126,6 +146,14 @@ export default function MilestonesPanel({ projectId, canEdit }) {
       });
       if (generation !== mutationGenerationRef.current) return { stale: true };
       if (res?.data?.error) throw new Error(res.data.error);
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "delete" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.projectId !== projectId ||
+        res?.data?.milestoneId !== id ||
+        res?.data?.deleted !== true
+      ) throw new Error("Milestone deletion was not confirmed.");
       return { stale: false, data: res?.data };
     },
     onSuccess: (result) => {

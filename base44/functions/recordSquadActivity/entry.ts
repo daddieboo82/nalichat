@@ -88,7 +88,13 @@ async function awardOnce(entities: any, userId: string, squad: any, progress: an
     throw createError;
   }
   try {
-    await entities.User.updateMany({ id: userId }, { $inc: { squad_credits: CREDITS_REWARD } });
+    const creditUpdate = await entities.User.updateMany(
+      { id: userId },
+      { $inc: { squad_credits: CREDITS_REWARD } },
+    );
+    if (Number(creditUpdate?.updated || 0) !== 1) {
+      throw new Error('Squad credit update did not modify exactly one account');
+    }
   } catch (creditError) {
     // Keep the reward retryable if the protected user-credit update fails.
     try {
@@ -213,10 +219,13 @@ Deno.serve(async (req) => {
 
     if (!duplicate) {
       try {
-        await entities.SquadProgress.updateMany(
+        const progressUpdate = await entities.SquadProgress.updateMany(
           { id: progress.id },
           { $inc: { [field]: 1 } },
         );
+        if (Number(progressUpdate?.updated || 0) !== 1) {
+          throw new Error('Squad progress update did not modify exactly one record');
+        }
       } catch (progressError) {
         // Keep the activity retryable if its progress increment did not land.
         try {

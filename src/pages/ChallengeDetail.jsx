@@ -172,15 +172,15 @@ export default function ChallengeDetail() {
   };
 
   return (
-    <PullToRefresh onRefresh={refresh} className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 pb-24 lg:pb-20">
-      <div className="rounded-3xl overflow-hidden border border-border bg-card">
-        <div className="relative aspect-[16/6] bg-secondary">
+    <PullToRefresh onRefresh={refresh} className="mx-auto max-w-4xl space-y-5 px-4 py-5 pb-[max(6rem,env(safe-area-inset-bottom))] sm:p-6 sm:space-y-6 lg:pb-20">
+      <div className="ui-surface overflow-hidden rounded-3xl border border-border bg-card">
+        <div className="relative aspect-[16/8] bg-secondary sm:aspect-[16/6]">
           {challenge.cover_url && <img src={challenge.cover_url} alt={challenge.title} className="w-full h-full object-cover" />}
         </div>
         <div className="p-4 sm:p-6 space-y-3">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <h1 className="font-heading text-2xl font-bold">{challenge.title}</h1>
+              <h1 className="font-heading text-xl font-bold tracking-tight sm:text-2xl">{challenge.title}</h1>
               <div className="flex items-center gap-2 mt-1">
                 <Avatar className="w-5 h-5">
                   <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
@@ -190,7 +190,7 @@ export default function ChallengeDetail() {
                 <p className="text-sm text-muted-foreground">Hosted by {challenge.host_artist_name}</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="rounded-full gap-1.5" asChild>
+            <Button variant="outline" size="sm" className="ui-hover min-h-10 rounded-xl gap-1.5" asChild>
               <Link to={`/challenge/${challengeId}/leaderboard`}><ListOrdered className="w-4 h-4" /> Leaderboard</Link>
             </Button>
           </div>
@@ -204,7 +204,7 @@ export default function ChallengeDetail() {
           {challenge.description && <p className="text-sm text-muted-foreground">{challenge.description}</p>}
 
           {challenge.prize_description && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-sm">
+            <div className="ui-surface flex items-start gap-2 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm">
               <Trophy className="w-4 h-4 text-yellow-500 shrink-0" /> {challenge.prize_description}
             </div>
           )}
@@ -216,12 +216,12 @@ export default function ChallengeDetail() {
           {isHostOrAdmin && (challenge.status === "active" || challenge.status === "voting") && (
             <div className="pt-2 border-t border-border/50">
               {challenge.status === "active" && (
-                <Button variant="outline" size="sm" className="rounded-full gap-1.5" onClick={() => changeStatus("voting")}>
+                <Button variant="outline" size="sm" className="ui-hover min-h-10 rounded-xl gap-1.5" onClick={() => changeStatus("voting")}>
                   <Square className="w-3.5 h-3.5" /> End Submissions
                 </Button>
               )}
               {challenge.status === "voting" && (
-                <Button variant="outline" size="sm" className="rounded-full gap-1.5" onClick={() => changeStatus("completed")}>
+                <Button variant="outline" size="sm" className="ui-hover min-h-10 rounded-xl gap-1.5" onClick={() => changeStatus("completed")}>
                   <Gavel className="w-3.5 h-3.5" /> End Voting
                 </Button>
               )}
@@ -230,13 +230,13 @@ export default function ChallengeDetail() {
         </div>
       </div>
 
-      <div className="rounded-2xl bg-card border border-border p-4 space-y-2">
+      <div className="ui-surface rounded-2xl border border-border bg-card p-4 space-y-2">
         <h2 className="font-heading font-bold">Source Track</h2>
         {challenge.source_track_url ? (
-          <div className="flex items-center gap-3 p-2 rounded-xl bg-secondary/40">
-            <audio controls src={challenge.source_track_url} className="flex-1 h-9" />
+          <div className="flex flex-col gap-3 rounded-xl bg-secondary/40 p-3 sm:flex-row sm:items-center">
+            <audio controls src={challenge.source_track_url} className="h-10 w-full min-w-0 flex-1" />
             <a href={challenge.source_track_url} download title="Download source track">
-              <Button size="icon" variant="ghost"><Download className="w-4 h-4" /></Button>
+              <Button className="ui-hover h-10 w-10 rounded-xl" size="icon" variant="ghost" aria-label="Download source track"><Download className="w-4 h-4" /></Button>
             </a>
             <span className="text-xs text-muted-foreground shrink-0 max-w-[120px] truncate">{challenge.source_track_name || "Source Track"}</span>
           </div>
@@ -246,14 +246,14 @@ export default function ChallengeDetail() {
       </div>
 
       {challenge.rules && (
-        <div className="rounded-2xl bg-card border border-border p-4">
+        <div className="ui-surface rounded-2xl border border-border bg-card p-4">
           <h2 className="font-heading font-bold mb-1">Rules</h2>
           <p className="text-sm text-muted-foreground whitespace-pre-line">{challenge.rules}</p>
         </div>
       )}
 
       {canSubmit && (
-        <Button onClick={() => user ? setModalOpen(true) : toast.error("Log in to submit a remix.")} className="w-full rounded-2xl bg-gradient-to-r from-primary to-accent text-white h-12 text-base">
+        <Button onClick={() => user ? setModalOpen(true) : toast.error("Log in to submit a remix.")} className="ui-hover h-12 w-full rounded-xl bg-gradient-to-r from-primary to-accent text-base font-semibold text-white shadow-lg shadow-primary/10">
           Submit Your Remix
         </Button>
       )}
@@ -263,12 +263,12 @@ export default function ChallengeDetail() {
         {votesError && user && (
           <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm" role="alert">
             <p>Couldn't verify which submissions you've already voted for. Voting is paused to prevent duplicate attempts.</p>
-            <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => setVotesRetryKey((key) => key + 1)}>
+            <Button type="button" size="sm" variant="outline" className="ui-hover mt-2 min-h-10 rounded-xl" onClick={() => setVotesRetryKey((key) => key + 1)}>
               Retry vote history
             </Button>
           </div>
         )}
-        <div className="grid sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {submissions.map((s) => (
             <SubmissionCard
               key={s.id}
@@ -281,7 +281,7 @@ export default function ChallengeDetail() {
             />
           ))}
         </div>
-        {submissions.length === 0 && <p className="text-center text-muted-foreground py-8">No submissions yet — be the first!</p>}
+        {submissions.length === 0 && <p className="ui-surface rounded-2xl border border-dashed border-border px-4 py-8 text-center text-muted-foreground">No submissions yet — be the first!</p>}
       </div>
 
       {user && (

@@ -76,7 +76,7 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
         <div className="space-y-4">
           <Input value={name} onChange={e => setName(e.target.value)} placeholder="Group name..." className="bg-secondary/50 border-0 rounded-xl" title="Group name" aria-label="Group name" />
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search people..." className="bg-secondary/50 border-0 rounded-xl" title="Search people" aria-label="Search people" />
-          <div className="max-h-64 overflow-y-auto space-y-1">
+          <div className="max-h-64 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] space-y-1">
             {filtered.map(u => (
               <button key={u.id} onClick={() => toggle(u.id)}
                 className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left", selected.includes(u.id) ? "bg-primary/10 border border-primary/20" : "hover:bg-secondary")}

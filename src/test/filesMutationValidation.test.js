@@ -8,3 +8,14 @@ describe('Files mutation validation', () => {
     expect(s).toContain('File update was not confirmed');
   });
 });
+
+
+describe('Files share-link account binding', () => {
+  it('passes the active user id into the share button instead of reading an out-of-scope variable', async () => {
+    const s = await readFile('src/pages/Files.jsx', 'utf8');
+    expect(s).toContain('function FileShareButton({ file, canShare, currentUserId })');
+    expect(s).toContain('res?.data?.userId !== currentUserId');
+    expect(s).toContain('currentUserId={currentUser?.id}');
+    expect(s).not.toContain('function FileShareButton({ file, canShare })');
+  });
+});

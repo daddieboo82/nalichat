@@ -7,18 +7,18 @@ async function readText(path) {
 }
 
 describe('client-keyed message send serialization', () => {
-  it('locks before duplicate checks, rate limits, and moderation', async () => {
+  it('serializes client-keyed moderation and creation replay checks', async () => {
     const source = await readText('base44/functions/sendConversationMessage/entry.ts');
 
     const lock = source.indexOf('clientSendLockId = await acquireMessageMutationLock');
     const existingAfterLock = source.indexOf('const existingAfterLock = await findExistingMessage', lock);
-    const rate = source.indexOf("'conversation_message'");
-    const moderation = source.indexOf('const moderation = await moderateText');
+    const moderationLock = source.indexOf('moderationLockId = await acquireMessageMutationLock');
+    const moderatedReplay = source.indexOf('const existingAfterModerationLock = await findExistingMessage', moderationLock);
 
     expect(lock).toBeGreaterThan(-1);
     expect(existingAfterLock).toBeGreaterThan(lock);
-    expect(rate).toBeGreaterThan(lock);
-    expect(moderation).toBeGreaterThan(lock);
+    expect(moderationLock).toBeGreaterThan(-1);
+    expect(moderatedReplay).toBeGreaterThan(moderationLock);
     expect(source).toContain('Message send is already in progress. Please retry.');
     expect(source).toContain('releaseMessageMutationLock(base44.asServiceRole.entities, clientSendLockId)');
   });

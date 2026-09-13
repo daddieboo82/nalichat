@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
         1,
       );
       if (existing.length > 0) {
-        return Response.json({ success: true, contact: existing[0], existing: true });
+        return Response.json({ success: true, action: 'add', userId: user.id, targetUserId: target.id, contact: existing[0], existing: true });
       }
 
       const deterministicId = await contactRecordId(user.id, target.id);
@@ -75,11 +75,11 @@ Deno.serve(async (req) => {
           contact_name: target.display_name || target.full_name || 'NaliChat User',
           contact_avatar: target.avatar_url || null,
         });
-        return Response.json({ success: true, contact, existing: false });
+        return Response.json({ success: true, action: 'add', userId: user.id, targetUserId: target.id, contact, existing: false });
       } catch (createError) {
         const raced = await entities.Contact.get(deterministicId).catch(() => null);
         if (raced?.user_id === user.id && raced?.contact_user_id === target.id) {
-          return Response.json({ success: true, contact: raced, existing: true });
+          return Response.json({ success: true, action: 'add', userId: user.id, targetUserId: target.id, contact: raced, existing: true });
         }
         throw createError;
       }
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Contact not found' }, { status: 404 });
       }
       await entities.Contact.delete(contact.id);
-      return Response.json({ success: true, deleted: true });
+      return Response.json({ success: true, action: 'delete', userId: user.id, contactId: contact.id, deleted: true });
     }
 
     return Response.json({ error: 'Invalid action' }, { status: 400 });

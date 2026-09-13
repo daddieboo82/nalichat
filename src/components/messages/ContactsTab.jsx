@@ -70,7 +70,11 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
     mutationFn: async (contactId) => {
       const res = await base44.functions.invoke("mutateContact", { action: "delete", contactId });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true || res?.data?.deleted !== true) {
+      if (res?.data?.success !== true ||
+        res?.data?.action !== "delete" ||
+        res?.data?.userId !== currentUserId ||
+        res?.data?.contactId !== contactId ||
+        res?.data?.deleted !== true) {
         throw new Error("Contact removal was not confirmed.");
       }
       return res.data;
@@ -92,6 +96,9 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
       const contact = res?.data?.contact;
       if (
         res?.data?.success !== true ||
+        res?.data?.action !== "add" ||
+        res?.data?.userId !== currentUserId ||
+        res?.data?.targetUserId !== user.id ||
         !contact?.id ||
         contact?.user_id !== currentUserId ||
         contact?.contact_user_id !== user.id

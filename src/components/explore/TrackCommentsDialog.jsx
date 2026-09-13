@@ -33,7 +33,14 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
         parentId: post.id,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (!Array.isArray(res?.data?.comments)) throw new Error("Comment list response was invalid.");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "list" ||
+        res?.data?.viewerUserId !== (currentUser?.id || null) ||
+        res?.data?.parentType !== "art_post" ||
+        res?.data?.parentId !== post.id ||
+        !Array.isArray(res?.data?.comments)
+      ) throw new Error("Comment list response was invalid.");
       return res.data.comments;
     },
     enabled: !!post?.id && open,
@@ -99,6 +106,15 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
         timestamp: currentTime,
       });
       if (res?.data?.error) throw new Error(res.data.error);
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "create" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.parentType !== "art_post" ||
+        res?.data?.parentId !== post.id
+      ) {
+        throw new Error("Comment creation was not confirmed.");
+      }
       const created = res?.data?.comment;
       if (!created?.id || created.track_id !== post.id || created.parent_type !== "art_post") {
         throw new Error("Comment creation was not confirmed.");

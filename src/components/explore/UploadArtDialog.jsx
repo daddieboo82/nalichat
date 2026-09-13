@@ -139,13 +139,13 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-lg max-h-[90dvh] flex flex-col">
-        <div className="flex items-center justify-between p-5 border-b border-border shrink-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 backdrop-blur-sm sm:p-4">
+      <div className="ui-surface flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-border bg-card/95 shadow-2xl">
+        <div className="flex shrink-0 items-center justify-between border-b border-border p-4 sm:p-5">
           <h2 className="font-heading font-bold text-lg">Release Your Track</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="ui-hover flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"><X className="w-5 h-5" /></button>
         </div>
-        <div className="p-5 space-y-4 overflow-y-auto custom-scrollbar">
+        <div className="custom-scrollbar space-y-5 overflow-y-auto overscroll-contain p-4 [-webkit-overflow-scrolling:touch] sm:p-5">
           
           {/* Audio Upload (Required) */}
           <div>
@@ -162,7 +162,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
               </div>
             </div>
             <div
-              className={cn("relative border-2 border-dashed rounded-xl overflow-hidden cursor-pointer transition-colors flex items-center justify-center h-20", audioFile ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/50")}
+              className={cn("relative border-2 border-dashed rounded-2xl overflow-hidden cursor-pointer transition-colors flex items-center justify-center h-20", audioFile ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/50")}
             >
               <input id="audio-upload" ref={audioRef} type="file" accept="audio/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleAudio} />
               <div className="text-center text-muted-foreground pointer-events-none relative z-0">
@@ -188,7 +188,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
               
             </div>
             <div
-              className={cn("relative border-2 border-dashed border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-center", preview ? "h-48" : "h-24")}
+              className={cn("relative border-2 border-dashed border-border rounded-2xl overflow-hidden cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-center", preview ? "h-48" : "h-24")}
             >
               <input id="cover-upload" ref={imageRef} type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleImage} />
               <div className="pointer-events-none relative z-0 w-full h-full flex items-center justify-center">
@@ -212,7 +212,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               placeholder="Enter track title..."
-              className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+              className="min-h-11 w-full rounded-xl border border-border/70 bg-secondary/50 px-4 py-2.5 text-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20"
               required
             />
           </div>
@@ -225,7 +225,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Production notes, credits..."
               rows={3}
-              className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary/50"
+              className="min-h-[96px] w-full resize-y rounded-xl border border-border/70 bg-secondary/50 px-4 py-2.5 text-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -233,7 +233,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
             <label id="medium-group-label" className="text-xs text-muted-foreground mb-2 block">Medium</label>
             <div role="radiogroup" aria-labelledby="medium-group-label" className="flex flex-wrap gap-2">
               {MEDIUMS.map(m => (
-                <button type="button" role="radio" aria-checked={form.medium === m} id={`medium-${m}`} aria-label={`Select medium ${m}`} key={m} onClick={() => setForm(f => ({ ...f, medium: m }))} className={cn("px-3 py-1 rounded-full text-xs font-semibold capitalize transition-colors", form.medium === m ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+                <button type="button" role="radio" aria-checked={form.medium === m} id={`medium-${m}`} aria-label={`Select medium ${m}`} key={m} onClick={() => setForm(f => ({ ...f, medium: m }))} className={cn("ui-hover min-h-10 rounded-xl px-3 py-1 text-xs font-semibold capitalize transition-colors focus-visible:ring-2 focus-visible:ring-primary/40", form.medium === m ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}>
                   {m}
                 </button>
               ))}
@@ -253,7 +253,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
                     key={option.label}
                     htmlFor={id}
                     className={cn(
-                      "px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer",
+                      "ui-hover min-h-10 cursor-pointer rounded-xl px-3 py-1 text-xs font-semibold transition-colors focus-within:ring-2 focus-within:ring-primary/40",
                       form.is_explicit === option.value
                         ? "bg-primary text-primary-foreground"
                         : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -283,7 +283,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
                 value={customTag}
                 onChange={(e) => setCustomTag(e.target.value)}
                 placeholder="Type a tag and press Enter or Add..."
-                className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className="min-h-11 w-full rounded-xl border border-border/70 bg-secondary/50 px-4 py-2.5 text-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -298,7 +298,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
               <button
                 type="button"
                 aria-label="Add tag"
-                className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground font-semibold rounded-xl text-sm transition-colors"
+                className="ui-hover min-h-11 rounded-xl bg-secondary px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/80 focus-visible:ring-2 focus-visible:ring-primary/40"
                 onClick={() => {
                   const val = customTag.trim().toLowerCase().replace(/^#/, '');
                   if (val && !form.tags.includes(val)) {
@@ -312,12 +312,12 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
             </div>
             <div role="group" aria-labelledby="tags-group-label" className="flex flex-wrap gap-2">
               {form.tags.filter(t => !TAGS_SUGGESTIONS.includes(t)).map(tag => (
-                <button type="button" role="checkbox" aria-checked={true} id={`tag-${tag}`} aria-label={`Remove tag ${tag}`} key={tag} onClick={() => toggleTag(tag)} className="px-3 py-1 rounded-full text-xs transition-colors bg-accent/20 text-accent border border-accent/30">
+                <button type="button" role="checkbox" aria-checked={true} id={`tag-${tag}`} aria-label={`Remove tag ${tag}`} key={tag} onClick={() => toggleTag(tag)} className="ui-hover min-h-10 rounded-xl border border-accent/30 bg-accent/20 px-3 py-1 text-xs text-accent transition-colors focus-visible:ring-2 focus-visible:ring-accent/40">
                   #{tag}
                 </button>
               ))}
               {TAGS_SUGGESTIONS.map(tag => (
-                <button type="button" role="checkbox" aria-checked={form.tags.includes(tag)} id={`tag-${tag}`} aria-label={`Toggle tag ${tag}`} key={tag} onClick={() => toggleTag(tag)} className={cn("px-3 py-1 rounded-full text-xs transition-colors", form.tags.includes(tag) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+                <button type="button" role="checkbox" aria-checked={form.tags.includes(tag)} id={`tag-${tag}`} aria-label={`Toggle tag ${tag}`} key={tag} onClick={() => toggleTag(tag)} className={cn("ui-hover min-h-10 rounded-xl px-3 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-accent/40", form.tags.includes(tag) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>
                   #{tag}
                 </button>
               ))}
@@ -325,7 +325,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
           </div>
 
         </div>
-        <div className="p-5 border-t border-border shrink-0">
+        <div className="shrink-0 border-t border-border bg-card/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5">
           <button
             type="button"
             onClick={submit}
@@ -333,7 +333,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
             title="Publish Track"
             aria-label="Publish Track"
             disabled={loading || !form.title || (!audioFile && !sourceFile?.file_url)}
-            className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="ui-hover flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50"
           >
             {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Publishing...</> : <><Upload className="w-4 h-4" /> Publish Track</>}
           </button>

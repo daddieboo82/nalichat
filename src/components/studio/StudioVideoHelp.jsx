@@ -108,11 +108,11 @@ export default function StudioVideoHelp() {
   return (
     <>
       {showIdleHint && !open && (
-        <div className="fixed right-4 bottom-20 sm:bottom-16 z-[145] max-w-xs rounded-2xl border border-primary/30 bg-card/95 backdrop-blur-xl shadow-2xl p-3">
+        <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-3 right-3 z-[145] rounded-2xl border border-primary/30 bg-card/95 p-3 shadow-2xl backdrop-blur-xl sm:bottom-16 sm:left-auto sm:right-4 sm:max-w-xs">
           <button
             aria-label="Dismiss Studio help suggestion"
             onClick={() => setShowIdleHint(false)}
-            className="absolute right-2 top-2 p-1 text-muted-foreground hover:text-foreground"
+            className="ui-hover absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -124,7 +124,7 @@ export default function StudioVideoHelp() {
               <p className="text-sm font-semibold">Stuck in Studio?</p>
               <p className="text-xs text-muted-foreground mt-0.5">Watch a short real-app tutorial without leaving your session.</p>
               <button
-                className="text-xs text-primary font-semibold mt-2 hover:underline"
+                className="ui-hover mt-2 min-h-9 rounded-lg px-2 text-xs font-semibold text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40"
                 onClick={() => choose("overview")}
               >
                 Show me how
@@ -138,21 +138,21 @@ export default function StudioVideoHelp() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open Studio video tutorials"
-        className="fixed right-4 bottom-20 lg:bottom-4 z-[140] flex items-center gap-2 rounded-full border border-primary/30 bg-card/95 px-3.5 py-2.5 text-sm font-semibold shadow-xl backdrop-blur-xl hover:bg-primary/10 hover:border-primary/50 transition-colors"
+        className="ui-hover fixed right-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-[140] flex min-h-11 items-center gap-2 rounded-xl border border-primary/30 bg-card/95 px-3.5 py-2.5 text-sm font-semibold shadow-xl backdrop-blur-xl transition-colors hover:border-primary/50 hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40 lg:bottom-4 lg:right-4"
       >
         <CircleHelp className="w-4 h-4 text-primary" />
         <span className="hidden sm:inline">Video Help</span>
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[160] bg-black/65 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Studio video tutorials">
-          <div className="w-full max-w-5xl max-h-[92dvh] overflow-hidden rounded-2xl border border-border bg-card shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-border">
+        <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/65 p-2 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-label="Studio video tutorials">
+          <div className="flex max-h-[96dvh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl sm:max-h-[92dvh]">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
               <div className="min-w-0">
                 <p className="font-heading font-bold text-lg">Studio Video Help</p>
                 <p className="text-xs text-muted-foreground">Real NaliStudio footage — choose what you are trying to do.</p>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Close Studio video tutorials">
+              <Button className="ui-hover h-11 w-11 rounded-xl" variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Close Studio video tutorials">
                 <X className="w-5 h-5" />
               </Button>
             </div>
@@ -165,7 +165,7 @@ export default function StudioVideoHelp() {
                       key={item.id}
                       onClick={() => setTopic(item.id)}
                       className={cn(
-                        "text-left rounded-xl border px-3 py-2.5 transition-colors w-52 md:w-full",
+                        "ui-hover min-h-[68px] w-52 rounded-xl border px-3 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 md:w-full",
                         item.id === active.id
                           ? "border-primary/50 bg-primary/10"
                           : "border-border/60 bg-secondary/20 hover:bg-secondary/50",
@@ -181,7 +181,7 @@ export default function StudioVideoHelp() {
                 </div>
               </div>
 
-              <div className="p-4 sm:p-5 overflow-y-auto">
+              <div className="overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5">
                 <div className="rounded-xl overflow-hidden border border-white/10 bg-black aspect-video shadow-xl">
                   <video
                     key={active.video}
@@ -208,7 +208,7 @@ export default function StudioVideoHelp() {
                 </div>
                 <button
                   onClick={() => setOpen(false)}
-                  className="mt-4 inline-flex items-center gap-1.5 text-sm text-primary font-semibold hover:underline"
+                  className="ui-hover mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   <ChevronLeft className="w-4 h-4" /> Back to my Studio session
                 </button>

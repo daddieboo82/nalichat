@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useSubscription } from "@/hooks/useSubscription";
 import { openBillingPortal } from "@/lib/subscriptionBilling";
 import { trackPaywallEvent } from "@/lib/paywallAnalytics";
+import { useAuth } from "@/lib/AuthContext";
 
 export function subscriptionPlanLabel(plan) {
   if (plan === "premium_plus") return "Premium Plus";
@@ -28,13 +29,14 @@ export default function SubscriptionSettings() {
     error,
     refetch,
   } = useSubscription();
+  const { user } = useAuth();
   const [openingPortal, setOpeningPortal] = useState(false);
 
   const manageBilling = async () => {
     if (openingPortal) return;
     setOpeningPortal(true);
     try {
-      await openBillingPortal();
+      await openBillingPortal({ expectedUserId: user?.id });
       trackPaywallEvent("billing_portal_opened", {
         plan: subscription.plan,
         billing_period: subscription.billingPeriod || "unknown",

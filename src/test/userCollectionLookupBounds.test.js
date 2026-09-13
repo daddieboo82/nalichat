@@ -7,11 +7,13 @@ async function readText(path) {
 }
 
 describe('user collection lookup bounds', () => {
-  it('caps liked-post and public-achievement reads', async () => {
+  it('paginates current-user liked-post state while keeping public achievements bounded', async () => {
     const likes = await readText('base44/functions/listMyLikedPostIds/entry.ts');
     const achievements = await readText('base44/functions/listPublicAchievements/entry.ts');
 
-    expect(likes).toMatch(/ArtPost\.filter\([\s\S]*liked_by: user\.id[\s\S]*'-created_date',[\s\S]*1000/);
+    expect(likes).toContain('async function listAllLikedPosts(entity: any, userId: string)');
+    expect(likes).toContain('for (let skip = 0; ; skip += pageSize)');
+    expect(likes).not.toContain("'-created_date',\n      1000,");
     expect(achievements).toMatch(/Achievement\.filter\([\s\S]*user_id: target\.id[\s\S]*'-created_date',[\s\S]*500/);
   });
 

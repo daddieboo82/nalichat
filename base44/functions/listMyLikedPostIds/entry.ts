@@ -1,6 +1,21 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
+async function listAllLikedPosts(entity: any, userId: string) {
+  const rows: any[] = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entity.filter(
+      { liked_by: userId },
+      '-created_date',
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     if (req.method !== 'POST') {
@@ -24,10 +39,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Liked-post lookup rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const posts = await base44.asServiceRole.entities.ArtPost.filter(
-      { liked_by: user.id },
-      '-created_date',
-      1000,
+    const posts = await listAllLikedPosts(
+      base44.asServiceRole.entities.ArtPost,
+      user.id,
     );
     return Response.json({
       post_ids: posts.map((post: any) => post.id).filter(Boolean),

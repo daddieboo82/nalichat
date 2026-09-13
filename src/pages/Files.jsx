@@ -369,7 +369,18 @@ export default function Files() {
         project_id: newFolderProject === "none" ? null : newFolderProject,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.folder;
+      const folder = res?.data?.folder;
+      const expectedProjectId = newFolderProject === "none" ? null : newFolderProject;
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "create_project_folder" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.folderId !== folder?.id ||
+        res?.data?.projectId !== expectedProjectId ||
+        folder?.owner_id !== currentUser?.id ||
+        (folder?.project_id || null) !== expectedProjectId
+      ) throw new Error("Folder creation was not confirmed");
+      return folder;
     },
     onSuccess: () => {
       sounds.success();

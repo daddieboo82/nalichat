@@ -9,6 +9,21 @@ import { Loader2, UploadCloud, Music2, Link2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
+async function listAllUserPosts(userId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.ArtPost.filter(
+      { creator_id: userId },
+      "-created_date",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 function detectDevice() {
   const ua = navigator.userAgent;
   if (/tablet|ipad/i.test(ua)) return "tablet";
@@ -33,7 +48,7 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
     let cancelled = false;
     setTracksLoading(true);
     setTracksError(false);
-    base44.entities.ArtPost.filter({ creator_id: user.id }, "-created_date", 25)
+    listAllUserPosts(user.id)
       .then((tracks) => {
         if (!cancelled) setMyTracks(tracks || []);
       })

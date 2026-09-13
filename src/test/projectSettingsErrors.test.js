@@ -7,6 +7,10 @@ describe('Studio project settings failures', () => {
     expect(s).toContain('isError: usersError');
     expect(s).toContain("Couldn't load collaborators");
     expect(s).toContain('if (response?.data?.error) throw new Error(response.data.error);');
+    expect(s).toContain('res?.data?.success !== true');
+    expect(s).toContain('res?.data?.viewerUserId !== currentUser?.id');
+    expect(s).toContain('!Array.isArray(res?.data?.users)');
+    expect(s).toContain('Collaborator directory response was not confirmed.');
     expect(s).toContain('response?.data?.success !== true');
     expect(s).toContain('Collaborator update was not confirmed.');
     expect(s).toContain('res?.data?.success !== true || res?.data?.project_id !== project.id');

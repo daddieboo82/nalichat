@@ -1,4 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
+import { validateUpload } from "@/lib/uploadValidation";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
@@ -67,8 +68,9 @@ export default function CreateChallenge() {
         toast.error("Challenge source tracks must be MP3 or WAV.");
         return;
       }
-      if (sourceTrackFile.size > 100 * 1024 * 1024) {
-        toast.error("Challenge source tracks must be 100MB or smaller.");
+      const sourceValidation = validateUpload(sourceTrackFile);
+      if (!sourceValidation.ok) {
+        toast.error(sourceValidation.error);
         return;
       }
 

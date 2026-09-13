@@ -342,7 +342,7 @@ Deno.serve(async (req) => {
           const ids = Array.isArray(conversation.participant_ids) ? conversation.participant_ids : [];
           return ids.length === 2 && ids.includes(user.id) && ids.includes(otherUserId);
         });
-        if (existing) return Response.json({ success: true, conversation: existing });
+        if (existing) return Response.json({ success: true, action: 'create_dm', userId: user.id, conversationId: existing.id, conversation: existing });
 
         const rate = await consumeHourlyLimit(entities, user.id, 'conversation_create', 60);
         if (!rate.allowed) {
@@ -357,7 +357,7 @@ Deno.serve(async (req) => {
             is_public: false,
             participant_ids: participantIds,
           });
-          return Response.json({ success: true, conversation });
+          return Response.json({ success: true, action: 'create_dm', userId: user.id, conversationId: conversation.id, conversation });
         } catch (createError) {
           const raced = await entities.Conversation.get(id).catch(() => null);
           const racedIds = Array.isArray(raced?.participant_ids) ? raced.participant_ids : [];
@@ -367,7 +367,7 @@ Deno.serve(async (req) => {
             && racedIds.includes(user.id)
             && racedIds.includes(otherUserId)
           ) {
-            return Response.json({ success: true, conversation: raced, duplicate: true });
+            return Response.json({ success: true, action: 'create_dm', userId: user.id, conversationId: raced.id, conversation: raced, duplicate: true });
           }
           throw createError;
         }
@@ -411,7 +411,7 @@ Deno.serve(async (req) => {
             && existingGroup.name === name
             && sameParticipants
           ) {
-            return Response.json({ success: true, conversation: existingGroup, duplicate: true });
+            return Response.json({ success: true, action: 'create_group', userId: user.id, conversationId: existingGroup.id, clientRequestKey, conversation: existingGroup, duplicate: true });
           }
           return Response.json(
             { error: 'client_request_key was already used for a different group request' },
@@ -475,7 +475,7 @@ Deno.serve(async (req) => {
       };
       try {
         const conversation = await entities.Conversation.create(groupPayload);
-        return Response.json({ success: true, conversation });
+        return Response.json({ success: true, action: 'create_group', userId: user.id, conversationId: conversation.id, clientRequestKey, conversation });
       } catch (createError) {
         if (!groupRequestId) throw createError;
         const raced = await entities.Conversation.get(groupRequestId).catch(() => null);
@@ -488,7 +488,7 @@ Deno.serve(async (req) => {
           && raced?.name === name
           && sameParticipants
         ) {
-          return Response.json({ success: true, conversation: raced, duplicate: true });
+          return Response.json({ success: true, action: 'create_dm', userId: user.id, conversationId: raced.id, conversation: raced, duplicate: true });
         }
         throw createError;
       }

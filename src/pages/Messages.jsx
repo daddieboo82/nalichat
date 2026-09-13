@@ -693,6 +693,9 @@ export default function Messages() {
       const conv = created?.data?.conversation;
       if (
         created?.data?.success !== true ||
+        created?.data?.action !== "create_dm" ||
+        created?.data?.userId !== currentUser.id ||
+        created?.data?.conversationId !== conv?.id ||
         !conv?.id ||
         conv?.type !== "dm" ||
         !Array.isArray(conv?.participant_ids) ||
@@ -727,6 +730,10 @@ export default function Messages() {
       const expectedParticipantIds = new Set([currentUser.id, ...participant_ids]);
       if (
         created?.data?.success !== true ||
+        created?.data?.action !== "create_group" ||
+        created?.data?.userId !== currentUser.id ||
+        created?.data?.conversationId !== conv?.id ||
+        created?.data?.clientRequestKey !== (client_request_key || "") ||
         !conv?.id ||
         conv?.type !== "group" ||
         conv?.name !== name ||

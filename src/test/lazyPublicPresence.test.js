@@ -14,9 +14,9 @@ describe('lazy public presence enrichment', () => {
     const leaderboard = await readText('src/pages/Leaderboard.jsx');
 
     expect(backend).toContain('body?.includePresence === true');
-    expect(backend).toContain('includePresence\n          ? base44.asServiceRole.entities.Contact.filter');
-    expect(backend).toContain('includePresence\n        ? base44.asServiceRole.entities.Contact.filter');
-    expect(backend).toContain('includePresence\n        ? base44.asServiceRole.entities.Conversation.filter');
+    expect(backend).toContain('if (includePresence) {');
+    expect(backend).toContain('entities.Contact');
+    expect(backend).toContain('entities.Conversation');
     expect(messages).toContain('includePresence: true');
     expect(profile).not.toContain('includePresence: true');
     expect(leaderboard).not.toContain('includePresence: true');

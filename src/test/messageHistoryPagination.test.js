@@ -6,8 +6,8 @@ describe('message history pagination', () => {
     const messages = await readFile('src/pages/Messages.jsx', 'utf8');
     const chat = await readFile('src/components/messages/ChatView.jsx', 'utf8');
     expect(messages).toContain('const [messageHistoryLimit, setMessageHistoryLimit] = useState(200);');
-    expect(messages).toContain('messageHistoryLimit + 1');
-    expect(messages).toContain('const hasOlder = page.length > messageHistoryLimit;');
+    expect(messages).toContain('desiredLimit + 1');
+    expect(messages).toContain('const hasOlder = rows.length > desiredLimit;');
     expect(messages).toContain('onLoadOlderMessages={() => setMessageHistoryLimit((limit) => limit + 200)}');
     expect(chat).toContain('Load older messages');
     expect(chat).toContain('prevLatestIdRef.current');

@@ -83,6 +83,8 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
+      action: 'create_project_invite',
+      userId: user.id,
       token,
       projectId: project.id,
       role,

@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { copyToClipboard } from '@/lib/clipboard';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function JamRoomOverlay({ jamRoomActive, defaultRole, setDefaultRole, roomId }) {
+  const { user } = useAuth();
   const [creatingLink, setCreatingLink] = useState(false);
   const [revokingLinks, setRevokingLinks] = useState(false);
 
@@ -19,7 +21,14 @@ export default function JamRoomOverlay({ jamRoomActive, defaultRole, setDefaultR
         projectId: roomId,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true || !Number.isInteger(res?.data?.revoked) || res.data.revoked < 0) {
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "revoke_project_invites" ||
+        res?.data?.userId !== user?.id ||
+        res?.data?.projectId !== roomId ||
+        !Number.isInteger(res?.data?.revoked) ||
+        res.data.revoked < 0
+      ) {
         throw new Error("Invite revocation was not confirmed.");
       }
       toast.success(`Revoked ${res.data.revoked} active invite link(s).`);
@@ -42,7 +51,14 @@ export default function JamRoomOverlay({ jamRoomActive, defaultRole, setDefaultR
         role: defaultRole,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true || !/^[0-9a-f]{64}$/i.test(String(res?.data?.token || ""))) {
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "create_project_invite" ||
+        res?.data?.userId !== user?.id ||
+        res?.data?.projectId !== roomId ||
+        res?.data?.role !== defaultRole ||
+        !/^[0-9a-f]{64}$/i.test(String(res?.data?.token || ""))
+      ) {
         throw new Error("Invite creation was not confirmed.");
       }
       const url = new URL("/studio", window.location.origin);

@@ -36,6 +36,15 @@ import { useAuth } from "@/lib/AuthContext";
 import { partitionUserConversations, resolveRequestedConversation } from "@/lib/lockedChatPolicy";
 import LockedChatAccessDialog from "@/components/messages/LockedChatAccessDialog";
 
+async function messageEditRequestKey(messageId, text) {
+  const input = new TextEncoder().encode(`${messageId}:${text}`);
+  const digest = await crypto.subtle.digest("SHA-256", input);
+  const hex = Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  return `edit-${hex}`;
+}
+
 function inferSendErrorStatus(errorMessage, response) {
   const explicit = Number(response?.status || response?.data?.status);
   if (Number.isFinite(explicit) && explicit > 0) return explicit;
@@ -243,10 +252,12 @@ export default function Messages() {
 
   const editMessage = useMutation({
     mutationFn: async ({ id, text }) => {
+      const clientRequestKey = await messageEditRequestKey(id, text);
       const res = await base44.functions.invoke("mutateConversationMessage", {
         action: "edit",
         message_id: id,
         text,
+        client_request_key: clientRequestKey,
       });
       if (res?.data?.moderation) return { _flagged: res.data.moderation };
       if (res?.data?.error) throw new Error(res.data.error);

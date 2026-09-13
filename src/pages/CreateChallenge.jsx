@@ -133,21 +133,21 @@ export default function CreateChallenge() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-6 pb-24 lg:pb-20">
-      <Link to="/challenges" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+    <div className="mx-auto max-w-2xl space-y-5 px-4 py-5 pb-[max(6rem,env(safe-area-inset-bottom))] sm:p-6 sm:space-y-6 lg:pb-20">
+      <Link to="/challenges" className="ui-hover inline-flex min-h-10 items-center gap-1.5 rounded-xl px-2 text-sm text-muted-foreground hover:bg-secondary/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40">
         <ArrowLeft className="w-4 h-4" /> Back to Challenges
       </Link>
 
       <div>
-        <h1 className="font-heading text-2xl sm:text-3xl font-bold text-gradient-animate">Create a Remix Challenge</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-gradient-animate sm:text-3xl">Create a Remix Challenge</h1>
         <p className="text-muted-foreground text-sm mt-1">Upload a source track and let the community remix it.</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="ui-surface space-y-4 rounded-3xl border border-white/[0.06] bg-card/40 p-4 sm:p-5">
         <div>
           <label className="text-xs text-muted-foreground mb-2 block">Cover Image</label>
           <div
-            className="relative border-2 border-dashed border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-center"
+            className="ui-hover relative flex items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-border transition-colors hover:border-primary/50 focus-within:ring-2 focus-within:ring-primary/40"
             style={{ height: coverPreview ? "180px" : "96px" }}
           >
             <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleCover} />
@@ -171,7 +171,7 @@ export default function CreateChallenge() {
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             placeholder="e.g. Summer Vibes Remix Challenge"
-            className="bg-secondary/50 border-0 rounded-xl h-11"
+            className="h-11 rounded-xl border border-border/50 bg-secondary/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
@@ -183,15 +183,15 @@ export default function CreateChallenge() {
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             placeholder="What are you looking for? Describe the vibe..."
             rows={4}
-            className="bg-secondary/50 border-0 rounded-xl resize-none"
+            className="resize-none rounded-xl border border-border/50 bg-secondary/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="text-xs text-muted-foreground mb-1.5 block">Genre</label>
             <Select value={form.genre} onValueChange={(v) => setForm((f) => ({ ...f, genre: v }))}>
-              <SelectTrigger className="bg-secondary/50 border-0 rounded-xl h-11"><SelectValue placeholder="Select genre" /></SelectTrigger>
+              <SelectTrigger className="h-11 rounded-xl border border-border/50 bg-secondary/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"><SelectValue placeholder="Select genre" /></SelectTrigger>
               <SelectContent>
                 {GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
               </SelectContent>
@@ -205,7 +205,7 @@ export default function CreateChallenge() {
               value={form.bpm}
               onChange={(e) => setForm((f) => ({ ...f, bpm: e.target.value }))}
               placeholder="e.g. 120"
-              className="bg-secondary/50 border-0 rounded-xl h-11"
+              className="h-11 rounded-xl border border-border/50 bg-secondary/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
             />
           </div>
         </div>
@@ -213,7 +213,7 @@ export default function CreateChallenge() {
         <div>
           <label className="text-xs text-muted-foreground mb-1.5 block">Key</label>
           <Select value={form.key} onValueChange={(v) => setForm((f) => ({ ...f, key: v }))}>
-            <SelectTrigger className="bg-secondary/50 border-0 rounded-xl h-11"><SelectValue placeholder="Select key" /></SelectTrigger>
+            <SelectTrigger className="h-11 rounded-xl border border-border/50 bg-secondary/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"><SelectValue placeholder="Select key" /></SelectTrigger>
             <SelectContent>
               {KEYS.map((k) => <SelectItem key={k} value={k}>{k}</SelectItem>)}
             </SelectContent>
@@ -224,7 +224,7 @@ export default function CreateChallenge() {
           <label className="text-xs text-muted-foreground mb-2 block">Source Track *</label>
           <div className="space-y-2">
             <div
-              className="relative border-2 border-dashed border-border rounded-xl h-20 flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+              className="ui-hover relative flex min-h-24 items-center justify-center rounded-2xl border-2 border-dashed border-border px-3 transition-colors hover:border-primary/50 focus-within:ring-2 focus-within:ring-primary/40"
               onClick={() => !sourceTrackFile && document.getElementById("source-track-input").click()}
             >
               <input
@@ -256,10 +256,10 @@ export default function CreateChallenge() {
                 value={sourceTrackName}
                 onChange={(e) => setSourceTrackName(e.target.value)}
                 placeholder="Track name"
-                className="h-9 bg-secondary/50 border-0 rounded-xl"
+                className="h-11 rounded-xl border border-border/50 bg-secondary/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               />
               {sourceTrackFile && (
-                <button type="button" onClick={() => { setSourceTrackFile(null); }} className="text-muted-foreground hover:text-destructive shrink-0">
+                <button type="button" onClick={() => { setSourceTrackFile(null); }} className="ui-hover flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30" aria-label="Remove source track">
                   <X className="w-4 h-4" />
                 </button>
               )}
@@ -275,7 +275,7 @@ export default function CreateChallenge() {
             onChange={(e) => setForm((f) => ({ ...f, rules: e.target.value }))}
             placeholder="Remix must incorporate elements from the source track..."
             rows={3}
-            className="bg-secondary/50 border-0 rounded-xl resize-none"
+            className="resize-none rounded-xl border border-border/50 bg-secondary/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
@@ -287,7 +287,7 @@ export default function CreateChallenge() {
             onChange={(e) => setForm((f) => ({ ...f, prize_description: e.target.value }))}
             placeholder="What does the winner get?"
             rows={2}
-            className="bg-secondary/50 border-0 rounded-xl resize-none"
+            className="resize-none rounded-xl border border-border/50 bg-secondary/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
@@ -301,7 +301,7 @@ export default function CreateChallenge() {
       <Button
         onClick={handleSubmit}
         disabled={!canSubmit}
-        className="w-full rounded-2xl bg-gradient-to-r from-primary to-accent text-white h-12 text-base"
+        className="ui-hover h-12 w-full rounded-xl bg-gradient-to-r from-primary to-accent text-base font-semibold text-white shadow-lg shadow-primary/10"
       >
         {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...</> : "Create Challenge"}
       </Button>

@@ -310,10 +310,10 @@ export default function Record() {
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-6">
+    <div className="flex min-h-full flex-col items-center overflow-y-auto px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 sm:justify-center sm:p-6">
       <div className="w-full max-w-2xl">
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-heading font-bold mb-2">Recording Studio</h1>
+        <div className="mb-5 text-center sm:mb-6">
+          <h1 className="mb-2 text-2xl font-heading font-bold tracking-tight sm:text-3xl">Recording Studio</h1>
           <p className="text-sm text-muted-foreground">Capture your ideas with professional-quality recording</p>
         </div>
 
@@ -341,7 +341,7 @@ export default function Record() {
             )}
           </AnimatePresence>
 
-          <div className="relative w-72 h-72 flex items-center justify-center">
+          <div className="relative flex h-[min(18rem,78vw)] w-[min(18rem,78vw)] items-center justify-center">
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 288 288" style={{ overflow: "visible" }}>
               {visualData.slice(0, 48).map((v, i) => {
                 const angle = (i / 48) * 2 * Math.PI - Math.PI / 2;
@@ -370,7 +370,7 @@ export default function Record() {
                   onClick={beginRecording}
                   whileTap={{ scale: 0.93 }}
                   whileHover={{ scale: 1.05 }}
-                  className="w-24 h-24 rounded-full flex items-center justify-center shadow-2xl shadow-primary/40"
+                  className="flex h-24 w-24 items-center justify-center rounded-full shadow-2xl shadow-primary/40 focus-visible:ring-4 focus-visible:ring-primary/30" aria-label="Start recording"
                   style={{ background: "linear-gradient(135deg, hsl(265 80% 60%), hsl(340 80% 60%))" }}
                   animate={{ boxShadow: ["0 0 20px hsl(265 80% 60% / 0.3)", "0 0 40px hsl(265 80% 60% / 0.55)", "0 0 20px hsl(265 80% 60% / 0.3)"] }}
                   transition={{ repeat: Infinity, duration: 2.5 }}
@@ -382,7 +382,7 @@ export default function Record() {
                   <motion.button
                     onClick={stopRecording}
                     whileTap={{ scale: 0.93 }}
-                    className="w-24 h-24 rounded-full bg-destructive flex items-center justify-center shadow-2xl shadow-destructive/40"
+                    className="flex h-24 w-24 items-center justify-center rounded-full bg-destructive shadow-2xl shadow-destructive/40 focus-visible:ring-4 focus-visible:ring-destructive/30" aria-label="Stop recording"
                     animate={{ boxShadow: isPaused ? undefined : ["0 0 15px hsl(0 72% 51% / 0.4)", "0 0 35px hsl(0 72% 51% / 0.7)", "0 0 15px hsl(0 72% 51% / 0.4)"] }}
                     transition={{ repeat: Infinity, duration: 1 }}
                   >
@@ -390,7 +390,7 @@ export default function Record() {
                   </motion.button>
                   <button
                     onClick={togglePause}
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground bg-secondary/60 hover:bg-secondary transition-all"
+                    className="ui-hover flex h-11 w-11 items-center justify-center rounded-full bg-secondary/60 text-muted-foreground transition-all hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary/40" aria-label={isPaused ? "Resume recording" : "Pause recording"}
                   >
                     {isPaused ? <Radio className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
                   </button>
@@ -425,7 +425,7 @@ export default function Record() {
             </p>
             <button
               onClick={() => setShowGuide(true)}
-              className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+              className="ui-hover mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-primary hover:bg-primary/10"
             >
               <HelpCircle className="w-3.5 h-3.5" /> New to recording? Replay the guide
             </button>
@@ -435,7 +435,7 @@ export default function Record() {
         {/* Recordings */}
         {recordings.length > 0 && (
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="font-heading font-semibold text-lg">Recordings</h2>
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <RotateCcw className="w-3 h-3" /> Nothing is saved until you choose to save — retake freely
@@ -495,9 +495,9 @@ function RecordingItem({ recording, saving, onSave, onDelete, onRename }) {
   };
 
   return (
-    <div className="bg-card/50 backdrop-blur-xl rounded-xl border border-white/[0.06] p-4 flex items-center gap-3">
+    <div className="ui-surface flex flex-wrap items-center gap-3 rounded-2xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl sm:flex-nowrap">
       <audio ref={audioRef} src={recording.url} onEnded={() => setPlaying(false)} />
-      <button onClick={togglePlay} className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center shrink-0 hover:bg-primary/30 transition-colors">
+      <button onClick={togglePlay} className="ui-hover flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/20 transition-colors hover:bg-primary/30 focus-visible:ring-2 focus-visible:ring-primary/40" aria-label={playing ? "Pause recording playback" : "Play recording"}>
         {playing ? <Pause className="w-4 h-4 text-primary" /> : <Play className="w-4 h-4 text-primary ml-0.5" />}
       </button>
       <div className="flex-1 min-w-0">
@@ -508,7 +508,7 @@ function RecordingItem({ recording, saving, onSave, onDelete, onRename }) {
         />
         <p className="text-[10px] text-muted-foreground">{Math.floor(recording.duration / 60)}:{String(recording.duration % 60).padStart(2, '0')} • {(recording.blob.size / 1024 / 1024).toFixed(1)} MB</p>
       </div>
-      <div className="flex gap-1">
+      <div className="ml-auto flex gap-1">
         <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg" onClick={onSave} disabled={saving}>
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
         </Button>

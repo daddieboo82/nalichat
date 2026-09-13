@@ -62,7 +62,13 @@ Deno.serve(async (req) => {
     }
 
     try {
-      await entities.User.updateMany({ id: user.id }, { $inc: { xp: 50 } });
+      const xpUpdate = await entities.User.updateMany(
+        { id: user.id },
+        { $inc: { xp: 50 } },
+      );
+      if (Number(xpUpdate?.updated || 0) !== 1) {
+        throw new Error('User XP update did not modify exactly one account');
+      }
     } catch (xpError) {
       // Compensate the deterministic dedupe record so a transient user-update
       // failure does not permanently consume an unawarded reward.

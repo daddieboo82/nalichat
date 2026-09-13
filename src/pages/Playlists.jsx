@@ -56,7 +56,9 @@ export default function Playlists() {
     mutationFn: async (data) => {
       const created = await base44.functions.invoke("createPlaylist", data);
       if (created?.data?.error) throw new Error(created.data.error);
-      return created?.data?.playlist;
+      const playlist = created?.data?.playlist;
+      if (!playlist?.id) throw new Error("Playlist creation was not confirmed");
+      return playlist;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlists"] });
@@ -76,7 +78,8 @@ export default function Playlists() {
         playlistId,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data;
+      if (res?.data?.success !== true) throw new Error("Playlist deletion was not confirmed");
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlists"] });

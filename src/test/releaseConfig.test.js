@@ -1185,7 +1185,9 @@ describe('release configuration', () => {
     const bell = await readText('src/components/notifications/NotificationBell.jsx');
 
     expect(session).not.toContain('entities.Track.subscribe');
-    expect(session).toContain('Track.filter({ project_id: message.id }, "created_date", 500)');
+    expect(session).toContain('async function listSessionTracks(projectId)');
+    expect(session).toContain('const next = await listSessionTracks(message.id)');
+    expect(session).toContain('for (let skip = 0; ; skip += pageSize)');
     expect(session).toContain('setInterval(refreshTracks, 5000)');
 
     expect(bell).not.toContain('entities.Notification.subscribe');

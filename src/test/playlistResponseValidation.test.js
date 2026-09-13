@@ -11,6 +11,16 @@ describe('playlist mutation response validation', () => {
     expect(s).toContain('res?.data?.playlistId !== playlistId');
     expect(s).toContain('res?.data?.deleted !== true');
   });
+  it('binds Explore add/create playlist responses to the active user and exact playlist', async () => {
+    const s = await readFile('src/components/explore/AddToPlaylistDialog.jsx', 'utf8');
+    expect(s).toContain('res?.data?.action !== "add_track"');
+    expect(s).toContain('res?.data?.userId !== currentUser?.id');
+    expect(s).toContain('res?.data?.playlistId !== playlistId');
+    expect(s).toContain('created?.data?.action !== "create_playlist"');
+    expect(s).toContain('created?.data?.userId !== currentUser?.id');
+    expect(s).toContain('created?.data?.playlistId !== playlist?.id');
+  });
+
   it('verifies add/remove membership and rollback confirmation', async () => {
     const s = await readFile('src/pages/PlaylistDetail.jsx', 'utf8');
     expect(s).toContain('updatedPlaylist?.id !== playlistId');

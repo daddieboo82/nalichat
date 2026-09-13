@@ -12,6 +12,7 @@ describe('message read receipt retries', () => {
 
     expect(source).toContain("base44.functions.invoke('markMessageRead', { message_id: m.id })");
     expect(source).toContain('markedRef.current.delete(m.id);');
+    expect(source).toContain('res?.data?.success !== true');
     expect(source).toContain('markedRef.current.clear();');
   });
 });

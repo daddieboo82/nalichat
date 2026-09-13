@@ -228,6 +228,15 @@ export default function Messages() {
     queryFn: async () => {
       const res = await base44.functions.invoke('listPublicUsers', { includePresence: true });
       if (res?.data?.error) throw new Error(res.data.error);
+      const updated = res?.data?.message;
+      if (
+        res?.data?.success !== true ||
+        updated?.id !== messageId ||
+        !res?.data?.reactions ||
+        typeof res.data.reactions !== "object"
+      ) {
+        throw new Error("Reaction update was not confirmed.");
+      }
       return res.data?.users || [];
     },
     enabled: !!currentUser?.id,

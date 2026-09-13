@@ -98,6 +98,25 @@ function updateMessageHistory(cache, updater) {
   };
 }
 
+async function fetchRecentMessageHistory(conversationId, desiredLimit) {
+  const rows = [];
+  const target = desiredLimit + 1;
+  const pageSize = 200;
+  for (let skip = 0; rows.length < target; skip += pageSize) {
+    const page = await base44.entities.Message.filter(
+      { conversation_id: conversationId },
+      "-created_date",
+      Math.min(pageSize, target - rows.length),
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < Math.min(pageSize, target - (rows.length - page.length))) break;
+  }
+  const hasOlder = rows.length > desiredLimit;
+  const visible = hasOlder ? rows.slice(0, desiredLimit) : rows;
+  return { messages: visible.reverse(), hasOlder };
+}
+
 export default function Messages() {
   const { user: currentUser, checkUserAuth } = useAuth();
   const location = useLocation();
@@ -294,16 +313,7 @@ export default function Messages() {
     refetch: refetchMessages,
   } = useQuery({
     queryKey: ["messages", currentUser?.id, selectedConvId],
-    queryFn: async () => {
-      const page = await base44.entities.Message.filter(
-        { conversation_id: selectedConvId },
-        "-created_date",
-        messageHistoryLimit + 1,
-      );
-      const hasOlder = page.length > messageHistoryLimit;
-      const visible = hasOlder ? page.slice(0, messageHistoryLimit) : page;
-      return { messages: visible.reverse(), hasOlder };
-    },
+    queryFn: () => fetchRecentMessageHistory(selectedConvId, messageHistoryLimit),
     enabled: !!currentUser?.id && !!selectedConvId && lockedChatsReady && canAccessConversation(selectedConvId),
     refetchInterval: 5000,
     staleTime: 3000,

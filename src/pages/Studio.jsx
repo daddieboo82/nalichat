@@ -1035,15 +1035,29 @@ export default function Studio() {
       updateCurrentTime(Math.max(0, recordStartPos - preRoll));
       sounds.nav();
       setActivity(`Pre-roll ${preRoll}s → recording 🎙️`);
-      // Start playback of existing (non-armed) tracks for context
+      // Start playback of existing (non-armed) tracks for context.
+      const preRollPlayPromises = [];
       tracks.forEach(track => {
         if (!track.armed && track.audioUrl && (!track.muted || track.solo)) {
           const audio = getTrackAudio(track);
           if (!audio) return;
           audio.currentTime = Math.max(0, recordStartPos - preRoll - (track.startTime || 0));
-          audio.play().catch(() => {});
+          preRollPlayPromises.push(
+            audio.play().then(() => true).catch((error) => {
+              console.error("Pre-roll playback error:", error);
+              return false;
+            })
+          );
         }
       });
+      if (preRollPlayPromises.length > 0) {
+        const started = await Promise.all(preRollPlayPromises);
+        if (!started.some(Boolean)) {
+          pendingRecordStartRef.current = null;
+          toast.error("Pre-roll audio couldn't start. Click Record again to retry.");
+          return;
+        }
+      }
       setIsPlaying(true);
       return; // RAF loop will call toggleRecord when playhead reaches recordStartPos
     }

@@ -1,5 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -43,26 +43,24 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
   const [tracksLoading, setTracksLoading] = useState(false);
   const [tracksError, setTracksError] = useState(false);
 
-  useEffect(() => {
-    if (!open || !user) return;
-    let cancelled = false;
+  const loadTracks = useCallback(async () => {
+    if (!open || !user?.id) return;
     setTracksLoading(true);
     setTracksError(false);
-    listAllUserPosts(user.id)
-      .then((tracks) => {
-        if (!cancelled) setMyTracks(tracks || []);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setMyTracks([]);
-          setTracksError(true);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setTracksLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [open, user]);
+    try {
+      const tracks = await listAllUserPosts(user.id);
+      setMyTracks(tracks || []);
+    } catch {
+      setMyTracks([]);
+      setTracksError(true);
+    } finally {
+      setTracksLoading(false);
+    }
+  }, [open, user?.id]);
+
+  useEffect(() => {
+    void loadTracks();
+  }, [loadTracks]);
 
   const reset = () => {
     setRemixName(""); setDescription(""); setSelectedTrackId(""); setFile(null); setLinkUrl(""); setTab("studio");
@@ -133,6 +131,7 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
       });
       if (res?.data?.error) throw new Error(res.data.error);
       const submission = res?.data?.submission;
+      if (!submission?.id) throw new Error("Remix submission was not confirmed");
 
       toast.success("Remix submitted! Good luck 🎧");
       reset();
@@ -168,7 +167,12 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
               {tracksLoading ? (
                 <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
               ) : tracksError ? (
-                <p className="text-sm text-destructive" role="alert">Couldn't load your published tracks. Close and reopen this dialog to retry.</p>
+                <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm" role="alert">
+                  <p className="text-destructive">Couldn't load your published tracks.</p>
+                  <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => void loadTracks()}>
+                    Retry
+                  </Button>
+                </div>
               ) : myTracks.length === 0 ? (
                 <p className="text-sm text-muted-foreground">You have no published tracks yet. Bounce one in the Studio first.</p>
               ) : (

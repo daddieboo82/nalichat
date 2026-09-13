@@ -3,8 +3,13 @@ import { readFile } from 'node:fs/promises';
 describe('playlist mutation response validation', () => {
   it('requires confirmed create and delete responses before success UI', async () => {
     const s = await readFile('src/pages/Playlists.jsx', 'utf8');
-    expect(s).toContain('created?.data?.success !== true || !playlist?.id');
-    expect(s).toContain('res?.data?.success !== true || res?.data?.deleted !== true');
+    expect(s).toContain('created?.data?.action !== "create_playlist"');
+    expect(s).toContain('created?.data?.userId !== currentUser?.id');
+    expect(s).toContain('created?.data?.playlistId !== playlist?.id');
+    expect(s).toContain('res?.data?.action !== "delete"');
+    expect(s).toContain('res?.data?.userId !== currentUser?.id');
+    expect(s).toContain('res?.data?.playlistId !== playlistId');
+    expect(s).toContain('res?.data?.deleted !== true');
   });
   it('verifies add/remove membership and rollback confirmation', async () => {
     const s = await readFile('src/pages/PlaylistDetail.jsx', 'utf8');

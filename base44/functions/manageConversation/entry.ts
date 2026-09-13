@@ -133,6 +133,98 @@ async function updateConversationAudienceSafely(
   }
 }
 
+async function cleanupDeletedConversationData(
+  entities: any,
+  conversationId: string,
+) {
+  const now = new Date().toISOString();
+
+  const reminders = await entities.FollowUpReminder.filter(
+    { conversation_id: conversationId },
+    '-created_date',
+    500,
+  );
+  for (const reminder of reminders) {
+    if (reminder.status === 'scheduled') {
+      await entities.FollowUpReminder.update(reminder.id, {
+        status: 'canceled',
+        resolution_reason: 'conversation_deleted',
+        resolved_at: now,
+        canceled_at: now,
+        delivery_claim_key: '',
+      });
+    }
+  }
+
+  await deleteConversationRows(
+    entities.LockedConversationPreference,
+    conversationId,
+  );
+  await deleteConversationRows(
+    entities.Notification,
+    conversationId,
+  );
+
+  const sessions = await entities.CallSummarySession.filter(
+    { conversation_id: conversationId },
+    '-created_date',
+    500,
+  );
+  for (const session of sessions) {
+    const [captures, summaries, consents] = await Promise.all([
+      entities.CallSummaryCapture.filter(
+        { session_id: session.id },
+        '-created_date',
+        500,
+      ),
+      entities.CallSummary.filter(
+        { session_id: session.id },
+        '-created_date',
+        500,
+      ),
+      entities.CallSummaryConsent.filter(
+        { session_id: session.id },
+        '-created_date',
+        500,
+      ),
+    ]);
+
+    await Promise.all([
+      ...captures.map((capture: any) => entities.CallSummaryCapture.update(
+        capture.id,
+        {
+          status: 'deleted',
+          audio_url: '',
+          deleted_at: now,
+        },
+      )),
+      ...summaries.map((summary: any) => entities.CallSummary.update(
+        summary.id,
+        {
+          status: 'deleted',
+          transcript: '',
+          summary: '',
+          action_items: [],
+          deleted_at: now,
+        },
+      )),
+      ...consents.map((consent: any) => entities.CallSummaryConsent.update(
+        consent.id,
+        {
+          state: 'expired',
+          expired_at: now,
+        },
+      )),
+    ]);
+
+    await entities.CallSummarySession.update(session.id, {
+      status: 'deleted',
+      deleted_at: now,
+      failure_code: 'CONVERSATION_DELETED',
+    });
+  }
+}
+
 async function deleteConversationRows(entity: any, conversationId: string): Promise<number> {
   let deleted = 0;
   while (true) {
@@ -549,6 +641,7 @@ Deno.serve(async (req) => {
           deleteConversationRows(entities.Message, conversation.id),
           deleteConversationRows(entities.TypingStatus, conversation.id),
         ]);
+        await cleanupDeletedConversationData(entities, conversation.id);
         await entities.Conversation.delete(conversation.id);
         return Response.json({
           success: true,

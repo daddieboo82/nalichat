@@ -16,7 +16,7 @@ describe('studio presence idempotency', () => {
     expect(source).toContain('StudioPresence.get(deterministicId)');
     expect(source).toContain("req.method !== 'POST'");
     expect(source).toContain('user.is_banned');
-    expect(source).toContain('roomId.length > 200');
+    expect(source).toContain("roomId !== 'local_studio' && !isBase44EntityId(roomId)");
     expect(source).toContain("activity must be 200 characters or fewer");
   });
 });

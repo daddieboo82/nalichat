@@ -2410,3 +2410,16 @@ describe('chat theme persistence response contract', () => {
     expect(backend).toContain('success: true, theme_id: themeId');
   });
 });
+
+
+describe('Explore like response contract', () => {
+  it('rolls back optimistic likes unless the exact post mutation is confirmed', async () => {
+    const client = await readText('src/pages/Explore.jsx');
+    const backend = await readText('base44/functions/toggleLike/entry.ts');
+    expect(client).toContain('res?.data?.success !== true');
+    expect(client).toContain('res?.data?.post_id !== post.id');
+    expect(client).toContain('typeof res?.data?.liked !== "boolean"');
+    expect(client).toContain('Like update was not confirmed.');
+    expect(backend).toContain('success: true, post_id: postId');
+  });
+});

@@ -99,7 +99,18 @@ export default function Explore() {
   const toggleLike = useMutation({
     mutationFn: async (post) => {
       if (!currentUser) return;
-      return base44.functions.invoke('toggleLike', { postId: post.id });
+      const res = await base44.functions.invoke('toggleLike', { postId: post.id });
+      if (res?.data?.error) throw new Error(res.data.error);
+      if (
+        res?.data?.success !== true ||
+        res?.data?.post_id !== post.id ||
+        typeof res?.data?.liked !== "boolean" ||
+        !Number.isFinite(Number(res?.data?.likes)) ||
+        Number(res.data.likes) < 0
+      ) {
+        throw new Error("Like update was not confirmed.");
+      }
+      return res.data;
     },
     // Optimistic update so the heart + count flip instantly
     onMutate: async (post) => {

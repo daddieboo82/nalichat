@@ -119,6 +119,8 @@ Deno.serve(async (req) => {
     const eligibility = trialEligibility(user.trial_used_at, subs);
 
     return Response.json({
+      success: true,
+      userId: user.id,
       plan,
       status,
       billingPeriod: selected?.billing_period || null,

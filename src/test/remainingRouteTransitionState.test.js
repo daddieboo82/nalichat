@@ -15,6 +15,14 @@ describe('remaining route transition state', () => {
     expect(source).toContain('setSquad(null);');
   });
 
+  it('only reports a squad join after the backend confirms the active membership', async () => {
+    const source = await readText('src/pages/SquadJoin.jsx');
+    expect(source).toContain('res?.data?.success !== true');
+    expect(source).toContain('!res?.data?.squad?.id');
+    expect(source).toContain('res.data.squad.status !== "active"');
+    expect(source).toContain('throw new Error("Squad join was not confirmed.");');
+  });
+
   it('keeps the playlist player index valid across playlist/track changes', async () => {
     const source = await readText('src/pages/PlaylistDetail.jsx');
     expect(source).toContain('setCurrentTrackIndex(0);');

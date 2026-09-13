@@ -2318,7 +2318,8 @@ describe('message attachment download response contract', () => {
     const source = await readText('src/components/messages/MessageBubble.jsx');
     expect(source).toContain('auth?.data?.userId !== currentUserId');
     expect(source).toContain('currentUserId={currentUser?.id}');
-    expect(source).toContain('typeof downloadUrl !== "string" || !downloadUrl.trim()');
+    expect(source).toContain('typeof downloadUrl !== "string"');
+    expect(source).toContain('!downloadUrl.trim()');
     expect(source).toContain('Download authorization was not confirmed');
   });
 });

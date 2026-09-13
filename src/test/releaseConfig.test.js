@@ -2496,3 +2496,17 @@ describe('subscription account isolation response contract', () => {
     expect(hook).toContain('queryFn: () => checkSubscriptionStatus(user?.id)');
   });
 });
+
+
+describe('AI capability account isolation response contract', () => {
+  it('fails closed when capabilities are unconfirmed or belong to another account', async () => {
+    const client = await readText('src/lib/aiCapabilities.js');
+    const hook = await readText('src/hooks/useAiCapabilities.js');
+    const backend = await readText('base44/functions/getAiCapabilities/entry.ts');
+    expect(client).toContain('payload.success !== true');
+    expect(client).toContain('expectedUserId && payload.userId !== expectedUserId');
+    expect(hook).toContain('queryFn: () => getAiCapabilities(user?.id)');
+    expect(hook).toContain('enabled: !!user?.id');
+    expect(backend).toContain('success: true, userId: user.id');
+  });
+});

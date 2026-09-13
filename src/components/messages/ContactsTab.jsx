@@ -134,11 +134,11 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden min-h-0">
-      <div className="px-6 pt-2 pb-4 space-y-4 shrink-0">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="shrink-0 space-y-3 px-4 pb-3 pt-2 sm:space-y-4 sm:px-6 sm:pb-4">
         <div className="flex gap-2">
-          <Button variant={tab === "contacts" ? "default" : "outline"} size="sm" onClick={() => setTab("contacts")} className="flex-1 rounded-xl">My Contacts</Button>
-          <Button variant={tab === "discover" ? "default" : "outline"} size="sm" onClick={() => setTab("discover")} className="flex-1 rounded-xl">Discover</Button>
+          <Button variant={tab === "contacts" ? "default" : "outline"} size="sm" onClick={() => setTab("contacts")} className="ui-hover min-h-11 flex-1 rounded-xl font-semibold focus-visible:ring-2 focus-visible:ring-primary/40">My Contacts</Button>
+          <Button variant={tab === "discover" ? "default" : "outline"} size="sm" onClick={() => setTab("discover")} className="ui-hover min-h-11 flex-1 rounded-xl font-semibold focus-visible:ring-2 focus-visible:ring-primary/40">Discover</Button>
         </div>
 
         <div className="relative">
@@ -149,7 +149,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
             onChange={(e) => setSearch(e.target.value)}
             title="Search contacts"
             aria-label="Search contacts"
-            className="pl-9 bg-secondary/50 border-0 rounded-xl text-sm"
+            className="min-h-11 rounded-xl border border-border/50 bg-secondary/50 pl-9 text-sm focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
@@ -158,7 +158,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
             <button
               key={r}
               onClick={() => setRoleFilter(r)}
-              className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap shrink-0 transition-colors ${roleFilter === r ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
+              className={`ui-hover min-h-10 shrink-0 whitespace-nowrap rounded-xl px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 ${roleFilter === r ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
             >
               {r === "all" ? "All" : r === "ar" ? "A&R" : r + "s"}
             </button>
@@ -166,9 +166,9 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 custom-scrollbar">
+      <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(5rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-6">
         {(contactsError || usersError) && (
-          <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-3 text-xs text-destructive" role="alert">
+          <div className="mb-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs leading-relaxed text-destructive" role="alert">
             <p>
               {usersError
                 ? "Couldn't load people right now."
@@ -178,7 +178,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
               type="button"
               size="sm"
               variant="outline"
-              className="mt-2 h-7 text-xs"
+              className="ui-hover mt-3 min-h-10 rounded-xl px-4 text-xs font-semibold"
               onClick={() => {
                 if (usersError) void refetchUsers();
                 if (contactsError) void refetchContacts();
@@ -190,7 +190,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
         )}
         {!usersError && filtered.length === 0 ? (
           <div className="text-center py-10 text-muted-foreground">
-            <p className="text-sm">No users found.</p>
+            <p className="text-sm font-semibold text-foreground">No people found</p><p className="mt-1 text-xs">Try another name, genre, location, or role.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -198,7 +198,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
               const contactRecord = contacts.find(c => c.contact_user_id === user.id);
               
               return (
-                <div key={user.id} className="bg-card rounded-2xl border border-border/50 p-4 hover:border-primary/30 transition-all flex flex-col gap-3 group">
+                <div key={user.id} className="ui-surface group flex flex-col gap-3 rounded-3xl border border-border/50 bg-card/70 p-4 transition-all hover:border-primary/30">
                   <div className="flex items-center gap-3">
                     <div className="relative shrink-0">
                       <Avatar className="w-12 h-12 rounded-xl">
@@ -239,7 +239,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
                   <div className="flex gap-2 pt-1">
                     <Button 
                       size="sm" 
-                      className="flex-1 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 border-0 text-xs"
+                      className="ui-hover min-h-11 flex-1 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 border-0 text-xs"
                       onClick={() => onMessageContact(user)}
                     >
                       <MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Message
@@ -249,7 +249,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
                       <Button 
                         size="sm" 
                         variant="outline"
-                        className="flex-1 h-8 rounded-lg text-xs"
+                        className="ui-hover min-h-11 flex-1 rounded-xl text-xs"
                         onClick={() => addContactMutation.mutate(user)}
                         disabled={addContactMutation.isPending}
                       >
@@ -259,11 +259,11 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
                       <Button 
                         size="sm" 
                         variant="outline"
-                        className="w-8 h-8 p-0 rounded-lg text-destructive hover:bg-destructive/10 border-border"
+                        className="ui-hover h-11 w-11 rounded-xl border-border p-0 text-destructive hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-destructive/30"
                         onClick={() => deleteContactMutation.mutate(contactRecord.id)}
                         disabled={deleteContactMutation.isPending}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" /><span className="sr-only">Remove contact</span>
                       </Button>
                     )}
                   </div>

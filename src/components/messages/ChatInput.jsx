@@ -218,6 +218,11 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       const blob = new Blob(chunksRef.current, { type: mimeType });
       const file = new File([blob], `voice-${Date.now()}.${ext}`, { type: mimeType });
       const id = `voice-${Date.now()}`;
+      const validation = validateUpload(file);
+      if (!validation.ok) {
+        toast.error(validation.error);
+        return;
+      }
       setUploads(u => [...u, { id, name: "Voice Message", progress: 0, done: false, error: false }]);
       try {
         const { file_url } = await secureUploadFile({ file });

@@ -6,7 +6,11 @@ Deno.serve((req) => {
   if (req.method !== 'GET') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
-  return Response.json(publicPushConfig(), {
+  return Response.json({
+    success: true,
+    action: 'get_push_config',
+    ...publicPushConfig(),
+  }, {
     headers: { 'Cache-Control': 'public, max-age=300' },
   });
 });

@@ -74,7 +74,7 @@ export default function StudioEditor() {
     try {
       const published = await base44.functions.invoke("createArtPost", {
         title: uploadTitle,
-        description: masterAnalysis?.recommendations || 'AI-mastered session',
+        description: masterAnalysis?.notes || 'AI-mastered session',
         file_url: audioUrl,
         medium: 'production',
         is_explicit: false,
@@ -214,27 +214,32 @@ export default function StudioEditor() {
                 <div className="grid gap-4">
                   <div className="bg-secondary/30 rounded-lg p-4">
                     <p className="text-xs text-muted-foreground mb-1">EQ & Tone</p>
-                    <p className="text-sm">{masterAnalysis.eq_recommendations}</p>
+                    <p className="text-sm">
+                      Low shelf {masterAnalysis.low_shelf.gain_db >= 0 ? "+" : ""}{masterAnalysis.low_shelf.gain_db} dB @ {masterAnalysis.low_shelf.freq_hz} Hz ·
+                      Presence {masterAnalysis.presence.gain_db >= 0 ? "+" : ""}{masterAnalysis.presence.gain_db} dB @ {masterAnalysis.presence.freq_hz} Hz ·
+                      High shelf {masterAnalysis.high_shelf.gain_db >= 0 ? "+" : ""}{masterAnalysis.high_shelf.gain_db} dB @ {masterAnalysis.high_shelf.freq_hz} Hz
+                    </p>
                   </div>
                   
                   <div className="bg-secondary/30 rounded-lg p-4">
                     <p className="text-xs text-muted-foreground mb-1">Compression</p>
-                    <p className="text-sm">{masterAnalysis.compression_settings}</p>
+                    <p className="text-sm">
+                      Threshold {masterAnalysis.compressor.threshold_db} dB · Ratio {masterAnalysis.compressor.ratio}:1 ·
+                      Attack {Math.round(masterAnalysis.compressor.attack_s * 1000)} ms · Release {Math.round(masterAnalysis.compressor.release_s * 1000)} ms
+                    </p>
                   </div>
                   
                   <div className="bg-secondary/30 rounded-lg p-4">
-                    <p className="text-xs text-muted-foreground mb-1">Effects & Reverb</p>
-                    <p className="text-sm">{masterAnalysis.effects_chain}</p>
+                    <p className="text-xs text-muted-foreground mb-1">Output</p>
+                    <p className="text-sm">
+                      Makeup gain {masterAnalysis.makeup_gain_db >= 0 ? "+" : ""}{masterAnalysis.makeup_gain_db} dB ·
+                      Limiter ceiling {masterAnalysis.limiter_ceiling_db} dB
+                    </p>
                   </div>
                   
                   <div className="bg-secondary/30 rounded-lg p-4">
-                    <p className="text-xs text-muted-foreground mb-1">Target Loudness</p>
-                    <p className="text-sm">{masterAnalysis.target_loudness}</p>
-                  </div>
-                  
-                  <div className="bg-secondary/30 rounded-lg p-4">
-                    <p className="text-xs text-muted-foreground mb-1">Mastering Chain</p>
-                    <p className="text-sm">{masterAnalysis.mastering_chain}</p>
+                    <p className="text-xs text-muted-foreground mb-1">Engineer Notes</p>
+                    <p className="text-sm">{masterAnalysis.notes || "No additional notes."}</p>
                   </div>
                 </div>
 

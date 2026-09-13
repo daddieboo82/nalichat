@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { Play, Sparkles, X, Music } from "lucide-react";
+import { Play, Sparkles, X, Music, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
 import { getLikeCount } from "@/lib/engagement";
@@ -29,20 +29,27 @@ export default function DailyRecommendation() {
   const [dismissed, setDismissed] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [audio, setAudio] = useState(null);
+  const [loadError, setLoadError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     // Check if already dismissed today
     const key = `nali_rec_dismissed_${new Date().toDateString()}`;
     if (sessionGet(key)) { setDismissed(true); return; }
 
+    let cancelled = false;
+    setLoadError(false);
     listAllArtPosts().then((posts) => {
-      if (!posts?.length) return;
+      if (cancelled || !posts?.length) return;
       const topPosts = [...posts].sort((a, b) => getLikeCount(b) - getLikeCount(a)).slice(0, 20);
       // Pick a pseudo-random one from the top 20 based on day
       const idx = new Date().getDate() % topPosts.length;
       setPost(topPosts[idx]);
-    }).catch(() => {});
-  }, []);
+    }).catch(() => {
+      if (!cancelled) setLoadError(true);
+    });
+    return () => { cancelled = true; };
+  }, [retryKey]);
 
   const dismiss = () => {
     const key = `nali_rec_dismissed_${new Date().toDateString()}`;
@@ -88,7 +95,27 @@ export default function DailyRecommendation() {
     }
   }, [audio]);
 
-  if (!post || dismissed) return null;
+  if (dismissed) return null;
+
+  if (!post && loadError) {
+    return (
+      <div className="mx-6 mt-6 mb-0">
+        <div className="rounded-2xl border border-border/60 bg-card/70 px-4 py-3 flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">Daily Pick couldn't load.</p>
+          <button
+            type="button"
+            onClick={() => setRetryKey((value) => value + 1)}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent/80"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!post) return null;
 
   return (
     <AnimatePresence>

@@ -14,6 +14,21 @@ import { Plus, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
 
+async function listAllOwnedPlaylists(userId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.Playlist.filter(
+      { owner_id: userId },
+      "-created_date",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
   const { user: currentUser } = useAuth();
   const [newPlaylistName, setNewPlaylistName] = useState("");
@@ -34,7 +49,7 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
     queryKey: ["userPlaylists", currentUser?.id],
     queryFn: () =>
       currentUser
-        ? base44.entities.Playlist.filter({ owner_id: currentUser.id })
+        ? listAllOwnedPlaylists(currentUser.id)
         : [],
     enabled: !!currentUser && open,
   });

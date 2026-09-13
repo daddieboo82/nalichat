@@ -3,6 +3,7 @@ import { Flag, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
 
 const REPORT_REASONS = [
   { value: "spam", label: "Spam or scam" },
@@ -20,6 +21,7 @@ const REPORT_REASONS = [
  * Required by Microsoft Store Policy 11.12 (UGC) and 11.16 (AI Content).
  */
 export default function ReportContentDialog({ open, onClose, contentType, contentId, contentText, conversationId }) {
+  const { user } = useAuth();
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -38,7 +40,13 @@ export default function ReportContentDialog({ open, onClose, contentType, conten
         conversation_id: conversationId,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (!res?.data?.success && !res?.data?.report) {
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "report" ||
+        res?.data?.userId !== user?.id ||
+        res?.data?.contentType !== contentType ||
+        res?.data?.contentId !== contentId
+      ) {
         throw new Error("Report submission was not confirmed");
       }
       toast.success("Report submitted. Thank you for helping keep NaliChat safe.");

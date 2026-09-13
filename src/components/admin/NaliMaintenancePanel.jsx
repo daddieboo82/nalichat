@@ -12,11 +12,17 @@ export default function NaliMaintenancePanel() {
   const [showDetails, setShowDetails] = useState(false);
 
   const run = async (repairMode) => {
-    setMode(repairMode);
+    if (mode) return;
+    const runMode = repairMode ? 'repair' : 'diagnose';
+    setMode(runMode);
     setResult(null);
     setShowDetails(false);
     try {
-      const res = await base44.functions.invoke('nali-maintenance', { mode: repairMode ? 'repair' : 'diagnose' });
+      const res = await base44.functions.invoke('nali-maintenance', { mode: runMode });
+      if (res?.data?.error) throw new Error(res.data.error);
+      if (!res?.data || typeof res.data.totalIssues !== 'number') {
+        throw new Error("Maintenance response was invalid");
+      }
       setResult(res.data);
       if (repairMode) {
         toast.success(`Nali repaired ${res.data.totalFixed || 0} issue${(res.data.totalFixed || 0) === 1 ? '' : 's'}.`);
@@ -44,18 +50,18 @@ export default function NaliMaintenancePanel() {
         <Button
           variant="outline"
           onClick={() => run(false)}
-          disabled={!!mode}
+          disabled={mode !== null}
           className="gap-2"
         >
-          {mode === false ? <Loader2 className="w-4 h-4 animate-spin" /> : <Stethoscope className="w-4 h-4" />}
+          {mode === "diagnose" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Stethoscope className="w-4 h-4" />}
           Diagnose Only
         </Button>
         <Button
           onClick={() => run(true)}
-          disabled={!!mode}
+          disabled={mode !== null}
           className="gap-2"
         >
-          {mode === true ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wrench className="w-4 h-4" />}
+          {mode === "repair" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wrench className="w-4 h-4" />}
           Diagnose & Repair
         </Button>
       </div>

@@ -43,13 +43,13 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
   const [tab, setTab] = useState("contacts"); // "contacts" | "discover"
   const queryClient = useQueryClient();
 
-  const { data: contacts = [], isLoading: loadingContacts, isError: contactsError } = useQuery({
+  const { data: contacts = [], isLoading: loadingContacts, isError: contactsError, refetch: refetchContacts } = useQuery({
     queryKey: ["contacts", currentUserId],
     queryFn: () => currentUserId ? listAllContacts(currentUserId) : [],
     enabled: !!currentUserId,
   });
 
-  const { data: allUsers = [], isLoading: loadingUsers, isError: usersError } = useQuery({
+  const { data: allUsers = [], isLoading: loadingUsers, isError: usersError, refetch: refetchUsers } = useQuery({
     queryKey: ["users", "presence", currentUserId],
     queryFn: async () => {
       const res = await base44.functions.invoke('listPublicUsers', { includePresence: true });
@@ -142,13 +142,27 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
 
       <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 custom-scrollbar">
         {(contactsError || usersError) && (
-          <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive" role="alert">
-            {usersError
-              ? "Couldn't load people right now. Please try again."
-              : "Couldn't load your contacts. Discovery may be incomplete."}
+          <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-3 text-xs text-destructive" role="alert">
+            <p>
+              {usersError
+                ? "Couldn't load people right now."
+                : "Couldn't load your contacts. Discovery may be incomplete."}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="mt-2 h-7 text-xs"
+              onClick={() => {
+                if (usersError) void refetchUsers();
+                if (contactsError) void refetchContacts();
+              }}
+            >
+              Retry
+            </Button>
           </div>
         )}
-        {filtered.length === 0 ? (
+        {!usersError && filtered.length === 0 ? (
           <div className="text-center py-10 text-muted-foreground">
             <p className="text-sm">No users found.</p>
           </div>

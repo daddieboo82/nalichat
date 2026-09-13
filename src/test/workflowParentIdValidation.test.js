@@ -5,7 +5,7 @@ const cases = [
   ['base44/functions/notifyOnFileUpload/entry.ts', 'isBase44EntityId(file.project_id)', 'Project.get(file.project_id)'],
   ['base44/functions/notifyOnTrackVersion/entry.ts', 'isBase44EntityId(version.project_id)', 'Project.get(version.project_id)'],
   ['base44/functions/notifyOnMilestoneUpdate/entry.ts', 'isBase44EntityId(milestone.project_id)', 'Project.get(milestone.project_id)'],
-  ['base44/functions/notifyOnMessage/entry.ts', 'isBase44EntityId(message.conversation_id)', 'Conversation.get(message.conversation_id)'],
+  ['base44/functions/notifyOnMessage/entry.ts', 'isConversationId(message.conversation_id)', 'Conversation.get(message.conversation_id)'],
   ['base44/functions/notifyOnTrackComment/entry.ts', 'isBase44EntityId(comment.track_id)', 'ArtPost.get(comment.track_id)'],
 ];
 

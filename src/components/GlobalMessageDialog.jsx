@@ -32,7 +32,7 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
     if (!currentUser?.id) onOpenChange(false);
   }, [currentUser?.id, onOpenChange]);
 
-  const { data: users = [], isLoading, isError: usersError } = useQuery({
+  const { data: users = [], isLoading, isError: usersError, refetch: refetchUsers } = useQuery({
     queryKey: ["users-list", currentUser?.id],
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicUsers", {});
@@ -137,9 +137,12 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
                   Log in to send messages.
                 </p>
               ) : usersError ? (
-                <p className="text-sm text-destructive text-center py-8" role="alert">
-                  Couldn't load people. Please try again.
-                </p>
+                <div className="text-center py-8" role="alert">
+                  <p className="text-sm text-destructive">Couldn't load people.</p>
+                  <Button type="button" size="sm" variant="outline" className="mt-3" onClick={() => void refetchUsers()}>
+                    Retry
+                  </Button>
+                </div>
               ) : isLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />

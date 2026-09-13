@@ -29,3 +29,18 @@ describe('shared file mutation serialization', () => {
     }
   });
 });
+
+
+describe('shared file mutation response identity contract', () => {
+  it('binds update, move, and delete confirmations to the current user and file', async () => {
+    const backend = await readText('base44/functions/mutateSharedFile/entry.ts');
+    const files = await readText('src/pages/Files.jsx');
+    expect(backend).toContain("action: 'delete'");
+    expect(backend).toContain("action: 'update'");
+    expect(backend).toContain("action: 'move'");
+    expect(backend).toContain('userId: user.id');
+    expect(files).toContain('res?.data?.userId !== currentUser?.id');
+    expect(files).toContain('res?.data?.fileId !== id');
+    expect(files).toContain('res?.data?.folderId !== folderId');
+  });
+});

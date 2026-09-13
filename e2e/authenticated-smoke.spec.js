@@ -50,6 +50,23 @@ test.describe('authenticated production smoke', () => {
     });
   }
 
+
+
+  test('uploads and surfaces a small file in Files', async ({ page }) => {
+    await page.goto('/files');
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/files');
+
+    const fileName = `e2e-${Date.now()}.txt`;
+    await page.getByRole('button', { name: /upload/i }).first().click();
+    await page.getByTestId('files-upload-input').setInputFiles({
+      name: fileName,
+      mimeType: 'text/plain',
+      buffer: Buffer.from('NaliChat production E2E upload check'),
+    });
+
+    await expect(page.getByText(fileName, { exact: false })).toBeVisible({ timeout: 30000 });
+  });
+
   test('authenticated session survives reload and protected navigation', async ({ page }) => {
     await page.goto('/messages');
     await expect.poll(() => new URL(page.url()).pathname).toBe('/messages');

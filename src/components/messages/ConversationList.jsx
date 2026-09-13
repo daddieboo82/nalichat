@@ -42,6 +42,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
       const other = getOtherUser(conv);
       const name = conv.type === "group" ? conv.name : (other?.display_name || other?.full_name || "");
       if (!name.toLowerCase().includes(term)) return false;
+      if (filter === "unread" && !isUnread(conv)) return false;
       if (filter === "groups" && conv.type !== "group") return false;
       return true;
     });
@@ -71,7 +72,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
     ) : [];
 
     return { filteredChats, discoverGroups, discoverUsers };
-  }, [search, filter, myConversations, conversations, users, currentUserId]);
+  }, [search, filter, myConversations, conversations, users, currentUserId, selectedId]);
 
   const gradients = [
     "from-primary to-pink-500", "from-accent to-cyan-400", "from-yellow-500 to-orange-500",
@@ -82,7 +83,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-h-0 bg-background/20">
       {/* Search Bar */}
-      <div className="px-4 sm:px-6 pt-2 mb-4 shrink-0">
+      <div className="shrink-0 border-b border-border/40 bg-background/85 px-4 pb-3 pt-2 backdrop-blur-xl sm:px-6">
         <div className="relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
           <Input
@@ -91,20 +92,20 @@ export default React.memo(function ConversationList({ conversations, myConversat
             placeholder="Search messages or find people..."
             title="Search conversations"
             aria-label="Search conversations"
-            className="h-12 pl-11 pr-4 bg-secondary/45 border border-border/30 rounded-2xl shadow-sm focus:bg-background/90 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all text-sm placeholder:text-muted-foreground/60"
+            className="h-12 pl-11 pr-4 bg-secondary/45 border border-border/50 rounded-2xl shadow-sm focus:bg-background/90 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-all text-sm placeholder:text-muted-foreground/60"
           />
         </div>
       </div>
 
       {/* Trending Topics */}
       {!search && (
-        <div className="pl-6 mb-3 flex gap-2 overflow-x-auto no-scrollbar shrink-0 pb-2 after:content-[''] after:w-6 after:shrink-0">
+        <div className="pl-4 sm:pl-6 mt-3 mb-3 flex gap-2 overflow-x-auto no-scrollbar shrink-0 pb-2 after:content-[''] after:w-6 after:shrink-0">
           <span className="text-xs font-bold text-muted-foreground uppercase flex items-center shrink-0 mr-1">Trending:</span>
           {["#TikTokMusic", "#ViralSounds", "#DrakeVsKendrick", "#AIinMusic", "#Eurovision", "#Grammys", "#BeatMakers"].map(topic => (
              <button
                 key={topic}
                 onClick={() => setSearch(topic.toLowerCase())}
-                className="px-3 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors whitespace-nowrap"
+                className="ui-hover min-h-9 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors whitespace-nowrap"
              >
                 {topic}
              </button>
@@ -115,12 +116,12 @@ export default React.memo(function ConversationList({ conversations, myConversat
       {/* Filters */}
       {!search && (
         <div className="px-4 sm:px-6 mb-4 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
-          {["all", "groups"].map(f => (
+          {["all", "unread", "groups"].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               className={cn(
-                "min-h-9 px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-all whitespace-nowrap touch-manipulation",
+                "ui-hover min-h-10 px-4 py-2 rounded-full text-xs font-semibold capitalize transition-all whitespace-nowrap touch-manipulation",
                 filter === f 
                   ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
                   : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -148,7 +149,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
                     toast.error("Couldn't start this conversation. Please try again.");
                   });
                 }}
-                className="flex min-w-[64px] flex-col items-center gap-1.5 shrink-0 group rounded-xl py-1.5 hover:bg-secondary/35 active:scale-[0.98] transition-all touch-manipulation"
+                className="ui-hover flex min-w-[68px] min-h-[84px] flex-col items-center justify-center gap-1.5 shrink-0 group rounded-2xl py-2 hover:bg-secondary/35 transition-all touch-manipulation focus-visible:ring-2 focus-visible:ring-primary/40"
                 title={`Message ${u.display_name || u.full_name}`}
                 aria-label={`Message ${u.display_name || u.full_name}`}
               >
@@ -171,7 +172,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
       )}
 
       {/* List */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 pb-6 space-y-1.5 custom-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-1 space-y-1.5 custom-scrollbar">
         {searchResults.filteredChats.length === 0 && !search && (
           <div className="text-center py-12 px-6">
             <div className="inline-flex w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 items-center justify-center mb-4">
@@ -209,13 +210,14 @@ export default React.memo(function ConversationList({ conversations, myConversat
               key={conv.id}
               onClick={() => onSelect(conv.id)}
               className={cn(
-                "w-full min-h-[72px] flex items-center gap-3.5 p-3.5 rounded-2xl transition-all text-left group relative touch-manipulation",
+                "ui-hover w-full min-h-[72px] flex items-center gap-3.5 p-3.5 rounded-2xl transition-all text-left group relative touch-manipulation focus-visible:ring-2 focus-visible:ring-primary/40",
                 isSelected
                   ? "bg-primary/[0.09] shadow-md shadow-black/10 border border-primary/20 z-10"
                   : "hover:bg-secondary/50 active:bg-secondary/60 border border-transparent"
               )}
               title={`Open chat with ${displayName}`}
               aria-label={`Open chat with ${displayName}`}
+              aria-pressed={isSelected}
             >
               <div className="relative shrink-0">
                 <Avatar className={cn("w-12 h-12 shadow-sm transition-all", unread && !isSelected && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background")}>

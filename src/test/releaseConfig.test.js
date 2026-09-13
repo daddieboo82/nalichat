@@ -2561,3 +2561,14 @@ describe('Squad account refresh isolation', () => {
     expect(source).toContain('setCredits(fresh.squad_credits || 0)');
   });
 });
+
+
+describe('squad activity response contract', () => {
+  it('does not treat a resolved malformed tracking response as confirmed', async () => {
+    const source = await readText('src/lib/squadBonus.js');
+    expect(source).toContain('data?.success !== true');
+    expect(source).toContain('typeof data?.tracked !== "boolean"');
+    expect(source).toContain('Squad activity was not confirmed.');
+    expect(source).toContain('return data');
+  });
+});

@@ -790,7 +790,10 @@ export default function Messages() {
                       try {
                         await startDM(u);
                         setSidebarTab("chats");
-                      } catch {}
+                      } catch (error) {
+                        console.error("Failed to start DM from Contacts:", error);
+                        toast.error("Couldn't start this conversation. Please try again.");
+                      }
                     }} 
                   />
                 </motion.div>

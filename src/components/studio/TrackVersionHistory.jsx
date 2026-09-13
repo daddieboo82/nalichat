@@ -10,6 +10,21 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
+async function listAllTrackVersions(trackId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.TrackVersion.filter(
+      { track_id: trackId },
+      "-version_number",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function TrackVersionHistory({ track, open, onOpenChange, onRevert, canEdit, currentUser }) {
   const [playingId, setPlayingId] = useState(null);
   const [audioEl, setAudioEl] = useState(null);
@@ -19,7 +34,7 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
 
   const { data: versions = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["track-versions", currentUser?.id, track?.id],
-    queryFn: () => base44.entities.TrackVersion.filter({ track_id: track.id }, "-version_number", 500),
+    queryFn: () => listAllTrackVersions(track.id),
     enabled: !!currentUser?.id && !!track?.id && open,
   });
 

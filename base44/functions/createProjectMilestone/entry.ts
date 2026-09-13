@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
       access_user_ids: Array.from(new Set([project.owner_id, ...(project.collaborator_ids || [])])),
       edit_user_ids: Array.from(new Set([project.owner_id, ...(project.editor_ids || [])])),
     });
-    return Response.json({ success: true, milestone });
+    return Response.json({ success: true, action: 'create_project_milestone', userId: user.id, projectId: project.id, milestoneId: milestone.id, milestone });
     } finally {
       await releaseProjectMembershipLock(entities, lockId);
     }

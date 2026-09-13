@@ -303,7 +303,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
             id="publish-track-button"
             title="Publish Track"
             aria-label="Publish Track"
-            disabled={loading || !form.title || !audioFile}
+            disabled={loading || !form.title || (!audioFile && !sourceFile?.file_url)}
             className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Publishing...</> : <><Upload className="w-4 h-4" /> Publish Track</>}

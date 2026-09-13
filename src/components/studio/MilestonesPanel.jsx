@@ -14,6 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { recordSquadActivity } from "@/lib/squadBonus";
 import { useAuth } from "@/lib/AuthContext";
+import { toast } from "sonner";
 
 const priorityColors = {
   low: "bg-muted text-muted-foreground",
@@ -66,7 +67,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
     setForm({ title: "", description: "", due_date: "", priority: "medium" });
   }, [currentUser?.id, projectId]);
 
-  const { data: milestones = [] } = useQuery({
+  const { data: milestones = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["milestones", currentUser?.id, projectId],
     queryFn: () => listAllProjectMilestones(projectId),
     enabled: !!currentUser?.id && !!projectId,
@@ -87,7 +88,12 @@ export default function MilestonesPanel({ projectId, canEdit }) {
     },
     onSuccess: (result) => {
       if (result?.stale) return;
-      invalidate(); setShowAdd(false); setForm({ title: "", description: "", due_date: "", priority: "medium" }); },
+      invalidate();
+      setShowAdd(false);
+      setForm({ title: "", description: "", due_date: "", priority: "medium" });
+      toast.success("Milestone added.");
+    },
+    onError: (error) => toast.error(error?.message || "Couldn't add milestone. Please try again."),
   });
 
   const toggle = useMutation({
@@ -108,6 +114,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
         recordSquadActivity("milestone", m.id);
       }
     },
+    onError: (error) => toast.error(error?.message || "Couldn't update milestone. Please try again."),
   });
 
   const remove = useMutation({
@@ -122,8 +129,12 @@ export default function MilestonesPanel({ projectId, canEdit }) {
       return { stale: false, data: res?.data };
     },
     onSuccess: (result) => {
-      if (!result?.stale) invalidate();
+      if (!result?.stale) {
+        invalidate();
+        toast.success("Milestone deleted.");
+      }
     },
+    onError: (error) => toast.error(error?.message || "Couldn't delete milestone. Please try again."),
   });
 
   const done = milestones.filter(m => m.completed);
@@ -170,7 +181,16 @@ export default function MilestonesPanel({ projectId, canEdit }) {
 
       {/* List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
-        {milestones.length === 0 && (
+        {isLoading ? (
+          <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">Loading milestones...</div>
+        ) : isError ? (
+          <div className="flex h-32 flex-col items-center justify-center text-center" role="alert">
+            <p className="text-xs font-semibold">Couldn't load milestones</p>
+            <Button type="button" size="sm" variant="outline" className="mt-3" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          </div>
+        ) : milestones.length === 0 && (
           <div className="flex flex-col items-center justify-center h-32 text-muted-foreground gap-2">
             <Flag className="w-8 h-8 opacity-20" />
             <p className="text-xs text-center">No milestones yet.<br />{canEdit ? "Add one to track progress." : ""}</p>

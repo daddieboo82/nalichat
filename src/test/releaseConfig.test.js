@@ -1941,6 +1941,8 @@ describe('release configuration', () => {
     expect(deletion).toContain("parent_type: 'art_post'");
     expect(deletion).toContain('track_ids: trackIds.filter');
     expect(explore).toContain('base44.functions.invoke("deleteArtPost"');
+    expect(explore).toContain('res?.data?.success !== true');
+    expect(explore).toContain('Track deletion was not confirmed.');
   });
 
 

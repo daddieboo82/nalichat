@@ -226,6 +226,20 @@ describe('home, navigation, and recovery flows', () => {
   });
 
   it('completes the welcome tour and navigates to challenges', async () => {
+    mockAuthState.current = {
+      user: { id: 'user-1' },
+      isAuthenticated: true,
+      logout: vi.fn(),
+    };
+    mockBase44.functions.invoke.mockResolvedValueOnce({
+      data: {
+        success: true,
+        action: 'update_my_profile',
+        userId: 'user-1',
+        updatedFields: ['welcome_tour_completed'],
+      },
+    });
+
     renderWithProviders(
       <Routes>
         <Route path="/" element={<WelcomeTour open onClose={() => {}} />} />

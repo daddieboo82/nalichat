@@ -192,7 +192,7 @@ export default function PricingPlans({
 
   if (!enabled) {
     return (
-      <div className="h-full overflow-y-auto bg-background px-6 py-16">
+      <div className="h-full min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background px-6 py-16">
         <div className="mx-auto max-w-xl rounded-2xl border border-border bg-card p-8 text-center">
           <h1 className="font-heading text-3xl font-black">Plans are temporarily unavailable</h1>
           <p className="mt-3 text-muted-foreground">Core chat is free forever.</p>
@@ -206,7 +206,7 @@ export default function PricingPlans({
   const paidCta = subscription.trialEligible ? copy.trialCta : "Choose plan";
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
+    <div className="h-full min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background">
       <section className="mx-auto max-w-6xl px-6 py-14">
         <div className="text-center">
           <p className="text-sm font-bold uppercase tracking-widest text-primary">NaliChat plans</p>

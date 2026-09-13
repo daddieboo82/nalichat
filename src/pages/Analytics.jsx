@@ -8,6 +8,21 @@ import { TrendingUp, Eye, Heart, Music } from "lucide-react";
 import { motion } from "framer-motion";
 import { getLikeCount } from "@/lib/engagement";
 import { useAuth } from "@/lib/AuthContext";
+
+async function listAllUserPosts(userId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.ArtPost.filter(
+      { creator_id: userId },
+      "-created_date",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
 export default function Analytics() {
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
@@ -16,7 +31,7 @@ export default function Analytics() {
     queryKey: ["userAnalytics", currentUser?.id],
     queryFn: () =>
       currentUser
-        ? base44.entities.ArtPost.filter({ creator_id: currentUser.id }, "-created_date", 100)
+        ? listAllUserPosts(currentUser.id)
         : [],
     enabled: !!currentUser,
   });

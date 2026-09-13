@@ -535,6 +535,11 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
+      action: 'edit',
+      userId: user.id,
+      messageId: message.id,
+      conversationId: message.conversation_id,
+      clientRequestKey,
       message: updated,
       preview_refresh_failed: previewRefreshFailed,
     });

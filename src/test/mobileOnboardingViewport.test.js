@@ -15,6 +15,7 @@ describe('mobile onboarding viewport safety', () => {
     const intro = await readFile('src/components/onboarding/ImmersiveOnboarding.jsx', 'utf8');
     expect(intro).toContain('min-h-[100dvh]');
     expect(intro).toContain('overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]');
-    expect(intro).toContain('py-16 sm:py-0');
+    expect(intro).toContain('env(safe-area-inset-top)');
+    expect(intro).toContain('env(safe-area-inset-bottom)');
   });
 });

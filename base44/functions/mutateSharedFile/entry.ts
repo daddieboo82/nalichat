@@ -210,12 +210,12 @@ Deno.serve(async (req) => {
 
       if (action === 'delete') {
         await entities.SharedFile.delete(file.id);
-        return Response.json({ success: true, deleted: true });
+        return Response.json({ success: true, action: 'delete', userId: user.id, fileId: file.id, deleted: true });
       }
 
       if (action === 'update') {
         const updated = await entities.SharedFile.update(file.id, updatePatch || {});
-        return Response.json({ success: true, file: updated });
+        return Response.json({ success: true, action: 'update', userId: user.id, fileId: file.id, file: updated });
       }
 
       let projectId = destinationProjectId;
@@ -258,7 +258,7 @@ Deno.serve(async (req) => {
         share_token_hash: null,
         share_token_expires_at: null,
       });
-      return Response.json({ success: true, file: updated });
+      return Response.json({ success: true, action: 'move', userId: user.id, fileId: file.id, folderId: requestedFolderId, file: updated });
     } finally {
       await releaseSharedFileMutationLock(entities, fileLockId);
       for (const projectLockId of projectLockIds.reverse()) {

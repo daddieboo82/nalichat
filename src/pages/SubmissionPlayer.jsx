@@ -114,10 +114,21 @@ export default function SubmissionPlayer() {
     }
   };
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (!audioRef.current) return;
-    if (playing) audioRef.current.pause(); else audioRef.current.play();
-    setPlaying(!playing);
+    if (playing) {
+      audioRef.current.pause();
+      setPlaying(false);
+      return;
+    }
+    try {
+      await audioRef.current.play();
+      setPlaying(true);
+    } catch (error) {
+      console.error("Submission playback failed:", error);
+      setPlaying(false);
+      toast.error("Couldn't play this remix. Please try again.");
+    }
   };
 
   if (submissionLoading) {

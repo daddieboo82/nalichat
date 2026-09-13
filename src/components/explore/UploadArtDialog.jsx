@@ -94,7 +94,15 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
     
     if (createdPost?.id) {
       try {
-        await base44.functions.invoke("claimPublishedPostReward", { postId: createdPost.id });
+        const reward = await base44.functions.invoke("claimPublishedPostReward", { postId: createdPost.id });
+        if (
+          reward?.data?.success !== true ||
+          reward?.data?.action !== "claim_publish_reward" ||
+          reward?.data?.userId !== currentUser.id ||
+          reward?.data?.postId !== createdPost.id
+        ) {
+          throw new Error("Publish reward was not confirmed.");
+        }
       } catch (err) {
         console.error("Failed to award publish XP:", err);
       }

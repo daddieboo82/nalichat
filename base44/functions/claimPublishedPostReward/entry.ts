@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
         && existing?.source_type === 'art_post'
         && existing?.source_id === post.id
       ) {
-        return Response.json({ success: true, awarded: false, duplicate: true });
+        return Response.json({ success: true, action: 'claim_publish_reward', userId: user.id, postId: post.id, awarded: false, duplicate: true, xp: 50 });
       }
       throw createError;
     }
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
       }
       throw xpError;
     }
-    return Response.json({ success: true, awarded: true, xp: 50 });
+    return Response.json({ success: true, action: 'claim_publish_reward', userId: user.id, postId: post.id, awarded: true, duplicate: false, xp: 50 });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

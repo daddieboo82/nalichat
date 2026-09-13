@@ -10,3 +10,19 @@ describe('published post reward hardening', () => {
     expect(source.indexOf('isBase44EntityId(postId)')).toBeLessThan(source.indexOf('consumeHourlyLimit('));
   });
 });
+
+
+describe('published post reward response identity contract', () => {
+  it('binds reward confirmation to the authenticated creator and exact post', async () => {
+    const backend = await readFile('base44/functions/claimPublishedPostReward/entry.ts', 'utf8');
+    const bounce = await readFile('src/components/studio/BounceDialog.jsx', 'utf8');
+    const upload = await readFile('src/components/explore/UploadArtDialog.jsx', 'utf8');
+    expect(backend).toContain("action: 'claim_publish_reward'");
+    expect(backend).toContain('userId: user.id');
+    expect(backend).toContain('postId: post.id');
+    expect(bounce).toContain('reward?.data?.userId !== user?.id');
+    expect(bounce).toContain('reward?.data?.postId !== postId');
+    expect(upload).toContain('reward?.data?.userId !== currentUser.id');
+    expect(upload).toContain('reward?.data?.postId !== createdPost.id');
+  });
+});

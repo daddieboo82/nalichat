@@ -64,7 +64,11 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
       });
       if (generation !== identityGenerationRef.current) return { stale: true };
       if (res?.data?.error) throw new Error(res.data.error);
-      return { stale: false, playlist: res?.data?.playlist };
+      const playlist = res?.data?.playlist;
+      if (res?.data?.success !== true || !playlist?.id || !Array.isArray(playlist.track_ids) || !playlist.track_ids.includes(trackId)) {
+        throw new Error("Playlist update was not confirmed.");
+      }
+      return { stale: false, playlist };
     },
     onSuccess: (result) => {
       if (result?.stale) return;
@@ -85,7 +89,11 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
       });
       if (generation !== identityGenerationRef.current) return { stale: true };
       if (created?.data?.error) throw new Error(created.data.error);
-      return { stale: false, playlist: created?.data?.playlist };
+      const playlist = created?.data?.playlist;
+      if (created?.data?.success !== true || !playlist?.id || !Array.isArray(playlist.track_ids) || !playlist.track_ids.includes(trackId)) {
+        throw new Error("Playlist creation was not confirmed.");
+      }
+      return { stale: false, playlist };
     },
     onSuccess: (result) => {
       if (result?.stale) return;

@@ -19,8 +19,8 @@ describe('shared file creation hardening', () => {
     expect(source).toContain("typeof body.description !== 'string'");
     expect(source).toContain('name.length > 255');
     expect(source).toContain('description.length > 1000');
-    expect(source).toContain('projectId.length > 200');
-    expect(source).toContain('folderId.length > 200');
+    expect(source).toContain('projectId && !isBase44EntityId(projectId)');
+    expect(source).toContain('folderId && !isBase44EntityId(folderId)');
     expect(source).not.toContain('slice(0, 255)');
     expect(source).not.toContain('slice(0, 1000)');
   });

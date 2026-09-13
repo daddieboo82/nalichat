@@ -144,7 +144,7 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
       if (!v && audioEl) { audioEl.pause(); setAudioEl(null); setPlayingId(null); }
       onOpenChange(v);
     }}>
-      <DialogContent className="bg-card border-border max-w-md max-h-[80vh] flex flex-col">
+      <DialogContent className="bg-card border-border max-w-md max-h-[80dvh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="font-heading flex items-center gap-2">
             <History className="w-4 h-4 text-primary" />
@@ -172,7 +172,7 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+        <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] space-y-2 pr-1">
           {isLoading ? (
             <div className="text-center text-muted-foreground py-8 text-sm">Loading versions...</div>
           ) : isError ? (

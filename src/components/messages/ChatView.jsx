@@ -449,7 +449,14 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                     conversation_id: conversation?.id,
                   });
                   if (res?.data?.error) throw new Error(res.data.error);
-                  if (res?.data?.success !== true || (res?.data?.deleted !== true && res?.data?.tombstoned !== true)) {
+                  if (
+                    res?.data?.success !== true ||
+                    res?.data?.action !== "delete" ||
+                    res?.data?.userId !== currentUser?.id ||
+                    res?.data?.messageId !== id ||
+                    res?.data?.conversationId !== conversation?.id ||
+                    (res?.data?.deleted !== true && res?.data?.tombstoned !== true)
+                  ) {
                     throw new Error("Message deletion was not confirmed.");
                   }
                   if (res?.data?.preview_refresh_failed) {

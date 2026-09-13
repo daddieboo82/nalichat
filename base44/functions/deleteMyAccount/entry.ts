@@ -233,6 +233,8 @@ Deno.serve(async (req) => {
       ['UserActivityReward', 'user_id'],
       ['UsageRateLimit', 'user_id'],
       ['ProjectInvite', 'created_by_id'],
+      ['LockedConversationPreference', 'user_id'],
+      ['FollowUpReminder', 'owner_id'],
     ];
 
     for (const [entityName, ownerField] of ownedDeletes) {
@@ -244,6 +246,72 @@ Deno.serve(async (req) => {
         (row) => entity.delete(row.id),
       );
     }
+
+    // Remove account-owned call-summary content. Captures and summaries may
+    // contain sensitive audio/transcript data, so wipe them before marking the
+    // session deleted. Consent rows are removed because the participant account
+    // no longer exists.
+    await processMatchingBatches(
+      entities.CallSummarySession,
+      { owner_id: user.id },
+      async (session) => {
+        const now = new Date().toISOString();
+        await Promise.all([
+          processPagedRows(
+            entities.CallSummaryCapture,
+            { session_id: session.id },
+            (capture) => entities.CallSummaryCapture.update(capture.id, {
+              status: 'deleted',
+              audio_url: '',
+              deleted_at: now,
+            }),
+          ),
+          processPagedRows(
+            entities.CallSummary,
+            { session_id: session.id },
+            (summary) => entities.CallSummary.update(summary.id, {
+              status: 'deleted',
+              transcript: '',
+              summary: '',
+              action_items: [],
+              deleted_at: now,
+            }),
+          ),
+          processMatchingBatches(
+            entities.CallSummaryConsent,
+            { session_id: session.id },
+            (consent) => entities.CallSummaryConsent.delete(consent.id),
+          ),
+        ]);
+        await entities.CallSummarySession.update(session.id, {
+          participant_ids: [],
+          status: 'deleted',
+          deleted_at: now,
+          failure_code: 'OWNER_DELETED',
+        });
+      },
+    );
+
+    // If the deleted account only participated in another user's summary
+    // session, remove its consent and membership reference without destroying
+    // the remaining participants' shared session.
+    await processMatchingBatches(
+      entities.CallSummaryConsent,
+      { participant_id: user.id },
+      (consent) => entities.CallSummaryConsent.delete(consent.id),
+    );
+    await processMatchingBatches(
+      entities.CallSummarySession,
+      { participant_ids: user.id },
+      async (session) => {
+        const participantIds = Array.isArray(session.participant_ids)
+          ? session.participant_ids.filter((id: string) => id !== user.id)
+          : [];
+        await entities.CallSummarySession.update(session.id, {
+          participant_ids: participantIds,
+        });
+      },
+    );
 
     // Remove references to the deleted account from other users' contact lists.
     await processMatchingBatches(

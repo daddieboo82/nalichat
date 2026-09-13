@@ -174,7 +174,14 @@ export default async function(req) {
     }
 
     const updated = await entities.ChallengeSubmission.get(submission_id);
-    return Response.json({ success: true, vote_count: updated.vote_count });
+    return Response.json({
+      success: true,
+      action: 'vote',
+      userId: user.id,
+      submissionId: submission.id,
+      challengeId: submission.challenge_id,
+      vote_count: updated.vote_count,
+    });
     } finally {
       await releaseChallengeLifecycleLock(entities, challengeLockId);
     }

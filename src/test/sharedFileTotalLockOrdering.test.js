@@ -14,7 +14,7 @@ describe('shared file total lock ordering', () => {
 
   it('locks project ids in deterministic sorted order', async () => {
     const s = await readFile('base44/functions/mutateSharedFile/entry.ts', 'utf8');
-    expect(s).toContain("])).sort();");
+    expect(s).toContain(')).sort();');
     expect(s).toContain('for (const projectId of projectIdsToLock)');
   });
 

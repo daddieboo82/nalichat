@@ -92,6 +92,10 @@ Deno.serve(async (req) => {
     }
 
     return Response.json({
+      success: true,
+      action: 'get_shared_file_by_token',
+      fileId: normalizedFileId,
+      tokenFingerprint: candidate.slice(0, 16),
       file: {
         id: file.id,
         name: file.name,

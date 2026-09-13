@@ -85,11 +85,14 @@ Deno.serve(async (req) => {
     const lockedMaxUses = Number(lockedInvite.max_uses || 25);
 
     if (project.owner_id === user.id) {
-      return Response.json({ success: true, role: 'owner', already_member: true }, { headers: { 'Cache-Control': 'no-store' } });
+      return Response.json({ success: true, action: 'accept_project_invite', userId: user.id, projectId: project.id, role: 'owner', already_member: true }, { headers: { 'Cache-Control': 'no-store' } });
     }
     if ((project.collaborator_ids || []).includes(user.id)) {
       return Response.json({
         success: true,
+        action: 'accept_project_invite',
+        userId: user.id,
+        projectId: project.id,
         role: project.collaborator_roles?.[user.id] || 'viewer',
         already_member: true,
       }, { headers: { 'Cache-Control': 'no-store' } });
@@ -152,7 +155,7 @@ Deno.serve(async (req) => {
     }
 
     return Response.json(
-      { success: true, role: lockedInvite.role },
+      { success: true, action: 'accept_project_invite', userId: user.id, projectId: project.id, role: lockedInvite.role, already_member: false },
       { headers: { 'Cache-Control': 'no-store' } },
     );
     } catch (grantError) {

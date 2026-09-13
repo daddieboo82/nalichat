@@ -43,6 +43,8 @@ describe('AdminDashboard', () => {
     authState.current = { user: { id: 'admin-1', role: 'admin' }, isLoadingAuth: false, authError: null };
     base44.functions.invoke.mockResolvedValue({
       data: {
+        success: true,
+        adminUserId: 'admin-1',
         stats: {
           totalUsers: 42,
           totalSubscriptions: 18,

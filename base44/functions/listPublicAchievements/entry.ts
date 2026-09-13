@@ -52,6 +52,9 @@ Deno.serve(async (req) => {
       500,
     );
     return Response.json({
+      success: true,
+      viewerUserId: user.id,
+      requestedUserId: targetUserId,
       achievements: rows.map((a) => ({ key: a.key })),
     });
   } catch (error) {

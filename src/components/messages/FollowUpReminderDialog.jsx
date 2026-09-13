@@ -110,7 +110,7 @@ export default function FollowUpReminderDialog({
     setIsSaving(true);
     try {
       if (editingId) {
-        await rescheduleFollowUpReminder(editingId, remindAt);
+        await rescheduleFollowUpReminder(editingId, remindAt, user?.id);
         trackFollowUpEvent("follow_up_reschedule", {
           outcome: "scheduled",
           delay_bucket: delayBucket(remindAt),
@@ -145,7 +145,7 @@ export default function FollowUpReminderDialog({
   const cancel = async (reminderId) => {
     setIsSaving(true);
     try {
-      await cancelFollowUpReminder(reminderId);
+      await cancelFollowUpReminder(reminderId, user?.id);
       trackFollowUpEvent("follow_up_cancel", { outcome: "canceled" });
       toast.success("Reminder canceled.");
       await loadReminders();

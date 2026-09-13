@@ -23,7 +23,10 @@ export default function SubmissionComments({ submissionId, user }) {
         parentId: submissionId,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      setComments(res?.data?.comments || []);
+      if (!Array.isArray(res?.data?.comments)) {
+        throw new Error("Comment list response was invalid.");
+      }
+      setComments(res.data.comments);
     } catch {
       setComments([]);
       setLoadError(true);
@@ -48,7 +51,10 @@ export default function SubmissionComments({ submissionId, user }) {
       });
       if (res?.data?.error) throw new Error(res.data.error);
       const created = res?.data?.comment;
-      if (created) setComments((current) => [...current, created]);
+      if (!created?.id || created.track_id !== submissionId || created.parent_type !== "challenge_submission") {
+        throw new Error("Comment creation was not confirmed.");
+      }
+      setComments((current) => [...current, created]);
       setText("");
     } catch (error) {
       toast.error(error?.message || "Couldn't post your comment. Please try again.");

@@ -2835,12 +2835,12 @@ export default function Studio() {
       </Suspense>
 
       {/* Bottom Mixer / Status Bar */}
-      <div className="min-h-[2.5rem] py-1.5 mx-2 sm:mx-3 mb-2 sm:mb-3 mt-2 sm:mt-3 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-wrap items-center justify-between px-3 sm:px-4 text-xs text-muted-foreground shrink-0 overflow-hidden gap-2 relative z-10">
+      <div className="relative z-10 mx-2 mb-[4.5rem] mt-2 flex min-h-[2.75rem] shrink-0 flex-wrap items-center justify-between gap-2 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-muted-foreground shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl sm:mx-3 sm:mb-3 sm:mt-3 sm:px-4 lg:mb-3">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-          <Button variant="ghost" size="sm" onClick={() => setShowMixerPanel(!showMixerPanel)} className={cn("h-6 text-xs gap-1.5", showMixerPanel && "bg-secondary text-foreground")}>
+          <Button variant="ghost" size="sm" onClick={() => setShowMixerPanel(!showMixerPanel)} className={cn("ui-hover min-h-10 rounded-xl text-xs gap-1.5", showMixerPanel && "bg-secondary text-foreground")}>
             <SlidersHorizontal className="w-3 h-3" /> Mixer
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setShowPluginRack(!showPluginRack)} className={cn("h-6 text-xs gap-1.5 transition-colors", showPluginRack && "bg-secondary text-foreground")}>
+          <Button variant="ghost" size="sm" onClick={() => setShowPluginRack(!showPluginRack)} className={cn("ui-hover min-h-10 rounded-xl text-xs gap-1.5 transition-colors", showPluginRack && "bg-secondary text-foreground")}>
             <SlidersHorizontal className="w-3 h-3" /> Plugins
           </Button>
           <div className="hidden md:flex items-center gap-2 border-l border-r border-border/50 px-3 mx-1" title="Master Output Level (Scales all track volumes)">
@@ -3066,12 +3066,12 @@ export default function Studio() {
 
       {/* Mobile bottom bar - Studio only */}
       <div 
-        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden flex items-center justify-center border-t border-border bg-card/90 backdrop-blur-md py-2"
+        className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center border-t border-border bg-card/95 px-3 py-2 backdrop-blur-xl lg:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <button
           onClick={async () => { if (await handleSave()) navigate('/'); }}
-          className="flex items-center gap-2 px-6 py-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground text-sm font-medium transition-colors min-h-[44px]"
+          className="ui-hover flex min-h-12 w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-secondary px-6 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <ChevronLeft className="w-4 h-4" /> Exit Studio
         </button>

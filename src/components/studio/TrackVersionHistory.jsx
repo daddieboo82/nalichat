@@ -89,10 +89,18 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
       return;
     }
     const el = new Audio(version.file_url);
-    el.play();
     el.onended = () => { setPlayingId(null); setAudioEl(null); };
-    setAudioEl(el);
-    setPlayingId(version.id);
+    el.play()
+      .then(() => {
+        setAudioEl(el);
+        setPlayingId(version.id);
+      })
+      .catch((error) => {
+        console.error("Track version playback failed", error);
+        setAudioEl(null);
+        setPlayingId(null);
+        toast.error("Couldn't preview this version. Please try again.");
+      });
   };
 
   const handleRevert = (version) => {

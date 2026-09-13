@@ -465,11 +465,21 @@ function RecordingItem({ recording, saving, onSave, onDelete, onRename }) {
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef(null);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (!audioRef.current) return;
-    if (playing) audioRef.current.pause();
-    else audioRef.current.play();
-    setPlaying(!playing);
+    if (playing) {
+      audioRef.current.pause();
+      setPlaying(false);
+      return;
+    }
+    try {
+      await audioRef.current.play();
+      setPlaying(true);
+    } catch (error) {
+      console.error("Recording playback failed:", error);
+      setPlaying(false);
+      toast.error("Couldn't play this recording. Please try again.");
+    }
   };
 
   return (

@@ -212,9 +212,32 @@ export default async function(req) {
       achievementCount[achievement.user_id] = (achievementCount[achievement.user_id] || 0) + 1;
     }
 
+    // Discovery itself stays bounded, but Messages relies on this endpoint for
+    // names, avatars, and presence of people already in the caller's chats.
+    // Always supplement conversation participants that fell outside the broad
+    // discovery window so older DMs never degrade to an anonymous "User".
+    const visibleUsers = [...allUsers];
+    if (includePresence) {
+      const loadedIds = new Set(visibleUsers.map((candidate: any) => candidate.id).filter(Boolean));
+      const missingParticipantIds = [...presenceVisibleTo].filter(
+        (participantId) => participantId !== user.id && !loadedIds.has(participantId),
+      );
+      const missingParticipants = await Promise.all(
+        missingParticipantIds.map((participantId) =>
+          base44.asServiceRole.entities.User.get(participantId).catch(() => null)
+        ),
+      );
+      for (const participant of missingParticipants) {
+        if (participant?.id && !loadedIds.has(participant.id)) {
+          loadedIds.add(participant.id);
+          visibleUsers.push(participant);
+        }
+      }
+    }
+
     // Explicit public projection. Never return email, phone, birthdate, Stripe
     // identifiers, trial state, moderation state, or other account-only fields.
-    const publicUsers = allUsers
+    const publicUsers = visibleUsers
       .filter((u) => u.onboarding_completed && !u.is_banned && String(u.display_name || '').trim())
       .map((u) => publicUserProjection(
         u,

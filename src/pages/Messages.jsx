@@ -808,7 +808,7 @@ export default function Messages() {
       <GroupChatDialog
         open={showNewGroup}
         onOpenChange={setShowNewGroup}
-        users={otherUsers}
+        users={otherUsers.filter((candidate) => candidate.can_group_chat === true)}
         onCreate={createGroup}
       />
       <ExternalMessageDialog

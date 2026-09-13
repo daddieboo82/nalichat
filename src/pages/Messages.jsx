@@ -187,6 +187,7 @@ export default function Messages() {
       setShowExternal(false);
       setShowInvite(false);
       setSelectedConvId(null);
+      setMessageHistoryLimit(200);
       setLockedLinkConversationId(null);
       setShowLockedAccess(false);
     }
@@ -195,6 +196,7 @@ export default function Messages() {
   useEffect(() => {
     if (location.pathname === "/messages" && !location.search) {
       setSelectedConvId(null);
+      setMessageHistoryLimit(200);
     }
   }, [location.pathname, location.search]);
 
@@ -282,6 +284,7 @@ export default function Messages() {
       handleSelectConv(requestedId);
     } else if (resolution.status === "locked") {
       setSelectedConvId(null);
+      setMessageHistoryLimit(200);
       setLockedLinkConversationId(requestedId);
       setShowLockedAccess(true);
     } else if (resolution.status === "missing") {
@@ -290,6 +293,7 @@ export default function Messages() {
       // chat surface and normalize the URL so Messages returns to its list
       // instead of rendering a stale/empty conversation.
       setSelectedConvId(null);
+      setMessageHistoryLimit(200);
       setLockedLinkConversationId(null);
       setShowLockedAccess(false);
       if (location.pathname === "/messages" && location.search) {

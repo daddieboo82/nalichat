@@ -20,10 +20,10 @@ describe('squad status lookup bounds', () => {
     const join = await readText('base44/functions/joinSquad/entry.ts');
     const activity = await readText('base44/functions/recordSquadActivity/entry.ts');
 
-    expect(create).toContain("Squad.filter({ member_a_id: user.id }, '-created_date', 100)");
-    expect(create).toContain("Squad.filter({ member_b_id: user.id }, '-created_date', 100)");
-    expect(join).toContain("Squad.filter({ member_a_id: user.id }, '-created_date', 100)");
-    expect(join).toContain("Squad.filter({ member_b_id: user.id }, '-created_date', 100)");
+    expect(create).toContain('findBlockingSquadMembership(entities, user.id)');
+    expect(create).toContain('squad_membership_id: null');
+    expect(join).toContain('squad_membership_id: null');
+    expect(join).toContain('$set: { squad_membership_id: squad.id }');
     expect(activity).toContain("Squad.filter({ member_a_id: userId, status: 'active' }, '-created_date', 1)");
     expect(activity).toContain("Squad.filter({ member_b_id: userId, status: 'active' }, '-created_date', 1)");
   });

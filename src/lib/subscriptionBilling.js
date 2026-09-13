@@ -22,6 +22,7 @@ export async function startSubscriptionCheckout({
   sku,
   idempotencyKey,
   cancelDestination = "pricing",
+  expectedUserId,
   invoke = base44.functions.invoke,
   redirect = (url) => window.location.assign(url),
 }) {
@@ -34,8 +35,18 @@ export async function startSubscriptionCheckout({
     },
   });
   const payload = responsePayload(response);
-  if (payload?.success !== true || typeof payload?.checkoutUrl !== "string" || !payload.checkoutUrl.trim()) {
-    throw new Error("No checkout URL returned");
+  if (
+    payload?.success !== true ||
+    payload?.action !== "create_subscription_checkout" ||
+    (expectedUserId && payload?.userId !== expectedUserId) ||
+    payload?.sku !== sku ||
+    payload?.idempotencyKey !== idempotencyKey ||
+    payload?.successDestination !== "subscription_thank_you" ||
+    payload?.cancelDestination !== cancelDestination ||
+    typeof payload?.checkoutUrl !== "string" ||
+    !payload.checkoutUrl.trim()
+  ) {
+    throw new Error("Subscription checkout response was not confirmed");
   }
   redirect(payload.checkoutUrl);
   return payload;

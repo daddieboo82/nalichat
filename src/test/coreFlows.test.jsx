@@ -24,6 +24,10 @@ const mockBase44 = vi.hoisted(() => ({
     User: { subscribe: vi.fn(() => () => {}) },
     Conversation: {
       list: vi.fn(() => Promise.resolve(conversationStore.items)),
+      filter: vi.fn(async ({ participant_ids } = {}) => {
+        if (!participant_ids) return conversationStore.items;
+        return conversationStore.items.filter((item) => (item.participant_ids || []).includes(participant_ids));
+      }),
       get: vi.fn((id) => Promise.resolve(conversationStore.items.find((item) => item.id === id))),
       create: vi.fn(async (payload) => {
         const created = {

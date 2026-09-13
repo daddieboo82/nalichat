@@ -36,10 +36,11 @@ describe('Settings in-flight account binding', () => {
 });
 
 
-describe('Profile upload response scope', () => {
-  it('uses the upload owner id for avatar and cover mutation validation', async () => {
+describe('Profile mutation response scope', () => {
+  it('uses the save owner for profile saves and the upload owner for avatar/cover writes', async () => {
     const s = await readFile('src/pages/Profile.jsx', 'utf8');
-    expect(s).toContain('res?.data?.userId !== uploadOwnerId');
-    expect(s).not.toContain('res?.data?.userId !== submittingUserId');
+    expect(s).toContain('const submittingUserId = currentUser?.id');
+    expect(s).toContain('res?.data?.userId !== submittingUserId');
+    expect((s.match(/res\?\.data\?\.userId !== uploadOwnerId/g) || []).length).toBeGreaterThanOrEqual(2);
   });
 });

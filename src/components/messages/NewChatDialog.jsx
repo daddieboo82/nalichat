@@ -104,7 +104,7 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
             autoFocus
           />
         </div>
-        <div className="max-h-[340px] overflow-y-auto space-y-1">
+        <div className="max-h-[340px] overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] space-y-1">
           {contactsLoading && (
             <div className="flex justify-center py-8">
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />

@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'You already have an active or pending squad.' }, { status: 409 });
     }
 
-    return Response.json({ success: true, squad });
+    return Response.json({ success: true, userId: user.id, squad });
   } catch (error) {
     return Response.json({ error: 'Could not create squad invite' }, { status: 500 });
   }

@@ -16,6 +16,8 @@ describe('Studio project settings failures', () => {
     expect(s).toContain('res?.data?.action !== "delete_project"');
     expect(s).toContain('res?.data?.userId !== currentUser?.id');
     expect(s).toContain('res?.data?.project_id !== project.id');
+    expect(s).toContain('!res?.data?.deleted');
+    expect(s).toContain('typeof res.data.deleted !== "object"');
     expect(s).toContain('Project deletion was not confirmed.');
     expect(s).toContain("Couldn't update this collaborator. Please try again.");
     expect(s).toContain("Couldn't delete this project. Please try again.");

@@ -20,6 +20,6 @@ describe('message mutation serialization', () => {
     expect(source).toContain('messageId.length > 200');
     expect(source).toContain('status: 409');
     expect(source).toContain('emoji.length > 32');
-    expect(source).toContain('text.length > 20000');
+    expect(source).toContain('editedText.length > 20000');
   });
 });

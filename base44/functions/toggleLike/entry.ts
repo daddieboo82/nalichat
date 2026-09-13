@@ -76,7 +76,7 @@ export default async function(req) {
     const likes = liked_by.length;
     await entities.ArtPost.update(postId, { likes });
 
-    return Response.json({ liked: !alreadyLiked, likes });
+    return Response.json({ success: true, post_id: postId, liked: !alreadyLiked, likes });
     } finally {
       await releaseArtPostEngagementLock(entities, lockId);
     }

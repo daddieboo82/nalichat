@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
 
     if (action === 'delete') {
       await entities.Milestone.delete(currentMilestone.id);
-      return Response.json({ success: true, deleted: true });
+      return Response.json({ success: true, action: 'delete', userId: user.id, projectId: currentMilestone.project_id, milestoneId: currentMilestone.id, deleted: true });
     }
 
     const completed = !currentMilestone.completed;
@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
       completed_at: completed ? new Date().toISOString() : null,
       completed_by_id: completed ? user.id : null,
     });
-    return Response.json({ success: true, milestone: updated });
+    return Response.json({ success: true, action: 'toggle', userId: user.id, projectId: currentMilestone.project_id, milestoneId: currentMilestone.id, milestone: updated });
     } finally {
       await releaseProjectMembershipLock(entities, lockId);
     }

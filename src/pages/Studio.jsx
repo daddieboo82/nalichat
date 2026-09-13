@@ -338,15 +338,27 @@ export default function Studio() {
       } catch (e) {
         console.error('Failed to autosave master FX chain', e);
       }
-      if (roomId && canEditProject) {
+      if (roomId && canEditProject && user?.id) {
         base44.functions.invoke("mutateProject", {
           projectId: roomId,
           data: { master_fx: chain },
+        }).then((res) => {
+          if (
+            res?.data?.error ||
+            res?.data?.success !== true ||
+            res?.data?.action !== "update_project" ||
+            res?.data?.userId !== user.id ||
+            res?.data?.projectId !== roomId ||
+            !Array.isArray(res?.data?.updatedFields) ||
+            !res.data.updatedFields.includes("master_fx")
+          ) {
+            throw new Error(res?.data?.error || "Master FX sync was not confirmed.");
+          }
         }).catch(err => console.error('Failed to sync master FX to project', err));
       }
     }, 1000);
     return () => clearTimeout(timeoutId);
-  }, [masterFx, roomId, canEditProject, masterFxStorageKey]);
+  }, [masterFx, roomId, canEditProject, masterFxStorageKey, user?.id]);
 
   useEffect(() => {
     setHasAutosave(false);

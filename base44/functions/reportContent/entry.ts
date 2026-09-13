@@ -10,6 +10,10 @@ import {
   acquireArtPostEngagementLock,
   releaseArtPostEngagementLock,
 } from '../../shared/artPostEngagementLock.ts';
+import {
+  acquireConversationMembershipLock,
+  releaseConversationMembershipLock,
+} from '../../shared/conversationMembershipLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -60,12 +64,26 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Report rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    // Pre-authorize before taking a shared content lock so unauthorized callers
-    // cannot create lock contention. Authorization is repeated under the lock.
+    // Pre-authorize before taking shared locks so unauthorized callers cannot
+    // create lock contention. For messages, current Conversation membership is
+    // authoritative; Message.participant_ids is only a cached projection.
+    let messageConversationId: string | null = null;
     if (content_type === 'message') {
       const preview = await entities.Message.get(normalizedContentId).catch(() => null);
       if (!preview) return Response.json({ error: 'Content not found' }, { status: 404 });
-      if (!Array.isArray(preview.participant_ids) || !preview.participant_ids.includes(reporter.id)) {
+      messageConversationId = typeof preview.conversation_id === 'string'
+        ? preview.conversation_id
+        : null;
+      if (!messageConversationId) {
+        return Response.json({ error: 'Message has no conversation' }, { status: 409 });
+      }
+      const conversationPreview = await entities.Conversation
+        .get(messageConversationId)
+        .catch(() => null);
+      const previewParticipants = Array.isArray(conversationPreview?.participant_ids)
+        ? conversationPreview.participant_ids
+        : [];
+      if (!conversationPreview || !previewParticipants.includes(reporter.id)) {
         return Response.json({ error: 'Forbidden' }, { status: 403 });
       }
       if (preview.sender_id === reporter.id) {
@@ -79,11 +97,17 @@ Deno.serve(async (req) => {
       }
     }
 
+    let conversationLockId: string | null = null;
     let messageLockId: string | null = null;
     let artPostLockId: string | null = null;
     if (content_type === 'message') {
+      conversationLockId = await acquireConversationMembershipLock(entities, messageConversationId);
+      if (!conversationLockId) {
+        return Response.json({ error: 'Conversation is being updated. Please retry.' }, { status: 409 });
+      }
       messageLockId = await acquireMessageMutationLock(entities, normalizedContentId);
       if (!messageLockId) {
+        await releaseConversationMembershipLock(entities, conversationLockId);
         return Response.json({ error: 'Message is being updated. Please retry.' }, { status: 409 });
       }
     } else {
@@ -100,15 +124,28 @@ Deno.serve(async (req) => {
       let authoritativeConversationId = null;
 
       if (content_type === 'message') {
-        const message = await entities.Message.get(normalizedContentId).catch(() => null);
-        if (!message) return Response.json({ error: 'Content not found' }, { status: 404 });
-        if (!Array.isArray(message.participant_ids) || !message.participant_ids.includes(reporter.id)) {
+        const [message, conversation] = await Promise.all([
+          entities.Message.get(normalizedContentId).catch(() => null),
+          messageConversationId
+            ? entities.Conversation.get(messageConversationId).catch(() => null)
+            : Promise.resolve(null),
+        ]);
+        if (!message || !conversation) {
+          return Response.json({ error: 'Content not found' }, { status: 404 });
+        }
+        if (message.conversation_id !== conversation.id) {
+          return Response.json({ error: 'Message conversation changed. Please retry.' }, { status: 409 });
+        }
+        const participantIds = Array.isArray(conversation.participant_ids)
+          ? conversation.participant_ids
+          : [];
+        if (!participantIds.includes(reporter.id)) {
           return Response.json({ error: 'Forbidden' }, { status: 403 });
         }
         reportedUserId = message.sender_id || '';
         reportedUserName = message.sender_name || '';
         authoritativeText = message.text || message.file_name || '';
-        authoritativeConversationId = message.conversation_id || null;
+        authoritativeConversationId = conversation.id;
       } else {
         const post = await entities.ArtPost.get(normalizedContentId).catch(() => null);
         if (!post) return Response.json({ error: 'Content not found' }, { status: 404 });
@@ -157,6 +194,7 @@ Deno.serve(async (req) => {
     } finally {
       await releaseArtPostEngagementLock(entities, artPostLockId);
       await releaseMessageMutationLock(entities, messageLockId);
+      await releaseConversationMembershipLock(entities, conversationLockId);
     }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);

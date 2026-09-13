@@ -58,7 +58,7 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
   const retryTextRef = useRef("");
   const queryClient = useQueryClient();
 
-  const { data: replies = [], isLoading: repliesLoading, isError: repliesError } = useQuery({
+  const { data: replies = [], isLoading: repliesLoading, isError: repliesError, refetch: refetchReplies } = useQuery({
     queryKey: ["thread", currentUser?.id, parentMessage.id],
     queryFn: () => listThreadReplies(parentMessage.id),
     enabled: !!currentUser?.id && !!parentMessage?.id,
@@ -183,8 +183,15 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
             <span className="text-xs text-muted-foreground">Loading replies...</span>
           </div>
         ) : repliesError ? (
-          <div className="text-center text-destructive py-8 text-xs" role="alert">
-            Couldn't load thread replies. Please try again.
+          <div className="text-center py-8 text-xs" role="alert">
+            <p className="text-destructive">Couldn't load thread replies.</p>
+            <button
+              type="button"
+              className="mt-3 rounded-lg border border-border px-3 py-1.5 font-semibold text-foreground hover:bg-secondary/50"
+              onClick={() => void refetchReplies()}
+            >
+              Retry
+            </button>
           </div>
         ) : replies.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">

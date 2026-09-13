@@ -102,11 +102,11 @@ export default function Register() {
         subtitle={`We sent a code to ${email}`}
       >
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+          <div className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
           </div>
         )}
-        <div className="flex justify-center mb-6">
+        <div className="mb-6 flex justify-center overflow-x-auto px-1">
           <InputOTP
             maxLength={6}
             value={otpCode}
@@ -125,7 +125,7 @@ export default function Register() {
           </InputOTP>
         </div>
         <Button
-          className="w-full h-12 font-medium"
+          className="ui-hover h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/10"
           onClick={handleVerify}
           disabled={loading || otpCode.length < 6}
         >
@@ -140,7 +140,7 @@ export default function Register() {
         </Button>
         <p className="text-center text-sm text-muted-foreground mt-4">
           Didn't receive the code?{" "}
-          <button onClick={handleResend} className="text-primary font-medium hover:underline">
+          <button onClick={handleResend} className="ui-hover rounded-lg px-1 py-1 font-medium text-primary hover:bg-primary/10">
             Resend
           </button>
         </p>
@@ -156,7 +156,7 @@ export default function Register() {
       footer={
         <>
           Already have an account?{" "}
-          <Link to={`/login?returnTo=${encodeURIComponent(safeReturnTo())}`} className="text-primary font-medium hover:underline">
+          <Link to={`/login?returnTo=${encodeURIComponent(safeReturnTo())}`} className="ui-hover rounded-lg px-1 py-1 font-medium text-primary hover:bg-primary/10">
             Log in
           </Link>
         </>
@@ -164,7 +164,7 @@ export default function Register() {
     >
       <Button
         variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
+        className="ui-hover mb-6 h-12 w-full rounded-xl text-sm font-semibold"
         onClick={handleGoogle}
         disabled={googleLoading || loading}
         aria-busy={googleLoading ? "true" : undefined}
@@ -192,7 +192,7 @@ export default function Register() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <div className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -210,7 +210,7 @@ export default function Register() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12"
+              className="h-12 rounded-xl border-border/70 bg-background/70 pl-10 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               required
             />
           </div>
@@ -226,7 +226,7 @@ export default function Register() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 h-12"
+              className="h-12 rounded-xl border-border/70 bg-background/70 pl-10 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               required
             />
           </div>
@@ -242,12 +242,12 @@ export default function Register() {
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="pl-10 h-12"
+              className="h-12 rounded-xl border-border/70 bg-background/70 pl-10 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               required
             />
           </div>
         </div>
-        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+        <Button type="submit" className="ui-hover h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/10" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

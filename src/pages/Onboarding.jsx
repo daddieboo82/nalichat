@@ -95,10 +95,10 @@ export default function Onboarding() {
     <>
     <OnboardingNaliGuide step={1} profileComplete={profileComplete} />
     <div className="flex min-h-screen min-h-[100dvh] items-start sm:items-center justify-center overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] lg:justify-start lg:pl-[6%] xl:pl-[12%]">
-      <div className="w-full max-w-md bg-card border rounded-2xl p-8 shadow-xl">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
-            <Music className="w-5 h-5 text-primary" />
+      <div className="ui-surface w-full max-w-md rounded-3xl border border-border/80 bg-card/90 p-5 shadow-2xl backdrop-blur-xl sm:p-8">
+        <div className="mb-6 flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/20">
+            <Music className="h-5 w-5 text-primary" />
           </div>
           <div>
             <p className="font-heading font-bold text-lg leading-tight">Welcome to NaliChat</p>
@@ -112,8 +112,8 @@ export default function Onboarding() {
             <Input
               value={form.display_name}
               onChange={(e) => setForm(f => ({ ...f, display_name: e.target.value }))}
-              placeholder="How should we call you?"
-            />
+              placeholder="What should we call you?"
+            className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Birthdate *</label>
@@ -121,7 +121,7 @@ export default function Onboarding() {
               type="date"
               value={form.birthdate}
               onChange={(e) => setForm(f => ({ ...f, birthdate: e.target.value }))}
-            />
+            className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Bio</label>
@@ -130,7 +130,7 @@ export default function Onboarding() {
               onChange={(e) => setForm(f => ({ ...f, bio: e.target.value }))}
               placeholder="A short bio about your music (optional)"
               rows={2}
-            />
+            className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Location</label>
@@ -138,9 +138,9 @@ export default function Onboarding() {
               value={form.location}
               onChange={(e) => setForm(f => ({ ...f, location: e.target.value }))}
               placeholder="City, Country (optional)"
-            />
+            className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
-          <Button onClick={handleSave} disabled={loading} className="w-full mt-2" size="lg">
+          <Button onClick={handleSave} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
             {loading ? "Saving..." : "Get Started"}
           </Button>

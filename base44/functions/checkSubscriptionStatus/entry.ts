@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
       cancelAtPeriodEnd: selected?.cancel_at_period_end === true,
       trialStartedAt: selected?.trial_started_at || null,
       trialEndDate: selected?.trial_end_date || null,
-      trialUsedAt: selected?.trial_used_at || null,
+      trialUsedAt: user.trial_used_at || selected?.trial_used_at || null,
       trialEligible: eligibility.eligible,
       trialEligibilityReason: eligibility.reason,
       grandfathered: selected?.grandfathered === true,

@@ -269,7 +269,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
     }
 
-    if (user.is_banned && ['create_dm', 'create_group', 'create_public', 'join_public', 'rename'].includes(action)) {
+    // Banned users may open a direct DM only to an admin for an appeal. The
+    // create_dm branch below verifies that exception after resolving the target.
+    if (user.is_banned && ['create_group', 'create_public', 'join_public', 'rename'].includes(action)) {
       return Response.json({ error: 'banned' }, { status: 403 });
     }
 

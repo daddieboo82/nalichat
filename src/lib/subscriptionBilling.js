@@ -34,7 +34,7 @@ export async function startSubscriptionCheckout({
     },
   });
   const payload = responsePayload(response);
-  if (typeof payload?.checkoutUrl !== "string" || !payload.checkoutUrl) {
+  if (payload?.success !== true || typeof payload?.checkoutUrl !== "string" || !payload.checkoutUrl.trim()) {
     throw new Error("No checkout URL returned");
   }
   redirect(payload.checkoutUrl);
@@ -48,7 +48,7 @@ export async function openBillingPortal({
 } = {}) {
   const response = await invoke("createBillingPortal", { returnDestination });
   const payload = responsePayload(response);
-  if (typeof payload?.portalUrl !== "string" || !payload.portalUrl) {
+  if (payload?.success !== true || typeof payload?.portalUrl !== "string" || !payload.portalUrl.trim()) {
     throw new Error("No billing portal URL returned");
   }
   redirect(payload.portalUrl);

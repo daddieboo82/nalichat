@@ -54,7 +54,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    return Response.json({ success: true });
+    return Response.json({
+      success: true,
+      userId: user.id,
+      squadId: normalizedSquadId,
+      status: 'ended',
+    });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

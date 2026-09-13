@@ -99,7 +99,7 @@ function FileDownloadButton({ file }) {
   );
 }
 
-function FileShareButton({ file, canShare }) {
+function FileShareButton({ file, canShare, currentUserId }) {
   const { toast } = useToast();
   if (!canShare) return null;
 
@@ -113,7 +113,7 @@ function FileShareButton({ file, canShare }) {
       if (
         res?.data?.success !== true ||
         res?.data?.action !== "create_file_share_link" ||
-        res?.data?.userId !== currentUser?.id ||
+        res?.data?.userId !== currentUserId ||
         res?.data?.fileId !== file.id ||
         !token
       ) throw new Error("No share token returned");
@@ -726,7 +726,7 @@ export default function Files() {
                           )}
                         </div>
                         <div className="flex gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                          <FileShareButton file={file} canShare={canEditFile} />
+                          <FileShareButton file={file} canShare={canEditFile} currentUserId={currentUser?.id} />
                           <FileDownloadButton file={file} />
                           {canEditFile && (
                             <>
@@ -811,7 +811,7 @@ export default function Files() {
                       )}
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <FileShareButton file={file} canShare={canEditFile} />
+                      <FileShareButton file={file} canShare={canEditFile} currentUserId={currentUser?.id} />
                       <FileDownloadButton file={file} />
                       {canEditFile && (
                         <>

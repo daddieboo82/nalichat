@@ -112,7 +112,14 @@ export default function Squad() {
       const res = await base44.functions.invoke("createSquadInvite", {});
       if (res?.data?.error) throw new Error(res.data.error);
       const createdSquad = res?.data?.squad;
-      if (res?.data?.success !== true || !createdSquad?.id || !createdSquad?.invite_code) {
+      if (
+        res?.data?.success !== true ||
+        res?.data?.userId !== user.id ||
+        !createdSquad?.id ||
+        !createdSquad?.invite_code ||
+        createdSquad.member_a_id !== user.id ||
+        createdSquad.status !== "pending"
+      ) {
         throw new Error("Squad invite creation was not confirmed");
       }
       setSquad(createdSquad);

@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
       }
 
       const updated = await entities.ArtPost.update(currentPost.id, patch);
-      return Response.json({ success: true, post: updated });
+      return Response.json({ success: true, action: 'update_art_post', userId: user.id, postId: currentPost.id, post: updated });
     } finally {
       await releaseArtPostEngagementLock(entities, lockId);
     }

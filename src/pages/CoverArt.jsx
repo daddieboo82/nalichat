@@ -419,7 +419,7 @@ export default function CoverArt() {
     <div className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-6xl flex-col px-4 py-5 pb-[max(7rem,env(safe-area-inset-bottom))] sm:p-8 md:pb-12">
       <div className="mb-6 sm:mb-8">
         <h1 className="flex items-center gap-3 font-heading text-2xl font-black tracking-tight sm:text-3xl">
-          <Sparkles className="w-8 h-8 text-primary" />
+          <Sparkles className="h-8 w-8 shrink-0 text-primary" />
           AI Cover Art Creator
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
@@ -429,7 +429,7 @@ export default function CoverArt() {
 
       <div className="flex flex-1 flex-col gap-4 sm:gap-6 md:flex-row md:gap-8">
         {/* Left: Track Selection */}
-        <div className="ui-surface custom-scrollbar flex max-h-[280px] w-full flex-col gap-3 overflow-y-auto rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl md:max-h-none md:w-1/3">
+        <div className="ui-surface custom-scrollbar flex max-h-[320px] w-full flex-col gap-3 overflow-y-auto overscroll-contain rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl md:max-h-none md:w-1/3">
           <h2 className="font-semibold uppercase text-xs tracking-wider text-muted-foreground">Your Tracks</h2>
           {isLoading ? (
             <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
@@ -441,10 +441,10 @@ export default function CoverArt() {
               </Button>
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center p-8 flex flex-col items-center justify-center text-muted-foreground text-sm">
+            <div className="flex flex-col items-center justify-center p-5 text-center text-sm text-muted-foreground sm:p-8">
               <Music className="w-8 h-8 mx-auto mb-3 opacity-50" />
               <p className="mb-4">No tracks found. You need a track to generate cover art.</p>
-              <div className="flex gap-2">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                 <Button asChild variant="outline" size="sm">
                   <Link to="/studio">Go to Studio</Link>
                 </Button>
@@ -487,7 +487,10 @@ export default function CoverArt() {
                   setSelectedPost(post);
                   setGeneratedImage(null);
                 }}
-                className={`ui-hover cursor-pointer rounded-2xl border p-3 text-left transition-all focus-visible:ring-2 focus-visible:ring-primary/40 ${selectedPost?.id === post.id ? 'border-primary bg-primary/10 ring-1 ring-primary/20' : 'border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70'}`}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && !generateArtMutation.isPending) { event.preventDefault(); setSelectedPost(post); setGeneratedImage(null); } }}
+                className={`ui-hover min-h-14 cursor-pointer rounded-2xl border p-3 text-left transition-all focus-visible:ring-2 focus-visible:ring-primary/40 ${selectedPost?.id === post.id ? 'border-primary bg-primary/10 ring-1 ring-primary/20' : 'border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70'}`}
               >
                 <p className="font-semibold text-sm truncate">{post.title}</p>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{post.genre || 'No genre'} • {post.medium}</p>
@@ -498,11 +501,11 @@ export default function CoverArt() {
 
         {/* Modals */}
         <Dialog open={showFilesDialog} onOpenChange={setShowFilesDialog}>
-          <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
+          <DialogContent className="max-h-[92dvh] w-[calc(100vw-1rem)] max-w-md overflow-hidden rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
             <DialogHeader>
               <DialogTitle>Import from Files</DialogTitle>
             </DialogHeader>
-            <div className="max-h-[65vh] space-y-2 overflow-y-auto overscroll-contain pr-1">
+            <div className="custom-scrollbar max-h-[70dvh] space-y-2 overflow-y-auto overscroll-contain pr-1">
               {isLoadingFiles ? (
                 <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
               ) : filesError ? (
@@ -523,7 +526,7 @@ export default function CoverArt() {
                       className="ui-hover flex min-h-14 w-full items-center gap-3 rounded-2xl border border-border p-3 text-left transition-colors hover:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
                       onClick={() => handleImportSharedFile(file)}
                     >
-                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/20">
                         <Music className="w-5 h-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -540,11 +543,11 @@ export default function CoverArt() {
           setShowPlaylistDialog(open);
           if (!open) setSelectedPlaylist(null);
         }}>
-          <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
+          <DialogContent className="max-h-[92dvh] w-[calc(100vw-1rem)] max-w-md overflow-hidden rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
             <DialogHeader>
               <DialogTitle>{selectedPlaylist ? "Select Track" : "Select Playlist"}</DialogTitle>
             </DialogHeader>
-            <div className="max-h-[65vh] space-y-2 overflow-y-auto overscroll-contain pr-1">
+            <div className="custom-scrollbar max-h-[70dvh] space-y-2 overflow-y-auto overscroll-contain pr-1">
               {!selectedPlaylist ? (
                 isLoadingPlaylists ? (
                   <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
@@ -564,7 +567,7 @@ export default function CoverArt() {
                       className="ui-hover flex min-h-14 w-full items-center gap-3 rounded-2xl border border-border p-3 text-left transition-colors hover:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
                       onClick={() => setSelectedPlaylist(playlist)}
                     >
-                      <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/20">
                         <ListMusic className="w-5 h-5 text-accent" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -613,12 +616,12 @@ export default function CoverArt() {
         </Dialog>
 
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
+          <DialogContent className="max-h-[92dvh] w-[calc(100vw-1rem)] max-w-md overflow-hidden rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
             <DialogHeader>
               <DialogTitle>Manual Cover Editing</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
-              <div className="aspect-square bg-black/50 rounded-lg overflow-hidden relative">
+              <div className="relative mx-auto aspect-square w-full max-w-[360px] overflow-hidden rounded-2xl border border-border bg-black/50">
                 {(generatedImage || selectedPost?.image_url) && (
                   <img 
                     src={generatedImage || selectedPost?.image_url} 
@@ -658,7 +661,7 @@ export default function CoverArt() {
                 )}
               </div>
               
-              <div className="custom-scrollbar max-h-[45vh] space-y-4 overflow-y-auto overscroll-contain pr-2">
+              <div className="custom-scrollbar max-h-[42dvh] space-y-4 overflow-y-auto overscroll-contain pr-2 sm:max-h-[45vh]">
                 <div>
                   <label className="text-xs font-medium mb-1 block text-muted-foreground">Brightness ({editOptions.brightness}%)</label>
                   <input type="range" min="0" max="200" value={editOptions.brightness} onChange={e => setEditOptions({...editOptions, brightness: e.target.value})} className="h-6 w-full cursor-pointer accent-primary" />
@@ -776,7 +779,7 @@ export default function CoverArt() {
         </Dialog>
 
         {/* Right: Generation Area */}
-        <div className="ui-surface custom-scrollbar relative flex min-h-[440px] w-full flex-col items-center overflow-y-auto rounded-3xl border border-white/[0.06] bg-card/50 p-4 pb-8 backdrop-blur-xl sm:min-h-[500px] sm:p-8 md:w-2/3 md:pb-12">
+        <div className="ui-surface custom-scrollbar relative flex min-h-[400px] w-full flex-col items-center overflow-y-auto rounded-3xl border border-white/[0.06] bg-card/50 p-4 pb-8 backdrop-blur-xl sm:min-h-[500px] sm:p-8 md:w-2/3 md:pb-12">
           <div className="flex flex-col items-center w-full max-w-md my-auto">
             <div className="relative mb-5 flex aspect-square w-full items-center justify-center overflow-hidden rounded-3xl border border-border bg-black/50 shadow-2xl sm:mb-6">
               {generatedImage ? (
@@ -817,10 +820,10 @@ export default function CoverArt() {
             />
             
             {!generatedImage ? (
-              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+              <div className="grid w-full grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex sm:flex-wrap sm:gap-3">
                 <Button 
                   size="lg" 
-                  className="ui-hover col-span-2 h-14 gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 text-base font-semibold text-white shadow-lg shadow-primary/25 hover:opacity-90 sm:min-w-[140px] sm:flex-[2] sm:text-lg"
+                  className="ui-hover min-[380px]:col-span-2 h-14 gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 text-base font-semibold text-white shadow-lg shadow-primary/25 hover:opacity-90 sm:min-w-[140px] sm:flex-[2] sm:text-lg"
                   onClick={() => {
                     if (!selectedPost) {
                       toast.error("Please select a track first to generate cover art.");
@@ -876,7 +879,7 @@ export default function CoverArt() {
                 )}
               </div>
             ) : (
-              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+              <div className="grid w-full grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex sm:flex-wrap sm:gap-3">
                 <Button 
                   variant="outline" 
                   size="lg" 
@@ -919,7 +922,7 @@ export default function CoverArt() {
                 </Button>
                 <Button 
                   size="lg" 
-                  className="ui-hover col-span-2 h-12 gap-2 rounded-xl bg-primary font-semibold text-white hover:bg-primary/90 sm:min-w-[140px] sm:flex-[2]"
+                  className="ui-hover min-[380px]:col-span-2 h-12 gap-2 rounded-xl bg-primary font-semibold text-white hover:bg-primary/90 sm:min-w-[140px] sm:flex-[2]"
                   onClick={() => saveArtMutation.mutate()}
                   disabled={saveArtMutation.isPending || isUploading}
                 >

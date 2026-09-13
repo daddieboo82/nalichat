@@ -11,13 +11,23 @@ vi.mock("@/api/base44Client", () => ({
 describe("subscription billing client", () => {
   it("invokes checkout with only an approved SKU contract and server callbacks", async () => {
     const invoke = vi.fn().mockResolvedValue({
-      data: { success: true, checkoutUrl: "https://checkout.stripe.test/session" },
+      data: {
+        success: true,
+        action: "create_subscription_checkout",
+        userId: "user-123",
+        sku: "premium_plus_yearly",
+        idempotencyKey: "checkout_request_1234",
+        successDestination: "subscription_thank_you",
+        cancelDestination: "pricing",
+        checkoutUrl: "https://checkout.stripe.test/session",
+      },
     });
     const redirect = vi.fn();
 
     await startSubscriptionCheckout({
       sku: "premium_plus_yearly",
       idempotencyKey: "checkout_request_1234",
+      expectedUserId: "user-123",
       invoke,
       redirect,
     });
@@ -31,6 +41,32 @@ describe("subscription billing client", () => {
       },
     });
     expect(redirect).toHaveBeenCalledWith("https://checkout.stripe.test/session");
+  });
+
+  it("rejects a checkout response for another account", async () => {
+    const invoke = vi.fn().mockResolvedValue({
+      data: {
+        success: true,
+        action: "create_subscription_checkout",
+        userId: "other-user",
+        sku: "premium_plus_yearly",
+        idempotencyKey: "checkout_request_1234",
+        successDestination: "subscription_thank_you",
+        cancelDestination: "pricing",
+        checkoutUrl: "https://checkout.stripe.test/session",
+      },
+    });
+    const redirect = vi.fn();
+
+    await expect(startSubscriptionCheckout({
+      sku: "premium_plus_yearly",
+      idempotencyKey: "checkout_request_1234",
+      expectedUserId: "user-123",
+      invoke,
+      redirect,
+    })).rejects.toThrow("Subscription checkout response was not confirmed");
+
+    expect(redirect).not.toHaveBeenCalled();
   });
 
   it("opens the server-created Stripe billing portal", async () => {

@@ -9,6 +9,20 @@ import { useAuth } from "@/lib/AuthContext";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import LoadError from "@/components/layout/LoadError";
 
+async function listAllChallenges() {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.Challenge.list(
+      "-created_date",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function ChallengeHub() {
   const { user } = useAuth();
   const [challenges, setChallenges] = useState([]);
@@ -21,7 +35,7 @@ export default function ChallengeHub() {
     // the page spinning forever with no error and no way to retry.
     setLoadError(false);
     try {
-      const list = await base44.entities.Challenge.list("-created_date");
+      const list = await listAllChallenges();
       setChallenges(list || []);
       const completed = (list || []).filter((c) => c.status === "completed");
       const winnerMap = {};

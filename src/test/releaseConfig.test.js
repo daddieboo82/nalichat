@@ -1761,7 +1761,12 @@ describe('release configuration', () => {
     expect(deletion).toContain('async function syncConversationAudience');
     expect(deletion).toContain('read_by: Array.isArray(message.read_by)');
     expect(deletion).toContain('reactions: pruneConversationReactions');
-    expect(deletion).toContain('await syncConversationAudience(entities, conversation.id, participantIds, user.id)');
+    expect(deletion).toContain('async function withConversationMembershipLock');
+    expect(deletion).toContain('withConversationMembershipLock(');
+    expect(deletion).toContain('await syncConversationAudience(');
+    expect(deletion).toContain('conversation.id');
+    expect(deletion).toContain('participantIds');
+    expect(deletion).toContain('user.id');
   });
 
   it('removes or anonymizes cross-user references during account deletion', async () => {

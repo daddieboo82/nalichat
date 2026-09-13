@@ -79,6 +79,7 @@ Deno.serve(async (req) => {
     }
 
     const { post_id, request_key } = await readJsonBodyLimited(req, 8 * 1024);
+    const explicitRequestKey = typeof request_key === 'string' ? request_key.trim() : '';
     if (!isBase44EntityId(post_id)) {
       return Response.json({ error: 'Valid post_id is required' }, { status: 400 });
     }
@@ -90,6 +91,9 @@ Deno.serve(async (req) => {
     if (post.creator_id !== user.id) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    const fallbackBucket = new Date().toISOString().slice(0, 16).replace(/[^0-9]/g, '');
+    const requestKey = explicitRequestKey || `cover-art:${user.id}:${post_id}:${fallbackBucket}`;
 
     const file_url = post.file_url || '';
     const title = post.title || 'Untitled';
@@ -114,7 +118,7 @@ Deno.serve(async (req) => {
       base44,
       user,
       operation: 'cover_art',
-      requestKey: request_key,
+      requestKey,
       dispatch: async () => {
         // Step 1: Transcribe only the media URL stored on the authorized track.
         let transcript = "No lyrics available.";

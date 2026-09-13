@@ -7,7 +7,9 @@ describe('AI cover art quota metering', () => {
 
     expect(source).toContain('executeMeteredAiRequest');
     expect(source).toContain("operation: 'cover_art'");
-    expect(source).toContain('requestKey: request_key');
+    expect(source).toContain('requestKey,');
+    expect(source).toContain("const requestKey = explicitRequestKey || `cover-art:${user.id}:${post_id}:${fallbackBucket}`");
+    expect(source).not.toContain('requestKey: request_key');
     expect(source.indexOf('executeMeteredAiRequest({')).toBeLessThan(
       source.indexOf('integrations.Core.TranscribeAudio'),
     );

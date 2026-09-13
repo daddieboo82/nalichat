@@ -89,7 +89,9 @@ describe('account deletion batch bounds', () => {
     expect(source).toContain('{ conversation_id: conversationId, user_id: departedUserId }');
     expect(source).toContain('await processPagedRows(\n    entities.Message');
     expect(source).toContain('await processPagedRows(\n    entities.TypingStatus');
-    expect(source).toContain('syncConversationAudience(entities, conversation.id, participantIds, user.id)');
+    expect(source).toContain('const currentConversation = await entities.Conversation.get(conversation.id).catch(() => null);');
+    expect(source).toContain('await syncConversationAudience(');
+    expect(source).toContain('currentConversation.id,');
     expect(source).not.toContain('const conversations = await entities.Conversation.filter');
     expect(source).not.toContain('const [messages, typingRows] = await Promise.all');
   });

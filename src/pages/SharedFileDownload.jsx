@@ -27,7 +27,17 @@ export default function SharedFileDownload() {
       .then(([res, expectedFingerprint]) => {
         if (!active) return;
         const sharedFile = res?.data?.file;
-        if (res?.data?.success !== true || res?.data?.action !== "get_shared_file_by_token" || res?.data?.fileId !== fileId || res?.data?.tokenFingerprint !== expectedFingerprint || sharedFile?.id !== fileId) throw new Error("Shared file not found");
+        if (
+          res?.data?.success !== true ||
+          res?.data?.action !== "get_shared_file_by_token" ||
+          res?.data?.fileId !== fileId ||
+          res?.data?.tokenFingerprint !== expectedFingerprint ||
+          sharedFile?.id !== fileId ||
+          typeof sharedFile?.file_url !== "string" ||
+          !sharedFile.file_url.trim() ||
+          typeof sharedFile?.name !== "string" ||
+          !sharedFile.name.trim()
+        ) throw new Error("Shared file not found");
         setFile(sharedFile);
         setState("ready");
       })

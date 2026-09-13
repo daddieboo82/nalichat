@@ -7,14 +7,17 @@ async function readText(path) {
 }
 
 describe('health-check user scan bounds', () => {
-  it('uses a bounded user snapshot and a targeted admin query', async () => {
+  it('uses a bounded user snapshot and paginates admin recipients', async () => {
     const source = await readText('base44/functions/naliHealthCheck/entry.ts');
 
     expect(source).toContain("User.list('-created_date', 200)");
-    expect(source).toContain("User.filter({ role: 'admin' }, '-created_date', 100)");
+    expect(source).toContain('async function listAllRows(');
+    expect(source).toContain("{ role: 'admin' }");
+    expect(source).toContain('for (let skip = 0; ; skip += pageSize)');
     expect(source).not.toContain('User.list()');
     expect(source).not.toContain("users.filter(u => u.role === 'admin')");
   });
+
   it('keeps scheduled health checks timezone-aware and tightly authorized', async () => {
     const source = await readText('base44/functions/naliHealthCheck/entry.ts');
     const workflow = JSON.parse(await readText('base44/workflows/Nali Weekly Health Check.jsonc'));
@@ -30,5 +33,4 @@ describe('health-check user scan bounds', () => {
     expect(workflow.trigger.config.cron_expression).toBe('0 4 * * 0');
     expect(workflow.trigger.config.timezone).toBe('America/New_York');
   });
-
 });

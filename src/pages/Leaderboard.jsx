@@ -36,11 +36,19 @@ export default function Leaderboard() {
 
 
   const { data: users = [], isLoading: usersLoading, isError: usersError, refetch: refetchUsers } = useQuery({
-    queryKey: ["leaderboard-users"],
+    queryKey: ["leaderboard-users", currentUser?.id],
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicUsers", { includeAchievementCounts: true });
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.users || [];
+      if (
+        res?.data?.success !== true ||
+        res?.data?.viewerUserId !== currentUser?.id ||
+        res?.data?.requestedUserId !== null ||
+        !Array.isArray(res?.data?.users)
+      ) {
+        throw new Error("Leaderboard user response was not confirmed.");
+      }
+      return res.data.users;
     },
   });
 

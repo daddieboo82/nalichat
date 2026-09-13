@@ -1964,7 +1964,8 @@ describe('release configuration', () => {
     const submitFunction = await readText('base44/functions/submitChallengeRemix/entry.ts');
 
     expect(submission.rls.create?.user_condition?.role).toBe('admin');
-    expect(submitFunction).toContain("challenge.status !== 'active'");
+    expect(submitFunction).toContain("challenge?.status !== 'active'");
+    expect(submitFunction).toContain('challengeSubmissionStateError(challenge)');
     expect(submitFunction).toContain('submission_end_date');
     expect(submitFunction).toContain('100 * 1024 * 1024');
     expect(submitFunction).toContain('producer_id: user.id');
@@ -2218,7 +2219,8 @@ describe('track comment response contracts', () => {
 describe('group info mutation response contracts', () => {
   it('only closes rename/leave flows after confirmed server state', async () => {
     const source = await readText('src/components/messages/GroupInfoPanel.jsx');
-    expect(source).toContain('updated?.id !== conversation.id || updated?.name !== nameValue.trim()');
+    expect(source).toContain('updated?.id !== conversation.id');
+    expect(source).toContain('updated?.name !== nameValue.trim()');
     expect(source).toContain('Group rename was not confirmed.');
     expect(source).toContain('const leaveConfirmed = res?.data?.success === true');
     expect(source).toContain('!updated.participant_ids.includes(currentUser.id)');

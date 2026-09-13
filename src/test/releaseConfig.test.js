@@ -1246,7 +1246,8 @@ describe('release configuration', () => {
     expect(membership).toContain('squad_membership_id: squad.id');
     expect(membership).toContain('squad_membership_id: null');
     expect(getInvite).toContain('isInviteExpired(squad)');
-    expect(join).toContain('isInviteExpired(squad)');
+    expect(join).toContain('isSquadInviteExpired(squad)');
+    expect(join).toContain("claimFilter.invite_expires_at = { $gt: new Date().toISOString() }");
   });
 
   it('applies moderation timeouts consistently to public interactions', async () => {

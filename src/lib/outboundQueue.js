@@ -36,7 +36,7 @@ export function sanitizeOutboundPayload(payload = {}) {
       if (Number.isFinite(value) && value >= 0) sanitized[field] = value;
       continue;
     }
-    sanitized[field] = cleanString(value, field === "text" ? 10_000 : 2_000);
+    sanitized[field] = cleanString(value, field === "text" ? 20_000 : 2_000);
   }
   sanitized.type = VALID_TYPES.has(sanitized.type) ? sanitized.type : "text";
   sanitized.text = sanitized.text || "";

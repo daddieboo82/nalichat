@@ -171,7 +171,7 @@ export function LockedChatsProvider({ children }) {
     }
     setIsUnlocked(true);
     return result;
-  }, []);
+  }, [user?.id]);
 
   const unlock = useCallback(async (pin) => {
     if (!state.security?.configured) throw new Error("Set up a PIN before unlocking chats.");
@@ -213,7 +213,7 @@ export function LockedChatsProvider({ children }) {
     }
     setIsUnlocked(true);
     return result;
-  }, [broadcastStateChange]);
+  }, [broadcastStateChange, user?.id]);
 
   const lockedIdSet = useMemo(
     () => new Set(state.lockedConversationIds),

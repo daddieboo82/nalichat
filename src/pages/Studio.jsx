@@ -243,6 +243,9 @@ export default function Studio() {
   const [jamVideoActive, setJamVideoActive] = useState(false);
   const [defaultRole, setDefaultRole] = useState("editor");
   const [canEditProject, setCanEditProject] = useState(!roomId);
+  const [projectLoading, setProjectLoading] = useState(Boolean(roomId));
+  const [projectLoadError, setProjectLoadError] = useState(false);
+  const [projectLoadRetryKey, setProjectLoadRetryKey] = useState(0);
   const [isProcessing, setIsProcessing] = useState(null); // 'separate' | 'generate' | null
 
   // Real-time collaborator presence
@@ -358,10 +361,16 @@ export default function Studio() {
   }, [autosaveStorageKey]);
 
   useEffect(() => {
-    if (!roomId || !user?.id) return;
+    if (!roomId || !user?.id) {
+      setProjectLoading(false);
+      setProjectLoadError(false);
+      return;
+    }
 
     let cancelled = false;
     masterFxLoadedRef.current = false;
+    setProjectLoading(true);
+    setProjectLoadError(false);
 
     (async () => {
       try {
@@ -436,16 +445,21 @@ export default function Studio() {
 
         setShowWelcome(false);
         setJamRoomActive(true);
+        if (!cancelled) setProjectLoadError(false);
       } catch (err) {
         console.error("Failed to load project:", err);
+        if (!cancelled) setProjectLoadError(true);
         toast.error("Couldn't load this Studio project.");
       } finally {
-        if (!cancelled) masterFxLoadedRef.current = true;
+        if (!cancelled) {
+          masterFxLoadedRef.current = true;
+          setProjectLoading(false);
+        }
       }
     })();
 
     return () => { cancelled = true; };
-  }, [roomId, inviteToken, WAVEFORM_POINTS, user?.id]);
+  }, [roomId, inviteToken, WAVEFORM_POINTS, user?.id, projectLoadRetryKey]);
 
   const handleStartBlank = () => { setTracks([]); setShowWelcome(false); };
 
@@ -1835,6 +1849,34 @@ export default function Studio() {
       setIsDownloading(false);
     }
   };
+
+  if (roomId && projectLoading) return (
+    <div className="flex h-screen items-center justify-center bg-[#0D0B14] text-foreground">
+      <div className="text-center" aria-live="polite">
+        <Loader2 className="mx-auto h-7 w-7 animate-spin text-primary" />
+        <p className="mt-3 text-sm text-muted-foreground">Loading Studio project…</p>
+      </div>
+    </div>
+  );
+
+  if (roomId && projectLoadError) return (
+    <div className="flex h-screen items-center justify-center bg-[#0D0B14] px-6 text-foreground">
+      <div className="max-w-sm text-center" role="alert">
+        <h2 className="font-heading text-xl font-bold">Studio project unavailable</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          We couldn't load this shared project, so the app won't open a blank session in its place.
+        </p>
+        <div className="mt-4 flex justify-center gap-2">
+          <Button variant="outline" onClick={() => setProjectLoadRetryKey((key) => key + 1)}>
+            Retry
+          </Button>
+          <Button variant="ghost" onClick={() => navigate("/")}>
+            Leave Studio
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 
   if (showWelcome) return (
     <>

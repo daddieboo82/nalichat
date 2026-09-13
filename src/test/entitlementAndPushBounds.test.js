@@ -19,6 +19,6 @@ describe('entitlement and push cleanup bounds', () => {
     expect(source).toContain('const DELETE_BATCH_SIZE = 200;');
     expect(source).toMatch(/entity\.filter\([\s\S]*user_id: user\.id, endpoint[\s\S]*DELETE_BATCH_SIZE/);
     expect(source).toContain('removed += 1');
-    expect(source).toContain('Response.json({ success: true, removed })');
+    expect(source).toMatch(/Response\.json\(\{[\s\S]*success: true,[\s\S]*removed,[\s\S]*\}\)/);
   });
 });

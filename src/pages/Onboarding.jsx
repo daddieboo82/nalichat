@@ -49,6 +49,7 @@ export default function Onboarding() {
         location: form.location,
       });
       if (res?.data?.error) throw new Error(res.data.error);
+      if (res?.data?.success !== true) throw new Error("Profile setup was not confirmed");
       
       await checkUserAuth();
       

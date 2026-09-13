@@ -665,7 +665,15 @@ export default function Messages() {
       });
       if (created?.data?.error) throw new Error(created.data.error);
       const conv = created?.data?.conversation;
-      if (!conv?.id) throw new Error("Conversation was not created");
+      if (
+        created?.data?.success !== true ||
+        !conv?.id ||
+        conv?.type !== "dm" ||
+        !Array.isArray(conv?.participant_ids) ||
+        conv.participant_ids.length !== 2 ||
+        !conv.participant_ids.includes(currentUser.id) ||
+        !conv.participant_ids.includes(otherUser.id)
+      ) throw new Error("Conversation was not created");
       await queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       if (lockedConversationIds.includes(conv.id) && !lockedChatsUnlocked) {
         setLockedLinkConversationId(conv.id);
@@ -690,7 +698,16 @@ export default function Messages() {
       });
       if (created?.data?.error) throw new Error(created.data.error);
       const conv = created?.data?.conversation;
-      if (!conv?.id) throw new Error("Group was not created");
+      const expectedParticipantIds = new Set([currentUser.id, ...participant_ids]);
+      if (
+        created?.data?.success !== true ||
+        !conv?.id ||
+        conv?.type !== "group" ||
+        conv?.name !== name ||
+        !Array.isArray(conv?.participant_ids) ||
+        conv.participant_ids.length !== expectedParticipantIds.size ||
+        ![...expectedParticipantIds].every((id) => conv.participant_ids.includes(id))
+      ) throw new Error("Group was not created");
       await queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       handleSelectConv(conv.id);
     } catch (err) {

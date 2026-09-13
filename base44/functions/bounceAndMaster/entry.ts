@@ -5,6 +5,10 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
+const ALLOWED_LOUDNESS_TARGETS = new Set(['spotify', 'apple', 'youtube', 'tidal', 'streaming']);
+const ALLOWED_FORMATS = new Set(['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a']);
+const ALLOWED_BIT_DEPTHS = new Set(['16bit', '24bit', '32bit']);
+const ALLOWED_SAMPLE_RATES = new Set(['44.1khz', '48khz', '96khz']);
 
 async function storedAudioSize(url: string): Promise<number | null> {
   try {
@@ -74,6 +78,23 @@ Deno.serve(async (req) => {
     }
 
     const { postId, loudnessTarget, format, bitDepth, sampleRate } = await readJsonBodyLimited(req, 16 * 1024);
+
+    const normalizedLoudnessTarget = typeof loudnessTarget === 'string' ? loudnessTarget.trim() : 'streaming';
+    const normalizedFormat = typeof format === 'string' ? format.trim().toLowerCase() : 'mp3';
+    const normalizedBitDepth = typeof bitDepth === 'string' ? bitDepth.trim().toLowerCase() : '24bit';
+    const normalizedSampleRate = typeof sampleRate === 'string' ? sampleRate.trim().toLowerCase() : '44.1khz';
+    if (!ALLOWED_LOUDNESS_TARGETS.has(normalizedLoudnessTarget)) {
+      return Response.json({ error: 'Unsupported loudness target' }, { status: 400 });
+    }
+    if (!ALLOWED_FORMATS.has(normalizedFormat)) {
+      return Response.json({ error: 'Unsupported export format' }, { status: 400 });
+    }
+    if (!ALLOWED_BIT_DEPTHS.has(normalizedBitDepth)) {
+      return Response.json({ error: 'Unsupported bit depth' }, { status: 400 });
+    }
+    if (!ALLOWED_SAMPLE_RATES.has(normalizedSampleRate)) {
+      return Response.json({ error: 'Unsupported sample rate' }, { status: 400 });
+    }
 
     const normalizedPostId = typeof postId === 'string' ? postId.trim() : '';
     if (!isBase44EntityId(normalizedPostId)) {
@@ -154,14 +175,14 @@ Deno.serve(async (req) => {
     const analysis = analyzeAudio(audioBuffer);
     
     // Normalize to target loudness standard
-    const targetLufs = getLufsTarget(loudnessTarget);
+    const targetLufs = getLufsTarget(normalizedLoudnessTarget);
     const gainAdjustment = calculateGainAdjustment(analysis.integrativeLouds, targetLufs);
     
     // Process audio with gain and limiting
     const processedBuffer = processAudioBuffer(audioBuffer, gainAdjustment);
     
     // Apply mastering chain
-    const masteredBuffer = applyMasteringChain(processedBuffer, loudnessTarget);
+    const masteredBuffer = applyMasteringChain(processedBuffer, normalizedLoudnessTarget);
     
     // Get final analysis
     const finalAnalysis = analyzeAudio(masteredBuffer);
@@ -172,9 +193,9 @@ Deno.serve(async (req) => {
         before: analysis,
         after: finalAnalysis,
         gainApplied: gainAdjustment,
-        format,
-        bitDepth,
-        sampleRate,
+        format: normalizedFormat,
+        bitDepth: normalizedBitDepth,
+        sampleRate: normalizedSampleRate,
       },
     });
   } catch (error) {
@@ -206,9 +227,12 @@ function analyzeAudio(audioBuffer) {
   const lufs = rmsDb - 0.691; // Simplified LUFS approximation
   
   // Dynamic range estimate
-  const minNonZero = Math.min(...Array.from(audioBuffer).filter(s => Math.abs(s) > 1e-6).map(Math.abs));
+  const nonZeroMagnitudes = Array.from(audioBuffer)
+    .map(Math.abs)
+    .filter((sample) => sample > 1e-6);
+  const minNonZero = nonZeroMagnitudes.length > 0 ? Math.min(...nonZeroMagnitudes) : 1e-10;
   const minDb = 20 * Math.log10(Math.max(minNonZero, 1e-10));
-  const dynamicRange = peakDb - minDb;
+  const dynamicRange = Math.max(0, peakDb - minDb);
 
   return {
     peakDb: Math.round(peakDb * 100) / 100,

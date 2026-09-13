@@ -483,6 +483,7 @@ describe('core usage flow coverage', () => {
 
   it('persists the explicit rating and claims publish XP through the server', async () => {
     const currentUser = { id: 'user-1', display_name: 'Fresh', full_name: 'Fresh User', xp: 150, total_posts: 2 };
+    mockBase44.auth.me.mockResolvedValue(currentUser);
     const onSuccess = vi.fn();
     const { container } = renderWithProviders(
       <UploadArtDialog open onClose={() => {}} currentUser={currentUser} onSuccess={onSuccess} />

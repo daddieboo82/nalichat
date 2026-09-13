@@ -123,7 +123,9 @@ export async function subscribeToRemotePush() {
       registerResponse?.data?.success !== true ||
       registerResponse?.data?.action !== "register_push" ||
       registerResponse?.data?.userId !== authUser.id ||
-      registerResponse?.data?.endpoint !== json.endpoint
+      registerResponse?.data?.endpoint !== json.endpoint ||
+      !Number.isInteger(registerResponse?.data?.cleanup_failures) ||
+      registerResponse.data.cleanup_failures < 0
     ) {
       throw new Error("Push registration was not confirmed.");
     }
@@ -159,7 +161,9 @@ export async function unsubscribeFromRemotePush() {
       unregisterResponse?.data?.success !== true ||
       unregisterResponse?.data?.action !== "unregister_push" ||
       unregisterResponse?.data?.userId !== authUser.id ||
-      unregisterResponse?.data?.endpoint !== subscription.endpoint
+      unregisterResponse?.data?.endpoint !== subscription.endpoint ||
+      !Number.isInteger(unregisterResponse?.data?.removed) ||
+      unregisterResponse.data.removed < 0
     ) {
       serverError = new Error("Push unregistration was not confirmed.");
     }

@@ -8,14 +8,18 @@ const base44 = vi.hoisted(() => ({
   auth: { logout: vi.fn() },
   functions: { invoke: vi.fn() },
 }));
+const mockUser = { id: 'user-123' };
 
 vi.mock('@/api/base44Client', () => ({ base44 }));
+vi.mock('@/lib/AuthContext', () => ({ useAuth: () => ({ user: mockUser }) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 describe('DeleteAccountDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    base44.functions.invoke.mockResolvedValue({ data: { success: true } });
+    base44.functions.invoke.mockResolvedValue({
+      data: { success: true, action: 'delete_my_account', userId: mockUser.id, deleted: true },
+    });
     base44.auth.logout.mockResolvedValue(undefined);
   });
 
@@ -33,6 +37,21 @@ describe('DeleteAccountDialog', () => {
     await waitFor(() => {
       expect(base44.functions.invoke).toHaveBeenCalledWith('deleteMyAccount', { confirmation: 'DELETE' });
       expect(base44.auth.logout).toHaveBeenCalled();
+    });
+  });
+
+  it('does not log out for a mismatched deletion response', async () => {
+    base44.functions.invoke.mockResolvedValue({
+      data: { success: true, action: 'delete_my_account', userId: 'other-user', deleted: true },
+    });
+    render(<DeleteAccountDialog />);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
+    fireEvent.change(await screen.findByPlaceholderText('Type DELETE'), { target: { value: 'DELETE' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Forever' }));
+
+    await waitFor(() => {
+      expect(base44.functions.invoke).toHaveBeenCalled();
+      expect(base44.auth.logout).not.toHaveBeenCalled();
     });
   });
 });

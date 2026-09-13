@@ -745,7 +745,7 @@ Deno.serve(async (req) => {
     );
 
     await entities.User.delete(user.id);
-    return Response.json({ success: true });
+    return Response.json({ success: true, action: 'delete_my_account', userId: user.id, deleted: true });
     } finally {
       await releaseAccountDeletionLock(entities, lockId);
     }

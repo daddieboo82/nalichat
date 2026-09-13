@@ -2296,3 +2296,12 @@ describe('chat session track mutation response contracts', () => {
     expect(source).toContain('Track deletion was not confirmed');
   });
 });
+
+
+describe('message attachment download response contract', () => {
+  it('only starts a download after explicit authorization success', async () => {
+    const source = await readText('src/components/messages/MessageBubble.jsx');
+    expect(source).toContain('auth?.data?.success !== true || !downloadUrl');
+    expect(source).toContain('Download authorization was not confirmed');
+  });
+});

@@ -170,7 +170,7 @@ export default function Explore() {
       className="h-full overflow-y-auto bg-background"
     >
       {/* Hero */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/25 via-background to-accent/15 px-4 sm:px-8 pt-8 pb-6">
+      <div className="relative overflow-hidden border-b border-border/60 bg-gradient-to-br from-primary/25 via-background to-accent/15 px-4 pb-6 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8 sm:pt-8">
         <div className="absolute -top-24 right-10 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-float-blob pointer-events-none" />
         <div className="absolute -bottom-24 left-10 w-72 h-72 bg-accent/20 rounded-full blur-3xl animate-float-blob pointer-events-none" style={{ animationDelay: "-7s" }} />
         <div className="relative max-w-5xl mx-auto">
@@ -195,7 +195,7 @@ export default function Explore() {
               }}
               title="Release Track"
               aria-label="Release Track"
-              className="flex items-center gap-2 bg-gradient-to-r from-primary to-pink-500 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:opacity-90 transition-all glow-primary shimmer-hover"
+              className="ui-hover flex min-h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 glow-primary shimmer-hover"
             >
               <Plus className="w-4 h-4" />
               Release Track
@@ -214,7 +214,7 @@ export default function Explore() {
               placeholder="Search by title, artist, tag..."
               title="Search Tracks"
               aria-label="Search Tracks"
-              className="w-full bg-secondary/60 border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground"
+              className="w-full min-h-11 rounded-xl border border-border/80 bg-secondary/60 pl-9 pr-4 py-2.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
         </div>
@@ -230,7 +230,7 @@ export default function Explore() {
               title={`Filter by ${m}`}
               aria-label={`Filter by ${m}`}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap capitalize transition-colors shrink-0",
+                "ui-hover min-h-10 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap capitalize transition-colors shrink-0",
                 filter === m ? "bg-gradient-to-r from-primary to-pink-500 text-white shadow-md shadow-primary/30" : "bg-secondary text-muted-foreground hover:text-foreground"
               )}
             >
@@ -267,7 +267,7 @@ export default function Explore() {
               <p className="text-sm mt-1">Check your connection and try again.</p>
               <button
                 onClick={() => refetch()}
-                className="mt-4 bg-primary text-primary-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+                className="ui-hover mt-4 min-h-11 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
               >
                 Retry
               </button>
@@ -285,7 +285,7 @@ export default function Explore() {
                   return;
                 }
                 setShowUpload(true);
-              }} title="Release Now" aria-label="Release Now" className="mt-4 bg-primary text-primary-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
+              }} title="Release Now" aria-label="Release Now" className="ui-hover mt-4 min-h-11 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
                 Release Now
               </button>
             </div>

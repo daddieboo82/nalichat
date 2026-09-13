@@ -75,6 +75,9 @@ export function NaliPresenceProvider({ children }) {
       });
       if (generation !== identityGenerationRef.current) return;
       if (response?.data?.error) throw new Error(response.data.error);
+      if (response?.data?.success !== true) {
+        throw new Error("Nali Presence update was not confirmed.");
+      }
     } catch (error) {
       if (generation !== identityGenerationRef.current) return;
       setLevelState(previousLevel);

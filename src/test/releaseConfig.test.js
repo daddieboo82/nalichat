@@ -2365,3 +2365,13 @@ describe('notification read response contract', () => {
     expect(source).toContain('Number(result.data.updated) < 0');
   });
 });
+
+
+describe('Nali Presence persistence response contract', () => {
+  it('rolls back optimistic preference changes when profile persistence is not confirmed', async () => {
+    const source = await readText('src/lib/NaliPresenceContext.jsx');
+    expect(source).toContain('response?.data?.success !== true');
+    expect(source).toContain('Nali Presence update was not confirmed.');
+    expect(source).toContain('setLevelState(previousLevel)');
+  });
+});

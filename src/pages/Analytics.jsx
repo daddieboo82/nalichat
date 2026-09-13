@@ -81,13 +81,13 @@ export default function Analytics() {
   return (
     <PullToRefresh onRefresh={async () => { queryClient.invalidateQueries({ queryKey: ["userAnalytics"] }); }} className="h-full flex flex-col bg-background overflow-y-auto">
       {/* Header */}
-      <div className="p-6 border-b border-border">
-        <h1 className="text-3xl font-heading font-bold">Analytics</h1>
+      <div className="border-b border-border/70 bg-gradient-to-r from-primary/10 via-background to-accent/5 px-4 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] sm:p-6">
+        <h1 className="text-2xl sm:text-3xl font-heading font-bold tracking-tight">Analytics</h1>
         <p className="text-muted-foreground mt-1">Track your audience engagement</p>
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 space-y-6 px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-20" aria-live="polite">
             <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
@@ -100,7 +100,7 @@ export default function Analytics() {
             <button
               type="button"
               onClick={() => void refetch()}
-              className="mt-4 rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary/50"
+              className="ui-hover mt-4 min-h-11 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-secondary/50"
             >
               Retry
             </button>
@@ -108,7 +108,7 @@ export default function Analytics() {
         ) : (
           <>
         {/* Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {statCards.map((stat, i) => {
             const Icon = stat.icon;
             return (
@@ -118,13 +118,13 @@ export default function Analytics() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
               >
-                <Card className="p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70 transition-all duration-300">
+                <Card className="ui-surface ui-hover h-full rounded-2xl p-4 sm:p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
-                      <p className="text-2xl font-heading font-bold mt-2">{stat.value}</p>
+                      <p className="text-xl sm:text-2xl font-heading font-bold mt-2 tabular-nums">{stat.value}</p>
                     </div>
-                    <Icon className={`w-8 h-8 ${stat.color} opacity-60`} />
+                    <Icon className={`w-7 h-7 sm:w-8 sm:h-8 ${stat.color} opacity-70`} />
                   </div>
                 </Card>
               </motion.div>
@@ -135,7 +135,7 @@ export default function Analytics() {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top Tracks */}
-          <Card className="p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06]">
+          <Card className="ui-surface rounded-2xl p-4 sm:p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06]">
             <h2 className="font-heading font-semibold mb-4">Top Tracks by Views</h2>
             {trackData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
@@ -153,7 +153,7 @@ export default function Analytics() {
           </Card>
 
           {/* Catalog totals by release */}
-          <Card className="p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06]">
+          <Card className="ui-surface rounded-2xl p-4 sm:p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06]">
             <h2 className="font-heading font-semibold mb-4">Catalog Totals by Release</h2>
             {growthData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
@@ -175,10 +175,10 @@ export default function Analytics() {
 
         {/* Detailed Track List */}
         {userPosts.length > 0 && (
-          <Card className="p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06]">
+          <Card className="ui-surface rounded-2xl p-4 sm:p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06]">
             <h2 className="font-heading font-semibold mb-4">Track Performance</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto no-scrollbar -mx-1 px-1">
+              <table className="w-full min-w-[560px] text-sm">
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-2 px-3 text-muted-foreground font-medium">Track</th>

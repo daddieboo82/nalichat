@@ -40,10 +40,18 @@ export function normalizeAiCapabilities(value) {
   });
 }
 
-export async function getAiCapabilities() {
+export async function getAiCapabilities(expectedUserId) {
   const response = await base44.functions.invoke("getAiCapabilities", {});
   const payload = response?.data ?? response;
-  if (!payload || typeof payload !== "object" || payload.error) {
+  if (
+    !payload ||
+    typeof payload !== "object" ||
+    payload.error ||
+    payload.success !== true ||
+    typeof payload.userId !== "string" ||
+    !payload.userId.trim() ||
+    (expectedUserId && payload.userId !== expectedUserId)
+  ) {
     throw new Error(payload?.error || "Unable to load AI capabilities.");
   }
   return normalizeAiCapabilities(payload);

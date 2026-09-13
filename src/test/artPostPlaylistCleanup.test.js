@@ -11,8 +11,8 @@ describe('ArtPost playlist cleanup', () => {
     const source = await readText('base44/functions/deleteArtPost/entry.ts');
 
     expect(source).not.toContain('entities.Playlist.list()');
-    expect(source).toContain('{ track_ids: post.id }');
+    expect(source).toContain('{ track_ids: currentPost.id }');
     expect(source).toMatch(/Playlist\.filter\([\s\S]*'-created_date',[\s\S]*200/);
-    expect(source).toContain('track_ids: trackIds.filter');
+    expect(source).toContain('{ $pull: { track_ids: currentPost.id } }');
   });
 });

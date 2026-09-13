@@ -38,17 +38,31 @@ export default function MultiTrackEditor({ tracks, selectedProject, onTrackUpdat
     };
   }, []);
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
     if (!isPlaying) {
-      setIsPlaying(true);
+      const attempts = [];
       // Key audio elements by track.id — find matching track to check muted state
       Object.entries(audioElements.current).forEach(([trackId, el]) => {
         const track = tracks.find(t => t.id === trackId);
         if (el && !track?.muted) {
           el.currentTime = currentTime;
-          el.play().catch(() => {});
+          attempts.push(
+            el.play().then(() => true).catch((error) => {
+              console.error("Multitrack playback failed:", error);
+              return false;
+            })
+          );
         }
       });
+      if (attempts.length > 0) {
+        const started = await Promise.all(attempts);
+        if (!started.some(Boolean)) {
+          setIsPlaying(false);
+          toast.error("Couldn't start track playback. Please try again.");
+          return;
+        }
+      }
+      setIsPlaying(true);
     } else {
       setIsPlaying(false);
       Object.values(audioElements.current).forEach(el => el?.pause());

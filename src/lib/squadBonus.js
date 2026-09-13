@@ -28,7 +28,16 @@ export function memberGoalMet(progress, member) {
 
 export async function recordSquadActivity(sourceType, sourceId) {
   try {
-    await base44.functions.invoke("recordSquadActivity", { sourceType, sourceId });
+    const res = await base44.functions.invoke("recordSquadActivity", { sourceType, sourceId });
+    const data = res?.data;
+    if (
+      data?.success !== true ||
+      typeof data?.tracked !== "boolean" ||
+      (data?.duplicate !== undefined && typeof data.duplicate !== "boolean")
+    ) {
+      throw new Error(data?.error || "Squad activity was not confirmed.");
+    }
+    return data;
   } catch (err) {
     console.error("Failed to record squad activity:", err);
   }

@@ -6,10 +6,11 @@ describe('submission comment error handling', () => {
     const s = await readFile('src/components/challenges/SubmissionComments.jsx', 'utf8');
     expect(s).toContain('const [loadError, setLoadError] = useState(false);');
     expect(s).toContain('const [sending, setSending] = useState(false);');
-    expect(s).toContain('.catch(() => {');
+    expect(s).toContain('} catch {\n      setComments([]);\n      setLoadError(true);');
     expect(s).toContain('toast.error(error?.message || "Couldn\'t post your comment. Please try again.")');
     expect(s).toContain('if (!text.trim() || !user || sending) return;');
     expect(s).toContain('disabled={sending || !text.trim()}');
-    expect(s).toContain("Couldn't load comments. Reopen this submission to retry.");
+    expect(s).toContain("Couldn't load comments.");
+    expect(s).toContain('onClick={() => void loadComments()}');
   });
 });

@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { resumableUpload } from "@/lib/resumableUpload";
-import { formatBytes, validateUpload } from "@/lib/uploadValidation";
+import { validateUpload } from "@/lib/uploadValidation";
 import { UploadCloud, FileText, CheckCircle2 } from "lucide-react";
 import { EntitlementGate } from "@/components/subscription/EntitlementGate";
 import { copyToClipboard } from "@/lib/clipboard";

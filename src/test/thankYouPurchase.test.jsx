@@ -62,7 +62,12 @@ describe('ThankYou purchase verification', () => {
 
   it('shows success only after the backend confirms paid status', async () => {
     base44.functions.invoke.mockResolvedValue({
-      data: { status: 'paid', items: [{ type: 'donation', name: 'Donation to NaliChat' }] },
+      data: {
+        success: true,
+        checkoutId: 'cs_test_123',
+        status: 'paid',
+        items: [{ type: 'donation', name: 'Donation to NaliChat' }],
+      },
     });
 
     renderPage('/ThankYou?checkout_id=cs_test_123&purchase_token=secret-token');

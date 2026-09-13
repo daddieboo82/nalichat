@@ -22,7 +22,7 @@ describe('published post reward response identity contract', () => {
     expect(backend).toContain('postId: post.id');
     expect(bounce).toContain('reward?.data?.userId !== user?.id');
     expect(bounce).toContain('reward?.data?.postId !== postId');
-    expect(upload).toContain('reward?.data?.userId !== currentUser.id');
+    expect(upload).toContain('reward?.data?.userId !== publishingUserId');
     expect(upload).toContain('reward?.data?.postId !== createdPost.id');
   });
 });

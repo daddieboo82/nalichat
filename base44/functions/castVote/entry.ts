@@ -153,10 +153,13 @@ export default async function(req) {
     // If the counter update fails, remove the vote ledger so the voter can
     // retry instead of being permanently recorded without a counted vote.
     try {
-      await entities.ChallengeSubmission.updateMany(
+      const countUpdate = await entities.ChallengeSubmission.updateMany(
         { id: submission_id },
         { $inc: { vote_count: 1 } },
       );
+      if (Number(countUpdate?.updated || 0) !== 1) {
+        throw new Error('Vote count update did not modify exactly one submission');
+      }
     } catch (countError) {
       try {
         await entities.ChallengeVote.delete(id);

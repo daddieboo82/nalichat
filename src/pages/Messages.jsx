@@ -166,6 +166,7 @@ export default function Messages() {
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [showExternal, setShowExternal] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [sharedComposeText, setSharedComposeText] = useState("");
   const queryClient = useQueryClient();
   const lastMessagesUserIdRef = useRef(undefined);
 
@@ -199,6 +200,15 @@ export default function Messages() {
       setMessageHistoryLimit(200);
     }
   }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    const composeText = typeof location.state?.composeText === "string"
+      ? location.state.composeText.trim()
+      : "";
+    if (!composeText) return;
+    setSharedComposeText(composeText);
+    navigate(location.pathname + location.search, { replace: true, state: null });
+  }, [location.pathname, location.search, location.state, navigate]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -821,6 +831,8 @@ export default function Messages() {
               isBlocked={isBlocked}
               moderationBanner={isBlocked ? <ModerationBanner currentUser={currentUser} /> : null}
               theme={activeChatTheme}
+              initialComposeText={sharedComposeText}
+              onInitialComposeConsumed={() => setSharedComposeText("")}
               onSendMessage={(data) => {
                 if (isBlocked) {
                   toast.error(currentUser?.is_banned ? "You are banned from sending messages." : "You are timed out and cannot send messages right now.");

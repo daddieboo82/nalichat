@@ -38,7 +38,7 @@ function updateMessageHistory(cache, updater) {
   };
 }
 
-export default React.memo(function ChatView({ conversation, messages, isLoading, loadError, hasOlderMessages, isLoadingOlderMessages, onLoadOlderMessages, currentUser, users, onSendMessage, onEditMessage, onReact, onRetryMessage, onBack, onStartDM, isBlocked, moderationBanner, theme: themePreference }) {
+export default React.memo(function ChatView({ conversation, messages, isLoading, loadError, hasOlderMessages, isLoadingOlderMessages, onLoadOlderMessages, currentUser, users, onSendMessage, onEditMessage, onReact, onRetryMessage, onBack, onStartDM, isBlocked, moderationBanner, theme: themePreference, initialComposeText = "", onInitialComposeConsumed }) {
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -523,6 +523,8 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
         {isBlocked ? moderationBanner : (
         <div className="chat-theme-composer w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-visible bg-background/90 backdrop-blur-2xl border border-border/50">
           <ChatInput
+        initialText={initialComposeText}
+        onInitialTextConsumed={onInitialComposeConsumed}
             key={conversation?.id || "chat"}
             onSend={(payload) => {
               if (editingMessage && payload.type === 'text') {

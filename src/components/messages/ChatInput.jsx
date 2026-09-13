@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessage, onCancelEdit, disabled, onTyping }) {
+export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessage, onCancelEdit, disabled, onTyping, initialText = "", onInitialTextConsumed }) {
   const [text, setText] = useState("");
 
   useEffect(() => {
@@ -21,6 +21,12 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       textareaRef.current?.focus();
     }
   }, [editingMessage]);
+  useEffect(() => {
+    if (!initialText || editingMessage) return;
+    setText(initialText);
+    textareaRef.current?.focus();
+    onInitialTextConsumed?.();
+  }, [initialText, editingMessage, onInitialTextConsumed]);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const recordingTimeRef = useRef(0);

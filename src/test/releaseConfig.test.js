@@ -2331,3 +2331,16 @@ describe('viral moment response contracts', () => {
     expect(source).toContain('response.data.hashtags.every((tag) => typeof tag === "string" && tag.trim())');
   });
 });
+
+
+describe('call signaling response contract', () => {
+  it('requires the signaling message to be confirmed before WebRTC proceeds', async () => {
+    const source = await readText('src/hooks/useCall.js');
+    expect(source).toContain('res?.data?.success !== true');
+    expect(source).toContain('sent?.conversation_id !== conversationId');
+    expect(source).toContain('sent?.sender_id !== currentUser.id');
+    expect(source).toContain('sent?.type !== "session"');
+    expect(source).toContain('!isCallSignal(sent?.text)');
+    expect(source).toContain('Call signal was not confirmed.');
+  });
+});

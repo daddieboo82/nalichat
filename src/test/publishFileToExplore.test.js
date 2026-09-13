@@ -12,3 +12,10 @@ describe('publish Files track to Explore', () => {
     expect(upload).toContain('Publishing from Files:');
   });
 });
+
+
+  it('keeps the generic Files publish button free of an undefined file reference', async () => {
+    const files = await readFile('src/pages/Files.jsx', 'utf8');
+    expect(files).toContain("onClick={() => navigate('/explore?upload=true')}");
+    expect(files).not.toContain("navigate('/explore?upload=true', { state: { publishFile: file } })");
+  });

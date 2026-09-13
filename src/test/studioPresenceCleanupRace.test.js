@@ -18,7 +18,9 @@ describe('studio presence cleanup', () => {
     expect(source).toContain('Studio presence clear was not confirmed.');
     expect(source).not.toContain('setTimeout(() => {\n        base44.functions.invoke("updateStudioPresence"');
     expect(source).not.toContain('}, 2000);');
-    it('binds heartbeat confirmation to the current user and room', async () => {
+  });
+
+  it('binds heartbeat confirmation to the current user and room', async () => {
     const backend = await readText('base44/functions/updateStudioPresence/entry.ts');
     const hook = await readText('src/hooks/useStudioPresence.js');
     expect(backend).toContain("action: 'heartbeat'");
@@ -27,5 +29,4 @@ describe('studio presence cleanup', () => {
     expect(hook).toContain('res?.data?.userId !== me.id');
     expect(hook).toContain('res?.data?.roomId !== roomId');
   });
-});
 });

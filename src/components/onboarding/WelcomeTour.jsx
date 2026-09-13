@@ -43,6 +43,7 @@ export default function WelcomeTour({ open, onClose }) {
     try {
       const res = await base44.functions.invoke("updateMyProfile", { welcome_tour_completed: true });
       if (res?.data?.error) throw new Error(res.data.error);
+      if (res?.data?.success !== true) throw new Error("Tour completion was not confirmed.");
       return true;
     } catch (error) {
       toast.error("Couldn't save your tour progress. Please try again.");

@@ -159,6 +159,8 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
+      action: 'delete_project',
+      userId: user.id,
       project_id: project.id,
       deleted,
     });

@@ -17,6 +17,7 @@ export default function Onboarding() {
     bio: "",
     location: ""
   });
+  const [formOwnerId, setFormOwnerId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
 
@@ -29,13 +30,20 @@ export default function Onboarding() {
         bio: user.bio || "",
         location: user.location || "",
       }));
+      setFormOwnerId(user.id);
       setInitializing(false);
     } else if (isAuthenticated === false) {
+        setFormOwnerId(null);
         window.location.href = "/login";
     }
   }, [user, isAuthenticated]);
 
   const handleSave = async () => {
+    const submittingUserId = user?.id;
+    if (!submittingUserId || formOwnerId !== submittingUserId) {
+      toast.error("Your account changed. Please wait for setup to reload.");
+      return;
+    }
     if (!form.display_name || !form.birthdate) {
       toast.error("Please fill in your name and birthdate");
       return;
@@ -52,14 +60,14 @@ export default function Onboarding() {
       if (
         res?.data?.success !== true ||
         res?.data?.action !== "complete_onboarding" ||
-        res?.data?.userId !== user?.id ||
+        res?.data?.userId !== submittingUserId ||
         res?.data?.onboardingCompleted !== true
       ) throw new Error("Profile setup was not confirmed");
       
       const refreshedUser = await checkUserAuth();
       if (
         !refreshedUser?.id ||
-        refreshedUser.id !== user?.id ||
+        refreshedUser.id !== submittingUserId ||
         refreshedUser.onboarding_completed !== true
       ) {
         throw new Error("Profile setup saved, but your session did not refresh. Please try again.");
@@ -73,7 +81,7 @@ export default function Onboarding() {
     }
   };
 
-  if (initializing) {
+  if (initializing || (user?.id && formOwnerId !== user.id)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

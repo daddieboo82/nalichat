@@ -13,16 +13,26 @@ import {
 const TIMEOUT_48H_MINUTES = 48 * 60;
 const EDIT_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/;
 
+async function findLatestNonSessionMessage(entities: any, conversationId: string) {
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entities.Message.filter(
+      { conversation_id: conversationId },
+      '-created_date',
+      pageSize,
+      skip,
+    );
+    const latest = page.find((candidate: any) => candidate.type !== 'session');
+    if (latest) return latest;
+    if (page.length < pageSize) return null;
+  }
+}
+
 async function repairConversationPreview(entities: any, conversationId: string) {
   let lastError: any = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      const recent = await entities.Message.filter(
-        { conversation_id: conversationId },
-        '-created_date',
-        200,
-      );
-      const latest = recent.find((candidate: any) => candidate.type !== 'session') || null;
+      const latest = await findLatestNonSessionMessage(entities, conversationId);
       await entities.Conversation.update(conversationId, {
         last_message_text: latest?.text || (latest ? `Sent a ${latest.type || 'message'}` : ''),
         last_message_at: latest?.created_date || null,
@@ -489,12 +499,10 @@ Deno.serve(async (req) => {
     // the preview incorrectly when multiple messages have identical text.
     let previewRefreshFailed = false;
     try {
-      const recent = await entities.Message.filter(
-        { conversation_id: message.conversation_id },
-        '-created_date',
-        50,
+      const latest = await findLatestNonSessionMessage(
+        entities,
+        message.conversation_id,
       );
-      const latest = recent.find((candidate: any) => candidate.type !== 'session') || null;
       if (latest?.id === message.id) {
         await entities.Conversation.update(message.conversation_id, {
           last_message_text: text,

@@ -24,7 +24,7 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
   const audioRef = useRef(null);
   const queryClient = useQueryClient();
 
-  const { data: comments = [], isLoading } = useQuery({
+  const { data: comments = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["track-comments", post?.id],
     queryFn: async () => {
       const res = await base44.functions.invoke("trackComments", {
@@ -164,6 +164,14 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
         <div className="max-h-64 overflow-y-auto space-y-3 -mx-1 px-1">
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+          ) : isError ? (
+            <div className="py-8 text-center" role="alert">
+              <p className="text-sm font-semibold">Couldn't load comments</p>
+              <p className="mt-1 text-xs text-muted-foreground">Try again before assuming this track has no comments.</p>
+              <Button type="button" size="sm" variant="outline" className="mt-3" onClick={() => void refetch()}>
+                Retry
+              </Button>
+            </div>
           ) : sortedComments.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">No comments yet. Be the first!</p>
           ) : (

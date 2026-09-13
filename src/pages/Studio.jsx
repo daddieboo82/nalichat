@@ -1926,7 +1926,7 @@ export default function Studio() {
   };
 
   if (roomId && projectLoading) return (
-    <div className="flex h-screen items-center justify-center bg-[#0D0B14] text-foreground">
+    <div className="flex h-screen h-[100dvh] items-center justify-center bg-[#0D0B14] text-foreground">
       <div className="text-center" aria-live="polite">
         <Loader2 className="mx-auto h-7 w-7 animate-spin text-primary" />
         <p className="mt-3 text-sm text-muted-foreground">Loading Studio project…</p>
@@ -1935,7 +1935,7 @@ export default function Studio() {
   );
 
   if (roomId && projectLoadError) return (
-    <div className="flex h-screen items-center justify-center bg-[#0D0B14] px-6 text-foreground">
+    <div className="flex h-screen h-[100dvh] items-center justify-center bg-[#0D0B14] px-6 text-foreground">
       <div className="max-w-sm text-center" role="alert">
         <h2 className="font-heading text-xl font-bold">Studio project unavailable</h2>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -1961,7 +1961,7 @@ export default function Studio() {
   );
 
   return (
-    <div className="flex flex-col h-screen bg-[#0D0B14] text-foreground overflow-hidden relative">
+    <div className="flex flex-col h-screen h-[100dvh] bg-[#0D0B14] text-foreground overflow-hidden relative">
       <StudioVideoHelp />
       {/* Ambient stage glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">

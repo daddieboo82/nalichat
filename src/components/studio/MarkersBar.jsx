@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Flag, Plus, X } from 'lucide-react';
 import { sounds } from '@/hooks/use-sound';
 import { useAuth } from '@/lib/AuthContext';
+import { toast } from 'sonner';
 
 /**
  * Pro Tools-style Markers / Memory Locations bar.
@@ -25,13 +26,21 @@ export default function MarkersBar({ projectId, currentTime, onSeek, zoom, durat
     try {
       const saved = localStorage.getItem(storageKey);
       if (saved) setMarkers(JSON.parse(saved));
-    } catch {}
+    } catch (error) {
+      console.error("Failed to restore Studio markers", error);
+      toast.error("Couldn't restore saved markers on this device.");
+    }
   }, [storageKey]);
 
   const saveMarkers = useCallback((next) => {
     setMarkers(next);
     if (!storageKey) return;
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch {}
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(next));
+    } catch (error) {
+      console.error("Failed to persist Studio markers", error);
+      toast.error("Marker updated for this session, but couldn't be saved on this device.");
+    }
   }, [storageKey]);
 
   const addMarker = () => {

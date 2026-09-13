@@ -142,7 +142,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invite was claimed by another user' }, { status: 409 });
     }
 
-    return Response.json({ success: true, squad: claimed });
+    return Response.json({
+      success: true,
+      userId: user.id,
+      inviteCode: normalizedInviteCode,
+      squad: claimed,
+    });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

@@ -266,7 +266,7 @@ export default function FollowUpReminderDialog({
                   No follow-up reminders in this conversation.
                 </p>
               ) : (
-                <div className="max-h-64 space-y-2 overflow-y-auto">
+                <div className="max-h-64 space-y-2 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]">
                   {reminders.map((reminder) => (
                     <div
                       key={reminder.id}

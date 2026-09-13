@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,33 +13,28 @@ export default function SubmissionComments({ submissionId, user }) {
   const [loadError, setLoadError] = useState(false);
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadComments = useCallback(async () => {
     setLoading(true);
     setLoadError(false);
-    base44.functions.invoke("trackComments", {
-      action: "list",
-      parentType: "challenge_submission",
-      parentId: submissionId,
-    })
-      .then((res) => {
-        if (cancelled) return;
-        if (res?.data?.error) throw new Error(res.data.error);
-        setComments(res?.data?.comments || []);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setComments([]);
-          setLoadError(true);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+    try {
+      const res = await base44.functions.invoke("trackComments", {
+        action: "list",
+        parentType: "challenge_submission",
+        parentId: submissionId,
       });
-    return () => {
-      cancelled = true;
-    };
+      if (res?.data?.error) throw new Error(res.data.error);
+      setComments(res?.data?.comments || []);
+    } catch {
+      setComments([]);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [submissionId]);
+
+  useEffect(() => {
+    void loadComments();
+  }, [loadComments]);
 
   const handleSend = async () => {
     if (!text.trim() || !user || sending) return;
@@ -71,7 +66,14 @@ export default function SubmissionComments({ submissionId, user }) {
           <Button size="icon" className="rounded-xl shrink-0" onClick={handleSend} disabled={sending || !text.trim()}>{sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}</Button>
         </div>
       )}
-      {loadError && <p className="text-sm text-destructive">Couldn\'t load comments. Reopen this submission to retry.</p>}
+      {loadError && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm" role="alert">
+          <p className="text-destructive">Couldn't load comments.</p>
+          <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => void loadComments()}>
+            Retry
+          </Button>
+        </div>
+      )}
       {!loading && !loadError && comments.length === 0 && <p className="text-sm text-muted-foreground">No comments yet — be the first!</p>}
       <div className="space-y-3">
         {comments.map((c) => (

@@ -52,6 +52,12 @@ export default function CreateChallenge() {
   const handleCover = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
+    const validation = validateUpload(f, { accept: "image" });
+    if (!validation.ok) {
+      toast.error(validation.error);
+      e.target.value = "";
+      return;
+    }
     setCoverFile(f);
     setCoverPreview(URL.createObjectURL(f));
   };

@@ -178,7 +178,10 @@ export const AuthProvider = ({ children }) => {
     // The app-shell presence cleanup runs after auth state flips and may no longer
     // have permission to update the server record.
     try {
-      await base44.functions.invoke('updateUserPresence', { isOnline: false });
+      const presenceResponse = await base44.functions.invoke('updateUserPresence', { isOnline: false });
+      if (presenceResponse?.data?.error || presenceResponse?.data?.success !== true) {
+        throw new Error(presenceResponse?.data?.error || 'Offline presence was not confirmed.');
+      }
     } catch (error) {
       console.error('Presence offline update failed:', error);
     }

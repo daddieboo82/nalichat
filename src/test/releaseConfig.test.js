@@ -2611,3 +2611,16 @@ describe('message send response identity contract', () => {
     expect(backend).toContain('userId: user.id');
   });
 });
+
+
+describe('call signaling send identity contract', () => {
+  it('accepts a call signal only when the exact send request is confirmed', async () => {
+    const source = await readText('src/hooks/useCall.js');
+    expect(source).toContain('client_message_key: clientMessageKey');
+    expect(source).toContain('res?.data?.action !== "send"');
+    expect(source).toContain('res?.data?.userId !== currentUser.id');
+    expect(source).toContain('res?.data?.conversationId !== conversationId');
+    expect(source).toContain('res?.data?.clientMessageKey !== clientMessageKey');
+    expect(source).toContain('sent?.client_message_key !== clientMessageKey');
+  });
+});

@@ -217,7 +217,7 @@ export default function StudioToolbar2({
               <Settings2 className="w-4 h-4" /> Tools
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="h-[75vh] bg-card border-border overflow-y-auto custom-scrollbar p-6">
+          <SheetContent side="bottom" className="h-[75dvh] bg-card border-border overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] custom-scrollbar p-6">
             <SheetHeader className="mb-4 text-left">
               <SheetTitle>Studio Tools</SheetTitle>
             </SheetHeader>

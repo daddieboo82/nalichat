@@ -166,6 +166,10 @@ Deno.serve(async (req) => {
       await entities.Track.delete(track.id);
       return Response.json({
         success: true,
+        action: 'delete',
+        userId: user.id,
+        trackId: track.id,
+        parentId: track.project_id,
         deleted: true,
         deleted_versions: deletedVersions,
         deleted_comments: deletedComments,
@@ -254,7 +258,7 @@ Deno.serve(async (req) => {
     }
 
     const updated = await entities.Track.update(track.id, patch);
-    return Response.json({ success: true, track: updated });
+    return Response.json({ success: true, action: 'update', userId: user.id, trackId: track.id, parentId: track.project_id, track: updated });
     } finally {
       await releaseTrackLifecycleLock(entities, lockId);
       await releaseConversationMembershipLock(entities, conversationLockId);

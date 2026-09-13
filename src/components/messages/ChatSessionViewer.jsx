@@ -194,6 +194,10 @@ export default function ChatSessionViewer({ message, currentUser }) {
               const updated = res?.data?.track;
               if (
                 res?.data?.success !== true ||
+                res?.data?.action !== "update" ||
+                res?.data?.userId !== currentUser?.id ||
+                res?.data?.trackId !== id ||
+                res?.data?.parentId !== message.id ||
                 updated?.id !== id ||
                 updated?.project_id !== message.id
               ) throw new Error("Track was not updated");
@@ -210,7 +214,14 @@ export default function ChatSessionViewer({ message, currentUser }) {
             try {
               const res = await base44.functions.invoke("mutateTrack", { action: "delete", trackId: id });
               if (res?.data?.error) throw new Error(res.data.error);
-              if (res?.data?.success !== true || res?.data?.deleted !== true) {
+              if (
+                res?.data?.success !== true ||
+                res?.data?.action !== "delete" ||
+                res?.data?.userId !== currentUser?.id ||
+                res?.data?.trackId !== id ||
+                res?.data?.parentId !== message.id ||
+                res?.data?.deleted !== true
+              ) {
                 throw new Error("Track deletion was not confirmed");
               }
               setTracks((current) => current.filter((track) => track.id !== id));

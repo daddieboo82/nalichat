@@ -99,10 +99,10 @@ export default function StudioEditor() {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <h2 className="font-heading font-bold text-2xl">Award-Winning Studio Editor</h2>
-                    <span className="text-xs px-3 py-1 rounded-full bg-accent/20 text-accent font-semibold">Professional Grade</span>
+                    <h2 className="font-heading font-bold text-2xl">Studio Mastering Editor</h2>
+                    <span className="text-xs px-3 py-1 rounded-full bg-accent/20 text-accent font-semibold">AI Mastering</span>
                   </div>
-                  <p className="text-muted-foreground">Professional mastering-grade tools with streaming platform optimization</p>
+                  <p className="text-muted-foreground">Preview a bounced mix, get AI mastering settings, and publish when you are ready.</p>
                 </div>
               </div>
 
@@ -167,7 +167,7 @@ export default function StudioEditor() {
                    ) : (
                      <>
                        <Wand2 className="w-4 h-4 mr-2" />
-                       Analyze & Master with AI
+                       Analyze with AI
                      </>
                    )}
                  </Button>
@@ -189,7 +189,7 @@ export default function StudioEditor() {
                 <div className="flex items-center gap-2 mb-4">
                    <Zap className="w-5 h-5 text-accent" />
                    <h3 className="font-heading font-bold text-lg">AI Mastering Analysis</h3>
-                   <span className="text-xs px-2 py-1 rounded-full bg-accent/20 text-accent font-semibold">Industry Standard</span>
+                   <span className="text-xs px-2 py-1 rounded-full bg-accent/20 text-accent font-semibold">AI Suggested</span>
                  </div>
 
                 <div className="grid gap-4">

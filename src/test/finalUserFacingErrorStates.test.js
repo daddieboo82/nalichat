@@ -22,7 +22,7 @@ describe('final user-facing error states', () => {
     const source = await readText('src/components/challenges/SubmitRemixModal.jsx');
     expect(source).toContain('const [tracksError, setTracksError] = useState(false);');
     expect(source).toContain("Couldn't load your published tracks.");
-    expect(source).toContain('onClick={() => refetchTracks()}');
+    expect(source).toContain('onClick={() => void loadTracks()}');
   });
 
   it('distinguishes admin auth failure from logged-out state', async () => {
@@ -59,7 +59,7 @@ describe('final user-facing error states', () => {
     expect(source).toContain('if (res?.data?.error) throw new Error(res.data.error);');
     expect(source).toContain('Log in to send messages.');
     expect(source).toContain("Couldn't load people.");
-    expect(source).toContain('onClick={() => refetchUsers()}');
+    expect(source).toContain('onClick={() => void refetchUsers()}');
     expect(source).toContain('toast.error(error?.message === "moderated"');
     expect(source).toContain('created?.data?.success !== true');
     expect(source).toContain('conversation.participant_ids.includes(selectedUser.id)');

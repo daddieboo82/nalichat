@@ -307,7 +307,13 @@ export default function Files() {
     mutationFn: async (id) => {
       const res = await base44.functions.invoke("mutateSharedFile", { action: "delete", fileId: id });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true || res?.data?.deleted !== true) {
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "delete" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.fileId !== id ||
+        res?.data?.deleted !== true
+      ) {
         throw new Error("File deletion was not confirmed");
       }
       return res.data;
@@ -327,7 +333,13 @@ export default function Files() {
       });
       if (res?.data?.error) throw new Error(res.data.error);
       const updatedFile = res?.data?.file;
-      if (res?.data?.success !== true || !updatedFile?.id) {
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "update" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.fileId !== id ||
+        updatedFile?.id !== id
+      ) {
         throw new Error("File update was not confirmed");
       }
       return updatedFile;
@@ -396,7 +408,19 @@ export default function Files() {
         folderId,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.file;
+      const movedFile = res?.data?.file;
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "move" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.fileId !== id ||
+        res?.data?.folderId !== folderId ||
+        movedFile?.id !== id ||
+        movedFile?.folder_id !== folderId
+      ) {
+        throw new Error("File move was not confirmed");
+      }
+      return movedFile;
     })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shared-files"] });

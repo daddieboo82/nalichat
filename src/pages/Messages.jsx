@@ -246,6 +246,15 @@ export default function Messages() {
     staleTime: 3000,
   });
 
+  const latestVisibleMessageId = messages.length > 0
+    ? messages[messages.length - 1]?.id
+    : null;
+
+  useEffect(() => {
+    if (!selectedConvId || !currentUser?.id || document.visibilityState !== "visible") return;
+    markConversationRead(selectedConvId);
+  }, [selectedConvId, currentUser?.id, latestVisibleMessageId]);
+
   // Message and conversation lists already poll every five seconds above.
   // Avoid raw realtime entity subscriptions so the client never receives an
   // event payload outside the normal scoped read query path.

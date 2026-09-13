@@ -31,7 +31,7 @@ export default function Explore() {
   // Use the already-resolved app-wide auth state instead of a fresh per-page
   // fetch — a local base44.auth.me() call left currentUser null for a brief
   // window on mount, wrongly redirecting logged-in users to login.
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, navigateToLogin } = useAuth();
   const urlParams = new URLSearchParams(window.location.search);
   const [filter, setFilter] = useState(urlParams.get("filter") || "all");
   const [search, setSearch] = useState(urlParams.get("search") || "");
@@ -143,7 +143,7 @@ export default function Explore() {
             <button
               onClick={() => {
                 if (!currentUser) {
-                  base44.auth.redirectToLogin();
+                  navigateToLogin();
                   return;
                 }
                 setShowUpload(true);
@@ -234,7 +234,7 @@ export default function Explore() {
               <p className="text-sm mt-1">Be the first to release your music!</p>
               <button onClick={() => {
                 if (!currentUser) {
-                  base44.auth.redirectToLogin();
+                  navigateToLogin();
                   return;
                 }
                 setShowUpload(true);

@@ -2460,3 +2460,15 @@ describe('billing session response contracts', () => {
     expect(portal).toContain('success: true, portalUrl: session.url');
   });
 });
+
+
+describe('subscription status response contract', () => {
+  it('fails closed unless status lookup explicitly confirms an authenticated account', async () => {
+    const client = await readText('src/lib/subscriptionClient.js');
+    const backend = await readText('base44/functions/checkSubscriptionStatus/entry.ts');
+    expect(client).toContain('payload.success !== true');
+    expect(client).toContain('typeof payload.userId !== "string"');
+    expect(backend).toContain('success: true');
+    expect(backend).toContain('userId: user.id');
+  });
+});

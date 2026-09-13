@@ -98,7 +98,14 @@ export function subscriptionQueryKey(userId) {
 export async function checkSubscriptionStatus() {
   const response = await base44.functions.invoke("checkSubscriptionStatus");
   const payload = response?.data ?? response;
-  if (!payload || typeof payload !== "object" || payload.error) {
+  if (
+    !payload ||
+    typeof payload !== "object" ||
+    payload.error ||
+    payload.success !== true ||
+    typeof payload.userId !== "string" ||
+    !payload.userId.trim()
+  ) {
     throw new Error(payload?.error || "Unable to load subscription status");
   }
   return normalizeSubscription(payload);

@@ -66,18 +66,21 @@ export default function FollowUpReminderDialog({
   const [localTime, setLocalTime] = useState(() => defaultReminderTime());
   const [editingId, setEditingId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const requestKeyRef = useRef(createReminderRequestKey());
   const timezone = useMemo(() => localTimeZoneLabel(), []);
 
   const loadReminders = async () => {
     setIsLoading(true);
+    setLoadError(false);
     try {
       const loaded = await listFollowUpReminders();
       setReminders(loaded.filter((reminder) => (
         !conversation?.id || reminder.conversation_id === conversation.id
       )));
     } catch (error) {
+      setLoadError(true);
       toast.error(errorMessage(error));
     } finally {
       setIsLoading(false);
@@ -247,6 +250,14 @@ export default function FollowUpReminderDialog({
               </div>
               {isLoading ? (
                 <p className="text-sm text-muted-foreground" aria-live="polite">Loading reminders...</p>
+              ) : loadError ? (
+                <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4" role="alert">
+                  <p className="text-sm font-semibold">Couldn't load reminders</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Retry before assuming this conversation has no reminders.</p>
+                  <Button type="button" size="sm" variant="outline" className="mt-3" onClick={loadReminders}>
+                    Retry
+                  </Button>
+                </div>
               ) : reminders.length === 0 ? (
                 <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
                   No follow-up reminders in this conversation.

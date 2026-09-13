@@ -70,7 +70,7 @@ export default function Login() {
       footer={
         <>
           Don't have an account?{" "}
-          <Link to={`/register?returnTo=${encodeURIComponent(safeReturnTo())}`} className="text-primary font-medium hover:underline">
+          <Link to={`/register?returnTo=${encodeURIComponent(safeReturnTo())}`} className="ui-hover rounded-lg px-1 py-1 font-medium text-primary hover:bg-primary/10">
             Create one
           </Link>
         </>
@@ -78,7 +78,7 @@ export default function Login() {
     >
       <Button
         variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
+        className="ui-hover mb-6 h-12 w-full rounded-xl text-sm font-semibold"
         onClick={handleGoogle}
         disabled={googleLoading || loading}
         aria-busy={googleLoading ? "true" : undefined}
@@ -106,7 +106,7 @@ export default function Login() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm space-y-1">
+        <div className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive space-y-1">
           <p>{error}</p>
           <p className="text-muted-foreground">
             If you originally signed up with Google, use "Continue with Google" above instead of a password. Otherwise, try "Forgot password?" to set one.
@@ -127,7 +127,7 @@ export default function Login() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12"
+              className="h-12 rounded-xl border-border/70 bg-background/70 pl-10 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               required
             />
           </div>
@@ -135,7 +135,7 @@ export default function Login() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
-            <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+            <Link to="/forgot-password" className="ui-hover min-h-9 rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10">
               Forgot password?
             </Link>
           </div>
@@ -148,12 +148,12 @@ export default function Login() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 h-12"
+              className="h-12 rounded-xl border-border/70 bg-background/70 pl-10 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               required
             />
           </div>
         </div>
-        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+        <Button type="submit" className="ui-hover h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/10" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

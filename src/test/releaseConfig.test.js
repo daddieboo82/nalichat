@@ -2254,8 +2254,11 @@ describe('message mutation response contracts', () => {
 describe('message reaction response contract', () => {
   it('rolls back optimistic reactions when the server does not confirm them', async () => {
     const source = await readText('src/pages/Messages.jsx');
-    expect(source).toContain('Reaction update was not confirmed.');
-    expect(source).toContain('updated?.id !== messageId');
+    expect(source).toContain('Message reaction was not confirmed.');
+    expect(source).toContain('res?.data?.action !== "react"');
+    expect(source).toContain('res?.data?.userId !== currentUser.id');
+    expect(source).toContain('res?.data?.messageId !== messageId');
+    expect(source).toContain('res?.data?.message?.id !== messageId');
     expect(source).toContain('typeof res.data.reactions !== "object"');
   });
 });

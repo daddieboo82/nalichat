@@ -1810,6 +1810,12 @@ export default function Studio() {
   const handleFileChange = async (e) => {
     const file = e.target.files && e.target.files[0];
     if (file) {
+      const validation = validateUpload(file, { accept: "audio" });
+      if (!validation.ok) {
+        toast.error(validation.error);
+        e.target.value = null;
+        return;
+      }
       if (tracks.length >= maxTracks) {
         toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
         e.target.value = null;

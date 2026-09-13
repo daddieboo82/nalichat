@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
       featured: false,
     });
 
-    return Response.json({ success: true, post });
+    return Response.json({ success: true, action: 'create_art_post', userId: user.id, postId: post.id, post });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

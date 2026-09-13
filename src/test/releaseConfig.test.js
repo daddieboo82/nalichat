@@ -1108,7 +1108,8 @@ describe('release configuration', () => {
     const profile = await readText('src/pages/Profile.jsx');
 
     expect(artPost.properties.liked_by.rls?.read?.user_condition?.role).toBe('admin');
-    expect(liked).toMatch(/ArtPost\.filter\([\s\S]*liked_by: user\.id[\s\S]*'-created_date',[\s\S]*1000/);
+    expect(liked).toContain('async function listAllLikedPosts(entity: any, userId: string)');
+    expect(liked).toContain('for (let skip = 0; ; skip += pageSize)');
     expect(liked).toContain('post_ids: posts.map');
     expect(toggle).toContain('return Response.json({ liked: !alreadyLiked, likes });');
     expect(toggle).not.toContain('liked_by });');

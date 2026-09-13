@@ -71,7 +71,14 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
       });
       if (created?.data?.error) throw new Error(created.data.error);
       const conversation = created?.data?.conversation;
-      if (!conversation?.id) throw new Error("Conversation was not created");
+      if (
+        created?.data?.success !== true ||
+        !conversation?.id ||
+        conversation?.type !== "dm" ||
+        !Array.isArray(conversation?.participant_ids) ||
+        !conversation.participant_ids.includes(currentUser?.id) ||
+        !conversation.participant_ids.includes(selectedUser.id)
+      ) throw new Error("Conversation was not created");
       if (identityGeneration !== identityGenerationRef.current) return;
 
       const send = await base44.functions.invoke("sendConversationMessage", {
@@ -83,6 +90,14 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
       if (identityGeneration !== identityGenerationRef.current) return;
       if (send?.data?.moderation) throw new Error("moderated");
       if (send?.data?.error) throw new Error(send.data.error);
+      const sentMessage = send?.data?.message;
+      if (
+        send?.data?.success !== true ||
+        !sentMessage?.id ||
+        sentMessage?.conversation_id !== conversation.id ||
+        sentMessage?.sender_id !== currentUser?.id ||
+        sentMessage?.client_message_key !== clientMessageKey
+      ) throw new Error("Message send was not confirmed.");
 
       retryKeyRef.current = null;
       retrySignatureRef.current = "";

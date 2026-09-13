@@ -3,6 +3,10 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
+import {
+  acquireConversationMembershipLock,
+  releaseConversationMembershipLock,
+} from '../../shared/conversationMembershipLock.ts';
 
 const MAX_TRACK_BYTES = 100 * 1024 * 1024;
 
@@ -182,12 +186,45 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invalid track type' }, { status: 400 });
     }
 
+    let sessionConversationId: string | null = null;
+    if (!initialProject) {
+      const messagePreview = await entities.Message.get(projectId).catch(() => null);
+      if (!messagePreview) {
+        return Response.json({ error: 'Project/session not found' }, { status: 404 });
+      }
+      sessionConversationId = typeof messagePreview.conversation_id === 'string'
+        ? messagePreview.conversation_id
+        : null;
+      if (!sessionConversationId) {
+        return Response.json({ error: 'Session message has no conversation' }, { status: 409 });
+      }
+      const conversationPreview = await entities.Conversation
+        .get(sessionConversationId)
+        .catch(() => null);
+      const previewParticipants = Array.isArray(conversationPreview?.participant_ids)
+        ? conversationPreview.participant_ids
+        : [];
+      if (!conversationPreview || !previewParticipants.includes(user.id)) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+
     const projectLockId = initialProject
       ? await acquireProjectMembershipLock(entities, projectId)
       : null;
     if (initialProject && !projectLockId) {
       return Response.json(
         { error: 'Project is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+    const conversationLockId = sessionConversationId
+      ? await acquireConversationMembershipLock(entities, sessionConversationId)
+      : null;
+    if (sessionConversationId && !conversationLockId) {
+      await releaseProjectMembershipLock(entities, projectLockId);
+      return Response.json(
+        { error: 'Conversation is being updated. Please retry.' },
         { status: 409 },
       );
     }
@@ -210,16 +247,26 @@ Deno.serve(async (req) => {
           user.id,
         ].filter(Boolean)));
       } else {
-        // Chat-session tracks use the parent Message ID as project_id.
-        const message = await entities.Message.get(projectId).catch(() => null);
-        if (!message) {
+        // Chat-session tracks use the parent Message ID as project_id, but
+        // current Conversation membership is the authorization boundary.
+        const [message, conversation] = await Promise.all([
+          entities.Message.get(projectId).catch(() => null),
+          entities.Conversation.get(sessionConversationId).catch(() => null),
+        ]);
+        if (!message || !conversation) {
           return Response.json({ error: 'Project/session not found' }, { status: 404 });
         }
-        if (!message?.participant_ids?.includes(user.id)) {
+        if (message.conversation_id !== conversation.id) {
+          return Response.json({ error: 'Session conversation changed. Please retry.' }, { status: 409 });
+        }
+        const participantIds = Array.isArray(conversation.participant_ids)
+          ? conversation.participant_ids
+          : [];
+        if (!participantIds.includes(user.id)) {
           return Response.json({ error: 'Forbidden' }, { status: 403 });
         }
-        accessUserIds = message.participant_ids;
-        editUserIds = message.participant_ids;
+        accessUserIds = participantIds;
+        editUserIds = participantIds;
       }
 
     const track = await entities.Track.create({
@@ -243,6 +290,7 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, track });
     } finally {
+      await releaseConversationMembershipLock(entities, conversationLockId);
       await releaseProjectMembershipLock(entities, projectLockId);
     }
   } catch (error) {

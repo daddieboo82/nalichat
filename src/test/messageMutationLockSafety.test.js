@@ -1,1 +1,21 @@
-import { describe, expect, it } from 'vitest';\nimport { readFile } from 'node:fs/promises';\n\ndescribe('message mutation lock safety', () => {\n  it('authorizes the caller before acquiring the message mutation lock', async () => {\n    const source = await readFile('base44/functions/mutateConversationMessage/entry.ts', 'utf8');\n    const preview = source.indexOf('const messagePreview = await entities.Message.get(messageId)');\n    const participantCheck = source.indexOf('messagePreview.participant_ids');\n    const lock = source.indexOf('const lockId = await acquireMessageMutationLock(entities, messageId)');\n    expect(preview).toBeGreaterThan(-1);\n    expect(participantCheck).toBeGreaterThan(preview);\n    expect(participantCheck).toBeLessThan(lock);\n  });\n\n  it('does not reacquire the same message lock for reactions', async () => {\n    const source = await readFile('base44/functions/mutateConversationMessage/entry.ts', 'utf8');\n    expect(source).toContain('The outer message lock already serializes reactions');\n    expect(source).not.toContain('acquireMessageMutationLock(entities, message.id)');\n    expect(source).not.toContain('releaseMessageMutationLock(entities, reactionLockId)');\n  });\n});\n
+import { describe, expect, it } from 'vitest';
+import { readFile } from 'node:fs/promises';
+
+describe('message mutation lock safety', () => {
+  it('authorizes the caller before acquiring the message mutation lock', async () => {
+    const source = await readFile('base44/functions/mutateConversationMessage/entry.ts', 'utf8');
+    const preview = source.indexOf('const messagePreview = await entities.Message.get(messageId)');
+    const participantCheck = source.indexOf('messagePreview.participant_ids');
+    const lock = source.indexOf('const lockId = await acquireMessageMutationLock(entities, messageId)');
+    expect(preview).toBeGreaterThan(-1);
+    expect(participantCheck).toBeGreaterThan(preview);
+    expect(participantCheck).toBeLessThan(lock);
+  });
+
+  it('does not reacquire the same message lock for reactions', async () => {
+    const source = await readFile('base44/functions/mutateConversationMessage/entry.ts', 'utf8');
+    expect(source).toContain('The outer message lock already serializes reactions');
+    expect(source).not.toContain('acquireMessageMutationLock(entities, message.id)');
+    expect(source).not.toContain('releaseMessageMutationLock(entities, reactionLockId)');
+  });
+});

@@ -114,6 +114,7 @@ export default function Explore() {
       if (res?.data?.error) throw new Error(res.data.error);
       if (
         res?.data?.success !== true ||
+        res?.data?.userId !== currentUser.id ||
         res?.data?.post_id !== post.id ||
         typeof res?.data?.liked !== "boolean" ||
         !Number.isFinite(Number(res?.data?.likes)) ||

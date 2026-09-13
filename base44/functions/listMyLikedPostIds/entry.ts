@@ -45,6 +45,7 @@ Deno.serve(async (req) => {
     );
     return Response.json({
       success: true,
+      userId: user.id,
       post_ids: posts.map((post: any) => post.id).filter(Boolean),
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {

@@ -12,6 +12,21 @@ describe('playlist and ArtPost lifecycle serialization', () => {
     expect(recheck).toBeGreaterThan(playlistLock);
   });
 
+  it('locks every referenced ArtPost before creating a playlist', async () => {
+    const s = await readFile('base44/functions/createPlaylist/entry.ts', 'utf8');
+    const totalOrder = s.indexOf('const orderedTrackIds = [...trackIds].sort()');
+    const lock = s.indexOf('acquireArtPostEngagementLock(entities, trackId)');
+    const recheck = s.indexOf('ArtPost.get(trackId)', lock);
+    const create = s.indexOf('Playlist.create({', recheck);
+    const release = s.indexOf('releaseArtPostEngagementLock(entities, lockId)', create);
+
+    expect(totalOrder).toBeGreaterThan(-1);
+    expect(lock).toBeGreaterThan(totalOrder);
+    expect(recheck).toBeGreaterThan(lock);
+    expect(create).toBeGreaterThan(recheck);
+    expect(release).toBeGreaterThan(create);
+  });
+
   it('uses atomic pull when removing deleted posts from playlists', async () => {
     const s = await readFile('base44/functions/deleteArtPost/entry.ts', 'utf8');
     expect(s).toContain('{ $pull: { track_ids: currentPost.id } }');

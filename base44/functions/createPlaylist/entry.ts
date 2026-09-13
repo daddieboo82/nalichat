@@ -2,6 +2,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import {
+  acquireArtPostEngagementLock,
+  releaseArtPostEngagementLock,
+} from '../../shared/artPostEngagementLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -58,23 +62,46 @@ Deno.serve(async (req) => {
     if (!rate.allowed) {
       return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
     }
-    for (const trackId of trackIds) {
-      const track = await entities.ArtPost.get(trackId).catch(() => null);
-      if (!track) {
-        return Response.json({ error: 'One or more playlist tracks were not found' }, { status: 400 });
+
+    // Lock every referenced ArtPost in a total order before the final existence
+    // check and playlist write. This serializes playlist creation with ArtPost
+    // deletion and avoids deadlocks when two playlist creates overlap.
+    const orderedTrackIds = [...trackIds].sort();
+    const artPostLockIds: string[] = [];
+    try {
+      for (const trackId of orderedTrackIds) {
+        const lockId = await acquireArtPostEngagementLock(entities, trackId);
+        if (!lockId) {
+          return Response.json(
+            { error: 'One or more playlist tracks are being updated. Please retry.' },
+            { status: 409 },
+          );
+        }
+        artPostLockIds.push(lockId);
+      }
+
+      for (const trackId of trackIds) {
+        const track = await entities.ArtPost.get(trackId).catch(() => null);
+        if (!track) {
+          return Response.json({ error: 'One or more playlist tracks were not found' }, { status: 400 });
+        }
+      }
+
+      const playlist = await entities.Playlist.create({
+        name,
+        description,
+        owner_id: user.id,
+        owner_name: user.display_name || user.full_name || 'User',
+        track_ids: trackIds,
+        is_public: Boolean(body?.is_public),
+      });
+
+      return Response.json({ success: true, playlist });
+    } finally {
+      for (const lockId of artPostLockIds.reverse()) {
+        await releaseArtPostEngagementLock(entities, lockId);
       }
     }
-
-    const playlist = await entities.Playlist.create({
-      name,
-      description,
-      owner_id: user.id,
-      owner_name: user.display_name || user.full_name || 'User',
-      track_ids: trackIds,
-      is_public: Boolean(body?.is_public),
-    });
-
-    return Response.json({ success: true, playlist });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

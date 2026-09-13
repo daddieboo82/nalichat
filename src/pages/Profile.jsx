@@ -276,13 +276,13 @@ export default function Profile() {
   if (targetUserId && (targetUserError || !targetUser)) {
     return (
       <div className="h-full flex items-center justify-center p-6">
-        <div className="max-w-sm text-center">
+        <div className="ui-surface w-full max-w-sm rounded-3xl border border-border bg-card/70 p-6 text-center">
           <h2 className="font-heading text-xl font-bold">Profile unavailable</h2>
           <p className="mt-2 text-sm text-muted-foreground">This profile couldn't be loaded. It may no longer be available.</p>
           <button
             type="button"
             onClick={() => void refetchTargetUser()}
-            className="mt-4 rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary/50"
+            className="ui-hover mt-4 min-h-11 rounded-xl border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             Retry
           </button>
@@ -298,7 +298,7 @@ export default function Profile() {
   return (
     <PullToRefresh onRefresh={async () => { queryClient.invalidateQueries({ queryKey: ["my-posts"] }); queryClient.invalidateQueries({ queryKey: ["my-achievements"] }); }} className="h-full overflow-y-auto bg-background">
       {/* Cover */}
-      <div className="relative h-44 overflow-hidden bg-gradient-to-br from-primary/30 via-secondary to-accent/20 sm:h-56">
+      <div className="relative h-44 overflow-hidden bg-gradient-to-br from-primary/30 via-secondary to-accent/20 shadow-inner sm:h-56">
         {user.cover_url && <img src={user.cover_url} className="w-full h-full object-cover" alt="cover" />}
         <div className="absolute inset-0 bg-black/20" />
         {isMe && (
@@ -313,9 +313,9 @@ export default function Profile() {
 
       <div className="mx-auto max-w-3xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6">
         {/* Avatar + info */}
-        <div className="relative z-10 -mt-10 mb-5 flex flex-wrap items-end gap-3 sm:gap-4">
+        <div className="relative z-10 -mt-10 mb-5 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4">
           <div className="relative">
-            <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
+            <Avatar className="h-24 w-24 border-4 border-background shadow-xl ring-1 ring-border/50">
               <AvatarImage src={user.avatar_url} />
               <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">{user.display_name?.[0] || user.full_name?.[0]}</AvatarFallback>
             </Avatar>
@@ -338,13 +338,13 @@ export default function Profile() {
           {isMe && (
             <button
               onClick={() => editing ? save() : setEditing(true)}
-              className="ui-hover flex min-h-11 items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/10 transition-colors hover:bg-primary/90"
+              className="ui-hover flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/10 transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-auto"
             >
               {editing ? <Save className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
               {editing ? "Save" : "Edit"}
             </button>
           )}
-          <div className="ml-auto flex flex-col items-end gap-2 pb-1 sm:pb-2">
+          <div className="flex w-full flex-col items-start gap-2 pb-1 sm:ml-auto sm:w-auto sm:items-end sm:pb-2">
             <NaliPresenceIndicator surface="profile" size="md" greeting={`Tell me about ${user.display_name || user.full_name || "this artist"} — help me understand their sound and suggest ways to grow their audience.`} />
             <NaliContextHint surface="profile" contextLabel={user.display_name || user.full_name || "profile"} />
           </div>
@@ -352,7 +352,7 @@ export default function Profile() {
 
         {/* XP Bar */}
         <div className="ui-surface mb-4 rounded-2xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl">
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-yellow-400" />
               <span className="text-sm font-semibold">Level {user.level || 1}</span>
@@ -384,8 +384,8 @@ export default function Profile() {
           <div className="ui-surface mb-6 space-y-4 rounded-2xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl sm:p-5">
             <h3 className="font-heading font-semibold">Edit Profile</h3>
             <input value={form.display_name || form.full_name || ""} onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))} placeholder="Display name" className="min-h-11 w-full rounded-xl border border-border/70 bg-secondary/40 px-4 py-2.5 text-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20" />
-            <textarea value={form.bio || ""} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell your story..." rows={3} className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary/50" />
-            <div className="grid grid-cols-2 gap-3">
+            <textarea value={form.bio || ""} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell your story..." rows={3} className="min-h-[96px] w-full resize-y rounded-xl border border-border/70 bg-secondary/40 px-4 py-2.5 text-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <input value={form.location || ""} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Location" className="min-h-11 rounded-xl border border-border/70 bg-secondary/40 px-4 py-2.5 text-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20" />
               <input value={form.website || ""} onChange={e => setForm(f => ({ ...f, website: e.target.value }))} placeholder="Website" className="min-h-11 rounded-xl border border-border/70 bg-secondary/40 px-4 py-2.5 text-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
@@ -396,7 +396,7 @@ export default function Profile() {
                   <button
                     key={value}
                     onClick={() => setForm(f => ({ ...f, artist_role: value }))}
-                    className={cn("ui-hover min-h-9 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors", form.artist_role === value ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}
+                    className={cn("ui-hover min-h-9 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/40", form.artist_role === value ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}
                   >
                     {label}
                   </button>
@@ -438,7 +438,7 @@ export default function Profile() {
 
         {tab === "featured" && (
           postsError ? (
-            <div className="text-center py-12 text-muted-foreground">
+            <div className="ui-surface rounded-3xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
               <p className="font-heading font-semibold text-foreground">Featured works unavailable</p>
               <p className="text-sm mt-1">We couldn't load this creator's tracks.</p>
               <button type="button" onClick={() => void refetchPosts()} className="ui-hover mt-3 min-h-11 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-secondary/50">
@@ -465,7 +465,7 @@ export default function Profile() {
               <p className="text-sm mt-1">Release your first track from the Explore tab!</p>
             </div>
           ) : (
-            <div className="columns-1 sm:columns-2 gap-4 mb-8">
+            <div className="mb-8 columns-1 gap-4 sm:columns-2">
               {myPosts.map(post => (
                 <ArtPostCard key={post.id} post={post} currentUser={user} onLike={() => {}} />
               ))}

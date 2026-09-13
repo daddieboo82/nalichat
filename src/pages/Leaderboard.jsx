@@ -130,19 +130,19 @@ export default function Leaderboard() {
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-background">
+    <div className="flex h-full flex-col overflow-hidden bg-background">
       <div className="flex-1 overflow-y-auto custom-scrollbar">
       <PullToRefresh onRefresh={handleRefresh}>
       {/* Header */}
       <div className="border-b border-border/60 bg-gradient-to-br from-yellow-500/10 via-background to-primary/10 px-4 pb-6 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8 sm:pt-8">
         <div className="max-w-2xl mx-auto text-center">
-          <div className="w-16 h-16 rounded-2xl bg-yellow-500/20 flex items-center justify-center mx-auto mb-4">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-yellow-500/20 shadow-lg shadow-yellow-500/10">
             <Trophy className="w-8 h-8 text-yellow-400" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-heading font-bold">Leaderboard</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">Leaderboard</h1>
           <p className="text-muted-foreground text-sm mt-1">Top producers on RecordStudio</p>
           {myRank > 0 && (
-            <div className="mt-3 inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-semibold">
+            <div className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
               <Star className="w-4 h-4" /> You're #{myRank}
             </div>
           )}
@@ -212,7 +212,7 @@ export default function Leaderboard() {
 
             {/* Top 3 podium */}
             {sorted.length >= 3 && (
-          <div className="flex items-end justify-center gap-3 mb-8">
+          <div className="mb-8 flex items-end justify-center gap-2 sm:gap-3">
             {[sorted[1], sorted[0], sorted[2]].map((user, i) => {
               const realRank = i === 0 ? 2 : i === 1 ? 1 : 3;
               return (
@@ -239,11 +239,12 @@ export default function Leaderboard() {
         {/* Full list */}
         <div className="space-y-2">
           {sorted.map((user, i) => (
-            <div
+            <button
+              type="button"
               key={user.id}
               onClick={() => navigate(`/profile?id=${user.id}`)}
               className={cn(
-                "flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 cursor-pointer",
+                "ui-hover flex min-h-[68px] cursor-pointer items-center gap-3 rounded-2xl border p-3 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary/40",
                 user.id === currentUser?.id ? "border-primary/40 bg-primary/5" : "border-white/[0.06] bg-card/50 backdrop-blur-xl hover:bg-card/70 hover:border-white/[0.12]"
               )}
             >
@@ -269,7 +270,7 @@ export default function Leaderboard() {
                 )}
                 <span className="text-sm font-bold text-primary">{getValue(user)}</span>
               </div>
-            </div>
+            </button>
           ))}
         </div>
           </>
@@ -277,13 +278,13 @@ export default function Leaderboard() {
 
         {!leaderboardLoading && !leaderboardLoadProblem && mode === "content" && (
           <>
-            <div className="flex gap-2 bg-secondary/30 rounded-xl p-1 mb-6">
+            <div className="mb-6 flex gap-2 rounded-2xl bg-secondary/30 p-1.5">
               {CONTENT_TABS.map(t => (
                 <button
                   key={t}
                   onClick={() => setContentTab(t)}
                   className={cn(
-                    "flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition-colors flex items-center justify-center gap-1.5",
+                    "ui-hover flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-semibold capitalize transition-colors focus-visible:ring-2 focus-visible:ring-primary/40",
                     contentTab === t ? "bg-card text-foreground shadow-sm border border-border/50" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -297,16 +298,17 @@ export default function Leaderboard() {
 
             <div className="space-y-3">
               {currentContent.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground bg-secondary/20 rounded-xl border border-border/50">
+                <div className="ui-surface rounded-3xl border border-dashed border-border bg-secondary/20 px-4 py-10 text-center text-muted-foreground">
                   <p className="font-semibold">No {contentTab} uploaded yet.</p>
                   <p className="text-sm">Be the first to upload one!</p>
                 </div>
               ) : (
                 currentContent.map((item, i) => (
-                  <div 
-                    key={item.id} 
+                  <button
+                    type="button"
+                    key={item.id}
                     onClick={() => handleItemClick(item)}
-                    className="flex items-center gap-4 p-3 rounded-xl border border-white/[0.06] bg-card/50 backdrop-blur-xl hover:bg-card/70 hover:border-white/[0.12] transition-all duration-300 cursor-pointer"
+                    className="ui-hover flex min-h-[72px] cursor-pointer items-center gap-3 rounded-2xl border border-white/[0.06] bg-card/50 p-3 text-left backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40 sm:gap-4"
                   >
                     <div className="w-8 text-center shrink-0 flex flex-col items-center">
                       {i < 3 ? RANK_ICONS[i] : <span className="text-sm text-muted-foreground font-bold">#{i + 1}</span>}

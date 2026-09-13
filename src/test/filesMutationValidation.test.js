@@ -19,3 +19,15 @@ describe('Files share-link account binding', () => {
     expect(s).not.toContain('function FileShareButton({ file, canShare })');
   });
 });
+
+
+describe('Files folder deletion response binding', () => {
+  it('accepts folder deletion only for the active user and exact folder', async () => {
+    const s = await readFile('src/pages/Files.jsx', 'utf8');
+    expect(s).toContain('res?.data?.action !== "delete_folder"');
+    expect(s).toContain('res?.data?.userId !== currentUser?.id');
+    expect(s).toContain('res?.data?.folderId !== id');
+    expect(s).toContain('res?.data?.deleted !== true');
+    expect(s).toContain('Folder deletion was not confirmed');
+  });
+});

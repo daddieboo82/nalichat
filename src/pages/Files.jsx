@@ -396,7 +396,17 @@ export default function Files() {
     mutationFn: async (id) => {
       const res = await base44.functions.invoke("deleteFolder", { folderId: id });
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data;
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "delete_folder" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.folderId !== id ||
+        res?.data?.deleted !== true ||
+        !Number.isFinite(Number(res?.data?.detached_files))
+      ) {
+        throw new Error("Folder deletion was not confirmed");
+      }
+      return res.data;
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["folders"] });

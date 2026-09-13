@@ -92,6 +92,7 @@ export default function Messages() {
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedConvId, setSelectedConvId] = useState(null);
+  const [messageHistoryLimit, setMessageHistoryLimit] = useState(200);
   const [sidebarTab, setSidebarTab] = useState("chats");
   const [lockedLinkConversationId, setLockedLinkConversationId] = useState(null);
   const [showLockedAccess, setShowLockedAccess] = useState(false);
@@ -118,6 +119,7 @@ export default function Messages() {
     if (location.search !== nextSearch) {
       navigate(`${location.pathname}${nextSearch}`, { replace: true });
     }
+    if (convId !== selectedConvId) setMessageHistoryLimit(200);
     setSelectedConvId(convId);
     markConversationRead(convId);
   };
@@ -127,6 +129,7 @@ export default function Messages() {
       navigate(location.pathname, { replace: true });
     }
     setSelectedConvId(null);
+    setMessageHistoryLimit(200);
   };
 
   const [showNewDM, setShowNewDM] = useState(false);
@@ -272,16 +275,34 @@ export default function Messages() {
     lockedConversationIds,
   ]);
 
-  const { data: messages = [], isLoading: isLoadingMessages, isError: messagesError } = useQuery({
+  const {
+    data: messageHistory = { messages: [], hasOlder: false },
+    isLoading: isLoadingMessages,
+    isFetching: isFetchingMessages,
+    isError: messagesError,
+    refetch: refetchMessages,
+  } = useQuery({
     queryKey: ["messages", currentUser?.id, selectedConvId],
     queryFn: async () => {
-      const msgs = await base44.entities.Message.filter({ conversation_id: selectedConvId }, "-created_date", 200);
-      return msgs.reverse();
+      const page = await base44.entities.Message.filter(
+        { conversation_id: selectedConvId },
+        "-created_date",
+        messageHistoryLimit + 1,
+      );
+      const hasOlder = page.length > messageHistoryLimit;
+      const visible = hasOlder ? page.slice(0, messageHistoryLimit) : page;
+      return { messages: visible.reverse(), hasOlder };
     },
     enabled: !!currentUser?.id && !!selectedConvId && lockedChatsReady && canAccessConversation(selectedConvId),
     refetchInterval: 5000,
     staleTime: 3000,
   });
+  const messages = messageHistory.messages;
+
+  useEffect(() => {
+    if (messageHistoryLimit <= 200 || !selectedConvId) return;
+    void refetchMessages();
+  }, [messageHistoryLimit, selectedConvId, refetchMessages]);
 
   const latestVisibleMessageId = messages.length > 0
     ? messages[messages.length - 1]?.id
@@ -774,6 +795,9 @@ export default function Messages() {
               messages={messages}
               isLoading={isLoadingMessages}
               loadError={messagesError}
+              hasOlderMessages={messageHistory.hasOlder}
+              isLoadingOlderMessages={isFetchingMessages && !isLoadingMessages}
+              onLoadOlderMessages={() => setMessageHistoryLimit((limit) => limit + 200)}
               currentUser={currentUser}
               users={users}
               isBlocked={isBlocked}

@@ -29,21 +29,25 @@ export default function PlaylistDetail() {
     queryFn: () => base44.entities.Playlist.get(playlistId),
   });
 
-  const { data: tracks = [], isLoading: tracksLoading } = useQuery({
+  const {
+    data: trackResult = { tracks: [], unavailableCount: 0 },
+    isLoading: tracksLoading,
+  } = useQuery({
     queryKey: ["playlistTracks", currentUser?.id || "anonymous", playlist?.track_ids],
     queryFn: async () => {
-      if (!playlist?.track_ids?.length) return [];
-      // Tolerate tracks that were deleted from ArtPost — skip the missing ones
-      // instead of failing the whole list.
-      const results = await Promise.all(
-        playlist.track_ids.map((id) =>
-          base44.entities.ArtPost.get(id).catch(() => null)
-        )
+      if (!playlist?.track_ids?.length) return { tracks: [], unavailableCount: 0 };
+      const settled = await Promise.allSettled(
+        playlist.track_ids.map((id) => base44.entities.ArtPost.get(id))
       );
-      return results.filter(Boolean);
+      const tracks = settled
+        .filter((result) => result.status === "fulfilled" && result.value)
+        .map((result) => result.value);
+      const unavailableCount = settled.filter((result) => result.status === "rejected").length;
+      return { tracks, unavailableCount };
     },
     enabled: !!playlist?.track_ids?.length,
   });
+  const tracks = trackResult.tracks;
 
   const uploadMutation = useMutation({
     mutationFn: async (file) => {
@@ -265,6 +269,12 @@ export default function PlaylistDetail() {
           </div>
         )}
       </div>
+
+      {trackResult.unavailableCount > 0 && !tracksLoading && (
+        <div className="mx-6 mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300" role="status">
+          {trackResult.unavailableCount} playlist track{trackResult.unavailableCount === 1 ? "" : "s"} couldn't be loaded. Showing the tracks that are available.
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-6 p-6">

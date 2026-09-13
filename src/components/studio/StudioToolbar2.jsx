@@ -207,17 +207,17 @@ export default function StudioToolbar2({
 
   if (isMobile) {
     return (
-      <div className="min-h-[3.5rem] py-1.5 mx-2 mt-2 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] flex items-center justify-between px-4 gap-2 shrink-0 relative z-10">
-        <Button onClick={addTrack} variant="secondary" size="sm" className="gap-2 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20">
+      <div className="relative z-10 mx-2 mt-2 flex min-h-[3.75rem] shrink-0 items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+        <Button onClick={addTrack} variant="secondary" size="sm" className="ui-hover min-h-11 gap-2 rounded-xl bg-primary/10 px-4 text-primary hover:bg-primary/20 focus-visible:ring-2 focus-visible:ring-primary/40">
           <Plus className="w-4 h-4" /> Add Track
         </Button>
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2 h-8 rounded-lg">
+            <Button variant="outline" size="sm" className="ui-hover min-h-11 gap-2 rounded-xl px-4 focus-visible:ring-2 focus-visible:ring-primary/40">
               <Settings2 className="w-4 h-4" /> Tools
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="h-[75dvh] bg-card border-border overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] custom-scrollbar p-6">
+          <SheetContent side="bottom" className="custom-scrollbar h-[82dvh] overflow-y-auto overscroll-contain rounded-t-3xl border-border bg-card p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] touch-pan-y [-webkit-overflow-scrolling:touch] sm:p-6">
             <SheetHeader className="mb-4 text-left">
               <SheetTitle>Studio Tools</SheetTitle>
             </SheetHeader>

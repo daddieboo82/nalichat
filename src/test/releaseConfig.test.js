@@ -2295,7 +2295,11 @@ describe('chat session track mutation response contracts', () => {
     expect(source).toContain('track?.uploaded_by !== currentUser?.id');
     expect(source).toContain('updated?.id !== id');
     expect(source).toContain('updated?.project_id !== message.id');
-    expect(source).toContain('res?.data?.success !== true || res?.data?.deleted !== true');
+    expect(source).toContain('res?.data?.action !== "delete"');
+    expect(source).toContain('res?.data?.userId !== currentUser?.id');
+    expect(source).toContain('res?.data?.trackId !== id');
+    expect(source).toContain('res?.data?.parentId !== message.id');
+    expect(source).toContain('res?.data?.deleted !== true');
     expect(source).toContain('Track deletion was not confirmed');
   });
 });
@@ -2462,10 +2466,13 @@ describe('billing session response contracts', () => {
     const client = await readText('src/lib/subscriptionBilling.js');
     const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');
     const portal = await readText('base44/functions/createBillingPortal/entry.ts');
-    expect(client).toContain('payload?.success !== true || typeof payload?.checkoutUrl');
-    expect(client).toContain('payload?.success !== true || typeof payload?.portalUrl');
-    expect(checkout).toContain('success: true');
-    expect(portal).toContain('success: true, portalUrl: session.url');
+    expect(client).toContain('payload?.action !== "create_subscription_checkout"');
+    expect(client).toContain('payload?.action !== "create_billing_portal"');
+    expect(client).toContain('payload?.userId !== expectedUserId');
+    expect(client).toContain('payload?.successDestination !== "subscription_thank_you"');
+    expect(client).toContain('payload?.returnDestination !== returnDestination');
+    expect(checkout).toContain("action: 'create_subscription_checkout'");
+    expect(portal).toContain("action: 'create_billing_portal'");
   });
 });
 

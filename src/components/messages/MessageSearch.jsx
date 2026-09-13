@@ -153,7 +153,7 @@ export default function MessageSearch({
       aria-modal="true"
       aria-labelledby="message-search-title"
     >
-      <div className="bg-card border border-border/60 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+      <div className="bg-card border border-border/60 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85dvh] flex flex-col overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40">
           <Search className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
           <h2 id="message-search-title" className="sr-only">Search messages</h2>
@@ -278,7 +278,7 @@ export default function MessageSearch({
           </div>
         )}
 
-        <div className="flex-1 min-h-48 overflow-y-auto" aria-live="polite">
+        <div className="flex-1 min-h-0 sm:min-h-48 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]" aria-live="polite">
           {isLoading ? (
             <div className="flex h-full min-h-48 items-center justify-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />

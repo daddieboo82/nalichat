@@ -19,7 +19,7 @@ describe('project milestone serialization', () => {
 
     const mutate = await readText('base44/functions/mutateMilestone/entry.ts');
     expect(mutate).toContain("req.method !== 'POST'");
-    expect(mutate).toContain('milestoneId.length > 200');
+    expect(mutate).toContain('isBase44EntityId(milestoneId)');
     expect(mutate).toContain('acquireProjectMembershipLock');
     expect(mutate).toContain('const currentMilestone = await entities.Milestone.get(milestone.id)');
     expect(mutate).toContain('const completed = !currentMilestone.completed');

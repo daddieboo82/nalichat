@@ -122,8 +122,15 @@ export default function Profile() {
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicAchievements", { userId: user.id });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
-      return res?.data?.achievements || [];
+      if (
+        res?.data?.success !== true ||
+        res?.data?.viewerUserId !== currentUser?.id ||
+        res?.data?.requestedUserId !== user.id ||
+        !Array.isArray(res?.data?.achievements)
+      ) {
+        throw new Error("Achievement lookup was not confirmed");
+      }
+      return res.data.achievements;
     },
     enabled: !!user?.id,
   });

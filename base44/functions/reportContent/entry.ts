@@ -2,6 +2,14 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import {
+  acquireMessageMutationLock,
+  releaseMessageMutationLock,
+} from '../../shared/messageMutationLock.ts';
+import {
+  acquireArtPostEngagementLock,
+  releaseArtPostEngagementLock,
+} from '../../shared/artPostEngagementLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -29,6 +37,9 @@ Deno.serve(async (req) => {
     if (!content_type || !isBase44EntityId(normalizedContentId)) {
       return Response.json({ error: 'Valid content_type and content_id are required' }, { status: 400 });
     }
+    if (!['message', 'art_post'].includes(content_type)) {
+      return Response.json({ error: 'Unsupported content_type' }, { status: 400 });
+    }
 
     const validReasons = ['spam', 'harassment', 'hate_speech', 'violence', 'sexual_content', 'illegal_activity', 'misinformation', 'other'];
     const reportReason = validReasons.includes(reason) ? reason : 'other';
@@ -49,70 +60,104 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Report rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    let reportedUserId = '';
-    let reportedUserName = '';
-    let authoritativeText = '';
-    let authoritativeConversationId = null;
-
+    // Pre-authorize before taking a shared content lock so unauthorized callers
+    // cannot create lock contention. Authorization is repeated under the lock.
     if (content_type === 'message') {
-      const message = await entities.Message.get(normalizedContentId);
-      if (!message) return Response.json({ error: 'Content not found' }, { status: 404 });
-
-      // A reporter must actually be a participant in the conversation.
-      if (!Array.isArray(message.participant_ids) || !message.participant_ids.includes(reporter.id)) {
+      const preview = await entities.Message.get(normalizedContentId).catch(() => null);
+      if (!preview) return Response.json({ error: 'Content not found' }, { status: 404 });
+      if (!Array.isArray(preview.participant_ids) || !preview.participant_ids.includes(reporter.id)) {
         return Response.json({ error: 'Forbidden' }, { status: 403 });
       }
-      reportedUserId = message.sender_id || '';
-      reportedUserName = message.sender_name || '';
-      authoritativeText = message.text || message.file_name || '';
-      authoritativeConversationId = message.conversation_id || null;
-    } else if (content_type === 'art_post') {
-      const post = await entities.ArtPost.get(normalizedContentId);
-      if (!post) return Response.json({ error: 'Content not found' }, { status: 404 });
-      reportedUserId = post.creator_id || '';
-      reportedUserName = post.creator_name || '';
-      authoritativeText = post.title || post.description || '';
+      if (preview.sender_id === reporter.id) {
+        return Response.json({ error: 'You cannot report your own content' }, { status: 400 });
+      }
     } else {
-      return Response.json({ error: 'Unsupported content_type' }, { status: 400 });
+      const preview = await entities.ArtPost.get(normalizedContentId).catch(() => null);
+      if (!preview) return Response.json({ error: 'Content not found' }, { status: 404 });
+      if (preview.creator_id === reporter.id) {
+        return Response.json({ error: 'You cannot report your own content' }, { status: 400 });
+      }
     }
 
-    if (!reportedUserId) {
-      return Response.json({ error: 'Reported content has no owner' }, { status: 400 });
-    }
-    if (reportedUserId === reporter.id) {
-      return Response.json({ error: 'You cannot report your own content' }, { status: 400 });
-    }
-
-    // Avoid duplicate reports from the same user for the same content while one
-    // is still pending review.
-    const existing = await entities.Violation.filter({
-      reported_by_id: reporter.id,
-      content_type,
-      content_id: normalizedContentId,
-      review_status: 'pending',
-    });
-    if (existing.length > 0) {
-      return Response.json({ success: true, duplicate: true });
+    let messageLockId: string | null = null;
+    let artPostLockId: string | null = null;
+    if (content_type === 'message') {
+      messageLockId = await acquireMessageMutationLock(entities, normalizedContentId);
+      if (!messageLockId) {
+        return Response.json({ error: 'Message is being updated. Please retry.' }, { status: 409 });
+      }
+    } else {
+      artPostLockId = await acquireArtPostEngagementLock(entities, normalizedContentId);
+      if (!artPostLockId) {
+        return Response.json({ error: 'Post is being updated. Please retry.' }, { status: 409 });
+      }
     }
 
-    await entities.Violation.create({
-      user_id: reportedUserId,
-      user_name: reportedUserName || 'Unknown user',
-      reported_by_id: reporter.id,
-      reported_by_name: reporter.display_name || reporter.full_name || 'Reporter',
-      content_type,
-      content_id: normalizedContentId,
-      category: categoryMap[reportReason] || 'bullying',
-      severity: 'low',
-      content: `[USER REPORT — ${reportReason}]\nContent type: ${content_type}\nContent ID: ${normalizedContentId}\n\n${authoritativeText.slice(0, 800)}`,
-      conversation_id: authoritativeConversationId,
-      message_id: content_type === 'message' ? normalizedContentId : null,
-      action_taken: 'warning',
-      review_status: 'pending',
-      explanation: `Reported by user for: ${reportReason}. Awaiting admin review.`,
-    });
+    try {
+      let reportedUserId = '';
+      let reportedUserName = '';
+      let authoritativeText = '';
+      let authoritativeConversationId = null;
 
-    return Response.json({ success: true, message: 'Content reported. Thank you.' });
+      if (content_type === 'message') {
+        const message = await entities.Message.get(normalizedContentId).catch(() => null);
+        if (!message) return Response.json({ error: 'Content not found' }, { status: 404 });
+        if (!Array.isArray(message.participant_ids) || !message.participant_ids.includes(reporter.id)) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 });
+        }
+        reportedUserId = message.sender_id || '';
+        reportedUserName = message.sender_name || '';
+        authoritativeText = message.text || message.file_name || '';
+        authoritativeConversationId = message.conversation_id || null;
+      } else {
+        const post = await entities.ArtPost.get(normalizedContentId).catch(() => null);
+        if (!post) return Response.json({ error: 'Content not found' }, { status: 404 });
+        reportedUserId = post.creator_id || '';
+        reportedUserName = post.creator_name || '';
+        authoritativeText = post.title || post.description || '';
+      }
+
+      if (!reportedUserId) {
+        return Response.json({ error: 'Reported content has no owner' }, { status: 400 });
+      }
+      if (reportedUserId === reporter.id) {
+        return Response.json({ error: 'You cannot report your own content' }, { status: 400 });
+      }
+
+      // The content lock makes the pending-check + create sequence atomic for
+      // this target, preventing simultaneous requests from creating duplicates.
+      const existing = await entities.Violation.filter({
+        reported_by_id: reporter.id,
+        content_type,
+        content_id: normalizedContentId,
+        review_status: 'pending',
+      });
+      if (existing.length > 0) {
+        return Response.json({ success: true, duplicate: true });
+      }
+
+      await entities.Violation.create({
+        user_id: reportedUserId,
+        user_name: reportedUserName || 'Unknown user',
+        reported_by_id: reporter.id,
+        reported_by_name: reporter.display_name || reporter.full_name || 'Reporter',
+        content_type,
+        content_id: normalizedContentId,
+        category: categoryMap[reportReason] || 'bullying',
+        severity: 'low',
+        content: `[USER REPORT — ${reportReason}]\nContent type: ${content_type}\nContent ID: ${normalizedContentId}\n\n${authoritativeText.slice(0, 800)}`,
+        conversation_id: authoritativeConversationId,
+        message_id: content_type === 'message' ? normalizedContentId : null,
+        action_taken: 'warning',
+        review_status: 'pending',
+        explanation: `Reported by user for: ${reportReason}. Awaiting admin review.`,
+      });
+
+      return Response.json({ success: true, message: 'Content reported. Thank you.' });
+    } finally {
+      await releaseArtPostEngagementLock(entities, artPostLockId);
+      await releaseMessageMutationLock(entities, messageLockId);
+    }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

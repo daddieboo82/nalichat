@@ -939,6 +939,11 @@ describe('release configuration', () => {
     const createPlaylist = await readText('base44/functions/createPlaylist/entry.ts');
     const playlistsPage = await readText('src/pages/Playlists.jsx');
     const addToPlaylist = await readText('src/components/explore/AddToPlaylistDialog.jsx');
+    expect(addToPlaylist).toContain('res?.data?.success !== true');
+    expect(addToPlaylist).toContain('!playlist.track_ids.includes(trackId)');
+    expect(addToPlaylist).toContain('Playlist update was not confirmed.');
+    expect(addToPlaylist).toContain('created?.data?.success !== true');
+    expect(addToPlaylist).toContain('Playlist creation was not confirmed.');
 
     expect(playlist.rls.create?.user_condition?.role).toBe('admin');
     expect(playlist.properties.owner_id.rls?.write?.user_condition?.role).toBe('admin');

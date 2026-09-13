@@ -154,7 +154,7 @@ export default function ImmersiveOnboarding() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-background"
+          className="fixed inset-0 z-[100] flex min-h-[100dvh] items-start sm:items-center justify-center overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background py-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
         >
           {/* Animated background blobs — unique per step */}
           <AnimatePresence mode="wait">
@@ -196,7 +196,7 @@ export default function ImmersiveOnboarding() {
           )}
 
           {/* Main content */}
-          <div className="relative z-10 w-full max-w-3xl mx-auto px-6 sm:px-10">
+          <div className="relative z-10 w-full max-w-3xl mx-auto px-6 sm:px-10 py-16 sm:py-0">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={current.id}

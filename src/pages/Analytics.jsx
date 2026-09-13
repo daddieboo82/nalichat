@@ -170,12 +170,13 @@ export default function Analytics() {
                 </thead>
                 <tbody>
                   {userPosts.map((post) => {
-                    const engagement = post.views > 0 ? ((post.likes / post.views) * 100).toFixed(1) : 0;
+                    const likeCount = getLikeCount(post);
+                    const engagement = post.views > 0 ? ((likeCount / post.views) * 100).toFixed(1) : 0;
                     return (
                       <tr key={post.id} className="border-b border-border hover:bg-secondary/30 transition-colors">
                         <td className="py-3 px-3 truncate max-w-xs">{post.title}</td>
                         <td className="text-center py-3 px-3">{post.views || 0}</td>
-                        <td className="text-center py-3 px-3 text-primary font-semibold">{post.likes || 0}</td>
+                        <td className="text-center py-3 px-3 text-primary font-semibold">{likeCount}</td>
                         <td className="text-center py-3 px-3 text-accent">{engagement}%</td>
                       </tr>
                     );

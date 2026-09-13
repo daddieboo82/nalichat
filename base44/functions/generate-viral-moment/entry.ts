@@ -136,6 +136,46 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Message text or a voice note is required' }, { status: 400 });
     }
 
+    const conversationLockId = await acquireConversationMembershipLock(
+      entities,
+      messagePreview.conversation_id,
+    );
+    if (!conversationLockId) {
+      return Response.json({ error: 'Conversation is being updated. Please retry.' }, { status: 409 });
+    }
+
+    try {
+      const [conversation, message] = await Promise.all([
+        entities.Conversation.get(messagePreview.conversation_id).catch(() => null),
+        entities.Message.get(messageId).catch(() => null),
+      ]);
+      if (!conversation || !message) {
+        return Response.json({ error: 'Message not found' }, { status: 404 });
+      }
+      const currentParticipantIds = Array.isArray(conversation.participant_ids)
+        ? conversation.participant_ids
+        : [];
+      if (!currentParticipantIds.includes(user.id)) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+
+      const currentMessageText = typeof message.text === 'string'
+        ? message.text.trim().slice(0, 12000)
+        : '';
+      const currentIsVoiceNote =
+        !currentMessageText &&
+        !!message.file_url &&
+        (message.type === 'audio' || String(message.file_type || '').startsWith('audio'));
+      if (
+        message.conversation_id !== conversation.id
+        || currentMessageText !== initialMessageText
+        || currentIsVoiceNote !== isVoiceNote
+        || (message.file_url || '') !== (messagePreview.file_url || '')
+      ) {
+        return Response.json({ error: 'Message content changed. Please retry.' }, { status: 409 });
+      }
+      const currentFileUrl = message.file_url || '';
+
     const { result, quota } = await executeMeteredAiRequest({
       base44,
       user,
@@ -146,7 +186,7 @@ Deno.serve(async (req) => {
         if (isVoiceNote) {
           try {
             const transcript = await base44.asServiceRole.integrations.Core.TranscribeAudio({
-              audio_url: message.file_url,
+              audio_url: currentFileUrl,
             });
             const transcriptText = typeof transcript === 'string' ? transcript : transcript?.text || '';
             finalMessageText = String(transcriptText).trim().slice(0, 12000);
@@ -249,6 +289,9 @@ Respond as JSON: {
     });
 
     return Response.json({ ...result, quota });
+    } finally {
+      await releaseConversationMembershipLock(entities, conversationLockId);
+    }
   } catch (error) {
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     if (error instanceof Error && error.message === 'VOICE_TRANSCRIPTION_FAILED') {

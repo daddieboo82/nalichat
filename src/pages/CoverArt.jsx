@@ -733,9 +733,15 @@ export default function CoverArt() {
                     type="file" 
                     accept="image/*" 
                     onChange={e => {
-                      if (e.target.files && e.target.files[0]) {
-                        setOverlayImageRef(URL.createObjectURL(e.target.files[0]));
+                      const selected = e.target.files?.[0];
+                      if (!selected) return;
+                      const validation = validateUpload(selected, { accept: "image" });
+                      if (!validation.ok) {
+                        toast.error(validation.error);
+                        e.target.value = "";
+                        return;
                       }
+                      setOverlayImageRef(URL.createObjectURL(selected));
                     }} 
                   />
                 </div>

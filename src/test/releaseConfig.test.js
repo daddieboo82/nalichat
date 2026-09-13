@@ -2638,3 +2638,16 @@ describe('messaging public-directory account isolation', () => {
     expect(contacts).toContain('res?.data?.viewerUserId !== currentUserId');
   });
 });
+
+
+describe('profile and leaderboard public-directory isolation', () => {
+  it('binds public profile and ranking results to the current viewer/request', async () => {
+    const profile = await readText('src/pages/Profile.jsx');
+    const leaderboard = await readText('src/pages/Leaderboard.jsx');
+    expect(profile).toContain('res?.data?.viewerUserId !== currentUser?.id');
+    expect(profile).toContain('res?.data?.requestedUserId !== targetUserId');
+    expect(leaderboard).toContain('queryKey: ["leaderboard-users", currentUser?.id]');
+    expect(leaderboard).toContain('res?.data?.viewerUserId !== currentUser?.id');
+    expect(leaderboard).toContain('res?.data?.requestedUserId !== null');
+  });
+});

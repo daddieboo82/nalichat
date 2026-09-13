@@ -17,7 +17,8 @@ describe('message delete preview consistency', () => {
     expect(backend).toContain('conversationId: message.conversation_id');
     expect(chat).toContain('res?.data?.messageId !== id');
     expect(chat).toContain('res?.data?.conversationId !== conversation?.id');
-    expect(backend).toContain("if (!message && action === 'delete')");
+    expect(backend).toContain('already_deleted: true');
+    expect(backend).toContain('repairConversationPreview');
     expect(backend).toContain('preview_refresh_failed: previewRefreshFailed');
     expect(backend).toContain('already_deleted: true');
     expect(chat).toContain('conversation_id: conversation?.id');

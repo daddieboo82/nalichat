@@ -117,6 +117,15 @@ export default function ChallengeDetail() {
     try {
       const res = await base44.functions.invoke("castVote", { submission_id: submissionId });
       if (res?.data?.error) throw new Error(res.data.error);
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "vote" ||
+        res?.data?.userId !== user.id ||
+        res?.data?.submissionId !== submissionId ||
+        res?.data?.challengeId !== challengeId
+      ) {
+        throw new Error("Vote response was invalid");
+      }
       const nextVoteCount = Number(res?.data?.vote_count);
       if (!Number.isFinite(nextVoteCount)) throw new Error("Vote response was invalid");
       setSubmissions((subs) => subs.map((s) => (s.id === submissionId ? { ...s, vote_count: nextVoteCount } : s)));

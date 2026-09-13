@@ -24,3 +24,15 @@ describe('follow-up reminder auth error handling', () => {
     expect(shared).toContain("FollowUpReminderError(401, 'UNAUTHORIZED', 'Unauthorized.')");
   });
 });
+
+
+describe('follow-up reminder mutation response identity contract', () => {
+  it('binds create, reschedule, and cancel confirmations to the current user and target', async () => {
+    const client = await readFile('src/lib/followUpReminders.js', 'utf8');
+    expect(client).toContain('data?.action !== "create_reminder"');
+    expect(client).toContain('data?.action !== "reschedule_reminder"');
+    expect(client).toContain('data?.action !== "cancel_reminder"');
+    expect(client).toContain('data?.userId !== userId');
+    expect(client).toContain('data?.reminder?.owner_id !== userId');
+  });
+});

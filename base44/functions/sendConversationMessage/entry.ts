@@ -318,9 +318,71 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
       }
 
       if (text.trim() && !user.is_banned) {
-        const moderation = await moderateText(base44, user, text, conversationId, clientMessageKey);
-        if (moderation) {
-          return Response.json({ success: false, moderation }, { status: 200 });
+        let moderationLockId: string | null = null;
+        try {
+          if (clientMessageKey) {
+            const moderationMessageId = await deterministicMessageId(
+              user.id,
+              conversationId,
+              clientMessageKey,
+            );
+            moderationLockId = await acquireMessageMutationLock(
+              base44.asServiceRole.entities,
+              moderationMessageId,
+            );
+            if (!moderationLockId) {
+              return Response.json(
+                { error: 'Message moderation is already in progress. Please retry.' },
+                { status: 409 },
+              );
+            }
+
+            // Re-check durable replay state after serialization. This prevents
+            // concurrent retries of one logical send from claiming multiple
+            // moderation strikes before the later message-creation lock.
+            const existingAfterModerationLock = await findExistingMessage(
+              base44,
+              user.id,
+              conversationId,
+              clientMessageKey,
+            );
+            if (existingAfterModerationLock) {
+              return Response.json({
+                success: true,
+                message: existingAfterModerationLock,
+                duplicate: true,
+              });
+            }
+            const moderationReplay = await findModerationReplay(
+              base44,
+              user,
+              conversationId,
+              clientMessageKey,
+            );
+            if (moderationReplay) {
+              return Response.json({
+                success: false,
+                moderation: moderationReplay,
+                duplicate: true,
+              });
+            }
+          }
+
+          const moderation = await moderateText(
+            base44,
+            user,
+            text,
+            conversationId,
+            clientMessageKey,
+          );
+          if (moderation) {
+            return Response.json({ success: false, moderation }, { status: 200 });
+          }
+        } finally {
+          await releaseMessageMutationLock(
+            base44.asServiceRole.entities,
+            moderationLockId,
+          );
         }
       }
     }

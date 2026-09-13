@@ -102,7 +102,15 @@ export default function CreateChallenge() {
       if (identityGeneration !== identityGenerationRef.current) return;
       if (res?.data?.error) throw new Error(res.data.error);
       const challenge = res?.data?.challenge;
-      if (!challenge?.id) throw new Error("Challenge creation was not confirmed");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "create_challenge" ||
+        res?.data?.userId !== user.id ||
+        !challenge?.id ||
+        challenge.host_artist_id !== user.id
+      ) {
+        throw new Error("Challenge creation was not confirmed");
+      }
 
       toast.success("Challenge created!");
       navigate(`/challenge/${challenge.id}`);

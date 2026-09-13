@@ -35,8 +35,12 @@ describe('push subscription response identity contract', () => {
     expect(client).toContain('registerResponse?.data?.action !== "register_push"');
     expect(client).toContain('registerResponse?.data?.userId !== authUser.id');
     expect(client).toContain('registerResponse?.data?.endpoint !== json.endpoint');
+    expect(client).toContain('!Number.isInteger(registerResponse?.data?.cleanup_failures)');
+    expect(client).toContain('registerResponse.data.cleanup_failures < 0');
     expect(client).toContain('unregisterResponse?.data?.action !== "unregister_push"');
     expect(client).toContain('unregisterResponse?.data?.userId !== authUser.id');
+    expect(client).toContain('!Number.isInteger(unregisterResponse?.data?.removed)');
+    expect(client).toContain('unregisterResponse.data.removed < 0');
     expect(register).toContain("action: 'register_push'");
     expect(unregister).toContain("action: 'unregister_push'");
   });

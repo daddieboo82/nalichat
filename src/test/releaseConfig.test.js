@@ -2418,6 +2418,8 @@ describe('chat theme persistence response contract', () => {
     const client = await readText('src/lib/chatThemes.js');
     const backend = await readText('base44/functions/setChatTheme/entry.ts');
     expect(client).toContain('payload.success !== true');
+    expect(client).toContain('payload.action !== "check_subscription_status"');
+    expect(backend).toContain("action: 'check_subscription_status'");
     expect(client).toContain('payload.theme_id !== themeId');
     expect(client).toContain('payload.action !== "set_chat_theme"');
     expect(client).toContain('payload.userId !== userId');

@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
         review_status: 'pending',
       });
       if (existing.length > 0) {
-        return Response.json({ success: true, duplicate: true });
+        return Response.json({ success: true, action: 'report', userId: reporter.id, contentType: content_type, contentId: normalizedContentId, duplicate: true });
       }
 
       await entities.Violation.create({
@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
         explanation: `Reported by user for: ${reportReason}. Awaiting admin review.`,
       });
 
-      return Response.json({ success: true, message: 'Content reported. Thank you.' });
+      return Response.json({ success: true, action: 'report', userId: reporter.id, contentType: content_type, contentId: normalizedContentId, message: 'Content reported. Thank you.' });
     } finally {
       await releaseArtPostEngagementLock(entities, artPostLockId);
       await releaseMessageMutationLock(entities, messageLockId);

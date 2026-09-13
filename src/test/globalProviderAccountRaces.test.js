@@ -7,8 +7,9 @@ describe('global provider account-switch races', () => {
     const source = await readFile('src/lib/LockedChatsContext.jsx', 'utf8');
     expect(source).toContain('const generation = lockGenerationRef.current;');
     expect(source).toContain('Locked chats changed accounts before the update completed.');
-    expect(source).toContain('const result = await configureLockedChatPin(pin);');
-    expect(source).toContain('const result = await completeLockedChatPinReset(code, pin);');
+    expect(source).toContain('const result = await configureLockedChatPin(pin, user?.id);');
+    expect(source).toContain('const result = await completeLockedChatPinReset(code, pin, user?.id);');
+    expect(source).toContain('const result = await setLockedConversation(conversationId, locked, user?.id);');
   });
 
   it('does not roll back Nali Presence with a previous account save result', async () => {

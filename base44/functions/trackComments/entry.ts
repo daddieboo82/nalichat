@@ -205,7 +205,14 @@ Deno.serve(async (req) => {
           timestamp: row.timestamp,
           created_date: row.created_date,
         }));
-      return Response.json({ comments });
+      return Response.json({
+        success: true,
+        action: 'list',
+        viewerUserId: user?.id || null,
+        parentType,
+        parentId,
+        comments,
+      });
     }
 
     if (action === 'create') {
@@ -231,7 +238,14 @@ Deno.serve(async (req) => {
         text,
         ...(Number.isFinite(timestamp) && timestamp >= 0 ? { timestamp } : {}),
       });
-      return Response.json({ comment });
+      return Response.json({
+        success: true,
+        action: 'create',
+        userId: user.id,
+        parentType,
+        parentId,
+        comment,
+      });
     }
 
     return Response.json({ error: 'Unsupported comment action' }, { status: 400 });

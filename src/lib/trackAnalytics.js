@@ -1,10 +1,20 @@
 import { base44 } from '@/api/base44Client';
 
-export async function recordArtPostPlay(postId) {
+export async function recordArtPostPlay(postId, expectedUserId) {
   if (!postId) return null;
   try {
     const response = await base44.functions.invoke('recordArtPostPlay', { post_id: postId });
-    return response?.data ?? response;
+    const data = response?.data ?? response;
+    if (
+      data?.success !== true ||
+      data?.action !== 'record_art_post_play' ||
+      data?.userId !== expectedUserId ||
+      data?.postId !== postId ||
+      typeof data?.counted !== 'boolean'
+    ) {
+      throw new Error(data?.error || 'Play tracking was not confirmed.');
+    }
+    return data;
   } catch {
     return null;
   }

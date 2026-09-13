@@ -71,8 +71,8 @@ function Select({ value, defaultValue, onValueChange, children, ...props }) {
     </ResponsiveSelectContext.Provider>
   )
 }
-
-const SelectValue = React.forwardRef(({ className, children, placeholder, ...props }, ref) => {
+/** @type {any} */
+(({ className, children, placeholder, ...props }, ref) => {
   const ctx = React.useContext(ResponsiveSelectContext)
 
   if (!ctx.isMobile) {
@@ -87,8 +87,8 @@ const SelectValue = React.forwardRef(({ className, children, placeholder, ...pro
   )
 })
 SelectValue.displayName = "ResponsiveSelectValue"
-
-const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) => {
+/** @type {any} */
+(({ className, children, ...props }, ref) => {
   const ctx = React.useContext(ResponsiveSelectContext)
 
   if (!ctx.isMobile) {

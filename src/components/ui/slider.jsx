@@ -11,8 +11,8 @@ import { cn } from "@/lib/utils"
 // each part correct flex direction and sizing in both orientations, while
 // still letting a consumer's className (merged last via cn) override size.
 /** @type {any} */
-/** @type {any} */
-const Slider = React.forwardRef(({ className, ...props }, ref) => (
+/** @type {any} *//** @type {any} */
+(({ className, ...props }, ref) => (
   <SliderPrimitive.Root
     ref={ref}
     className={cn(

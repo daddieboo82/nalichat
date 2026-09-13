@@ -3,8 +3,8 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 /** @type {any} */
-/** @type {any} */
-const Input = React.forwardRef(({ className, type, ...props }, ref) => {
+/** @type {any} *//** @type {any} */
+(({ className, type, ...props }, ref) => {
   return (
     (<input
       type={type}

@@ -108,6 +108,9 @@ export async function subscribeToRemotePush() {
       userAgent: navigator.userAgent,
     });
     if (registerResponse?.data?.error) throw new Error(registerResponse.data.error);
+    if (registerResponse?.data?.success !== true) {
+      throw new Error("Push registration was not confirmed.");
+    }
   } catch (error) {
     if (createdSubscription) {
       try { await subscription.unsubscribe(); } catch {}
@@ -134,6 +137,8 @@ export async function unsubscribeFromRemotePush() {
     });
     if (unregisterResponse?.data?.error) {
       serverError = new Error(unregisterResponse.data.error);
+    } else if (unregisterResponse?.data?.success !== true) {
+      serverError = new Error("Push unregistration was not confirmed.");
     }
   } catch (error) {
     serverError = error;

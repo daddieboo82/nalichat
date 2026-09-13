@@ -2344,3 +2344,14 @@ describe('call signaling response contract', () => {
     expect(source).toContain('Call signal was not confirmed.');
   });
 });
+
+
+describe('push subscription response contracts', () => {
+  it('requires explicit server confirmation for register and unregister', async () => {
+    const source = await readText('src/lib/pushNotifications.js');
+    expect(source).toContain('registerResponse?.data?.success !== true');
+    expect(source).toContain('Push registration was not confirmed.');
+    expect(source).toContain('unregisterResponse?.data?.success !== true');
+    expect(source).toContain('Push unregistration was not confirmed.');
+  });
+});

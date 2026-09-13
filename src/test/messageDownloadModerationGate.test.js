@@ -7,6 +7,7 @@ describe('message download moderation gate', () => {
     expect(source).toContain("if (user.is_banned)");
     expect(source).toContain("error: 'timed_out'");
     expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('consumeHourlyLimit('));
-    expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('asServiceRole.entities.Message.get'));
+    expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('const entities = base44.asServiceRole.entities;'));
+    expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('const messagePreview = await entities.Message.get(messageId)'));
   });
 });

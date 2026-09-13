@@ -2816,3 +2816,15 @@ describe('Studio invite acceptance response contract', () => {
     expect(source).toContain('Project invite acceptance was not confirmed.');
   });
 });
+
+
+describe('typing clear response identity contract', () => {
+  it('binds conversation-exit typing cleanup to the active user and exact conversation', async () => {
+    const source = await readText('src/hooks/useTypingIndicator.js');
+    expect(source).toContain('response?.data?.action !== "clear"');
+    expect(source).toContain('response?.data?.userId !== currentUser?.id');
+    expect(source).toContain('response?.data?.conversationId !== conversationId');
+    expect(source).toContain('!Number.isInteger(response?.data?.cleared)');
+    expect(source).toContain('Typing clear was not confirmed.');
+  });
+});

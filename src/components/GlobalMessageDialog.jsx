@@ -37,6 +37,13 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicUsers", {});
       if (res?.data?.error) throw new Error(res.data.error);
+      if (
+        res?.data?.success !== true ||
+        res?.data?.viewerUserId !== currentUser?.id ||
+        !Array.isArray(res?.data?.users)
+      ) {
+        throw new Error("User directory response was not confirmed.");
+      }
       return res?.data?.users || [];
     },
     enabled: open && isAuthenticated,

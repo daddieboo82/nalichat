@@ -95,9 +95,23 @@ export function useStudioPresence(roomId = 'local_studio') {
       if (interval) clearInterval(interval);
       if (refreshInterval) clearInterval(refreshInterval);
       if (user?.id) {
+        const expectedUserId = user.id;
         void base44.functions.invoke("updateStudioPresence", {
           action: "clear",
           roomId,
+        }).then((res) => {
+          if (
+            res?.data?.success !== true ||
+            res?.data?.action !== "clear" ||
+            res?.data?.userId !== expectedUserId ||
+            res?.data?.roomId !== roomId ||
+            !Number.isInteger(res?.data?.cleared) ||
+            res.data.cleared < 0 ||
+            !Number.isInteger(res?.data?.cleanup_failures) ||
+            res.data.cleanup_failures < 0
+          ) {
+            throw new Error("Studio presence clear was not confirmed.");
+          }
         }).catch(() => {});
       }
     };

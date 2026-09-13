@@ -51,7 +51,12 @@ describe("chat theme settings", () => {
       isError: false,
     };
     mockBase44.functions.invoke.mockImplementation(async (_name, payload) => ({
-      data: { theme_id: payload.theme_id },
+      data: {
+        success: true,
+        action: 'set_chat_theme',
+        userId: 'user-1',
+        theme_id: payload.theme_id,
+      },
     }));
   });
 

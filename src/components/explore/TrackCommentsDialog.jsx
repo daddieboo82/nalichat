@@ -196,7 +196,7 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
         )}
 
         {/* Comments List */}
-        <div className="max-h-64 overflow-y-auto space-y-3 -mx-1 px-1">
+        <div className="max-h-64 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] space-y-3 -mx-1 px-1">
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
           ) : isError ? (

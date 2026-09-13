@@ -354,7 +354,7 @@ export default function Leaderboard() {
                         {getLikeCount(item)}
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </div>

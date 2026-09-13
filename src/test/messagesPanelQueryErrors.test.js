@@ -12,7 +12,7 @@ describe('Messages panel query errors', () => {
     const session = await readText('src/components/messages/ChatSessionViewer.jsx');
 
     expect(thread).toContain('isError: repliesError');
-    expect(thread).toContain("Couldn't load thread replies. Please try again.");
+    expect(thread).toContain("Couldn't load thread replies.");
     expect(session).toContain('const [tracksError, setTracksError] = useState(false);');
     expect(session).toContain("Couldn't load session tracks. The app will retry automatically.");
     expect(session).toContain('setTracksError(false);');

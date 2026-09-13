@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
       customer: customerId,
       return_url: returnUrl,
     });
-    return Response.json({ portalUrl: session.url });
+    return Response.json({ success: true, portalUrl: session.url });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

@@ -159,6 +159,7 @@ Deno.serve(async (req) => {
       && Date.parse(pendingSubscription.checkout_expires_at) > Date.now()
     ) {
       return Response.json({
+        success: true,
         checkoutUrl: pendingSubscription.checkout_url,
         checkoutId: pendingSubscription.checkout_id,
         trialApplied: Boolean(
@@ -352,6 +353,7 @@ Deno.serve(async (req) => {
     });
 
     return Response.json({
+      success: true,
       checkoutUrl: session.url,
       checkoutId: session.id,
       trialApplied,

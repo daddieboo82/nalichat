@@ -74,6 +74,7 @@ export default function Explore() {
         currentUser &&
         (
           likedRes?.data?.success !== true ||
+          likedRes?.data?.userId !== currentUser?.id ||
           !Array.isArray(likedRes?.data?.post_ids) ||
           !likedRes.data.post_ids.every((id) => typeof id === "string" && id.trim())
         )

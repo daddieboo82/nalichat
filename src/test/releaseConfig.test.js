@@ -2664,3 +2664,15 @@ describe('public achievement response identity contract', () => {
     expect(profile).toContain('!Array.isArray(res?.data?.achievements)');
   });
 });
+
+
+describe('liked-post account isolation response contract', () => {
+  it('applies liked state only when it belongs to the current account', async () => {
+    const backend = await readText('base44/functions/listMyLikedPostIds/entry.ts');
+    const explore = await readText('src/pages/Explore.jsx');
+    const profile = await readText('src/pages/Profile.jsx');
+    expect(backend).toContain('userId: user.id');
+    expect(explore).toContain('likedRes?.data?.userId !== currentUser?.id');
+    expect(profile).toContain('likedRes?.data?.userId !== currentUser?.id');
+  });
+});

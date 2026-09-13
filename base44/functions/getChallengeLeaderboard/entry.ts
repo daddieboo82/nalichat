@@ -3,11 +3,32 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 
 const MAX_LEADERBOARD_SUBMISSIONS = 500;
-const MAX_WEEKLY_VOTES = 5000;
 const CACHE_TTL_MS = 15_000;
 const MAX_CACHE_ENTRIES = 100;
 const leaderboardCache = new Map<string, { expiresAt: number; payload: unknown; status?: number }>();
 const leaderboardInFlight = new Map<string, Promise<unknown>>();
+
+async function loadWeeklyVotes(
+  entity: any,
+  challengeId: string,
+  weekStartIso: string,
+) {
+  const rows: any[] = [];
+  const pageSize = 500;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entity.filter(
+      {
+        challenge_id: challengeId,
+        created_date: { $gte: weekStartIso },
+      },
+      '-created_date',
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
 
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
@@ -100,13 +121,10 @@ Deno.serve(async (req) => {
             '-vote_count',
             MAX_LEADERBOARD_SUBMISSIONS,
           ),
-          entities.ChallengeVote.filter(
-            {
-              challenge_id: challengeId,
-              created_date: { $gte: weekStart.toISOString() },
-            },
-            '-created_date',
-            MAX_WEEKLY_VOTES,
+          loadWeeklyVotes(
+            entities.ChallengeVote,
+            challengeId,
+            weekStart.toISOString(),
           ),
         ]);
 
@@ -132,7 +150,7 @@ Deno.serve(async (req) => {
           counts,
           truncated: {
             submissions: submissions.length >= MAX_LEADERBOARD_SUBMISSIONS,
-            weeklyVotes: votes.length >= MAX_WEEKLY_VOTES,
+            weeklyVotes: false,
           },
         };
         leaderboardCache.set(challengeId, {

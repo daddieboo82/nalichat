@@ -211,13 +211,13 @@ export default function Files() {
     setZipping(false);
   };
 
-  const { data: files = [], isLoading } = useQuery({
+  const { data: files = [], isLoading, isError: filesError } = useQuery({
     queryKey: ["shared-files", currentUser?.id],
     queryFn: () => listAllAccessible(base44.entities.SharedFile),
     enabled: !!currentUser?.id,
   });
 
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [], isError: projectsError } = useQuery({
     queryKey: ["projects", currentUser?.id],
     queryFn: async () => {
       if (!currentUser) return [];
@@ -227,7 +227,7 @@ export default function Files() {
     enabled: !!currentUser?.id,
   });
 
-  const { data: folders = [] } = useQuery({
+  const { data: folders = [], isError: foldersError } = useQuery({
     queryKey: ["folders", currentUser?.id],
     queryFn: () => currentUser ? listAllAccessible(base44.entities.Folder) : [],
     enabled: !!currentUser?.id,
@@ -549,6 +549,15 @@ export default function Files() {
         ) : isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        ) : filesError || projectsError || foldersError ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <FolderOpen className="w-12 h-12 opacity-30 mb-3" />
+            <p className="font-heading text-lg">Couldn't load your files</p>
+            <p className="text-sm text-muted-foreground mt-1 mb-4">Your data is still safe. Try loading it again.</p>
+            <Button type="button" variant="outline" onClick={() => void handleRefresh()}>
+              Retry
+            </Button>
           </div>
         ) : (!currentFolderId && filteredFolders.length === 0 && filtered.length === 0) || (currentFolderId && filtered.length === 0) ? (
           <div className="text-center text-muted-foreground py-20">

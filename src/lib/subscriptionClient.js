@@ -103,6 +103,7 @@ export async function checkSubscriptionStatus(expectedUserId) {
     typeof payload !== "object" ||
     payload.error ||
     payload.success !== true ||
+    payload.action !== "check_subscription_status" ||
     typeof payload.userId !== "string" ||
     !payload.userId.trim() ||
     (expectedUserId && payload.userId !== expectedUserId)

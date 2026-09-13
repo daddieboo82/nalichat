@@ -120,6 +120,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
+      action: 'check_subscription_status',
       userId: user.id,
       plan,
       status,

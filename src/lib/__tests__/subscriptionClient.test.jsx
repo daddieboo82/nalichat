@@ -66,7 +66,8 @@ describe("subscription client normalization", () => {
   });
 
   it("treats an error-shaped API response as a failure", async () => {
-    mockInvoke.mockResolvedValue({ data: { error: "status unavailable" } });
+    mockInvoke.mockResolvedValue({ data: {
+        action: "check_subscription_status", error: "status unavailable" } });
     await expect(checkSubscriptionStatus()).rejects.toThrow("status unavailable");
   });
 
@@ -85,6 +86,9 @@ describe("subscription client normalization", () => {
     mockInvoke
       .mockResolvedValueOnce({
         data: {
+          success: true,
+          action: "check_subscription_status",
+          userId: "user-1",
           plan: "premium",
           status: "active",
           hasPaidAccess: true,

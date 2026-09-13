@@ -20,14 +20,18 @@ Any change pushed to the repo will also be reflected in the Base44 Builder.
 
 ```
 VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
+VITE_BASE44_BACKEND_URL=https://base44.app
+VITE_BASE44_APP_BASE_URL=https://nalichat.org
 VITE_PAYWALL_ENABLED=true
 VITE_PAYWALL_VARIANT=auto
 
-e.g.
+# NaliChat production example
 VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
+VITE_BASE44_BACKEND_URL=https://base44.app
+VITE_BASE44_APP_BASE_URL=https://nalichat.org
 ```
+
+`VITE_BASE44_BACKEND_URL` configures the Base44 SDK server endpoint. `VITE_BASE44_APP_BASE_URL` is the public app origin used for app-level URLs and must not be used as the SDK backend endpoint.
 
 `VITE_PAYWALL_ENABLED=false` disables paid checkout UI while leaving Free chat
 available. `VITE_PAYWALL_VARIANT` accepts `auto`, `A`, or `B`; `auto` assigns and

@@ -16,12 +16,31 @@ export default function PullToRefresh({ onRefresh, className, children }) {
   const scrollRef = useRef(null);
   const startY = useRef(0);
   const pulling = useRef(false);
+  const activeScrollerRef = useRef(null);
   const [pull, setPull] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const onTouchStart = (e) => {
     if (!isMobile || refreshing) return;
-    if (scrollRef.current && scrollRef.current.scrollTop <= 0) {
+    const wrapper = scrollRef.current;
+    if (!wrapper) return;
+
+    // The wrapped content may own the real vertical scroller (Messages does).
+    // Walk up from the touched element and use the first scrollable descendant
+    // instead of assuming this wrapper's scrollTop is authoritative.
+    let node = e.target instanceof Element ? e.target : null;
+    let scroller = null;
+    while (node && node !== wrapper) {
+      const style = window.getComputedStyle(node);
+      const canScrollY = /(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight;
+      if (canScrollY) {
+        scroller = node;
+        break;
+      }
+      node = node.parentElement;
+    }
+    activeScrollerRef.current = scroller || wrapper;
+    if (activeScrollerRef.current.scrollTop <= 0) {
       startY.current = e.touches[0].clientY;
       pulling.current = true;
     }
@@ -37,8 +56,12 @@ export default function PullToRefresh({ onRefresh, className, children }) {
   };
 
   const onTouchEnd = async () => {
-    if (!pulling.current) return;
+    if (!pulling.current) {
+      activeScrollerRef.current = null;
+      return;
+    }
     pulling.current = false;
+    activeScrollerRef.current = null;
     if (pull >= THRESHOLD) {
       setRefreshing(true);
       setPull(THRESHOLD);

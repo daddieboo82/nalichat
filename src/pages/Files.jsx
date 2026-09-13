@@ -516,18 +516,18 @@ export default function Files() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-6 pb-0">
-        <div className="flex items-center justify-between mb-6">
+    <div className="flex h-full flex-col bg-background">
+      <div className="px-4 pt-5 sm:px-6 sm:pt-6">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold">Files</h1>
             <p className="text-sm text-muted-foreground">Share music, sessions, art & more</p>
           </div>
           {typeFilter !== "transfer" && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {uploading && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
               <Button
-                className="bg-primary hover:bg-primary/90 text-white shadow-sm"
+                className="ui-hover min-h-11 flex-1 rounded-xl bg-primary font-semibold text-white shadow-lg shadow-primary/10 hover:bg-primary/90 sm:flex-none"
                 onClick={() => setShowUploadModal(true)}
                 disabled={uploading}
               >
@@ -537,7 +537,7 @@ export default function Files() {
               <Button
                 variant="default"
                 size="sm"
-                className="bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 transition-all text-white"
+                className="ui-hover min-h-11 flex-1 rounded-xl bg-gradient-to-r from-primary to-pink-500 font-semibold text-white transition-all hover:opacity-90 sm:flex-none"
                 onClick={() => navigate('/explore?upload=true')}
                 title="Publish Track to Explore"
               >
@@ -547,7 +547,7 @@ export default function Files() {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 mb-6">
+        <div className="mb-5 flex flex-wrap items-center gap-2 sm:gap-4">
           {typeFilter !== "transfer" && (
             <>
               <Button 
@@ -567,12 +567,12 @@ export default function Files() {
               </Button>
               <div className="relative flex-1 max-w-md min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Search files..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-secondary/50 border-0 rounded-xl" />
+                <Input placeholder="Search files..." value={search} onChange={e => setSearch(e.target.value)} className="h-11 rounded-xl border border-border/50 bg-secondary/40 pl-9 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
               </div>
             </>
           )}
           <Tabs value={typeFilter} onValueChange={setTypeFilter} className={typeFilter === "transfer" ? "ml-auto" : ""}>
-            <TabsList className="bg-secondary/50">
+            <TabsList className="no-scrollbar max-w-[calc(100vw-2rem)] justify-start overflow-x-auto rounded-xl bg-secondary/50 p-1">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="audio">Audio</TabsTrigger>
               <TabsTrigger value="image">Images</TabsTrigger>
@@ -584,12 +584,12 @@ export default function Files() {
         </div>
 
         {selectedIds.length > 0 && (
-          <div className="flex items-center justify-between gap-3 mb-4 p-3 rounded-xl bg-primary/10 border border-primary/20">
+          <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/10 p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-sm font-medium text-primary">
               <CheckSquare className="w-4 h-4" />
               {selectedIds.length} selected
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               {accessibleFolders.length > 0 && (
                 <Button 
                   size="sm" 
@@ -644,7 +644,7 @@ export default function Files() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 pb-6">
+      <div className="flex-1 overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-6">
         <PullToRefresh onRefresh={handleRefresh}>
         {typeFilter === "transfer" ? (
           <LargeFileTransfer currentUser={currentUser} />
@@ -687,7 +687,7 @@ export default function Files() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className="bg-card/50 backdrop-blur-xl rounded-xl border border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70 p-4 cursor-pointer transition-all duration-300 group"
+                    className="ui-surface ui-hover group cursor-pointer rounded-2xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl hover:border-white/[0.12] hover:bg-card/70"
                     onClick={() => setCurrentFolderId(folder.id)}
                   >
                     <div className="flex items-start gap-3">
@@ -719,7 +719,7 @@ export default function Files() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.03 }}
-                      className={`bg-card/50 backdrop-blur-xl rounded-xl border p-4 transition-all duration-300 group ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70"}`}
+                      className={`ui-surface group rounded-2xl border bg-card/50 p-4 backdrop-blur-xl transition-all ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70"}`}
                     >
                       <div className="flex items-start gap-3">
                         <Checkbox
@@ -770,7 +770,7 @@ export default function Files() {
                             </Button>
                           )}
                         </div>
-                        <div className="flex gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                        <div className="flex flex-wrap justify-end gap-1 opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity">
                           <FileShareButton file={file} canShare={canEditFile} currentUserId={currentUser?.id} />
                           <FileDownloadButton file={file} />
                           {canEditFile && (
@@ -803,7 +803,7 @@ export default function Files() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className={`bg-card/50 backdrop-blur-xl rounded-xl border p-4 transition-all duration-300 group ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70"}`}
+                  className={`ui-surface group rounded-2xl border bg-card/50 p-4 backdrop-blur-xl transition-all ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70"}`}
                 >
                   <div className="flex items-start gap-3">
                     <Checkbox
@@ -855,7 +855,7 @@ export default function Files() {
                         </Button>
                       )}
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex flex-wrap justify-end gap-1 opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity">
                       <FileShareButton file={file} canShare={canEditFile} currentUserId={currentUser?.id} />
                       <FileDownloadButton file={file} />
                       {canEditFile && (
@@ -919,7 +919,7 @@ export default function Files() {
               placeholder="Folder name"
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              className="rounded-lg bg-secondary/50 border-0"
+              className="h-11 rounded-xl border border-border/50 bg-secondary/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && newFolderName.trim()) {
                   createFolderMutation.mutate(newFolderName);
@@ -969,7 +969,7 @@ export default function Files() {
                 placeholder="File name"
                 value={editFormData.name}
                 onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                className="rounded-lg bg-secondary/50 border-0"
+                className="h-11 rounded-xl border border-border/50 bg-secondary/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <div className="space-y-1">
@@ -978,7 +978,7 @@ export default function Files() {
                 placeholder="Description"
                 value={editFormData.description}
                 onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                className="rounded-lg bg-secondary/50 border-0"
+                className="h-11 rounded-xl border border-border/50 bg-secondary/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <div className="space-y-1">
@@ -987,7 +987,7 @@ export default function Files() {
                 placeholder="tag1, tag2"
                 value={editFormData.tags}
                 onChange={(e) => setEditFormData({ ...editFormData, tags: e.target.value })}
-                className="rounded-lg bg-secondary/50 border-0"
+                className="h-11 rounded-xl border border-border/50 bg-secondary/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <div className="flex gap-2 pt-2">
@@ -1026,7 +1026,7 @@ export default function Files() {
               <button
                 key={folder.id}
                 onClick={() => moveToFolderMutation.mutate({ fileIds: selectedIds, folderId: folder.id })}
-                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors text-left"
+                className="ui-hover flex min-h-12 w-full items-center gap-3 rounded-xl p-3 text-left transition-colors hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <FolderOpen className="w-4 h-4 text-accent shrink-0" />
                 <div className="flex flex-col min-w-0 flex-1">

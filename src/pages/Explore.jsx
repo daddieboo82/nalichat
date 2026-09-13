@@ -104,7 +104,13 @@ export default function Explore() {
       return { previous, filter };
     },
     onError: (_err, _post, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData(["artposts", ctx.filter], ctx.previous);
+      if (ctx?.previous) {
+        queryClient.setQueryData(
+          ["artposts", ctx.filter, currentUser?.id],
+          ctx.previous,
+        );
+      }
+      toast.error("Couldn't update like. Please try again.");
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["artposts"] }),
   });

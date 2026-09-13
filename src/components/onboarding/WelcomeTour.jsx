@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Sparkles, UserCircle, Trophy, ArrowRight, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";
 import { toast } from "sonner";
 
@@ -36,6 +37,7 @@ const STEPS = [
 export default function WelcomeTour({ open, onClose }) {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const current = STEPS[step];
   const Icon = current.icon;
 
@@ -43,7 +45,12 @@ export default function WelcomeTour({ open, onClose }) {
     try {
       const res = await base44.functions.invoke("updateMyProfile", { welcome_tour_completed: true });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true) throw new Error("Tour completion was not confirmed.");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "update_my_profile" ||
+        res?.data?.userId !== user?.id ||
+        !res?.data?.updatedFields?.includes("welcome_tour_completed")
+      ) throw new Error("Tour completion was not confirmed.");
       return true;
     } catch (error) {
       toast.error("Couldn't save your tour progress. Please try again.");

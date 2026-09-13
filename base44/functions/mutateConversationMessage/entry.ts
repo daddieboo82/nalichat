@@ -350,7 +350,14 @@ Deno.serve(async (req) => {
       else reactions[key] = emoji;
 
       const updated = await entities.Message.update(message.id, { reactions });
-      return Response.json({ success: true, message: updated, reactions });
+      return Response.json({
+        success: true,
+        action: 'react',
+        userId: user.id,
+        messageId: message.id,
+        message: updated,
+        reactions,
+      });
     }
 
     if (action === 'delete') {

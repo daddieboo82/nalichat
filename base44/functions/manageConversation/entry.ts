@@ -540,7 +540,7 @@ Deno.serve(async (req) => {
               participants,
             );
           }
-          return Response.json({ success: true, conversation: { ...currentRoom, participant_ids: participants } });
+          return Response.json({ success: true, action: 'create_public', userId: user.id, conversationId: currentRoom.id, roomName: name, conversation: { ...currentRoom, participant_ids: participants } });
         } finally {
           await releaseConversationMembershipLock(entities, lockId);
         }
@@ -560,7 +560,7 @@ Deno.serve(async (req) => {
           is_public: true,
           participant_ids: [user.id],
         });
-        return Response.json({ success: true, conversation });
+        return Response.json({ success: true, action: 'create_public', userId: user.id, conversationId: conversation.id, roomName: name, conversation });
       } catch (createError) {
         const raced = await entities.Conversation.get(id).catch(() => null);
         if (
@@ -598,6 +598,10 @@ Deno.serve(async (req) => {
           }
           return Response.json({
             success: true,
+            action: 'create_public',
+            userId: user.id,
+            conversationId: currentRoom.id,
+            roomName: name,
             conversation: { ...currentRoom, participant_ids: participants },
             duplicate: true,
           });
@@ -661,7 +665,7 @@ Deno.serve(async (req) => {
             conversation,
             participantIds,
           );
-      return Response.json({ success: true, conversation: updated });
+      return Response.json({ success: true, action: 'join_public', userId: user.id, conversationId: conversation.id, conversation: updated });
     }
 
     if (!isParticipant) return Response.json({ error: 'Forbidden' }, { status: 403 });

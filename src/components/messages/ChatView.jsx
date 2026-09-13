@@ -192,7 +192,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       markedRef.current.add(m.id);
       base44.functions.invoke('markMessageRead', { message_id: m.id })
         .then((res) => {
-          if (res?.data?.error) {
+          if (res?.data?.error || res?.data?.success !== true) {
             markedRef.current.delete(m.id);
           }
         })

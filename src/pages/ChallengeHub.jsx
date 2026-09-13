@@ -81,13 +81,13 @@ export default function ChallengeHub() {
 
   return (
     <PullToRefresh onRefresh={refresh} className="mx-auto max-w-5xl space-y-7 px-4 py-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:p-6 sm:space-y-8">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-heading text-2xl sm:text-3xl font-bold text-gradient-animate">Remix Challenges</h1>
-          <p className="text-muted-foreground text-sm mt-1">Upload a source track, remix, and vote for the community's best.</p>
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-gradient-animate sm:text-3xl">Remix Challenges</h1>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">Upload a source track, remix, and vote for the community's best.</p>
         </div>
         {user && (
-          <Button className="ui-hover min-h-11 gap-1.5 rounded-xl bg-gradient-to-r from-primary to-accent px-4 font-semibold text-white shadow-lg shadow-primary/10" asChild>
+          <Button className="ui-hover min-h-12 w-full gap-1.5 rounded-xl bg-gradient-to-r from-primary to-accent px-5 font-semibold text-white shadow-lg shadow-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-auto" asChild>
             <Link to="/create-challenge"><Plus className="w-4 h-4" /> Create Challenge</Link>
             </Button>
         )}

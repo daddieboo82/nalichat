@@ -54,6 +54,7 @@ export default function StudioEditor() {
 
   const handleUploadToLeaderboard = async () => {
     if (!audioUrl || !uploadTitle || !currentUser) return;
+    const publishingUserId = currentUser.id;
     
     try {
       const published = await base44.functions.invoke("createArtPost", {
@@ -65,7 +66,15 @@ export default function StudioEditor() {
         genre: 'Electronic'
       });
       if (published?.data?.error) throw new Error(published.data.error);
-      setPublishedPostId(published?.data?.post?.id || null);
+      const post = published?.data?.post;
+      if (
+        published?.data?.success !== true ||
+        published?.data?.action !== "create_art_post" ||
+        published?.data?.userId !== publishingUserId ||
+        published?.data?.postId !== post?.id ||
+        post?.creator_id !== publishingUserId
+      ) throw new Error("Track publish was not confirmed");
+      setPublishedPostId(post.id);
       setShareDialog(false);
       setError("");
     } catch (err) {

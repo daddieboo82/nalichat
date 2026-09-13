@@ -60,7 +60,8 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
   };
 
   const submit = async () => {
-    if (!currentUser || !form.title || (!audioFile && !sourceFile?.file_url)) return;
+    const publishingUserId = currentUser?.id;
+    if (!publishingUserId || !form.title || (!audioFile && !sourceFile?.file_url)) return;
     setLoading(true);
     let image_url = null;
     let file_url = sourceFile?.file_url || null;
@@ -85,6 +86,13 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
       });
       if (published?.data?.error) throw new Error(published.data.error);
       createdPost = published?.data?.post;
+      if (
+        published?.data?.success !== true ||
+        published?.data?.action !== "create_art_post" ||
+        published?.data?.userId !== publishingUserId ||
+        published?.data?.postId !== createdPost?.id ||
+        createdPost?.creator_id !== publishingUserId
+      ) throw new Error("Track release was not confirmed.");
     } catch (err) {
       console.error("Track release failed:", err);
       toast.error(err?.message || "Track release failed. Your selections are still here so you can retry.");
@@ -98,7 +106,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
         if (
           reward?.data?.success !== true ||
           reward?.data?.action !== "claim_publish_reward" ||
-          reward?.data?.userId !== currentUser.id ||
+          reward?.data?.userId !== publishingUserId ||
           reward?.data?.postId !== createdPost.id
         ) {
           throw new Error("Publish reward was not confirmed.");
@@ -106,7 +114,7 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
       } catch (err) {
         console.error("Failed to award publish XP:", err);
       }
-      recordSquadActivity("art_post", createdPost.id, currentUser?.id);
+      recordSquadActivity("art_post", createdPost.id, publishingUserId);
     }
 
     setLoading(false);

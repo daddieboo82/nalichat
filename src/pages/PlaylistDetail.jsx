@@ -60,7 +60,13 @@ export default function PlaylistDetail() {
       });
       if (published?.data?.error) throw new Error(published.data.error);
       const newPost = published?.data?.post;
-      if (!newPost?.id) throw new Error("Track was not created");
+      if (
+        published?.data?.success !== true ||
+        published?.data?.action !== "create_art_post" ||
+        published?.data?.userId !== currentUser?.id ||
+        published?.data?.postId !== newPost?.id ||
+        newPost?.creator_id !== currentUser?.id
+      ) throw new Error("Track was not created");
       try {
         const res = await base44.functions.invoke("mutatePlaylist", {
           action: "add_track",

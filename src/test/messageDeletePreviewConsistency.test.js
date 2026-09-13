@@ -12,6 +12,11 @@ describe('message delete preview consistency', () => {
     const chat = await readText('src/components/messages/ChatView.jsx');
 
     expect(backend).toContain('async function repairConversationPreview');
+    expect(backend).toContain("action: 'delete'");
+    expect(backend).toContain('userId: user.id');
+    expect(backend).toContain('conversationId: message.conversation_id');
+    expect(chat).toContain('res?.data?.messageId !== id');
+    expect(chat).toContain('res?.data?.conversationId !== conversation?.id');
     expect(backend).toContain("if (!message && action === 'delete')");
     expect(backend).toContain('preview_refresh_failed: previewRefreshFailed');
     expect(backend).toContain('already_deleted: true');

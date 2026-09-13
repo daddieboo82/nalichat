@@ -145,16 +145,18 @@ export const AuthProvider = ({ children }) => {
       // session for the departing account. Purge its persisted outbound
       // plaintext before discarding the user id, otherwise a later account
       // switch cannot identify which queued entries belong to the old user.
-      if (departingUserId && getAuthErrorStatus(error) === 401) {
-        purgeOutboundQueueForUser(departingUserId);
+      if (getAuthErrorStatus(error) === 401) {
+        if (departingUserId) purgeOutboundQueueForUser(departingUserId);
+        clearPersistedAuthTokens();
       }
       lastUserIdRef.current = null;
       setUser(null);
       setIsAuthenticated(false);
       setAuthChecked(true);
-      // Do NOT clear the token — clearing it on a transient failure is the
-      // race condition that causes the app to revert to logged-out right
-      // after a successful login.  Only logout() clears the token.
+      // Transient failures preserve the token so a successful login/session is
+      // not discarded during propagation. A terminal 401 is authoritative and
+      // clears persisted tokens above so an expired bearer cannot override the
+      // next login or survive a reload.
       return null;
     }
   }, [queryClient]);

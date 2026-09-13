@@ -44,3 +44,16 @@ describe('shared file mutation response identity contract', () => {
     expect(files).toContain('res?.data?.folderId !== folderId');
   });
 });
+
+
+describe('file share token response validation', () => {
+  it('accepts only a file-bound secure token with a future expiry', async () => {
+    const source = await readText('src/pages/Files.jsx');
+    expect(source).toContain('res?.data?.action !== "create_file_share_link"');
+    expect(source).toContain('res?.data?.userId !== currentUserId');
+    expect(source).toContain('res?.data?.fileId !== file.id');
+    expect(source).toContain('/^[0-9a-f]{64}$/i.test(token)');
+    expect(source).toContain('expiresAtMs <= Date.now()');
+    expect(source).toContain('Secure share link was not confirmed');
+  });
+});

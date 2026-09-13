@@ -15,17 +15,24 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function DeleteAccountDialog() {
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const { user: currentUser } = useAuth();
 
   const handleDelete = async () => {
     setDeleting(true);
     try {
       const res = await base44.functions.invoke("deleteMyAccount", { confirmation: "DELETE" });
-      if (!res?.data?.success) {
-        throw new Error(res?.data?.error || "Account deletion failed");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "delete_my_account" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.deleted !== true
+      ) {
+        throw new Error(res?.data?.error || "Account deletion was not confirmed");
       }
       toast.success("Your account has been deleted.");
       await base44.auth.logout();

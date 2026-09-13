@@ -6,8 +6,8 @@ async function readText(path) {
   return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
 }
 
-describe('client collection read bounds', () => {
-  it('caps high-volume user-facing collection reads', async () => {
+describe('client collection read behavior', () => {
+  it('keeps bounded history feeds capped while complete-data views paginate', async () => {
     const versions = await readText('src/components/studio/TrackVersionHistory.jsx');
     const contacts = await readText('src/components/messages/ContactsTab.jsx');
     const newChat = await readText('src/components/messages/NewChatDialog.jsx');
@@ -16,13 +16,23 @@ describe('client collection read bounds', () => {
     const quick = await readText('src/components/home/QuickAccessGrid.jsx');
     const session = await readText('src/components/messages/ChatSessionViewer.jsx');
 
+    // Version history is an intentionally bounded history surface.
     expect(versions).toContain('TrackVersion.filter({ track_id: track.id }, "-version_number", 500)');
-    expect(contacts).toContain('Contact.filter({ user_id: currentUserId }, "-created_date", 500)');
-    expect(newChat).toContain('Contact.filter({ user_id: currentUserId }, "-created_date", 500)');
-    expect(files).toContain('SharedFile.list("-created_date", 500)');
-    expect(files).toContain('Project.list("-created_date", 500)');
-    expect(summary).toContain('Milestone.list("-created_date", 500)');
-    expect(quick).toContain('Conversation.list("-last_message_at", 500)');
-    expect(session).toContain('Track.filter({ project_id: message.id }, "created_date", 500)');
+
+    // Complete-data surfaces must not silently truncate older accessible rows.
+    expect(contacts).toContain('async function listAllContacts(userId)');
+    expect(newChat).toContain('async function listAllContacts(userId)');
+    expect(files).toContain('async function listAllAccessible(entity, sort = "-created_date", pageSize = 200)');
+    expect(summary).toContain('async function listAllRows(entity, sort = "-created_date", pageSize = 200)');
+    expect(quick).toContain('async function listAllUserConversations(userId)');
+    expect(session).toContain('async function listSessionTracks(projectId)');
+
+    expect(contacts).not.toContain('Contact.filter({ user_id: currentUserId }, "-created_date", 500)');
+    expect(newChat).not.toContain('Contact.filter({ user_id: currentUserId }, "-created_date", 500)');
+    expect(files).not.toContain('SharedFile.list("-created_date", 500)');
+    expect(files).not.toContain('Project.list("-created_date", 500)');
+    expect(summary).not.toContain('Milestone.list("-created_date", 500)');
+    expect(quick).not.toContain('"-last_message_at",\n          500,');
+    expect(session).not.toContain('Track.filter({ project_id: message.id }, "created_date", 500)');
   });
 });

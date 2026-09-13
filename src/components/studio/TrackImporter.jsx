@@ -1,4 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
+import { validateUpload } from "@/lib/uploadValidation";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -39,13 +40,16 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
     const audioFiles = Array.from(files).filter(isSupportedFormat);
     if (audioFiles.length === 0) return;
 
-    const newItems = audioFiles.map(file => ({
-      id: `${file.name}-${Date.now()}`,
-      file,
-      name: file.name.replace(/\.[^/.]+$/, ""),
-      status: "pending",
-      error: null,
-    }));
+    const newItems = audioFiles.map(file => {
+      const validation = validateUpload(file);
+      return {
+        id: `${file.name}-${Date.now()}`,
+        file,
+        name: file.name.replace(/\.[^/.]+$/, ""),
+        status: validation.ok ? "pending" : "error",
+        error: validation.ok ? null : validation.error,
+      };
+    });
 
     setQueue(prev => [...prev, ...newItems]);
     if (!open) setOpen(true);

@@ -47,6 +47,24 @@ function isDeletedUserId(value: unknown): value is string {
   return typeof value === 'string' && value.startsWith('deleted:');
 }
 
+async function loadStripeSubscriptionsForUser(
+  entities: any,
+  userId: string,
+): Promise<any[]> {
+  const rows: any[] = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entities.Subscription.filter(
+      { user_id: userId, provider: 'stripe' },
+      '-created_date',
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 async function findSubscription(
   entities: any,
   {
@@ -76,10 +94,10 @@ async function findSubscription(
     if (bySubscription) return bySubscription;
   }
   if (metadata) {
-    const userRecords = await entities.Subscription.filter({
-      user_id: metadata.userId,
-      provider: 'stripe',
-    });
+    const userRecords = await loadStripeSubscriptionsForUser(
+      entities,
+      metadata.userId,
+    );
     const matching = userRecords.filter((record: any) => (
       record.sku === metadata.sku
       && (!customerId || !record.stripe_customer_id || record.stripe_customer_id === customerId)

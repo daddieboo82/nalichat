@@ -56,5 +56,10 @@ describe('final user-facing error states', () => {
     expect(source).toContain('Log in to send messages.');
     expect(source).toContain("Couldn't load people. Please try again.");
     expect(source).toContain('toast.error(error?.message === "moderated"');
+    expect(source).toContain('created?.data?.success !== true');
+    expect(source).toContain('conversation.participant_ids.includes(selectedUser.id)');
+    expect(source).toContain('send?.data?.success !== true');
+    expect(source).toContain('sentMessage?.client_message_key !== clientMessageKey');
+    expect(source).toContain('Message send was not confirmed.');
   });
 });

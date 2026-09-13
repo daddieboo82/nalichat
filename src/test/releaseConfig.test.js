@@ -2387,3 +2387,15 @@ describe('typing heartbeat response contract', () => {
     expect(source).toContain('lastSentRef.current = 0');
   });
 });
+
+
+describe('secure upload response contract', () => {
+  it('requires explicit backend success and a non-empty file URL', async () => {
+    const client = await readText('src/lib/secureUpload.js');
+    const backend = await readText('base44/functions/secureUploadFile/entry.ts');
+    expect(client).toContain('result?.data?.success !== true');
+    expect(client).toContain('typeof fileUrl !== "string" || !fileUrl.trim()');
+    expect(client).toContain('Upload was not confirmed.');
+    expect(backend).toContain('success: true, file_url: fileUrl');
+  });
+});

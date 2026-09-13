@@ -2407,7 +2407,10 @@ describe('chat theme persistence response contract', () => {
     const backend = await readText('base44/functions/setChatTheme/entry.ts');
     expect(client).toContain('payload.success !== true');
     expect(client).toContain('payload.theme_id !== themeId');
-    expect(backend).toContain('success: true, theme_id: themeId');
+    expect(client).toContain('payload.action !== "set_chat_theme"');
+    expect(client).toContain('payload.userId !== userId');
+    expect(backend).toContain("action: 'set_chat_theme'");
+    expect(backend).toContain('userId: user.id');
   });
 });
 

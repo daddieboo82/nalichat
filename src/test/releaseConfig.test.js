@@ -2268,3 +2268,14 @@ describe('contact mutation response contracts', () => {
     expect(source).toContain('contact?.contact_user_id !== user.id');
   });
 });
+
+
+describe('direct message creation response contract', () => {
+  it('only opens a new DM after the server returns the exact two participants', async () => {
+    const source = await readText('src/pages/Messages.jsx');
+    expect(source).toContain('conv?.type !== "dm"');
+    expect(source).toContain('conv.participant_ids.length !== 2');
+    expect(source).toContain('!conv.participant_ids.includes(currentUser.id)');
+    expect(source).toContain('!conv.participant_ids.includes(otherUser.id)');
+  });
+});

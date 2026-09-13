@@ -14,11 +14,20 @@ vi.mock("@/api/base44Client", () => ({
 describe("locked chat client protocol", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    invoke.mockResolvedValue({ data: { unlocked: true, security: { configured: true } } });
+    invoke.mockImplementation(async (_name, payload) => ({
+      data: {
+        success: true,
+        action: payload.action,
+        userId: "user-123",
+        unlocked: true,
+        security: { configured: true },
+        reset: payload.action === "complete_reset",
+      },
+    }));
   });
 
   it("never sends the plaintext PIN during setup", async () => {
-    await configureLockedChatPin("123456");
+    await configureLockedChatPin("123456", "user-123");
     const [, payload] = invoke.mock.calls[0];
 
     expect(payload.action).toBe("set_pin");
@@ -32,7 +41,7 @@ describe("locked chat client protocol", () => {
     await verifyLockedChatPin("123456", {
       salt: btoa("1234567890123456"),
       iterations: 600_000,
-    });
+    }, "user-123");
     const [, payload] = invoke.mock.calls[0];
 
     expect(payload).toEqual({
@@ -43,7 +52,7 @@ describe("locked chat client protocol", () => {
   }, 10_000);
 
   it("sends only the one-time code and a new verifier during reset", async () => {
-    await completeLockedChatPinReset("654321", "123456");
+    await completeLockedChatPinReset("654321", "123456", "user-123");
     const [, payload] = invoke.mock.calls[0];
 
     expect(payload.action).toBe("complete_reset");

@@ -2651,3 +2651,16 @@ describe('profile and leaderboard public-directory isolation', () => {
     expect(leaderboard).toContain('res?.data?.requestedUserId !== null');
   });
 });
+
+
+describe('public achievement response identity contract', () => {
+  it('renders achievements only for the exact viewer and requested profile', async () => {
+    const backend = await readText('base44/functions/listPublicAchievements/entry.ts');
+    const profile = await readText('src/pages/Profile.jsx');
+    expect(backend).toContain('viewerUserId: user.id');
+    expect(backend).toContain('requestedUserId: targetUserId');
+    expect(profile).toContain('res?.data?.viewerUserId !== currentUser?.id');
+    expect(profile).toContain('res?.data?.requestedUserId !== user.id');
+    expect(profile).toContain('!Array.isArray(res?.data?.achievements)');
+  });
+});

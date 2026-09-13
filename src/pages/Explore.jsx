@@ -82,7 +82,10 @@ export default function Explore() {
     mutationFn: async (post) => {
       const res = await base44.functions.invoke("deleteArtPost", { postId: post.id });
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data;
+      if (res?.data?.success !== true) {
+        throw new Error("Track deletion was not confirmed.");
+      }
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["artposts"] });

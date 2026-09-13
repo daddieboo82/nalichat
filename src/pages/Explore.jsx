@@ -173,14 +173,14 @@ export default function Explore() {
       <div className="relative overflow-hidden border-b border-border/60 bg-gradient-to-br from-primary/25 via-background to-accent/15 px-4 pb-6 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8 sm:pt-8">
         <div className="absolute -top-24 right-10 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-float-blob pointer-events-none" />
         <div className="absolute -bottom-24 left-10 w-72 h-72 bg-accent/20 rounded-full blur-3xl animate-float-blob pointer-events-none" style={{ animationDelay: "-7s" }} />
-        <div className="relative max-w-5xl mx-auto">
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div className="relative mx-auto max-w-5xl">
+          <div className="mb-4 flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles className="w-5 h-5 text-primary" />
                 <span className="text-xs text-primary font-semibold uppercase tracking-wider">Gallery</span>
               </div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-heading font-black text-gradient-animate inline-block">Explore & Discover</h1>
+              <h1 className="inline-block font-heading text-2xl font-black tracking-tight text-gradient-animate sm:text-3xl">Explore & Discover</h1>
               <p className="text-muted-foreground text-sm mt-1">Tracks from producers worldwide</p>
             </div>
             <button
@@ -195,7 +195,7 @@ export default function Explore() {
               }}
               title="Release Track"
               aria-label="Release Track"
-              className="ui-hover flex min-h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 glow-primary shimmer-hover"
+              className="ui-hover flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 glow-primary shimmer-hover focus-visible:ring-2 focus-visible:ring-primary/50 sm:w-auto"
             >
               <Plus className="w-4 h-4" />
               Release Track
@@ -203,7 +203,7 @@ export default function Explore() {
           </div>
 
           {/* Search */}
-          <div className="relative max-w-md">
+          <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               id="explore-search"
@@ -220,9 +220,9 @@ export default function Explore() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-8 py-6">
+      <div className="mx-auto max-w-5xl px-4 py-5 pb-[max(6rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6">
         {/* Medium filters */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none">
+        <div className="scrollbar-none no-scrollbar mb-6 flex gap-2 overflow-x-auto pb-2">
           {MEDIUMS.map(m => (
             <button
               key={m}
@@ -230,7 +230,7 @@ export default function Explore() {
               title={`Filter by ${m}`}
               aria-label={`Filter by ${m}`}
               className={cn(
-                "ui-hover min-h-10 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap capitalize transition-colors shrink-0",
+                "ui-hover min-h-10 shrink-0 whitespace-nowrap rounded-xl px-4 py-2 text-xs font-semibold capitalize transition-colors focus-visible:ring-2 focus-visible:ring-primary/40",
                 filter === m ? "bg-gradient-to-r from-primary to-pink-500 text-white shadow-md shadow-primary/30" : "bg-secondary text-muted-foreground hover:text-foreground"
               )}
             >
@@ -243,7 +243,7 @@ export default function Explore() {
         {featured.length > 0 && search === "" && (
           <div className="mb-8">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">🔥 Trending</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {featured.slice(0, 3).map(post => (
                 <ArtPostCard key={post.id} post={post} currentUser={currentUser} onLike={() => toggleLike.mutate(post)} onComment={setCommentTrack} onAddToPlaylist={setSelectedTrackForPlaylist} onDelete={() => deletePost.mutate(post)} large />
               ))}
@@ -261,7 +261,7 @@ export default function Explore() {
               <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
             </div>
           ) : isError ? (
-            <div className="text-center py-20 text-muted-foreground" role="alert">
+            <div className="ui-surface rounded-3xl border border-dashed border-border px-5 py-14 text-center text-muted-foreground sm:py-20" role="alert">
               <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="font-heading font-semibold text-foreground">Couldn&apos;t load tracks</p>
               <p className="text-sm mt-1">Check your connection and try again.</p>
@@ -273,7 +273,7 @@ export default function Explore() {
               </button>
             </div>
           ) : recent.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground">
+            <div className="ui-surface rounded-3xl border border-dashed border-border px-5 py-14 text-center text-muted-foreground sm:py-20">
               <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="font-heading font-semibold">No tracks yet</p>
               <p className="text-sm mt-1">Be the first to release your music!</p>
@@ -290,7 +290,7 @@ export default function Explore() {
               </button>
             </div>
           ) : (
-            <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+            <div className="columns-1 gap-4 space-y-4 sm:columns-2 lg:columns-3">
               {recent.map(post => (
                 <ArtPostCard 
                   key={post.id} 

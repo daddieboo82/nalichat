@@ -26,7 +26,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
         tabIndex={0}
         title={`View ${post.title || 'media'}`}
         aria-label={`View ${post.title || 'media'}`}
-        className={cn("break-inside-avoid mb-4 bg-card/50 backdrop-blur-xl rounded-2xl overflow-hidden border border-white/[0.06] group hover:border-white/[0.12] hover:bg-card/70 transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 cursor-pointer", large && "")} 
+        className={cn("ui-surface group mb-4 break-inside-avoid cursor-pointer overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] hover:bg-card/70 hover:shadow-xl hover:shadow-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40", large && "")} 
         onClick={() => {
           setShowMedia(true);
         }}
@@ -59,8 +59,8 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
             </div>
             {post.file_url && (
               <div className={cn("absolute inset-0 flex items-center justify-center transition-opacity duration-300", isActive ? "opacity-100 bg-black/60" : "opacity-0 group-hover:opacity-100 bg-black/40")}>
-                <div 
-                  className="w-12 h-12 rounded-full bg-primary flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
+                <button type="button" aria-label={isActive && isPlaying ? "Pause track" : "Play track"}
+                  className="ui-hover flex h-14 w-14 cursor-pointer items-center justify-center rounded-2xl bg-primary shadow-xl shadow-primary/30 transition-transform focus-visible:ring-2 focus-visible:ring-white/70"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (isActive && isPlaying && audioPlayer?.togglePlay) {
@@ -79,31 +79,31 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
                   }}
                 >
                   {isActive && isPlaying ? <Pause className="w-5 h-5 fill-current text-white" /> : <Play className="w-5 h-5 fill-current text-white ml-1" />}
-                </div>
+                </button>
               </div>
             )}
           </div>
         )}
-        <div className="p-3">
-        <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="p-4">
+        <div className="mb-3 flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
           <div className="flex-1 min-w-0">
             <h3 className="font-heading font-semibold text-sm truncate">{post.title}</h3>
             {post.description && (
               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{post.description}</p>
             )}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex w-full items-center gap-1 sm:w-auto">
             <button
               onClick={(e) => { e.stopPropagation(); sounds.click(); onComment?.(post); }}
-              className="p-2.5 rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
-              title="Comments"
+              className="ui-hover flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40"
+              title="Comments" aria-label="Open comments"
             >
               <MessageCircle className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); sounds.click(); onAddToPlaylist?.(post.id); }}
-              className="p-2.5 rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
-              title="Add to playlist"
+              className="ui-hover flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40"
+              title="Add to playlist" aria-label="Add track to playlist"
             >
               <Music className="w-3.5 h-3.5" />
             </button>
@@ -116,7 +116,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
                     onDelete(post);
                   }
                 }}
-                className="p-2.5 rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                className="ui-hover flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30"
                 title="Delete track"
                 aria-label="Delete track"
               >
@@ -133,7 +133,7 @@ export default React.memo(function ArtPostCard({ post, currentUser, onLike, onAd
               title="Like"
               aria-label="Like"
               className={cn(
-                "flex items-center gap-1 px-2.5 py-2 rounded-full text-xs font-semibold transition-all shrink-0 min-h-[44px]",
+                "ui-hover flex min-h-11 shrink-0 items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-destructive/30",
                 liked
                   ? "bg-destructive/15 text-destructive"
                   : "bg-secondary text-muted-foreground hover:bg-destructive/10 hover:text-destructive"

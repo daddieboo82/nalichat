@@ -39,11 +39,19 @@ export default function AdminDashboard() {
     isError: statsError,
     refetch,
   } = useQuery({
-    queryKey: ["adminDashboardStats"],
+    queryKey: ["adminDashboardStats", currentUser?.id],
     queryFn: async () => {
       const res = await base44.functions.invoke("getAdminDashboardStats", {});
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.stats || EMPTY_STATS;
+      if (
+        res?.data?.success !== true ||
+        res?.data?.adminUserId !== currentUser?.id ||
+        !res?.data?.stats ||
+        typeof res.data.stats !== "object"
+      ) {
+        throw new Error("Admin dashboard response was not confirmed.");
+      }
+      return res.data.stats;
     },
     enabled: currentUser?.role === "admin",
     retry: false,

@@ -87,6 +87,8 @@ Deno.serve(async (req) => {
     ]);
 
     return Response.json({
+      success: true,
+      adminUserId: user.id,
       stats: {
         totalUsers,
         ...subscriptionStats,

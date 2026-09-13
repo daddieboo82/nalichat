@@ -2510,3 +2510,16 @@ describe('AI capability account isolation response contract', () => {
     expect(backend).toContain('success: true, userId: user.id');
   });
 });
+
+
+describe('admin dashboard account isolation response contract', () => {
+  it('renders privileged stats only for the exact authenticated admin response', async () => {
+    const page = await readText('src/pages/AdminDashboard.jsx');
+    const backend = await readText('base44/functions/getAdminDashboardStats/entry.ts');
+    expect(page).toContain('queryKey: ["adminDashboardStats", currentUser?.id]');
+    expect(page).toContain('res?.data?.success !== true');
+    expect(page).toContain('res?.data?.adminUserId !== currentUser?.id');
+    expect(backend).toContain('success: true');
+    expect(backend).toContain('adminUserId: user.id');
+  });
+});

@@ -26,7 +26,7 @@ describe('locked chat notification redaction', () => {
     expect(source).toContain('redactLockedChatNotification(');
     expect(source).toContain('!lockedChatsReady');
     expect(source).toContain('const safeItems = items.map(redactNotification);');
-    expect(source).toContain('[user, lockedChatsReady, lockedConversationIds]');
+    expect(source).toContain('[user?.id, lockedChatsReady, lockedConversationIds]');
   });
 
   it('stores the locked-chat redaction marker in the notification schema', async () => {

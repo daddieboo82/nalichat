@@ -131,7 +131,7 @@ export default function NaliMaintenancePanel() {
                 Issue Details ({result.issues.length}{result.totalIssues > result.issues.length ? ` of ${result.totalIssues}` : ''})
               </button>
               {showDetails && (
-                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-2">
+                <div className="space-y-1.5 max-h-64 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] pr-2">
                   {result.issues.map((iss, i) => (
                     <div key={i} className="text-xs bg-secondary/30 border border-border/50 rounded-md px-3 py-2 flex items-start gap-2">
                       <span className="font-mono text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">{iss.entity}</span>
@@ -147,7 +147,7 @@ export default function NaliMaintenancePanel() {
           {result.mode === 'repair' && result.fixed && result.fixed.length > 0 && (
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-primary mb-2">Repaired</p>
-              <div className="space-y-1.5 max-h-64 overflow-y-auto pr-2">
+              <div className="space-y-1.5 max-h-64 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] pr-2">
                 {result.fixed.map((f, i) => (
                   <div key={i} className="text-xs bg-green-500/5 border border-green-500/20 rounded-md px-3 py-2 flex items-start gap-2">
                     <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />

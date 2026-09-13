@@ -12,7 +12,7 @@ describe('call summary and reply identifier hardening', () => {
   it('rejects malformed call-summary entity ids before service-role lookup', async () => {
     const source = await readFile('base44/functions/callSummarySession/entry.ts', 'utf8');
     expect(source).toContain('isBase44EntityId(sessionId.trim())');
-    expect(source).toContain('isBase44EntityId(body.conversation_id.trim())');
+    expect(source).toContain('isConversationId(body.conversation_id.trim())');
   });
 
   it('validates reply_to_id before message lookup', async () => {

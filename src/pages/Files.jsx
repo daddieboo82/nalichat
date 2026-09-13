@@ -49,6 +49,15 @@ function detectFileType(file) {
   return "other";
 }
 
+async function listAllAccessible(entity, sort = "-created_date", pageSize = 200) {
+  const rows = [];
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entity.list(sort, pageSize, skip);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 function FileDownloadButton({ file }) {
   const [dlProgress, setDlProgress] = useState(null);
   const { toast } = useToast();
@@ -204,7 +213,7 @@ export default function Files() {
 
   const { data: files = [], isLoading } = useQuery({
     queryKey: ["shared-files", currentUser?.id],
-    queryFn: () => base44.entities.SharedFile.list("-created_date", 500),
+    queryFn: () => listAllAccessible(base44.entities.SharedFile),
     enabled: !!currentUser?.id,
   });
 
@@ -212,7 +221,7 @@ export default function Files() {
     queryKey: ["projects", currentUser?.id],
     queryFn: async () => {
       if (!currentUser) return [];
-      const all = await base44.entities.Project.list("-created_date", 500);
+      const all = await listAllAccessible(base44.entities.Project);
       return all.filter(p => p.owner_id === currentUser.id || (p.collaborator_ids || []).includes(currentUser.id));
     },
     enabled: !!currentUser?.id,
@@ -220,7 +229,7 @@ export default function Files() {
 
   const { data: folders = [] } = useQuery({
     queryKey: ["folders", currentUser?.id],
-    queryFn: () => currentUser ? base44.entities.Folder.list("-created_date", 500) : [],
+    queryFn: () => currentUser ? listAllAccessible(base44.entities.Folder) : [],
     enabled: !!currentUser?.id,
   });
 

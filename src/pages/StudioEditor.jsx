@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Play, Pause, Share2, Loader2, Wand2, Music, Zap, Radio } from "lucide-react";
 import { motion } from "framer-motion";
-import CollaboratorPresence from "@/components/studio/CollaboratorPresence";
 import ExportBounce from "@/components/studio/ExportBounce";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/lib/AuthContext";
@@ -18,8 +17,6 @@ export default function StudioEditor() {
   const canUseAi = hasEntitlement("ai.standard");
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
-  const [activeSession, setActiveSession] = useState(null);
-  const [collaborators, setCollaborators] = useState([]);
   const [audioUrl, setAudioUrl] = useState("");
   const [publishedPostId, setPublishedPostId] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -30,19 +27,6 @@ export default function StudioEditor() {
   const [error, setError] = useState("");
   const audioRef = useRef(null);
 
-
-  // Subscribe to collaboration updates
-  useEffect(() => {
-    if (!activeSession || !currentUser) return;
-
-    const handleCollaborationUpdate = () => {
-      // Fetch current collaborators (in production, use WebSocket/SSE)
-      setCollaborators([currentUser]);
-    };
-
-    const interval = setInterval(handleCollaborationUpdate, 1000);
-    return () => clearInterval(interval);
-  }, [activeSession, currentUser]);
 
   const handleProcessAudio = async () => {
     if (!canUseAi) {
@@ -120,9 +104,6 @@ export default function StudioEditor() {
                   </div>
                   <p className="text-muted-foreground">Professional mastering-grade tools with streaming platform optimization</p>
                 </div>
-                {collaborators.length > 0 && (
-                  <CollaboratorPresence collaborators={collaborators} currentUserId={currentUser?.id} />
-                )}
               </div>
 
               <div className="space-y-4">

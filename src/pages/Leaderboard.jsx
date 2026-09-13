@@ -35,7 +35,7 @@ export default function Leaderboard() {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
 
-  const { data: users = [] } = useQuery({
+  const { data: users = [], isLoading: usersLoading, isError: usersError, refetch: refetchUsers } = useQuery({
     queryKey: ["leaderboard-users"],
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicUsers", { includeAchievementCounts: true });
@@ -43,7 +43,7 @@ export default function Leaderboard() {
     },
   });
 
-  const { data: posts = [] } = useQuery({
+  const { data: posts = [], isLoading: postsLoading, isError: postsError, refetch: refetchPosts } = useQuery({
     queryKey: ["leaderboard-posts"],
     queryFn: listAllArtPosts,
   });
@@ -86,6 +86,14 @@ export default function Leaderboard() {
   };
 
   const currentContent = getCurrentContentList();
+
+  const needsPostsForUserTab = userTab === "likes" || userTab === "posts";
+  const leaderboardLoading = mode === "content"
+    ? postsLoading
+    : usersLoading || (needsPostsForUserTab && postsLoading);
+  const leaderboardLoadProblem = mode === "content"
+    ? postsError
+    : usersError || (needsPostsForUserTab && postsError);
 
   const handleItemClick = (item) => {
     setSelectedItem({
@@ -151,7 +159,31 @@ export default function Leaderboard() {
           </div>
         </div>
 
-        {mode === "users" && (
+        {leaderboardLoading && (
+          <div className="flex justify-center py-16" aria-live="polite">
+            <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            <span className="sr-only">Loading leaderboard</span>
+          </div>
+        )}
+
+        {leaderboardLoadProblem && !leaderboardLoading && (
+          <div className="rounded-xl border border-destructive/40 bg-card/60 p-6 text-center" role="alert">
+            <p className="font-heading font-semibold">Leaderboard unavailable</p>
+            <p className="mt-1 text-sm text-muted-foreground">We couldn't load the data needed for this ranking.</p>
+            <button
+              type="button"
+              onClick={() => {
+                if (usersError) void refetchUsers();
+                if (postsError) void refetchPosts();
+              }}
+              className="mt-4 rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary/50"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!leaderboardLoading && !leaderboardLoadProblem && mode === "users" && (
           <>
             {/* User Tabs */}
             <div className="flex gap-2 bg-secondary/30 rounded-xl p-1 mb-6">
@@ -234,7 +266,7 @@ export default function Leaderboard() {
           </>
         )}
 
-        {mode === "content" && (
+        {!leaderboardLoading && !leaderboardLoadProblem && mode === "content" && (
           <>
             <div className="flex gap-2 bg-secondary/30 rounded-xl p-1 mb-6">
               {CONTENT_TABS.map(t => (

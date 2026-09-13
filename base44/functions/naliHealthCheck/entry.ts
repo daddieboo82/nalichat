@@ -164,14 +164,20 @@ App data snapshot (most recent records):
 - SharedFiles: ${sharedFiles.length}
 - Subscriptions: ${subscriptions.length}
 
-Detected data issues:
-${issues.length ? issues.map(i => `- ${i}`).join('\n') : '- None detected'}
+Detected data issues in this snapshot:
+${issues.length ? issues.map(i => `- ${i}`).join('\n') : '- None detected in the sampled rows'}
+
+Snapshot coverage:
+- This is a lightweight recent-record sample, not a full-database audit.
+- One or more collections reached the 200-row sample cap: ${partialSnapshot ? 'yes' : 'no'}
+- Truncation flags: ${JSON.stringify(snapshotTruncated)}
 `.trim();
 
     const llmResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `You are Nali, the AI assistant for NaliChat (a music collaboration app). This is your weekly app health report for the app owner. Based on the data snapshot below, write a concise, friendly report that:
 1. Summarizes any concrete issues that need fixing (use the detected issues).
-2. Suggests 2-4 practical enhancements or things worth keeping an eye on, based on usage patterns.
+2. Clearly states that this is a lightweight recent-record snapshot, not a complete database audit, whenever any truncation flag is true.
+3. Suggests 2-4 practical enhancements or things worth keeping an eye on, based on usage patterns.
 Keep it short, scannable, and actionable. Address the owner directly.
 
 ${dataSummary}`,
@@ -219,7 +225,15 @@ ${dataSummary}`,
     );
 
     console.log(`Nali health check done. Issues: ${issues.length}, admins notified: ${admins.length}`);
-    return Response.json({ ok: true, headline, needsAttention, issuesCount: issues.length, adminsNotified: admins.length });
+    return Response.json({
+      ok: true,
+      headline,
+      needsAttention,
+      issuesCount: issues.length,
+      adminsNotified: admins.length,
+      partialSnapshot,
+      snapshotTruncated,
+    });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

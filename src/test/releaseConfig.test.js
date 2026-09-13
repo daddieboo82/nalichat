@@ -683,6 +683,12 @@ describe('release configuration', () => {
     expect(revoke).toContain('entities.ProjectInvite.delete(invite.id)');
     expect(jamRoom).toContain('functions.invoke("revokeProjectInvites"');
     expect(jamRoom).toContain('Revoke All Invite Links');
+    expect(jamRoom).toContain('res?.data?.success !== true');
+    expect(jamRoom).toContain('!Number.isInteger(res?.data?.revoked)');
+    expect(jamRoom).toContain('res.data.revoked < 0');
+    expect(jamRoom).toContain('Invite revocation was not confirmed.');
+    expect(jamRoom).toContain('/^[0-9a-f]{64}$/i.test');
+    expect(jamRoom).toContain('Invite creation was not confirmed.');
   });
 
 

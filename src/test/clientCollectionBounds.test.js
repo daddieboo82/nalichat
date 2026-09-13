@@ -16,8 +16,9 @@ describe('client collection read behavior', () => {
     const quick = await readText('src/components/home/QuickAccessGrid.jsx');
     const session = await readText('src/components/messages/ChatSessionViewer.jsx');
 
-    // Version history is an intentionally bounded history surface.
-    expect(versions).toContain('TrackVersion.filter({ track_id: track.id }, "-version_number", 500)');
+    // Version history paginates so older saved versions are not silently dropped.
+    expect(versions).toContain('async function listAllTrackVersions(trackId)');
+    expect(versions).toMatch(/TrackVersion\.filter\([\s\S]*pageSize,[\s\S]*skip/);
 
     // Complete-data surfaces must not silently truncate older accessible rows.
     expect(contacts).toContain('async function listAllContacts(userId)');

@@ -103,7 +103,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#0a0a0c] border-white/10 max-w-5xl p-0 shadow-2xl sm:rounded-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-[#0a0a0c] border-white/10 max-w-5xl p-0 shadow-2xl sm:rounded-3xl max-h-[90dvh] overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]">
         <DialogTitle className="sr-only">{post.title || "Media viewer"}</DialogTitle>
         <DialogDescription className="sr-only">{post.description || "View media details and playback."}</DialogDescription>
         

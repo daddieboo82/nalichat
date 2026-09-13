@@ -108,7 +108,11 @@ export default function Squad() {
     try {
       const res = await base44.functions.invoke("createSquadInvite", {});
       if (res?.data?.error) throw new Error(res.data.error);
-      setSquad(res?.data?.squad);
+      const createdSquad = res?.data?.squad;
+      if (res?.data?.success !== true || !createdSquad?.id || !createdSquad?.invite_code) {
+        throw new Error("Squad invite creation was not confirmed");
+      }
+      setSquad(createdSquad);
       toast.success("Squad invite created! Share your link.");
     } catch (err) {
       toast.error("Couldn't create a squad invite.");
@@ -136,6 +140,7 @@ export default function Squad() {
     try {
       const res = await base44.functions.invoke("leaveSquad", { squadId: squad.id });
       if (res?.data?.error) throw new Error(res.data.error);
+      if (res?.data?.success !== true) throw new Error("Squad update was not confirmed");
       setSquad(null);
       setProgress(null);
       setBonusActive(false);

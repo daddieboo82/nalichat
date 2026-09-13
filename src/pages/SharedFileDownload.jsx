@@ -4,6 +4,11 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { resumableDownload } from "@/lib/resumableUpload";
 
+async function tokenFingerprint(token) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+}
+
 export default function SharedFileDownload() {
   const params = new URLSearchParams(window.location.search);
   const fileId = params.get("id");
@@ -18,11 +23,11 @@ export default function SharedFileDownload() {
       return () => { active = false; };
     }
 
-    base44.functions.invoke("getSharedFileByToken", { fileId, token })
-      .then((res) => {
+    Promise.all([base44.functions.invoke("getSharedFileByToken", { fileId, token }), tokenFingerprint(token)])
+      .then(([res, expectedFingerprint]) => {
         if (!active) return;
         const sharedFile = res?.data?.file;
-        if (!sharedFile) throw new Error("Shared file not found");
+        if (res?.data?.success !== true || res?.data?.action !== "get_shared_file_by_token" || res?.data?.fileId !== fileId || res?.data?.tokenFingerprint !== expectedFingerprint || sharedFile?.id !== fileId) throw new Error("Shared file not found");
         setFile(sharedFile);
         setState("ready");
       })

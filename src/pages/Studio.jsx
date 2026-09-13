@@ -1,4 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
+import { validateUpload } from "@/lib/uploadValidation";
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -1690,6 +1691,10 @@ export default function Studio() {
           const extension = blob.type.includes("mpeg") ? "mp3" : blob.type.includes("webm") ? "webm" : "wav";
           const safeName = (track.name || "track").replace(/[^a-z0-9_-]+/gi, "_");
           const file = new File([blob], `${safeName}.${extension}`, { type: blob.type || "audio/wav" });
+          const validation = validateUpload(file);
+          if (!validation.ok) {
+            throw new Error(`${track.name || "Track"}: ${validation.error}`);
+          }
           const uploaded = await secureUploadFile({ file });
           audioUrl = uploaded.file_url;
         }

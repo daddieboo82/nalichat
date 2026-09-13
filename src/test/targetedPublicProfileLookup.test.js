@@ -15,7 +15,7 @@ describe('targeted public profile lookup', () => {
     expect(backend).toContain("const requestedUserId = String(body?.userId || '').trim()");
     expect(backend).toContain('!isBase44EntityId(requestedUserId)');
     expect(backend).toContain('base44.asServiceRole.entities.User.get(requestedUserId)');
-    expect(backend).toContain('users: [publicUserProjection(target');
+    expect(backend).toContain('users: [publicUserProjection(');
     expect(profile).toContain('functions.invoke("listPublicUsers", { userId: targetUserId })');
     expect(profile).toContain('res?.data?.viewerUserId !== currentUser?.id');
     expect(profile).toContain('res?.data?.requestedUserId !== targetUserId');

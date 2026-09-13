@@ -27,7 +27,7 @@ describe('project creation hardening', () => {
     expect(backend).toContain("action: 'create_project'");
     expect(backend).toContain('userId: user.id');
     expect(backend).toContain('projectId: project.id');
-    expect(client).toContain('created?.data?.userId !== user?.id');
-    expect(client).toContain('project?.owner_id !== user?.id');
+    expect(client).toContain('created?.data?.userId !== submittingUserId');
+    expect(client).toContain('project?.owner_id !== submittingUserId');
   });
 });

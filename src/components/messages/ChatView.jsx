@@ -27,6 +27,16 @@ import { useLockedChats } from "@/lib/LockedChatsContext";
 
 import React from "react";
 
+function updateMessageHistory(cache, updater) {
+  if (Array.isArray(cache)) return updater(cache);
+  const current = cache && typeof cache === "object"
+    ? cache
+    : { messages: [], hasOlder: false };
+  return {
+    ...current,
+    messages: updater(Array.isArray(current.messages) ? current.messages : []),
+  };
+}
 
 export default React.memo(function ChatView({ conversation, messages, isLoading, loadError, hasOlderMessages, isLoadingOlderMessages, onLoadOlderMessages, currentUser, users, onSendMessage, onEditMessage, onReact, onRetryMessage, onBack, onStartDM, isBlocked, moderationBanner, theme: themePreference }) {
   const [replyTo, setReplyTo] = useState(null);
@@ -196,11 +206,11 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     }
 
     if (!messages.some((candidate) => candidate.id === message.id)) {
-      queryClient.setQueryData(["messages", currentUser?.id, conversation?.id], (current = []) =>
-        [...current, message].sort(
+      queryClient.setQueryData(["messages", currentUser?.id, conversation?.id], (current) => updateMessageHistory(current, (rows) =>
+        [...rows, message].sort(
           (left, right) => new Date(left.created_date || 0) - new Date(right.created_date || 0),
         )
-      );
+      ));
       await new Promise((resolve) => window.requestAnimationFrame(resolve));
     }
 
@@ -413,8 +423,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
                 // Instant optimistic delete: remove from the cache immediately so the
                 // message vanishes from the UI with zero network delay.
                 const previous = queryClient.getQueryData(["messages", currentUser?.id, conversation?.id]);
-                queryClient.setQueryData(["messages", currentUser?.id, conversation?.id], (old = []) =>
-                  old.filter(m => m.id !== id)
+                queryClient.setQueryData(["messages", currentUser?.id, conversation?.id], (old) => updateMessageHistory(old, (rows) => rows.filter(m => m.id !== id))
                 );
                 try {
                   let res = await base44.functions.invoke("mutateConversationMessage", {

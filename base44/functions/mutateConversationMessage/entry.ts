@@ -119,6 +119,8 @@ ${text}
     await base44.asServiceRole.entities.User.update(user.id, {
       ...(timeout_until ? { timeout_until } : {}),
       ...(is_banned ? { is_banned: true } : {}),
+      is_online: false,
+      last_seen: new Date().toISOString(),
     });
   }
 

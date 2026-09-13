@@ -123,7 +123,15 @@ const AuthenticatedApp = () => {
     if (!isAuthenticated || !user?.id) return undefined;
 
     const sendPresence = (isOnline) => {
-      base44.functions.invoke('updateUserPresence', { isOnline }).catch(() => {});
+      base44.functions.invoke('updateUserPresence', { isOnline })
+        .then((res) => {
+          if (res?.data?.error || res?.data?.success !== true) {
+            throw new Error(res?.data?.error || 'Presence update was not confirmed.');
+          }
+        })
+        .catch((error) => {
+          console.warn('Presence update failed:', error);
+        });
     };
     const syncVisibility = () => sendPresence(document.visibilityState === 'visible');
     const handlePageHide = () => sendPresence(false);

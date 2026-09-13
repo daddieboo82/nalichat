@@ -59,6 +59,10 @@ describe('final user-facing error states', () => {
     expect(source).toContain('created?.data?.success !== true');
     expect(source).toContain('conversation.participant_ids.includes(selectedUser.id)');
     expect(source).toContain('send?.data?.success !== true');
+    expect(source).toContain('send?.data?.action !== "send"');
+    expect(source).toContain('send?.data?.userId !== currentUser?.id');
+    expect(source).toContain('send?.data?.conversationId !== conversation.id');
+    expect(source).toContain('send?.data?.clientMessageKey !== clientMessageKey');
     expect(source).toContain('sentMessage?.client_message_key !== clientMessageKey');
     expect(source).toContain('Message send was not confirmed.');
   });

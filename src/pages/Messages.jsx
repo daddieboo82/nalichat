@@ -638,6 +638,17 @@ export default function Messages() {
         emoji,
       });
       if (res?.data?.error) throw new Error(res.data.error);
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "react" ||
+        res?.data?.userId !== currentUser.id ||
+        res?.data?.messageId !== messageId ||
+        res?.data?.message?.id !== messageId ||
+        !res?.data?.reactions ||
+        typeof res.data.reactions !== "object"
+      ) {
+        throw new Error("Message reaction was not confirmed.");
+      }
     } catch (err) {
       if (previous) queryClient.setQueryData(["messages", currentUser?.id, conversationId], previous);
       if (err?.message === "timed_out") {

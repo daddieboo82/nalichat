@@ -12,6 +12,9 @@ describe('message reaction concurrency', () => {
 
     expect(source).toContain('const reactionLockId = await acquireMessageMutationLock(entities, message.id);');
     expect(source).toContain("Message reactions are being updated. Please retry.");
+    expect(source).toContain("action: 'react'");
+    expect(source).toContain('userId: user.id');
+    expect(source).toContain('messageId: message.id');
     expect(source).toContain('const freshMessage = await entities.Message.get(message.id);');
     expect(source).toContain('const reactions = { ...(freshMessage.reactions || {}) };');
     expect(source).toContain('await releaseMessageMutationLock(entities, reactionLockId);');

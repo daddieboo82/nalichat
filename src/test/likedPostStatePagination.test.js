@@ -7,6 +7,7 @@ describe('liked post state pagination', () => {
     expect(s).toContain('async function listAllLikedPosts(entity: any, userId: string)');
     expect(s).toContain('const pageSize = 200');
     expect(s).toContain('for (let skip = 0; ; skip += pageSize)');
+    expect(s).toContain('success: true');
     expect(s).toContain('{ liked_by: userId }');
     expect(s).toContain('const posts = await listAllLikedPosts(');
     expect(s).not.toContain("'-created_date',\n      1000,");

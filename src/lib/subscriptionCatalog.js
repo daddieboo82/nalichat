@@ -37,7 +37,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
     }),
     features: Object.freeze([
       "Everything in Free",
-      "Premium file transfer tools with higher supported limits",
+      "Premium file transfer tools",
       "More Premium capabilities coming later",
     ]),
   }),

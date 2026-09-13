@@ -11,7 +11,7 @@ describe('public achievement lookup bounds', () => {
     const source = await readText('base44/functions/listPublicAchievements/entry.ts');
 
     expect(source).toContain("req.method !== 'POST'");
-    expect(source).toContain('targetUserId.length > 256');
+    expect(source).toContain('isBase44EntityId(targetUserId)');
     expect(source).toContain('consumeHourlyLimit');
     expect(source).toContain("'public_achievement_lookup'");
     expect(source).toMatch(/'public_achievement_lookup',\s*240/);

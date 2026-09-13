@@ -25,6 +25,10 @@ const toast = vi.hoisted(() => ({
   error: vi.fn(),
 }));
 
+vi.mock("@/lib/AuthContext", () => ({
+  useAuth: () => ({ user: { id: "user-1" } }),
+}));
+
 vi.mock("@/hooks/useSubscription", () => ({
   useSubscription: () => subscriptionState.value,
 }));
@@ -78,7 +82,7 @@ describe("FollowUpReminderDialog", () => {
       hasEntitlement: (entitlement) => entitlement === "reminders.follow_up",
     };
     renderDialog();
-    await waitFor(() => expect(reminderApi.list).toHaveBeenCalled());
+    await waitFor(() => expect(reminderApi.list).toHaveBeenCalledWith("user-1"));
 
     const future = new Date(Date.now() + 60 * 60 * 1000);
     future.setSeconds(0, 0);
@@ -91,6 +95,7 @@ describe("FollowUpReminderDialog", () => {
       sourceMessageId: "message-1",
       remindAt: future.toISOString(),
       requestKey: expect.stringMatching(/^follow-up:/),
+      userId: "user-1",
     }));
     expect(toast.success).toHaveBeenCalledWith("Follow-up reminder scheduled.");
   });

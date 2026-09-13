@@ -31,7 +31,12 @@ Deno.serve(async (req) => {
       entities: base44.asServiceRole.entities,
       user,
     });
-    return Response.json({ reminders });
+    return Response.json({
+      success: true,
+      action: 'list_reminders',
+      userId: user?.id || null,
+      reminders,
+    });
   } catch (error) {
     console.error('listFollowUpReminders error:', error);
     return followUpReminderErrorResponse(error);

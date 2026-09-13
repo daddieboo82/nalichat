@@ -128,16 +128,16 @@ export default function MobileHeader() {
   return (
     <>
       <header
-        className="lg:hidden sticky top-0 z-40 border-b border-white/[0.06] bg-card/70 backdrop-blur-md select-none"
+        className="sticky top-0 z-40 border-b border-white/[0.08] bg-card/85 backdrop-blur-xl select-none lg:hidden shadow-sm shadow-black/10"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="px-2 h-14 flex items-center justify-between gap-2">
+        <div className="flex h-14 items-center justify-between gap-2 px-2 sm:px-3">
           {/* Left Section */}
           <div className="flex items-center gap-1 min-w-0">
             {isSubPage ? (
               <button
                 onClick={handleBack}
-                className="w-11 h-11 -ml-1 rounded-lg flex items-center justify-center text-foreground hover:bg-primary/10 active:bg-primary/20 transition-colors select-none"
+                className="ui-hover -ml-1 flex h-11 w-11 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-primary/10 active:bg-primary/20 select-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 aria-label="Back"
               >
                 <ChevronLeft className="w-6 h-6" />
@@ -145,7 +145,7 @@ export default function MobileHeader() {
             ) : (
               <button
                 onClick={() => setMenuOpen(true)}
-                className="w-11 h-11 -ml-1 rounded-lg flex items-center justify-center text-foreground hover:bg-primary/10 active:bg-primary/20 transition-colors select-none"
+                className="ui-hover -ml-1 flex h-11 w-11 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-primary/10 active:bg-primary/20 select-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 aria-label="Open menu"
               >
                 <Menu className="w-6 h-6" />
@@ -170,7 +170,7 @@ export default function MobileHeader() {
               onClick={() => window.dispatchEvent(new Event("open-ai-assistant"))}
               title="Ask Nali"
               aria-label="Ask Nali, the AI assistant"
-              className="relative w-11 h-11 ml-1 rounded-lg flex items-center justify-center text-white bg-gradient-to-r from-primary to-accent shadow-lg shadow-primary/20 transition-all active:scale-95"
+              className="ui-hover relative ml-1 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-primary/20 focus-visible:ring-2 focus-visible:ring-primary/50"
             >
               <AudioLines className="w-4 h-4 animate-pulse" />
             </button>
@@ -180,7 +180,7 @@ export default function MobileHeader() {
 
       {/* Full Feature Menu Sheet */}
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-        <SheetContent side="left" className="w-[85vw] sm:max-w-sm p-0 bg-card/95 backdrop-blur-xl border-r border-white/[0.06] overflow-y-auto">
+        <SheetContent side="left" className="w-[88vw] max-w-[380px] overflow-y-auto border-r border-white/[0.08] bg-card/97 p-0 backdrop-blur-xl sm:max-w-sm">
           <SheetHeader className="p-4 pb-2 border-b border-white/[0.06]">
             <SheetTitle className="flex items-center gap-2">
               <Logo size={30} />
@@ -206,7 +206,7 @@ export default function MobileHeader() {
                         key={itemPath}
                         onClick={() => handleNavigate(itemPath)}
                         className={cn(
-                          "w-full flex items-center gap-3 p-2.5 rounded-xl transition-all text-left",
+                          "ui-hover w-full min-h-[58px] flex items-center gap-3 p-2.5 rounded-xl transition-all text-left focus-visible:ring-2 focus-visible:ring-primary/40",
                           active
                             ? "bg-primary/15 text-primary"
                             : "hover:bg-secondary/50 text-foreground"
@@ -278,7 +278,7 @@ export default function MobileHeader() {
             <div className="pt-3 border-t border-white/[0.06] space-y-1">
               <button
                 onClick={() => handleNavigate("/download")}
-                className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/50 text-left transition-all"
+                className="ui-hover min-h-[58px] w-full rounded-xl p-2.5 text-left transition-all hover:bg-secondary/50 flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                   <Smartphone className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
@@ -290,7 +290,7 @@ export default function MobileHeader() {
               </button>
               <button
                 onClick={() => handleNavigate("/pricing")}
-                className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/50 text-left transition-all"
+                className="ui-hover min-h-[58px] w-full rounded-xl p-2.5 text-left transition-all hover:bg-secondary/50 flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                   <Gem className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
@@ -302,7 +302,7 @@ export default function MobileHeader() {
               </button>
               <button
                 onClick={() => handleNavigate("/settings")}
-                className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/50 text-left transition-all"
+                className="ui-hover min-h-[58px] w-full rounded-xl p-2.5 text-left transition-all hover:bg-secondary/50 flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <div className="w-9 h-9 rounded-lg bg-secondary/60 flex items-center justify-center shrink-0">
                   <Settings className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />
@@ -315,7 +315,7 @@ export default function MobileHeader() {
               {user?.role === "admin" && (
                 <button
                   onClick={() => handleNavigate("/admin")}
-                  className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/50 text-left transition-all"
+                  className="ui-hover min-h-[58px] w-full rounded-xl p-2.5 text-left transition-all hover:bg-secondary/50 flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   <div className="w-9 h-9 rounded-lg bg-secondary/60 flex items-center justify-center shrink-0">
                     <BarChart3 className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />

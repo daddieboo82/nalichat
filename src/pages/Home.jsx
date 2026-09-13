@@ -175,7 +175,7 @@ export default function Home() {
       {!user && <ImmersiveOnboarding />}
 
       {/* ── Hero ── */}
-      <section className="relative flex flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-32 min-h-[100dvh] md:min-h-[700px]">
+      <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-4 pb-20 pt-[max(5.5rem,env(safe-area-inset-top))] sm:px-6 sm:pb-28 md:min-h-[700px] md:pt-28">
         {/* Animated blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-primary/30 rounded-full blur-[100px] animate-float-blob" />
@@ -195,7 +195,7 @@ export default function Home() {
           className="relative z-10 text-center max-w-5xl mx-auto"
         >
           {/* Logo icon */}
-          <div className="mb-8 flex justify-center relative">
+          <div className="relative mb-6 flex justify-center sm:mb-8">
             <div className="absolute inset-0 bg-primary/30 blur-2xl rounded-full scale-150 animate-pulse" />
             <motion.div
               animate={{ rotate: 360 }}
@@ -232,11 +232,11 @@ export default function Home() {
             </motion.div>
           )}
 
-          <h1 className="font-heading font-black text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] mb-6 tracking-tight leading-[1.05] drop-shadow-xl text-gradient-animate">
+          <h1 className="mb-5 font-heading text-4xl font-black leading-[1.02] tracking-tight drop-shadow-xl text-gradient-animate sm:text-6xl md:mb-6 md:text-8xl lg:text-[7rem]">
             Real-Time<br className="hidden md:block" />{" "}
             <span>Messaging</span>
           </h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-foreground/90 font-medium mb-10 md:mb-12 leading-relaxed max-w-3xl mx-auto">
+          <p className="mx-auto mb-8 max-w-3xl text-base font-medium leading-relaxed text-foreground/90 sm:text-xl md:mb-12 md:text-2xl">
             Connect instantly with artists globally. Share high-res audio, drop voice notes, and collaborate seamlessly in unlimited chats.
           </p>
 
@@ -244,7 +244,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full max-w-sm mx-auto sm:max-w-none">
             {user ? (
               <>
-                <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7" asChild>
+                <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 px-7 text-base font-semibold glow-primary shimmer-hover hover:opacity-90 sm:w-auto" asChild>
                   <Link to="/messages" className="w-full sm:w-auto">
                     <MessageSquare className="w-5 h-5 mr-2" />
                     Open Messages
@@ -252,7 +252,7 @@ export default function Home() {
                   </Link>
                   </Button>
 
-                <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-accent to-cyan-500 hover:opacity-90 text-base glow-accent shimmer-hover px-7" asChild>
+                <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-accent to-cyan-500 px-7 text-base font-semibold glow-accent shimmer-hover hover:opacity-90 sm:w-auto" asChild>
                   <Link to="/studio" className="w-full sm:w-auto">
                     <Music className="w-5 h-5 mr-2" />
                     Open Studio
@@ -263,7 +263,7 @@ export default function Home() {
               </>
             ) : (
               <>
-                <Button size="lg" className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-base glow-primary shimmer-hover px-7" asChild>
+                <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 px-7 text-base font-semibold glow-primary shimmer-hover hover:opacity-90 sm:w-auto" asChild>
                   <Link to="/register" className="w-full sm:w-auto">
                     <MessageSquare className="w-5 h-5 mr-2" />
                     Get Started
@@ -292,16 +292,16 @@ export default function Home() {
       {user && <QuickAccessGrid />}
 
       {/* ── Pillar pills ── */}
-      <section className="relative z-10 overflow-hidden border-y border-border bg-card/40 py-4">
+      <section className="relative z-10 overflow-hidden border-y border-border/70 bg-card/50 py-3 backdrop-blur-xl sm:py-4">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex flex-wrap justify-center gap-3 px-6"
+          className="no-scrollbar flex justify-start gap-2 overflow-x-auto px-4 sm:flex-wrap sm:justify-center sm:gap-3 sm:px-6"
         >
           {pillars.map((p) => {
             const Icon = p.icon;
             return (
-              <div key={p.label} className="flex items-center gap-2 bg-secondary/60 rounded-full px-4 py-2 text-sm font-medium">
+              <div key={p.label} className="flex shrink-0 items-center gap-2 rounded-full bg-secondary/60 px-4 py-2 text-sm font-medium">
                 <Icon className={`w-4 h-4 ${p.color}`} />
                 <span className="text-foreground/80">{p.label}</span>
               </div>

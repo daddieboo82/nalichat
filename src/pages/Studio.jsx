@@ -1637,6 +1637,11 @@ export default function Studio() {
   };
 
   const handleSave = async () => {
+    if (roomId && !canEditProject) {
+      toast.error("This Jam Room invite is view-only. Your changes cannot be saved to the shared project.");
+      return false;
+    }
+
     const toastId = toast.loading("Saving Studio project...");
     try {
       const portableTracks = [];
@@ -1674,10 +1679,6 @@ export default function Studio() {
       }
 
       if (roomId) {
-        if (!canEditProject) {
-          toast.error("This Jam Room invite is view-only. Your local changes were not saved to the shared project.", { id: toastId });
-          return false;
-        }
         const saved = await base44.functions.invoke("mutateProject", {
           projectId: roomId,
           data: {

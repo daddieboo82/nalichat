@@ -36,7 +36,8 @@ export default function VoiceTranscription({ message, isOwn }) {
       .then((res) => {
         if (cancelled) return;
         if (res?.data?.error) throw new Error(res.data.error);
-        const text = res?.data?.text || "";
+        if (!res?.data || typeof res.data.text !== "string") throw new Error("Transcription response was invalid.");
+        const text = res.data.text;
         const clean = typeof text === "string" ? text.trim() : String(text).trim();
         if (clean && clean.length > 0) {
           transcriptionCache.set(message.id, clean);
@@ -61,7 +62,7 @@ export default function VoiceTranscription({ message, isOwn }) {
       });
       if (res?.data?.error) throw new Error(res.data.error);
       const url = res?.data?.url;
-      if (!url) throw new Error("Speech audio was unavailable.");
+      if (typeof url !== "string" || !url.trim()) throw new Error("Speech audio was unavailable.");
 
       audioRef.current?.pause?.();
       const audio = new Audio(url);

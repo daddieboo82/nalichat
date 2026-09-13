@@ -16,7 +16,21 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 
 const TRIAL_DAYS = 7;
 const CHECKOUT_LEASE_MS = 24 * 60 * 60 * 1000;
-const MAX_SUBSCRIPTION_HISTORY = 500;
+
+async function loadUserSubscriptions(entity: any, userId: string) {
+  const rows: any[] = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entity.filter(
+      { user_id: userId },
+      '-created_date',
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Failed to create subscription checkout';
@@ -115,10 +129,9 @@ Deno.serve(async (req) => {
         '-created_date',
         2,
       ),
-      base44.asServiceRole.entities.Subscription.filter(
-        { user_id: user.id },
-        '-created_date',
-        MAX_SUBSCRIPTION_HISTORY,
+      loadUserSubscriptions(
+        base44.asServiceRole.entities.Subscription,
+        user.id,
       ),
     ]);
     if (existingAttempts.length > 1) {

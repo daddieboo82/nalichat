@@ -493,7 +493,7 @@ export default function Files() {
                 variant="default"
                 size="sm"
                 className="bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 transition-all text-white"
-                onClick={() => navigate('/explore?upload=true', { state: { publishFile: file } })}
+                onClick={() => navigate('/explore?upload=true')}
                 title="Publish Track to Explore"
               >
                 Publish Track

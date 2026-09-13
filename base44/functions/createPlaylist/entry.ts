@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
         is_public: Boolean(body?.is_public),
       });
 
-      return Response.json({ success: true, playlist });
+      return Response.json({ success: true, action: 'create_playlist', userId: user.id, playlistId: playlist.id, playlist });
     } finally {
       for (const lockId of artPostLockIds.reverse()) {
         await releaseArtPostEngagementLock(entities, lockId);

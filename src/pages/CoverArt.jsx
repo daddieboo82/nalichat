@@ -416,20 +416,20 @@ export default function CoverArt() {
   if (!currentUser) return <div className="p-8 text-center">Please log in to use the Cover Art Creator.</div>;
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-8 flex flex-col min-h-[calc(100vh-6rem)] pb-32 md:pb-12">
-      <div className="mb-8">
-        <h1 className="text-3xl font-heading font-black flex items-center gap-3">
+    <div className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-6xl flex-col px-4 py-5 pb-[max(7rem,env(safe-area-inset-bottom))] sm:p-8 md:pb-12">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="flex items-center gap-3 font-heading text-2xl font-black tracking-tight sm:text-3xl">
           <Sparkles className="w-8 h-8 text-primary" />
           AI Cover Art Creator
         </h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
           Let AI listen to your finished work and design a one-of-a-kind album cover with exclusive rights.
         </p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8 flex-1">
+      <div className="flex flex-1 flex-col gap-4 sm:gap-6 md:flex-row md:gap-8">
         {/* Left: Track Selection */}
-        <div className="w-full md:w-1/3 flex flex-col gap-4 border border-white/[0.06] bg-card/50 backdrop-blur-xl rounded-xl p-4 overflow-y-auto custom-scrollbar max-h-[300px] md:max-h-none">
+        <div className="ui-surface custom-scrollbar flex max-h-[280px] w-full flex-col gap-3 overflow-y-auto rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl md:max-h-none md:w-1/3">
           <h2 className="font-semibold uppercase text-xs tracking-wider text-muted-foreground">Your Tracks</h2>
           {isLoading ? (
             <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
@@ -487,7 +487,7 @@ export default function CoverArt() {
                   setSelectedPost(post);
                   setGeneratedImage(null);
                 }}
-                className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedPost?.id === post.id ? 'border-primary bg-primary/10' : 'border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70'}`}
+                className={`ui-hover cursor-pointer rounded-2xl border p-3 text-left transition-all focus-visible:ring-2 focus-visible:ring-primary/40 ${selectedPost?.id === post.id ? 'border-primary bg-primary/10 ring-1 ring-primary/20' : 'border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70'}`}
               >
                 <p className="font-semibold text-sm truncate">{post.title}</p>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{post.genre || 'No genre'} • {post.medium}</p>
@@ -498,11 +498,11 @@ export default function CoverArt() {
 
         {/* Modals */}
         <Dialog open={showFilesDialog} onOpenChange={setShowFilesDialog}>
-          <DialogContent className="max-w-md bg-card border-border">
+          <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
             <DialogHeader>
               <DialogTitle>Import from Files</DialogTitle>
             </DialogHeader>
-            <div className="max-h-96 overflow-y-auto space-y-2">
+            <div className="max-h-[65vh] space-y-2 overflow-y-auto overscroll-contain pr-1">
               {isLoadingFiles ? (
                 <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
               ) : filesError ? (
@@ -520,7 +520,7 @@ export default function CoverArt() {
                   .map(file => (
                     <button
                       key={file.id}
-                      className="w-full text-left p-3 rounded-lg border border-border hover:border-primary/50 transition-colors flex items-center gap-3"
+                      className="ui-hover flex min-h-14 w-full items-center gap-3 rounded-2xl border border-border p-3 text-left transition-colors hover:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
                       onClick={() => handleImportSharedFile(file)}
                     >
                       <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
@@ -540,11 +540,11 @@ export default function CoverArt() {
           setShowPlaylistDialog(open);
           if (!open) setSelectedPlaylist(null);
         }}>
-          <DialogContent className="max-w-md bg-card border-border">
+          <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
             <DialogHeader>
               <DialogTitle>{selectedPlaylist ? "Select Track" : "Select Playlist"}</DialogTitle>
             </DialogHeader>
-            <div className="max-h-96 overflow-y-auto space-y-2">
+            <div className="max-h-[65vh] space-y-2 overflow-y-auto overscroll-contain pr-1">
               {!selectedPlaylist ? (
                 isLoadingPlaylists ? (
                   <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
@@ -561,7 +561,7 @@ export default function CoverArt() {
                   myPlaylists.map(playlist => (
                     <button
                       key={playlist.id}
-                      className="w-full text-left p-3 rounded-lg border border-border hover:border-primary/50 transition-colors flex items-center gap-3"
+                      className="ui-hover flex min-h-14 w-full items-center gap-3 rounded-2xl border border-border p-3 text-left transition-colors hover:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
                       onClick={() => setSelectedPlaylist(playlist)}
                     >
                       <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
@@ -576,7 +576,7 @@ export default function CoverArt() {
                 )
               ) : (
                 <>
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedPlaylist(null)} className="mb-2">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedPlaylist(null)} className="ui-hover mb-2 min-h-10 rounded-xl">
                     &larr; Back to Playlists
                   </Button>
                   {playlistTrackResult.unavailableCount > 0 && !isLoadingPlaylistTracks && (
@@ -592,7 +592,7 @@ export default function CoverArt() {
                     playlistTracks.map(track => (
                       <button
                         key={track.id}
-                        className="w-full text-left p-3 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                        className="ui-hover min-h-14 w-full rounded-2xl border border-border p-3 text-left transition-colors hover:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
                         onClick={() => {
                           setSelectedPost(track);
                           setGeneratedImage(null);
@@ -613,7 +613,7 @@ export default function CoverArt() {
         </Dialog>
 
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="max-w-md bg-card border-border">
+          <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
             <DialogHeader>
               <DialogTitle>Manual Cover Editing</DialogTitle>
             </DialogHeader>
@@ -658,18 +658,18 @@ export default function CoverArt() {
                 )}
               </div>
               
-              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="custom-scrollbar max-h-[45vh] space-y-4 overflow-y-auto overscroll-contain pr-2">
                 <div>
                   <label className="text-xs font-medium mb-1 block text-muted-foreground">Brightness ({editOptions.brightness}%)</label>
-                  <input type="range" min="0" max="200" value={editOptions.brightness} onChange={e => setEditOptions({...editOptions, brightness: e.target.value})} className="w-full accent-primary" />
+                  <input type="range" min="0" max="200" value={editOptions.brightness} onChange={e => setEditOptions({...editOptions, brightness: e.target.value})} className="h-6 w-full cursor-pointer accent-primary" />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block text-muted-foreground">Contrast ({editOptions.contrast}%)</label>
-                  <input type="range" min="0" max="200" value={editOptions.contrast} onChange={e => setEditOptions({...editOptions, contrast: e.target.value})} className="w-full accent-primary" />
+                  <input type="range" min="0" max="200" value={editOptions.contrast} onChange={e => setEditOptions({...editOptions, contrast: e.target.value})} className="h-6 w-full cursor-pointer accent-primary" />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block text-muted-foreground">Saturation ({editOptions.saturation}%)</label>
-                  <input type="range" min="0" max="200" value={editOptions.saturation} onChange={e => setEditOptions({...editOptions, saturation: e.target.value})} className="w-full accent-primary" />
+                  <input type="range" min="0" max="200" value={editOptions.saturation} onChange={e => setEditOptions({...editOptions, saturation: e.target.value})} className="h-6 w-full cursor-pointer accent-primary" />
                 </div>
                 
                 <div className="pt-2 border-t border-border">
@@ -690,13 +690,13 @@ export default function CoverArt() {
                           type="color" 
                           value={editOptions.textColor} 
                           onChange={e => setEditOptions({...editOptions, textColor: e.target.value})}
-                          className="w-full h-8 rounded cursor-pointer bg-transparent border-0 p-0" 
+                          className="h-11 w-full cursor-pointer rounded-xl border border-border bg-transparent p-1" 
                         />
                       </div>
                       <div className="flex-1">
                         <label className="text-xs font-medium mb-1 block text-muted-foreground">Position</label>
                         <Select value={editOptions.textPosition} onValueChange={(val) => setEditOptions({...editOptions, textPosition: val})}>
-                          <SelectTrigger className="w-full h-8 rounded border border-input bg-card px-2 text-sm text-foreground">
+                          <SelectTrigger className="h-11 w-full rounded-xl border border-input bg-card px-3 text-sm text-foreground">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -710,7 +710,7 @@ export default function CoverArt() {
                     <div>
                       <label className="text-xs font-medium mb-1 block text-muted-foreground">Font Family</label>
                       <Select value={editOptions.fontFamily} onValueChange={(val) => setEditOptions({...editOptions, fontFamily: val})}>
-                        <SelectTrigger className="w-full h-8 rounded border border-input bg-card px-2 text-sm text-foreground">
+                        <SelectTrigger className="h-11 w-full rounded-xl border border-input bg-card px-3 text-sm text-foreground">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -750,21 +750,21 @@ export default function CoverArt() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-medium text-muted-foreground">Scale ({editOptions.overlayScale}%)</label>
-                      <Button variant="ghost" size="sm" className="h-6 text-xs text-destructive" onClick={() => setOverlayImageRef(null)}>Remove Image</Button>
+                      <Button variant="ghost" size="sm" className="ui-hover min-h-9 rounded-lg px-2 text-xs text-destructive" onClick={() => setOverlayImageRef(null)}>Remove Image</Button>
                     </div>
-                    <input type="range" min="5" max="200" value={editOptions.overlayScale} onChange={e => setEditOptions({...editOptions, overlayScale: e.target.value})} className="w-full accent-primary" />
+                    <input type="range" min="5" max="200" value={editOptions.overlayScale} onChange={e => setEditOptions({...editOptions, overlayScale: e.target.value})} className="h-6 w-full cursor-pointer accent-primary" />
                     
                     <label className="text-xs font-medium block text-muted-foreground">Position X ({editOptions.overlayX}%)</label>
-                    <input type="range" min="0" max="100" value={editOptions.overlayX} onChange={e => setEditOptions({...editOptions, overlayX: e.target.value})} className="w-full accent-primary" />
+                    <input type="range" min="0" max="100" value={editOptions.overlayX} onChange={e => setEditOptions({...editOptions, overlayX: e.target.value})} className="h-6 w-full cursor-pointer accent-primary" />
                     
                     <label className="text-xs font-medium block text-muted-foreground">Position Y ({editOptions.overlayY}%)</label>
-                    <input type="range" min="0" max="100" value={editOptions.overlayY} onChange={e => setEditOptions({...editOptions, overlayY: e.target.value})} className="w-full accent-primary" />
+                    <input type="range" min="0" max="100" value={editOptions.overlayY} onChange={e => setEditOptions({...editOptions, overlayY: e.target.value})} className="h-6 w-full cursor-pointer accent-primary" />
                   </div>
                 )}
               </div>
               
               <Button 
-                className="w-full" 
+                className="ui-hover min-h-12 w-full rounded-xl font-semibold" 
                 onClick={applyEdits}
                 disabled={isApplyingEdits}
               >
@@ -776,9 +776,9 @@ export default function CoverArt() {
         </Dialog>
 
         {/* Right: Generation Area */}
-        <div className="w-full md:w-2/3 flex flex-col items-center border border-white/[0.06] bg-card/50 backdrop-blur-xl rounded-xl p-4 pb-32 sm:p-8 sm:pb-32 md:pb-12 relative overflow-y-auto custom-scrollbar min-h-[500px]">
+        <div className="ui-surface custom-scrollbar relative flex min-h-[440px] w-full flex-col items-center overflow-y-auto rounded-3xl border border-white/[0.06] bg-card/50 p-4 pb-8 backdrop-blur-xl sm:min-h-[500px] sm:p-8 md:w-2/3 md:pb-12">
           <div className="flex flex-col items-center w-full max-w-md my-auto">
-            <div className="w-full aspect-square bg-black/50 rounded-2xl border-2 border-border overflow-hidden relative shadow-2xl flex items-center justify-center mb-6">
+            <div className="relative mb-5 flex aspect-square w-full items-center justify-center overflow-hidden rounded-3xl border border-border bg-black/50 shadow-2xl sm:mb-6">
               {generatedImage ? (
                 <img src={generatedImage} alt="Generated cover" className="w-full h-full object-cover" />
               ) : selectedPost?.image_url && !generateArtMutation.isPending ? (
@@ -817,10 +817,10 @@ export default function CoverArt() {
             />
             
             {!generatedImage ? (
-              <div className="flex flex-wrap gap-3 w-full">
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
                 <Button 
                   size="lg" 
-                  className="flex-[2] min-w-[140px] h-14 text-lg gap-2 bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/25 text-white"
+                  className="ui-hover col-span-2 h-14 gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 text-base font-semibold text-white shadow-lg shadow-primary/25 hover:opacity-90 sm:min-w-[140px] sm:flex-[2] sm:text-lg"
                   onClick={() => {
                     if (!selectedPost) {
                       toast.error("Please select a track first to generate cover art.");
@@ -837,7 +837,7 @@ export default function CoverArt() {
                 <Button 
                   variant="outline"
                   size="lg" 
-                  className="flex-1 min-w-[100px] h-14 gap-2 border-primary/50 text-primary hover:bg-primary/10 bg-transparent"
+                  className="ui-hover h-14 gap-2 rounded-xl border-primary/50 bg-transparent text-primary hover:bg-primary/10 sm:min-w-[100px] sm:flex-1"
                   onClick={() => {
                     if (!selectedPost) {
                       toast.error("Please select a track first to upload an image.");
@@ -855,7 +855,7 @@ export default function CoverArt() {
                   <Button 
                     variant="outline"
                     size="lg" 
-                    className="flex-1 min-w-[100px] h-14 gap-2 bg-transparent"
+                    className="ui-hover h-14 gap-2 rounded-xl bg-transparent sm:min-w-[100px] sm:flex-1"
                     onClick={() => setShowEditDialog(true)}
                     disabled={!canUseAi || generateArtMutation.isPending || isUploading}
                   >
@@ -865,7 +865,7 @@ export default function CoverArt() {
                   <Button 
                     variant="outline"
                     size="lg" 
-                    className="flex-1 min-w-[100px] h-14 gap-2 bg-transparent"
+                    className="ui-hover h-14 gap-2 rounded-xl bg-transparent sm:min-w-[100px] sm:flex-1"
                     onClick={handleDownload}
                     disabled={generateArtMutation.isPending || isUploading}
                   >
@@ -876,11 +876,11 @@ export default function CoverArt() {
                 )}
               </div>
             ) : (
-              <div className="flex flex-wrap gap-3 w-full">
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="flex-1 min-w-[100px] h-12 gap-2 bg-transparent"
+                  className="ui-hover h-12 gap-2 rounded-xl bg-transparent sm:min-w-[100px] sm:flex-1"
                   onClick={() => generateArtMutation.mutate(selectedPost)}
                   disabled={generateArtMutation.isPending || saveArtMutation.isPending || isUploading}
                 >
@@ -890,7 +890,7 @@ export default function CoverArt() {
                 <Button 
                   variant="outline"
                   size="lg" 
-                  className="flex-1 min-w-[100px] h-12 gap-2 bg-transparent"
+                  className="ui-hover h-12 gap-2 rounded-xl bg-transparent sm:min-w-[100px] sm:flex-1"
                   onClick={() => setShowEditDialog(true)}
                   disabled={generateArtMutation.isPending || saveArtMutation.isPending || isUploading}
                 >
@@ -900,7 +900,7 @@ export default function CoverArt() {
                 <Button 
                   variant="outline"
                   size="lg" 
-                  className="flex-1 min-w-[100px] h-12 gap-2 bg-transparent"
+                  className="ui-hover h-12 gap-2 rounded-xl bg-transparent sm:min-w-[100px] sm:flex-1"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={generateArtMutation.isPending || saveArtMutation.isPending || isUploading}
                 >
@@ -910,7 +910,7 @@ export default function CoverArt() {
                 <Button 
                   variant="outline"
                   size="lg" 
-                  className="flex-1 min-w-[100px] h-12 gap-2 bg-transparent"
+                  className="ui-hover h-12 gap-2 rounded-xl bg-transparent sm:min-w-[100px] sm:flex-1"
                   onClick={handleDownload}
                   disabled={generateArtMutation.isPending || saveArtMutation.isPending || isUploading}
                 >
@@ -919,7 +919,7 @@ export default function CoverArt() {
                 </Button>
                 <Button 
                   size="lg" 
-                  className="flex-[2] min-w-[140px] h-12 gap-2 bg-primary hover:bg-primary/90 text-white"
+                  className="ui-hover col-span-2 h-12 gap-2 rounded-xl bg-primary font-semibold text-white hover:bg-primary/90 sm:min-w-[140px] sm:flex-[2]"
                   onClick={() => saveArtMutation.mutate()}
                   disabled={saveArtMutation.isPending || isUploading}
                 >

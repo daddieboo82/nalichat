@@ -1,4 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
+import { validateUpload } from "@/lib/uploadValidation";
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -120,6 +121,8 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
 
       // 3. Upload + publish the finished, industry-ready song
       setStep(3);
+      const validation = validateUpload(file);
+      if (!validation.ok) throw new Error(validation.error);
       const { file_url } = await secureUploadFile({ file });
       const published = await base44.functions.invoke("publishStudioBounce", {
         projectId: project?.id || null,

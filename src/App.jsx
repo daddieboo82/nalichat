@@ -125,7 +125,13 @@ const AuthenticatedApp = () => {
     const sendPresence = (isOnline) => {
       base44.functions.invoke('updateUserPresence', { isOnline })
         .then((res) => {
-          if (res?.data?.error || res?.data?.success !== true) {
+          if (
+            res?.data?.error ||
+            res?.data?.success !== true ||
+            res?.data?.action !== 'update_presence' ||
+            res?.data?.userId !== user.id ||
+            res?.data?.isOnline !== isOnline
+          ) {
             throw new Error(res?.data?.error || 'Presence update was not confirmed.');
           }
         })

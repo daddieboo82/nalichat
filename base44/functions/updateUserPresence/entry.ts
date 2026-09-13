@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
       last_seen: new Date().toISOString(),
     });
 
-    return Response.json({ success: true });
+    return Response.json({ success: true, action: 'update_presence', userId: user.id, isOnline });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

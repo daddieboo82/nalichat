@@ -6,6 +6,9 @@ describe('app-wide user presence', () => {
     const app = await readFile('src/App.jsx', 'utf8');
     expect(app).toContain("base44.functions.invoke('updateUserPresence', { isOnline })");
     expect(app).toContain("res?.data?.success !== true");
+    expect(app).toContain("res?.data?.action !== 'update_presence'");
+    expect(app).toContain('res?.data?.userId !== user.id');
+    expect(app).toContain('res?.data?.isOnline !== isOnline');
     expect(app).toContain("Presence update was not confirmed.");
     expect(app).toContain("document.addEventListener('visibilitychange', syncVisibility)");
     expect(app).toContain("window.addEventListener('pagehide', handlePageHide)");

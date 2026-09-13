@@ -79,28 +79,28 @@ export default function Analytics() {
   ];
 
   return (
-    <PullToRefresh onRefresh={async () => { queryClient.invalidateQueries({ queryKey: ["userAnalytics"] }); }} className="h-full flex flex-col bg-background overflow-y-auto">
+    <PullToRefresh onRefresh={async () => { queryClient.invalidateQueries({ queryKey: ["userAnalytics"] }); }} className="flex h-full flex-col overflow-y-auto bg-background">
       {/* Header */}
       <div className="border-b border-border/70 bg-gradient-to-r from-primary/10 via-background to-accent/5 px-4 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] sm:p-6">
-        <h1 className="text-2xl sm:text-3xl font-heading font-bold tracking-tight">Analytics</h1>
-        <p className="text-muted-foreground mt-1">Track your audience engagement</p>
+        <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">Analytics</h1>
+        <p className="mt-1 text-sm text-muted-foreground sm:text-base">Track your audience engagement</p>
       </div>
 
       {/* Content */}
-      <div className="flex-1 space-y-6 px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
+      <div className="flex-1 space-y-5 px-4 py-5 pb-[max(6rem,env(safe-area-inset-bottom))] sm:space-y-6 sm:p-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-20" aria-live="polite">
             <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
             <span className="sr-only">Loading analytics</span>
           </div>
         ) : isError ? (
-          <div className="rounded-2xl border border-destructive/40 bg-card/60 p-6 text-center" role="alert">
+          <div className="ui-surface rounded-3xl border border-destructive/40 bg-card/60 p-6 text-center" role="alert">
             <h2 className="font-heading text-lg font-semibold">Analytics unavailable</h2>
             <p className="mt-2 text-sm text-muted-foreground">We couldn't load your release data, so the app won't show misleading zero totals.</p>
             <button
               type="button"
               onClick={() => void refetch()}
-              className="ui-hover mt-4 min-h-11 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-secondary/50"
+              className="ui-hover mt-4 min-h-11 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               Retry
             </button>
@@ -108,7 +108,7 @@ export default function Analytics() {
         ) : (
           <>
         {/* Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           {statCards.map((stat, i) => {
             const Icon = stat.icon;
             return (
@@ -118,7 +118,7 @@ export default function Analytics() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
               >
-                <Card className="ui-surface ui-hover h-full rounded-2xl p-4 sm:p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70">
+                <Card className="ui-surface ui-hover h-full rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl hover:border-white/[0.12] hover:bg-card/70 sm:p-5">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
@@ -133,12 +133,12 @@ export default function Analytics() {
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
           {/* Top Tracks */}
-          <Card className="ui-surface rounded-2xl p-4 sm:p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06]">
-            <h2 className="font-heading font-semibold mb-4">Top Tracks by Views</h2>
+          <Card className="ui-surface overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl sm:p-5">
+            <h2 className="mb-4 font-heading font-semibold tracking-tight">Top Tracks by Views</h2>
             {trackData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <div className="-mx-2 overflow-x-auto px-2"><div className="min-w-[520px]"><ResponsiveContainer width="100%" height={300}>
                 <BarChart data={trackData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
@@ -146,17 +146,17 @@ export default function Analytics() {
                   <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
                   <Bar dataKey="views" fill="hsl(var(--primary))" />
                 </BarChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer></div></div>
             ) : (
               <p className="text-muted-foreground text-sm py-12 text-center">No data yet. Upload tracks to see analytics.</p>
             )}
           </Card>
 
           {/* Catalog totals by release */}
-          <Card className="ui-surface rounded-2xl p-4 sm:p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06]">
-            <h2 className="font-heading font-semibold mb-4">Catalog Totals by Release</h2>
+          <Card className="ui-surface overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl sm:p-5">
+            <h2 className="mb-4 font-heading font-semibold tracking-tight">Catalog Totals by Release</h2>
             {growthData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <div className="-mx-2 overflow-x-auto px-2"><div className="min-w-[520px]"><ResponsiveContainer width="100%" height={300}>
                 <LineChart data={growthData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="track" tick={{ fontSize: 11 }} />
@@ -166,7 +166,7 @@ export default function Analytics() {
                   <Line type="monotone" dataKey="views" stroke="hsl(var(--primary))" dot={false} strokeWidth={2} />
                   <Line type="monotone" dataKey="likes" stroke="hsl(var(--accent))" dot={false} strokeWidth={2} />
                 </LineChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer></div></div>
             ) : (
               <p className="text-muted-foreground text-sm py-12 text-center">No data yet. Upload tracks to see analytics.</p>
             )}
@@ -175,10 +175,10 @@ export default function Analytics() {
 
         {/* Detailed Track List */}
         {userPosts.length > 0 && (
-          <Card className="ui-surface rounded-2xl p-4 sm:p-5 bg-card/50 backdrop-blur-xl border border-white/[0.06]">
-            <h2 className="font-heading font-semibold mb-4">Track Performance</h2>
-            <div className="overflow-x-auto no-scrollbar -mx-1 px-1">
-              <table className="w-full min-w-[560px] text-sm">
+          <Card className="ui-surface overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl sm:p-5">
+            <h2 className="mb-4 font-heading font-semibold tracking-tight">Track Performance</h2>
+            <div className="no-scrollbar -mx-1 overflow-x-auto rounded-xl px-1">
+              <table className="w-full min-w-[560px] text-sm tabular-nums">
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-2 px-3 text-muted-foreground font-medium">Track</th>
@@ -192,7 +192,7 @@ export default function Analytics() {
                     const likeCount = getLikeCount(post);
                     const engagement = post.views > 0 ? ((likeCount / post.views) * 100).toFixed(1) : 0;
                     return (
-                      <tr key={post.id} className="border-b border-border hover:bg-secondary/30 transition-colors">
+                      <tr key={post.id} className="border-b border-border transition-colors hover:bg-secondary/30">
                         <td className="py-3 px-3 truncate max-w-xs">{post.title}</td>
                         <td className="text-center py-3 px-3">{post.views || 0}</td>
                         <td className="text-center py-3 px-3 text-primary font-semibold">{likeCount}</td>

@@ -172,6 +172,8 @@ export default function NotificationBell({ direction = "down" }) {
       if (
         result?.data?.error ||
         result?.data?.success !== true ||
+        result?.data?.action !== "mark_notifications_read" ||
+        result?.data?.userId !== userId ||
         !Number.isFinite(Number(result?.data?.updated)) ||
         Number(result.data.updated) < 0
       ) failed = true;

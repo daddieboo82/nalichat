@@ -3,6 +3,33 @@ import { describe, expect, it, vi } from 'vitest';
 import { resolveUserSubscription } from '../../base44/shared/subscriptionAccess.ts';
 
 describe('shared subscription access resolver', () => {
+  it('keeps a permanent manual Premium Plus grant active without an expiration or external subscription', async () => {
+    const manual = {
+      id: 'manual-plus',
+      user_id: 'user-1',
+      plan: 'premium_plus',
+      status: 'active',
+      provider: 'manual',
+      current_period_end: null,
+      subscription_id: null,
+    };
+    const filter = vi.fn().mockResolvedValueOnce([manual]);
+
+    const access = await resolveUserSubscription(
+      { filter },
+      'user-1',
+      '2035-01-01T00:00:00.000Z',
+    );
+
+    expect(access.selected).toEqual(manual);
+    expect(access.plan).toBe('premium_plus');
+    expect(access.status).toBe('active');
+    expect(access.currentPeriodEnd).toBeNull();
+    expect(access.hasPaidAccess).toBe(true);
+    expect(access.entitlements['ai.best_model']).toBe(true);
+    expect(access.limits.ai.requestsPerUtcDay).toBe(1000);
+  });
+
   it('loads bounded pages and selects the strongest paid subscription', async () => {
     const firstPage = Array.from({ length: 500 }, (_, index) => ({
       id: `free-${index}`,

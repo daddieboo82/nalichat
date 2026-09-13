@@ -10,7 +10,7 @@ export default function StudioWelcome({
   navigate
 }) {
   return (
-    <div className="flex-1 flex flex-col h-screen items-center justify-center p-8 bg-background relative overflow-hidden">
+    <div className="flex-1 flex flex-col h-screen h-[100dvh] items-center justify-center p-8 bg-background relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(var(--primary),0.15)_0%,transparent_70%)] pointer-events-none" />
       <div className="z-10 bg-card/80 backdrop-blur-xl border border-border p-8 rounded-2xl shadow-2xl max-w-md w-full flex flex-col items-center">
         <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-6">

@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';

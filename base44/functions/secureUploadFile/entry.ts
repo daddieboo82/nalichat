@@ -9,14 +9,19 @@ const MAX_BY_KIND: Record<string, number> = {
   file: 50 * MB,
 };
 
-function kindFor(file: File, requested: unknown) {
-  const normalized = typeof requested === 'string' ? requested.toLowerCase() : '';
-  if (['image', 'audio', 'video', 'file'].includes(normalized)) return normalized;
-
+function kindFor(file: File) {
   const type = String(file.type || '').toLowerCase();
   if (type.startsWith('image/')) return 'image';
   if (type.startsWith('audio/')) return 'audio';
   if (type.startsWith('video/')) return 'video';
+
+  // Some browsers provide an empty or generic MIME type for media selected
+  // from device storage. Fall back to a small, explicit extension allowlist,
+  // but never trust the request's claimed kind to raise the server-side limit.
+  const extension = file.name.toLowerCase().split('.').pop() || '';
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'].includes(extension)) return 'image';
+  if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'webm'].includes(extension)) return 'audio';
+  if (['mp4', 'mov', 'm4v', 'webm', 'avi', 'mkv'].includes(extension)) return 'video';
   return 'file';
 }
 
@@ -62,7 +67,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'The selected file is empty or invalid' }, { status: 400 });
     }
 
-    const kind = kindFor(file, form.get('kind'));
+    const kind = kindFor(file);
     const maxBytes = MAX_BY_KIND[kind] || MAX_BY_KIND.file;
     if (file.size > maxBytes) {
       return Response.json({

@@ -16,7 +16,7 @@ describe('art post view retryability', () => {
     const source = await readText('base44/functions/recordArtPostView/entry.ts');
     expect(source).toContain("req.method !== 'POST'");
     expect(source).toContain('user.is_banned');
-    expect(source).toContain('postId.length > 200');
+    expect(source).toContain('isBase44EntityId(postId)');
     expect(source).toContain('releaseSingleHourlyClaim');
     expect(source).toContain("action: 'record_art_post_view'");
     expect(source).toContain('userId: user.id');

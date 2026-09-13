@@ -309,6 +309,10 @@ export default React.memo(function ConversationList({ conversations, myConversat
                       roomId = createdRoom?.id;
                       if (
                         res?.data?.success !== true ||
+                        res?.data?.action !== "create_public" ||
+                        res?.data?.userId !== currentUserId ||
+                        res?.data?.conversationId !== roomId ||
+                        res?.data?.roomName !== room.name ||
                         !roomId ||
                         createdRoom?.type !== "group" ||
                         createdRoom?.is_public !== true ||
@@ -324,6 +328,9 @@ export default React.memo(function ConversationList({ conversations, myConversat
                       const joinedRoom = res?.data?.conversation;
                       if (
                         res?.data?.success !== true ||
+                        res?.data?.action !== "join_public" ||
+                        res?.data?.userId !== currentUserId ||
+                        res?.data?.conversationId !== room.id ||
                         joinedRoom?.id !== room.id ||
                         joinedRoom?.type !== "group" ||
                         joinedRoom?.is_public !== true ||

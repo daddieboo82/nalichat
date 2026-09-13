@@ -104,7 +104,18 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
         throw new Error("moderated");
       }
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.message;
+      const sent = res?.data?.message;
+      if (
+        res?.data?.success !== true ||
+        !sent?.id ||
+        sent?.conversation_id !== parentMessage.conversation_id ||
+        sent?.thread_id !== parentMessage.id ||
+        sent?.sender_id !== currentUser?.id ||
+        sent?.client_message_key !== clientMessageKey
+      ) {
+        throw new Error("Thread reply was not confirmed.");
+      }
+      return sent;
     },
     onSuccess: () => {
       retryKeyRef.current = null;

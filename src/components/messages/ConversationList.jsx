@@ -305,14 +305,31 @@ export default React.memo(function ConversationList({ conversations, myConversat
                         name: room.name,
                       });
                       if (res?.data?.error) throw new Error(res.data.error);
-                      roomId = res?.data?.conversation?.id;
-                      if (!roomId) throw new Error("Public room was not created");
+                      const createdRoom = res?.data?.conversation;
+                      roomId = createdRoom?.id;
+                      if (
+                        res?.data?.success !== true ||
+                        !roomId ||
+                        createdRoom?.type !== "group" ||
+                        createdRoom?.is_public !== true ||
+                        !Array.isArray(createdRoom?.participant_ids) ||
+                        !createdRoom.participant_ids.includes(currentUserId)
+                      ) throw new Error("Public room was not created");
                     } else {
                       const res = await base44.functions.invoke("manageConversation", {
                         action: "join_public",
                         conversationId: room.id,
                       });
                       if (res?.data?.error) throw new Error(res.data.error);
+                      const joinedRoom = res?.data?.conversation;
+                      if (
+                        res?.data?.success !== true ||
+                        joinedRoom?.id !== room.id ||
+                        joinedRoom?.type !== "group" ||
+                        joinedRoom?.is_public !== true ||
+                        !Array.isArray(joinedRoom?.participant_ids) ||
+                        !joinedRoom.participant_ids.includes(currentUserId)
+                      ) throw new Error("Public room join was not confirmed");
                     }
                     onSelect(roomId);
                     setSearch("");

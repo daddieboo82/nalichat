@@ -2217,3 +2217,18 @@ describe('group info mutation response contracts', () => {
     expect(source).toContain('Leaving the group was not confirmed.');
   });
 });
+
+
+describe('messages response integrity follow-up', () => {
+  it('validates thread replies and public room membership transitions', async () => {
+    const thread = await readText('src/components/messages/ThreadPanel.jsx');
+    const conversations = await readText('src/components/messages/ConversationList.jsx');
+    expect(thread).toContain('Thread reply was not confirmed.');
+    expect(thread).toContain('sent?.thread_id !== parentMessage.id');
+    expect(thread).toContain('sent?.client_message_key !== clientMessageKey');
+    expect(conversations).toContain('createdRoom?.is_public !== true');
+    expect(conversations).toContain('!createdRoom.participant_ids.includes(currentUserId)');
+    expect(conversations).toContain('Public room join was not confirmed');
+    expect(conversations).toContain('!joinedRoom.participant_ids.includes(currentUserId)');
+  });
+});

@@ -193,6 +193,23 @@ export default function Messages() {
     staleTime: 3000,
   });
 
+  const { data: publicRooms = [] } = useQuery({
+    queryKey: ["public-conversations"],
+    queryFn: () => base44.entities.Conversation.filter(
+      { type: "group", is_public: true },
+      "-last_message_at",
+      200,
+    ),
+    enabled: !!currentUser?.id,
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
+
+  const discoveryConversations = [
+    ...conversations,
+    ...publicRooms.filter((room) => !conversations.some((conversation) => conversation.id === room.id)),
+  ];
+
   const partitionedConversations = lockedChatsReady
     ? partitionUserConversations(
         conversations,
@@ -697,14 +714,19 @@ export default function Messages() {
             <AnimatePresence mode="wait">
               {sidebarTab === "chats" ? (
                 <motion.div key="chats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col bg-background/40">
-                  <PullToRefresh onRefresh={async () => { await queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] }); }} className="flex-1 overflow-y-auto">
+                  <PullToRefresh onRefresh={async () => {
+                    await Promise.all([
+                      queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] }),
+                      queryClient.invalidateQueries({ queryKey: ["public-conversations"] }),
+                    ]);
+                  }} className="flex-1 overflow-y-auto">
                     {conversationsError ? (
                       <div className="m-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
                         Couldn't load conversations. Pull to refresh or try again.
                       </div>
                     ) : (
                     <ConversationList
-                      conversations={conversations}
+                      conversations={discoveryConversations}
                       myConversations={myConversations}
                       selectedId={selectedConvId}
                       onSelect={handleSelectConv}

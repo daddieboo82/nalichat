@@ -131,3 +131,11 @@ describe("chat theme settings", () => {
     });
   });
 });
+
+
+describe("chat theme account binding source contract", () => {
+  it("passes the current user id into theme persistence", async () => {
+    const source = await import("node:fs/promises").then(({ readFile }) => readFile("src/components/settings/ChatThemeSettings.jsx", "utf8"));
+    expect(source).toContain("persistChatThemePreference(theme.id, user?.id)");
+  });
+});

@@ -84,6 +84,8 @@ export async function subscribeToRemotePush() {
   }
 
   const { base44 } = await import('@/api/base44Client');
+  const authUser = await base44.auth.me();
+  if (!authUser?.id) throw new Error("Sign in to enable push notifications.");
   const configResponse = await base44.functions.invoke('getPushConfig', {});
   if (configResponse?.data?.error) throw new Error(configResponse.data.error);
   const config = configResponse?.data ?? configResponse;
@@ -108,7 +110,12 @@ export async function subscribeToRemotePush() {
       userAgent: navigator.userAgent,
     });
     if (registerResponse?.data?.error) throw new Error(registerResponse.data.error);
-    if (registerResponse?.data?.success !== true) {
+    if (
+      registerResponse?.data?.success !== true ||
+      registerResponse?.data?.action !== "register_push" ||
+      registerResponse?.data?.userId !== authUser.id ||
+      registerResponse?.data?.endpoint !== json.endpoint
+    ) {
       throw new Error("Push registration was not confirmed.");
     }
   } catch (error) {
@@ -130,6 +137,8 @@ export async function unsubscribeFromRemotePush() {
   if (!subscription) return { unsubscribed: false, reason: 'none' };
 
   const { base44 } = await import('@/api/base44Client');
+  const authUser = await base44.auth.me();
+  if (!authUser?.id) throw new Error("Sign in to disable push notifications.");
   let serverError = null;
   try {
     const unregisterResponse = await base44.functions.invoke('unregisterPushSubscription', {
@@ -137,7 +146,12 @@ export async function unsubscribeFromRemotePush() {
     });
     if (unregisterResponse?.data?.error) {
       serverError = new Error(unregisterResponse.data.error);
-    } else if (unregisterResponse?.data?.success !== true) {
+    } else if (
+      unregisterResponse?.data?.success !== true ||
+      unregisterResponse?.data?.action !== "unregister_push" ||
+      unregisterResponse?.data?.userId !== authUser.id ||
+      unregisterResponse?.data?.endpoint !== subscription.endpoint
+    ) {
       serverError = new Error("Push unregistration was not confirmed.");
     }
   } catch (error) {

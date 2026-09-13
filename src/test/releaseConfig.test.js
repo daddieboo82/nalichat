@@ -2624,3 +2624,17 @@ describe('call signaling send identity contract', () => {
     expect(source).toContain('sent?.client_message_key !== clientMessageKey');
   });
 });
+
+
+describe('messaging public-directory account isolation', () => {
+  it('renders directory/presence data only for the current authenticated viewer', async () => {
+    const backend = await readText('base44/functions/listPublicUsers/entry.ts');
+    const messages = await readText('src/pages/Messages.jsx');
+    const dialog = await readText('src/components/GlobalMessageDialog.jsx');
+    const contacts = await readText('src/components/messages/ContactsTab.jsx');
+    expect(backend).toContain('viewerUserId: user.id');
+    expect(messages).toContain('res?.data?.viewerUserId !== currentUser?.id');
+    expect(dialog).toContain('res?.data?.viewerUserId !== currentUser?.id');
+    expect(contacts).toContain('res?.data?.viewerUserId !== currentUserId');
+  });
+});

@@ -53,7 +53,13 @@ Deno.serve(async (req) => {
       if (rows.length < DELETE_BATCH_SIZE) break;
     }
 
-    return Response.json({ success: true, removed });
+    return Response.json({
+      success: true,
+      action: 'unregister_push',
+      userId: user.id,
+      endpoint,
+      removed,
+    });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

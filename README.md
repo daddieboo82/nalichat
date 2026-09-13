@@ -42,6 +42,16 @@ Run browser end-to-end tests:
 1. Install Playwright browsers: `npx playwright install --with-deps chromium`
 2. Execute e2e suite: `npm run test:e2e`
 
+Authenticated production smoke tests are opt-in and never hardcode credentials. Set:
+```
+E2E_BASE_URL=https://nalichat.org
+E2E_USER_EMAIL=first-test-user@example.com
+E2E_USER_PASSWORD=...
+E2E_SECOND_USER_EMAIL=second-test-user@example.com
+E2E_SECOND_USER_PASSWORD=...
+```
+Then run `npm run test:e2e`. When `E2E_BASE_URL` is set, Playwright tests the deployed app instead of starting the local preview server.
+
 **Publish your changes**
 
 Open [Base44.com](http://Base44.com) and click on Publish.

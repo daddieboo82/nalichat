@@ -397,7 +397,8 @@ export default function Studio() {
             accepted?.data?.action !== "accept_project_invite" ||
             accepted?.data?.userId !== user.id ||
             accepted?.data?.projectId !== roomId ||
-            !["owner", "editor", "viewer"].includes(accepted?.data?.role)
+            !["owner", "editor", "viewer"].includes(accepted?.data?.role) ||
+            typeof accepted?.data?.already_member !== "boolean"
           ) throw new Error("Project invite acceptance was not confirmed.");
           if (!cancelled) {
             const nextParams = new URLSearchParams(searchParams);

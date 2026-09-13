@@ -69,7 +69,12 @@ export default function PlaylistDetail() {
         });
         if (res?.data?.error) throw new Error(res.data.error);
         const updatedPlaylist = res?.data?.playlist;
-        if (res?.data?.success !== true || !updatedPlaylist?.id) {
+        if (
+          res?.data?.success !== true ||
+          updatedPlaylist?.id !== playlistId ||
+          !Array.isArray(updatedPlaylist?.track_ids) ||
+          !updatedPlaylist.track_ids.includes(newPost.id)
+        ) {
           throw new Error("Playlist update was not confirmed");
         }
         return updatedPlaylist;
@@ -78,6 +83,7 @@ export default function PlaylistDetail() {
         try {
           const cleanup = await base44.functions.invoke("deleteArtPost", { postId: newPost.id });
           if (cleanup?.data?.error) throw new Error(cleanup.data.error);
+          if (cleanup?.data?.success !== true) throw new Error("Track rollback was not confirmed");
         } catch (cleanupError) {
           const playlistMessage = playlistError instanceof Error
             ? playlistError.message
@@ -120,7 +126,12 @@ export default function PlaylistDetail() {
       });
       if (res?.data?.error) throw new Error(res.data.error);
       const updatedPlaylist = res?.data?.playlist;
-      if (res?.data?.success !== true || !updatedPlaylist?.id) {
+      if (
+        res?.data?.success !== true ||
+        updatedPlaylist?.id !== playlistId ||
+        !Array.isArray(updatedPlaylist?.track_ids) ||
+        updatedPlaylist.track_ids.includes(trackId)
+      ) {
         throw new Error("Playlist update was not confirmed");
       }
       return updatedPlaylist;

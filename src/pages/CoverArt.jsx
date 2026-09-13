@@ -164,13 +164,13 @@ export default function CoverArt() {
     }
   };
 
-  const { data: sharedFiles = [], isLoading: isLoadingFiles } = useQuery({
+  const { data: sharedFiles = [], isLoading: isLoadingFiles, isError: filesError, refetch: refetchFiles } = useQuery({
     queryKey: ["mySharedFiles", currentUser?.id],
     queryFn: () => currentUser ? filterAllRows(base44.entities.SharedFile, { uploader_id: currentUser.id }) : [],
     enabled: showFilesDialog && !!currentUser,
   });
 
-  const { data: myPlaylists = [], isLoading: isLoadingPlaylists } = useQuery({
+  const { data: myPlaylists = [], isLoading: isLoadingPlaylists, isError: playlistsError, refetch: refetchPlaylists } = useQuery({
     queryKey: ["myPlaylists", currentUser?.id],
     queryFn: () => currentUser ? filterAllRows(base44.entities.Playlist, { owner_id: currentUser.id }) : [],
     enabled: showPlaylistDialog && !!currentUser,
@@ -259,7 +259,7 @@ export default function CoverArt() {
   };
 
 
-  const { data: posts = [], isLoading } = useQuery({
+  const { data: posts = [], isLoading, isError: postsError, refetch: refetchPosts } = useQuery({
     queryKey: ["myArtPosts", currentUser?.id],
     queryFn: () => currentUser ? filterAllRows(base44.entities.ArtPost, { creator_id: currentUser.id }) : [],
     enabled: !!currentUser,
@@ -304,6 +304,10 @@ export default function CoverArt() {
       queryClient.invalidateQueries({ queryKey: ["artposts"] });
       setGeneratedImage(null);
       setSelectedPost(null);
+    },
+    onError: (error) => {
+      console.error("Failed to save cover art:", error);
+      toast.error(error?.message || "Failed to save cover art. Please try again.");
     }
   });
 
@@ -376,6 +380,13 @@ export default function CoverArt() {
           <h2 className="font-semibold uppercase text-xs tracking-wider text-muted-foreground">Your Tracks</h2>
           {isLoading ? (
             <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+          ) : postsError ? (
+            <div className="text-center p-8">
+              <p className="text-sm font-semibold">Couldn't load your tracks</p>
+              <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => void refetchPosts()}>
+                Retry
+              </Button>
+            </div>
           ) : posts.length === 0 ? (
             <div className="text-center p-8 flex flex-col items-center justify-center text-muted-foreground text-sm">
               <Music className="w-8 h-8 mx-auto mb-3 opacity-50" />
@@ -441,6 +452,13 @@ export default function CoverArt() {
             <div className="max-h-96 overflow-y-auto space-y-2">
               {isLoadingFiles ? (
                 <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+              ) : filesError ? (
+                <div className="p-6 text-center" role="alert">
+                  <p className="text-sm font-semibold">Couldn't load your Files</p>
+                  <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => void refetchFiles()}>
+                    Retry
+                  </Button>
+                </div>
               ) : sharedFiles.filter(f => f.file_type === "audio" || f.file_type === "video").length === 0 ? (
                 <p className="text-center text-muted-foreground p-4">No audio or video files found in your Files.</p>
               ) : (
@@ -477,6 +495,13 @@ export default function CoverArt() {
               {!selectedPlaylist ? (
                 isLoadingPlaylists ? (
                   <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                ) : playlistsError ? (
+                  <div className="p-6 text-center" role="alert">
+                    <p className="text-sm font-semibold">Couldn't load your playlists</p>
+                    <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => void refetchPlaylists()}>
+                      Retry
+                    </Button>
+                  </div>
                 ) : myPlaylists.length === 0 ? (
                   <p className="text-center text-muted-foreground p-4">No playlists found.</p>
                 ) : (

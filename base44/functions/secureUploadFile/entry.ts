@@ -8,6 +8,7 @@ const MAX_BY_KIND: Record<string, number> = {
   video: 100 * MB,
   file: 50 * MB,
 };
+const MAX_MULTIPART_BYTES = MAX_BY_KIND.video + 1 * MB;
 
 function kindFor(file: File) {
   const type = String(file.type || '').toLowerCase();
@@ -56,6 +57,11 @@ Deno.serve(async (req) => {
     const contentType = req.headers.get('content-type') || '';
     if (!contentType.toLowerCase().includes('multipart/form-data')) {
       return Response.json({ error: 'Multipart file upload required' }, { status: 400 });
+    }
+
+    const declaredLength = Number(req.headers.get('content-length'));
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_MULTIPART_BYTES) {
+      return Response.json({ error: 'Upload request is too large' }, { status: 413 });
     }
 
     const form = await req.formData();

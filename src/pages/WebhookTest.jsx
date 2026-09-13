@@ -9,6 +9,8 @@ export default function WebhookTest() {
   const {
     data: subscriptions = [],
     isLoading: fetchingSubs,
+    isError: subscriptionsError,
+    refetch: refetchSubscriptions,
   } = useQuery({
     queryKey: ["webhookTestSubscriptions", currentUser?.id],
     queryFn: () => base44.entities.Subscription.filter({ user_id: currentUser.id }),
@@ -54,6 +56,17 @@ export default function WebhookTest() {
             {fetchingSubs ? (
               <div className="flex items-center text-sm text-muted-foreground gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" /> Fetching subscriptions...
+              </div>
+            ) : subscriptionsError ? (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4" role="alert">
+                <p className="text-sm font-semibold text-destructive">Couldn't load subscription diagnostics.</p>
+                <button
+                  type="button"
+                  className="mt-3 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary/50"
+                  onClick={() => void refetchSubscriptions()}
+                >
+                  Retry
+                </button>
               </div>
             ) : subscriptions.length === 0 ? (
               <div className="text-sm text-muted-foreground p-4 bg-secondary/50 rounded-lg">

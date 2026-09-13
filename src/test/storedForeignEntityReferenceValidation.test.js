@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 
 const cases = [
-  ['base44/functions/deleteFolder/entry.ts', 'isBase44EntityId(folder.project_id)', 'Project.get(folder.project_id)'],
+  ['base44/functions/deleteFolder/entry.ts', 'isBase44EntityId(folderPreview.project_id)', 'Project.get(folderPreview.project_id)'],
   ['base44/functions/mutateMilestone/entry.ts', 'isBase44EntityId(milestone.project_id)', 'Project.get(milestone.project_id)'],
   ['base44/functions/deleteTrackVersion/entry.ts', 'isBase44EntityId(version.project_id)', 'Project.get(version.project_id)'],
   ['base44/functions/deleteTrackVersion/entry.ts', 'isBase44EntityId(version.track_id)', 'acquireTrackLifecycleLock(entities, version.track_id)'],

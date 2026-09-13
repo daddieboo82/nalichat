@@ -251,7 +251,7 @@ Deno.serve(async (req) => {
     // contain sensitive audio/transcript data, so wipe them before marking the
     // session deleted. Consent rows are removed because the participant account
     // no longer exists.
-    await processMatchingBatches(
+    await processPagedRows(
       entities.CallSummarySession,
       { owner_id: user.id },
       async (session) => {

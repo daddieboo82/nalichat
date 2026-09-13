@@ -6,6 +6,7 @@ describe('account deletion private chat cleanup', () => {
     const s = await readFile('base44/functions/deleteMyAccount/entry.ts', 'utf8');
     expect(s).toContain("['LockedConversationPreference', 'user_id']");
     expect(s).toContain("['FollowUpReminder', 'owner_id']");
+    expect(s).toContain('processPagedRows(\n      entities.CallSummarySession,\n      { owner_id: user.id }');
     expect(s).toContain('entities.CallSummarySession');
     expect(s).toContain("audio_url: ''");
     expect(s).toContain("transcript: ''");

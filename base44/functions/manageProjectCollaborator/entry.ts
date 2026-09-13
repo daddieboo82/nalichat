@@ -215,7 +215,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ success: true });
+    return Response.json({
+      success: true,
+      action: 'manage_project_collaborator',
+      userId: owner.id,
+      projectId: project.id,
+      collaboratorId: userId,
+      collaboratorAction: action,
+      role: action === 'remove' ? null : role,
+    });
     } finally {
       await releaseProjectMembershipLock(entities, lockId);
     }

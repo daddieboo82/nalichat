@@ -9,11 +9,12 @@ export function useAiCapabilities() {
   const { user } = useAuth();
   const query = useQuery({
     queryKey: ["ai-capabilities", user?.id || "anonymous"],
-    queryFn: getAiCapabilities,
+    queryFn: () => getAiCapabilities(user?.id),
     retry: false,
     staleTime: 60_000,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
+    enabled: !!user?.id,
   });
 
   return {

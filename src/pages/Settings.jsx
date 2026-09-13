@@ -172,17 +172,17 @@ export default function Settings() {
 
   return (
     <PullToRefresh onRefresh={async () => { await checkUserAuth(); }} className="h-full overflow-y-auto">
-      <div className={`max-w-xl mx-auto p-6 py-12 ${reduceMotion ? "reduce-motion-surface" : ""}`}>
-        <h1 className="text-2xl font-heading font-bold mb-8">Profile Settings</h1>
+      <div className={`mx-auto max-w-2xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 sm:px-6 sm:py-10 ${reduceMotion ? "reduce-motion-surface" : ""}`}>
+        <h1 className="mb-6 text-2xl font-heading font-bold tracking-tight sm:text-3xl">Profile Settings</h1>
 
         {/* Avatar */}
-        <div className="flex items-center gap-6 mb-8 bg-card/50 backdrop-blur-xl p-6 rounded-2xl border border-white/[0.06] shadow-lg relative overflow-hidden">
+        <div className="ui-surface relative mb-8 flex flex-col items-center gap-4 overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-5 text-center shadow-lg backdrop-blur-xl sm:flex-row sm:gap-6 sm:p-6 sm:text-left">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-pink-500/20 blur-3xl rounded-full pointer-events-none" />
           <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/20 blur-3xl rounded-full pointer-events-none" />
           
           <div className="relative group shrink-0">
             <div className="absolute -inset-1 bg-gradient-to-br from-primary to-pink-500 rounded-full blur opacity-70 group-hover:opacity-100 transition duration-500" />
-            <Avatar className="w-24 h-24 rounded-full border-4 border-background relative z-10 shadow-xl">
+            <Avatar className="relative z-10 h-24 w-24 rounded-full border-4 border-background shadow-xl">
               <AvatarImage src={form.avatar_url} className="rounded-full object-cover" />
               <AvatarFallback className="bg-gradient-to-br from-primary to-pink-500 text-white text-3xl font-black rounded-full">
                 {form.display_name?.[0]?.toUpperCase() || user.full_name?.[0]?.toUpperCase() || "?"}
@@ -191,13 +191,13 @@ export default function Settings() {
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
             <button
               onClick={() => fileRef.current?.click()}
-              className="absolute inset-1 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20 backdrop-blur-sm cursor-pointer"
+              className="absolute inset-1 z-20 flex cursor-pointer items-center justify-center rounded-full bg-black/60 opacity-100 backdrop-blur-sm transition-opacity sm:opacity-0 sm:group-hover:opacity-100 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label="Change profile photo"
             >
               {uploading ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-6 h-6 text-white" />}
             </button>
           </div>
           <div className="relative z-10">
-            <h2 className="text-3xl font-heading font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-pink-500 drop-shadow-sm">
+            <h2 className="bg-gradient-to-r from-primary to-pink-500 bg-clip-text text-2xl font-heading font-black text-transparent drop-shadow-sm sm:text-3xl">
               {form.display_name || user.full_name}
             </h2>
             <p className="text-sm font-medium text-muted-foreground mt-1 bg-background/50 px-3 py-1 rounded-full inline-block border border-border/50">
@@ -209,13 +209,13 @@ export default function Settings() {
         <div className="space-y-6">
           <div>
             <label className="text-sm font-medium mb-2 block">Display Name / Artist Name</label>
-            <Input value={form.display_name} onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))} className="bg-secondary/50 border-0 rounded-xl" placeholder="Your stage name..." />
+            <Input value={form.display_name} onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))} className="h-12 rounded-xl border border-border/50 bg-secondary/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" placeholder="Your stage name..." />
           </div>
 
           <div>
             <label className="text-sm font-medium mb-2 block">Role</label>
             <Select value={form.artist_role} onValueChange={v => setForm(f => ({ ...f, artist_role: v }))}>
-              <SelectTrigger className="bg-secondary/50 border-0 rounded-xl">
+              <SelectTrigger className="h-12 rounded-xl border border-border/50 bg-secondary/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -229,12 +229,12 @@ export default function Settings() {
 
           <div>
             <label className="text-sm font-medium mb-2 block">Bio</label>
-            <Textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} className="bg-secondary/50 border-0 rounded-xl min-h-[120px] resize-y" placeholder="Tell others about yourself..." />
+            <Textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} className="min-h-[120px] resize-y rounded-xl border border-border/50 bg-secondary/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" placeholder="Tell others about yourself..." />
           </div>
 
           <div>
             <label className="text-sm font-medium mb-2 block">Location</label>
-            <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className="bg-secondary/50 border-0 rounded-xl" placeholder="City, State" />
+            <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className="h-12 rounded-xl border border-border/50 bg-secondary/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" placeholder="City, State" />
           </div>
 
           <div>
@@ -255,7 +255,7 @@ export default function Settings() {
             </div>
           </div>
 
-          <Button className="w-full rounded-xl bg-primary hover:bg-primary/90 mt-4" onClick={handleSave} disabled={saving}>
+          <Button className="ui-hover mt-4 min-h-12 w-full rounded-xl bg-primary font-semibold shadow-lg shadow-primary/15 hover:bg-primary/90" onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Save Profile
           </Button>
@@ -286,7 +286,7 @@ export default function Settings() {
 
         <div className="mt-12 pt-8 border-t border-border">
           <h2 className="text-xl font-heading font-bold mb-6">Accessibility</h2>
-          <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex items-center justify-between gap-4 border border-white/[0.06]">
+          <div className="ui-surface flex items-center justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:p-6">
             <div>
               <label htmlFor="reduce-motion" className="font-heading font-semibold text-lg text-foreground">
                 Reduce Motion
@@ -309,7 +309,7 @@ export default function Settings() {
         <div className="mt-12 pt-8 border-t border-border">
           <h2 className="text-xl font-heading font-bold mb-6">Onboarding & Tutorial</h2>
           <div className="flex flex-col gap-4">
-            <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06]">
+            <div className="ui-surface flex flex-col justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
               <div>
                 <h3 className="font-heading font-semibold text-lg text-foreground">Interactive Tutorial</h3>
                 <p className="text-sm text-muted-foreground mt-1">Take an interactive tour to learn how to use NaliChat's studio and collaboration tools.</p>
@@ -319,7 +319,7 @@ export default function Settings() {
               </Button>
             </div>
 
-            <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06]">
+            <div className="ui-surface flex flex-col justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
               <div>
                 <h3 className="font-heading font-semibold text-lg text-foreground">Profile Setup & Onboarding</h3>
                 <p className="text-sm text-muted-foreground mt-1">Revisit the initial onboarding process to set up your profile and complete the tutorial.</p>
@@ -335,7 +335,7 @@ export default function Settings() {
 
         <div className="mt-12 pt-8 border-t border-border">
           <h2 className="text-xl font-heading font-bold mb-6">Creator Tools</h2>
-          <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06]">
+          <div className="ui-surface flex flex-col justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
             <div>
               <h3 className="font-heading font-semibold text-lg text-foreground">Analytics Dashboard</h3>
               <p className="text-sm text-muted-foreground mt-1">Track plays, reach, audience growth & listener engagement.</p>
@@ -351,7 +351,7 @@ export default function Settings() {
 
         <div className="mt-12 pt-8 border-t border-border">
           <h2 className="text-xl font-heading font-bold mb-6">Squad & Scale</h2>
-          <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06]">
+          <div className="ui-surface flex flex-col justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
             <div>
               <h3 className="font-heading font-semibold text-lg text-foreground">Link Up With a Partner</h3>
               <p className="text-sm text-muted-foreground mt-1">Team up with a friend — hit your weekly chat or task goals together and unlock a 1.5x weekend bonus.</p>

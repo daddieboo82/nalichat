@@ -92,7 +92,7 @@ export default function ReportContentDialog({ open, onClose, contentType, conten
               <p className="text-xs text-muted-foreground mb-3">
                 Help us keep NaliChat safe. Why are you reporting this content?
               </p>
-              <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
+              <div className="space-y-1.5 max-h-[280px] overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]">
                 {REPORT_REASONS.map((r) => (
                   <button
                     key={r.value}

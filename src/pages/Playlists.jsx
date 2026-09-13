@@ -122,20 +122,20 @@ export default function Playlists() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="flex h-full flex-col bg-background">
       {/* Header */}
-      <div className="h-20 border-b border-border flex items-center justify-between px-6 shrink-0">
-        <h1 className="text-2xl font-heading font-bold">Your Playlists</h1>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
+      <div className="shrink-0 border-b border-border/70 bg-card/40 px-4 py-4 backdrop-blur-xl sm:px-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h1 className="text-2xl font-heading font-bold tracking-tight">Your Playlists</h1>
+        <Button onClick={() => setShowCreateDialog(true)} className="ui-hover min-h-11 gap-2 rounded-xl font-semibold shadow-lg shadow-primary/10">
           <Plus className="w-4 h-4" /> Create Playlist
-        </Button>
+        </Button></div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
         <PullToRefresh onRefresh={handleRefresh}>
         {playlists.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
+          <div className="ui-surface flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-3xl border border-white/[0.06] bg-card/40 p-6 text-muted-foreground">
             <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
               <Music className="w-10 h-10 text-primary/40" />
             </div>
@@ -149,9 +149,9 @@ export default function Playlists() {
               <Link
                 key={playlist.id}
                 to={`/playlist/${playlist.id}`}
-                className="group bg-card/50 backdrop-blur-xl border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] hover:bg-card/70 transition-all duration-300 cursor-pointer"
+                className="ui-surface ui-hover group cursor-pointer rounded-2xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl hover:border-white/[0.12] hover:bg-card/70"
               >
-                <div className="aspect-square bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg flex items-center justify-center mb-4 group-hover:from-primary/30 group-hover:to-accent/30 transition-colors">
+                <div className="mb-4 flex aspect-[4/3] items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 transition-colors group-hover:from-primary/30 group-hover:to-accent/30">
                   <Music className="w-8 h-8 text-primary/60" />
                 </div>
                 <h3 className="font-heading font-semibold truncate group-hover:text-primary transition-colors">
@@ -171,7 +171,7 @@ export default function Playlists() {
                       e.preventDefault();
                       deletePlaylistMutation.mutate(playlist.id);
                     }}
-                    className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                    className="ui-hover flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30" aria-label="Delete playlist"
                     title="Delete playlist"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -202,7 +202,7 @@ export default function Playlists() {
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                className="mt-1"
+                className="mt-1 h-11 rounded-xl border-border/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <div>
@@ -213,7 +213,7 @@ export default function Playlists() {
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                className="mt-1"
+                className="mt-1 min-h-[110px] rounded-xl border-border/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <div className="flex justify-end gap-2">

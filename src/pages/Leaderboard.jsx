@@ -134,7 +134,7 @@ export default function Leaderboard() {
       <div className="flex-1 overflow-y-auto custom-scrollbar">
       <PullToRefresh onRefresh={handleRefresh}>
       {/* Header */}
-      <div className="bg-gradient-to-br from-yellow-500/10 via-background to-primary/10 px-4 sm:px-8 pt-8 pb-6">
+      <div className="border-b border-border/60 bg-gradient-to-br from-yellow-500/10 via-background to-primary/10 px-4 pb-6 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8 sm:pt-8">
         <div className="max-w-2xl mx-auto text-center">
           <div className="w-16 h-16 rounded-2xl bg-yellow-500/20 flex items-center justify-center mx-auto mb-4">
             <Trophy className="w-8 h-8 text-yellow-400" />
@@ -149,19 +149,19 @@ export default function Leaderboard() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-8 py-6">
+      <div className="mx-auto max-w-2xl px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6">
         {/* Mode Toggle */}
         <div className="flex justify-center mb-6">
-          <div className="flex gap-1 bg-secondary/50 p-1 rounded-xl w-full max-w-sm">
+          <div className="flex w-full max-w-sm gap-1 rounded-2xl bg-secondary/50 p-1.5">
             <button
               onClick={() => setMode("users")}
-              className={cn("flex-1 py-2 rounded-lg text-sm font-bold transition-all", mode === "users" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground")}
+              className={cn("ui-hover min-h-10 flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all", mode === "users" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground")}
             >
               Top Users
             </button>
             <button
               onClick={() => setMode("content")}
-              className={cn("flex-1 py-2 rounded-lg text-sm font-bold transition-all", mode === "content" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground")}
+              className={cn("ui-hover min-h-10 flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all", mode === "content" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground")}
             >
               Top Content
             </button>
@@ -185,7 +185,7 @@ export default function Leaderboard() {
                 if (usersError) void refetchUsers();
                 if (postsError) void refetchPosts();
               }}
-              className="mt-4 rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary/50"
+              className="ui-hover mt-4 min-h-11 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-secondary/50"
             >
               Retry
             </button>
@@ -195,13 +195,13 @@ export default function Leaderboard() {
         {!leaderboardLoading && !leaderboardLoadProblem && mode === "users" && (
           <>
             {/* User Tabs */}
-            <div className="flex gap-2 bg-secondary/30 rounded-xl p-1 mb-6">
+            <div className="no-scrollbar mb-6 flex gap-1.5 overflow-x-auto rounded-2xl bg-secondary/30 p-1.5">
               {USER_TABS.map(t => (
                 <button
                   key={t}
                   onClick={() => setUserTab(t)}
                   className={cn(
-                    "flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition-colors",
+                    "ui-hover min-h-10 shrink-0 flex-1 rounded-xl px-3 py-2 text-sm font-semibold capitalize transition-colors",
                     userTab === t ? "bg-card text-foreground shadow-sm border border-border/50" : "text-muted-foreground hover:text-foreground"
                   )}
                 >

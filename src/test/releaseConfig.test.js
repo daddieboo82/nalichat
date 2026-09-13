@@ -2434,3 +2434,16 @@ describe('onboarding auth refresh contract', () => {
     expect(source).toContain('your session did not refresh');
   });
 });
+
+
+describe('liked-post state response contract', () => {
+  it('does not silently render all tracks unliked when the lookup response is malformed', async () => {
+    const explore = await readText('src/pages/Explore.jsx');
+    const profile = await readText('src/pages/Profile.jsx');
+    for (const source of [explore, profile]) {
+      expect(source).toContain('likedRes?.data?.success !== true');
+      expect(source).toContain('!Array.isArray(likedRes?.data?.post_ids)');
+      expect(source).toContain('Liked track state was not confirmed.');
+    }
+  });
+});

@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
           });
         }
       }
-      return Response.json({ success: true, cleared, cleanup_failures: cleanupFailures });
+      return Response.json({ success: true, action: 'clear', userId: user.id, roomId, cleared, cleanup_failures: cleanupFailures });
     }
 
     const payload = {
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ success: true, presence: updated, cleanup_failures: cleanupFailures });
+    return Response.json({ success: true, action: 'heartbeat', userId: user.id, roomId, presence: updated, cleanup_failures: cleanupFailures });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

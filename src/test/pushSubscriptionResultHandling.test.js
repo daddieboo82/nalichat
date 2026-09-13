@@ -11,6 +11,10 @@ describe('push subscription result handling', () => {
     const source = await readText('src/lib/pushNotifications.js');
 
     expect(source).toContain('if (configResponse?.data?.error) throw new Error(configResponse.data.error);');
+    expect(source).toContain('config.action !== "get_push_config"');
+    expect(source).toContain('typeof config.configured !== "boolean"');
+    expect(source).toContain('typeof config.publicKey !== "string"');
+    expect(source).toContain('Push configuration was not confirmed.');
     expect(source).toContain('if (registerResponse?.data?.error) throw new Error(registerResponse.data.error);');
     expect(source).toContain('if (createdSubscription)');
     expect(source).toContain('await subscription.unsubscribe()');

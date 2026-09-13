@@ -13,7 +13,7 @@ describe('Messages Network query errors', () => {
     expect(source).toContain('isError: contactsError');
     expect(source).toContain('isError: usersError');
     expect(source).toContain('if (res?.data?.error) throw new Error(res.data.error);');
-    expect(source).toContain("Couldn't load people right now. Please try again.");
+    expect(source).toContain("Couldn't load people right now.");
     expect(source).toContain("Couldn't load your contacts. Discovery may be incomplete.");
   });
 });

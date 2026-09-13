@@ -70,12 +70,12 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
 
   return (
     <nav
-      className="hidden lg:block relative z-50 border-t border-white/[0.06] backdrop-blur-xl"
+      className="relative z-50 hidden border-t border-white/[0.08] shadow-[0_-1px_18px_rgba(0,0,0,0.12)] backdrop-blur-xl lg:block"
       style={{ background: "hsl(240 8% 6% / 0.95)" }}
     >
-      <div className="w-full px-3 py-2 flex items-center justify-between gap-2">
+      <div className="flex min-h-14 w-full items-center justify-between gap-2 px-3 py-2">
         {/* Logo */}
-        <Link to="/" className="group shrink-0">
+        <Link to="/" className="ui-hover shrink-0 rounded-xl px-1.5 py-1 focus-visible:ring-2 focus-visible:ring-primary/40">
           <div className="flex items-center gap-2">
             <Logo size={30} className="group-hover:scale-105 transition-transform shadow-lg shadow-primary/30" />
             <span className="font-heading font-extrabold text-sm text-gradient-animate hidden xl:inline tracking-tight">NaliChat</span>
@@ -96,7 +96,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
                     title={label}
                     onClick={() => sounds.nav()}
                     className={cn(
-                      "relative px-1.5 py-2 rounded-lg flex items-center gap-1 transition-all whitespace-nowrap text-xs font-semibold group shrink-0",
+                      "ui-hover group relative flex min-h-10 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl px-2 py-2 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary/40",
                       active
                         ? "bg-primary/15 text-primary shadow-sm"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
@@ -128,12 +128,12 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
               <Link
                 to="/login"
                 onClick={() => sounds.nav()}
-                className="px-3 py-2 rounded-lg text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all whitespace-nowrap"
+                className="ui-hover min-h-10 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold text-muted-foreground transition-all hover:bg-secondary/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 Log in
               </Link>
               <Link to="/register" onClick={() => sounds.nav()}>
-                <Button size="sm" className="rounded-lg text-xs font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/20 whitespace-nowrap">
+                <Button size="sm" className="ui-hover min-h-10 whitespace-nowrap rounded-xl bg-gradient-to-r from-primary to-pink-500 text-xs font-bold shadow-lg shadow-primary/20 hover:opacity-90">
                   Sign up
                 </Button>
               </Link>
@@ -144,7 +144,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
           <Link
             to="/projects-summary?new=true"
             title="New Project"
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-white bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 shadow-lg shadow-primary/20 transition-all active:scale-95 mr-0.5 shrink-0"
+            className="ui-hover mr-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-pink-500 text-white shadow-lg shadow-primary/20 transition-all hover:opacity-90 focus-visible:ring-2 focus-visible:ring-primary/50"
           >
             <Plus className="w-5 h-5" />
           </Link>
@@ -158,7 +158,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
               <DropdownMenuTrigger asChild>
                 <button
                   title="Account & Settings"
-                  className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all active:scale-95"
+                  className="ui-hover flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-secondary/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   {user ? (
                     <Avatar className="w-7 h-7">
@@ -172,41 +172,41 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-card/95 backdrop-blur-xl border-border/50">
-                <DropdownMenuItem onClick={onInviteClick} className="cursor-pointer">
+              <DropdownMenuContent align="end" className="w-52 rounded-2xl border-border/50 bg-card/95 p-1.5 backdrop-blur-xl">
+                <DropdownMenuItem onClick={onInviteClick} className="min-h-10 cursor-pointer rounded-xl">
                   <UserPlus className="w-4 h-4 mr-2" /> Invite Friends
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onHelpClick} className="cursor-pointer">
+                <DropdownMenuItem onClick={onHelpClick} className="min-h-10 cursor-pointer rounded-xl">
                   <HelpCircle className="w-4 h-4 mr-2" /> Help
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/download" className="cursor-pointer">
+                  <Link to="/download" className="min-h-10 cursor-pointer rounded-xl">
                     <Smartphone className="w-4 h-4 mr-2" /> Download App
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/pricing" className="cursor-pointer">
+                  <Link to="/pricing" className="min-h-10 cursor-pointer rounded-xl">
                     <Gem className="w-4 h-4 mr-2 text-primary" /> Pricing
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/settings" className="cursor-pointer">
+                  <Link to="/settings" className="min-h-10 cursor-pointer rounded-xl">
                     <Settings className="w-4 h-4 mr-2" /> Settings
                   </Link>
                 </DropdownMenuItem>
                 {user?.role === "admin" && (
                   <DropdownMenuItem asChild>
-                    <Link to="/admin" className="cursor-pointer">
+                    <Link to="/admin" className="min-h-10 cursor-pointer rounded-xl">
                       <BarChart3 className="w-4 h-4 mr-2" /> Admin Dashboard
                     </Link>
                   </DropdownMenuItem>
                 )}
                 {isAuthenticated ? (
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
+                  <DropdownMenuItem onClick={handleLogout} className="min-h-10 cursor-pointer rounded-xl text-destructive focus:text-destructive">
                     <LogOut className="w-4 h-4 mr-2" /> Log out
                   </DropdownMenuItem>
                 ) : (
-                  <DropdownMenuItem onClick={() => navigate("/login")} className="cursor-pointer">
+                  <DropdownMenuItem onClick={() => navigate("/login")} className="min-h-10 cursor-pointer rounded-xl">
                     <LogIn className="w-4 h-4 mr-2" /> Log in
                   </DropdownMenuItem>
                 )}
@@ -217,7 +217,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
             <button
               onClick={() => window.dispatchEvent(new Event("open-ai-assistant"))}
               title="NALI.ai Assistant"
-              className="w-10 h-10 shrink-0 ml-0.5 rounded-xl flex items-center justify-center text-white bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20 transition-all active:scale-95"
+              className="ui-hover ml-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-primary/20 transition-all hover:opacity-90 focus-visible:ring-2 focus-visible:ring-primary/50"
             >
               <AudioLines className="w-5 h-5 animate-pulse" />
             </button>

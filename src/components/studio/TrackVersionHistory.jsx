@@ -42,7 +42,10 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
     mutationFn: async (id) => {
       const res = await base44.functions.invoke("deleteTrackVersion", { versionId: id });
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data;
+      if (res?.data?.success !== true || res?.data?.deleted !== true) {
+        throw new Error("Track version deletion was not confirmed.");
+      }
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["track-versions", currentUser?.id, track?.id] });
@@ -67,6 +70,9 @@ export default function TrackVersionHistory({ track, open, onOpenChange, onRever
         solo: track.solo,
       });
       if (created?.data?.error) throw new Error(created.data.error);
+      if (created?.data?.success !== true || !created?.data?.version?.id) {
+        throw new Error("Track version save was not confirmed.");
+      }
       setLabel("");
       await queryClient.invalidateQueries({ queryKey: ["track-versions", currentUser?.id, track?.id] });
       toast.success("Version saved.");

@@ -86,6 +86,9 @@ describe("subscription client normalization", () => {
     mockInvoke
       .mockResolvedValueOnce({
         data: {
+          success: true,
+          action: "check_subscription_status",
+          userId: "user-1",
           plan: "premium",
           status: "active",
           hasPaidAccess: true,

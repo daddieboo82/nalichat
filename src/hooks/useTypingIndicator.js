@@ -26,6 +26,7 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
   const lastSentRef = useRef(0);
   const rowsRef = useRef(new Map()); // user_id -> { user_name, at }
   const supportedRef = useRef(true);
+  const transientFailureRef = useRef(false);
   const convIdRef = useRef(conversationId);
 
   useEffect(() => { convIdRef.current = conversationId; }, [conversationId]);
@@ -36,6 +37,7 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
     setTypingUsers([]);
     lastSentRef.current = 0;
     supportedRef.current = true;
+    transientFailureRef.current = false;
   }, [conversationId]);
 
   const applyRows = useCallback(() => {
@@ -65,7 +67,7 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
   // TypingStatus events. This keeps all received payloads behind the entity's
   // normal read filter/RLS path.
   useEffect(() => {
-    if (!conversationId || !currentUser || !supportedRef.current) return;
+    if (!conversationId || !currentUser) return;
     let cancelled = false;
     let refreshInFlight = false;
 
@@ -80,7 +82,11 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
         (existing || []).forEach(ingest);
         applyRows();
       } catch {
-        supportedRef.current = false;
+        // Treat read failures as transient. Mobile networks and iOS background
+        // transitions can briefly fail a poll; disabling the indicator for the
+        // rest of the chat session would make typing state appear permanently
+        // broken until the user switches conversations.
+        transientFailureRef.current = true;
       } finally {
         refreshInFlight = false;
       }
@@ -103,7 +109,7 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
 
   // Broadcast that the local user is typing (throttled).
   const notifyTyping = useCallback(() => {
-    if (!conversationId || !currentUser || !supportedRef.current) return;
+    if (!conversationId || !currentUser) return;
     const now = Date.now();
     if (now - lastSentRef.current < THROTTLE_MS) return;
     lastSentRef.current = now;
@@ -113,11 +119,17 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
       conversationId,
     });
 
-    Promise.resolve(write).catch(() => {
-      // A failed heartbeat is not worth interrupting the user over; retry on the
-      // next keystroke.
-      lastSentRef.current = 0;
-    });
+    Promise.resolve(write)
+      .then(() => {
+        supportedRef.current = true;
+        transientFailureRef.current = false;
+      })
+      .catch(() => {
+        // A failed heartbeat is not worth interrupting the user over; retry on
+        // the next keystroke rather than disabling typing for this chat.
+        transientFailureRef.current = true;
+        lastSentRef.current = 0;
+      });
   }, [conversationId, currentUser, participantIds]);
 
   // Clear our row when leaving the conversation so we don't appear stuck typing.

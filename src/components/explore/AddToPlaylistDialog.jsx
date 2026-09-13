@@ -45,7 +45,7 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
     onOpenChange(false);
   }, [currentUser?.id, onOpenChange]);
 
-  const { data: playlists = [] } = useQuery({
+  const { data: playlists = [], isLoading: playlistsLoading, isError: playlistsError, refetch: refetchPlaylists } = useQuery({
     queryKey: ["userPlaylists", currentUser?.id],
     queryFn: () =>
       currentUser
@@ -113,8 +113,19 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          {playlistsLoading && (
+            <div className="py-4 text-center text-sm text-muted-foreground">Loading playlists…</div>
+          )}
+          {playlistsError && !playlistsLoading && (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-center" role="alert">
+              <p className="text-sm font-semibold">Couldn't load your playlists</p>
+              <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => void refetchPlaylists()}>
+                Retry
+              </Button>
+            </div>
+          )}
           {/* Existing Playlists */}
-          {playlists.length > 0 && (
+          {!playlistsLoading && !playlistsError && playlists.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground">
                 YOUR PLAYLISTS
@@ -144,6 +155,7 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
           )}
 
           {/* Create New */}
+          {!playlistsLoading && (
           <div className="border-t border-border pt-3 space-y-2">
             <p className="text-xs font-medium text-muted-foreground">
               CREATE NEW
@@ -166,6 +178,7 @@ export default function AddToPlaylistDialog({ trackId, open, onOpenChange }) {
               </Button>
             </div>
           </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

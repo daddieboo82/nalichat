@@ -3,6 +3,10 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireTrackLifecycleLock, releaseTrackLifecycleLock } from '../../shared/trackLifecycleLock.ts';
+import {
+  acquireConversationMembershipLock,
+  releaseConversationMembershipLock,
+} from '../../shared/conversationMembershipLock.ts';
 
 const MUTABLE_KEYS = new Set([
   'name','volume','pan','muted','solo','color','description','waveform_data','duration'
@@ -60,25 +64,56 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Track has an invalid parent reference' }, { status: 409 });
     }
 
+    let sessionConversationId: string | null = null;
     let previewCanEdit = user.role === 'admin'
       || (Array.isArray(trackPreview.edit_user_ids) && trackPreview.edit_user_ids.includes(user.id));
+    const projectPreview = await entities.Project.get(trackPreview.project_id).catch(() => null);
     if (!previewCanEdit) {
-      const projectPreview = await entities.Project.get(trackPreview.project_id).catch(() => null);
       if (projectPreview) {
         previewCanEdit = projectPreview.owner_id === user.id
           || (projectPreview.editor_ids || []).includes(user.id);
       } else {
         const sessionMessagePreview = await entities.Message.get(trackPreview.project_id).catch(() => null);
-        previewCanEdit = Array.isArray(sessionMessagePreview?.participant_ids)
-          && sessionMessagePreview.participant_ids.includes(user.id);
+        if (!sessionMessagePreview) {
+          return Response.json({ error: 'Track parent not found' }, { status: 404 });
+        }
+        sessionConversationId = typeof sessionMessagePreview.conversation_id === 'string'
+          ? sessionMessagePreview.conversation_id
+          : null;
+        if (!sessionConversationId) {
+          return Response.json({ error: 'Session message has no conversation' }, { status: 409 });
+        }
+        const conversationPreview = await entities.Conversation
+          .get(sessionConversationId)
+          .catch(() => null);
+        const previewParticipants = Array.isArray(conversationPreview?.participant_ids)
+          ? conversationPreview.participant_ids
+          : [];
+        previewCanEdit = Boolean(conversationPreview && previewParticipants.includes(user.id));
+      }
+    } else if (!projectPreview) {
+      const sessionMessagePreview = await entities.Message.get(trackPreview.project_id).catch(() => null);
+      if (sessionMessagePreview?.conversation_id) {
+        sessionConversationId = sessionMessagePreview.conversation_id;
       }
     }
     if (!previewCanEdit) {
       return Response.json({ error: 'Viewer access cannot modify this track' }, { status: 403 });
     }
 
+    const conversationLockId = sessionConversationId
+      ? await acquireConversationMembershipLock(entities, sessionConversationId)
+      : null;
+    if (sessionConversationId && !conversationLockId) {
+      return Response.json(
+        { error: 'Conversation is being updated. Please retry.' },
+        { status: 409 },
+      );
+    }
+
     const lockId = await acquireTrackLifecycleLock(entities, trackId);
     if (!lockId) {
+      await releaseConversationMembershipLock(entities, conversationLockId);
       return Response.json({ error: 'Track is being updated. Please retry.' }, { status: 409 });
     }
 
@@ -95,16 +130,31 @@ Deno.serve(async (req) => {
     let canEdit = user.role === 'admin'
       || (Array.isArray(track.edit_user_ids) && track.edit_user_ids.includes(user.id));
 
-    if (!canEdit) {
-      const project = await entities.Project.get(track.project_id).catch(() => null);
-      if (project) {
+    const project = await entities.Project.get(track.project_id).catch(() => null);
+    if (project) {
+      if (!canEdit) {
         canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
-      } else {
-        // Chat-session tracks use the parent Message ID as project_id.
-        const sessionMessage = await entities.Message.get(track.project_id).catch(() => null);
-        canEdit = Array.isArray(sessionMessage?.participant_ids)
-          && sessionMessage.participant_ids.includes(user.id);
       }
+    } else {
+      // Chat-session tracks use the parent Message ID as project_id. Current
+      // Conversation membership is authoritative even if the track's cached
+      // edit_user_ids or Message.participant_ids are stale.
+      const [sessionMessage, conversation] = await Promise.all([
+        entities.Message.get(track.project_id).catch(() => null),
+        sessionConversationId
+          ? entities.Conversation.get(sessionConversationId).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+      if (!sessionMessage || !conversation) {
+        return Response.json({ error: 'Track parent not found' }, { status: 404 });
+      }
+      if (sessionMessage.conversation_id !== conversation.id) {
+        return Response.json({ error: 'Session conversation changed. Please retry.' }, { status: 409 });
+      }
+      const participantIds = Array.isArray(conversation.participant_ids)
+        ? conversation.participant_ids
+        : [];
+      canEdit = user.role === 'admin' || participantIds.includes(user.id);
     }
     if (!canEdit) return Response.json({ error: 'Viewer access cannot modify this track' }, { status: 403 });
 
@@ -207,6 +257,7 @@ Deno.serve(async (req) => {
     return Response.json({ success: true, track: updated });
     } finally {
       await releaseTrackLifecycleLock(entities, lockId);
+      await releaseConversationMembershipLock(entities, conversationLockId);
     }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);

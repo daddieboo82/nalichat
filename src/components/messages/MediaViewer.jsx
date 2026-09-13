@@ -31,8 +31,16 @@ export default function MediaViewer({ media, isOpen, onClose, canDownload = fals
         throw new Error("Download authorization was not confirmed.");
       }
       const downloadUrl = auth?.data?.file_url;
-      if (!downloadUrl) throw new Error("Download URL unavailable");
-      await resumableDownload(downloadUrl, auth?.data?.file_name || media.file_name || "file");
+      const downloadName = auth?.data?.file_name;
+      if (
+        typeof downloadUrl !== "string" ||
+        !downloadUrl.trim() ||
+        typeof downloadName !== "string" ||
+        !downloadName.trim()
+      ) {
+        throw new Error("Download authorization was not confirmed.");
+      }
+      await resumableDownload(downloadUrl, downloadName);
     } catch (error) {
       toast.error(error?.message || "Couldn't download the attachment. Please try again.");
     } finally {

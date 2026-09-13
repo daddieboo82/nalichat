@@ -71,9 +71,18 @@ export async function createFollowUpReminder({ sourceMessageId, remindAt, reques
   return data;
 }
 
-export async function listFollowUpReminders() {
+export async function listFollowUpReminders(userId) {
   const data = await invokeReminderFunction("listFollowUpReminders");
-  return data?.reminders || [];
+  if (
+    data?.success !== true ||
+    data?.action !== "list_reminders" ||
+    data?.userId !== userId ||
+    !Array.isArray(data?.reminders) ||
+    data.reminders.some((reminder) => reminder?.owner_id !== userId)
+  ) {
+    throw new Error("Follow-up reminder list was not confirmed.");
+  }
+  return data.reminders;
 }
 
 export async function rescheduleFollowUpReminder(reminderId, remindAt, userId) {

@@ -4,16 +4,28 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Play, Pause, Heart, Share2 } from "lucide-react";
 import ShareButtons from "./ShareButtons";
+import { toast } from "sonner";
 
 export default function SubmissionCard({ submission, challengeId, hasVoted, isOwn, onVote, voteDisabled = false }) {
   const [playing, setPlaying] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const audioRef = useRef(null);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (!audioRef.current) return;
-    if (playing) { audioRef.current.pause(); } else { audioRef.current.play(); }
-    setPlaying(!playing);
+    if (playing) {
+      audioRef.current.pause();
+      setPlaying(false);
+      return;
+    }
+    try {
+      await audioRef.current.play();
+      setPlaying(true);
+    } catch (error) {
+      console.error("Submission playback failed:", error);
+      setPlaying(false);
+      toast.error("Couldn't play this remix. Please try again.");
+    }
   };
 
   const shareUrl = `${window.location.origin}/challenge/${challengeId}/submission/${submission.id}`;

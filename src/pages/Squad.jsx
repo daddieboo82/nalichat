@@ -10,6 +10,21 @@ import PullToRefresh from "@/components/layout/PullToRefresh";
 import LoadError from "@/components/layout/LoadError";
 import { copyToClipboard } from "@/lib/clipboard";
 
+async function listAllSquads(query) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.Squad.filter(
+      query,
+      "-created_date",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function Squad() {
   const { user, checkUserAuth } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -49,8 +64,8 @@ export default function Squad() {
     setLoadError(false);
     try {
       const [asA, asB] = await Promise.all([
-        base44.entities.Squad.filter({ member_a_id: requestedUserId }),
-        base44.entities.Squad.filter({ member_b_id: requestedUserId }),
+        listAllSquads({ member_a_id: requestedUserId }),
+        listAllSquads({ member_b_id: requestedUserId }),
       ]);
       if (isStale()) return;
       const mine = [...asA, ...asB]

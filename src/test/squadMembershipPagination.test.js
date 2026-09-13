@@ -24,4 +24,12 @@ describe('squad membership pagination and cleanup', () => {
     expect(create).not.toContain("Squad.filter({ member_a_id: user.id }, '-created_date', 100)");
     expect(join).not.toContain("Squad.filter({ member_a_id: user.id }, '-created_date', 100)");
   });
+  it('loads the full client-side squad membership history before choosing the active squad', async () => {
+    const source = await readFile('src/pages/Squad.jsx', 'utf8');
+    expect(source).toContain('async function listAllSquads(query)');
+    expect(source).toContain('const pageSize = 200');
+    expect(source).toContain('for (let skip = 0; ; skip += pageSize)');
+    expect(source).toContain('listAllSquads({ member_a_id: requestedUserId })');
+    expect(source).toContain('listAllSquads({ member_b_id: requestedUserId })');
+  });
 });

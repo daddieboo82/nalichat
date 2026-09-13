@@ -74,12 +74,12 @@ Deno.serve(async (req) => {
 
     // Don't mark your own messages as read.
     if (currentMessage.sender_id === user.id) {
-      return Response.json({ success: true, alreadyRead: true });
+      return Response.json({ success: true, action: 'mark_read', userId: user.id, messageId, conversationId: message.conversation_id, alreadyRead: true });
     }
 
     const alreadyRead = Array.isArray(currentMessage.read_by) && currentMessage.read_by.includes(user.id);
     if (alreadyRead) {
-      return Response.json({ success: true, alreadyRead: true });
+      return Response.json({ success: true, action: 'mark_read', userId: user.id, messageId, conversationId: message.conversation_id, alreadyRead: true });
     }
 
     const readUpdate = await entities.Message.updateMany(
@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Message changed. Please retry.' }, { status: 409 });
     }
 
-    return Response.json({ success: true, alreadyRead: false });
+    return Response.json({ success: true, action: 'mark_read', userId: user.id, messageId, conversationId: message.conversation_id, alreadyRead: false });
     } finally {
       await releaseConversationMembershipLock(entities, conversationLockId);
     }

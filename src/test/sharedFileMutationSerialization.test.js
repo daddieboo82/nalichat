@@ -57,3 +57,15 @@ describe('file share token response validation', () => {
     expect(source).toContain('Secure share link was not confirmed');
   });
 });
+
+
+describe('shared file download response binding', () => {
+  it('binds token downloads to the exact requested file and token fingerprint', async () => {
+    const source = await readText('src/pages/Files.jsx');
+    expect(source).toContain('res?.data?.action !== "get_shared_file_by_token"');
+    expect(source).toContain('res?.data?.fileId !== downloadId');
+    expect(source).toContain('file?.id !== downloadId');
+    expect(source).toContain('tokenFingerprint !== expectedFingerprint');
+    expect(source).toContain('Shared file response was not confirmed');
+  });
+});

@@ -23,6 +23,13 @@ import PullToRefresh from "@/components/layout/PullToRefresh";
 import { useAuth } from "@/lib/AuthContext";
 import { useNavigate } from "react-router-dom";
 
+async function sha256Hex(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 const typeIcons = {
   audio: Music,
   image: Image,
@@ -194,7 +201,21 @@ export default function Files() {
       base44.functions.invoke("getSharedFileByToken", { fileId: downloadId, token: shareToken })
         .then(async (res) => {
           const file = res?.data?.file;
-          if (!file) throw new Error("Shared file not found");
+          const tokenFingerprint = res?.data?.tokenFingerprint;
+          const expectedFingerprint = (await sha256Hex(shareToken)).slice(0, 16);
+          if (
+            res?.data?.success !== true ||
+            res?.data?.action !== "get_shared_file_by_token" ||
+            res?.data?.fileId !== downloadId ||
+            file?.id !== downloadId ||
+            tokenFingerprint !== expectedFingerprint ||
+            typeof file?.file_url !== "string" ||
+            !file.file_url.trim() ||
+            typeof file?.name !== "string" ||
+            !file.name.trim()
+          ) {
+            throw new Error("Shared file response was not confirmed");
+          }
           toast({ title: "Starting download...", description: `Downloading ${file.name}` });
           await resumableDownload(file.file_url, file.name || "file");
           toast({ title: "Download complete", description: `${file.name} downloaded successfully.` });

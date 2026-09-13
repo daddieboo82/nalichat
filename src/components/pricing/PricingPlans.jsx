@@ -174,6 +174,7 @@ export default function PricingPlans({
       await startSubscriptionCheckout({
         sku,
         idempotencyKey: requestKeys.current.get(sku),
+        expectedUserId: user?.id,
       });
     } catch (checkoutError) {
       try { sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch {}

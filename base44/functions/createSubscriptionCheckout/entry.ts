@@ -160,6 +160,12 @@ Deno.serve(async (req) => {
     ) {
       return Response.json({
         success: true,
+        action: 'create_subscription_checkout',
+        userId: user.id,
+        sku: sku.sku,
+        idempotencyKey: requestKey,
+        successDestination: body.callbackDestinations.success,
+        cancelDestination: body.callbackDestinations.cancel,
         checkoutUrl: pendingSubscription.checkout_url,
         checkoutId: pendingSubscription.checkout_id,
         trialApplied: Boolean(
@@ -354,6 +360,12 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
+      action: 'create_subscription_checkout',
+      userId: user.id,
+      sku: sku.sku,
+      idempotencyKey: requestKey,
+      successDestination: body.callbackDestinations.success,
+      cancelDestination: body.callbackDestinations.cancel,
       checkoutUrl: session.url,
       checkoutId: session.id,
       trialApplied,

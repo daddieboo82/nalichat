@@ -146,6 +146,9 @@ export default async function(req) {
       }
 
       return Response.json({
+        success: true,
+        viewerUserId: user.id,
+        requestedUserId,
         users: [publicUserProjection(
           target,
           targetAchievements.length,
@@ -247,6 +250,9 @@ export default async function(req) {
       ));
 
     return Response.json({
+      success: true,
+      viewerUserId: user.id,
+      requestedUserId: null,
       users: publicUsers,
       truncated: {
         users: allUsers.length >= MAX_DISCOVERY_USERS,

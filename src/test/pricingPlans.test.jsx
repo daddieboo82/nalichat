@@ -105,6 +105,7 @@ describe("pricing plans", () => {
     expect(mockStartCheckout).toHaveBeenCalledWith({
       sku: "premium_yearly",
       idempotencyKey: "checkout_request_1234",
+      expectedUserId: "user-1",
     });
   });
 

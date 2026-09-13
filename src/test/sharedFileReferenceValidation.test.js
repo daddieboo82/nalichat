@@ -13,8 +13,8 @@ describe('shared file reference validation', () => {
   });
   it('requires canonical folder ids and validates destination project references', async () => {
     const s=await readFile('base44/functions/mutateSharedFile/entry.ts','utf8');
-    expect(s).toContain('isBase44EntityId(folderId)');
+    expect(s).toContain('isBase44EntityId(requestedFolderId)');
+    expect(s).toContain('isBase44EntityId(destinationProjectId)');
     expect(s).toContain('isBase44EntityId(folder.project_id)');
-    expect(s).toContain('isBase44EntityId(currentFolder.project_id)');
   });
 });

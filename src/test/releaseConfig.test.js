@@ -2572,3 +2572,16 @@ describe('squad activity response contract', () => {
     expect(source).toContain('return data');
   });
 });
+
+
+describe('squad join response identity contract', () => {
+  it('navigates only after the exact user and invite join are confirmed', async () => {
+    const page = await readText('src/pages/SquadJoin.jsx');
+    const backend = await readText('base44/functions/joinSquad/entry.ts');
+    expect(page).toContain('data?.userId !== user.id');
+    expect(page).toContain('data?.inviteCode !== normalizedInviteCode');
+    expect(page).toContain('data.squad.member_b_id !== user.id');
+    expect(backend).toContain('userId: user.id');
+    expect(backend).toContain('inviteCode: normalizedInviteCode');
+  });
+});

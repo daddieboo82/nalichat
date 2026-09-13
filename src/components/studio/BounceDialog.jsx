@@ -149,7 +149,18 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
             }
             return reward;
           }),
-          base44.functions.invoke("recordSquadActivity", { sourceType: "art_post", sourceId: postId }),
+          base44.functions.invoke("recordSquadActivity", { sourceType: "art_post", sourceId: postId }).then((activity) => {
+            if (
+              activity?.data?.success !== true ||
+              activity?.data?.action !== "record_squad_activity" ||
+              activity?.data?.userId !== user?.id ||
+              activity?.data?.sourceType !== "art_post" ||
+              activity?.data?.sourceId !== postId
+            ) {
+              throw new Error("Squad activity was not confirmed.");
+            }
+            return activity;
+          }),
         ]);
       }
 

@@ -133,6 +133,9 @@ Deno.serve(async (req) => {
     await entities.Folder.delete(folder.id);
     return Response.json({
       success: true,
+      action: 'delete_folder',
+      userId: user.id,
+      folderId: folder.id,
       deleted: true,
       detached_files: detachedFiles,
     });

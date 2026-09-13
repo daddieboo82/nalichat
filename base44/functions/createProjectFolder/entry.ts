@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
         access_user_ids: accessUserIds,
         edit_user_ids: editUserIds,
       });
-      return Response.json({ success: true, folder });
+      return Response.json({ success: true, action: 'create_project_folder', userId: user.id, folderId: folder.id, projectId: projectId || null, folder });
     } finally {
       await releaseProjectMembershipLock(entities, lockId);
     }

@@ -81,19 +81,19 @@ export default function ViralSeed() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] pb-20">
+    <div className="min-h-[calc(100vh-64px)] pb-[max(5rem,env(safe-area-inset-bottom))]">
       {/* Hero */}
-      <div className="relative overflow-hidden px-4 sm:px-6 pt-8 pb-6">
+      <div className="relative overflow-hidden px-4 pb-6 pt-6 sm:px-6 sm:pt-8">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float-blob pointer-events-none" />
         <div className="relative max-w-4xl mx-auto text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
             <Rocket className="w-3.5 h-3.5 text-primary" />
             <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">ViralSeed AI</span>
           </div>
-          <h1 className="font-heading font-bold text-2xl sm:text-3xl text-gradient-animate">
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-gradient-animate sm:text-3xl">
             Viral Content Seeding Engine
           </h1>
-          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+          <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
             Generate platform-native viral content for NaliChat — TikTok scripts, Reddit posts, Discord messages, X threads, and YouTube Shorts, all optimized for explosive growth.
           </p>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20">
@@ -121,12 +121,12 @@ export default function ViralSeed() {
       {/* Controls */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-4">
         {/* Mood selector */}
-        <div className="flex items-center gap-2 flex-wrap justify-center">
+        <div className="no-scrollbar flex items-center justify-start gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:justify-center sm:overflow-visible">
           <span className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mr-1">Mood:</span>
           <button
             onClick={() => setMood("all")}
             className={cn(
-              "px-3 py-1.5 rounded-full text-[12px] font-medium transition-all touch-manipulation",
+              "ui-hover min-h-10 shrink-0 touch-manipulation rounded-full px-3 py-1.5 text-[12px] font-medium transition-all focus-visible:ring-2 focus-visible:ring-primary/40",
               mood === "all" ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary/60 text-muted-foreground hover:bg-secondary"
             )}
           >
@@ -152,7 +152,7 @@ export default function ViralSeed() {
             onClick={generate}
             disabled={loading || !canUseAi}
             size="lg"
-            className="bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 text-white shadow-lg shadow-primary/30 px-8 h-12 rounded-xl"
+            className="ui-hover h-12 w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 px-6 font-semibold text-white shadow-lg shadow-primary/30 hover:opacity-90 sm:w-auto sm:px-8"
           >
             {loading ? (
               <>
@@ -174,7 +174,7 @@ export default function ViralSeed() {
         </div>
 
         {error && (
-          <div className="text-center text-sm text-destructive bg-destructive/10 rounded-xl py-2 px-4">
+          <div className="ui-surface rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-center text-sm text-destructive">
             {error}
           </div>
         )}
@@ -199,7 +199,7 @@ export default function ViralSeed() {
         )}
 
         {!loading && concepts.length === 0 && !error && (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+          <div className="ui-surface flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-border px-5 py-14 text-center sm:py-20">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
               <Rocket className="w-8 h-8 text-primary/50" />
             </div>

@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
       status: 'draft',
     });
 
-    return Response.json({ success: true, project });
+    return Response.json({ success: true, action: 'create_project', userId: user.id, projectId: project.id, project });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

@@ -151,7 +151,11 @@ export default function ChallengeDetail() {
         status: newStatus,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      setChallenge(res?.data?.challenge || ((c) => ({ ...c, status: newStatus })));
+      const updatedChallenge = res?.data?.challenge;
+      if (!updatedChallenge?.id || updatedChallenge.status !== newStatus) {
+        throw new Error("Challenge status update was not confirmed");
+      }
+      setChallenge(updatedChallenge);
       toast.success(newStatus === "voting" ? "Submissions closed — voting is now open." : "Voting closed — challenge completed.");
     } catch (err) {
       toast.error(err?.message || "Couldn't update challenge status.");

@@ -14,28 +14,37 @@ const ENTITY_TABLE_MAP = {
   ChallengeSubmission: "challengesubmission",
 };
 
-async function getEntityRecords(base44, entityName) {
+function getEntityService(base44, entityName) {
   const svc = base44.asServiceRole.entities;
   switch (entityName) {
-    case "User": return await svc.User.list("-created_date", 500);
-    case "Conversation": return await svc.Conversation.list("-created_date", 500);
-    case "Message": return await svc.Message.list("-created_date", 500);
-    case "Project": return await svc.Project.list("-created_date", 500);
-    case "Track": return await svc.Track.list("-created_date", 500);
-    case "ArtPost": return await svc.ArtPost.list("-created_date", 500);
-    case "Challenge": return await svc.Challenge.list("-created_date", 500);
-    case "ChallengeSubmission": return await svc.ChallengeSubmission.list("-created_date", 500);
+    case "User": return svc.User;
+    case "Conversation": return svc.Conversation;
+    case "Message": return svc.Message;
+    case "Project": return svc.Project;
+    case "Track": return svc.Track;
+    case "ArtPost": return svc.ArtPost;
+    case "Challenge": return svc.Challenge;
+    case "ChallengeSubmission": return svc.ChallengeSubmission;
     default: throw new Error(`Unknown entity: ${entityName}`);
   }
 }
 
 async function syncEntity(base44, entityName, tableName) {
-  const records = await getEntityRecords(base44, entityName);
-  if (!records || records.length === 0) {
-    return { entity: entityName, table: tableName, synced: 0 };
+  const entity = getEntityService(base44, entityName);
+  const pageSize = 200;
+  let synced = 0;
+
+  for (let skip = 0; ; skip += pageSize) {
+    const records = await entity.list("-created_date", pageSize, skip);
+    if (!records || records.length === 0) break;
+
+    await supabaseUpsert(tableName, records);
+    synced += records.length;
+
+    if (records.length < pageSize) break;
   }
-  await supabaseUpsert(tableName, records);
-  return { entity: entityName, table: tableName, synced: records.length };
+
+  return { entity: entityName, table: tableName, synced };
 }
 
 export default async function (req) {

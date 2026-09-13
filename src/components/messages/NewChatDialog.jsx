@@ -7,6 +7,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2 } from "lucide-react";
 
+async function listAllContacts(userId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.Contact.filter(
+      { user_id: userId },
+      "-created_date",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function NewChatDialog({ open, onOpenChange, users, onSelectUser, currentUserId }) {
   const [search, setSearch] = useState("");
   const [pendingUserId, setPendingUserId] = useState(null);
@@ -38,7 +53,7 @@ export default function NewChatDialog({ open, onOpenChange, users, onSelectUser,
   // Fetch contacts for the current user
   const { data: contacts = [], isLoading: contactsLoading, isError: contactsError } = useQuery({
     queryKey: ["contacts", currentUserId],
-    queryFn: () => base44.entities.Contact.filter({ user_id: currentUserId }, "-created_date", 500),
+    queryFn: () => listAllContacts(currentUserId),
     enabled: open && !!currentUserId,
   });
 

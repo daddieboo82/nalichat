@@ -298,12 +298,12 @@ export default function Profile() {
   return (
     <PullToRefresh onRefresh={async () => { queryClient.invalidateQueries({ queryKey: ["my-posts"] }); queryClient.invalidateQueries({ queryKey: ["my-achievements"] }); }} className="h-full overflow-y-auto bg-background">
       {/* Cover */}
-      <div className="relative h-40 sm:h-52 bg-gradient-to-br from-primary/30 via-secondary to-accent/20 overflow-hidden">
+      <div className="relative h-44 overflow-hidden bg-gradient-to-br from-primary/30 via-secondary to-accent/20 sm:h-56">
         {user.cover_url && <img src={user.cover_url} className="w-full h-full object-cover" alt="cover" />}
         <div className="absolute inset-0 bg-black/20" />
         {isMe && (
           <>
-            <button onClick={() => coverRef.current?.click()} className="absolute top-3 right-3 bg-black/40 text-white p-2 rounded-xl hover:bg-black/60 transition-colors">
+            <button onClick={() => coverRef.current?.click()} className="ui-hover absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-xl bg-black/55 text-white backdrop-blur-sm transition-colors hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Change profile cover">
               <Camera className="w-4 h-4" />
             </button>
             <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={uploadCover} />
@@ -311,26 +311,26 @@ export default function Profile() {
         )}
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6">
+      <div className="mx-auto max-w-3xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6">
         {/* Avatar + info */}
-        <div className="flex items-end gap-4 -mt-10 mb-4 relative z-10">
+        <div className="relative z-10 -mt-10 mb-5 flex flex-wrap items-end gap-3 sm:gap-4">
           <div className="relative">
-            <Avatar className="w-20 h-20 border-4 border-background">
+            <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
               <AvatarImage src={user.avatar_url} />
               <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">{user.display_name?.[0] || user.full_name?.[0]}</AvatarFallback>
             </Avatar>
             {isMe && (
               <>
-                <button onClick={() => avatarRef.current?.click()} className="absolute bottom-0 right-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors">
+                <button onClick={() => avatarRef.current?.click()} className="ui-hover absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-primary shadow-lg transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label="Change profile photo">
                   <Camera className="w-3 h-3 text-white" />
                 </button>
                 <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
               </>
             )}
           </div>
-          <div className="flex-1 min-w-0 pb-2">
+          <div className="min-w-[180px] flex-1 pb-1 sm:pb-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-heading font-bold text-xl">{user.display_name || user.full_name}</h1>
+              <h1 className="font-heading text-xl font-bold tracking-tight sm:text-2xl">{user.display_name || user.full_name}</h1>
               <LevelBadge level={user.level || 1} />
             </div>
             <p className="text-muted-foreground text-sm capitalize">{user.artist_role || "Producer"}</p>
@@ -338,20 +338,20 @@ export default function Profile() {
           {isMe && (
             <button
               onClick={() => editing ? save() : setEditing(true)}
-              className="pb-2 flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+              className="ui-hover flex min-h-11 items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/10 transition-colors hover:bg-primary/90"
             >
               {editing ? <Save className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
               {editing ? "Save" : "Edit"}
             </button>
           )}
-          <div className="pb-2 flex flex-col items-end gap-2">
+          <div className="ml-auto flex flex-col items-end gap-2 pb-1 sm:pb-2">
             <NaliPresenceIndicator surface="profile" size="md" greeting={`Tell me about ${user.display_name || user.full_name || "this artist"} — help me understand their sound and suggest ways to grow their audience.`} />
             <NaliContextHint surface="profile" contextLabel={user.display_name || user.full_name || "profile"} />
           </div>
         </div>
 
         {/* XP Bar */}
-        <div className="mb-4 bg-card/50 backdrop-blur-xl rounded-xl p-4 border border-white/[0.06]">
+        <div className="ui-surface mb-4 rounded-2xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-yellow-400" />
@@ -365,13 +365,13 @@ export default function Profile() {
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
           {[
             { label: "Tracks", value: myPosts.length, icon: Grid },
             { label: "Plays", value: totalPlays, icon: Eye },
             { label: "Awards", value: achievements.length, icon: Award },
           ].map(({ label, value, icon: Icon }) => (
-            <div key={label} className="bg-card/50 backdrop-blur-xl rounded-xl border border-white/[0.06] p-3 text-center">
+            <div key={label} className="ui-surface rounded-2xl border border-white/[0.06] bg-card/50 p-3 text-center backdrop-blur-xl sm:p-4">
               <Icon className="w-4 h-4 text-primary mx-auto mb-1" />
               <p className="font-bold text-lg font-heading">{value}</p>
               <p className="text-xs text-muted-foreground">{label}</p>
@@ -381,13 +381,13 @@ export default function Profile() {
 
         {/* Edit form */}
         {editing && (
-          <div className="bg-card/50 backdrop-blur-xl rounded-xl border border-white/[0.06] p-5 mb-6 space-y-4">
+          <div className="ui-surface mb-6 space-y-4 rounded-2xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl sm:p-5">
             <h3 className="font-heading font-semibold">Edit Profile</h3>
-            <input value={form.display_name || form.full_name || ""} onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))} placeholder="Display name" className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50" />
+            <input value={form.display_name || form.full_name || ""} onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))} placeholder="Display name" className="min-h-11 w-full rounded-xl border border-border/70 bg-secondary/40 px-4 py-2.5 text-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20" />
             <textarea value={form.bio || ""} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell your story..." rows={3} className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary/50" />
             <div className="grid grid-cols-2 gap-3">
-              <input value={form.location || ""} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Location" className="bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50" />
-              <input value={form.website || ""} onChange={e => setForm(f => ({ ...f, website: e.target.value }))} placeholder="Website" className="bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50" />
+              <input value={form.location || ""} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Location" className="min-h-11 rounded-xl border border-border/70 bg-secondary/40 px-4 py-2.5 text-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              <input value={form.website || ""} onChange={e => setForm(f => ({ ...f, website: e.target.value }))} placeholder="Website" className="min-h-11 rounded-xl border border-border/70 bg-secondary/40 px-4 py-2.5 text-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-2 block">Role</label>
@@ -396,7 +396,7 @@ export default function Profile() {
                   <button
                     key={value}
                     onClick={() => setForm(f => ({ ...f, artist_role: value }))}
-                    className={cn("px-3 py-1 rounded-full text-xs font-semibold transition-colors", form.artist_role === value ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}
+                    className={cn("ui-hover min-h-9 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors", form.artist_role === value ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}
                   >
                     {label}
                   </button>
@@ -407,7 +407,7 @@ export default function Profile() {
               <label className="text-xs text-muted-foreground mb-2 block">Genres / Styles</label>
               <div className="flex flex-wrap gap-2">
                 {GENRES.map(g => (
-                  <button key={g} onClick={() => toggleGenre(g)} className={cn("px-3 py-1 rounded-full text-xs transition-colors", (form.genres || []).includes(g) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>{g}</button>
+                  <button key={g} onClick={() => toggleGenre(g)} className={cn("ui-hover min-h-9 px-3 py-1.5 rounded-full text-xs transition-colors", (form.genres || []).includes(g) ? "bg-accent/20 text-accent border border-accent/30" : "bg-secondary text-muted-foreground hover:text-foreground")}>{g}</button>
                 ))}
               </div>
             </div>
@@ -428,9 +428,9 @@ export default function Profile() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-secondary/50 rounded-xl p-1 mb-6">
+        <div className="no-scrollbar mb-6 flex gap-1 overflow-x-auto rounded-2xl bg-secondary/50 p-1.5">
           {["featured", "posts", "achievements"].map(t => (
-            <button key={t} onClick={() => setTab(t)} className={cn("flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition-colors", tab === t ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground")}>
+            <button key={t} onClick={() => setTab(t)} className={cn("ui-hover min-h-10 shrink-0 flex-1 rounded-xl px-3 py-2 text-sm font-semibold capitalize transition-colors", tab === t ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground")}>
               {t === "featured" ? "⭐ Featured" : t === "posts" ? "🎨 All Tracks" : "🏆 Achievements"}
             </button>
           ))}
@@ -441,7 +441,7 @@ export default function Profile() {
             <div className="text-center py-12 text-muted-foreground">
               <p className="font-heading font-semibold text-foreground">Featured works unavailable</p>
               <p className="text-sm mt-1">We couldn't load this creator's tracks.</p>
-              <button type="button" onClick={() => void refetchPosts()} className="mt-3 rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary/50">
+              <button type="button" onClick={() => void refetchPosts()} className="ui-hover mt-3 min-h-11 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-secondary/50">
                 Retry
               </button>
             </div>
@@ -455,7 +455,7 @@ export default function Profile() {
             <div className="text-center py-12 text-muted-foreground">
               <p className="font-heading font-semibold text-foreground">Tracks unavailable</p>
               <p className="text-sm mt-1">We couldn't load this creator's tracks.</p>
-              <button type="button" onClick={() => void refetchPosts()} className="mt-3 rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary/50">
+              <button type="button" onClick={() => void refetchPosts()} className="ui-hover mt-3 min-h-11 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-secondary/50">
                 Retry
               </button>
             </div>
@@ -478,7 +478,7 @@ export default function Profile() {
             <div className="text-center py-12 text-muted-foreground">
               <p className="font-heading font-semibold text-foreground">Achievements unavailable</p>
               <p className="text-sm mt-1">We couldn't load this creator's achievements.</p>
-              <button type="button" onClick={() => void refetchAchievements()} className="mt-3 rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary/50">
+              <button type="button" onClick={() => void refetchAchievements()} className="ui-hover mt-3 min-h-11 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-secondary/50">
                 Retry
               </button>
             </div>

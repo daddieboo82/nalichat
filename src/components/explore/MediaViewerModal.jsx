@@ -52,6 +52,8 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
         }
         audioRef.current.play().catch(e => {
           console.error("Playback failed:", e);
+          setIsPlaying(false);
+          toast.error("Couldn't play this track. Please try again.");
         });
       }
     }

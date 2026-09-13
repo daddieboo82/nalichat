@@ -9,7 +9,7 @@ import { toast } from "sonner";
 // Shared cache so we don't re-transcribe the same voice note every render.
 const transcriptionCache = new Map();
 
-const APP_URL = "nalichat.base44.app";
+const APP_URL = "nalichat.org";
 const CARD_SIZE = 1080;
 
 async function fetchTranscription(_fileUrl, messageId) {

@@ -156,7 +156,7 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
   };
 
   return (
-    <div className="w-80 border-l border-border flex flex-col bg-card/70 backdrop-blur-sm shrink-0">
+    <div className="w-full sm:w-80 h-full min-h-0 border-l border-border flex flex-col bg-card/70 backdrop-blur-sm shrink-0">
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
@@ -188,7 +188,7 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
       </div>
 
       {/* Replies */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] px-4 py-3">
         {repliesLoading ? (
           <div className="flex justify-center py-8">
             <span className="text-xs text-muted-foreground">Loading replies...</span>

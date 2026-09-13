@@ -9,7 +9,7 @@ describe('read utility gate hardening', () => {
     expect(source).toContain("error: 'timed_out'");
     expect(source.indexOf("req.method !== 'POST'")).toBeLessThan(source.indexOf('auth.me()'));
     expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('consumeHourlyLimit('));
-    expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('listAllLikedPosts('));
+    expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('const posts = await listAllLikedPosts('));
   });
 
   it('blocks restricted AI capability lookups before subscription resolution', async () => {

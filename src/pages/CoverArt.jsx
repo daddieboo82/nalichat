@@ -212,6 +212,7 @@ export default function CoverArt() {
         tags: ["imported"],
       });
       if (published?.data?.error) throw new Error(published.data.error);
+      if (!published?.data?.post?.id) throw new Error("Track import was not confirmed");
       queryClient.invalidateQueries({ queryKey: ["myArtPosts"] });
       toast.success("Track imported successfully!");
     } catch (error) {
@@ -245,6 +246,7 @@ export default function CoverArt() {
         tags: ["imported"],
       });
       if (published?.data?.error) throw new Error(published.data.error);
+      if (!published?.data?.post?.id) throw new Error("Track import was not confirmed");
       queryClient.invalidateQueries({ queryKey: ["myArtPosts"] });
       toast.success("Track imported successfully!");
     } catch (error) {

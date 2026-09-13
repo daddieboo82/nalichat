@@ -276,6 +276,13 @@ export default function Record() {
         file_size: file.size,
       });
       if (created?.data?.error) throw new Error(created.data.error);
+      if (
+        created?.data?.success !== true ||
+        created?.data?.action !== "create_shared_file" ||
+        created?.data?.userId !== currentUser?.id ||
+        created?.data?.fileId !== created?.data?.file?.id ||
+        created?.data?.file?.uploader_id !== currentUser?.id
+      ) throw new Error("Recording save was not confirmed.");
       toast.success("Recording saved to Files.");
     } catch (error) {
       console.error("Recording save failed:", error);

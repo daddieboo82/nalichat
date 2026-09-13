@@ -25,3 +25,11 @@ describe('shared file creation hardening', () => {
     expect(source).not.toContain('slice(0, 1000)');
   });
 });
+
+
+  it('binds file creation confirmation to the authenticated uploader and exact file', async () => {
+    const backend = await readText('base44/functions/createSharedFileRecord/entry.ts');
+    expect(backend).toContain("action: 'create_shared_file'");
+    expect(backend).toContain('userId: user.id');
+    expect(backend).toContain('fileId: file.id');
+  });

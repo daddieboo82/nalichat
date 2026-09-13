@@ -266,7 +266,13 @@ export default function Files() {
             project_id: currentFolderObj?.project_id || null,
           });
           if (created?.data?.error) throw new Error(created.data.error);
-          if (!created?.data?.file?.id) throw new Error("File upload was not confirmed");
+          if (
+            created?.data?.success !== true ||
+            created?.data?.action !== "create_shared_file" ||
+            created?.data?.userId !== currentUser?.id ||
+            created?.data?.fileId !== created?.data?.file?.id ||
+            created?.data?.file?.uploader_id !== currentUser?.id
+          ) throw new Error("File upload was not confirmed");
           uploaded += 1;
         } catch (error) {
           failures.push({ name: file.name, message: error?.message || "Upload failed" });

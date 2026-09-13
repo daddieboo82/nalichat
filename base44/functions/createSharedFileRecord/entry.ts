@@ -343,7 +343,13 @@ Deno.serve(async (req) => {
         edit_user_ids: editUserIds,
       });
 
-      return Response.json({ success: true, file });
+      return Response.json({
+        success: true,
+        action: 'create_shared_file',
+        userId: user.id,
+        fileId: file.id,
+        file,
+      });
     } finally {
       await releaseProjectMembershipLock(entities, projectLockId);
       await releaseFolderMutationLock(entities, folderLockId);

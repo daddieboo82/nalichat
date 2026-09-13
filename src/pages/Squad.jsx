@@ -74,13 +74,16 @@ export default function Squad() {
       setSquad(mine);
 
       if (mine && mine.status === "active") {
-        const status = await getSquadBonusStatus();
+        const status = await getSquadBonusStatus(requestedUserId);
         if (isStale()) return;
         setProgress(status.progress);
         setBonusActive(status.active);
         const fresh = await checkUserAuth();
         if (isStale()) return;
-        setCredits(fresh?.squad_credits || user.squad_credits || 0);
+        if (!fresh?.id || fresh.id !== requestedUserId) {
+          throw new Error("Squad account refresh was not confirmed.");
+        }
+        setCredits(fresh.squad_credits || 0);
       } else {
         setCredits(user.squad_credits || 0);
       }

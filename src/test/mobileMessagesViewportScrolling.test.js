@@ -10,8 +10,11 @@ describe('mobile Messages viewport scrolling', () => {
     expect(messages).toContain('flex-1 h-full min-h-0 flex flex-col');
   });
 
-  it('enables native vertical touch scrolling in the message history', async () => {
+  it('enables native vertical touch scrolling in the message history and threads', async () => {
     const chat = await readFile('src/components/messages/ChatView.jsx', 'utf8');
+    const thread = await readFile('src/components/messages/ThreadPanel.jsx', 'utf8');
     expect(chat).toContain('overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]');
+    expect(thread).toContain('w-full sm:w-80 h-full min-h-0');
+    expect(thread).toContain('overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]');
   });
 });

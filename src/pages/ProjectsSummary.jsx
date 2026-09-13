@@ -17,6 +17,15 @@ import { copyToClipboard } from '@/lib/clipboard';
 
 import { useSearchParams } from 'react-router-dom';
 
+async function listAllRows(entity, sort = "-created_date", pageSize = 200) {
+  const rows = [];
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entity.list(sort, pageSize, skip);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function ProjectsSummary() {
   const { user, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
@@ -117,9 +126,9 @@ export default function ProjectsSummary() {
     async function fetchData() {
       try {
         const [projectsRes, milestonesRes, filesRes] = await Promise.all([
-          base44.entities.Project.list("-created_date", 500),
-          base44.entities.Milestone.list("-created_date", 500),
-          base44.entities.SharedFile.list("-created_date", 500)
+          listAllRows(base44.entities.Project),
+          listAllRows(base44.entities.Milestone),
+          listAllRows(base44.entities.SharedFile),
         ]);
         if (cancelled) return;
         

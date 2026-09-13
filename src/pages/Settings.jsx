@@ -153,10 +153,10 @@ export default function Settings() {
   if (authError || !user) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <div className="max-w-md text-center">
+        <div className="ui-surface w-full max-w-md rounded-3xl border border-border bg-card/70 p-6 text-center">
           <h2 className="text-xl font-bold">Settings unavailable</h2>
           <p className="mt-2 text-sm text-muted-foreground">We couldn't verify your account. Refresh and try again.</p>
-          <Button className="mt-4" variant="outline" onClick={() => window.location.reload()}>
+          <Button className="ui-hover mt-4 min-h-11 rounded-xl" variant="outline" onClick={() => window.location.reload()}>
             Refresh
           </Button>
         </div>
@@ -173,7 +173,7 @@ export default function Settings() {
   return (
     <PullToRefresh onRefresh={async () => { await checkUserAuth(); }} className="h-full overflow-y-auto">
       <div className={`mx-auto max-w-2xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 sm:px-6 sm:py-10 ${reduceMotion ? "reduce-motion-surface" : ""}`}>
-        <h1 className="mb-6 text-2xl font-heading font-bold tracking-tight sm:text-3xl">Profile Settings</h1>
+        <h1 className="mb-6 font-heading text-2xl font-bold tracking-tight sm:text-3xl">Profile Settings</h1>
 
         {/* Avatar */}
         <div className="ui-surface relative mb-8 flex flex-col items-center gap-4 overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 p-5 text-center shadow-lg backdrop-blur-xl sm:flex-row sm:gap-6 sm:p-6 sm:text-left">
@@ -208,12 +208,12 @@ export default function Settings() {
 
         <div className="space-y-6">
           <div>
-            <label className="text-sm font-medium mb-2 block">Display Name / Artist Name</label>
+            <label className="mb-2 block text-sm font-semibold text-foreground">Display Name / Artist Name</label>
             <Input value={form.display_name} onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))} className="h-12 rounded-xl border border-border/50 bg-secondary/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" placeholder="Your stage name..." />
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Role</label>
+            <label className="mb-2 block text-sm font-semibold text-foreground">Role</label>
             <Select value={form.artist_role} onValueChange={v => setForm(f => ({ ...f, artist_role: v }))}>
               <SelectTrigger className="h-12 rounded-xl border border-border/50 bg-secondary/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20">
                 <SelectValue />
@@ -228,27 +228,27 @@ export default function Settings() {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Bio</label>
+            <label className="mb-2 block text-sm font-semibold text-foreground">Bio</label>
             <Textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} className="min-h-[120px] resize-y rounded-xl border border-border/50 bg-secondary/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" placeholder="Tell others about yourself..." />
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Location</label>
+            <label className="mb-2 block text-sm font-semibold text-foreground">Location</label>
             <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className="h-12 rounded-xl border border-border/50 bg-secondary/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" placeholder="City, State" />
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Genres</label>
+            <label className="mb-2 block text-sm font-semibold text-foreground">Genres</label>
             <div className="flex flex-wrap gap-2 mb-3">
               {form.genres.map(g => (
-                <Badge key={g} className="bg-primary/20 text-primary border-0 cursor-pointer hover:bg-primary/30" onClick={() => removeGenre(g)}>
+                <Badge key={g} className="ui-hover min-h-9 cursor-pointer rounded-xl border-0 bg-primary/20 px-2.5 text-primary hover:bg-primary/30 focus-visible:ring-2 focus-visible:ring-primary/40" onClick={() => removeGenre(g)}>
                   {g} <X className="w-3 h-3 ml-1" />
                 </Badge>
               ))}
             </div>
             <div className="flex flex-wrap gap-2">
               {GENRES.filter(g => !form.genres.includes(g)).map(g => (
-                <Badge key={g} variant="outline" className="cursor-pointer border-border hover:border-primary hover:text-primary transition-colors text-xs" onClick={() => addGenre(g)}>
+                <Badge key={g} variant="outline" className="ui-hover min-h-9 cursor-pointer rounded-xl border-border px-2.5 text-xs transition-colors hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40" onClick={() => addGenre(g)}>
                   <Plus className="w-2.5 h-2.5 mr-1" /> {g}
                 </Badge>
               ))}
@@ -261,8 +261,8 @@ export default function Settings() {
           </Button>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border">
-          <h2 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
+        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+          <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6 flex items-center gap-2">
             <Palette className="h-5 w-5 text-primary" aria-hidden="true" />
             Appearance
           </h2>
@@ -274,19 +274,19 @@ export default function Settings() {
           />
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border">
-          <h2 className="text-xl font-heading font-bold mb-6">Privacy</h2>
+        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+          <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Privacy</h2>
           <LockedChatSettings />
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border">
-          <h2 className="text-xl font-heading font-bold mb-6">Nali Presence</h2>
+        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+          <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Nali Presence</h2>
           <NaliProactivitySettings />
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border">
-          <h2 className="text-xl font-heading font-bold mb-6">Accessibility</h2>
-          <div className="ui-surface flex items-center justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:p-6">
+        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+          <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Accessibility</h2>
+          <div className="ui-surface flex flex-col items-start justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
             <div>
               <label htmlFor="reduce-motion" className="font-heading font-semibold text-lg text-foreground">
                 Reduce Motion
@@ -306,15 +306,15 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border">
-          <h2 className="text-xl font-heading font-bold mb-6">Onboarding & Tutorial</h2>
+        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+          <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Onboarding & Tutorial</h2>
           <div className="flex flex-col gap-4">
             <div className="ui-surface flex flex-col justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
               <div>
                 <h3 className="font-heading font-semibold text-lg text-foreground">Interactive Tutorial</h3>
                 <p className="text-sm text-muted-foreground mt-1">Take an interactive tour to learn how to use NaliChat's studio and collaboration tools.</p>
               </div>
-              <Button onClick={() => setShowWizard(true)} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-0 font-semibold">
+              <Button onClick={() => setShowWizard(true)} className="ui-hover min-h-11 w-full rounded-xl border-0 bg-primary font-semibold text-white hover:bg-primary/90 sm:w-auto">
                 Start Tutorial
               </Button>
             </div>
@@ -324,7 +324,7 @@ export default function Settings() {
                 <h3 className="font-heading font-semibold text-lg text-foreground">Profile Setup & Onboarding</h3>
                 <p className="text-sm text-muted-foreground mt-1">Revisit the initial onboarding process to set up your profile and complete the tutorial.</p>
               </div>
-              <Button variant="outline" className="w-full sm:w-auto border-primary/50 text-primary hover:bg-primary/10 font-semibold" asChild>
+              <Button variant="outline" className="ui-hover min-h-11 w-full rounded-xl border-primary/50 font-semibold text-primary hover:bg-primary/10 sm:w-auto" asChild>
                 <Link to="/onboarding">
                   Restart Onboarding
                 </Link>
@@ -333,14 +333,14 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border">
-          <h2 className="text-xl font-heading font-bold mb-6">Creator Tools</h2>
+        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+          <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Creator Tools</h2>
           <div className="ui-surface flex flex-col justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
             <div>
               <h3 className="font-heading font-semibold text-lg text-foreground">Analytics Dashboard</h3>
               <p className="text-sm text-muted-foreground mt-1">Track plays, reach, audience growth & listener engagement.</p>
             </div>
-            <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-0 gap-2 font-semibold" asChild>
+            <Button className="ui-hover min-h-11 w-full rounded-xl border-0 bg-primary font-semibold text-white hover:bg-primary/90 sm:w-auto" asChild>
               <Link to="/analytics">
                 <BarChart3 className="w-4 h-4" />
                 View Analytics
@@ -349,14 +349,14 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border">
-          <h2 className="text-xl font-heading font-bold mb-6">Squad & Scale</h2>
+        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+          <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Squad & Scale</h2>
           <div className="ui-surface flex flex-col justify-between gap-4 rounded-2xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
             <div>
               <h3 className="font-heading font-semibold text-lg text-foreground">Link Up With a Partner</h3>
               <p className="text-sm text-muted-foreground mt-1">Team up with a friend — hit your weekly chat or task goals together and unlock a 1.5x weekend bonus.</p>
             </div>
-            <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent text-white border-0 gap-2 font-semibold" asChild>
+            <Button className="ui-hover min-h-11 w-full rounded-xl border-0 bg-gradient-to-r from-primary to-accent font-semibold text-white sm:w-auto" asChild>
               <Link to="/squad">
                 <Users className="w-4 h-4" />
                 Open Squad & Scale
@@ -365,26 +365,26 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border">
-          <h2 className="text-xl font-heading font-bold mb-6">Subscription & Billing</h2>
+        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+          <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Subscription & Billing</h2>
           <SubscriptionSettings />
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border">
-          <h2 className="text-xl font-heading font-bold mb-6">Audio Devices</h2>
+        <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+          <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6">Audio Devices</h2>
           <DeviceSelector compact={true} />
         </div>
 
         {user?.role === 'admin' && (
-          <div className="mt-12 pt-8 border-t border-border">
-            <h2 className="text-xl font-heading font-bold mb-6 text-orange-500">Developer Testing</h2>
-            <div className="bg-orange-500/10 rounded-2xl p-6 border border-orange-500/30">
+          <div className="mt-10 border-t border-border pt-7 sm:mt-12 sm:pt-8">
+            <h2 className="mb-5 flex items-center gap-2 font-heading text-xl font-bold tracking-tight sm:mb-6 text-orange-500">Developer Testing</h2>
+            <div className="ui-surface rounded-2xl border border-orange-500/30 bg-orange-500/10 p-5 sm:p-6">
               <h3 className="font-heading font-semibold text-lg text-orange-500 mb-2">Backend Infrastructure Testing</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Use these tools to manually trigger backend webhooks and simulate server-side events for automated testing.
               </p>
-              <div className="flex gap-4">
-                <Button variant="outline" className="border-orange-500/50 text-orange-500 hover:bg-orange-500/20" asChild>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button variant="outline" className="ui-hover min-h-11 w-full rounded-xl border-orange-500/50 text-orange-500 hover:bg-orange-500/20 sm:w-auto" asChild>
                   <Link to="/webhook-test">
                     Open Webhook Testing Interface
                   </Link>

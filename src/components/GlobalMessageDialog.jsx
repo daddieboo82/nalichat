@@ -80,6 +80,9 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
       const conversation = created?.data?.conversation;
       if (
         created?.data?.success !== true ||
+        created?.data?.action !== "create_dm" ||
+        created?.data?.userId !== currentUser?.id ||
+        created?.data?.conversationId !== conversation?.id ||
         !conversation?.id ||
         conversation?.type !== "dm" ||
         !Array.isArray(conversation?.participant_ids) ||

@@ -11,6 +11,11 @@ describe('studio presence cleanup', () => {
     const source = await readText('src/hooks/useStudioPresence.js');
     expect(source).toContain('void base44.functions.invoke("updateStudioPresence"');
     expect(source).toContain('action: "clear"');
+    expect(source).toContain('res?.data?.action !== "clear"');
+    expect(source).toContain('res?.data?.userId !== expectedUserId');
+    expect(source).toContain('res?.data?.roomId !== roomId');
+    expect(source).toContain('!Number.isInteger(res?.data?.cleanup_failures)');
+    expect(source).toContain('Studio presence clear was not confirmed.');
     expect(source).not.toContain('setTimeout(() => {\n        base44.functions.invoke("updateStudioPresence"');
     expect(source).not.toContain('}, 2000);');
     it('binds heartbeat confirmation to the current user and room', async () => {

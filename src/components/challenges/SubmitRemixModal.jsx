@@ -157,21 +157,21 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!submitting) { onOpenChange(v); if (!v) reset(); } }}>
-      <DialogContent className="bg-card border-border max-h-[85vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-lg max-h-[90dvh] overflow-y-auto overscroll-contain rounded-3xl border-border bg-card/95 p-5 backdrop-blur-xl sm:p-6">
         <DialogHeader>
           <DialogTitle className="font-heading">Submit Your Remix</DialogTitle>
           <DialogDescription>Choose how you want to submit to "{challenge.title}"</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <Input placeholder="Remix name" value={remixName} onChange={(e) => setRemixName(e.target.value)} disabled={submitting} className="rounded-xl" />
-          <Textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} disabled={submitting} className="rounded-xl" />
+          <Input placeholder="Remix name" value={remixName} onChange={(e) => setRemixName(e.target.value)} disabled={submitting} className="min-h-11 rounded-xl border-border/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
+          <Textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} disabled={submitting} className="min-h-11 rounded-xl border-border/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
 
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="grid grid-cols-3 w-full">
-              <TabsTrigger value="studio"><Music2 className="w-4 h-4 mr-1" /> Studio</TabsTrigger>
-              <TabsTrigger value="external"><UploadCloud className="w-4 h-4 mr-1" /> Upload</TabsTrigger>
-              <TabsTrigger value="link"><Link2 className="w-4 h-4 mr-1" /> Link</TabsTrigger>
+            <TabsList className="grid h-auto w-full grid-cols-3 rounded-xl p-1">
+              <TabsTrigger className="min-h-10 rounded-lg px-2" value="studio"><Music2 className="w-4 h-4 mr-1" /> Studio</TabsTrigger>
+              <TabsTrigger className="min-h-10 rounded-lg px-2" value="external"><UploadCloud className="w-4 h-4 mr-1" /> Upload</TabsTrigger>
+              <TabsTrigger className="min-h-10 rounded-lg px-2" value="link"><Link2 className="w-4 h-4 mr-1" /> Link</TabsTrigger>
             </TabsList>
 
             <TabsContent value="studio" className="space-y-2 pt-3">
@@ -180,19 +180,19 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
               ) : tracksError ? (
                 <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm" role="alert">
                   <p className="text-destructive">Couldn't load your published tracks.</p>
-                  <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => void loadTracks()}>
+                  <Button type="button" size="sm" variant="outline" className="ui-hover mt-2 min-h-10 rounded-xl" onClick={() => void loadTracks()}>
                     Retry
                   </Button>
                 </div>
               ) : myTracks.length === 0 ? (
                 <p className="text-sm text-muted-foreground">You have no published tracks yet. Bounce one in the Studio first.</p>
               ) : (
-                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                <div className="max-h-48 space-y-1.5 overflow-y-auto overscroll-contain pr-1">
                   {myTracks.map((t) => (
                     <button
                       key={t.id}
                       onClick={() => setSelectedTrackId(t.id)}
-                      className={`w-full text-left px-3 py-2 rounded-xl border text-sm ${selectedTrackId === t.id ? "border-primary bg-primary/10" : "border-border"}`}
+                      className={`ui-hover min-h-11 w-full rounded-xl border px-3 py-2 text-left text-sm focus-visible:ring-2 focus-visible:ring-primary/40 ${selectedTrackId === t.id ? "border-primary bg-primary/10" : "border-border"}`}
                     >
                       {t.title}
                     </button>
@@ -217,19 +217,19 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
                   }
                   setFile(selected);
                 }}
-                className="w-full text-sm rounded-xl border border-border p-2 file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-1.5"
+                className="min-h-12 w-full rounded-xl border border-border p-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-2"
               />
               {file && <p className="text-xs text-muted-foreground truncate">{file.name}</p>}
               <p className="text-xs text-muted-foreground">.mp3, .wav — up to 50MB</p>
             </TabsContent>
 
             <TabsContent value="link" className="space-y-2 pt-3">
-              <Input placeholder="https://soundcloud.com/... or Drive/Dropbox link" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} className="rounded-xl" />
+              <Input placeholder="https://soundcloud.com/... or Drive/Dropbox link" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} className="min-h-11 rounded-xl border-border/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
               <p className="text-xs text-muted-foreground">Linked file should be MP3 or WAV</p>
             </TabsContent>
           </Tabs>
 
-          <Button onClick={handleSubmit} disabled={submitting} className="w-full rounded-xl bg-gradient-to-r from-primary to-accent text-white">
+          <Button onClick={handleSubmit} disabled={submitting} className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-accent font-semibold text-white shadow-lg shadow-primary/10">
             {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting...</> : "Submit Remix"}
           </Button>
         </div>

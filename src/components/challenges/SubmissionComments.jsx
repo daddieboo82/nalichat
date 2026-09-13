@@ -83,15 +83,15 @@ export default function SubmissionComments({ submissionId, user }) {
     <div className="space-y-3">
       <h3 className="font-heading font-semibold text-sm">Comments</h3>
       {user && (
-        <div className="flex gap-2">
-          <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Leave a comment..." className="rounded-xl" onKeyDown={(e) => e.key === "Enter" && handleSend()} />
-          <Button size="icon" className="rounded-xl shrink-0" onClick={handleSend} disabled={sending || !text.trim()}>{sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}</Button>
+        <div className="flex gap-3 rounded-xl p-2 hover:bg-secondary/20">
+          <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Leave a comment..." className="min-h-11 rounded-xl border-border/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" onKeyDown={(e) => e.key === "Enter" && handleSend()} />
+          <Button size="icon" className="ui-hover h-11 w-11 shrink-0 rounded-xl" aria-label="Post comment" onClick={handleSend} disabled={sending || !text.trim()}>{sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}</Button>
         </div>
       )}
       {loadError && (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm" role="alert">
           <p className="text-destructive">Couldn't load comments.</p>
-          <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => void loadComments()}>
+          <Button type="button" size="sm" variant="outline" className="ui-hover mt-2 min-h-10 rounded-xl" onClick={() => void loadComments()}>
             Retry
           </Button>
         </div>

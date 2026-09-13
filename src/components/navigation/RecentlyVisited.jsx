@@ -69,13 +69,13 @@ export default function RecentlyVisited({ onNavigate, currentPath }) {
       <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2 px-1 flex items-center gap-1.5">
         <Clock className="w-3 h-3" /> Recent
       </h3>
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+      <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
         {recent.map(path => (
           <button
             key={path}
             onClick={() => onNavigate(path)}
             className={cn(
-              "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all",
+              "ui-hover flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary/40",
               path === currentPath
                 ? "bg-primary/15 text-primary border border-primary/20"
                 : "bg-secondary/60 text-foreground hover:bg-secondary"

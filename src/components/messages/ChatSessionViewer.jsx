@@ -12,6 +12,21 @@ function recordingExtension(mimeType = "") {
   return "webm";
 }
 
+async function listSessionTracks(projectId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.Track.filter(
+      { project_id: projectId },
+      "created_date",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function ChatSessionViewer({ message, currentUser }) {
   const [tracks, setTracks] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -44,7 +59,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
       if (refreshInFlight) return;
       refreshInFlight = true;
       try {
-        const next = await base44.entities.Track.filter({ project_id: message.id }, "created_date", 500);
+        const next = await listSessionTracks(message.id);
         if (!cancelled) {
           setTracks(next || []);
           setTracksError(false);

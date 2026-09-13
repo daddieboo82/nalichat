@@ -248,7 +248,13 @@ Deno.serve(async (req) => {
       vote_count: 0,
     });
 
-    return Response.json({ success: true, submission });
+    return Response.json({
+      success: true,
+      action: 'submit_remix',
+      userId: user.id,
+      challengeId: challenge.id,
+      submission,
+    });
     } finally {
       await releaseChallengeLifecycleLock(entities, challengeLockId);
     }

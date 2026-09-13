@@ -201,8 +201,10 @@ export const AuthProvider = ({ children }) => {
   }, [queryClient]);
 
   const navigateToLogin = () => {
-    // Navigate to the custom login page if available
-    window.location.href = '/login?returnTo=' + encodeURIComponent(window.location.pathname);
+    // Preserve the full in-app deep link so auth does not discard a selected
+    // conversation, studio room, invite token, or other route state.
+    const returnTo = window.location.pathname + window.location.search + window.location.hash;
+    window.location.href = '/login?returnTo=' + encodeURIComponent(returnTo);
   };
 
   return (

@@ -400,9 +400,10 @@ describe('release configuration', () => {
     const postDownload = await readText('base44/functions/authorizeArtPostDownload/entry.ts');
 
     expect(viral).toContain('MAX_TRANSCRIBE_BYTES = 50 * 1024 * 1024');
-    expect(viral).toContain('storedMediaSize(message.file_url)');
+    expect(viral).toContain('storedMediaSize(messagePreview.file_url)');
     expect(viral).toContain('Viral Moment transcription supports voice notes up to 50MB');
-    expect(viral.indexOf('storedMediaSize(message.file_url)')).toBeLessThan(
+    expect(viral).toContain('(message.file_url || \'\') !== (messagePreview.file_url || \'\')');
+    expect(viral.indexOf('storedMediaSize(messagePreview.file_url)')).toBeLessThan(
       viral.indexOf('integrations.Core.TranscribeAudio'),
     );
 
@@ -424,9 +425,10 @@ describe('release configuration', () => {
     expect(transcribe).toContain('user.is_banned');
     expect(transcribe).toContain("error: 'timed_out'");
     expect(transcribe).toContain('MAX_TRANSCRIBE_BYTES = 50 * 1024 * 1024');
-    expect(transcribe).toContain('storedMediaSize(message.file_url)');
+    expect(transcribe).toContain('storedMediaSize(messagePreview.file_url)');
     expect(transcribe).toContain('Voice transcription supports audio up to 50MB');
-    expect(transcribe.indexOf('storedMediaSize(message.file_url)')).toBeLessThan(
+    expect(transcribe).toContain('message.file_url !== messagePreview.file_url');
+    expect(transcribe.indexOf('storedMediaSize(messagePreview.file_url)')).toBeLessThan(
       transcribe.indexOf('integrations.Core.TranscribeAudio'),
     );
   });
@@ -450,8 +452,8 @@ describe('release configuration', () => {
     const coverArt = await readText('base44/functions/generate-cover-art/entry.ts');
 
     expect(mediaSecurity).toContain('isTrustedStoredMediaUrl');
-    expect(transcription).toContain('isTrustedStoredMediaUrl(message.file_url)');
-    expect(viralMoment).toContain('isTrustedStoredMediaUrl(message.file_url)');
+    expect(transcription).toContain('isTrustedStoredMediaUrl(messagePreview.file_url)');
+    expect(viralMoment).toContain('isTrustedStoredMediaUrl(messagePreview.file_url)');
     expect(coverArt).toContain('isTrustedStoredMediaUrl(file_url)');
   });
 

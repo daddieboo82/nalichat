@@ -47,7 +47,14 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicUsers", {});
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.users || [];
+      if (
+        res?.data?.success !== true ||
+        res?.data?.viewerUserId !== currentUser?.id ||
+        !Array.isArray(res?.data?.users)
+      ) {
+        throw new Error("Collaborator directory response was not confirmed.");
+      }
+      return res.data.users;
     },
     enabled: open && !!currentUser?.id,
   });

@@ -54,7 +54,7 @@ export default function MediaViewer({ media, isOpen, onClose, canDownload = fals
       onClick={onClose}
     >
       <div
-        className="relative bg-black/95 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        className="relative bg-black/95 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-2xl max-w-4xl w-full max-h-[90dvh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -88,7 +88,7 @@ export default function MediaViewer({ media, isOpen, onClose, canDownload = fals
               <img
                 src={media.file_url}
                 alt={media.file_name}
-                className="rounded-xl max-h-[60vh] object-contain shadow-2xl transition-transform"
+                className="rounded-xl max-h-[60dvh] object-contain shadow-2xl transition-transform"
                 style={{ transform: `scale(${zoom / 100})` }}
               />
               {/* Zoom controls */}
@@ -121,7 +121,7 @@ export default function MediaViewer({ media, isOpen, onClose, canDownload = fals
                 controls
                 autoPlay
                 playsInline
-                className="rounded-xl max-h-[70vh] max-w-full object-contain shadow-2xl border border-white/10 bg-black/50"
+                className="rounded-xl max-h-[70dvh] max-w-full object-contain shadow-2xl border border-white/10 bg-black/50"
               />
             </div>
           ) : null}

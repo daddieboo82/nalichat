@@ -75,7 +75,12 @@ export function NaliPresenceProvider({ children }) {
       });
       if (generation !== identityGenerationRef.current) return;
       if (response?.data?.error) throw new Error(response.data.error);
-      if (response?.data?.success !== true) {
+      if (
+        response?.data?.success !== true ||
+        response?.data?.action !== "update_my_profile" ||
+        response?.data?.userId !== user.id ||
+        !response?.data?.updatedFields?.includes("nali_presence_level")
+      ) {
         throw new Error("Nali Presence update was not confirmed.");
       }
     } catch (error) {

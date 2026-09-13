@@ -25,3 +25,19 @@ describe('push subscription idempotency and input bounds', () => {
     expect(unregister).toContain('endpoint.length > 2048');
   });
 });
+
+
+describe('push subscription response identity contract', () => {
+  it('binds register/unregister confirmations to the current account and endpoint', async () => {
+    const client = await readText('src/lib/pushNotifications.js');
+    const register = await readText('base44/functions/registerPushSubscription/entry.ts');
+    const unregister = await readText('base44/functions/unregisterPushSubscription/entry.ts');
+    expect(client).toContain('registerResponse?.data?.action !== "register_push"');
+    expect(client).toContain('registerResponse?.data?.userId !== authUser.id');
+    expect(client).toContain('registerResponse?.data?.endpoint !== json.endpoint');
+    expect(client).toContain('unregisterResponse?.data?.action !== "unregister_push"');
+    expect(client).toContain('unregisterResponse?.data?.userId !== authUser.id');
+    expect(register).toContain("action: 'register_push'");
+    expect(unregister).toContain("action: 'unregister_push'");
+  });
+});

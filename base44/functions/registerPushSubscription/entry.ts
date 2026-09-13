@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ success: true, cleanup_failures: cleanupFailures });
+    return Response.json({ success: true, action: 'register_push', userId: user.id, endpoint, cleanup_failures: cleanupFailures });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

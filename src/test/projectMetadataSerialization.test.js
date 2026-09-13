@@ -14,7 +14,7 @@ describe('project metadata serialization', () => {
     expect(source).toContain('acquireProjectMembershipLock');
     expect(source).toContain('releaseProjectMembershipLock');
     expect(source).toContain('Project is being updated. Please retry.');
-    expect(source).toContain('projectId.length > 200');
+    expect(source).toContain('isBase44EntityId(projectId)');
     expect(source).toContain("Project title must be a string");
     expect(source).toContain('title.length > 200');
     expect(source).toContain('data.description.length > 3000');

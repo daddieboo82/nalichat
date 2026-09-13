@@ -90,3 +90,28 @@ test.describe('account isolation smoke', () => {
     await secondContext.close();
   });
 });
+
+
+test.describe('mobile logout and account switch', () => {
+  test.skip(
+    !(authenticated && secondEmail && secondPassword),
+    'Set both primary and secondary E2E credentials to run mobile account-switch checks.',
+  );
+
+  test('mobile logout clears the first session before the second account signs in', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile-chromium', 'Mobile navigation flow only.');
+
+    await login(page, email, password);
+    await page.goto('/');
+    await page.getByRole('button', { name: /open menu/i }).click();
+    await page.getByRole('button', { name: /log out/i }).click();
+
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/');
+    await page.goto('/messages');
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/login');
+
+    await login(page, secondEmail, secondPassword);
+    await page.goto('/messages');
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/messages');
+  });
+});

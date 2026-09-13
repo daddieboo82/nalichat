@@ -98,7 +98,7 @@ function FileDownloadButton({ file }) {
     <Button 
       size="icon" 
       variant="ghost" 
-      className="w-11 h-11 rounded-lg hover:bg-primary/20 hover:text-primary transition-colors" 
+      className="ui-hover h-11 w-11 rounded-xl transition-colors hover:bg-primary/20 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40" 
       onClick={handleDownload}
       title="Download file"
     >
@@ -144,7 +144,7 @@ function FileShareButton({ file, canShare, currentUserId }) {
     <Button 
       size="icon" 
       variant="ghost" 
-      className="w-11 h-11 rounded-lg hover:bg-primary/20 hover:text-primary transition-colors" 
+      className="ui-hover h-11 w-11 rounded-xl transition-colors hover:bg-primary/20 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40" 
       onClick={handleShare}
       title="Copy share link"
     >
@@ -622,7 +622,7 @@ export default function Files() {
             <Button 
               size="icon"
               variant="ghost"
-              className="w-11 h-11 rounded-lg text-destructive"
+              className="ui-hover h-11 w-11 rounded-xl text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30"
               onClick={() => deleteFolderMutation.mutate(currentFolder.id)}
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -719,7 +719,7 @@ export default function Files() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.03 }}
-                      className={`ui-surface group rounded-2xl border bg-card/50 p-4 backdrop-blur-xl transition-all ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70"}`}
+                      className={`ui-surface group rounded-3xl border bg-card/50 p-4 backdrop-blur-xl transition-all ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70"}`}
                     >
                       <div className="flex items-start gap-3">
                         <Checkbox
@@ -727,7 +727,7 @@ export default function Files() {
                           onCheckedChange={() => toggleSelect(file.id)}
                           className="mt-1 shrink-0"
                         />
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${typeColors[file.file_type] || typeColors.other}`}>
+                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${typeColors[file.file_type] || typeColors.other}`}>
                           <Icon className="w-5 h-5" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -739,7 +739,7 @@ export default function Files() {
                               ))}
                             </div>
                           )}
-                          <div className="flex items-center gap-2 mt-1 mb-2">
+                          <div className="mt-1 mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                             <span className="text-[10px] text-muted-foreground">
                               {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "—"}
                             </span>
@@ -754,7 +754,7 @@ export default function Files() {
                             <Button
                               variant="secondary"
                               size="sm"
-                              className="mt-3 gap-2 w-fit rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
+                              className="ui-hover mt-3 min-h-10 w-fit gap-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 focus-visible:ring-2 focus-visible:ring-primary/40"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 playTrack({
@@ -770,15 +770,15 @@ export default function Files() {
                             </Button>
                           )}
                         </div>
-                        <div className="flex flex-wrap justify-end gap-1 opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity">
+                        <div className="flex max-w-[96px] flex-wrap justify-end gap-1 opacity-100 transition-opacity sm:max-w-none sm:opacity-60 sm:group-hover:opacity-100">
                           <FileShareButton file={file} canShare={canEditFile} currentUserId={currentUser?.id} />
                           <FileDownloadButton file={file} />
                           {canEditFile && (
                             <>
-                              <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg" onClick={(e) => handleEditClick(e, file)}>
+                              <Button size="icon" variant="ghost" className="ui-hover h-11 w-11 rounded-xl focus-visible:ring-2 focus-visible:ring-primary/40" onClick={(e) => handleEditClick(e, file)}>
                                 <Edit className="w-3.5 h-3.5" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg text-destructive" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
+                              <Button size="icon" variant="ghost" className="ui-hover h-11 w-11 rounded-xl text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
                                 <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             </>
@@ -803,7 +803,7 @@ export default function Files() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className={`ui-surface group rounded-2xl border bg-card/50 p-4 backdrop-blur-xl transition-all ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70"}`}
+                  className={`ui-surface group rounded-3xl border bg-card/50 p-4 backdrop-blur-xl transition-all ${isSelected ? "border-primary ring-1 ring-primary/40" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card/70"}`}
                 >
                   <div className="flex items-start gap-3">
                     <Checkbox
@@ -812,7 +812,7 @@ export default function Files() {
                       onCheckedChange={() => canEditFile && toggleSelect(file.id)}
                       className="mt-1 shrink-0"
                     />
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${typeColors[file.file_type] || typeColors.other}`}>
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${typeColors[file.file_type] || typeColors.other}`}>
                       <Icon className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -824,7 +824,7 @@ export default function Files() {
                           ))}
                         </div>
                       )}
-                      <div className="flex items-center gap-2 mt-1 mb-2">
+                      <div className="mt-1 mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="text-[10px] text-muted-foreground">
                           {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "—"}
                         </span>
@@ -839,7 +839,7 @@ export default function Files() {
                         <Button
                           variant="secondary"
                           size="sm"
-                          className="mt-3 gap-2 w-fit rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
+                          className="ui-hover mt-3 min-h-10 w-fit gap-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 focus-visible:ring-2 focus-visible:ring-primary/40"
                           onClick={(e) => {
                             e.stopPropagation();
                             playTrack({
@@ -855,15 +855,15 @@ export default function Files() {
                         </Button>
                       )}
                     </div>
-                    <div className="flex flex-wrap justify-end gap-1 opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity">
+                    <div className="flex max-w-[96px] flex-wrap justify-end gap-1 opacity-100 transition-opacity sm:max-w-none sm:opacity-60 sm:group-hover:opacity-100">
                       <FileShareButton file={file} canShare={canEditFile} currentUserId={currentUser?.id} />
                       <FileDownloadButton file={file} />
                       {canEditFile && (
                         <>
-                          <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg" onClick={(e) => handleEditClick(e, file)}>
+                          <Button size="icon" variant="ghost" className="ui-hover h-11 w-11 rounded-xl focus-visible:ring-2 focus-visible:ring-primary/40" onClick={(e) => handleEditClick(e, file)}>
                             <Edit className="w-3.5 h-3.5" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="w-11 h-11 rounded-lg text-destructive" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
+                          <Button size="icon" variant="ghost" className="ui-hover h-11 w-11 rounded-xl text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(file.id); }}>
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </>
@@ -879,12 +879,12 @@ export default function Files() {
       </div>
 
       <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
-        <DialogContent className="bg-card border-border max-w-md">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-3xl border-border bg-card/95 p-5 backdrop-blur-xl sm:p-6">
           <DialogHeader>
             <DialogTitle className="font-heading">Upload Files</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="relative border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-8 flex flex-col items-center justify-center text-center bg-secondary/20">
+            <div className="ui-hover relative flex min-h-48 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-secondary/20 p-6 text-center transition-colors hover:border-primary/50 focus-within:ring-2 focus-within:ring-primary/40 sm:p-8">
               <input 
                 data-testid="files-upload-input"
                 type="file" 
@@ -910,7 +910,7 @@ export default function Files() {
       </Dialog>
 
       <Dialog open={showNewFolder} onOpenChange={setShowNewFolder}>
-        <DialogContent className="bg-card border-border max-w-sm">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-sm rounded-3xl border-border bg-card/95 p-5 backdrop-blur-xl sm:p-6">
           <DialogHeader>
             <DialogTitle className="font-heading">Create Folder</DialogTitle>
           </DialogHeader>
@@ -928,7 +928,7 @@ export default function Files() {
             />
             {projects.length > 0 && (
               <Select value={newFolderProject} onValueChange={setNewFolderProject}>
-                <SelectTrigger className="bg-secondary/50 border-0 rounded-lg h-10 w-full text-sm">
+                <SelectTrigger className="h-11 w-full rounded-xl border border-border/60 bg-secondary/50 text-sm focus:ring-2 focus:ring-primary/20">
                   <SelectValue placeholder="Select Project (Optional)" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border">
@@ -939,12 +939,12 @@ export default function Files() {
                 </SelectContent>
               </Select>
             )}
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1 rounded-lg" onClick={() => setShowNewFolder(false)}>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <Button variant="outline" className="ui-hover min-h-11 flex-1 rounded-xl" onClick={() => setShowNewFolder(false)}>
                 Cancel
               </Button>
               <Button 
-                className="flex-1 rounded-lg bg-primary hover:bg-primary/90"
+                className="ui-hover min-h-11 flex-1 rounded-xl bg-primary hover:bg-primary/90"
                 onClick={() => {
                   if (newFolderName.trim()) createFolderMutation.mutate(newFolderName);
                 }}
@@ -958,7 +958,7 @@ export default function Files() {
       </Dialog>
 
       <Dialog open={!!fileToEdit} onOpenChange={(open) => !open && setFileToEdit(null)}>
-        <DialogContent className="bg-card border-border max-w-sm">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-sm rounded-3xl border-border bg-card/95 p-5 backdrop-blur-xl sm:p-6">
           <DialogHeader>
             <DialogTitle className="font-heading">Edit File Details</DialogTitle>
           </DialogHeader>
@@ -991,11 +991,11 @@ export default function Files() {
               />
             </div>
             <div className="flex gap-2 pt-2">
-              <Button variant="outline" className="flex-1 rounded-lg" onClick={() => setFileToEdit(null)}>
+              <Button variant="outline" className="ui-hover min-h-11 flex-1 rounded-xl" onClick={() => setFileToEdit(null)}>
                 Cancel
               </Button>
               <Button 
-                className="flex-1 rounded-lg bg-primary hover:bg-primary/90"
+                className="ui-hover min-h-11 flex-1 rounded-xl bg-primary hover:bg-primary/90"
                 onClick={() => {
                   updateFileMutation.mutate({
                     id: fileToEdit.id,
@@ -1017,11 +1017,11 @@ export default function Files() {
       </Dialog>
 
       <Dialog open={showMoveFolder} onOpenChange={setShowMoveFolder}>
-        <DialogContent className="bg-card border-border max-w-sm">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-sm rounded-3xl border-border bg-card/95 p-5 backdrop-blur-xl sm:p-6">
           <DialogHeader>
             <DialogTitle className="font-heading">Move to Folder</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+          <div className="max-h-[55vh] space-y-2 overflow-y-auto overscroll-contain pr-1">
             {accessibleFolders.map((folder) => (
               <button
                 key={folder.id}

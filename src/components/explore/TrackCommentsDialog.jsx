@@ -47,21 +47,34 @@ export default function TrackCommentsDialog({ post, currentUser, open, onOpenCha
     }
   }, [open]);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (!audioRef.current) return;
     if (isPlaying) {
       audioRef.current.pause();
-    } else {
-      audioRef.current.play();
+      setIsPlaying(false);
+      return;
     }
-    setIsPlaying(!isPlaying);
+    try {
+      await audioRef.current.play();
+      setIsPlaying(true);
+    } catch (error) {
+      console.error("Track comment playback failed:", error);
+      setIsPlaying(false);
+      toast.error("Couldn't play this track. Please try again.");
+    }
   };
 
-  const seekTo = (seconds) => {
+  const seekTo = async (seconds) => {
     if (!audioRef.current) return;
     audioRef.current.currentTime = seconds;
-    audioRef.current.play();
-    setIsPlaying(true);
+    try {
+      await audioRef.current.play();
+      setIsPlaying(true);
+    } catch (error) {
+      console.error("Track comment seek playback failed:", error);
+      setIsPlaying(false);
+      toast.error("Couldn't play from that timestamp. Please try again.");
+    }
   };
 
   const captureTimestamp = () => {

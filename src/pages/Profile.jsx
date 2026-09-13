@@ -80,7 +80,7 @@ export default function Profile() {
     setEditing(false);
   }, [user, isMe]);
 
-  const { data: myPosts = [] } = useQuery({
+  const { data: myPosts = [], isError: postsError, refetch: refetchPosts } = useQuery({
     queryKey: ["my-posts", user?.id, currentUser?.id],
     queryFn: async () => {
       const [rows, likedRes] = await Promise.all([
@@ -98,7 +98,7 @@ export default function Profile() {
     enabled: !!user?.id,
   });
 
-  const { data: achievements = [] } = useQuery({
+  const { data: achievements = [], isError: achievementsError, refetch: refetchAchievements } = useQuery({
     queryKey: ["my-achievements", user?.id],
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicAchievements", { userId: user.id });
@@ -343,11 +343,29 @@ export default function Profile() {
         </div>
 
         {tab === "featured" && (
-          <TopWorksGallery posts={myPosts} />
+          postsError ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="font-heading font-semibold text-foreground">Featured works unavailable</p>
+              <p className="text-sm mt-1">We couldn't load this creator's tracks.</p>
+              <button type="button" onClick={() => void refetchPosts()} className="mt-3 rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary/50">
+                Retry
+              </button>
+            </div>
+          ) : (
+            <TopWorksGallery posts={myPosts} />
+          )
         )}
 
         {tab === "posts" && (
-          myPosts.length === 0 ? (
+          postsError ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="font-heading font-semibold text-foreground">Tracks unavailable</p>
+              <p className="text-sm mt-1">We couldn't load this creator's tracks.</p>
+              <button type="button" onClick={() => void refetchPosts()} className="mt-3 rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary/50">
+                Retry
+              </button>
+            </div>
+          ) : myPosts.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <p className="font-heading font-semibold">No tracks yet</p>
               <p className="text-sm mt-1">Release your first track from the Explore tab!</p>
@@ -362,7 +380,17 @@ export default function Profile() {
         )}
 
         {tab === "achievements" && (
-          <AchievementsPanel achievements={achievements} userId={user.id} />
+          achievementsError ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="font-heading font-semibold text-foreground">Achievements unavailable</p>
+              <p className="text-sm mt-1">We couldn't load this creator's achievements.</p>
+              <button type="button" onClick={() => void refetchAchievements()} className="mt-3 rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary/50">
+                Retry
+              </button>
+            </div>
+          ) : (
+            <AchievementsPanel achievements={achievements} userId={user.id} />
+          )
         )}
       </div>
     </PullToRefresh>

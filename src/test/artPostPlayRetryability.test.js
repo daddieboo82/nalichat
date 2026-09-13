@@ -13,7 +13,7 @@ describe('art post play retryability', () => {
     expect(source).toContain("req.method !== 'POST'");
     expect(source).toContain('user.is_banned');
     expect(source).toContain('user.timeout_until');
-    expect(source).toContain('postId.length > 200');
+    expect(source).toContain('isBase44EntityId(postId)');
     expect(source).toContain('await entities.ArtPostPlay.delete(id)');
     expect(source.indexOf('ArtPostPlay.delete(id)')).toBeGreaterThan(
       source.indexOf('$inc: { views: 1 }'),

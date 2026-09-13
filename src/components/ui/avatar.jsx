@@ -6,6 +6,7 @@ import * as AvatarPrimitive from "@radix-ui/react-avatar"
 import { cn } from "@/lib/utils"
 
 /** @type {any} */
+/** @type {any} */
 const Avatar = React.forwardRef(({ className, ...props }, ref) => (
   <AvatarPrimitive.Root
     ref={ref}
@@ -15,6 +16,7 @@ const Avatar = React.forwardRef(({ className, ...props }, ref) => (
 Avatar.displayName = AvatarPrimitive.Root.displayName
 
 /** @type {any} */
+/** @type {any} */
 const AvatarImage = React.forwardRef(({ className, ...props }, ref) => (
   <AvatarPrimitive.Image
     ref={ref}
@@ -23,6 +25,7 @@ const AvatarImage = React.forwardRef(({ className, ...props }, ref) => (
 ))
 AvatarImage.displayName = AvatarPrimitive.Image.displayName
 
+/** @type {any} */
 /** @type {any} */
 const AvatarFallback = React.forwardRef(({ className, ...props }, ref) => (
   <AvatarPrimitive.Fallback

@@ -71,12 +71,17 @@ function LargeFileTransferContent({ currentUser }) {
       // globally readable.
       const share = await base44.functions.invoke("createFileShareLink", { fileId: newFile.id });
       const token = share?.data?.token;
+      const expiresAt = share?.data?.expires_at;
+      const expiresAtMs = typeof expiresAt === "string" ? Date.parse(expiresAt) : NaN;
       if (
         share?.data?.success !== true ||
         share?.data?.action !== "create_file_share_link" ||
         share?.data?.userId !== currentUser?.id ||
         share?.data?.fileId !== newFile.id ||
-        !token
+        typeof token !== "string" ||
+        !/^[0-9a-f]{64}$/i.test(token) ||
+        !Number.isFinite(expiresAtMs) ||
+        expiresAtMs <= Date.now()
       ) throw new Error("Could not create share link");
       const link = `${window.location.origin}/shared-file?id=${encodeURIComponent(newFile.id)}&token=${encodeURIComponent(token)}`;
       setShareLink(link);

@@ -226,6 +226,11 @@ export default function Profile() {
     const file = e.target.files[0];
     const uploadOwnerId = currentUser?.id;
     if (!file || !uploadOwnerId || formOwnerId !== uploadOwnerId) return;
+    const validation = validateUpload(file);
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
     setUploading(true);
     try {
       const { file_url } = await secureUploadFile({ file });

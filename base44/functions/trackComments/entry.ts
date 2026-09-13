@@ -190,8 +190,9 @@ Deno.serve(async (req) => {
     if (!access.allowed) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
     if (action === 'list') {
-      const rows = await entities.TrackComment.filter({ track_id: parentId }, 'created_date', 200);
+      const rows = await entities.TrackComment.filter({ track_id: parentId }, '-created_date', 200);
       const comments = rows
+        .reverse()
         .filter((row: any) => !row.parent_type || row.parent_type === parentType)
         .map((row: any) => ({
           id: row.id,

@@ -31,7 +31,7 @@ export default function SubmissionCard({ submission, challengeId, hasVoted, isOw
   const shareUrl = `${window.location.origin}/challenge/${challengeId}/submission/${submission.id}`;
 
   return (
-    <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
+    <div className="ui-surface space-y-3 rounded-2xl border border-border bg-card p-4">
       <audio ref={audioRef} src={submission.remix_file_url} preload="none" onEnded={() => setPlaying(false)} />
       <div className="flex items-center gap-3">
         <Avatar className="w-9 h-9">
@@ -39,12 +39,12 @@ export default function SubmissionCard({ submission, challengeId, hasVoted, isOw
           <AvatarFallback>{submission.producer_name?.[0] || "?"}</AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <Link to={`/challenge/${challengeId}/submission/${submission.id}`} className="font-heading font-semibold text-sm truncate hover:text-primary block">
+          <Link to={`/challenge/${challengeId}/submission/${submission.id}`} className="ui-hover block min-h-9 truncate rounded-lg py-2 font-heading text-sm font-semibold hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40">
             {submission.remix_name}
           </Link>
           <p className="text-xs text-muted-foreground truncate">{submission.producer_name}</p>
         </div>
-        <Button size="icon" variant="secondary" className="rounded-full shrink-0" onClick={togglePlay}>
+        <Button size="icon" variant="secondary" className="ui-hover h-11 w-11 shrink-0 rounded-xl focus-visible:ring-2 focus-visible:ring-primary/40" onClick={togglePlay} aria-label={playing ? "Pause remix" : "Play remix"}>
           {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
         </Button>
       </div>
@@ -57,17 +57,17 @@ export default function SubmissionCard({ submission, challengeId, hasVoted, isOw
           variant={hasVoted ? "secondary" : "outline"}
           disabled={hasVoted || isOwn || voteDisabled}
           onClick={() => onVote(submission.id)}
-          className="rounded-full gap-1.5"
+          className="ui-hover min-h-10 rounded-xl gap-1.5"
         >
           <Heart className={`w-4 h-4 ${hasVoted ? "fill-primary text-primary" : ""}`} />
           {submission.vote_count || 0}
         </Button>
         <div className="relative">
-          <Button size="icon" variant="ghost" className="rounded-full" onClick={() => setShowShare(!showShare)}>
+          <Button size="icon" variant="ghost" className="ui-hover h-10 w-10 rounded-xl" onClick={() => setShowShare(!showShare)} aria-label="Share remix">
             <Share2 className="w-4 h-4" />
           </Button>
           {showShare && (
-            <div className="absolute right-0 bottom-full mb-2 p-2 bg-popover border border-border rounded-xl shadow-xl z-10">
+            <div className="absolute bottom-full right-0 z-10 mb-2 rounded-2xl border border-border bg-popover p-2 shadow-xl">
               <ShareButtons url={shareUrl} text={`Vote for "${submission.remix_name}" on NaliChat 🎧`} />
             </div>
           )}

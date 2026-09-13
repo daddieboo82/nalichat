@@ -326,7 +326,7 @@ describe('core usage flow coverage', () => {
     mockBase44.auth.me.mockResolvedValue(currentUser);
     mockBase44.functions.invoke.mockImplementation(async (name) => {
       if (name === 'listPublicUsers') {
-        return { data: { users: [currentUser] } };
+        return { data: { success: true, viewerUserId: currentUser.id, users: [currentUser] } };
       }
       return { data: {} };
     });
@@ -357,7 +357,7 @@ describe('core usage flow coverage', () => {
     };
     mockBase44.functions.invoke.mockImplementation(async (name) => {
       if (name === 'listPublicUsers') {
-        return { data: { users: [currentUser, otherUser] } };
+        return { data: { success: true, viewerUserId: currentUser.id, users: [currentUser, otherUser] } };
       }
       return { data: {} };
     });
@@ -391,7 +391,7 @@ describe('core usage flow coverage', () => {
     mockBase44.auth.me.mockResolvedValue(currentUser);
     mockBase44.functions.invoke.mockImplementation(async (name, payload) => {
       if (name === 'listPublicUsers') {
-        return { data: { users: [currentUser, otherUser] } };
+        return { data: { success: true, viewerUserId: currentUser.id, users: [currentUser, otherUser] } };
       }
       if (name === 'updateUserPresence') {
         return { data: { ok: true } };

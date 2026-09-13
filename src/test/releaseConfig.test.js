@@ -665,10 +665,10 @@ describe('release configuration', () => {
 
   it('claims project invite usage atomically before granting membership', async () => {
     const acceptInvite = await readText('base44/functions/acceptProjectInvite/entry.ts');
-    expect(acceptInvite).toContain('used_count: { $lt: maxUses }');
+    expect(acceptInvite).toContain('used_count: { $lt: lockedMaxUses }');
     expect(acceptInvite).toContain('{ $inc: { used_count: 1 } }');
     expect(acceptInvite).toContain('Number(claim?.updated || 0) !== 1');
-    expect(acceptInvite.indexOf('used_count: { $lt: maxUses }')).toBeLessThan(
+    expect(acceptInvite.indexOf('used_count: { $lt: lockedMaxUses }')).toBeLessThan(
       acceptInvite.indexOf('Project.update(project.id'),
     );
     expect(acceptInvite).toContain('membershipGranted = true');
@@ -1129,7 +1129,11 @@ describe('release configuration', () => {
     expect(liked).toContain('async function listAllLikedPosts(entity: any, userId: string)');
     expect(liked).toContain('for (let skip = 0; ; skip += pageSize)');
     expect(liked).toContain('post_ids: posts.map');
-    expect(toggle).toContain('return Response.json({ liked: !alreadyLiked, likes });');
+    expect(toggle).toContain('success: true');
+    expect(toggle).toContain('userId: user.id');
+    expect(toggle).toContain('post_id: postId');
+    expect(toggle).toContain('liked: !alreadyLiked');
+    expect(toggle).toContain('likes');
     expect(toggle).not.toContain('liked_by });');
     expect(explore).toContain('functions.invoke("listMyLikedPostIds"');
     expect(profile).toContain('functions.invoke("listMyLikedPostIds"');

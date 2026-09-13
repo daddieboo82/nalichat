@@ -22,6 +22,21 @@ const QUICK_ITEMS = [
   { icon: FileText, label: "Files", path: "/files", gradient: "from-violet-500 to-purple-500", desc: "Shared files" },
 ];
 
+async function listAllUserConversations(userId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.Conversation.filter(
+      { participant_ids: userId },
+      "-last_message_at",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function QuickAccessGrid() {
   const { user } = useAuth();
   const {
@@ -42,11 +57,7 @@ export default function QuickAccessGrid() {
     queryFn: async () => {
       if (!user?.id || !lockedChatsReady) return 0;
       try {
-        const conversations = await base44.entities.Conversation.filter(
-          { participant_ids: user.id },
-          "-last_message_at",
-          500,
-        );
+        const conversations = await listAllUserConversations(user.id);
         return countVisibleUnreadConversations(
           conversations,
           user.id,

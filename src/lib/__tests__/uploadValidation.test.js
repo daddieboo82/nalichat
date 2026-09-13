@@ -34,17 +34,19 @@ describe('validateUpload', () => {
   });
 
   it('rejects oversized files, naming both the size and the limit', () => {
-    const result = validateUpload(mkFile('a.jpg', 'image/jpeg', 20 * MB));
+    const result = validateUpload(mkFile('a.jpg', 'image/jpeg', 51 * MB));
     expect(result.ok).toBe(false);
-    expect(result.error).toContain('20 MB');
-    expect(result.error).toContain('15 MB');
+    expect(result.error).toContain('51 MB');
+    expect(result.error).toContain('50 MB');
   });
 
   it('enforces a different ceiling per kind', () => {
-    // 50 MB is fine for audio but far over the image limit.
+    // Images and audio share the standard 50 MB ceiling; video allows more.
     expect(validateUpload(mkFile('a.mp3', 'audio/mpeg', 50 * MB)).ok).toBe(true);
-    expect(validateUpload(mkFile('a.jpg', 'image/jpeg', 50 * MB)).ok).toBe(false);
-    expect(UPLOAD_LIMITS.audio.maxBytes).toBeGreaterThan(UPLOAD_LIMITS.image.maxBytes);
+    expect(validateUpload(mkFile('a.jpg', 'image/jpeg', 50 * MB)).ok).toBe(true);
+    expect(validateUpload(mkFile('a.mp4', 'video/mp4', 75 * MB)).ok).toBe(true);
+    expect(validateUpload(mkFile('a.jpg', 'image/jpeg', 51 * MB)).ok).toBe(false);
+    expect(UPLOAD_LIMITS.video.maxBytes).toBeGreaterThan(UPLOAD_LIMITS.image.maxBytes);
   });
 
   it('rejects a kind mismatch when accept is specified', () => {

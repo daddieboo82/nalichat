@@ -103,6 +103,10 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
       const sentMessage = send?.data?.message;
       if (
         send?.data?.success !== true ||
+        send?.data?.action !== "send" ||
+        send?.data?.userId !== currentUser?.id ||
+        send?.data?.conversationId !== conversation.id ||
+        send?.data?.clientMessageKey !== clientMessageKey ||
         !sentMessage?.id ||
         sentMessage?.conversation_id !== conversation.id ||
         sentMessage?.sender_id !== currentUser?.id ||

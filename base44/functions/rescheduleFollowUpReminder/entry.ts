@@ -34,7 +34,14 @@ Deno.serve(async (req) => {
       reminderId: reminder_id,
       remindAt: remind_at,
     });
-    return Response.json({ reminder });
+    return Response.json({
+      success: true,
+      action: 'reschedule_reminder',
+      userId: user?.id || null,
+      reminderId: reminder?.id || reminder_id,
+      remindAt: reminder?.remind_at || remind_at,
+      reminder,
+    });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

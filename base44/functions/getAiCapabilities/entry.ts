@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       user,
       readEnvironment: (name) => secrets.get(name),
     });
-    return Response.json(capabilities);
+    return Response.json({ success: true, userId: user.id, ...capabilities });
   } catch (error) {
     console.error('getAiCapabilities error:', error);
     return Response.json({ error: 'Unable to load AI capabilities.' }, { status: 500 });

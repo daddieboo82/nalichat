@@ -82,7 +82,9 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
       const auth = await base44.functions.invoke("authorizeMessageDownload", { messageId: message.id });
       if (auth?.data?.error) throw new Error(auth.data.error);
       const downloadUrl = auth?.data?.file_url;
-      if (!downloadUrl) throw new Error("Download URL unavailable");
+      if (auth?.data?.success !== true || !downloadUrl) {
+        throw new Error("Download authorization was not confirmed");
+      }
       await resumableDownload(downloadUrl, auth?.data?.file_name || message.file_name || "file", (pct) => setDlProgress(pct));
     } catch (error) {
       toast.error(error?.message || "Couldn't download the attachment. Please try again.");

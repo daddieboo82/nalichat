@@ -2282,3 +2282,17 @@ describe('direct message creation response contract', () => {
     expect(source).toContain('!conv.participant_ids.includes(otherUser.id)');
   });
 });
+
+
+describe('chat session track mutation response contracts', () => {
+  it('only commits collaborative track UI state after confirmed server mutations', async () => {
+    const source = await readText('src/components/messages/ChatSessionViewer.jsx');
+    expect(source).toContain('created?.data?.success !== true');
+    expect(source).toContain('track?.project_id !== message.id');
+    expect(source).toContain('track?.uploaded_by !== currentUser?.id');
+    expect(source).toContain('updated?.id !== id');
+    expect(source).toContain('updated?.project_id !== message.id');
+    expect(source).toContain('res?.data?.success !== true || res?.data?.deleted !== true');
+    expect(source).toContain('Track deletion was not confirmed');
+  });
+});

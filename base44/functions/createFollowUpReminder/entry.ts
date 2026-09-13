@@ -36,7 +36,14 @@ Deno.serve(async (req) => {
       remindAt: remind_at,
       requestKey: client_request_key,
     });
-    return Response.json(result);
+    return Response.json({
+      success: true,
+      action: 'create_reminder',
+      userId: user?.id || null,
+      sourceMessageId: source_message_id,
+      requestKey: client_request_key,
+      ...result,
+    });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

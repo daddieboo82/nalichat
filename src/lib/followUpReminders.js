@@ -51,12 +51,24 @@ async function invokeReminderFunction(name, payload = {}) {
   return response?.data || response;
 }
 
-export async function createFollowUpReminder({ sourceMessageId, remindAt, requestKey }) {
-  return invokeReminderFunction("createFollowUpReminder", {
+export async function createFollowUpReminder({ sourceMessageId, remindAt, requestKey, userId }) {
+  const data = await invokeReminderFunction("createFollowUpReminder", {
     source_message_id: sourceMessageId,
     remind_at: remindAt,
     client_request_key: requestKey,
   });
+  if (
+    data?.success !== true ||
+    data?.action !== "create_reminder" ||
+    data?.userId !== userId ||
+    data?.sourceMessageId !== sourceMessageId ||
+    data?.requestKey !== requestKey ||
+    data?.reminder?.owner_id !== userId ||
+    data?.reminder?.source_message_id !== sourceMessageId
+  ) {
+    throw new Error("Follow-up reminder creation was not confirmed.");
+  }
+  return data;
 }
 
 export async function listFollowUpReminders() {
@@ -64,17 +76,37 @@ export async function listFollowUpReminders() {
   return data?.reminders || [];
 }
 
-export async function rescheduleFollowUpReminder(reminderId, remindAt) {
+export async function rescheduleFollowUpReminder(reminderId, remindAt, userId) {
   const data = await invokeReminderFunction("rescheduleFollowUpReminder", {
     reminder_id: reminderId,
     remind_at: remindAt,
   });
-  return data?.reminder;
+  if (
+    data?.success !== true ||
+    data?.action !== "reschedule_reminder" ||
+    data?.userId !== userId ||
+    data?.reminderId !== reminderId ||
+    data?.reminder?.owner_id !== userId ||
+    data?.reminder?.id !== reminderId
+  ) {
+    throw new Error("Follow-up reminder reschedule was not confirmed.");
+  }
+  return data.reminder;
 }
 
-export async function cancelFollowUpReminder(reminderId) {
+export async function cancelFollowUpReminder(reminderId, userId) {
   const data = await invokeReminderFunction("cancelFollowUpReminder", {
     reminder_id: reminderId,
   });
-  return data?.reminder;
+  if (
+    data?.success !== true ||
+    data?.action !== "cancel_reminder" ||
+    data?.userId !== userId ||
+    data?.reminderId !== reminderId ||
+    data?.reminder?.owner_id !== userId ||
+    data?.reminder?.id !== reminderId
+  ) {
+    throw new Error("Follow-up reminder cancellation was not confirmed.");
+  }
+  return data.reminder;
 }

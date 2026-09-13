@@ -1239,8 +1239,12 @@ describe('release configuration', () => {
 
     expect(squad.properties.invite_expires_at).toBeTruthy();
     expect(createInvite).toContain('invite_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)');
-    expect(createInvite).toContain("s.status === 'pending' && isInviteExpired(s)");
-    expect(createInvite).toContain('squad_membership_id: null');
+    expect(createInvite).toContain('findBlockingSquadMembership(entities, user.id)');
+    expect(createInvite).toContain('Expired squad invite cleanup failed');
+    const membership = await readText('base44/shared/squadMembership.ts');
+    expect(membership).toContain("squad.status === 'pending' && isSquadInviteExpired(squad)");
+    expect(membership).toContain('squad_membership_id: squad.id');
+    expect(membership).toContain('squad_membership_id: null');
     expect(getInvite).toContain('isInviteExpired(squad)');
     expect(join).toContain('isInviteExpired(squad)');
   });

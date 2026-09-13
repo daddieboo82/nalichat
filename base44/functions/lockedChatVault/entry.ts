@@ -195,6 +195,9 @@ Deno.serve(async (req) => {
         getSecurity(base44, user.id),
       ]);
       return Response.json({
+        success: true,
+        action: 'state',
+        userId: user.id,
         lockedConversationIds,
         security: publicSecurity(security),
       });
@@ -220,7 +223,12 @@ Deno.serve(async (req) => {
         iterations: body.iterations,
         failed_attempts: 0,
       });
-      return Response.json({ security: publicSecurity(security) });
+      return Response.json({
+        success: true,
+        action: 'set_pin',
+        userId: user.id,
+        security: publicSecurity(security),
+      });
     }
 
     if (action === 'verify_pin') {
@@ -278,7 +286,12 @@ Deno.serve(async (req) => {
             verified_at: new Date().toISOString(),
           }),
         ]);
-        return Response.json({ unlocked: true });
+        return Response.json({
+          success: true,
+          action: 'verify_pin',
+          userId: user.id,
+          unlocked: true,
+        });
       });
     }
 
@@ -318,6 +331,11 @@ Deno.serve(async (req) => {
         ));
       }
       return Response.json({
+        success: true,
+        action: 'set_locked',
+        userId: user.id,
+        conversationId,
+        locked: body.locked === true,
         lockedConversationIds: await listAccessibleLockedIds(base44, user.id),
       });
     }
@@ -365,7 +383,12 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.LockedChatResetChallenge.delete(challenge.id);
         return errorResponse('The verification email could not be sent.', 503, 'reset_email_failed');
       }
-      return Response.json({ sent: true });
+      return Response.json({
+        success: true,
+        action: 'request_reset',
+        userId: user.id,
+        sent: true,
+      });
     }
 
     if (action === 'complete_reset') {
@@ -437,7 +460,13 @@ Deno.serve(async (req) => {
             })
           ),
         ]);
-        return Response.json({ security: publicSecurity(updated), reset: true });
+        return Response.json({
+          success: true,
+          action: 'complete_reset',
+          userId: user.id,
+          security: publicSecurity(updated),
+          reset: true,
+        });
       });
     }
 

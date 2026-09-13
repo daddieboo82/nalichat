@@ -48,7 +48,17 @@ export function useStudioPresence(roomId = 'local_studio') {
         roomId,
         activity: activityRef.current,
       });
-      if (res?.data?.error) throw new Error(res.data.error);
+      if (
+        res?.data?.error ||
+        res?.data?.success !== true ||
+        res?.data?.action !== "heartbeat" ||
+        res?.data?.userId !== me.id ||
+        res?.data?.roomId !== roomId ||
+        res?.data?.presence?.user_id !== me.id ||
+        res?.data?.presence?.room_id !== roomId
+      ) {
+        throw new Error(res?.data?.error || "Studio presence update was not confirmed.");
+      }
     } catch (e) {
       // Presence is non-critical; retry on the next heartbeat.
     }

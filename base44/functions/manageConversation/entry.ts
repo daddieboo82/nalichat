@@ -133,16 +133,28 @@ async function updateConversationAudienceSafely(
   }
 }
 
+async function listAllRows(
+  entity: any,
+  query: Record<string, unknown>,
+  sort = '-created_date',
+) {
+  const rows: any[] = [];
+  for (let skip = 0; ; skip += PAGE_SIZE) {
+    const page = await entity.filter(query, sort, PAGE_SIZE, skip);
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) return rows;
+  }
+}
+
 async function cleanupDeletedConversationData(
   entities: any,
   conversationId: string,
 ) {
   const now = new Date().toISOString();
 
-  const reminders = await entities.FollowUpReminder.filter(
+  const reminders = await listAllRows(
+    entities.FollowUpReminder,
     { conversation_id: conversationId },
-    '-created_date',
-    500,
   );
   for (const reminder of reminders) {
     if (reminder.status === 'scheduled') {
@@ -165,27 +177,23 @@ async function cleanupDeletedConversationData(
     conversationId,
   );
 
-  const sessions = await entities.CallSummarySession.filter(
+  const sessions = await listAllRows(
+    entities.CallSummarySession,
     { conversation_id: conversationId },
-    '-created_date',
-    500,
   );
   for (const session of sessions) {
     const [captures, summaries, consents] = await Promise.all([
-      entities.CallSummaryCapture.filter(
+      listAllRows(
+        entities.CallSummaryCapture,
         { session_id: session.id },
-        '-created_date',
-        500,
       ),
-      entities.CallSummary.filter(
+      listAllRows(
+        entities.CallSummary,
         { session_id: session.id },
-        '-created_date',
-        500,
       ),
-      entities.CallSummaryConsent.filter(
+      listAllRows(
+        entities.CallSummaryConsent,
         { session_id: session.id },
-        '-created_date',
-        500,
       ),
     ]);
 

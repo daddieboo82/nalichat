@@ -9,7 +9,7 @@ describe('read utility gate hardening', () => {
     expect(source).toContain("error: 'timed_out'");
     expect(source.indexOf("req.method !== 'POST'")).toBeLessThan(source.indexOf('auth.me()'));
     expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('consumeHourlyLimit('));
-    expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('asServiceRole.entities.ArtPost.filter'));
+    expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('listAllLikedPosts('));
   });
 
   it('blocks restricted AI capability lookups before subscription resolution', async () => {
@@ -24,6 +24,6 @@ describe('read utility gate hardening', () => {
     expect(source).toContain("if (user.is_banned)");
     expect(source).toContain("error: 'timed_out'");
     expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('consumeHourlyLimit('));
-    expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('asServiceRole.entities.Message.get'));
+    expect(source.indexOf('if (user.is_banned)')).toBeLessThan(source.indexOf('const message = await entities.Message.get'));
   });
 });

@@ -126,7 +126,12 @@ export default function ChatSessionViewer({ message, currentUser }) {
           });
           if (created?.data?.error) throw new Error(created.data.error);
           const track = created?.data?.track;
-          if (!track?.id) throw new Error("Track was not created");
+          if (
+            created?.data?.success !== true ||
+            !track?.id ||
+            track?.project_id !== message.id ||
+            track?.uploaded_by !== currentUser?.id
+          ) throw new Error("Track was not created");
           if (mountedRef.current) {
             setTracks((current) => [
               ...current.filter((existing) => existing.id !== track.id),
@@ -187,7 +192,11 @@ export default function ChatSessionViewer({ message, currentUser }) {
               const res = await base44.functions.invoke("mutateTrack", { action: "update", trackId: id, data });
               if (res?.data?.error) throw new Error(res.data.error);
               const updated = res?.data?.track;
-              if (!updated?.id) throw new Error("Track was not updated");
+              if (
+                res?.data?.success !== true ||
+                updated?.id !== id ||
+                updated?.project_id !== message.id
+              ) throw new Error("Track was not updated");
               setTracks((current) => current.map((track) => (
                 track.id === id ? { ...track, ...updated } : track
               )));
@@ -201,8 +210,11 @@ export default function ChatSessionViewer({ message, currentUser }) {
             try {
               const res = await base44.functions.invoke("mutateTrack", { action: "delete", trackId: id });
               if (res?.data?.error) throw new Error(res.data.error);
+              if (res?.data?.success !== true || res?.data?.deleted !== true) {
+                throw new Error("Track deletion was not confirmed");
+              }
               setTracks((current) => current.filter((track) => track.id !== id));
-              return res?.data;
+              return res.data;
             } catch (error) {
               toast.error("Couldn't delete the track. Please try again.");
               return null;

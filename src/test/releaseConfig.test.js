@@ -2399,3 +2399,14 @@ describe('secure upload response contract', () => {
     expect(backend).toContain('success: true, file_url: fileUrl');
   });
 });
+
+
+describe('chat theme persistence response contract', () => {
+  it('requires explicit success and the exact requested theme', async () => {
+    const client = await readText('src/lib/chatThemes.js');
+    const backend = await readText('base44/functions/setChatTheme/entry.ts');
+    expect(client).toContain('payload.success !== true');
+    expect(client).toContain('payload.theme_id !== themeId');
+    expect(backend).toContain('success: true, theme_id: themeId');
+  });
+});

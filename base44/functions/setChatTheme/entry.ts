@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     }
 
     await base44.asServiceRole.entities.User.update(user.id, { chat_theme_id: themeId });
-    return Response.json({ theme_id: themeId });
+    return Response.json({ success: true, theme_id: themeId });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

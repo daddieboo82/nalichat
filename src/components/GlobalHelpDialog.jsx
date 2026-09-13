@@ -5,10 +5,10 @@ import { Sparkles, MessageCircle, HelpCircle } from "lucide-react";
 export default function GlobalHelpDialog({ open, onOpenChange }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-card border-border">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-3xl border-border/80 bg-card/95 p-5 backdrop-blur-xl sm:p-6">
         <DialogHeader>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+          <div className="mb-2 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 ring-1 ring-primary/20">
               <HelpCircle className="w-5 h-5 text-primary" />
             </div>
             <DialogTitle>Help & Support</DialogTitle>
@@ -19,7 +19,7 @@ export default function GlobalHelpDialog({ open, onOpenChange }) {
         </DialogHeader>
 
         <div className="space-y-3 py-4">
-          <div className="p-4 rounded-xl border border-border bg-secondary/30 flex items-start gap-3">
+          <div className="ui-surface flex items-start gap-3 rounded-2xl border border-border bg-secondary/30 p-4">
             <Sparkles className="w-5 h-5 text-primary mt-0.5 shrink-0" />
             <div>
               <h3 className="font-semibold text-sm mb-1">Ask Nali AI</h3>
@@ -29,7 +29,7 @@ export default function GlobalHelpDialog({ open, onOpenChange }) {
             </div>
           </div>
 
-          <div className="p-4 rounded-xl border border-border bg-secondary/30 flex items-start gap-3">
+          <div className="ui-surface flex items-start gap-3 rounded-2xl border border-border bg-secondary/30 p-4">
             <MessageCircle className="w-5 h-5 text-accent mt-0.5 shrink-0" />
             <div>
               <h3 className="font-semibold text-sm mb-1">Community Support</h3>
@@ -40,11 +40,11 @@ export default function GlobalHelpDialog({ open, onOpenChange }) {
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2 border-t border-border">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
+          <Button className="ui-hover min-h-11 rounded-xl" variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-          <Button onClick={() => onOpenChange(false)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button onClick={() => onOpenChange(false)} className="ui-hover min-h-11 rounded-xl bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
             Got it
           </Button>
         </div>

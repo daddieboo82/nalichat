@@ -54,8 +54,8 @@ export default function CartDrawer() {
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetContent className="w-full sm:max-w-md bg-card/95 backdrop-blur-xl border-l border-border/50 flex flex-col p-6">
-        <SheetHeader className="text-left space-y-2 mb-6">
+      <SheetContent className="flex w-full flex-col border-l border-border/50 bg-card/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:max-w-md sm:p-6">
+        <SheetHeader className="mb-5 space-y-2 text-left sm:mb-6">
           <SheetTitle className="flex items-center gap-2 font-heading text-xl text-white">
             <ShoppingCart className="w-5 h-5" /> Your Cart
           </SheetTitle>
@@ -64,15 +64,15 @@ export default function CartDrawer() {
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 pr-2 -mr-2">
+        <div className="-mr-1 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1 sm:-mr-2 sm:space-y-4 sm:pr-2">
           {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <div className="ui-surface flex h-full min-h-[260px] flex-col items-center justify-center rounded-3xl border border-dashed border-border text-muted-foreground">
               <ShoppingCart className="w-12 h-12 mb-4 opacity-20" />
               <p>Your cart is empty.</p>
             </div>
           ) : (
             items.map(item => (
-              <div key={item.id} className="flex flex-col gap-2 bg-secondary/30 p-3 rounded-xl border border-white/5 shadow-sm">
+              <div key={item.id} className="ui-surface flex flex-col gap-2 rounded-2xl border border-white/5 bg-secondary/30 p-3 shadow-sm">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex gap-3 items-center flex-1 overflow-hidden">
                     {item.image_url ? (
@@ -91,7 +91,7 @@ export default function CartDrawer() {
                     <p className="font-bold text-primary">${item.price?.toFixed(2)}</p>
                     <button 
                       onClick={() => removeFromCart(item.id)}
-                      className="text-xs text-red-400 hover:text-red-300 hover:underline mt-1 flex items-center justify-end gap-1 ml-auto transition-colors"
+                      className="ui-hover ml-auto mt-1 flex min-h-9 items-center justify-end gap-1 rounded-lg px-2 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
                     >
                       <Trash2 className="w-3 h-3" /> Remove
                     </button>
@@ -103,13 +103,13 @@ export default function CartDrawer() {
         </div>
 
         {items.length > 0 && (
-          <div className="pt-6 border-t border-white/10 mt-auto space-y-4">
+          <div className="mt-auto space-y-4 border-t border-white/10 pt-5 sm:pt-6">
             <div className="flex justify-between items-center text-lg font-bold text-white">
               <span>Total:</span>
               <span className="text-primary">${total.toFixed(2)}</span>
             </div>
             <Button 
-              className="w-full h-14 text-base font-bold bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.15)] rounded-xl transition-all"
+              className="ui-hover h-14 w-full rounded-xl bg-white text-base font-bold text-black shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all hover:bg-white/90 focus-visible:ring-2 focus-visible:ring-primary/40"
               onClick={handleCheckout}
               disabled={isCheckingOut}
             >

@@ -178,7 +178,7 @@ export default function ImmersiveOnboarding() {
           {/* Skip button */}
           <button
             onClick={handleDismiss}
-            className="absolute top-6 right-6 z-50 flex items-center gap-1.5 px-4 py-2 rounded-full bg-card/60 backdrop-blur-md border border-white/10 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-card/80 transition-all"
+            className="ui-hover absolute right-3 top-[max(.75rem,env(safe-area-inset-top))] z-50 flex min-h-11 items-center gap-1.5 rounded-xl border border-white/10 bg-card/70 px-4 py-2 text-sm font-medium text-muted-foreground backdrop-blur-md transition-all hover:bg-card/90 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 sm:right-6 sm:top-6"
           >
             Skip intro
             <X className="w-4 h-4" />
@@ -188,7 +188,7 @@ export default function ImmersiveOnboarding() {
           {step > 0 && (
             <button
               onClick={handlePrev}
-              className="absolute left-6 top-1/2 -translate-y-1/2 z-50 w-12 h-12 rounded-full bg-card/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-card/80 hover:scale-110 transition-all"
+              className="ui-hover absolute left-3 top-[max(.75rem,env(safe-area-inset-top))] z-50 flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-card/70 text-muted-foreground backdrop-blur-md transition-all hover:bg-card/90 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 sm:left-6 sm:top-1/2 sm:h-12 sm:w-12 sm:-translate-y-1/2 sm:rounded-full"
               aria-label="Previous step"
             >
               <ChevronRight className="w-5 h-5 rotate-180" />
@@ -196,7 +196,7 @@ export default function ImmersiveOnboarding() {
           )}
 
           {/* Main content */}
-          <div className="relative z-10 w-full max-w-3xl mx-auto px-6 sm:px-10 py-16 sm:py-0">
+          <div className="relative z-10 mx-auto w-full max-w-3xl px-4 pb-8 pt-20 sm:px-10 sm:py-0">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={current.id}
@@ -213,7 +213,7 @@ export default function ImmersiveOnboarding() {
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ delay: 0.15, type: "spring", bounce: 0.5 }}
-                  className={`relative mb-8`}
+                  className="relative mb-6 sm:mb-8"
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${current.gradient} blur-2xl rounded-full scale-150 opacity-50`} />
                   <div className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br ${current.gradient} flex items-center justify-center shadow-2xl border border-white/20 overflow-hidden`}>
@@ -236,7 +236,7 @@ export default function ImmersiveOnboarding() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className={`font-heading font-black text-4xl sm:text-5xl md:text-6xl mb-5 tracking-tight leading-[1.05] bg-gradient-to-r ${current.gradient} bg-clip-text text-transparent`}
+                  className={`mb-4 bg-gradient-to-r ${current.gradient} bg-clip-text font-heading text-3xl font-black leading-[1.05] tracking-tight text-transparent sm:mb-5 sm:text-5xl md:text-6xl`}
                 >
                   {current.title}
                 </motion.h1>
@@ -246,7 +246,7 @@ export default function ImmersiveOnboarding() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="text-base sm:text-lg md:text-xl text-foreground/80 leading-relaxed max-w-2xl mb-10"
+                  className="mb-7 max-w-2xl text-sm leading-relaxed text-foreground/80 sm:mb-10 sm:text-lg md:text-xl"
                 >
                   {current.description}
                 </motion.p>
@@ -257,7 +257,7 @@ export default function ImmersiveOnboarding() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="grid grid-cols-3 gap-4 sm:gap-8 w-full max-w-lg mb-10"
+                    className="mb-7 grid w-full max-w-lg grid-cols-3 gap-2 sm:mb-10 sm:gap-8"
                   >
                     {current.stats.map((stat) => (
                       <div key={stat.label} className="text-center">
@@ -275,12 +275,12 @@ export default function ImmersiveOnboarding() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 w-full max-w-2xl mb-10"
+                    className="mb-7 grid w-full max-w-2xl grid-cols-2 gap-2 sm:mb-10 sm:grid-cols-4 sm:gap-4"
                   >
                     {current.features.map((feat) => {
                       const FeatureIcon = feat.icon;
                       return (
-                        <div key={feat.label} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card/40 backdrop-blur-xl border border-white/[0.06]">
+                        <div key={feat.label} className="ui-surface flex flex-col items-center gap-2 rounded-2xl border border-white/[0.06] bg-card/40 p-3 backdrop-blur-xl sm:p-4">
                           <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${current.gradient} flex items-center justify-center`}>
                             <FeatureIcon className="w-5 h-5 text-white" />
                           </div>
@@ -302,7 +302,7 @@ export default function ImmersiveOnboarding() {
                     <Button
                       onClick={handleRegister}
                       size="lg"
-                      className={`w-full sm:w-auto h-14 px-8 text-lg font-bold rounded-2xl bg-gradient-to-r ${current.gradient} hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl`}
+                      className={`ui-hover h-14 w-full rounded-2xl bg-gradient-to-r ${current.gradient} px-8 text-lg font-bold shadow-xl transition-all hover:opacity-90 sm:w-auto`}
                     >
                       <Sparkles className="w-5 h-5 mr-2" />
                       Get Started
@@ -310,7 +310,7 @@ export default function ImmersiveOnboarding() {
                     </Button>
                     <button
                       onClick={handleLogin}
-                      className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full sm:w-auto text-center"
+                      className="ui-hover min-h-11 w-full rounded-xl px-3 text-center text-sm font-medium text-muted-foreground transition-colors hover:bg-card/50 hover:text-foreground sm:w-auto"
                     >
                       Already have an account? <span className="text-primary font-semibold">Log in</span>
                     </button>
@@ -324,7 +324,7 @@ export default function ImmersiveOnboarding() {
                     <Button
                       onClick={handleNext}
                       size="lg"
-                      className={`h-14 px-8 text-lg font-bold rounded-2xl bg-gradient-to-r ${current.gradient} hover:opacity-90 transition-all hover:scale-105 shadow-xl`}
+                      className={`ui-hover h-14 w-full rounded-2xl bg-gradient-to-r ${current.gradient} px-8 text-lg font-bold shadow-xl transition-all hover:opacity-90 sm:w-auto`}
                     >
                       Continue
                       <ArrowRight className="w-5 h-5 ml-2" />
@@ -335,7 +335,7 @@ export default function ImmersiveOnboarding() {
             </AnimatePresence>
 
             {/* Progress indicator */}
-            <div className="flex justify-center gap-1 mt-12">
+            <div className="mt-7 flex justify-center gap-1 sm:mt-12">
               {steps.map((s, i) => (
                 <button
                   key={s.id}

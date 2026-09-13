@@ -13,7 +13,8 @@ describe('Messages user-scoped caches', () => {
     expect(source).toContain('queryKey: ["conversations", currentUser?.id]');
     expect(source).toContain('queryKey: ["messages", currentUser?.id, selectedConvId]');
     expect(source).toContain('enabled: !!currentUser?.id');
-    expect(source).toContain('}, [currentUser?.id]);');
+    expect(source).toContain('}, [currentUser?.id, navigate]);');
+    expect(source).toContain('}, [currentUser?.id, queryClient]);');
     expect(source).not.toContain('queryKey: ["conversations"]');
     expect(source).not.toContain('queryKey: ["messages", selectedConvId]');
   });

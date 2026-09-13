@@ -207,10 +207,10 @@ export default function Messages() {
 
   const { data: publicRooms = [] } = useQuery({
     queryKey: ["public-conversations"],
-    queryFn: () => base44.entities.Conversation.filter(
+    queryFn: () => filterAll(
+      base44.entities.Conversation,
       { type: "group", is_public: true },
       "-last_message_at",
-      200,
     ),
     enabled: !!currentUser?.id,
     refetchInterval: 30_000,

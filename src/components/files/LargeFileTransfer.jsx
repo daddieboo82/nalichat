@@ -69,7 +69,7 @@ function LargeFileTransferContent({ currentUser }) {
       setShareLink(link);
 
       if (recipientEmail) {
-        toast.success(`Transfer complete! Tell ${recipientEmail} to check their messages, or share the link directly.`);
+        toast.success(`Upload complete! Copy the link and send it to ${recipientEmail}.`);
       } else {
         toast.success("Upload complete! You can now share the link.");
       }
@@ -137,12 +137,18 @@ function LargeFileTransferContent({ currentUser }) {
               </div>
             </div>
 
-            <Input 
-              placeholder="Email to (optional)" 
-              value={recipientEmail}
-              onChange={(e) => setRecipientEmail(e.target.value)}
-              className="bg-secondary/50"
-            />
+            <div className="space-y-1">
+              <Input 
+                type="email"
+                placeholder="Recipient email (optional)" 
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                className="bg-secondary/50"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                For your reference only — NaliChat does not email the link automatically.
+              </p>
+            </div>
             
             <Textarea 
               placeholder="Message (optional)" 

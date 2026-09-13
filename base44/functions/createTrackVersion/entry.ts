@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Could not allocate a unique version number' }, { status: 409 });
     }
 
-    return Response.json({ success: true, version });
+    return Response.json({ success: true, action: 'create_track_version', userId: user.id, projectId: project.id, trackId: track.id, versionId: version.id, version });
     } finally {
       await releaseTrackLifecycleLock(entities, lockId);
     }

@@ -531,7 +531,9 @@ describe('release configuration', () => {
     expect(manageConversation).toMatch(/entities\.Message\.filter\([\s\S]*conversation_id: conversationId[\s\S]*PAGE_SIZE/);
     expect(manageConversation).toMatch(/entities\.TypingStatus\.filter\([\s\S]*conversation_id: conversationId[\s\S]*PAGE_SIZE/);
     expect(manageConversation).toContain('participant_ids: participantIds');
-    expect(manageConversation.match(/await syncConversationAudience\(entities,/g)?.length || 0).toBeGreaterThanOrEqual(3);
+    expect(manageConversation).toContain('async function updateConversationAudienceSafely');
+    expect(manageConversation).toContain('await syncConversationAudience(entities, conversation.id, participantIds)');
+    expect(manageConversation.match(/await updateConversationAudienceSafely\(/g)?.length || 0).toBeGreaterThanOrEqual(4);
   });
 
   it('prunes departed users from message read receipts', async () => {

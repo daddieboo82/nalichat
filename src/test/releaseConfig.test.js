@@ -2536,3 +2536,17 @@ describe('squad bonus status response contract', () => {
     expect(backend).toContain('success: true, userId: user.id');
   });
 });
+
+
+describe('squad invite preview response contract', () => {
+  it('renders an invite only when the exact code and viewer context are confirmed', async () => {
+    const page = await readText('src/pages/SquadJoin.jsx');
+    const backend = await readText('base44/functions/getSquadInvite/entry.ts');
+    expect(page).toContain('data?.success !== true');
+    expect(page).toContain('data?.inviteCode !== normalizedInviteCode');
+    expect(page).toContain('data?.viewerUserId !== user.id');
+    expect(backend).toContain('success: true');
+    expect(backend).toContain('inviteCode: normalizedCode');
+    expect(backend).toContain('viewerUserId: viewer?.id || null');
+  });
+});

@@ -12,11 +12,11 @@ describe('track version deletion hardening', () => {
 
     expect(source).toContain("req.method !== 'POST'");
     expect(source).toContain("typeof versionId !== 'string'");
-    expect(source).toContain('versionId.length > 200');
+    expect(source).toContain('isBase44EntityId(versionId.trim())');
     expect(source.indexOf("req.method !== 'POST'")).toBeLessThan(
       source.indexOf('createClientFromRequest(req)'),
     );
-    expect(source.indexOf('versionId.length > 200')).toBeLessThan(
+    expect(source.indexOf('isBase44EntityId(versionId.trim())')).toBeLessThan(
       source.indexOf('entities.TrackVersion.get(versionId)'),
     );
   });

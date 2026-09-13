@@ -333,10 +333,10 @@ Deno.serve(async (req) => {
           return Response.json({ error: 'banned' }, { status: 403 });
         }
 
-        const candidates = await entities.Conversation.filter(
+        const candidates = await listAllRows(
+          entities.Conversation,
           { type: 'dm', participant_ids: user.id },
           '-last_message_at',
-          500,
         );
         const existing = candidates.find((conversation: any) => {
           const ids = Array.isArray(conversation.participant_ids) ? conversation.participant_ids : [];

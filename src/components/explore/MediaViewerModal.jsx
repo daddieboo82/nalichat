@@ -324,7 +324,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    onEnded={() => setIsPlaying(false)}
                    onPlay={() => {
                      setIsPlaying(true);
-                     void recordArtPostPlay(post.id);
+                     void recordArtPostPlay(post.id, currentUser?.id);
                    }}
                    onPause={() => setIsPlaying(false)}
                    controlsList="nodownload nofullscreen noremoteplayback"

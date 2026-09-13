@@ -20,3 +20,15 @@ describe('art post play retryability', () => {
     );
   });
 });
+
+
+  it('binds play confirmation to the authenticated listener and exact post', async () => {
+    const backend = await readText('base44/functions/recordArtPostPlay/entry.ts');
+    const client = await readText('src/lib/trackAnalytics.js');
+    expect(backend).toContain("action: 'record_art_post_play'");
+    expect(backend).toContain('userId: user.id');
+    expect(backend).toContain('postId');
+    expect(client).toContain("data?.action !== 'record_art_post_play'");
+    expect(client).toContain('data?.userId !== expectedUserId');
+    expect(client).toContain('data?.postId !== postId');
+  });

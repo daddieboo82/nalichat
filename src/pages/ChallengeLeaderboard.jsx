@@ -77,18 +77,18 @@ export default function ChallengeLeaderboard() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-5">
+    <div className="mx-auto max-w-3xl space-y-5 px-4 py-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:p-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold">Leaderboard</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-tight">Leaderboard</h1>
         {challenge && <p className="text-muted-foreground text-sm">{challenge.title}</p>}
       </div>
 
-      <div className="flex gap-2">
+      <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
         {FILTERS.map((f) => (
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={cn("px-3 py-1.5 rounded-full text-sm font-medium border", filter === f.key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground")}
+            className={cn("ui-hover min-h-10 shrink-0 rounded-xl border px-3 py-1.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40", filter === f.key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground")}
           >
             {f.label}
           </button>
@@ -107,7 +107,7 @@ export default function ChallengeLeaderboard() {
             key={s.id}
             to={`/challenge/${challengeId}/submission/${s.id}`}
             className={cn(
-              "flex items-center gap-3 p-3 rounded-2xl border transition-colors",
+              "ui-hover flex min-h-[68px] items-center gap-3 rounded-2xl border p-3 transition-colors focus-visible:ring-2 focus-visible:ring-primary/40",
               i === 0 ? "bg-yellow-500/10 border-yellow-500/40" : i === 1 ? "bg-slate-400/10 border-slate-400/30" : i === 2 ? "bg-orange-500/10 border-orange-500/30" : "bg-card border-border"
             )}
           >
@@ -124,7 +124,7 @@ export default function ChallengeLeaderboard() {
             </div>
           </Link>
         ))}
-        {ranked.length === 0 && <p className="text-center text-muted-foreground py-12">No submissions yet.</p>}
+        {ranked.length === 0 && <p className="ui-surface rounded-3xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">No submissions yet.</p>}
       </div>
     </div>
   );

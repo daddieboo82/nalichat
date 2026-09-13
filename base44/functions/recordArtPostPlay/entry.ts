@@ -54,7 +54,7 @@ export default async function(req) {
     const postPreview = await entities.ArtPost.get(postId).catch(() => null);
     if (!postPreview) return Response.json({ error: 'Track not found' }, { status: 404 });
     if (postPreview.creator_id === user.id) {
-      return Response.json({ counted: false, reason: 'creator_self_play', views: Number(postPreview.views || 0) });
+      return Response.json({ success: true, action: 'record_art_post_play', userId: user.id, postId, counted: false, reason: 'creator_self_play', views: Number(postPreview.views || 0) });
     }
 
     const lockId = await acquireArtPostEngagementLock(entities, postId);
@@ -66,7 +66,7 @@ export default async function(req) {
       const post = await entities.ArtPost.get(postId).catch(() => null);
       if (!post) return Response.json({ error: 'Track not found' }, { status: 404 });
       if (post.creator_id === user.id) {
-        return Response.json({ counted: false, reason: 'creator_self_play', views: Number(post.views || 0) });
+        return Response.json({ success: true, action: 'record_art_post_play', userId: user.id, postId, counted: false, reason: 'creator_self_play', views: Number(post.views || 0) });
       }
 
     const day = new Date().toISOString().slice(0, 10);
@@ -89,7 +89,7 @@ export default async function(req) {
         1,
       );
       if (existing.length > 0) {
-        return Response.json({ counted: false, reason: 'already_counted_today', views: Number(post.views || 0) });
+        return Response.json({ success: true, action: 'record_art_post_play', userId: user.id, postId, counted: false, reason: 'already_counted_today', views: Number(post.views || 0) });
       }
       throw error;
     }
@@ -115,7 +115,7 @@ export default async function(req) {
       throw countError;
     }
     const updated = await entities.ArtPost.get(postId);
-    return Response.json({ counted: true, views: Number(updated?.views || 0) });
+    return Response.json({ success: true, action: 'record_art_post_play', userId: user.id, postId, counted: true, views: Number(updated?.views || 0) });
     } finally {
       await releaseArtPostEngagementLock(entities, lockId);
     }

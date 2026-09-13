@@ -14,6 +14,16 @@ import { useAuth } from "@/lib/AuthContext";
 const USER_TABS = ["xp", "likes", "posts", "achievements", "viral"];
 const CONTENT_TABS = ["songs"];
 
+async function listAllArtPosts() {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.ArtPost.list("-created_date", pageSize, skip);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function Leaderboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -35,7 +45,7 @@ export default function Leaderboard() {
 
   const { data: posts = [] } = useQuery({
     queryKey: ["leaderboard-posts"],
-    queryFn: () => base44.entities.ArtPost.list("-created_date", 200),
+    queryFn: listAllArtPosts,
   });
 
 

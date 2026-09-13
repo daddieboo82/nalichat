@@ -2411,9 +2411,12 @@ describe('secure upload response contract', () => {
     const client = await readText('src/lib/secureUpload.js');
     const backend = await readText('base44/functions/secureUploadFile/entry.ts');
     expect(client).toContain('result?.data?.success !== true');
-    expect(client).toContain('typeof fileUrl !== "string" || !fileUrl.trim()');
+    expect(client).toContain('typeof fileUrl !== "string"');
+    expect(client).toContain('!fileUrl.trim()');
     expect(client).toContain('Upload was not confirmed.');
-    expect(backend).toContain('success: true, file_url: fileUrl');
+    expect(backend).toContain('success: true');
+    expect(backend).toContain("action: 'secure_upload'");
+    expect(backend).toContain('file_url: fileUrl');
   });
 });
 
@@ -2423,8 +2426,6 @@ describe('chat theme persistence response contract', () => {
     const client = await readText('src/lib/chatThemes.js');
     const backend = await readText('base44/functions/setChatTheme/entry.ts');
     expect(client).toContain('payload.success !== true');
-    expect(client).toContain('payload.action !== "check_subscription_status"');
-    expect(backend).toContain("action: 'check_subscription_status'");
     expect(client).toContain('payload.theme_id !== themeId');
     expect(client).toContain('payload.action !== "set_chat_theme"');
     expect(client).toContain('payload.userId !== userId');
@@ -2442,7 +2443,9 @@ describe('Explore like response contract', () => {
     expect(client).toContain('res?.data?.post_id !== post.id');
     expect(client).toContain('typeof res?.data?.liked !== "boolean"');
     expect(client).toContain('Like update was not confirmed.');
-    expect(backend).toContain('success: true, post_id: postId');
+    expect(backend).toContain('success: true');
+    expect(backend).toContain('userId: user.id');
+    expect(backend).toContain('post_id: postId');
   });
 });
 

@@ -213,9 +213,17 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                              throw new Error("Download authorization was not confirmed.");
                            }
                            const downloadUrl = auth?.data?.file_url;
-                           if (!downloadUrl) throw new Error("Download URL unavailable");
+                           const authorizedTitle = auth?.data?.title;
+                           if (
+                             typeof downloadUrl !== "string" ||
+                             !downloadUrl.trim() ||
+                             typeof authorizedTitle !== "string" ||
+                             !authorizedTitle.trim()
+                           ) {
+                             throw new Error("Download authorization was not confirmed.");
+                           }
                            const { resumableDownload } = await import('@/lib/resumableUpload');
-                           let fileName = auth?.data?.title || post.title || 'download';
+                           let fileName = authorizedTitle;
                            if (!fileName.match(/\.[a-zA-Z0-9]+$/)) {
                              const match = downloadUrl.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
                              if (match) fileName += '.' + match[1];

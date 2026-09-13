@@ -186,7 +186,8 @@ export default function Explore() {
             <button
               onClick={() => {
                 if (!currentUser) {
-                  navigateToLogin();
+                  if (typeof navigateToLogin === "function") navigateToLogin();
+                  else navigate("/login", { state: { returnTo: location.pathname + location.search } });
                   return;
                 }
                 setShowUpload(true);
@@ -277,7 +278,8 @@ export default function Explore() {
               <p className="text-sm mt-1">Be the first to release your music!</p>
               <button onClick={() => {
                 if (!currentUser) {
-                  navigateToLogin();
+                  if (typeof navigateToLogin === "function") navigateToLogin();
+                  else navigate("/login", { state: { returnTo: location.pathname + location.search } });
                   return;
                 }
                 setShowUpload(true);

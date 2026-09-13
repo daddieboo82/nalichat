@@ -39,6 +39,11 @@ export default function Settings() {
   const [uploading, setUploading] = useState(false);
   const [genreInput, setGenreInput] = useState("");
   const fileRef = useRef(null);
+  const activeUserIdRef = useRef(user?.id || null);
+
+  useEffect(() => {
+    activeUserIdRef.current = user?.id || null;
+  }, [user?.id]);
   const [showWizard, setShowWizard] = useState(false);
   const { osReducedMotion, userReducedMotion, reduceMotion, setUserReducedMotion } = useReducedMotionPreference();
 
@@ -63,10 +68,12 @@ export default function Settings() {
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    const uploadOwnerId = user?.id;
+    if (!file || !uploadOwnerId || formOwnerId !== uploadOwnerId) return;
     setUploading(true);
     try {
       const { file_url } = await secureUploadFile({ file });
+      if (activeUserIdRef.current !== uploadOwnerId) return;
       setForm(f => ({ ...f, avatar_url: file_url }));
     } catch (error) {
       console.error("Settings avatar upload failed:", error);
@@ -89,6 +96,11 @@ export default function Settings() {
   };
 
   const handleSave = async () => {
+    const submittingUserId = user?.id;
+    if (!submittingUserId || formOwnerId !== submittingUserId) {
+      toast.error("Your account changed. Please wait for Settings to reload.");
+      return;
+    }
     setSaving(true);
     try {
       const cleanedForm = { ...form };
@@ -102,25 +114,28 @@ export default function Settings() {
       if (
         res?.data?.success !== true ||
         res?.data?.action !== "update_my_profile" ||
-        res?.data?.userId !== user.id
+        res?.data?.userId !== submittingUserId
       ) throw new Error("Profile update was not confirmed");
       // Refresh the global auth context and verify the account reflects the save.
       const refreshedUser = await checkUserAuth();
       if (
         !refreshedUser?.id ||
-        refreshedUser.id !== user.id ||
+        refreshedUser.id !== submittingUserId ||
         refreshedUser.display_name !== cleanedForm.display_name ||
         refreshedUser.avatar_url !== cleanedForm.avatar_url
       ) {
         throw new Error("Profile saved, but your session did not refresh.");
       }
+      if (activeUserIdRef.current !== submittingUserId) return;
       sounds.success();
       toast.success("Profile updated!");
     } catch (error) {
       console.error("Settings profile save failed:", error);
-      toast.error(error?.message || "Could not save your profile. Please try again.");
+      if (activeUserIdRef.current === submittingUserId) {
+        toast.error(error?.message || "Could not save your profile. Please try again.");
+      }
     } finally {
-      setSaving(false);
+      if (activeUserIdRef.current === submittingUserId) setSaving(false);
     }
   };
 

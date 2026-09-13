@@ -120,7 +120,16 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
     });
 
     Promise.resolve(write)
-      .then(() => {
+      .then((response) => {
+        const typing = response?.data?.typing;
+        if (
+          response?.data?.success !== true ||
+          !typing?.id ||
+          typing?.conversation_id !== conversationId ||
+          typing?.user_id !== currentUser.id
+        ) {
+          throw new Error("Typing heartbeat was not confirmed.");
+        }
         supportedRef.current = true;
         transientFailureRef.current = false;
       })

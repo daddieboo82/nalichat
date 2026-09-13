@@ -2375,3 +2375,15 @@ describe('Nali Presence persistence response contract', () => {
     expect(source).toContain('setLevelState(previousLevel)');
   });
 });
+
+
+describe('typing heartbeat response contract', () => {
+  it('retries after resolved-but-unconfirmed heartbeat responses', async () => {
+    const source = await readText('src/hooks/useTypingIndicator.js');
+    expect(source).toContain('response?.data?.success !== true');
+    expect(source).toContain('typing?.conversation_id !== conversationId');
+    expect(source).toContain('typing?.user_id !== currentUser.id');
+    expect(source).toContain('Typing heartbeat was not confirmed.');
+    expect(source).toContain('lastSentRef.current = 0');
+  });
+});

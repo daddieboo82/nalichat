@@ -50,7 +50,10 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
       if (res?.data?.error) throw new Error(res.data.error);
       return res?.data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["contacts", currentUserId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contacts", currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ["users", "presence", currentUserId] });
+    },
     onError: () => toast.error("Couldn't remove contact. Please try again."),
   });
 
@@ -65,6 +68,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contacts", currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ["users", "presence", currentUserId] });
     },
     onError: () => toast.error("Couldn't add contact. Please try again."),
   });

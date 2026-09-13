@@ -238,7 +238,9 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
                       res?.data?.success !== true ||
                       res?.data?.action !== "delete_project" ||
                       res?.data?.userId !== currentUser?.id ||
-                      res?.data?.project_id !== project.id
+                      res?.data?.project_id !== project.id ||
+                      !res?.data?.deleted ||
+                      typeof res.data.deleted !== "object"
                     ) {
                       throw new Error("Project deletion was not confirmed.");
                     }

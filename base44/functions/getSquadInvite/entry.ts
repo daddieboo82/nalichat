@@ -67,6 +67,9 @@ Deno.serve(async (req) => {
 
     // Public-safe projection only.
     return Response.json({
+      success: true,
+      inviteCode: normalizedCode,
+      viewerUserId: viewer?.id || null,
       squad: {
         member_a_name: squad.member_a_name,
         status: squad.status,

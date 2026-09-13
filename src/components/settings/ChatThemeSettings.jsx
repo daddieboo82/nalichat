@@ -41,7 +41,7 @@ export default function ChatThemeSettings({ user, onPreferenceSaved }) {
 
     setSavingThemeId(theme.id);
     try {
-      const savedThemeId = await persistChatThemePreference(theme.id);
+      const savedThemeId = await persistChatThemePreference(theme.id, user?.id);
       setSelectedThemeId(savedThemeId);
       await onPreferenceSaved?.(savedThemeId);
       toast.success(`${getChatTheme(savedThemeId).name} chat theme saved.`);

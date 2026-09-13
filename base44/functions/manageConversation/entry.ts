@@ -528,8 +528,12 @@ Deno.serve(async (req) => {
           if (!currentRoom) {
             return Response.json({ error: 'Conversation not found' }, { status: 404 });
           }
+          const alreadyParticipant = (currentRoom.participant_ids || []).includes(user.id);
           const participants = Array.from(new Set([...(currentRoom.participant_ids || []), user.id]));
-          if (!(currentRoom.participant_ids || []).includes(user.id)) {
+          if (!alreadyParticipant && participants.length > 100) {
+            return Response.json({ error: 'Public room is full' }, { status: 409 });
+          }
+          if (!alreadyParticipant) {
             await updateConversationAudienceSafely(
               entities,
               currentRoom,
@@ -580,8 +584,12 @@ Deno.serve(async (req) => {
           if (!currentRoom) {
             return Response.json({ error: 'Conversation not found' }, { status: 404 });
           }
+          const alreadyParticipant = (currentRoom.participant_ids || []).includes(user.id);
           const participants = Array.from(new Set([...(currentRoom.participant_ids || []), user.id]));
-          if (!(currentRoom.participant_ids || []).includes(user.id)) {
+          if (!alreadyParticipant && participants.length > 100) {
+            return Response.json({ error: 'Public room is full' }, { status: 409 });
+          }
+          if (!alreadyParticipant) {
             await updateConversationAudienceSafely(
               entities,
               currentRoom,
@@ -641,12 +649,18 @@ Deno.serve(async (req) => {
       if (conversation.type !== 'group' || conversation.is_public !== true) {
         return Response.json({ error: 'This group is not public' }, { status: 403 });
       }
+      const alreadyParticipant = (conversation.participant_ids || []).includes(user.id);
       const participantIds = Array.from(new Set([...(conversation.participant_ids || []), user.id]));
-      const updated = await updateConversationAudienceSafely(
-        entities,
-        conversation,
-        participantIds,
-      );
+      if (!alreadyParticipant && participantIds.length > 100) {
+        return Response.json({ error: 'Public room is full' }, { status: 409 });
+      }
+      const updated = alreadyParticipant
+        ? conversation
+        : await updateConversationAudienceSafely(
+            entities,
+            conversation,
+            participantIds,
+          );
       return Response.json({ success: true, conversation: updated });
     }
 

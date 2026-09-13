@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
 
       if (action === 'delete') {
         await entities.Playlist.delete(playlist.id);
-        return Response.json({ success: true, deleted: true });
+        return Response.json({ success: true, action: 'delete', userId: user.id, playlistId: playlist.id, deleted: true });
       }
 
       if (action === 'add_track' || action === 'remove_track') {
@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
           );
         }
         const updated = await entities.Playlist.get(playlist.id);
-        return Response.json({ success: true, playlist: updated });
+        return Response.json({ success: true, action, userId: user.id, playlistId: playlist.id, playlist: updated });
       }
 
       const updated = await entities.Playlist.update(playlist.id, patch);

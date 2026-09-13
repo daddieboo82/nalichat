@@ -70,6 +70,16 @@ export default function Explore() {
           ? base44.functions.invoke("listMyLikedPostIds", {})
           : Promise.resolve({ data: { post_ids: [] } }),
       ]);
+      if (
+        currentUser &&
+        (
+          likedRes?.data?.success !== true ||
+          !Array.isArray(likedRes?.data?.post_ids) ||
+          !likedRes.data.post_ids.every((id) => typeof id === "string" && id.trim())
+        )
+      ) {
+        throw new Error(likedRes?.data?.error || "Liked track state was not confirmed.");
+      }
       const likedIds = new Set(likedRes?.data?.post_ids || []);
       return rows.map((post) => ({
         ...post,

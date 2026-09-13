@@ -31,7 +31,19 @@ export async function sendPushToUser(
 
   webpush.setVapidDetails(config.subject, config.publicKey, config.privateKey);
 
-  const subscriptions = await entities.PushSubscription.filter({ user_id: userId });
+  const subscriptions: any[] = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await entities.PushSubscription.filter(
+      { user_id: userId },
+      '-last_seen_at',
+      pageSize,
+      skip,
+    );
+    subscriptions.push(...page);
+    if (page.length < pageSize) break;
+  }
+
   const byEndpoint = new Map<string, any>();
   for (const subscription of subscriptions) {
     if (!subscription?.endpoint || byEndpoint.has(subscription.endpoint)) continue;

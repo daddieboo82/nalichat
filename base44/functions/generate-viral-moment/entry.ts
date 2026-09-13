@@ -4,6 +4,11 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { isConversationId } from '../../shared/conversationIds.ts';
+import {
+  acquireConversationMembershipLock,
+  releaseConversationMembershipLock,
+} from '../../shared/conversationMembershipLock.ts';
 import {
   AiQuotaError,
   aiQuotaErrorResponse,
@@ -86,45 +91,46 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'type must be "meme" or "reel"' }, { status: 400 });
     }
 
-    const message = await base44.asServiceRole.entities.Message.get(messageId);
-    if (!message) {
+    const entities = base44.asServiceRole.entities;
+    const messagePreview = await entities.Message.get(messageId).catch(() => null);
+    if (!messagePreview) {
       return Response.json({ error: 'Message not found' }, { status: 404 });
     }
-    if (!Array.isArray(message.participant_ids) || !message.participant_ids.includes(user.id)) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    if (!isConversationId(messagePreview.conversation_id)) {
+      return Response.json({ error: 'Message has an invalid conversation reference' }, { status: 409 });
     }
 
-    const senderName = String(message.sender_name || 'Someone')
+    const senderName = String(messagePreview.sender_name || 'Someone')
       .replace(/[\r\n]/g, ' ')
       .trim()
       .slice(0, 120) || 'Someone';
-    const initialMessageText = typeof message.text === 'string'
-      ? message.text.trim().slice(0, 12000)
+    const initialMessageText = typeof messagePreview.text === 'string'
+      ? messagePreview.text.trim().slice(0, 12000)
       : '';
     const isVoiceNote =
       !initialMessageText &&
-      !!message.file_url &&
-      (message.type === 'audio' || String(message.file_type || '').startsWith('audio'));
+      !!messagePreview.file_url &&
+      (messagePreview.type === 'audio' || String(messagePreview.file_type || '').startsWith('audio'));
 
-    // Validate the stored voice-note target and plan access before reserving AI usage.
+    // Validate plan access before any remote storage probe.
     if (isVoiceNote) {
-      if (!isTrustedStoredMediaUrl(message.file_url)) {
-        return Response.json({ error: 'Stored voice-note host is not allowed' }, { status: 400 });
-      }
-      const mediaSize = await storedMediaSize(message.file_url);
-      if (mediaSize === null) {
-        return Response.json({ error: 'Could not verify stored voice-note size' }, { status: 400 });
-      }
-      if (mediaSize <= 0 || mediaSize > MAX_TRANSCRIBE_BYTES) {
-        return Response.json({ error: 'Viral Moment transcription supports voice notes up to 50MB' }, { status: 413 });
-      }
       const voiceAccess = await requireEntitlement(
-        base44.asServiceRole.entities,
+        entities,
         user.id,
         'voice.transcription',
       );
       if (!voiceAccess.allowed) {
         return Response.json({ error: 'Voice transcription is not available on your plan' }, { status: 403 });
+      }
+      if (!isTrustedStoredMediaUrl(messagePreview.file_url)) {
+        return Response.json({ error: 'Stored voice-note host is not allowed' }, { status: 400 });
+      }
+      const mediaSize = await storedMediaSize(messagePreview.file_url);
+      if (mediaSize === null) {
+        return Response.json({ error: 'Could not verify stored voice-note size' }, { status: 400 });
+      }
+      if (mediaSize <= 0 || mediaSize > MAX_TRANSCRIBE_BYTES) {
+        return Response.json({ error: 'Viral Moment transcription supports voice notes up to 50MB' }, { status: 413 });
       }
     } else if (!initialMessageText) {
       return Response.json({ error: 'Message text or a voice note is required' }, { status: 400 });

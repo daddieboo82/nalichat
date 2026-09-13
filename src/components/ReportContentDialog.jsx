@@ -30,13 +30,17 @@ export default function ReportContentDialog({ open, onClose, contentType, conten
     }
     setSubmitting(true);
     try {
-      await base44.functions.invoke("reportContent", {
+      const res = await base44.functions.invoke("reportContent", {
         content_type: contentType,
         content_id: contentId,
         content_text: contentText,
         reason,
         conversation_id: conversationId,
       });
+      if (res?.data?.error) throw new Error(res.data.error);
+      if (!res?.data?.success && !res?.data?.report) {
+        throw new Error("Report submission was not confirmed");
+      }
       toast.success("Report submitted. Thank you for helping keep NaliChat safe.");
       setReason("");
       onClose();

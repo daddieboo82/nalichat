@@ -16,8 +16,8 @@ const PAYLOAD_FIELDS = [
   "thread_id",
 ];
 
-let activeFlush = null;
-let rerunRequested = false;
+const activeFlushByUser = new Map();
+const rerunRequestedByUser = new Set();
 
 function browserStorage() {
   return typeof window === "undefined" ? null : window.localStorage;
@@ -219,15 +219,17 @@ export function flushOutboundQueue({
   onRejected,
   onFailed,
 }) {
-  if (activeFlush) {
-    rerunRequested = true;
-    return activeFlush;
+  const flushScope = userId || "__all__";
+  const existingFlush = activeFlushByUser.get(flushScope);
+  if (existingFlush) {
+    rerunRequestedByUser.add(flushScope);
+    return existingFlush;
   }
 
-  activeFlush = (async () => {
+  const operation = (async () => {
     const outcomes = [];
     do {
-      rerunRequested = false;
+      rerunRequestedByUser.delete(flushScope);
       if (!isOnline()) break;
 
       const snapshot = readOutboundQueue(storage);
@@ -289,13 +291,15 @@ export function flushOutboundQueue({
           outcomes.push({ key: sending.clientMessageKey, status: "failed" });
         }
       }
-    } while (rerunRequested);
+    } while (rerunRequestedByUser.has(flushScope));
     return outcomes;
   })().finally(() => {
-    activeFlush = null;
+    activeFlushByUser.delete(flushScope);
+    rerunRequestedByUser.delete(flushScope);
   });
 
-  return activeFlush;
+  activeFlushByUser.set(flushScope, operation);
+  return operation;
 }
 
 export const OUTBOUND_QUEUE_STORAGE_KEY = STORAGE_KEY;

@@ -40,16 +40,15 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
         message: message.trim(),
       });
       if (generation !== operationGenerationRef.current) return;
-      if (res.data?.success) {
-        setStatus("success");
-      } else {
-        setStatus("error");
-        setErrorMsg(res.data?.error || "Failed to send");
+      if (res?.data?.error) throw new Error(res.data.error);
+      if (res?.data?.success !== true || res?.data?.method !== "email") {
+        throw new Error("External message request was not confirmed.");
       }
+      setStatus("success");
     } catch (err) {
       if (generation !== operationGenerationRef.current) return;
       setStatus("error");
-      setErrorMsg("Couldn't send the external message. Please try again.");
+      setErrorMsg(err?.message || "Couldn't send the external message. Please try again.");
     } finally {
       if (generation === operationGenerationRef.current) setSending(false);
     }

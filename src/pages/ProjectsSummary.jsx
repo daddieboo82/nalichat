@@ -81,21 +81,27 @@ export default function ProjectsSummary() {
   };
 
   const handleCreateProject = async () => {
-    if (!newProjectTitle.trim()) return toast.error("Project title is required");
+    const submittingUserId = user?.id;
+    const requestedTitle = newProjectTitle.trim();
+    const requestedDescription = newProjectDescription.trim();
+    if (!requestedTitle) return toast.error("Project title is required");
+    if (!submittingUserId) return toast.error("Your account could not be verified.");
     setIsCreating(true);
     try {
       const created = await base44.functions.invoke("createProject", {
-        title: newProjectTitle.trim(),
-        description: newProjectDescription.trim(),
+        title: requestedTitle,
+        description: requestedDescription,
       });
       if (created?.data?.error) throw new Error(created.data.error);
       const project = created?.data?.project;
       if (
         created?.data?.success !== true ||
         created?.data?.action !== "create_project" ||
-        created?.data?.userId !== user?.id ||
+        created?.data?.userId !== submittingUserId ||
         created?.data?.projectId !== project?.id ||
-        project?.owner_id !== user?.id
+        project?.owner_id !== submittingUserId ||
+        project?.title !== requestedTitle ||
+        (project?.description || "") !== requestedDescription
       ) throw new Error("Project was not created");
       setData(prev => ({ ...prev, projects: [project, ...prev.projects] }));
       setShowNewProject(false);

@@ -575,7 +575,8 @@ describe('release configuration', () => {
 
   it('scopes read receipts to conversation participants and updates them atomically', async () => {
     const readReceipt = await readText('base44/functions/markMessageRead/entry.ts');
-    expect(readReceipt).toContain('message.participant_ids.includes(user.id)');
+    expect(readReceipt).toContain('acquireConversationMembershipLock');
+    expect(readReceipt).toContain('participantIds.includes(user.id)');
     expect(readReceipt).toContain('$addToSet');
     expect(readReceipt).toContain('status: 403');
   });

@@ -163,7 +163,7 @@ Deno.serve(async (req) => {
     if (!canEdit) return Response.json({ error: 'Viewer access cannot modify this project' }, { status: 403 });
 
     const updated = await entities.Project.update(project.id, patch);
-    return Response.json({ success: true, project: updated });
+    return Response.json({ success: true, action: 'update_project', userId: user.id, projectId: project.id, updatedFields: Object.keys(patch).sort(), project: updated });
     } finally {
       await releaseProjectMembershipLock(entities, lockId);
     }

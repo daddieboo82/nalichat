@@ -219,7 +219,12 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
                     });
                     if (generation !== mutationGenerationRef.current) return;
                     if (res?.data?.error) throw new Error(res.data.error);
-                    if (res?.data?.success !== true || res?.data?.project_id !== project.id) {
+                    if (
+                      res?.data?.success !== true ||
+                      res?.data?.action !== "delete_project" ||
+                      res?.data?.userId !== currentUser?.id ||
+                      res?.data?.project_id !== project.id
+                    ) {
                       throw new Error("Project deletion was not confirmed.");
                     }
                     onDelete?.(project.id);

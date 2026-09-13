@@ -3,6 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { stripeRequest } from '../../shared/stripe.ts';
 import { acquireAccountDeletionLock, releaseAccountDeletionLock } from '../../shared/accountDeletionLock.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
+import { acquireConversationMembershipLock, releaseConversationMembershipLock } from '../../shared/conversationMembershipLock.ts';
 import { secrets } from 'base44:runtime';
 
 const CLEANUP_BATCH_SIZE = 200;
@@ -53,6 +54,22 @@ async function processPagedRows(
       processed += 1;
     }
     if (rows.length < CLEANUP_BATCH_SIZE) return processed;
+  }
+}
+
+async function withConversationMembershipLock(
+  entities: any,
+  conversationId: string,
+  task: () => Promise<unknown>,
+) {
+  const lockId = await acquireConversationMembershipLock(entities, conversationId);
+  if (!lockId) {
+    throw new Error('Conversation membership is being updated. Please retry account deletion.');
+  }
+  try {
+    return await task();
+  } finally {
+    await releaseConversationMembershipLock(entities, lockId);
   }
 }
 
@@ -461,27 +478,38 @@ Deno.serve(async (req) => {
     await processMatchingBatches(
       entities.Conversation,
       { participant_ids: user.id },
-      async (conversation) => {
-        const participantIds = Array.isArray(conversation.participant_ids)
-          ? conversation.participant_ids.filter((id: string) => id !== user.id)
-          : [];
-        if (participantIds.length === 0) {
-          await processMatchingBatches(
-            entities.Message,
-            { conversation_id: conversation.id },
-            (message) => entities.Message.delete(message.id),
-          );
-          await processMatchingBatches(
-            entities.TypingStatus,
-            { conversation_id: conversation.id },
-            (typing) => entities.TypingStatus.delete(typing.id),
-          );
-          await entities.Conversation.delete(conversation.id);
-        } else {
-          await entities.Conversation.update(conversation.id, { participant_ids: participantIds });
-          await syncConversationAudience(entities, conversation.id, participantIds, user.id);
-        }
-      },
+      async (conversation) => withConversationMembershipLock(
+        entities,
+        conversation.id,
+        async () => {
+          const currentConversation = await entities.Conversation.get(conversation.id).catch(() => null);
+          if (!currentConversation) return;
+          const participantIds = Array.isArray(currentConversation.participant_ids)
+            ? currentConversation.participant_ids.filter((id: string) => id !== user.id)
+            : [];
+          if (participantIds.length === 0) {
+            await processMatchingBatches(
+              entities.Message,
+              { conversation_id: currentConversation.id },
+              (message) => entities.Message.delete(message.id),
+            );
+            await processMatchingBatches(
+              entities.TypingStatus,
+              { conversation_id: currentConversation.id },
+              (typing) => entities.TypingStatus.delete(typing.id),
+            );
+            await entities.Conversation.delete(currentConversation.id);
+          } else {
+            await entities.Conversation.update(currentConversation.id, { participant_ids: participantIds });
+            await syncConversationAudience(
+              entities,
+              currentConversation.id,
+              participantIds,
+              user.id,
+            );
+          }
+        },
+      ),
     );
 
     // Collaborative projects stay manageable by transferring ownership to a

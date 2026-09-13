@@ -36,6 +36,21 @@ function dueBadge(due_date, completed) {
   return null;
 }
 
+async function listAllProjectMilestones(projectId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.Milestone.filter(
+      { project_id: projectId },
+      "created_date",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function MilestonesPanel({ projectId, canEdit }) {
   const qc = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -53,7 +68,7 @@ export default function MilestonesPanel({ projectId, canEdit }) {
 
   const { data: milestones = [] } = useQuery({
     queryKey: ["milestones", currentUser?.id, projectId],
-    queryFn: () => base44.entities.Milestone.filter({ project_id: projectId }, "created_date"),
+    queryFn: () => listAllProjectMilestones(projectId),
     enabled: !!currentUser?.id && !!projectId,
   });
 

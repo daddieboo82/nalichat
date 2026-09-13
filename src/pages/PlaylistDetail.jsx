@@ -77,6 +77,9 @@ export default function PlaylistDetail() {
         const updatedPlaylist = res?.data?.playlist;
         if (
           res?.data?.success !== true ||
+          res?.data?.action !== "add_track" ||
+          res?.data?.userId !== currentUser?.id ||
+          res?.data?.playlistId !== playlistId ||
           updatedPlaylist?.id !== playlistId ||
           !Array.isArray(updatedPlaylist?.track_ids) ||
           !updatedPlaylist.track_ids.includes(newPost.id)
@@ -134,6 +137,9 @@ export default function PlaylistDetail() {
       const updatedPlaylist = res?.data?.playlist;
       if (
         res?.data?.success !== true ||
+        res?.data?.action !== "remove_track" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.playlistId !== playlistId ||
         updatedPlaylist?.id !== playlistId ||
         !Array.isArray(updatedPlaylist?.track_ids) ||
         updatedPlaylist.track_ids.includes(trackId)

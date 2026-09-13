@@ -58,7 +58,7 @@ export default function StemQueue({ queue, onRemove, onClear, open, onToggle }) 
 
       {/* Queue panel */}
       {open && (
-        <div className="absolute right-4 top-16 z-30 w-80 bg-card border border-border rounded-2xl shadow-2xl shadow-black/40 flex flex-col max-h-[70vh]">
+        <div className="absolute right-4 top-16 z-30 w-80 max-w-[calc(100vw-2rem)] bg-card border border-border rounded-2xl shadow-2xl shadow-black/40 flex flex-col max-h-[70dvh]">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
             <Layers className="w-4 h-4 text-primary" />
             <p className="font-heading font-bold text-sm flex-1">Stem Queue</p>
@@ -68,7 +68,7 @@ export default function StemQueue({ queue, onRemove, onClear, open, onToggle }) 
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2">
+          <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] p-2">
             {queue.length === 0 ? (
               <div className="text-center py-10 text-muted-foreground">
                 <ListPlus className="w-8 h-8 mx-auto mb-2 opacity-30" />

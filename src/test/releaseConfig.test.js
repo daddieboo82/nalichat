@@ -2301,7 +2301,9 @@ describe('chat session track mutation response contracts', () => {
 describe('message attachment download response contract', () => {
   it('only starts a download after explicit authorization success', async () => {
     const source = await readText('src/components/messages/MessageBubble.jsx');
-    expect(source).toContain('auth?.data?.success !== true || !downloadUrl');
+    expect(source).toContain('auth?.data?.userId !== currentUserId');
+    expect(source).toContain('currentUserId={currentUser?.id}');
+    expect(source).toContain('typeof downloadUrl !== "string" || !downloadUrl.trim()');
     expect(source).toContain('Download authorization was not confirmed');
   });
 });
@@ -2774,5 +2776,16 @@ describe('admin promotion response contract', () => {
     expect(page).toContain('res?.data?.adminUserId === currentUser?.id');
     expect(page).toContain('res?.data?.email === email');
     expect(page).toContain('res?.data?.role === "admin"');
+  });
+});
+
+
+describe('message attachment download user binding', () => {
+  it('passes the active user id into FileAttachment before validating download authorization', async () => {
+    const source = await readText('src/components/messages/MessageBubble.jsx');
+    expect(source).toContain('function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownload, currentUserId })');
+    expect(source).toContain('auth?.data?.userId !== currentUserId');
+    expect(source).toContain('currentUserId={currentUser?.id}');
+    expect(source).not.toContain('auth?.data?.userId !== currentUser?.id');
   });
 });

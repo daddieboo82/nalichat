@@ -22,6 +22,7 @@ describe('thread reply count bounds', () => {
 
   it('bounds client thread history reads', async () => {
     const panel = await readText('src/components/messages/ThreadPanel.jsx');
-    expect(panel).toContain('Message.filter({ thread_id: parentMessage.id }, "created_date", 500)');
+    expect(panel).toContain('async function listThreadReplies(threadId)');
+    expect(panel).toMatch(/Message\.filter\([\s\S]*pageSize,[\s\S]*skip/);
   });
 });

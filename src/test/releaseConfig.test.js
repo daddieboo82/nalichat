@@ -2192,3 +2192,16 @@ describe('release configuration', () => {
 
 
 });
+
+
+describe('track comment response contracts', () => {
+  it('validates comment list and creation responses', async () => {
+    const exploreComments = await readText('src/components/explore/TrackCommentsDialog.jsx');
+    const studioComments = await readText('src/components/studio/TrackStrip.jsx');
+    for (const source of [exploreComments, studioComments]) {
+      expect(source).toContain('!Array.isArray(res?.data?.comments)');
+      expect(source).toContain('Comment list response was invalid.');
+      expect(source).toContain('Comment creation was not confirmed.');
+    }
+  });
+});

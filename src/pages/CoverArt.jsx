@@ -315,13 +315,25 @@ export default function CoverArt() {
 
   const saveArtMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedPost || !generatedImage) return;
+      const saveOwnerId = currentUser?.id;
+      const targetPostId = selectedPost?.id;
+      if (!saveOwnerId || !targetPostId || selectedPost?.creator_id !== saveOwnerId || !generatedImage) return;
       const res = await base44.functions.invoke("mutateArtPost", {
-        postId: selectedPost.id,
+        postId: targetPostId,
         image_url: generatedImage,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.post;
+      const post = res?.data?.post;
+      if (
+        activeUserIdRef.current !== saveOwnerId ||
+        res?.data?.success !== true ||
+        res?.data?.action !== "update_art_post" ||
+        res?.data?.userId !== saveOwnerId ||
+        res?.data?.postId !== targetPostId ||
+        post?.id !== targetPostId ||
+        post?.creator_id !== saveOwnerId
+      ) throw new Error("Cover art save was not confirmed");
+      return post;
     },
     onSuccess: () => {
       toast.success("Cover art saved to track!");

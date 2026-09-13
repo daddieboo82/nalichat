@@ -68,7 +68,11 @@ export default function PlaylistDetail() {
           trackId: newPost.id,
         });
         if (res?.data?.error) throw new Error(res.data.error);
-        return res?.data?.playlist;
+        const updatedPlaylist = res?.data?.playlist;
+        if (res?.data?.success !== true || !updatedPlaylist?.id) {
+          throw new Error("Playlist update was not confirmed");
+        }
+        return updatedPlaylist;
       } catch (playlistError) {
         // Avoid leaving a newly-published orphan if playlist membership fails.
         try {

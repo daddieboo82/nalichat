@@ -1089,7 +1089,8 @@ describe('release configuration', () => {
     expect(manage).toContain('!otherUser.is_banned');
     expect(manage).toContain("String(otherUser.display_name || '').trim()");
     expect(manage).toContain("error: 'Recipient unavailable'");
-    expect(manage).toContain("candidate.role !== 'admin'");
+    expect(manage).toContain('candidate.is_banned');
+    expect(manage).toContain("String(candidate.display_name || '').trim()");
     expect(manage).toContain("error: 'One or more participants are unavailable'");
     expect(manage).toContain('if (user.is_banned && !otherIsAdmin)');
   });

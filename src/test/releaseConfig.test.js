@@ -2485,3 +2485,14 @@ describe('checkout payment verification response contract', () => {
     expect(backend).toContain('checkoutId: normalizedCheckoutId');
   });
 });
+
+
+describe('subscription account isolation response contract', () => {
+  it('rejects a successful subscription payload for a different signed-in account', async () => {
+    const client = await readText('src/lib/subscriptionClient.js');
+    const hook = await readText('src/hooks/useSubscription.js');
+    expect(client).toContain('checkSubscriptionStatus(expectedUserId)');
+    expect(client).toContain('expectedUserId && payload.userId !== expectedUserId');
+    expect(hook).toContain('queryFn: () => checkSubscriptionStatus(user?.id)');
+  });
+});

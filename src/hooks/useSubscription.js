@@ -11,7 +11,7 @@ export function useSubscription() {
   const { isAuthenticated, user } = useAuth();
   const query = useQuery({
     queryKey: subscriptionQueryKey(user?.id),
-    queryFn: checkSubscriptionStatus,
+    queryFn: () => checkSubscriptionStatus(user?.id),
     enabled: !!isAuthenticated,
     retry: false,
     staleTime: 30_000,

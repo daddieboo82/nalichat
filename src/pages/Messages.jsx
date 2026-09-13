@@ -87,6 +87,17 @@ async function filterAll(entity, query, sort, pageSize = 200) {
   }
 }
 
+function updateMessageHistory(cache, updater) {
+  if (Array.isArray(cache)) return updater(cache);
+  const current = cache && typeof cache === "object"
+    ? cache
+    : { messages: [], hasOlder: false };
+  return {
+    ...current,
+    messages: updater(Array.isArray(current.messages) ? current.messages : []),
+  };
+}
+
 export default function Messages() {
   const { user: currentUser, checkUserAuth } = useAuth();
   const location = useLocation();
@@ -390,8 +401,7 @@ export default function Messages() {
         _deliveryState: "sending",
         _sendError: null,
       };
-      queryClient.setQueryData(["messages", currentUser?.id, conversationId], (old = []) =>
-        applyQueuedMessage(old, tempMsg)
+      queryClient.setQueryData(["messages", currentUser?.id, conversationId], (old) => updateMessageHistory(old, (rows) => applyQueuedMessage(rows, tempMsg))
       );
       queryClient.setQueryData(["conversations", currentUser?.id], (old = []) => {
         const updated = old.map(c =>
@@ -416,8 +426,7 @@ export default function Messages() {
     onError: (err, _msgData, ctx) => {
       const status = Number(err?.status);
       const retryable = !Number.isFinite(status) || status === 429 || status >= 500;
-      queryClient.setQueryData(["messages", currentUser?.id, ctx?.conversationId], (old = []) =>
-        applySendFailure(old, ctx?.clientMessageKey, err?.message, retryable)
+      queryClient.setQueryData(["messages", currentUser?.id, ctx?.conversationId], (old) => updateMessageHistory(old, (rows) => applySendFailure(rows, ctx?.clientMessageKey, err?.message, retryable))
       );
       if (retryable && ctx?.outboundEntry) {
         const failedEntry = {
@@ -448,8 +457,7 @@ export default function Messages() {
     onSuccess: (msg, _vars, ctx) => {
       if (msg?._flagged) {
         const f = msg._flagged;
-        queryClient.setQueryData(["messages", currentUser?.id, ctx?.conversationId], (old = []) =>
-          old.filter(m => m._tempId !== ctx?.tempId)
+        queryClient.setQueryData(["messages", currentUser?.id, ctx?.conversationId], (old) => updateMessageHistory(old, (rows) => rows.filter(m => m._tempId !== ctx?.tempId))
         );
         if (ctx?.previousConversations) {
           queryClient.setQueryData(["conversations", currentUser?.id], ctx.previousConversations);
@@ -468,8 +476,7 @@ export default function Messages() {
         void checkUserAuth();
         return;
       }
-      queryClient.setQueryData(["messages", currentUser?.id, ctx?.conversationId], (old = []) =>
-        applySendSuccess(old, msg, ctx?.clientMessageKey, ctx?.tempId)
+      queryClient.setQueryData(["messages", currentUser?.id, ctx?.conversationId], (old) => updateMessageHistory(old, (rows) => applySendSuccess(rows, msg, ctx?.clientMessageKey, ctx?.tempId))
       );
       queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       if (msg?.id && msg?.type !== "session") {
@@ -514,25 +521,21 @@ export default function Messages() {
         userId: currentUser.id,
         send: sendQueuedEntry,
         onSending: (entry) => {
-          queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old = []) =>
-            applyQueuedMessage(old, queueEntryToMessage(entry))
+          queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old) => updateMessageHistory(old, (rows) => applyQueuedMessage(rows, queueEntryToMessage(entry)))
           );
         },
         onSent: (entry, message) => {
-          queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old = []) =>
-            applySendSuccess(old, message, entry.clientMessageKey, `temp-${entry.clientMessageKey}`)
+          queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old) => updateMessageHistory(old, (rows) => applySendSuccess(rows, message, entry.clientMessageKey, `temp-${entry.clientMessageKey}`))
           );
           queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
         },
         onRejected: (entry, rejection) => {
-          queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old = []) =>
-            removeClientMessage(old, entry.clientMessageKey)
+          queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old) => updateMessageHistory(old, (rows) => removeClientMessage(rows, entry.clientMessageKey))
           );
           toast.error(rejection?.message || "A queued message could not be sent.");
         },
         onFailed: (entry, error) => {
-          queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old = []) =>
-            applySendFailure(old, entry.clientMessageKey, error?.message, true)
+          queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old) => updateMessageHistory(old, (rows) => applySendFailure(rows, entry.clientMessageKey, error?.message, true))
           );
         },
         });
@@ -543,8 +546,7 @@ export default function Messages() {
     };
 
     for (const entry of readOutboundQueue().filter((item) => item.sender.id === currentUser.id)) {
-      queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old = []) =>
-        applyQueuedMessage(old, queueEntryToMessage(entry))
+      queryClient.setQueryData(["messages", currentUser?.id, entry.conversationId], (old) => updateMessageHistory(old, (rows) => applyQueuedMessage(rows, queueEntryToMessage(entry)))
       );
     }
 
@@ -573,8 +575,7 @@ export default function Messages() {
     if (optimisticReactions[userKey]) delete optimisticReactions[userKey];
     else optimisticReactions[userKey] = emoji;
 
-    queryClient.setQueryData(["messages", currentUser?.id, conversationId], (old = []) =>
-      old.map(m => (m.id === messageId ? { ...m, reactions: optimisticReactions } : m))
+    queryClient.setQueryData(["messages", currentUser?.id, conversationId], (old) => updateMessageHistory(old, (rows) => rows.map(m => (m.id === messageId ? { ...m, reactions: optimisticReactions } : m)))
     );
     try {
       const res = await base44.functions.invoke("mutateConversationMessage", {

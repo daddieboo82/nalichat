@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { resumableUpload } from "@/lib/resumableUpload";
+import { formatBytes, validateUpload } from "@/lib/uploadValidation";
 import { UploadCloud, FileText, CheckCircle2 } from "lucide-react";
 import { EntitlementGate } from "@/components/subscription/EntitlementGate";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -19,14 +20,13 @@ function LargeFileTransferContent({ currentUser }) {
   const [shareLink, setShareLink] = useState("");
   const fileInputRef = useRef(null);
 
-  const MAX_UPLOAD_SIZE = 20 * 1024 * 1024 * 1024; // 20GB
-
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    if (selectedFile.size > MAX_UPLOAD_SIZE) {
-      toast.error("File is too large. Max size is 20GB.");
+    const validation = validateUpload(selectedFile);
+    if (!validation.ok) {
+      toast.error(validation.error);
       return;
     }
 
@@ -106,7 +106,7 @@ function LargeFileTransferContent({ currentUser }) {
       <div className="flex-1 p-6 md:p-8 space-y-6">
         <div>
           <h2 className="text-2xl font-bold font-heading mb-1">Transfer Large Files</h2>
-          <p className="text-sm text-muted-foreground">Resume uploads anytime. Up to 20GB per file with Premium.</p>
+          <p className="text-sm text-muted-foreground">Secure Premium transfers with upload limits based on file type.</p>
         </div>
 
         {shareLink ? (
@@ -182,7 +182,7 @@ function LargeFileTransferContent({ currentUser }) {
                   <span>{Math.round(uploadProgress)}%</span>
                 </div>
                 <Progress value={uploadProgress} className="h-2" />
-                <p className="text-[10px] text-muted-foreground text-center">You can safely pause or close—uploads resume automatically.</p>
+                <p className="text-[10px] text-muted-foreground text-center">Keep this page open until the upload finishes.</p>
               </div>
             ) : (
               <Button 
@@ -204,7 +204,7 @@ function LargeFileTransferContent({ currentUser }) {
             <UploadCloud className="w-12 h-12 text-primary animate-pulse" />
           </div>
           <h3 className="font-heading font-bold text-2xl mb-3">Fast, secure, resumable.</h3>
-          <p className="text-sm text-muted-foreground max-w-[200px] mx-auto">Share your largest sessions and stems without a hitch. Resumes automatically if your connection drops.</p>
+          <p className="text-sm text-muted-foreground max-w-[200px] mx-auto">Share supported sessions and media securely through NaliChat.</p>
         </div>
       </div>
     </div>
@@ -216,7 +216,7 @@ export default function LargeFileTransfer({ currentUser }) {
     <EntitlementGate
       entitlement="files.large_upload"
       title="Large file transfers are a Premium feature"
-      description="Choose Premium or Premium Plus to upload resumable files up to 20GB."
+      description="Choose Premium or Premium Plus for secure large-file transfer tools within current upload limits."
       source="large_file_transfer"
     >
       <LargeFileTransferContent currentUser={currentUser} />

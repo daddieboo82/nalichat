@@ -37,11 +37,11 @@ export default function ForgotPassword() {
       }
     >
       {sent ? (
-        <p className="text-sm text-foreground text-center">
+        <div className="rounded-2xl border border-primary/20 bg-primary/10 p-5 text-center"><Mail className="mx-auto mb-3 h-8 w-8 text-primary" aria-hidden="true" /><p className="text-sm leading-relaxed text-foreground">
           If an account exists with that email, you'll receive a password reset link shortly.
-        </p>
+        </p><p className="mt-2 text-xs text-muted-foreground">Check your inbox and spam folder. The message may take a minute to arrive.</p></div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4"><p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Enter the email connected to your NaliChat account. For privacy, we won’t reveal whether an account exists.</p>
           <div className="space-y-2">
             <Label htmlFor="email">Email address</Label>
             <div className="relative">

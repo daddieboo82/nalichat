@@ -92,6 +92,47 @@ async function syncConversationAudience(entities: any, conversationId: string, p
   return { messages: messageCount, typingRows: activeTypingRows.length, removedTypingRows: departedTypingRows.length };
 }
 
+async function updateConversationAudienceSafely(
+  entities: any,
+  conversation: any,
+  participantIds: string[],
+) {
+  const originalParticipantIds = Array.isArray(conversation.participant_ids)
+    ? [...conversation.participant_ids]
+    : [];
+  const updated = await entities.Conversation.update(
+    conversation.id,
+    { participant_ids: participantIds },
+  );
+
+  try {
+    await syncConversationAudience(entities, conversation.id, participantIds);
+    return updated;
+  } catch (syncError) {
+    try {
+      await entities.Conversation.update(
+        conversation.id,
+        { participant_ids: originalParticipantIds },
+      );
+      await syncConversationAudience(
+        entities,
+        conversation.id,
+        originalParticipantIds,
+      );
+    } catch (rollbackError) {
+      console.error(
+        'Conversation audience rollback failed after sync error:',
+        rollbackError,
+      );
+      throw new Error(
+        'Conversation audience update failed and rollback was incomplete. Please retry.',
+        { cause: syncError },
+      );
+    }
+    throw syncError;
+  }
+}
+
 async function deleteConversationRows(entity: any, conversationId: string): Promise<number> {
   let deleted = 0;
   while (true) {
@@ -366,8 +407,11 @@ Deno.serve(async (req) => {
           }
           const participants = Array.from(new Set([...(currentRoom.participant_ids || []), user.id]));
           if (!(currentRoom.participant_ids || []).includes(user.id)) {
-            await entities.Conversation.update(currentRoom.id, { participant_ids: participants });
-            await syncConversationAudience(entities, currentRoom.id, participants);
+            await updateConversationAudienceSafely(
+              entities,
+              currentRoom,
+              participants,
+            );
           }
           return Response.json({ success: true, conversation: { ...currentRoom, participant_ids: participants } });
         } finally {
@@ -415,8 +459,11 @@ Deno.serve(async (req) => {
           }
           const participants = Array.from(new Set([...(currentRoom.participant_ids || []), user.id]));
           if (!(currentRoom.participant_ids || []).includes(user.id)) {
-            await entities.Conversation.update(currentRoom.id, { participant_ids: participants });
-            await syncConversationAudience(entities, currentRoom.id, participants);
+            await updateConversationAudienceSafely(
+              entities,
+              currentRoom,
+              participants,
+            );
           }
           return Response.json({
             success: true,
@@ -472,8 +519,11 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'This group is not public' }, { status: 403 });
       }
       const participantIds = Array.from(new Set([...(conversation.participant_ids || []), user.id]));
-      const updated = await entities.Conversation.update(conversation.id, { participant_ids: participantIds });
-      await syncConversationAudience(entities, conversation.id, participantIds);
+      const updated = await updateConversationAudienceSafely(
+        entities,
+        conversation,
+        participantIds,
+      );
       return Response.json({ success: true, conversation: updated });
     }
 
@@ -507,8 +557,11 @@ Deno.serve(async (req) => {
           deleted_typing_rows: deletedTypingRows,
         });
       }
-      const updated = await entities.Conversation.update(conversation.id, { participant_ids: participantIds });
-      await syncConversationAudience(entities, conversation.id, participantIds);
+      const updated = await updateConversationAudienceSafely(
+        entities,
+        conversation,
+        participantIds,
+      );
       return Response.json({ success: true, conversation: updated });
     }
 

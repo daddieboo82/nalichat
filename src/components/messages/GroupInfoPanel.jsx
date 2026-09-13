@@ -29,6 +29,10 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
         name: nameValue.trim(),
       });
       if (res?.data?.error) throw new Error(res.data.error);
+      const updated = res?.data?.conversation;
+      if (res?.data?.success !== true || updated?.id !== conversation.id || updated?.name !== nameValue.trim()) {
+        throw new Error("Group rename was not confirmed.");
+      }
       await queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       setEditingName(false);
     } catch {
@@ -47,6 +51,12 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
         conversationId: conversation.id,
       });
       if (res?.data?.error) throw new Error(res.data.error);
+      const updated = res?.data?.conversation;
+      const leaveConfirmed = res?.data?.success === true && (
+        res?.data?.deleted === true ||
+        (updated?.id === conversation.id && Array.isArray(updated?.participant_ids) && !updated.participant_ids.includes(currentUser.id))
+      );
+      if (!leaveConfirmed) throw new Error("Leaving the group was not confirmed.");
       await queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       onClose();
     } catch {

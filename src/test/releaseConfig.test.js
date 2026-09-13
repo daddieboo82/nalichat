@@ -2205,3 +2205,15 @@ describe('track comment response contracts', () => {
     }
   });
 });
+
+
+describe('group info mutation response contracts', () => {
+  it('only closes rename/leave flows after confirmed server state', async () => {
+    const source = await readText('src/components/messages/GroupInfoPanel.jsx');
+    expect(source).toContain('updated?.id !== conversation.id || updated?.name !== nameValue.trim()');
+    expect(source).toContain('Group rename was not confirmed.');
+    expect(source).toContain('const leaveConfirmed = res?.data?.success === true');
+    expect(source).toContain('!updated.participant_ids.includes(currentUser.id)');
+    expect(source).toContain('Leaving the group was not confirmed.');
+  });
+});

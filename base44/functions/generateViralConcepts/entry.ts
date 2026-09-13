@@ -123,13 +123,16 @@ Deno.serve(async (req) => {
     }
 
     try {
-      await entities.User.updateMany(
+      const userUpdate = await entities.User.updateMany(
         { id: user.id },
         { $inc: {
           viral_concepts_generated: concepts.length,
           ...(firstGeneration ? { xp: 50 } : {}),
         } },
       );
+      if (Number(userUpdate?.updated || 0) !== 1) {
+        throw new Error('ViralSeed user stats update did not modify exactly one account');
+      }
     } catch (updateError) {
       // If the first award failed to reach the user record, remove the
       // achievement claim so a retry can award it correctly.

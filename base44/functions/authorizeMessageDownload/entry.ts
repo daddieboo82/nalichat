@@ -91,6 +91,10 @@ Deno.serve(async (req) => {
       }
       return Response.json({
         success: true,
+        action: 'authorize_message_download',
+        userId: user.id,
+        messageId: message.id,
+        conversationId: conversation.id,
         file_url: message.file_url,
         file_name: message.file_name || 'file',
       });

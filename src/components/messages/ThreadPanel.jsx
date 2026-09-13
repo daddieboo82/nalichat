@@ -107,6 +107,10 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
       const sent = res?.data?.message;
       if (
         res?.data?.success !== true ||
+        res?.data?.action !== "send" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.conversationId !== parentMessage.conversation_id ||
+        res?.data?.clientMessageKey !== clientMessageKey ||
         !sent?.id ||
         sent?.conversation_id !== parentMessage.conversation_id ||
         sent?.thread_id !== parentMessage.id ||

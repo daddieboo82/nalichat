@@ -2611,3 +2611,15 @@ describe('message send response identity contract', () => {
     expect(backend).toContain('userId: user.id');
   });
 });
+
+
+describe('message send identity across secondary surfaces', () => {
+  it('validates thread and global-dialog sends against the exact request', async () => {
+    const thread = await readText('src/components/messages/ThreadPanel.jsx');
+    const globalDialog = await readText('src/components/GlobalMessageDialog.jsx');
+    expect(thread).toContain('res?.data?.clientMessageKey !== clientMessageKey');
+    expect(thread).toContain('res?.data?.conversationId !== parentMessage.conversation_id');
+    expect(globalDialog).toContain('send?.data?.clientMessageKey !== clientMessageKey');
+    expect(globalDialog).toContain('send?.data?.conversationId !== conversation.id');
+  });
+});

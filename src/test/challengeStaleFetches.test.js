@@ -18,7 +18,7 @@ describe('challenge route stale fetch protection', () => {
   it('cancels stale submission and vote-status fetch results', async () => {
     const source = await readText('src/pages/SubmissionPlayer.jsx');
     expect(source).toContain('setSubmission(null);');
-    expect(source).toContain('if (!cancelled) setSubmission(nextSubmission);');
+    expect(source).toMatch(/if \(!cancelled\) \{[\s\S]*setSubmission\(nextSubmission\);[\s\S]*\}/);
     expect(source).toContain('if (!cancelled) setHasVoted((votes || []).length > 0);');
     expect(source).toContain('cancelled = true;');
   });

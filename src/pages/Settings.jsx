@@ -99,6 +99,7 @@ export default function Settings() {
       }
       const res = await base44.functions.invoke("updateMyProfile", cleanedForm);
       if (res?.data?.error) throw new Error(res.data.error);
+      if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
       // Refresh the global auth context so the new display_name propagates
       // to the Home greeting, nav bar, and anywhere else that reads user data.
       await checkUserAuth();

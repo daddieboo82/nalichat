@@ -10,6 +10,7 @@ import CollaboratorPresence from "@/components/studio/CollaboratorPresence";
 import ExportBounce from "@/components/studio/ExportBounce";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/lib/AuthContext";
+import { toast } from "sonner";
 
 export default function StudioEditor() {
   const { hasEntitlement } = useSubscription();
@@ -146,10 +147,20 @@ export default function StudioEditor() {
                   <div className="flex items-center gap-2 p-4 bg-secondary/50 rounded-xl">
                     <div className="flex-1 flex items-center gap-2">
                       <button
-                        onClick={() => {
-                          if (audioRef.current) {
-                            playing ? audioRef.current.pause() : audioRef.current.play();
-                            setPlaying(!playing);
+                        onClick={async () => {
+                          if (!audioRef.current) return;
+                          if (playing) {
+                            audioRef.current.pause();
+                            setPlaying(false);
+                            return;
+                          }
+                          try {
+                            await audioRef.current.play();
+                            setPlaying(true);
+                          } catch (error) {
+                            console.error("Studio Editor preview failed:", error);
+                            setPlaying(false);
+                            toast.error("Couldn't preview this audio. Please try again.");
                           }
                         }}
                         className="w-10 h-10 rounded-lg bg-primary/20 text-primary flex items-center justify-center hover:bg-primary/30 transition-colors"

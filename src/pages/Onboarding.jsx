@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, CheckCircle2, Music } from "lucide-react";
+import { Loader2, CheckCircle2, Music, UserRound, MapPin, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import OnboardingNaliGuide from "@/components/onboarding/OnboardingNaliGuide";
 
@@ -95,20 +95,20 @@ export default function Onboarding() {
     <>
     <OnboardingNaliGuide step={1} profileComplete={profileComplete} />
     <div className="flex min-h-screen min-h-[100dvh] items-start sm:items-center justify-center overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] lg:justify-start lg:pl-[6%] xl:pl-[12%]">
-      <div className="ui-surface w-full max-w-md rounded-3xl border border-border/80 bg-card/90 p-5 shadow-2xl backdrop-blur-xl sm:p-8">
+      <div className="ui-surface w-full max-w-lg rounded-3xl border border-border/80 bg-card/90 p-5 shadow-2xl backdrop-blur-xl sm:p-8">
         <div className="mb-6 flex items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/20">
             <Music className="h-5 w-5 text-primary" />
           </div>
           <div>
             <p className="font-heading font-bold text-lg leading-tight">Welcome to NaliChat</p>
-            <p className="text-xs text-muted-foreground">Let's set up your profile</p>
+            <p className="text-xs text-muted-foreground">A few details and your creator space is ready.</p>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="mb-5 grid grid-cols-3 gap-2" aria-label="Setup progress"><div className="h-1.5 rounded-full bg-primary" /><div className="h-1.5 rounded-full bg-primary/25" /><div className="h-1.5 rounded-full bg-primary/25" /></div><div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Display Name *</label>
+            <label className="flex items-center gap-2 text-sm font-semibold"><UserRound className="h-4 w-4 text-primary" aria-hidden="true" />Display Name <span className="text-primary">*</span></label>
             <Input
               value={form.display_name}
               onChange={(e) => setForm(f => ({ ...f, display_name: e.target.value }))}
@@ -116,7 +116,7 @@ export default function Onboarding() {
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Birthdate *</label>
+            <label className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />Birthdate <span className="text-primary">*</span></label>
             <Input
               type="date"
               value={form.birthdate}
@@ -124,23 +124,23 @@ export default function Onboarding() {
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Bio</label>
+            <label className="text-sm font-semibold">Bio <span className="font-normal text-muted-foreground">(optional)</span></label>
             <Textarea
               value={form.bio}
               onChange={(e) => setForm(f => ({ ...f, bio: e.target.value }))}
               placeholder="A short bio about your music (optional)"
-              rows={2}
-            className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
+              rows={3}
+            className="min-h-[88px] resize-y rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Location</label>
+            <label className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-primary" aria-hidden="true" />Location <span className="font-normal text-muted-foreground">(optional)</span></label>
             <Input
               value={form.location}
               onChange={(e) => setForm(f => ({ ...f, location: e.target.value }))}
-              placeholder="City, Country (optional)"
+              placeholder="City, Country"
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
-          <Button onClick={handleSave} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
+          <p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Your display name and bio appear on your creator profile. You can change these later in Settings.</p><Button onClick={handleSave} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
             {loading ? "Saving..." : "Get Started"}
           </Button>

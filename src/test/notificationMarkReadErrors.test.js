@@ -10,9 +10,9 @@ describe('notification read update failures', () => {
   it('contains mark-all-read failures and reports stale unread state', async () => {
     const source = await readText('src/components/notifications/NotificationBell.jsx');
 
-    expect(source).toContain('await Promise.allSettled(');
-    expect(source).toContain('await load(user.id);');
-    expect(source).toContain("Some notifications weren't marked read");
+    expect(source).toContain('const result = await base44.functions.invoke("markNotificationsRead", {});');
+    expect(source).toContain('result?.data?.action !== "mark_notifications_read"');
+    expect(source).toContain('title: "Notifications weren\'t marked read"');
     expect(source).toContain('void markAllRead();');
   });
 });

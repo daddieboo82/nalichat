@@ -2305,3 +2305,16 @@ describe('message attachment download response contract', () => {
     expect(source).toContain('Download authorization was not confirmed');
   });
 });
+
+
+describe('voice AI response contracts', () => {
+  it('rejects malformed transcription and speech payloads', async () => {
+    const transcription = await readText('src/components/messages/VoiceTranscription.jsx');
+    const card = await readText('src/components/messages/VoiceCardDialog.jsx');
+    expect(transcription).toContain('typeof res.data.text !== "string"');
+    expect(transcription).toContain('Transcription response was invalid.');
+    expect(transcription).toContain('typeof url !== "string" || !url.trim()');
+    expect(card).toContain('typeof res.data.text !== "string"');
+    expect(card).toContain('Transcription response was invalid.');
+  });
+});

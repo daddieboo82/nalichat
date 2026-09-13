@@ -1,1 +1,15 @@
-import { describe, expect, it } from 'vitest';\nimport { readFile } from 'node:fs/promises';\n\ndescribe('shared file lock authorization ordering', () => {\n  it('authorizes project/folder edit access before acquiring the project lock', async () => {\n    const source = await readFile('base44/functions/createSharedFileRecord/entry.ts', 'utf8');\n    const folderAuth = source.indexOf('let canEditFolder = user.role');\n    const projectAuth = source.indexOf('const previewCanEdit = user.role');\n    const lock = source.indexOf('await acquireProjectMembershipLock(entities, destinationProjectId)');\n    expect(folderAuth).toBeGreaterThan(-1);\n    expect(projectAuth).toBeGreaterThan(-1);\n    expect(folderAuth).toBeLessThan(lock);\n    expect(projectAuth).toBeLessThan(lock);\n  });\n});\n
+import { describe, expect, it } from 'vitest';
+import { readFile } from 'node:fs/promises';
+
+describe('shared file lock authorization ordering', () => {
+  it('authorizes project/folder edit access before acquiring the project lock', async () => {
+    const source = await readFile('base44/functions/createSharedFileRecord/entry.ts', 'utf8');
+    const folderAuth = source.indexOf('let canEditFolder = user.role');
+    const projectAuth = source.indexOf('const previewCanEdit = user.role');
+    const lock = source.indexOf('await acquireProjectMembershipLock(entities, destinationProjectId)');
+    expect(folderAuth).toBeGreaterThan(-1);
+    expect(projectAuth).toBeGreaterThan(-1);
+    expect(folderAuth).toBeLessThan(lock);
+    expect(projectAuth).toBeLessThan(lock);
+  });
+});

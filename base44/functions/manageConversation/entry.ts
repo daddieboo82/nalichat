@@ -426,21 +426,44 @@ Deno.serve(async (req) => {
       }
 
       const uniqueOtherIds = participantIds.filter((id: string) => id !== user.id);
-      const resolvedUsers = await Promise.all(
-        uniqueOtherIds.map((id: string) => entities.User.get(id).catch(() => null)),
-      );
+      const [resolvedUsers, outboundContacts, inboundContacts] = await Promise.all([
+        Promise.all(
+          uniqueOtherIds.map((id: string) => entities.User.get(id).catch(() => null)),
+        ),
+        listAllRows(
+          entities.Contact,
+          { user_id: user.id },
+        ),
+        listAllRows(
+          entities.Contact,
+          { contact_user_id: user.id },
+        ),
+      ]);
       if (resolvedUsers.some((candidate: any) => (
         !candidate
-        || (
-          candidate.role !== 'admin'
-          && (
-            !candidate.onboarding_completed
-            || candidate.is_banned
-            || !String(candidate.display_name || '').trim()
-          )
-        )
+        || !candidate.onboarding_completed
+        || candidate.is_banned
+        || !String(candidate.display_name || '').trim()
       ))) {
         return Response.json({ error: 'One or more participants are unavailable' }, { status: 400 });
+      }
+
+      const inboundContactOwners = new Set(
+        inboundContacts.map((contact: any) => contact.user_id).filter(Boolean),
+      );
+      const mutualContactIds = new Set(
+        outboundContacts
+          .map((contact: any) => contact.contact_user_id)
+          .filter((contactUserId: string) => (
+            Boolean(contactUserId)
+            && inboundContactOwners.has(contactUserId)
+          )),
+      );
+      if (uniqueOtherIds.some((id: string) => !mutualContactIds.has(id))) {
+        return Response.json(
+          { error: 'Private groups can only include mutual contacts' },
+          { status: 403 },
+        );
       }
 
       const groupPayload = {

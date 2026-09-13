@@ -204,6 +204,14 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                          try {
                            const auth = await base44.functions.invoke("authorizeArtPostDownload", { postId: post.id });
                            if (auth?.data?.error) throw new Error(auth.data.error);
+                           if (
+                             auth?.data?.success !== true ||
+                             auth?.data?.action !== "authorize_art_post_download" ||
+                             auth?.data?.userId !== currentUser?.id ||
+                             auth?.data?.postId !== post.id
+                           ) {
+                             throw new Error("Download authorization was not confirmed.");
+                           }
                            const downloadUrl = auth?.data?.file_url;
                            if (!downloadUrl) throw new Error("Download URL unavailable");
                            const { resumableDownload } = await import('@/lib/resumableUpload');

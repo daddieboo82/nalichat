@@ -22,3 +22,14 @@ describe('art post download authorization hardening', () => {
     expect(rateLimit).toBeLessThan(bodyRead);
   });
 });
+
+
+  it('binds download authorization to the current viewer and exact post', async () => {
+    const backend = await readText('base44/functions/authorizeArtPostDownload/entry.ts');
+    const viewer = await readText('src/components/explore/MediaViewerModal.jsx');
+    expect(backend).toContain("action: 'authorize_art_post_download'");
+    expect(backend).toContain('userId: user.id');
+    expect(backend).toContain('postId: post.id');
+    expect(viewer).toContain('auth?.data?.userId !== currentUser?.id');
+    expect(viewer).toContain('auth?.data?.postId !== post.id');
+  });

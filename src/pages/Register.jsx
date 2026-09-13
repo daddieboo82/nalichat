@@ -102,11 +102,11 @@ export default function Register() {
         subtitle={`We sent a code to ${email}`}
       >
         {error && (
-          <div className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="mb-4 rounded-2xl border border-destructive/20 bg-destructive/10 p-3.5 text-sm leading-relaxed text-destructive">
             {error}
           </div>
         )}
-        <div className="mb-6 flex justify-center overflow-x-auto px-1">
+        <div className="mb-6 flex justify-center overflow-x-auto px-1 py-1">
           <InputOTP
             maxLength={6}
             value={otpCode}
@@ -114,13 +114,13 @@ export default function Register() {
             autoFocus
             autoComplete="one-time-code"
           >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-              <InputOTPSlot index={3} />
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
+            <InputOTPGroup className="gap-1.5 sm:gap-2">
+              <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={0} />
+              <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={1} />
+              <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={2} />
+              <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={3} />
+              <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={4} />
+              <InputOTPSlot className="h-12 w-10 rounded-xl border sm:w-12" index={5} />
             </InputOTPGroup>
           </InputOTP>
         </div>
@@ -138,9 +138,9 @@ export default function Register() {
             "Verify"
           )}
         </Button>
-        <p className="text-center text-sm text-muted-foreground mt-4">
+        <p className="mt-4 text-center text-sm text-muted-foreground">
           Didn't receive the code?{" "}
-          <button onClick={handleResend} className="ui-hover rounded-lg px-1 py-1 font-medium text-primary hover:bg-primary/10">
+          <button onClick={handleResend} className="ui-hover min-h-9 rounded-lg px-2 py-1 font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40">
             Resend
           </button>
         </p>
@@ -192,12 +192,12 @@ export default function Register() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="mb-4 rounded-2xl border border-destructive/20 bg-destructive/10 p-3.5 text-sm leading-relaxed text-destructive">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4"><p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Use an email you can access now. We’ll send a 6-digit verification code before your account is ready.</p>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <div className="relative">

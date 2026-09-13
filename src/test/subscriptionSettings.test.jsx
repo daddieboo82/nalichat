@@ -30,6 +30,9 @@ const mockSubscription = vi.hoisted(() => ({
 vi.mock("@/hooks/useSubscription", () => ({
   useSubscription: () => mockSubscription.current,
 }));
+vi.mock("@/lib/AuthContext", () => ({
+  useAuth: () => ({ user: { id: "test-user" } }),
+}));
 vi.mock("@/lib/subscriptionBilling", () => ({ openBillingPortal: vi.fn() }));
 vi.mock("@/lib/paywallAnalytics", () => ({ trackPaywallEvent: vi.fn() }));
 

@@ -30,7 +30,7 @@ export function EntitlementGate({
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-8 text-center" aria-live="polite">
+      <div className="ui-surface rounded-3xl border border-border bg-card p-6 text-center sm:p-8" aria-live="polite">
         <p className="text-sm text-muted-foreground">Checking access...</p>
       </div>
     );
@@ -39,7 +39,7 @@ export function EntitlementGate({
   if (isEntitled) return children;
 
   return (
-    <div className="rounded-2xl border border-primary/30 bg-card p-8 text-center">
+    <div className="ui-surface rounded-3xl border border-primary/30 bg-card p-6 text-center sm:p-8">
       <LockKeyhole className="mx-auto mb-4 h-10 w-10 text-primary" aria-hidden="true" />
       <h2 className="font-heading text-2xl font-bold">{title}</h2>
       <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
@@ -47,11 +47,11 @@ export function EntitlementGate({
       </p>
       <div className="mt-6 flex flex-wrap justify-center gap-3">
         {isError && (
-          <Button variant="outline" onClick={() => refetch()}>
+          <Button className="ui-hover min-h-11 rounded-xl" variant="outline" onClick={() => refetch()}>
             Try again
           </Button>
         )}
-        <Button asChild onClick={() => trackPaywallEvent("entitlement_prompt_convert", { entitlement, source })}>
+        <Button className="ui-hover min-h-11 rounded-xl font-semibold" asChild onClick={() => trackPaywallEvent("entitlement_prompt_convert", { entitlement, source })}>
           <Link to="/pricing">View plans</Link>
         </Button>
       </div>

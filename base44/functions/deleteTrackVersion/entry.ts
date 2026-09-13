@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
       }
 
       await entities.TrackVersion.delete(currentVersion.id);
-      return Response.json({ success: true, deleted: true });
+      return Response.json({ success: true, action: 'delete_track_version', userId: user.id, projectId: currentVersion.project_id, trackId: currentVersion.track_id, versionId: currentVersion.id, deleted: true });
     } finally {
       await releaseTrackLifecycleLock(entities, lockId);
     }

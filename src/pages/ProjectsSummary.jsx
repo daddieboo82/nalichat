@@ -83,7 +83,13 @@ export default function ProjectsSummary() {
       });
       if (created?.data?.error) throw new Error(created.data.error);
       const project = created?.data?.project;
-      if (!project?.id) throw new Error("Project was not created");
+      if (
+        created?.data?.success !== true ||
+        created?.data?.action !== "create_project" ||
+        created?.data?.userId !== user?.id ||
+        created?.data?.projectId !== project?.id ||
+        project?.owner_id !== user?.id
+      ) throw new Error("Project was not created");
       setData(prev => ({ ...prev, projects: [project, ...prev.projects] }));
       setShowNewProject(false);
       setNewProjectTitle("");

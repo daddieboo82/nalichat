@@ -64,20 +64,31 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const currentMessage = await entities.Message.get(messageId).catch(() => null);
+    if (!currentMessage) {
+      return Response.json({ error: 'Message not found' }, { status: 404 });
+    }
+    if (currentMessage.conversation_id !== message.conversation_id) {
+      return Response.json({ error: 'Message conversation changed. Please retry.' }, { status: 409 });
+    }
+
     // Don't mark your own messages as read.
-    if (message.sender_id === user.id) {
+    if (currentMessage.sender_id === user.id) {
       return Response.json({ success: true, alreadyRead: true });
     }
 
-    const alreadyRead = Array.isArray(message.read_by) && message.read_by.includes(user.id);
+    const alreadyRead = Array.isArray(currentMessage.read_by) && currentMessage.read_by.includes(user.id);
     if (alreadyRead) {
       return Response.json({ success: true, alreadyRead: true });
     }
 
-    await entities.Message.updateMany(
-      { id: messageId },
+    const readUpdate = await entities.Message.updateMany(
+      { id: messageId, conversation_id: message.conversation_id },
       { $addToSet: { read_by: user.id } },
     );
+    if (Number(readUpdate?.updated || 0) !== 1) {
+      return Response.json({ error: 'Message changed. Please retry.' }, { status: 409 });
+    }
 
     return Response.json({ success: true, alreadyRead: false });
     } finally {

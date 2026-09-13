@@ -64,7 +64,15 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
         ...payload,
       });
       if (response?.data?.error) throw new Error(response.data.error);
-      if (response?.data?.success !== true) {
+      if (
+        response?.data?.success !== true ||
+        response?.data?.action !== "manage_project_collaborator" ||
+        response?.data?.userId !== currentUser?.id ||
+        response?.data?.projectId !== project.id ||
+        response?.data?.collaboratorId !== payload.userId ||
+        response?.data?.collaboratorAction !== payload.action ||
+        response?.data?.role !== (payload.action === "remove" ? null : payload.role)
+      ) {
         throw new Error("Collaborator update was not confirmed.");
       }
       return {

@@ -8,7 +8,12 @@ const MAX_DISCOVERY_ACHIEVEMENTS = 5000;
 const MAX_DISCOVERY_CONTACTS = 1000;
 const MAX_DISCOVERY_CONVERSATIONS = 1000;
 
-function publicUserProjection(u: any, achievementCount: number, presenceVisibleTo: Set<string>) {
+function publicUserProjection(
+  u: any,
+  achievementCount: number,
+  presenceVisibleTo: Set<string>,
+  mutualContactIds: Set<string>,
+) {
   return {
     id: u.id,
     display_name: u.display_name,
@@ -26,6 +31,7 @@ function publicUserProjection(u: any, achievementCount: number, presenceVisibleT
     level: Number(u.level || Math.floor(Number(u.xp || 0) / 200) + 1),
     viral_concepts_generated: Number(u.viral_concepts_generated || 0),
     achievement_count: achievementCount,
+    can_group_chat: mutualContactIds.has(u.id),
     is_online: presenceVisibleTo.has(u.id)
       ? Boolean(
           u.is_online
@@ -78,20 +84,16 @@ export default async function(req) {
               500,
             )
           : Promise.resolve([]),
-        includePresence
-          ? base44.asServiceRole.entities.Contact.filter(
-              { user_id: user.id },
-              '-created_date',
-              MAX_DISCOVERY_CONTACTS,
-            )
-          : Promise.resolve([]),
-        includePresence
-          ? base44.asServiceRole.entities.Contact.filter(
-              { contact_user_id: user.id },
-              '-created_date',
-              MAX_DISCOVERY_CONTACTS,
-            )
-          : Promise.resolve([]),
+        base44.asServiceRole.entities.Contact.filter(
+          { user_id: user.id },
+          '-created_date',
+          MAX_DISCOVERY_CONTACTS,
+        ),
+        base44.asServiceRole.entities.Contact.filter(
+          { contact_user_id: user.id },
+          '-created_date',
+          MAX_DISCOVERY_CONTACTS,
+        ),
         includePresence
           ? base44.asServiceRole.entities.Conversation.filter(
               { participant_ids: user.id },
@@ -114,6 +116,12 @@ export default async function(req) {
       const inboundContactOwners = new Set(
         inboundContacts.map((contact: any) => contact.user_id).filter(Boolean),
       );
+      const mutualContactIds = new Set<string>();
+      for (const contact of contacts) {
+        if (contact.contact_user_id && inboundContactOwners.has(contact.contact_user_id)) {
+          mutualContactIds.add(contact.contact_user_id);
+        }
+      }
       for (const contact of contacts) {
         if (contact.contact_user_id && inboundContactOwners.has(contact.contact_user_id)) {
           presenceVisibleTo.add(contact.contact_user_id);
@@ -126,7 +134,12 @@ export default async function(req) {
       }
 
       return Response.json({
-        users: [publicUserProjection(target, targetAchievements.length, presenceVisibleTo)],
+        users: [publicUserProjection(
+          target,
+          targetAchievements.length,
+          presenceVisibleTo,
+          mutualContactIds,
+        )],
         truncated: {
           users: false,
           achievements: includeAchievementCounts && targetAchievements.length >= 500,
@@ -139,20 +152,16 @@ export default async function(req) {
       includeAchievementCounts
         ? base44.asServiceRole.entities.Achievement.list('-created_date', MAX_DISCOVERY_ACHIEVEMENTS)
         : Promise.resolve([]),
-      includePresence
-        ? base44.asServiceRole.entities.Contact.filter(
-            { user_id: user.id },
-            '-created_date',
-            MAX_DISCOVERY_CONTACTS,
-          )
-        : Promise.resolve([]),
-      includePresence
-        ? base44.asServiceRole.entities.Contact.filter(
-            { contact_user_id: user.id },
-            '-created_date',
-            MAX_DISCOVERY_CONTACTS,
-          )
-        : Promise.resolve([]),
+      base44.asServiceRole.entities.Contact.filter(
+        { user_id: user.id },
+        '-created_date',
+        MAX_DISCOVERY_CONTACTS,
+      ),
+      base44.asServiceRole.entities.Contact.filter(
+        { contact_user_id: user.id },
+        '-created_date',
+        MAX_DISCOVERY_CONTACTS,
+      ),
       includePresence
         ? base44.asServiceRole.entities.Conversation.filter(
             { participant_ids: user.id },
@@ -166,6 +175,12 @@ export default async function(req) {
     const inboundContactOwners = new Set(
       inboundContacts.map((contact: any) => contact.user_id).filter(Boolean),
     );
+    const mutualContactIds = new Set<string>();
+    for (const contact of contacts) {
+      if (contact.contact_user_id && inboundContactOwners.has(contact.contact_user_id)) {
+        mutualContactIds.add(contact.contact_user_id);
+      }
+    }
     for (const contact of contacts) {
       // Contact lists are unilateral. Reveal presence only when the relationship
       // is mutual, otherwise simply adding a public profile would become an
@@ -193,6 +208,7 @@ export default async function(req) {
         u,
         achievementCount[u.id] || 0,
         presenceVisibleTo,
+        mutualContactIds,
       ));
 
     return Response.json({

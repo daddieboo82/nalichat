@@ -288,7 +288,7 @@ Deno.serve(async (req) => {
       edit_user_ids: editUserIds,
     });
 
-    return Response.json({ success: true, track });
+    return Response.json({ success: true, action: 'create_collaborative_track', userId: user.id, parentId: projectId, trackId: track.id, track });
     } finally {
       await releaseConversationMembershipLock(entities, conversationLockId);
       await releaseProjectMembershipLock(entities, projectLockId);

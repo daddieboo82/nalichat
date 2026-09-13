@@ -128,6 +128,10 @@ export default function ChatSessionViewer({ message, currentUser }) {
           const track = created?.data?.track;
           if (
             created?.data?.success !== true ||
+            created?.data?.action !== "create_collaborative_track" ||
+            created?.data?.userId !== currentUser?.id ||
+            created?.data?.parentId !== message.id ||
+            created?.data?.trackId !== track?.id ||
             !track?.id ||
             track?.project_id !== message.id ||
             track?.uploaded_by !== currentUser?.id

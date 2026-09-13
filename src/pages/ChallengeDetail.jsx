@@ -28,6 +28,9 @@ export default function ChallengeDetail() {
   const [submissions, setSubmissions] = useState([]);
   const { user } = useAuth();
   const [myVotes, setMyVotes] = useState(new Set());
+  const [votesLoading, setVotesLoading] = useState(false);
+  const [votesError, setVotesError] = useState(false);
+  const [votesRetryKey, setVotesRetryKey] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -76,8 +79,15 @@ export default function ChallengeDetail() {
   }, [challengeId]);
 
   useEffect(() => {
-    if (!user) { setMyVotes(new Set()); return undefined; }
+    if (!user) {
+      setMyVotes(new Set());
+      setVotesLoading(false);
+      setVotesError(false);
+      return undefined;
+    }
     let cancelled = false;
+    setVotesLoading(true);
+    setVotesError(false);
     filterAllRows(
       base44.entities.ChallengeVote,
       { challenge_id: challengeId, voter_id: user.id },
@@ -89,12 +99,18 @@ export default function ChallengeDetail() {
         }
       })
       .catch((e) => {
-        if (!cancelled) console.error("Failed to load votes", e);
+        if (!cancelled) {
+          console.error("Failed to load votes", e);
+          setVotesError(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setVotesLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [user, challengeId]);
+  }, [user, challengeId, votesRetryKey]);
 
   const handleVote = async (submissionId) => {
     if (!user) { toast.error("Log in to vote."); return; }
@@ -231,6 +247,14 @@ export default function ChallengeDetail() {
 
       <div className="space-y-3">
         <h2 className="font-heading font-bold text-lg">Submissions ({submissions.length})</h2>
+        {votesError && user && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm" role="alert">
+            <p>Couldn't verify which submissions you've already voted for. Voting is paused to prevent duplicate attempts.</p>
+            <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => setVotesRetryKey((key) => key + 1)}>
+              Retry vote history
+            </Button>
+          </div>
+        )}
         <div className="grid sm:grid-cols-2 gap-3">
           {submissions.map((s) => (
             <SubmissionCard
@@ -240,6 +264,7 @@ export default function ChallengeDetail() {
               hasVoted={myVotes.has(s.id)}
               isOwn={user && s.producer_id === user.id}
               onVote={handleVote}
+              voteDisabled={Boolean(user) && (votesLoading || votesError)}
             />
           ))}
         </div>

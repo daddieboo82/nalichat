@@ -140,7 +140,7 @@ export default function Leaderboard() {
             <Trophy className="w-8 h-8 text-yellow-400" />
           </div>
           <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">Leaderboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">Top producers on RecordStudio</p>
+          <p className="text-muted-foreground text-sm mt-1">Top creators across NaliChat</p>
           {myRank > 0 && (
             <div className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
               <Star className="w-4 h-4" /> You're #{myRank}
@@ -149,19 +149,19 @@ export default function Leaderboard() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-2xl px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-2xl px-4 py-5 pb-[max(6rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6 lg:pb-8">
         {/* Mode Toggle */}
         <div className="flex justify-center mb-6">
           <div className="flex w-full max-w-sm gap-1 rounded-2xl bg-secondary/50 p-1.5">
             <button
               onClick={() => setMode("users")}
-              className={cn("ui-hover min-h-10 flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all", mode === "users" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground")}
+              className={cn("ui-hover min-h-11 flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary/40", mode === "users" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground")}
             >
               Top Users
             </button>
             <button
               onClick={() => setMode("content")}
-              className={cn("ui-hover min-h-10 flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all", mode === "content" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground")}
+              className={cn("ui-hover min-h-11 flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary/40", mode === "content" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground")}
             >
               Top Content
             </button>
@@ -176,7 +176,7 @@ export default function Leaderboard() {
         )}
 
         {leaderboardLoadProblem && !leaderboardLoading && (
-          <div className="rounded-xl border border-destructive/40 bg-card/60 p-6 text-center" role="alert">
+          <div className="ui-surface rounded-3xl border border-destructive/40 bg-card/60 p-6 text-center" role="alert">
             <p className="font-heading font-semibold">Leaderboard unavailable</p>
             <p className="mt-1 text-sm text-muted-foreground">We couldn't load the data needed for this ranking.</p>
             <button
@@ -185,7 +185,7 @@ export default function Leaderboard() {
                 if (usersError) void refetchUsers();
                 if (postsError) void refetchPosts();
               }}
-              className="ui-hover mt-4 min-h-11 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-secondary/50"
+              className="ui-hover mt-4 min-h-11 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               Retry
             </button>
@@ -201,7 +201,7 @@ export default function Leaderboard() {
                   key={t}
                   onClick={() => setUserTab(t)}
                   className={cn(
-                    "ui-hover min-h-10 shrink-0 flex-1 rounded-xl px-3 py-2 text-sm font-semibold capitalize transition-colors",
+                    "ui-hover min-h-11 shrink-0 flex-1 rounded-xl px-3 py-2 text-sm font-semibold capitalize transition-colors focus-visible:ring-2 focus-visible:ring-primary/40",
                     userTab === t ? "bg-card text-foreground shadow-sm border border-border/50" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -212,11 +212,11 @@ export default function Leaderboard() {
 
             {/* Top 3 podium */}
             {sorted.length >= 3 && (
-          <div className="mb-8 flex items-end justify-center gap-2 sm:gap-3">
+          <div className="no-scrollbar -mx-2 mb-8 flex items-end justify-start gap-2 overflow-x-auto px-2 pb-1 min-[430px]:justify-center sm:gap-3">
             {[sorted[1], sorted[0], sorted[2]].map((user, i) => {
               const realRank = i === 0 ? 2 : i === 1 ? 1 : 3;
               return (
-                <div key={user.id} className="flex flex-col items-center gap-2">
+                <div key={user.id} className="flex shrink-0 flex-col items-center gap-2">
                   <div className={cn("relative", realRank === 1 && "-mt-4")}>
                     <Avatar className={cn("border-4", realRank === 1 ? "w-16 h-16 border-yellow-400" : realRank === 2 ? "w-12 h-12 border-slate-400" : "w-12 h-12 border-amber-600")}>
                       <AvatarImage src={user.avatar_url} />
@@ -244,7 +244,7 @@ export default function Leaderboard() {
               key={user.id}
               onClick={() => navigate(`/profile?id=${user.id}`)}
               className={cn(
-                "ui-hover flex min-h-[68px] cursor-pointer items-center gap-3 rounded-2xl border p-3 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary/40",
+                "ui-surface ui-hover flex min-h-[72px] w-full cursor-pointer items-center gap-3 rounded-3xl border p-3 text-left transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary/40",
                 user.id === currentUser?.id ? "border-primary/40 bg-primary/5" : "border-white/[0.06] bg-card/50 backdrop-blur-xl hover:bg-card/70 hover:border-white/[0.12]"
               )}
             >
@@ -262,13 +262,13 @@ export default function Leaderboard() {
                 </p>
                 <p className="text-[11px] text-muted-foreground capitalize">{user.artist_role || "Creator"}</p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
                 {achievementCountByUser[user.id] > 0 && (
                   <span className="flex items-center gap-0.5 text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded-full">
                     <Award className="w-3 h-3" /> {achievementCountByUser[user.id]}
                   </span>
                 )}
-                <span className="text-sm font-bold text-primary">{getValue(user)}</span>
+                <span className="whitespace-nowrap text-xs font-bold text-primary sm:text-sm">{getValue(user)}</span>
               </div>
             </button>
           ))}
@@ -308,7 +308,7 @@ export default function Leaderboard() {
                     type="button"
                     key={item.id}
                     onClick={() => handleItemClick(item)}
-                    className="ui-hover flex min-h-[72px] cursor-pointer items-center gap-3 rounded-2xl border border-white/[0.06] bg-card/50 p-3 text-left backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40 sm:gap-4"
+                    className="ui-surface ui-hover flex min-h-[76px] w-full cursor-pointer items-center gap-3 rounded-3xl border border-white/[0.06] bg-card/50 p-3 text-left backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40 sm:gap-4"
                   >
                     <div className="w-8 text-center shrink-0 flex flex-col items-center">
                       {i < 3 ? RANK_ICONS[i] : <span className="text-sm text-muted-foreground font-bold">#{i + 1}</span>}
@@ -348,7 +348,7 @@ export default function Leaderboard() {
                       </p>
                     </div>
                     
-                    <div className="shrink-0 text-right pr-2">
+                    <div className="shrink-0 text-right">
                       <div className="flex items-center gap-1.5 text-primary bg-primary/10 px-2.5 py-1 rounded-full text-xs font-bold">
                         <Heart className="w-3.5 h-3.5 fill-current" />
                         {getLikeCount(item)}

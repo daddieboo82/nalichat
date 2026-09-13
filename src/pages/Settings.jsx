@@ -99,7 +99,11 @@ export default function Settings() {
       }
       const res = await base44.functions.invoke("updateMyProfile", cleanedForm);
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "update_my_profile" ||
+        res?.data?.userId !== user.id
+      ) throw new Error("Profile update was not confirmed");
       // Refresh the global auth context and verify the account reflects the save.
       const refreshedUser = await checkUserAuth();
       if (

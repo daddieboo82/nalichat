@@ -59,6 +59,7 @@ export default function Profile() {
     queryFn: async () => {
       if (!targetUserId) return null;
       const res = await base44.functions.invoke("listPublicUsers", { userId: targetUserId });
+      if (res?.data?.error) throw new Error(res.data.error);
       return (res?.data?.users || [])[0] || null;
     },
     enabled: !!targetUserId,
@@ -102,6 +103,7 @@ export default function Profile() {
     queryKey: ["my-achievements", user?.id],
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicAchievements", { userId: user.id });
+      if (res?.data?.error) throw new Error(res.data.error);
       return res?.data?.achievements || [];
     },
     enabled: !!user?.id,

@@ -28,7 +28,7 @@ import { useLockedChats } from "@/lib/LockedChatsContext";
 import React from "react";
 
 
-export default React.memo(function ChatView({ conversation, messages, isLoading, loadError, currentUser, users, onSendMessage, onEditMessage, onReact, onRetryMessage, onBack, onStartDM, isBlocked, moderationBanner, theme: themePreference }) {
+export default React.memo(function ChatView({ conversation, messages, isLoading, loadError, hasOlderMessages, isLoadingOlderMessages, onLoadOlderMessages, currentUser, users, onSendMessage, onEditMessage, onReact, onRetryMessage, onBack, onStartDM, isBlocked, moderationBanner, theme: themePreference }) {
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -39,6 +39,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const [unreadSinceScroll, setUnreadSinceScroll] = useState(0);
   const scrollRef = useRef(null);
   const prevLenRef = useRef(0);
+  const prevLatestIdRef = useRef(null);
   const isNearBottomRef = useRef(true);
   const markedRef = useRef(new Set());
   const [selectedMedia, setSelectedMedia] = useState(null);
@@ -128,13 +129,19 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   // If the user is reading older messages, don't yank them down — just badge the FAB.
   useEffect(() => {
     if (!scrollRef.current) return;
+    const latestId = messages[messages.length - 1]?.id || null;
     if (isNearBottomRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       setUnreadSinceScroll(0);
-    } else if (messages.length > prevLenRef.current) {
+    } else if (
+      messages.length > prevLenRef.current
+      && prevLatestIdRef.current
+      && latestId !== prevLatestIdRef.current
+    ) {
       setUnreadSinceScroll(c => c + (messages.length - prevLenRef.current));
     }
     prevLenRef.current = messages.length;
+    prevLatestIdRef.current = latestId;
   }, [messages]);
 
   // Route a call to the device's native calling app when supported; fall back
@@ -346,7 +353,23 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
             <p>No messages yet. Say hi!</p>
           </div>
         ) : (
-          groups.map((item, i) =>
+          <>
+            {hasOlderMessages && (
+              <div className="flex justify-center pb-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={onLoadOlderMessages}
+                  disabled={isLoadingOlderMessages}
+                  className="rounded-full px-4"
+                >
+                  {isLoadingOlderMessages ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Load older messages
+                </Button>
+              </div>
+            )}
+            {groups.map((item, i) =>
           item.type === "date" ? (
             <div key={item.key} className="flex justify-center my-6 sticky top-24 z-10 pointer-events-none">
               <span className="chat-theme-chip text-[10px] text-muted-foreground font-semibold px-3 py-1 rounded-full bg-background/60 backdrop-blur-md border border-border/30 shadow-sm uppercase tracking-wider">
@@ -430,6 +453,8 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
             />
           )
         ))}
+          </>
+        )}
       </div>
 
       {/* Scroll-to-bottom FAB (Messenger pattern) */}

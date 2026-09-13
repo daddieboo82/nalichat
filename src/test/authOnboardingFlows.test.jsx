@@ -139,9 +139,9 @@ describe('auth and onboarding flows', () => {
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrongpass' } });
     fireEvent.click(screen.getByRole('button', { name: 'Log in' }));
 
-    await screen.findByText('Invalid email or password');
+    await screen.findByText('Invalid email or password.');
     expect(screen.getByText(/If you originally signed up with Google/)).toBeTruthy();
-    expect(mockToast.error).toHaveBeenCalledWith('Invalid email or password');
+    expect(mockToast.error).toHaveBeenCalledWith('Invalid email or password.');
   });
 
   it('shows Google sign-in entry points on login and register and launches provider auth', () => {
@@ -193,7 +193,7 @@ describe('auth and onboarding flows', () => {
     fireEvent.change(screen.getByLabelText('OTP'), { target: { value: '123456' } });
     fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
 
-    await screen.findByText('Invalid verification code');
+    await screen.findByText('That verification code is invalid. Check the code and try again.');
 
     fireEvent.click(screen.getByRole('button', { name: 'Resend' }));
     await waitFor(() => {
@@ -205,7 +205,7 @@ describe('auth and onboarding flows', () => {
   it('requires display name and birthdate before onboarding can complete', async () => {
     mockAuthState.current = {
       ...mockAuthState.current,
-      user: { display_name: '', full_name: '', birthdate: '', bio: '', location: '' },
+      user: { id: '507f1f77bcf86cd799439011', display_name: '', full_name: '', birthdate: '', bio: '', location: '' },
       isAuthenticated: true,
     };
 
@@ -219,14 +219,19 @@ describe('auth and onboarding flows', () => {
   });
 
   it('saves onboarding profile data and refreshes auth state', async () => {
-    const checkUserAuth = vi.fn().mockResolvedValue(undefined);
+    const checkUserAuth = vi.fn().mockResolvedValue({ id: '507f1f77bcf86cd799439012', onboarding_completed: true });
     mockAuthState.current = {
       ...mockAuthState.current,
-      user: { display_name: '', full_name: 'New User', birthdate: '', bio: '', location: '' },
+      user: { id: '507f1f77bcf86cd799439012', display_name: '', full_name: 'New User', birthdate: '', bio: '', location: '' },
       isAuthenticated: true,
       checkUserAuth,
     };
-    mockBase44.functions.invoke.mockResolvedValueOnce({ data: { success: true } });
+    mockBase44.functions.invoke.mockResolvedValueOnce({ data: {
+      success: true,
+      action: 'complete_onboarding',
+      userId: '507f1f77bcf86cd799439012',
+      onboardingCompleted: true,
+    } });
 
     const { container } = renderInRouter(<Onboarding />);
     fireEvent.change(screen.getByPlaceholderText('How should we call you?'), { target: { value: 'Fresh Artist' } });

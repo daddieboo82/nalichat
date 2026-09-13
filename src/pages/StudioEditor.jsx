@@ -52,9 +52,12 @@ export default function StudioEditor() {
     setError("");
     try {
       const result = await base44.functions.invoke('aiMasterSession', {
-        audio_url: audioUrl,
         project_title: uploadTitle || 'Untitled Mix'
       });
+      if (result?.data?.error) throw new Error(result.data.error);
+      if (!result?.data?.compressor || !result?.data?.low_shelf || !result?.data?.high_shelf) {
+        throw new Error("AI mastering response was incomplete");
+      }
       setMasterAnalysis(result.data);
     } catch (err) {
       setError("Failed to process audio. Please try again.");

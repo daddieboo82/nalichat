@@ -16,5 +16,12 @@ describe('message download membership authorization', () => {
     expect(s).toContain('Message conversation changed. Please retry.');
     expect(s).toContain('releaseConversationMembershipLock(entities, conversationLockId)');
     expect(s).not.toContain('message.participant_ids.includes(user.id)');
+    it('binds download confirmation to the current user, message, and conversation', async () => {
+    const backend = await readFile('base44/functions/authorizeMessageDownload/entry.ts', 'utf8');
+    expect(backend).toContain("action: 'authorize_message_download'");
+    expect(backend).toContain('userId: user.id');
+    expect(backend).toContain('messageId: message.id');
+    expect(backend).toContain('conversationId: conversation.id');
   });
+});
 });

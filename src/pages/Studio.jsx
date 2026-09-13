@@ -1671,11 +1671,20 @@ export default function Studio() {
         timeSignature,
       };
 
-      if (autosaveStorageKey) {
-        localStorage.setItem(autosaveStorageKey, JSON.stringify(portableTracks));
-      }
-      if (masterFxStorageKey) {
-        localStorage.setItem(masterFxStorageKey, JSON.stringify(masterFx || {}));
+      let localPersistenceFailed = false;
+      try {
+        if (autosaveStorageKey) {
+          localStorage.setItem(autosaveStorageKey, JSON.stringify(portableTracks));
+        }
+        if (masterFxStorageKey) {
+          localStorage.setItem(masterFxStorageKey, JSON.stringify(masterFx || {}));
+        }
+      } catch (storageError) {
+        console.error("Studio local persistence failed", storageError);
+        localPersistenceFailed = true;
+        if (!roomId) {
+          throw new Error("This browser could not save the project locally.");
+        }
       }
 
       if (roomId) {
@@ -1700,7 +1709,12 @@ export default function Studio() {
         file_url: portableTracks[index]?.file_url || track.file_url,
       })));
 
-      toast.success("Project saved successfully!", { id: toastId });
+      toast.success(
+        localPersistenceFailed
+          ? "Shared project saved. Local autosave is unavailable on this device."
+          : "Project saved successfully!",
+        { id: toastId },
+      );
       return true;
     } catch (e) {
       console.error("Studio save failed", e);

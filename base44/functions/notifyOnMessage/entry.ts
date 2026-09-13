@@ -55,16 +55,34 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, count: 0, signaling: true });
     }
 
+    // Notify only users who were participants when the message was created and
+    // who are still participants now. This avoids exposing historical message
+    // content to someone who joined the room after this message was sent, while
+    // also excluding anyone who has since left.
+    const currentParticipantIds = new Set(
+      Array.isArray(conversation.participant_ids) ? conversation.participant_ids : [],
+    );
+    const sentParticipantIds = Array.isArray(message.participant_ids)
+      ? message.participant_ids
+      : [];
     const recipients = new Set<string>();
-    for (const id of conversation.participant_ids || []) {
-      if (id !== message.sender_id) recipients.add(id);
+    for (const id of sentParticipantIds) {
+      if (id !== message.sender_id && currentParticipantIds.has(id)) {
+        recipients.add(id);
+      }
     }
 
-    const lockPreferences = await entities.LockedConversationPreference.filter(
-      { conversation_id: conversation.id },
-      '-locked_at',
-      500,
-    );
+    const lockPreferences: any[] = [];
+    for (let skip = 0; ; skip += 200) {
+      const page = await entities.LockedConversationPreference.filter(
+        { conversation_id: conversation.id },
+        '-locked_at',
+        200,
+        skip,
+      );
+      lockPreferences.push(...page);
+      if (page.length < 200) break;
+    }
     const lockedRecipientIds = new Set(
       (lockPreferences || [])
         .map((preference: any) => preference.user_id)

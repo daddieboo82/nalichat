@@ -2585,3 +2585,15 @@ describe('squad join response identity contract', () => {
     expect(backend).toContain('inviteCode: normalizedInviteCode');
   });
 });
+
+
+describe('squad invite creation response identity contract', () => {
+  it('shows a new invite only when it belongs to the current user and is pending', async () => {
+    const page = await readText('src/pages/Squad.jsx');
+    const backend = await readText('base44/functions/createSquadInvite/entry.ts');
+    expect(page).toContain('res?.data?.userId !== user.id');
+    expect(page).toContain('createdSquad.member_a_id !== user.id');
+    expect(page).toContain('createdSquad.status !== "pending"');
+    expect(backend).toContain('success: true, userId: user.id, squad');
+  });
+});

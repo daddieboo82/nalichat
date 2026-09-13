@@ -139,7 +139,15 @@ export const AuthProvider = ({ children }) => {
       }
       if (generation !== authCheckGenerationRef.current) return null;
       setIsLoadingAuth(false);
-      if (lastUserIdRef.current) queryClient.clear();
+      const departingUserId = lastUserIdRef.current;
+      if (departingUserId) queryClient.clear();
+      // A terminal 401 means this browser no longer has an authenticated
+      // session for the departing account. Purge its persisted outbound
+      // plaintext before discarding the user id, otherwise a later account
+      // switch cannot identify which queued entries belong to the old user.
+      if (departingUserId && getAuthErrorStatus(error) === 401) {
+        purgeOutboundQueueForUser(departingUserId);
+      }
       lastUserIdRef.current = null;
       setUser(null);
       setIsAuthenticated(false);

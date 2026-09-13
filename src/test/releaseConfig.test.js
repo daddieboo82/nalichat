@@ -2265,7 +2265,10 @@ describe('contact mutation response contracts', () => {
   it('only refreshes contact state after confirmed add/remove mutations', async () => {
     const source = await readText('src/components/messages/ContactsTab.jsx');
     expect(source).toContain('Contact removal was not confirmed.');
-    expect(source).toContain('res?.data?.success !== true || res?.data?.deleted !== true');
+    expect(source).toContain('res?.data?.action !== "delete"');
+    expect(source).toContain('res?.data?.userId !== currentUserId');
+    expect(source).toContain('res?.data?.contactId !== contactId');
+    expect(source).toContain('res?.data?.deleted !== true');
     expect(source).toContain('Contact addition was not confirmed.');
     expect(source).toContain('contact?.user_id !== currentUserId');
     expect(source).toContain('contact?.contact_user_id !== user.id');

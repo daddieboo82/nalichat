@@ -14,6 +14,16 @@ function sessionSet(key, value) {
   try { sessionStorage.setItem(key, value); } catch {}
 }
 
+async function listAllArtPosts() {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.ArtPost.list("-created_date", pageSize, skip);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function DailyRecommendation() {
   const [post, setPost] = useState(null);
   const [dismissed, setDismissed] = useState(false);
@@ -25,7 +35,7 @@ export default function DailyRecommendation() {
     const key = `nali_rec_dismissed_${new Date().toDateString()}`;
     if (sessionGet(key)) { setDismissed(true); return; }
 
-    base44.entities.ArtPost.list("-created_date", 100).then((posts) => {
+    listAllArtPosts().then((posts) => {
       if (!posts?.length) return;
       const topPosts = [...posts].sort((a, b) => getLikeCount(b) - getLikeCount(a)).slice(0, 20);
       // Pick a pseudo-random one from the top 20 based on day

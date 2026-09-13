@@ -2,6 +2,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import {
+  acquireProjectMembershipLock,
+  releaseProjectMembershipLock,
+} from '../../shared/projectMembershipLock.ts';
 
 const MAX_PUBLISH_BYTES = 100 * 1024 * 1024;
 const ALLOWED_MEDIA = new Set(['original','remix','cover','beat','production','mixing','mastering','collab']);
@@ -144,24 +148,45 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'BPM must be between 1 and 400' }, { status: 400 });
     }
 
-    const post = await base44.asServiceRole.entities.ArtPost.create({
-      title,
-      description,
-      file_url: fileUrl,
-      medium,
-      genre,
-      tags: tags.map((tag) => tag.trim()).filter(Boolean),
-      is_explicit: body?.is_explicit === true,
-      bpm: body?.bpm == null ? undefined : bpm,
-      creator_id: user.id,
-      creator_name: user.display_name || user.full_name || 'User',
-      creator_avatar: user.avatar_url || null,
-      featured: false,
-      likes: 0,
-      views: 0,
-    });
+    const entities = base44.asServiceRole.entities;
+    const projectLockId = projectId
+      ? await acquireProjectMembershipLock(entities, projectId)
+      : null;
+    if (projectId && !projectLockId) {
+      return Response.json({ error: 'Project is being updated. Please retry.' }, { status: 409 });
+    }
 
-    return Response.json({ success: true, post });
+    try {
+      if (projectId) {
+        const project = await entities.Project.get(projectId).catch(() => null);
+        if (!project) return Response.json({ error: 'Project not found' }, { status: 404 });
+        const canEdit = project.owner_id === user.id || (project.editor_ids || []).includes(user.id);
+        if (!canEdit) {
+          return Response.json({ error: 'Viewer access cannot publish this shared project' }, { status: 403 });
+        }
+      }
+
+      const post = await entities.ArtPost.create({
+        title,
+        description,
+        file_url: fileUrl,
+        medium,
+        genre,
+        tags: tags.map((tag) => tag.trim()).filter(Boolean),
+        is_explicit: body?.is_explicit === true,
+        bpm: body?.bpm == null ? undefined : bpm,
+        creator_id: user.id,
+        creator_name: user.display_name || user.full_name || 'User',
+        creator_avatar: user.avatar_url || null,
+        featured: false,
+        likes: 0,
+        views: 0,
+      });
+
+      return Response.json({ success: true, post });
+    } finally {
+      await releaseProjectMembershipLock(entities, projectLockId);
+    }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

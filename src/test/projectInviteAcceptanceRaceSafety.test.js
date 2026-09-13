@@ -16,6 +16,9 @@ describe('project invite acceptance race safety', () => {
     const s=await readFile('base44/functions/acceptProjectInvite/entry.ts','utf8');
     expect(s).toContain('[user.id]: lockedInvite.role');
     expect(s).toContain("if (lockedInvite.role === 'editor')");
-    expect(s).toContain('{ success: true, role: lockedInvite.role }');
+    expect(s).toContain("action: 'accept_project_invite'");
+    expect(s).toContain('userId: user.id');
+    expect(s).toContain('projectId: project.id');
+    expect(s).toContain('role: lockedInvite.role');
   });
 });

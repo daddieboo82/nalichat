@@ -38,7 +38,7 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
     lastSentRef.current = 0;
     supportedRef.current = true;
     transientFailureRef.current = false;
-  }, [conversationId]);
+  }, [conversationId, currentUser?.id]);
 
   const applyRows = useCallback(() => {
     const now = Date.now();
@@ -152,6 +152,17 @@ export function useTypingIndicator(conversationId, currentUser, participantIds =
         base44.functions.invoke("updateTypingStatus", {
           action: "clear",
           conversationId,
+        }).then((response) => {
+          if (
+            response?.data?.success !== true ||
+            response?.data?.action !== "clear" ||
+            response?.data?.userId !== currentUser?.id ||
+            response?.data?.conversationId !== conversationId ||
+            !Number.isInteger(response?.data?.cleared) ||
+            response.data.cleared < 0
+          ) {
+            throw new Error("Typing clear was not confirmed.");
+          }
         }).catch(() => {});
       } catch { /* ignore */ }
     };

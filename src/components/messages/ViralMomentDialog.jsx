@@ -36,6 +36,17 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
         type,
       });
       if (response?.data?.error) throw new Error(response.data.error);
+      if (type === "meme") {
+        if (!response?.data?.image_url || !response?.data?.caption) {
+          throw new Error("Nali returned an incomplete meme. Try again!");
+        }
+      } else if (
+        !Array.isArray(response?.data?.scenes)
+        || response.data.scenes.length < 3
+        || !response?.data?.caption
+      ) {
+        throw new Error("Nali returned an incomplete reel script. Try again!");
+      }
       setResult(response.data);
     } catch (err) {
       setError(err?.message || "Nali couldn't create that moment. Try again!");

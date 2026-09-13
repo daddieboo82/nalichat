@@ -120,8 +120,10 @@ Deno.serve(async (req) => {
 
     // 4. Return the current status so the UI can show the right state
     return Response.json({
+      success: true,
+      checkoutId: normalizedCheckoutId,
       status: purchase.status === 'paid' ? 'paid' : session.payment_status,
-      items: purchase.items || [],
+      items: Array.isArray(purchase.items) ? purchase.items : [],
     }, {
       headers: { 'Cache-Control': 'no-store' },
     });

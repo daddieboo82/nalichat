@@ -121,12 +121,17 @@ export default function ThankYou() {
       }
       try {
         const res = await base44.functions.invoke('verifyCheckoutPayment', { checkoutId, purchaseToken });
-        if (res?.data?.status !== 'paid') {
+        if (
+          res?.data?.success !== true ||
+          res?.data?.checkoutId !== checkoutId ||
+          res?.data?.status !== 'paid' ||
+          !Array.isArray(res?.data?.items)
+        ) {
           setPurchaseVerification("failed");
           setProcessing(false);
           return;
         }
-        purchasedItems = res?.data?.items || [];
+        purchasedItems = res.data.items;
         setPurchaseVerification("confirmed");
       } catch (err) {
         console.error("Payment verification failed:", err);

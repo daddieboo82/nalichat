@@ -4,6 +4,11 @@ import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
+import { isConversationId } from '../../shared/conversationIds.ts';
+import {
+  acquireConversationMembershipLock,
+  releaseConversationMembershipLock,
+} from '../../shared/conversationMembershipLock.ts';
 import {
   AiQuotaError,
   aiQuotaErrorResponse,
@@ -66,19 +71,25 @@ Deno.serve(async (req) => {
     if (!isBase44EntityId(messageId)) return Response.json({ error: 'Valid messageId is required' }, { status: 400 });
 
     const entities = base44.asServiceRole.entities;
-    const message = await entities.Message.get(String(messageId));
-    if (!message) return Response.json({ error: 'Message not found' }, { status: 404 });
-    if (!Array.isArray(message.participant_ids) || !message.participant_ids.includes(user.id)) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const messagePreview = await entities.Message.get(String(messageId)).catch(() => null);
+    if (!messagePreview) return Response.json({ error: 'Message not found' }, { status: 404 });
+    if (!isConversationId(messagePreview.conversation_id)) {
+      return Response.json({ error: 'Message has an invalid conversation reference' }, { status: 409 });
     }
-    if (!message.file_url || !['audio', 'file'].includes(message.type)) {
+    if (!messagePreview.file_url || !['audio', 'file'].includes(messagePreview.type)) {
       return Response.json({ error: 'Message has no transcribable audio' }, { status: 400 });
     }
-    if (!isTrustedStoredMediaUrl(message.file_url)) {
+    if (!isTrustedStoredMediaUrl(messagePreview.file_url)) {
       return Response.json({ error: 'Stored audio host is not allowed' }, { status: 400 });
     }
 
-    const mediaSize = await storedMediaSize(message.file_url);
+    // Check paid access before any remote storage probe.
+    const { allowed } = await requireEntitlement(entities, user.id, 'voice.transcription');
+    if (!allowed) {
+      return Response.json({ error: 'Premium is required for voice transcription' }, { status: 403 });
+    }
+
+    const mediaSize = await storedMediaSize(messagePreview.file_url);
     if (mediaSize === null) {
       return Response.json({ error: 'Could not verify stored audio size' }, { status: 400 });
     }
@@ -86,22 +97,50 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Voice transcription supports audio up to 50MB' }, { status: 413 });
     }
 
-    const { allowed } = await requireEntitlement(entities, user.id, 'voice.transcription');
-    if (!allowed) {
-      return Response.json({ error: 'Premium is required for voice transcription' }, { status: 403 });
+    const conversationLockId = await acquireConversationMembershipLock(
+      entities,
+      messagePreview.conversation_id,
+    );
+    if (!conversationLockId) {
+      return Response.json({ error: 'Conversation is being updated. Please retry.' }, { status: 409 });
     }
 
-    const { result, quota } = await executeMeteredAiRequest({
-      base44,
-      user,
-      operation: 'voice_transcription',
-      requestKey: request_key,
-      dispatch: () => base44.asServiceRole.integrations.Core.TranscribeAudio({
-        audio_url: message.file_url,
-      }),
-    });
-    const text = typeof result === 'string' ? result : result?.text || result?.data || '';
-    return Response.json({ text: String(text || '').trim(), quota });
+    try {
+      const [conversation, message] = await Promise.all([
+        entities.Conversation.get(messagePreview.conversation_id).catch(() => null),
+        entities.Message.get(String(messageId)).catch(() => null),
+      ]);
+      if (!conversation || !message) {
+        return Response.json({ error: 'Message not found' }, { status: 404 });
+      }
+      if (
+        message.conversation_id !== conversation.id
+        || message.file_url !== messagePreview.file_url
+        || !['audio', 'file'].includes(message.type)
+      ) {
+        return Response.json({ error: 'Message audio changed. Please retry.' }, { status: 409 });
+      }
+      const participantIds = Array.isArray(conversation.participant_ids)
+        ? conversation.participant_ids
+        : [];
+      if (!participantIds.includes(user.id)) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+
+      const { result, quota } = await executeMeteredAiRequest({
+        base44,
+        user,
+        operation: 'voice_transcription',
+        requestKey: request_key,
+        dispatch: () => base44.asServiceRole.integrations.Core.TranscribeAudio({
+          audio_url: message.file_url,
+        }),
+      });
+      const text = typeof result === 'string' ? result : result?.text || result?.data || '';
+      return Response.json({ text: String(text || '').trim(), quota });
+    } finally {
+      await releaseConversationMembershipLock(entities, conversationLockId);
+    }
   } catch (error) {
     if (error instanceof AiQuotaError) return aiQuotaErrorResponse(error);
     const bodyError = requestBodyErrorResponse(error);

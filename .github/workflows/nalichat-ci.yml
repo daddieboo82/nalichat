@@ -1,0 +1,80 @@
+name: NaliChat CI
+# Keep each verification stage independent so failures are immediately visible
+# in the PR checks instead of being hidden inside one monolithic job.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
+  production-authenticated-e2e:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      E2E_BASE_URL: https://nalichat.org
+      E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+      E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+      E2E_SECOND_USER_EMAIL: ${{ secrets.E2E_SECOND_USER_EMAIL }}
+      E2E_SECOND_USER_PASSWORD: ${{ secrets.E2E_SECOND_USER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Require production E2E credentials
+        shell: bash
+        run: |
+          test -n "$E2E_USER_EMAIL" || { echo "Missing E2E_USER_EMAIL"; exit 1; }
+          test -n "$E2E_USER_PASSWORD" || { echo "Missing E2E_USER_PASSWORD"; exit 1; }
+          test -n "$E2E_SECOND_USER_EMAIL" || { echo "Missing E2E_SECOND_USER_EMAIL"; exit 1; }
+          test -n "$E2E_SECOND_USER_PASSWORD" || { echo "Missing E2E_SECOND_USER_PASSWORD"; exit 1; }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run authenticated production smoke
+        run: npm run test:e2e -- e2e/authenticated-smoke.spec.js

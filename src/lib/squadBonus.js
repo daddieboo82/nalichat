@@ -34,10 +34,21 @@ export async function recordSquadActivity(sourceType, sourceId) {
   }
 }
 
-export async function getSquadBonusStatus() {
+export async function getSquadBonusStatus(expectedUserId) {
   try {
     const res = await base44.functions.invoke("getSquadBonusStatus", {});
-    return res?.data || { active: false, multiplier: 1, squad: null, progress: null };
+    const data = res?.data;
+    if (
+      data?.success !== true ||
+      typeof data?.userId !== "string" ||
+      !data.userId.trim() ||
+      (expectedUserId && data.userId !== expectedUserId) ||
+      typeof data?.active !== "boolean" ||
+      ![1, BONUS_MULTIPLIER].includes(Number(data?.multiplier))
+    ) {
+      throw new Error(data?.error || "Squad bonus status was not confirmed.");
+    }
+    return data;
   } catch (err) {
     console.error("Failed to load squad bonus status:", err);
     return { active: false, multiplier: 1, squad: null, progress: null };

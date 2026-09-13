@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import AudioWaveform from "../messages/AudioWaveform";
 import VoiceEffectsBar from "../messages/VoiceEffectsBar";
+import { toast } from "sonner";
 
 export default function CustomMediaPlayer({ src, className, title }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -175,7 +176,7 @@ export default function CustomMediaPlayer({ src, className, title }) {
     };
   }, []);
 
-  const togglePlay = (e) => {
+  const togglePlay = async (e) => {
     e.stopPropagation();
     if (graphReadyRef.current && audioCtxRef.current?.state === "suspended") {
       audioCtxRef.current.resume().catch(() => {});
@@ -184,19 +185,26 @@ export default function CustomMediaPlayer({ src, className, title }) {
     if (isPlaying) {
       audioRef.current.pause();
       duetAudioRef.current?.pause();
-    } else {
-      document.querySelectorAll("audio").forEach(el => {
-        if (el !== audioRef.current && el !== duetAudioRef.current) {
-          el.pause();
-        }
-      });
-      audioRef.current.play().catch(console.error);
+      setIsPlaying(false);
+      return;
+    }
+    document.querySelectorAll("audio").forEach(el => {
+      if (el !== audioRef.current && el !== duetAudioRef.current) {
+        el.pause();
+      }
+    });
+    try {
+      await audioRef.current.play();
+      setIsPlaying(true);
       if (duetMode !== "off" && duetAudioRef.current) {
         duetAudioRef.current.currentTime = audioRef.current.currentTime;
         duetAudioRef.current.play().catch(() => {});
       }
+    } catch (error) {
+      console.error("Media playback failed:", error);
+      setIsPlaying(false);
+      toast.error("Couldn't play this audio. Please try again.");
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleSeek = (val) => {

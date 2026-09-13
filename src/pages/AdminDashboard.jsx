@@ -137,30 +137,34 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {cards.map(({ label, value, icon: Icon }) => (
-            <div key={label} className="bg-card border border-border rounded-xl p-6">
-              <Icon className="w-8 h-8 text-primary mb-4" />
-              <h3 className="text-sm font-bold text-muted-foreground">{label}</h3>
-              <p className="text-4xl font-black mt-2">{value ?? 0}</p>
+        {!statsError && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {cards.map(({ label, value, icon: Icon }) => (
+                <div key={label} className="bg-card border border-border rounded-xl p-6">
+                  <Icon className="w-8 h-8 text-primary mb-4" />
+                  <h3 className="text-sm font-bold text-muted-foreground">{label}</h3>
+                  <p className="text-4xl font-black mt-2">{value ?? 0}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-card border border-border rounded-xl p-5">
-            <p className="text-sm text-muted-foreground">Premium</p>
-            <p className="text-2xl font-bold">{stats.premiumSubscriptions ?? 0}</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-5">
-            <p className="text-sm text-muted-foreground">Pending checkout</p>
-            <p className="text-2xl font-bold">{stats.pendingSubscriptions ?? 0}</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-5">
-            <p className="text-sm text-muted-foreground">Canceled / ended</p>
-            <p className="text-2xl font-bold">{stats.canceledSubscriptions ?? 0}</p>
-          </div>
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              <div className="bg-card border border-border rounded-xl p-5">
+                <p className="text-sm text-muted-foreground">Premium</p>
+                <p className="text-2xl font-bold">{stats.premiumSubscriptions ?? 0}</p>
+              </div>
+              <div className="bg-card border border-border rounded-xl p-5">
+                <p className="text-sm text-muted-foreground">Pending checkout</p>
+                <p className="text-2xl font-bold">{stats.pendingSubscriptions ?? 0}</p>
+              </div>
+              <div className="bg-card border border-border rounded-xl p-5">
+                <p className="text-sm text-muted-foreground">Canceled / ended</p>
+                <p className="text-2xl font-bold">{stats.canceledSubscriptions ?? 0}</p>
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="bg-card border border-border rounded-xl p-6">
           <h2 className="text-xl font-bold mb-4 border-b border-border pb-2 flex items-center gap-2">

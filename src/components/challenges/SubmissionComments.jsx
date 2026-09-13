@@ -30,7 +30,7 @@ export default function SubmissionComments({ submissionId, user }) {
     });
     if (res?.data?.error) throw new Error(res.data.error);
     const created = res?.data?.comment;
-    setComments(created ? [created, ...comments] : comments);
+    if (created) setComments((current) => [...current, created]);
     setText("");
   };
 

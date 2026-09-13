@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { UserX, Settings, Crown, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 const ROLE_COLORS = {
   editor: "bg-primary/20 text-primary",
@@ -41,10 +42,11 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
     if (userChanged) onOpenChange(false);
   }, [currentUser?.id, project?.id, onOpenChange]);
 
-  const { data: allUsers = [] } = useQuery({
+  const { data: allUsers = [], isLoading: usersLoading, isError: usersError, refetch: refetchUsers } = useQuery({
     queryKey: ["users", "directory", currentUser?.id],
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicUsers", {});
+      if (res?.data?.error) throw new Error(res.data.error);
       return res?.data?.users || [];
     },
     enabled: open && !!currentUser?.id,
@@ -61,6 +63,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
         projectId: project.id,
         ...payload,
       });
+      if (response?.data?.error) throw new Error(response.data.error);
       return {
         stale: generation !== mutationGenerationRef.current,
         response,
@@ -69,6 +72,10 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
     onSuccess: (result) => {
       if (result?.stale) return;
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Project collaborator updated.");
+    },
+    onError: (error) => {
+      toast.error(error?.message || "Couldn't update this collaborator. Please try again.");
     },
   });
 
@@ -98,8 +105,21 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
             Assign <strong className="text-foreground">Viewer</strong> to allow read-only access.
           </p>
 
+          {usersLoading && (
+            <div className="py-6 text-center text-sm text-muted-foreground">Loading collaborators...</div>
+          )}
+
+          {usersError && !usersLoading && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-center" role="alert">
+              <p className="text-sm font-semibold">Couldn't load collaborators</p>
+              <Button type="button" size="sm" variant="outline" className="mt-3" onClick={() => void refetchUsers()}>
+                Retry
+              </Button>
+            </div>
+          )}
+
           {/* Owner row */}
-          {owner && (
+          {!usersLoading && !usersError && owner && (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40">
               <Avatar className="w-8 h-8 shrink-0">
                 <AvatarImage src={owner.avatar_url} />
@@ -118,7 +138,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
           )}
 
           {/* Collaborators */}
-          {collaborators.length === 0 ? (
+          {!usersLoading && !usersError && (collaborators.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
               <p className="text-sm">No collaborators yet.</p>
               <p className="text-xs mt-1">Create an invite link from the project or Jam Room to add collaborators.</p>
@@ -160,7 +180,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
                 );
               })}
             </div>
-          )}
+          ))}
 
           {/* Delete Project */}
           <div className="pt-4 border-t border-border/50">
@@ -202,6 +222,7 @@ export default function ProjectSettingsDialog({ project, open, onOpenChange, onD
                     onOpenChange(false);
                   } catch (error) {
                     console.error("Project deletion failed", error);
+                    toast.error(error?.message || "Couldn't delete this project. Please try again.");
                   }
                 }}
               >

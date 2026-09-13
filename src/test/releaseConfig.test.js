@@ -2723,3 +2723,18 @@ describe('typing heartbeat response identity contract', () => {
     expect(hook).toContain('response?.data?.conversationId !== conversationId');
   });
 });
+
+
+describe('secure upload response identity contract', () => {
+  it('binds upload confirmation to the current user and exact file metadata', async () => {
+    const backend = await readText('base44/functions/secureUploadFile/entry.ts');
+    const client = await readText('src/lib/secureUpload.js');
+    expect(backend).toContain("action: 'secure_upload'");
+    expect(backend).toContain('userId: user.id');
+    expect(backend).toContain('fileName: file.name');
+    expect(backend).toContain('fileSize: file.size');
+    expect(client).toContain('result?.data?.userId !== authUser.id');
+    expect(client).toContain('result?.data?.fileName !== file.name');
+    expect(client).toContain('result?.data?.fileSize !== file.size');
+  });
+});

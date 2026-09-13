@@ -36,3 +36,16 @@ describe('follow-up reminder mutation response identity contract', () => {
     expect(client).toContain('data?.reminder?.owner_id !== userId');
   });
 });
+
+
+describe('follow-up reminder list response identity contract', () => {
+  it('binds reminder lists to the current authenticated owner', async () => {
+    const backend = await readFile('base44/functions/listFollowUpReminders/entry.ts', 'utf8');
+    const client = await readFile('src/lib/followUpReminders.js', 'utf8');
+    expect(backend).toContain("action: 'list_reminders'");
+    expect(backend).toContain('userId: user?.id || null');
+    expect(client).toContain('data?.action !== "list_reminders"');
+    expect(client).toContain('data?.userId !== userId');
+    expect(client).toContain('reminder?.owner_id !== userId');
+  });
+});

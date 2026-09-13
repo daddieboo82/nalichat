@@ -1713,6 +1713,13 @@ export default function Studio() {
           },
         });
         if (saved?.data?.error) throw new Error(saved.data.error);
+        if (
+          saved?.data?.success !== true ||
+          saved?.data?.action !== "update_project" ||
+          saved?.data?.userId !== user?.id ||
+          saved?.data?.projectId !== roomId ||
+          saved?.data?.project?.id !== roomId
+        ) throw new Error("Project save was not confirmed.");
       }
 
       // Replace transient blob URLs in memory with their uploaded URLs so future

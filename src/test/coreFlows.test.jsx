@@ -417,7 +417,14 @@ describe('core usage flow coverage', () => {
       }
       if (name === 'sendConversationMessage') {
         const result = await pending.promise;
-        return { data: { message: result } };
+        return { data: {
+          success: true,
+          action: 'send',
+          userId: currentUser.id,
+          conversationId: payload?.conversation_id,
+          clientMessageKey: payload?.client_message_key,
+          message: { ...result, client_message_key: payload?.client_message_key },
+        } };
       }
       return { data: {} };
     });

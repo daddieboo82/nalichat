@@ -680,7 +680,7 @@ Deno.serve(async (req) => {
       const name = String(body?.name || '').trim().slice(0, 120);
       if (!name) return Response.json({ error: 'Group name is required' }, { status: 400 });
       const updated = await entities.Conversation.update(conversation.id, { name });
-      return Response.json({ success: true, conversation: updated });
+      return Response.json({ success: true, action: 'rename', userId: user.id, conversationId: conversation.id, name, conversation: updated });
     }
 
     if (action === 'leave') {
@@ -694,6 +694,9 @@ Deno.serve(async (req) => {
         await entities.Conversation.delete(conversation.id);
         return Response.json({
           success: true,
+          action: 'leave',
+          userId: user.id,
+          conversationId: conversation.id,
           deleted: true,
           deleted_messages: deletedMessages,
           deleted_typing_rows: deletedTypingRows,
@@ -704,7 +707,7 @@ Deno.serve(async (req) => {
         conversation,
         participantIds,
       );
-      return Response.json({ success: true, conversation: updated });
+      return Response.json({ success: true, action: 'leave', userId: user.id, conversationId: conversation.id, conversation: updated });
     }
 
     return Response.json({ error: 'Unsupported conversation action' }, { status: 400 });

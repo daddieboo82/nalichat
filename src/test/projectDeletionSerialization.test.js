@@ -14,7 +14,7 @@ describe('project deletion serialization', () => {
     expect(source).toContain('acquireProjectMembershipLock');
     expect(source).toContain('releaseProjectMembershipLock');
     expect(source).toContain('status: 409');
-    expect(source).toContain('projectId.length > 200');
+    expect(source).toContain('!isBase44EntityId(projectId.trim())');
     expect(source.indexOf('acquireProjectMembershipLock')).toBeLessThan(
       source.indexOf('entities.Project.get(projectId)'),
     );

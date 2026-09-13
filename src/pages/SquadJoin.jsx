@@ -25,7 +25,19 @@ export default function SquadJoin() {
     try {
       const res = await base44.functions.invoke("getSquadInvite", { inviteCode });
       if (requestId !== loadRequestRef.current) return;
-      setSquad(res?.data?.squad || null);
+      const data = res?.data;
+      const normalizedInviteCode = String(inviteCode || "").trim().toUpperCase();
+      if (
+        data?.success !== true ||
+        data?.inviteCode !== normalizedInviteCode ||
+        (user?.id && data?.viewerUserId !== user.id) ||
+        (!user?.id && data?.viewerUserId !== null) ||
+        !data?.squad ||
+        typeof data.squad !== "object"
+      ) {
+        throw new Error(data?.error || "Squad invite was not confirmed.");
+      }
+      setSquad(data.squad);
     } catch (e) {
       if (requestId !== loadRequestRef.current) return;
       console.error("Failed to load squad invite", e);

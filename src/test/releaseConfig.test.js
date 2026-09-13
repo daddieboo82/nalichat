@@ -2451,7 +2451,7 @@ describe('onboarding auth refresh contract', () => {
   it('redirects only after the refreshed authenticated user confirms onboarding', async () => {
     const source = await readText('src/pages/Onboarding.jsx');
     expect(source).toContain('const refreshedUser = await checkUserAuth()');
-    expect(source).toContain('refreshedUser.id !== user?.id');
+    expect(source).toContain('refreshedUser.id !== submittingUserId');
     expect(source).toContain('refreshedUser.onboarding_completed !== true');
     expect(source).toContain('your session did not refresh');
   });

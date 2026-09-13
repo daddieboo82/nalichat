@@ -10,7 +10,7 @@ import NaliPresenceIndicator from "@/components/nali/NaliPresenceIndicator";
 import ReportContentDialog from "@/components/ReportContentDialog";
 import { copyToClipboard } from "@/lib/clipboard";
 import { useSubscription } from "@/hooks/useSubscription";
-import { recordArtPostPlay } from "@/lib/trackAnalytics";
+import { recordArtPostPlay, recordArtPostView } from "@/lib/trackAnalytics";
 import { base44 } from "@/api/base44Client";
 
 export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlaylist, currentUser }) {
@@ -37,7 +37,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
 
   useEffect(() => {
     if (!open || !post?.id || !currentUser?.id || post.creator_id === currentUser.id) return;
-    base44.functions.invoke("recordArtPostView", { postId: post.id }).catch(() => {});
+    void recordArtPostView(post.id, currentUser.id);
   }, [open, post?.id, post?.creator_id, currentUser?.id]);
 
   const togglePlay = () => {

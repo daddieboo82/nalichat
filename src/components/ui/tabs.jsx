@@ -4,8 +4,8 @@ import * as TabsPrimitive from "@radix-ui/react-tabs"
 import { cn } from "@/lib/utils"
 
 const Tabs = TabsPrimitive.Root
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const TabsList = React.forwardRef(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
     className={cn(
@@ -15,8 +15,8 @@ const Tabs = TabsPrimitive.Root
     {...props} />
 ))
 TabsList.displayName = TabsPrimitive.List.displayName
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const TabsTrigger = React.forwardRef(({ className, ...props }, ref) => (
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
@@ -26,8 +26,8 @@ TabsList.displayName = TabsPrimitive.List.displayName
     {...props} />
 ))
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const TabsContent = React.forwardRef(({ className, ...props }, ref) => (
   <TabsPrimitive.Content
     ref={ref}
     className={cn(

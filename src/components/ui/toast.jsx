@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 import * as ToastPrimitives from "@radix-ui/react-toast";
 
 const ToastProvider = ToastPrimitives.Provider;
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const ToastViewport = React.forwardRef(({ className, ...props }, ref) => (
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
@@ -34,8 +34,8 @@ const toastVariants = cva(
     },
   }
 );
-/** @type {any} */
-(({ className, variant, ...props }, ref) => {
+
+const Toast = React.forwardRef(({ className, variant, ...props }, ref) => {
   return (
     <ToastPrimitives.Root
       ref={ref}
@@ -45,8 +45,8 @@ const toastVariants = cva(
   );
 });
 Toast.displayName = ToastPrimitives.Root.displayName;
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const ToastAction = React.forwardRef(({ className, ...props }, ref) => (
   <ToastPrimitives.Action
     ref={ref}
     className={cn(
@@ -57,8 +57,8 @@ Toast.displayName = ToastPrimitives.Root.displayName;
   />
 ));
 ToastAction.displayName = ToastPrimitives.Action.displayName;
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const ToastClose = React.forwardRef(({ className, ...props }, ref) => (
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
@@ -72,8 +72,8 @@ ToastAction.displayName = ToastPrimitives.Action.displayName;
   </ToastPrimitives.Close>
 ));
 ToastClose.displayName = ToastPrimitives.Close.displayName;
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const ToastTitle = React.forwardRef(({ className, ...props }, ref) => (
   <ToastPrimitives.Title
     ref={ref}
     className={cn("text-sm font-semibold", className)}
@@ -81,8 +81,8 @@ ToastClose.displayName = ToastPrimitives.Close.displayName;
   />
 ));
 ToastTitle.displayName = ToastPrimitives.Title.displayName;
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const ToastDescription = React.forwardRef(({ className, ...props }, ref) => (
   <ToastPrimitives.Description
     ref={ref}
     className={cn("text-sm opacity-90", className)}

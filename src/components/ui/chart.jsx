@@ -21,8 +21,8 @@ function useChart() {
 
   return context
 }
-/** @type {any} */
-(({ id, className, children, config, ...props }, ref) => {
+
+const ChartContainer = React.forwardRef(({ id, className, children, config, ...props }, ref) => {
   const uniqueId = React.useId()
   const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`
 
@@ -78,8 +78,8 @@ return color ? `  --color-${key}: ${color};` : null
 }
 
 const ChartTooltip = RechartsPrimitive.Tooltip
-/** @type {any} */
-((
+
+const ChartTooltipContent = React.forwardRef((
   {
     active,
     payload,
@@ -215,8 +215,8 @@ const ChartTooltip = RechartsPrimitive.Tooltip
 ChartTooltipContent.displayName = "ChartTooltip"
 
 const ChartLegend = RechartsPrimitive.Legend
-/** @type {any} */
-((
+
+const ChartLegendContent = React.forwardRef((
   { className, hideIcon = false, payload, verticalAlign = "bottom", nameKey },
   ref
 ) => {

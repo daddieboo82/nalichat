@@ -16,8 +16,7 @@ const DropdownMenuSub = DropdownMenuPrimitive.Sub
 
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
 
-/** @type {any} *//** @type {any} */
-(({ className, inset, children, ...props }, ref) => (
+const DropdownMenuSubTrigger = React.forwardRef(({ className, inset, children, ...props }, ref) => (
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
@@ -33,8 +32,7 @@ const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
 DropdownMenuSubTrigger.displayName =
   DropdownMenuPrimitive.SubTrigger.displayName
 
-/** @type {any} *//** @type {any} */
-(({ className, ...props }, ref) => (
+const DropdownMenuSubContent = React.forwardRef(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.SubContent
     ref={ref}
     className={cn(
@@ -46,8 +44,7 @@ DropdownMenuSubTrigger.displayName =
 DropdownMenuSubContent.displayName =
   DropdownMenuPrimitive.SubContent.displayName
 
-/** @type {any} *//** @type {any} */
-(({ className, sideOffset = 4, ...props }, ref) => (
+const DropdownMenuContent = React.forwardRef(({ className, sideOffset = 4, ...props }, ref) => (
   <DropdownMenuPrimitive.Portal>
     <DropdownMenuPrimitive.Content
       ref={ref}
@@ -62,8 +59,7 @@ DropdownMenuSubContent.displayName =
 ))
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName
 
-/** @type {any} *//** @type {any} */
-(({ className, inset, ...props }, ref) => (
+const DropdownMenuItem = React.forwardRef(({ className, inset, ...props }, ref) => (
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
@@ -75,8 +71,7 @@ DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName
 ))
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName
 
-/** @type {any} *//** @type {any} */
-(({ className, children, checked, ...props }, ref) => (
+const DropdownMenuCheckboxItem = React.forwardRef(({ className, children, checked, ...props }, ref) => (
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
@@ -96,8 +91,7 @@ DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName
 DropdownMenuCheckboxItem.displayName =
   DropdownMenuPrimitive.CheckboxItem.displayName
 
-/** @type {any} *//** @type {any} */
-(({ className, children, ...props }, ref) => (
+const DropdownMenuRadioItem = React.forwardRef(({ className, children, ...props }, ref) => (
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
@@ -115,8 +109,7 @@ DropdownMenuCheckboxItem.displayName =
 ))
 DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName
 
-/** @type {any} *//** @type {any} */
-(({ className, inset, ...props }, ref) => (
+const DropdownMenuLabel = React.forwardRef(({ className, inset, ...props }, ref) => (
   <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn("px-2 py-1.5 text-sm font-semibold", inset && "pl-8", className)}
@@ -124,8 +117,7 @@ DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName
 ))
 DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName
 
-/** @type {any} *//** @type {any} */
-(({ className, ...props }, ref) => (
+const DropdownMenuSeparator = React.forwardRef(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.Separator
     ref={ref}
     className={cn("-mx-1 my-1 h-px bg-muted", className)}

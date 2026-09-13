@@ -10,9 +10,7 @@ import { cn } from "@/lib/utils"
 // bare circle floating with no guide line. data-[orientation=…] variants give
 // each part correct flex direction and sizing in both orientations, while
 // still letting a consumer's className (merged last via cn) override size.
-/** @type {any} */
-/** @type {any} *//** @type {any} */
-(({ className, ...props }, ref) => (
+const Slider = React.forwardRef(({ className, ...props }, ref) => (
   <SliderPrimitive.Root
     ref={ref}
     className={cn(

@@ -13,8 +13,8 @@ const DialogTrigger = DialogPrimitive.Trigger
 const DialogPortal = DialogPrimitive.Portal
 
 const DialogClose = DialogPrimitive.Close
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
@@ -24,8 +24,8 @@ const DialogClose = DialogPrimitive.Close
     {...props} />
 ))
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
-/** @type {any} */
-(({ className, children, ...props }, ref) => (
+
+const DialogContent = React.forwardRef(({ className, children, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -65,16 +65,16 @@ const DialogFooter = ({
     {...props} />
 )
 DialogFooter.displayName = "DialogFooter"
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const DialogTitle = React.forwardRef(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
     className={cn("text-lg font-semibold leading-none tracking-tight", className)}
     {...props} />
 ))
 DialogTitle.displayName = DialogPrimitive.Title.displayName
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const DialogDescription = React.forwardRef(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
     className={cn("text-sm text-muted-foreground", className)}

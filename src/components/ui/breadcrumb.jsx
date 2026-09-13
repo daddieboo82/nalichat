@@ -3,13 +3,13 @@ import { Slot } from "@radix-ui/react-slot"
 import { ChevronRight, MoreHorizontal } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-/** @type {any} */
-(
+
+const Breadcrumb = React.forwardRef(
   ({ ...props }, ref) => <nav ref={ref} aria-label="breadcrumb" {...props} />
 )
 Breadcrumb.displayName = "Breadcrumb"
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const BreadcrumbList = React.forwardRef(({ className, ...props }, ref) => (
   <ol
     ref={ref}
     className={cn(
@@ -19,16 +19,16 @@ Breadcrumb.displayName = "Breadcrumb"
     {...props} />
 ))
 BreadcrumbList.displayName = "BreadcrumbList"
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const BreadcrumbItem = React.forwardRef(({ className, ...props }, ref) => (
   <li
     ref={ref}
     className={cn("inline-flex items-center gap-1.5", className)}
     {...props} />
 ))
 BreadcrumbItem.displayName = "BreadcrumbItem"
-/** @type {any} */
-(({ asChild, className, ...props }, ref) => {
+
+const BreadcrumbLink = React.forwardRef(({ asChild, className, ...props }, ref) => {
   const Comp = asChild ? Slot : "a"
 
   return (
@@ -39,8 +39,8 @@ BreadcrumbItem.displayName = "BreadcrumbItem"
   );
 })
 BreadcrumbLink.displayName = "BreadcrumbLink"
-/** @type {any} */
-(({ className, ...props }, ref) => (
+
+const BreadcrumbPage = React.forwardRef(({ className, ...props }, ref) => (
   <span
     ref={ref}
     role="link"

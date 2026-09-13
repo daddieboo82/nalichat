@@ -5,7 +5,7 @@ describe('notification read mutation hardening', () => {
   it('updates only the current user notifications server-side', async () => {
     const fn = await readFile('base44/functions/markNotificationsRead/entry.ts', 'utf8');
     expect(fn).toContain("req.method !== 'POST'");
-    expect(fn).toContain("if (user.is_banned)");
+    expect(fn).toContain("if (!user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });");
     expect(fn).toContain("'notification_mark_read'");
     expect(fn).toContain("{ recipient_id: user.id }");
     expect(fn).toContain("{ $set: { read: true } }");

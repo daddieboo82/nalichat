@@ -284,7 +284,7 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
                   <Clapperboard className="w-4 h-4 text-accent" />
                   <p className="text-xs font-heading font-semibold text-muted-foreground">REEL SCRIPT</p>
                 </div>
-                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[200px] overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] pr-1">
                   {result.scenes?.map((scene, i) => (
                     <div key={i} className="bg-secondary/60 rounded-lg p-2.5 border-l-2 border-accent/40">
                       <div className="flex items-center justify-between mb-1">

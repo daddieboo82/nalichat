@@ -50,7 +50,7 @@ export default function SubscriptionSettings() {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-border bg-card/50 p-6" aria-live="polite">
+      <div className="ui-surface rounded-2xl border border-border bg-card/50 p-5 sm:p-6" aria-live="polite">
         <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
         <span className="sr-only">Loading subscription</span>
       </div>
@@ -59,13 +59,13 @@ export default function SubscriptionSettings() {
 
   if (isError) {
     return (
-      <div className="rounded-2xl border border-destructive/50 bg-card/50 p-6" role="alert">
+      <div className="ui-surface rounded-2xl border border-destructive/50 bg-card/50 p-5 sm:p-6" role="alert">
         <h3 className="font-heading text-lg font-semibold">Subscription unavailable</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           We could not verify your plan. Paid access remains locked until verification succeeds.
         </p>
         {error?.message && <p className="sr-only">{error.message}</p>}
-        <Button className="mt-4" size="sm" variant="outline" onClick={() => refetch()}>
+        <Button className="ui-hover mt-4 min-h-10 rounded-xl" size="sm" variant="outline" onClick={() => refetch()}>
           Try again
         </Button>
       </div>
@@ -77,7 +77,7 @@ export default function SubscriptionSettings() {
   const canManageBilling = subscription.provider === "stripe";
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-card/50 p-6 backdrop-blur-xl">
+    <div className="ui-surface rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:p-6">
       <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -131,7 +131,7 @@ export default function SubscriptionSettings() {
         </div>
 
         {canManageBilling ? (
-          <Button onClick={manageBilling} disabled={openingPortal} className="shrink-0 gap-2">
+          <Button onClick={manageBilling} disabled={openingPortal} className="ui-hover min-h-11 w-full shrink-0 gap-2 rounded-xl font-semibold sm:w-auto">
             {openingPortal ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
@@ -140,7 +140,7 @@ export default function SubscriptionSettings() {
             {openingPortal ? "Opening..." : "Manage Billing"}
           </Button>
         ) : (
-          <Button asChild className="shrink-0 gap-2">
+          <Button asChild className="ui-hover min-h-11 w-full shrink-0 gap-2 rounded-xl font-semibold sm:w-auto">
             <Link to="/pricing">
               <CreditCard className="h-4 w-4" aria-hidden="true" />
               View plans

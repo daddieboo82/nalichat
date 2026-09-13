@@ -208,19 +208,19 @@ export default function ProjectsSummary() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto h-full overflow-y-auto custom-scrollbar">
+    <div className="mx-auto h-full max-w-5xl overflow-y-auto px-4 py-5 pb-[max(2rem,env(safe-area-inset-bottom))] custom-scrollbar sm:p-6">
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-heading font-bold mb-2">Collaboration Summary</h1>
+          <h1 className="mb-2 text-2xl font-heading font-bold tracking-tight sm:text-3xl">Collaboration Summary</h1>
           <p className="text-muted-foreground">Overview of your active projects, milestones, and shared files.</p>
         </div>
-        <Button onClick={() => setShowNewProject(true)} className="gap-2 shrink-0">
+        <Button onClick={() => setShowNewProject(true)} className="ui-hover min-h-11 shrink-0 gap-2 rounded-xl font-semibold shadow-lg shadow-primary/10">
           <Plus className="w-4 h-4" /> New Project
         </Button>
       </div>
 
       {data.projects.length === 0 ? (
-        <div className="text-center py-12 bg-card/50 backdrop-blur-xl rounded-2xl border border-white/[0.06]">
+        <div className="ui-surface rounded-3xl border border-white/[0.06] bg-card/50 px-5 py-12 text-center backdrop-blur-xl">
           <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">No Active Projects</h2>
           <p className="text-muted-foreground">You are not collaborating on any projects yet.</p>
@@ -239,10 +239,10 @@ export default function ProjectsSummary() {
                 transition={{ delay: idx * 0.1 }}
               >
                 <Card 
-                  className="bg-card/50 backdrop-blur-xl border border-white/[0.06] shadow-sm overflow-hidden cursor-pointer hover:border-white/[0.12] hover:bg-card/70 transition-all duration-300 group"
+                  className="ui-surface ui-hover group cursor-pointer overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 shadow-sm backdrop-blur-xl hover:border-white/[0.12] hover:bg-card/70"
                   onClick={() => navigate(`/studio?room=${project.id}`)}
                 >
-                  <CardHeader className="bg-secondary/30 border-b border-border/50 pb-4">
+                  <CardHeader className="border-b border-border/50 bg-secondary/30 p-4 sm:p-5">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="group-hover:text-primary transition-colors">
                         <CardTitle className="text-xl flex items-center gap-2">
@@ -265,7 +265,7 @@ export default function ProjectsSummary() {
                           <div onClick={e => e.stopPropagation()}>
                             <Popover>
                               <PopoverTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-6 text-xs gap-1.5 ml-2 border-primary/50 text-primary hover:bg-primary/10 transition-colors">
+                                <Button variant="outline" size="sm" className="ui-hover min-h-9 gap-1.5 rounded-xl border-primary/50 px-3 text-xs text-primary transition-colors hover:bg-primary/10">
                                   <Link2 className="w-3 h-3" /> Invite
                                 </Button>
                               </PopoverTrigger>
@@ -317,7 +317,7 @@ export default function ProjectsSummary() {
                     <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border/50">
                       
                       {/* Milestones Column */}
-                      <div className="p-5">
+                      <div className="p-4 sm:p-5">
                         <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4" />
                           Current Milestones
@@ -361,7 +361,7 @@ export default function ProjectsSummary() {
                         ) : (
                           <div className="space-y-3">
                             {projectFiles.slice(0, 5).map(f => (
-                              <div key={f.id} className="flex items-center gap-3 bg-secondary/30 p-2 rounded-lg border border-border/40">
+                              <div key={f.id} className="flex items-center gap-3 rounded-xl border border-border/40 bg-secondary/30 p-2.5">
                                 <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
                                   <FileText className="w-4 h-4 text-primary" />
                                 </div>
@@ -375,7 +375,7 @@ export default function ProjectsSummary() {
                                   href={f.file_url} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="text-xs font-medium text-primary hover:underline shrink-0"
+                                  className="ui-hover shrink-0 rounded-lg px-2 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10"
                                   onClick={e => e.stopPropagation()}
                                 >
                                   View
@@ -401,7 +401,7 @@ export default function ProjectsSummary() {
       )}
 
       <Dialog open={showNewProject} onOpenChange={setShowNewProject}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] rounded-2xl">
           <DialogHeader>
             <DialogTitle>Create New Project</DialogTitle>
           </DialogHeader>

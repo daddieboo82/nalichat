@@ -885,7 +885,7 @@ export default function Messages() {
 
         {/* Chat View */}
         <div className={cn(
-        "flex-1 flex flex-col min-w-0 bg-transparent relative z-0 overflow-hidden",
+        "flex-1 h-full min-h-0 flex flex-col min-w-0 bg-transparent relative z-0 overflow-hidden",
         !selectedConvId && "hidden sm:flex"
         )}>
           {selectedConv ? (

@@ -2597,3 +2597,17 @@ describe('squad invite creation response identity contract', () => {
     expect(backend).toContain('success: true, userId: user.id, squad');
   });
 });
+
+
+describe('message send response identity contract', () => {
+  it('accepts delivery only for the exact user, conversation, and client message key', async () => {
+    const client = await readText('src/pages/Messages.jsx');
+    const backend = await readText('base44/functions/sendConversationMessage/entry.ts');
+    expect(client).toContain('res?.data?.action !== "send"');
+    expect(client).toContain('res?.data?.userId !== currentUser?.id');
+    expect(client).toContain('res?.data?.conversationId !== conversationId');
+    expect(client).toContain('res?.data?.clientMessageKey !== msgData.client_message_key');
+    expect(backend).toContain("action: 'send'");
+    expect(backend).toContain('userId: user.id');
+  });
+});

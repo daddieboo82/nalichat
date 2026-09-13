@@ -1732,12 +1732,15 @@ export default function Studio() {
           },
         });
         if (saved?.data?.error) throw new Error(saved.data.error);
+        const expectedUpdatedFields = ["bpm", "key", "master_fx", "studio_state", "title"];
         if (
           saved?.data?.success !== true ||
           saved?.data?.action !== "update_project" ||
           saved?.data?.userId !== user?.id ||
           saved?.data?.projectId !== roomId ||
-          saved?.data?.project?.id !== roomId
+          saved?.data?.project?.id !== roomId ||
+          !Array.isArray(saved?.data?.updatedFields) ||
+          !expectedUpdatedFields.every((field) => saved.data.updatedFields.includes(field))
         ) throw new Error("Project save was not confirmed.");
       }
 

@@ -81,6 +81,9 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
+      action: 'revoke_project_invites',
+      userId: user.id,
+      projectId: project.id,
       revoked,
       role,
     }, { headers: { 'Cache-Control': 'no-store' } });

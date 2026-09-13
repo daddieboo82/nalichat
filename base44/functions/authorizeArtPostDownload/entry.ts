@@ -51,7 +51,14 @@ Deno.serve(async (req) => {
     if (!isTrustedStoredMediaUrl(post.file_url)) {
       return Response.json({ error: 'Stored track media host is not allowed' }, { status: 400 });
     }
-    return Response.json({ success: true, file_url: post.file_url, title: post.title || 'download' });
+    return Response.json({
+      success: true,
+      action: 'authorize_art_post_download',
+      userId: user.id,
+      postId: post.id,
+      file_url: post.file_url,
+      title: post.title || 'download',
+    });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

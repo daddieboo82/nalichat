@@ -262,19 +262,37 @@ describe('core usage flow coverage', () => {
         return { data: { liked: true, likes: 1 } };
       }
       if (name === 'secureUploadFile') {
-        return { data: { file_url: 'https://cdn.example.com/file.mp3' } };
+        const file = payload?.file;
+        return { data: {
+          success: true,
+          action: 'secure_upload',
+          userId: 'user-1',
+          fileName: file?.name,
+          fileSize: file?.size,
+          fileType: file?.type || '',
+          file_url: 'https://cdn.example.com/file.mp3',
+        } };
       }
       if (name === 'createArtPost') {
-        return { data: { success: true, post: { id: 'post-1', ...payload } } };
+        return { data: {
+          success: true,
+          action: 'create_art_post',
+          userId: 'user-1',
+          postId: 'post-1',
+          post: { id: 'post-1', creator_id: 'user-1', ...payload },
+        } };
       }
       if (name === 'publishStudioBounce') {
-        return { data: { success: true, post: { id: 'post-1', ...payload } } };
+        return { data: { success: true, action: 'publish_studio_bounce', userId: 'user-1', postId: 'post-1', post: { id: 'post-1', creator_id: 'user-1', ...payload } } };
       }
       if (name === 'claimPublishedPostReward') {
-        return { data: { success: true, awarded: true, xp: 50 } };
+        return { data: { success: true, action: 'claim_publish_reward', userId: 'user-1', postId: payload?.postId, awarded: true, xp: 50 } };
       }
       if (name === 'recordSquadActivity') {
-        return { data: { success: true, tracked: true } };
+        return { data: { success: true, action: 'record_squad_activity', userId: 'user-1', sourceType: payload?.sourceType, sourceId: payload?.sourceId, tracked: true } };
+      }
+      if (name === 'updateMyProfile') {
+        return { data: { success: true, action: 'update_my_profile', userId: 'user-1' } };
       }
       if (name === 'manageConversation' && payload?.action === 'create_dm') {
         const created = {
@@ -503,10 +521,25 @@ describe('core usage flow coverage', () => {
     mockBase44.functions.invoke.mockImplementation(async (name, payload) => {
       if (name === 'aiMasterSession') return { data: {} };
       if (name === 'secureUploadFile') {
-        return { data: { file_url: 'https://cdn.example.com/file.mp3' } };
+        const file = payload?.file;
+        return { data: {
+          success: true,
+          action: 'secure_upload',
+          userId: 'user-1',
+          fileName: file?.name,
+          fileSize: file?.size,
+          fileType: file?.type || '',
+          file_url: 'https://cdn.example.com/file.mp3',
+        } };
       }
       if (name === 'publishStudioBounce') {
-        return { data: { success: true, post: { id: 'post-1', ...payload } } };
+        return { data: { success: true, action: 'publish_studio_bounce', userId: 'user-1', postId: 'post-1', post: { id: 'post-1', creator_id: 'user-1', ...payload } } };
+      }
+      if (name === 'claimPublishedPostReward') {
+        return { data: { success: true, action: 'claim_publish_reward', userId: 'user-1', postId: payload?.postId } };
+      }
+      if (name === 'recordSquadActivity') {
+        return { data: { success: true, action: 'record_squad_activity', userId: 'user-1', sourceType: payload?.sourceType, sourceId: payload?.sourceId } };
       }
       return { data: {} };
     });
@@ -566,7 +599,11 @@ describe('core usage flow coverage', () => {
   });
 
   it('loads settings, saves profile edits, and refreshes the global auth user', async () => {
-    const checkUserAuth = vi.fn().mockResolvedValue(undefined);
+    const checkUserAuth = vi.fn().mockImplementation(async () => ({
+      id: 'user-1',
+      display_name: 'New Alias',
+      avatar_url: 'https://cdn.example.com/avatar.png',
+    }));
     const currentUser = {
       id: 'user-1',
       email: 'user@example.com',

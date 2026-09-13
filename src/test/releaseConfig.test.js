@@ -2447,3 +2447,16 @@ describe('liked-post state response contract', () => {
     }
   });
 });
+
+
+describe('billing session response contracts', () => {
+  it('redirects only after explicit checkout or portal success', async () => {
+    const client = await readText('src/lib/subscriptionBilling.js');
+    const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');
+    const portal = await readText('base44/functions/createBillingPortal/entry.ts');
+    expect(client).toContain('payload?.success !== true || typeof payload?.checkoutUrl');
+    expect(client).toContain('payload?.success !== true || typeof payload?.portalUrl');
+    expect(checkout).toContain('success: true');
+    expect(portal).toContain('success: true, portalUrl: session.url');
+  });
+});

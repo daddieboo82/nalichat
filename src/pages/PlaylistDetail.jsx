@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import CustomMediaPlayer from "@/components/audio/CustomMediaPlayer";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/lib/AuthContext";
+import { toast } from "sonner";
 
 export default function PlaylistDetail() {
   const { playlistId } = useParams();
@@ -23,7 +24,7 @@ export default function PlaylistDetail() {
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
 
-  const { data: playlist, isLoading: playlistLoading } = useQuery({
+  const { data: playlist, isLoading: playlistLoading, isError: playlistError, refetch: refetchPlaylist } = useQuery({
     queryKey: ["playlist", currentUser?.id || "anonymous", playlistId],
     queryFn: () => base44.entities.Playlist.get(playlistId),
   });
@@ -87,6 +88,10 @@ export default function PlaylistDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlist", currentUser?.id || "anonymous", playlistId] });
       queryClient.invalidateQueries({ queryKey: ["playlistTracks", currentUser?.id || "anonymous"] });
+      toast.success("Track added to playlist.");
+    },
+    onError: (error) => {
+      toast.error(error?.message || "Couldn't add track to playlist. Please try again.");
     }
   });
 
@@ -111,6 +116,10 @@ export default function PlaylistDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlist", currentUser?.id || "anonymous", playlistId] });
       queryClient.invalidateQueries({ queryKey: ["playlistTracks", currentUser?.id || "anonymous"] });
+      toast.success("Track removed from playlist.");
+    },
+    onError: (error) => {
+      toast.error(error?.message || "Couldn't remove track from playlist. Please try again.");
     },
   });
 
@@ -194,6 +203,19 @@ export default function PlaylistDetail() {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (playlistError) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+        <p className="font-heading text-xl font-bold">Playlist unavailable</p>
+        <p className="mt-2 text-sm text-muted-foreground">We couldn't load this playlist. It may be a temporary connection problem.</p>
+        <div className="mt-4 flex gap-2">
+          <Button variant="outline" onClick={() => void refetchPlaylist()}>Retry</Button>
+          <Button variant="ghost" onClick={() => navigate("/playlists")}>Back to Playlists</Button>
+        </div>
       </div>
     );
   }

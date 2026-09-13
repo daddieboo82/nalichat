@@ -2,6 +2,10 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit, releaseSingleHourlyClaim } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import {
+  acquireArtPostEngagementLock,
+  releaseArtPostEngagementLock,
+} from '../../shared/artPostEngagementLock.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -33,43 +37,66 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'View tracking rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const post = await entities.ArtPost.get(postId);
-    if (!post) return Response.json({ error: 'Post not found' }, { status: 404 });
+    const postPreview = await entities.ArtPost.get(postId).catch(() => null);
+    if (!postPreview) return Response.json({ error: 'Post not found' }, { status: 404 });
 
-    if (post.creator_id === user.id) {
+    if (postPreview.creator_id === user.id) {
       return Response.json({
         success: true,
         counted: false,
         reason: 'owner',
-        views: Number(post.views || 0),
+        views: Number(postPreview.views || 0),
       });
     }
 
-    const rate = await consumeHourlyLimit(
-      entities,
-      user.id,
-      `artpost_view:${post.id}`,
-      1,
-    );
-    if (!rate.allowed) {
-      return Response.json({ success: true, counted: false, views: Number(post.views || 0) });
+    const lockId = await acquireArtPostEngagementLock(entities, postId);
+    if (!lockId) {
+      return Response.json({ error: 'Post is being updated. Please retry.' }, { status: 409 });
     }
 
     try {
-      await entities.ArtPost.updateMany(
-        { id: post.id },
-        { $inc: { views: 1 } },
-      );
-    } catch (countError) {
-      await releaseSingleHourlyClaim(
+      const post = await entities.ArtPost.get(postId).catch(() => null);
+      if (!post) return Response.json({ error: 'Post not found' }, { status: 404 });
+      if (post.creator_id === user.id) {
+        return Response.json({
+          success: true,
+          counted: false,
+          reason: 'owner',
+          views: Number(post.views || 0),
+        });
+      }
+
+      const rate = await consumeHourlyLimit(
         entities,
         user.id,
         `artpost_view:${post.id}`,
+        1,
       );
-      throw countError;
+      if (!rate.allowed) {
+        return Response.json({ success: true, counted: false, views: Number(post.views || 0) });
+      }
+
+      try {
+        const countUpdate = await entities.ArtPost.updateMany(
+          { id: post.id },
+          { $inc: { views: 1 } },
+        );
+        if (Number(countUpdate?.updated || 0) !== 1) {
+          throw new Error('ArtPost view count did not update exactly one post');
+        }
+      } catch (countError) {
+        await releaseSingleHourlyClaim(
+          entities,
+          user.id,
+          `artpost_view:${post.id}`,
+        );
+        throw countError;
+      }
+      const updated = await entities.ArtPost.get(post.id);
+      return Response.json({ success: true, counted: true, views: Number(updated?.views || 0) });
+    } finally {
+      await releaseArtPostEngagementLock(entities, lockId);
     }
-    const updated = await entities.ArtPost.get(post.id);
-    return Response.json({ success: true, counted: true, views: Number(updated?.views || 0) });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

@@ -2,6 +2,10 @@ import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requ
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
+import {
+  acquireArtPostEngagementLock,
+  releaseArtPostEngagementLock,
+} from '../../shared/artPostEngagementLock.ts';
 
 async function playId(postId: string, listenerId: string, day: string): Promise<string> {
   const digest = await crypto.subtle.digest(
@@ -47,11 +51,23 @@ export default async function(req) {
       return Response.json({ error: 'Play tracking rate limit exceeded. Please try again later.' }, { status: 429 });
     }
 
-    const post = await entities.ArtPost.get(postId);
-    if (!post) return Response.json({ error: 'Track not found' }, { status: 404 });
-    if (post.creator_id === user.id) {
-      return Response.json({ counted: false, reason: 'creator_self_play', views: Number(post.views || 0) });
+    const postPreview = await entities.ArtPost.get(postId).catch(() => null);
+    if (!postPreview) return Response.json({ error: 'Track not found' }, { status: 404 });
+    if (postPreview.creator_id === user.id) {
+      return Response.json({ counted: false, reason: 'creator_self_play', views: Number(postPreview.views || 0) });
     }
+
+    const lockId = await acquireArtPostEngagementLock(entities, postId);
+    if (!lockId) {
+      return Response.json({ error: 'Post is being updated. Please retry.' }, { status: 409 });
+    }
+
+    try {
+      const post = await entities.ArtPost.get(postId).catch(() => null);
+      if (!post) return Response.json({ error: 'Track not found' }, { status: 404 });
+      if (post.creator_id === user.id) {
+        return Response.json({ counted: false, reason: 'creator_self_play', views: Number(post.views || 0) });
+      }
 
     const day = new Date().toISOString().slice(0, 10);
     const id = await playId(postId, user.id, day);
@@ -79,7 +95,13 @@ export default async function(req) {
     }
 
     try {
-      await entities.ArtPost.updateMany({ id: postId }, { $inc: { views: 1 } });
+      const countUpdate = await entities.ArtPost.updateMany(
+        { id: postId },
+        { $inc: { views: 1 } },
+      );
+      if (Number(countUpdate?.updated || 0) !== 1) {
+        throw new Error('ArtPost play count did not update exactly one post');
+      }
     } catch (countError) {
       try {
         await entities.ArtPostPlay.delete(id);
@@ -94,6 +116,9 @@ export default async function(req) {
     }
     const updated = await entities.ArtPost.get(postId);
     return Response.json({ counted: true, views: Number(updated?.views || 0) });
+    } finally {
+      await releaseArtPostEngagementLock(entities, lockId);
+    }
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

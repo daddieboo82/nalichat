@@ -134,8 +134,11 @@ export default function Profile() {
       });
       if (res?.data?.error) throw new Error(res.data.error);
       if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
-    // Refresh the authoritative auth context and wait for any transient retry.
-    await checkUserAuth();
+    // Refresh the authoritative auth context and verify the saved profile is visible.
+    const refreshedUser = await checkUserAuth();
+    if (!refreshedUser?.id || refreshedUser.id !== currentUser?.id) {
+      throw new Error("Profile saved, but your session did not refresh.");
+    }
     setEditing(false);
     toast.success("Profile updated.");
     } catch (error) {
@@ -153,7 +156,14 @@ export default function Profile() {
       const res = await base44.functions.invoke("updateMyProfile", { avatar_url: file_url });
       if (res?.data?.error) throw new Error(res.data.error);
       if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
-      await checkUserAuth();
+      const refreshedUser = await checkUserAuth();
+      if (
+        !refreshedUser?.id ||
+        refreshedUser.id !== currentUser?.id ||
+        refreshedUser.avatar_url !== file_url
+      ) {
+        throw new Error("Profile photo saved, but your session did not refresh.");
+      }
       toast.success("Profile photo updated.");
     } catch (error) {
       console.error("Avatar update failed:", error);
@@ -173,7 +183,14 @@ export default function Profile() {
       const res = await base44.functions.invoke("updateMyProfile", { cover_url: file_url });
       if (res?.data?.error) throw new Error(res.data.error);
       if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
-      await checkUserAuth();
+      const refreshedUser = await checkUserAuth();
+      if (
+        !refreshedUser?.id ||
+        refreshedUser.id !== currentUser?.id ||
+        refreshedUser.cover_url !== file_url
+      ) {
+        throw new Error("Profile cover saved, but your session did not refresh.");
+      }
       toast.success("Profile cover updated.");
     } catch (error) {
       console.error("Profile cover update failed:", error);

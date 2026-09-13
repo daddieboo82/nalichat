@@ -225,6 +225,17 @@ export default function Messages() {
       setSelectedConvId(null);
       setLockedLinkConversationId(requestedId);
       setShowLockedAccess(true);
+    } else if (resolution.status === "missing") {
+      // The conversation may have been deleted or this user may have been
+      // removed while a mobile deep link is still open. Clear every selected
+      // chat surface and normalize the URL so Messages returns to its list
+      // instead of rendering a stale/empty conversation.
+      setSelectedConvId(null);
+      setLockedLinkConversationId(null);
+      setShowLockedAccess(false);
+      if (location.pathname === "/messages" && location.search) {
+        navigate("/messages", { replace: true });
+      }
     }
   }, [
     location.search,

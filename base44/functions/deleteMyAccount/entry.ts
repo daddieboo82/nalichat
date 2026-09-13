@@ -570,6 +570,10 @@ Deno.serve(async (req) => {
             update.uploader_name = 'Deleted User';
             update.share_token_hash = null;
           }
+          if (entityName === 'Milestone') {
+            if (row.created_by_id === user.id) update.created_by_id = tombstoneId;
+            if (row.completed_by_id === user.id) update.completed_by_id = tombstoneId;
+          }
           await entity.update(row.id, update);
         });
       }
@@ -625,6 +629,10 @@ Deno.serve(async (req) => {
             update.uploader_name = 'Deleted User';
             update.share_token_hash = null;
             update.share_token_expires_at = null;
+          }
+          if (entityName === 'Milestone') {
+            if (row.created_by_id === user.id) update.created_by_id = tombstoneId;
+            if (row.completed_by_id === user.id) update.completed_by_id = tombstoneId;
           }
 
           await entity.update(row.id, update);

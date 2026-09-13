@@ -60,8 +60,15 @@ export default function Profile() {
       if (!targetUserId) return null;
       const res = await base44.functions.invoke("listPublicUsers", { userId: targetUserId });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
-      return (res?.data?.users || [])[0] || null;
+      if (
+        res?.data?.success !== true ||
+        res?.data?.viewerUserId !== currentUser?.id ||
+        res?.data?.requestedUserId !== targetUserId ||
+        !Array.isArray(res?.data?.users)
+      ) {
+        throw new Error("Profile lookup was not confirmed");
+      }
+      return res.data.users[0] || null;
     },
     enabled: !!targetUserId,
   });

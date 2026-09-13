@@ -23,8 +23,8 @@ describe('challenge leaderboard bounds', () => {
 
     expect(leaderboard).toContain('MAX_LEADERBOARD_SUBMISSIONS = 500');
     expect(detail).toContain('async function filterAllRows');
-    expect(detail).toMatch(/ChallengeSubmission[\s\S]*filterAllRows/);
-    expect(detail).toMatch(/ChallengeVote[\s\S]*filterAllRows/);
+    expect(detail).toMatch(/filterAllRows\([\s\S]*ChallengeSubmission/);
+    expect(detail).toMatch(/filterAllRows\([\s\S]*ChallengeVote/);
     expect(player).toContain('async function listAllApprovedSubmissions');
     expect(player).toMatch(/ChallengeVote[\s\S]*"-created_date", 1/);
   });

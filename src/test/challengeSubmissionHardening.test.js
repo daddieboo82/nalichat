@@ -11,6 +11,9 @@ describe('challenge submission hardening', () => {
     const source = await readText('base44/functions/submitChallengeRemix/entry.ts');
 
     expect(source).toContain("req.method !== 'POST'");
+    expect(source).toContain("action: 'submit_remix'");
+    expect(source).toContain('userId: user.id');
+    expect(source).toContain('challengeId: challenge.id');
     expect(source).toContain("typeof body?.challenge_id !== 'string'");
     expect(source).toContain('remixName.length > 200');
     expect(source).toContain('body.description.length > 2000');

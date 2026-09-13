@@ -8,6 +8,7 @@ describe('subscription upload capability claims', () => {
     const transfer = await readFile('src/components/files/LargeFileTransfer.jsx', 'utf8');
     expect(catalog).not.toContain('20GB');
     expect(transfer).not.toContain('20GB');
-    expect(catalog).toContain('Premium file transfer tools with higher supported limits');
+    expect(catalog).toContain('Premium file transfer tools');
+    expect(catalog).not.toContain('higher supported limits');
   });
 });

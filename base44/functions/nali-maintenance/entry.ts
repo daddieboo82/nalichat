@@ -76,8 +76,46 @@ export default async function(req) {
     const values = await Promise.all(Object.values(loads));
     keys.forEach((k, i) => { data[k] = values[i]; });
 
-    // Count records
+    // Count records and surface every bounded collection that may be partial.
     Object.entries(data).forEach(([k, v]) => { stats[k] = v.length; });
+    const collectionCaps = {
+      artPosts: 500,
+      projects: 500,
+      tracks: 500,
+      sharedFiles: 500,
+      subscriptions: 500,
+      challenges: 500,
+      submissions: 500,
+      votes: 500,
+      conversations: 500,
+      messages: 500,
+      trackVersions: 500,
+      playlists: 500,
+      usageRateLimits: 1000,
+      users: 500,
+      squads: 1000,
+    };
+    const truncated = {};
+    for (const [key, cap] of Object.entries(collectionCaps)) {
+      truncated[key] = Array.isArray(data[key]) && data[key].length >= cap;
+    }
+
+    if (mode === 'repair') {
+      const partialCollections = Object.entries(truncated)
+        .filter(([, isTruncated]) => isTruncated)
+        .map(([key]) => key);
+      if (partialCollections.length > 0) {
+        return Response.json(
+          {
+            error: 'Maintenance repair requires a complete dataset. Narrow the scope and retry.',
+            partial_collections: partialCollections,
+            scanned: stats,
+            truncated,
+          },
+          { status: 409 },
+        );
+      }
+    }
 
     // =====================================================
     // 1. PROJECT — missing/empty title → "Untitled Project"
@@ -440,10 +478,7 @@ export default async function(req) {
       issues: issues.slice(0, 100),    // cap for response size
       fixed: mode === 'repair' ? fixed.slice(0, 100) : [],
       needsAttention: issues.length > 0,
-      truncated: {
-        users: Array.isArray(data.users) && data.users.length >= 500,
-        squads: Array.isArray(data.squads) && data.squads.length >= 1000,
-      },
+      truncated,
     };
 
     console.log(`Nali maintenance (${mode}): ${issues.length} issues found, ${fixed.length} fixed.`);

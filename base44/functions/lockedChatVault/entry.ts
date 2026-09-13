@@ -154,14 +154,10 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return errorResponse('Unauthorized', 401, 'unauthorized');
-    if (user.is_banned) return errorResponse('banned', 403, 'banned');
-    if (user.timeout_until && new Date(user.timeout_until).getTime() > Date.now()) {
-      return Response.json({
-        error: 'timed_out',
-        code: 'timed_out',
-        timeout_until: user.timeout_until,
-      }, { status: 403 });
-    }
+    // Locked-chat controls are private account-security operations, not public
+    // interactions. Moderation state must not strand a user outside their own
+    // PIN/reset/lock preferences; authorization and entitlement checks below
+    // still constrain every conversation-specific mutation.
 
     const body = await readJsonBodyLimited(req, 32 * 1024);
     const action = body?.action;

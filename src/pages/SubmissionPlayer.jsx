@@ -164,21 +164,21 @@ export default function SubmissionPlayer() {
   const isOwn = user && submission.producer_id === user.id;
 
   return (
-    <div className="max-w-xl mx-auto p-4 sm:p-6 space-y-6">
-      <Link to={`/challenge/${challengeId}`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+    <div className="mx-auto max-w-xl space-y-5 px-4 py-5 pb-[max(6rem,env(safe-area-inset-bottom))] sm:p-6 sm:space-y-6">
+      <Link to={`/challenge/${challengeId}`} className="ui-hover inline-flex min-h-10 items-center gap-1 rounded-xl px-2 text-sm text-muted-foreground hover:bg-secondary/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40">
         <ArrowLeft className="w-4 h-4" /> Back to challenge
       </Link>
 
-      <div className="rounded-3xl bg-card border border-border p-6 space-y-5 text-center">
+      <div className="ui-surface space-y-5 rounded-3xl border border-border bg-card p-5 text-center sm:p-6">
         <audio ref={audioRef} src={submission.remix_file_url} preload="none" onEnded={() => setPlaying(false)} />
-        <div className="w-32 h-32 mx-auto rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-          <Button size="icon" variant="ghost" className="w-16 h-16 text-white hover:bg-white/10" onClick={togglePlay}>
+        <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-accent shadow-xl shadow-primary/15 sm:h-32 sm:w-32">
+          <Button size="icon" variant="ghost" className="ui-hover h-16 w-16 rounded-2xl text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/70" onClick={togglePlay}>
             {playing ? <Pause className="w-10 h-10" /> : <Play className="w-10 h-10" />}
           </Button>
         </div>
         <h1 className="font-heading text-xl font-bold">{submission.remix_name}</h1>
 
-        <Link to={`/profile?id=${submission.producer_id}`} className="flex items-center justify-center gap-2">
+        <Link to={`/profile?id=${submission.producer_id}`} className="ui-hover mx-auto flex min-h-10 w-fit items-center justify-center gap-2 rounded-xl px-2 hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-primary/40">
           <Avatar className="w-8 h-8"><AvatarImage src={submission.producer_avatar} /><AvatarFallback>{submission.producer_name?.[0] || "?"}</AvatarFallback></Avatar>
           <span className="text-sm font-medium">{submission.producer_name}</span>
         </Link>
@@ -189,7 +189,7 @@ export default function SubmissionPlayer() {
           size="lg"
           disabled={hasVoted || isOwn}
           onClick={handleVote}
-          className="w-full rounded-2xl bg-gradient-to-r from-primary to-accent text-white text-base h-12 gap-2"
+          className="ui-hover h-12 w-full gap-2 rounded-xl bg-gradient-to-r from-primary to-accent text-base font-semibold text-white shadow-lg shadow-primary/10"
         >
           <Heart className={`w-5 h-5 ${hasVoted ? "fill-white" : ""}`} /> {hasVoted ? "Voted" : "Vote"} ({submission.vote_count || 0})
         </Button>
@@ -202,22 +202,22 @@ export default function SubmissionPlayer() {
       {listError && (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-center text-sm" role="alert">
           Couldn't load the challenge submission list, so Previous/Next navigation may be unavailable.
-          <button type="button" className="ml-2 font-semibold text-primary hover:underline" onClick={() => setRetryKey((key) => key + 1)}>
+          <button type="button" className="ui-hover ml-1 min-h-9 rounded-lg px-2 font-semibold text-primary hover:bg-primary/10" onClick={() => setRetryKey((key) => key + 1)}>
             Retry
           </button>
         </div>
       )}
 
-      <div className="flex justify-between">
-        <Button variant="outline" disabled={!prev} onClick={() => prev && navigate(`/challenge/${challengeId}/submission/${prev.id}`)} className="rounded-xl gap-1">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-between">
+        <Button variant="outline" disabled={!prev} onClick={() => prev && navigate(`/challenge/${challengeId}/submission/${prev.id}`)} className="ui-hover min-h-11 rounded-xl gap-1">
           <ChevronLeft className="w-4 h-4" /> Previous
         </Button>
-        <Button variant="outline" disabled={!next} onClick={() => next && navigate(`/challenge/${challengeId}/submission/${next.id}`)} className="rounded-xl gap-1">
+        <Button variant="outline" disabled={!next} onClick={() => next && navigate(`/challenge/${challengeId}/submission/${next.id}`)} className="ui-hover min-h-11 rounded-xl gap-1">
           Next <ChevronRight className="w-4 h-4" />
         </Button>
       </div>
 
-      <div className="rounded-2xl bg-card border border-border p-4">
+      <div className="ui-surface rounded-2xl border border-border bg-card p-4">
         <SubmissionComments submissionId={submissionId} user={user} />
       </div>
     </div>

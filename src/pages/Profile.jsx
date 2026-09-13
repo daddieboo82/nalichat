@@ -24,6 +24,21 @@ const ROLES = [
 ];
 const GENRES = ["Hip-Hop", "Trap", "Lo-Fi", "Electronic", "House", "Techno", "Ambient", "R&B", "Indie", "Alternative"];
 
+async function listAllUserPosts(userId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.ArtPost.filter(
+      { creator_id: userId },
+      "-created_date",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 export default function Profile() {
   const location = useLocation();
   const { user: currentUser, checkUserAuth } = useAuth();
@@ -69,7 +84,7 @@ export default function Profile() {
     queryKey: ["my-posts", user?.id, currentUser?.id],
     queryFn: async () => {
       const [rows, likedRes] = await Promise.all([
-        base44.entities.ArtPost.filter({ creator_id: user.id }, "-created_date"),
+        listAllUserPosts(user.id),
         currentUser
           ? base44.functions.invoke("listMyLikedPostIds", {})
           : Promise.resolve({ data: { post_ids: [] } }),

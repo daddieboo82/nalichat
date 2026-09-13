@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
       throw new Error('Upload provider returned no file URL');
     }
 
-    return Response.json({ file_url: fileUrl });
+    return Response.json({ success: true, file_url: fileUrl });
   } catch (error) {
     console.error('secureUploadFile error:', error);
     return Response.json({ error: 'File upload failed' }, { status: 500 });

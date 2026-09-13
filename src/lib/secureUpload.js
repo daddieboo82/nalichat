@@ -18,8 +18,8 @@ export async function secureUploadFile(input, options = {}) {
     throw new Error(result.data.error);
   }
   const fileUrl = result?.data?.file_url;
-  if (!fileUrl) {
-    throw new Error("Upload completed without a file URL.");
+  if (result?.data?.success !== true || typeof fileUrl !== "string" || !fileUrl.trim()) {
+    throw new Error("Upload was not confirmed.");
   }
   return { file_url: fileUrl };
 }

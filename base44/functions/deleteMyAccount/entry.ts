@@ -234,6 +234,9 @@ Deno.serve(async (req) => {
       ['UsageRateLimit', 'user_id'],
       ['ProjectInvite', 'created_by_id'],
       ['LockedConversationPreference', 'user_id'],
+      ['LockedChatSecurity', 'user_id'],
+      ['LockedChatResetChallenge', 'user_id'],
+      ['AIUsage', 'user_id'],
       ['FollowUpReminder', 'owner_id'],
     ];
 

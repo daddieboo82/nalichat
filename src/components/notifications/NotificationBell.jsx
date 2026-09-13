@@ -250,7 +250,7 @@ export default function NotificationBell({ direction = "down" }) {
 
       {open && (
         <div className={cn(
-          "absolute right-0 z-50 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-2xl shadow-black/40 backdrop-blur-xl",
+          "absolute right-0 z-50 w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-3xl border border-border/80 bg-card/95 shadow-2xl shadow-black/40 backdrop-blur-xl",
           direction === "up" ? "bottom-full mb-2" : "top-full mt-2"
         )}>
           <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-secondary/20 px-4 py-3.5">
@@ -259,13 +259,13 @@ export default function NotificationBell({ direction = "down" }) {
               <button
                 type="button"
                 onClick={enableNotifications}
-                className="ui-hover min-h-9 rounded-lg px-2.5 text-xs font-semibold text-primary hover:bg-primary/10"
+                className="ui-hover min-h-10 rounded-xl px-3 text-xs font-semibold text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 Enable alerts
               </button>
             )}
           </div>
-          <div className="max-h-[min(28rem,70vh)] overflow-y-auto overscroll-contain">
+          <div className="custom-scrollbar max-h-[min(32rem,72dvh)] overflow-y-auto overscroll-contain">
             {loadError && safeItems.length === 0 ? (
               <div className="py-10 px-4 text-center" role="alert">
                 <Bell className="w-8 h-8 mx-auto mb-2 opacity-30 text-muted-foreground" />
@@ -273,7 +273,7 @@ export default function NotificationBell({ direction = "down" }) {
                 <p className="mt-1 text-xs text-muted-foreground">Your notifications may still be available.</p>
                 <button
                   type="button"
-                  className="ui-hover mt-3 min-h-10 rounded-xl border border-border px-4 text-xs font-semibold text-primary hover:bg-secondary/50"
+                  className="ui-hover mt-3 min-h-11 rounded-xl border border-border px-4 text-xs font-semibold text-primary hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-primary/40"
                   onClick={() => user?.id && void load(user.id)}
                 >
                   Retry
@@ -289,11 +289,11 @@ export default function NotificationBell({ direction = "down" }) {
                 const Icon = typeIcon[n.type] || Bell;
                 const inner = (
                   <div className={cn(
-                    "ui-hover flex min-h-[68px] items-start gap-3 border-b border-border/50 px-4 py-3 transition-colors hover:bg-secondary/50 focus-within:bg-secondary/50",
+                    "ui-hover flex min-h-[76px] items-start gap-3 border-b border-border/50 px-4 py-3.5 transition-colors hover:bg-secondary/50 focus-within:bg-secondary/50 focus-within:ring-2 focus-within:ring-inset focus-within:ring-primary/30",
                     !n.read && "bg-primary/5"
                   )}>
                     <div className="relative shrink-0">
-                      <Avatar className="h-9 w-9">
+                      <Avatar className="h-10 w-10">
                         <AvatarImage src={n.actor_avatar} />
                         <AvatarFallback className="bg-primary/20 text-primary text-xs">{n.actor_name?.[0] || "?"}</AvatarFallback>
                       </Avatar>
@@ -306,7 +306,7 @@ export default function NotificationBell({ direction = "down" }) {
                         <span className="font-semibold">{n.actor_name}</span>{" "}
                         <span className="text-muted-foreground">{n.message}</span>
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                      <p className="mt-1 text-[10px] text-muted-foreground">
                         {n.created_date && !isNaN(new Date(n.created_date).getTime()) ? formatDistanceToNow(new Date(n.created_date), { addSuffix: true }) : "just now"}
                       </p>
                     </div>

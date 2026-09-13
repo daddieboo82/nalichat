@@ -161,7 +161,7 @@ export default function Profile() {
       if (
         res?.data?.success !== true ||
         res?.data?.action !== "update_my_profile" ||
-        res?.data?.userId !== uploadOwnerId
+        res?.data?.userId !== submittingUserId
       ) throw new Error("Profile update was not confirmed");
     // Refresh the authoritative auth context and verify the saved profile is visible.
     const refreshedUser = await checkUserAuth();

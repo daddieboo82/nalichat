@@ -7,7 +7,7 @@ describe('content report serialization', () => {
 
     const messagePreview = s.indexOf('const preview = await entities.Message.get(normalizedContentId)');
     const messageLock = s.indexOf('messageLockId = await acquireMessageMutationLock');
-    const messageRecheck = s.indexOf('const message = await entities.Message.get(normalizedContentId)', messageLock);
+    const messageRecheck = s.indexOf('entities.Message.get(normalizedContentId).catch(() => null)', messageLock);
 
     expect(messagePreview).toBeGreaterThan(-1);
     expect(messageLock).toBeGreaterThan(messagePreview);

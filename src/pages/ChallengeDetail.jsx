@@ -100,11 +100,14 @@ export default function ChallengeDetail() {
     if (!user) { toast.error("Log in to vote."); return; }
     try {
       const res = await base44.functions.invoke("castVote", { submission_id: submissionId });
-      setSubmissions((subs) => subs.map((s) => (s.id === submissionId ? { ...s, vote_count: res.data.vote_count } : s)));
+      if (res?.data?.error) throw new Error(res.data.error);
+      const nextVoteCount = Number(res?.data?.vote_count);
+      if (!Number.isFinite(nextVoteCount)) throw new Error("Vote response was invalid");
+      setSubmissions((subs) => subs.map((s) => (s.id === submissionId ? { ...s, vote_count: nextVoteCount } : s)));
       setMyVotes((prev) => new Set(prev).add(submissionId));
       toast.success("Vote counted!");
     } catch (err) {
-      toast.error(err.response?.data?.error || "Couldn't cast vote");
+      toast.error(err?.response?.data?.error || err?.message || "Couldn't cast vote");
     }
   };
 

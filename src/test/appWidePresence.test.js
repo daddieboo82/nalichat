@@ -6,6 +6,10 @@ describe('app-wide user presence', () => {
     const app = await readFile('src/App.jsx', 'utf8');
     expect(app).toContain("base44.functions.invoke('updateUserPresence', { isOnline })");
     expect(app).toContain("document.addEventListener('visibilitychange', syncVisibility)");
+    expect(app).toContain("window.addEventListener('pagehide', handlePageHide)");
+    expect(app).toContain("window.addEventListener('pageshow', handlePageShow)");
+    expect(app).toContain("window.removeEventListener('pagehide', handlePageHide)");
+    expect(app).toContain("window.removeEventListener('pageshow', handlePageShow)");
     expect(app).toContain('60_000');
     expect(app).toContain('}, [isAuthenticated, user?.id]);');
   });

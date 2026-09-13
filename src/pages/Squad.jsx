@@ -150,7 +150,14 @@ export default function Squad() {
     try {
       const res = await base44.functions.invoke("leaveSquad", { squadId: squad.id });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true) throw new Error("Squad update was not confirmed");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.userId !== user?.id ||
+        res?.data?.squadId !== squad.id ||
+        res?.data?.status !== "ended"
+      ) {
+        throw new Error("Squad update was not confirmed");
+      }
       setSquad(null);
       setProgress(null);
       setBonusActive(false);

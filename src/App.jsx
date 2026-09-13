@@ -126,8 +126,12 @@ const AuthenticatedApp = () => {
       base44.functions.invoke('updateUserPresence', { isOnline }).catch(() => {});
     };
     const syncVisibility = () => sendPresence(document.visibilityState === 'visible');
+    const handlePageHide = () => sendPresence(false);
+    const handlePageShow = () => syncVisibility();
 
     document.addEventListener('visibilitychange', syncVisibility);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('pageshow', handlePageShow);
     syncVisibility();
     const heartbeat = window.setInterval(() => {
       if (document.visibilityState === 'visible') sendPresence(true);
@@ -136,6 +140,8 @@ const AuthenticatedApp = () => {
     return () => {
       window.clearInterval(heartbeat);
       document.removeEventListener('visibilitychange', syncVisibility);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('pageshow', handlePageShow);
       sendPresence(false);
     };
   }, [isAuthenticated, user?.id]);

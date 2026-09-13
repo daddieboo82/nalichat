@@ -1,4 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
+import { validateUpload } from "@/lib/uploadValidation";
 import { useEffect, useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { X, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
@@ -38,6 +39,12 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
   const handleImage = (e) => {
     const f = e.target.files[0];
     if (!f) return;
+    const validation = validateUpload(f);
+    if (!validation.ok) {
+      toast.error(validation.error);
+      e.target.value = "";
+      return;
+    }
     setImageFile(f);
     setPreview(URL.createObjectURL(f));
   };
@@ -45,6 +52,12 @@ export default function UploadArtDialog({ open, onClose, currentUser, onSuccess,
   const handleAudio = (e) => {
     const f = e.target.files[0];
     if (!f) return;
+    const validation = validateUpload(f);
+    if (!validation.ok) {
+      toast.error(validation.error);
+      e.target.value = "";
+      return;
+    }
     setAudioFile(f);
     setForm(prev => ({
       ...prev,

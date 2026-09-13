@@ -2747,7 +2747,7 @@ describe('file share-link response identity contract', () => {
     const large = await readText('src/components/files/LargeFileTransfer.jsx');
     expect(backend).toContain("action: 'create_file_share_link'");
     expect(backend).toContain('userId: user.id');
-    expect(files).toContain('res?.data?.userId !== currentUser?.id');
+    expect(files).toContain('res?.data?.userId !== currentUserId');
     expect(files).toContain('res?.data?.fileId !== file.id');
     expect(large).toContain('share?.data?.userId !== currentUser?.id');
     expect(large).toContain('share?.data?.fileId !== newFile.id');

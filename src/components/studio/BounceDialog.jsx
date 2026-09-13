@@ -59,6 +59,14 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
     if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
   }, []);
 
+  useEffect(() => {
+    if (!open || bouncing) return;
+    setBounceTitle(projectTitle || "Untitled");
+    setBounceGenre(project?.genre || "");
+    setError("");
+    setDone(false);
+  }, [open, projectTitle, project?.genre, bouncing]);
+
   const handleBounce = async () => {
     if (!canPublish) {
       toast.error("Viewer access cannot publish this shared project.");

@@ -34,3 +34,12 @@ describe('Settings in-flight account binding', () => {
     expect(s).toContain('activeUserIdRef.current !== submittingUserId');
   });
 });
+
+
+describe('Profile upload response scope', () => {
+  it('uses the upload owner id for avatar and cover mutation validation', async () => {
+    const s = await readFile('src/pages/Profile.jsx', 'utf8');
+    expect(s).toContain('res?.data?.userId !== uploadOwnerId');
+    expect(s).not.toContain('res?.data?.userId !== submittingUserId');
+  });
+});

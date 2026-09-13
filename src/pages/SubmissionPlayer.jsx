@@ -28,41 +28,60 @@ export default function SubmissionPlayer() {
   const { challengeId, submissionId } = useParams();
   const navigate = useNavigate();
   const audioRef = useRef(null);
-  const { user } = useAuth();
+  const { user, navigateToLogin } = useAuth();
   const [submission, setSubmission] = useState(null);
   const [allSubs, setAllSubs] = useState([]);
   const [hasVoted, setHasVoted] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [submissionLoading, setSubmissionLoading] = useState(true);
+  const [submissionError, setSubmissionError] = useState(false);
+  const [listError, setListError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setListError(false);
     listAllApprovedSubmissions(challengeId)
       .then((nextSubmissions) => {
         if (!cancelled) setAllSubs(nextSubmissions || []);
       })
       .catch(() => {
-        if (!cancelled) setAllSubs([]);
+        if (!cancelled) {
+          setAllSubs([]);
+          setListError(true);
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [challengeId]);
+  }, [challengeId, retryKey]);
 
   useEffect(() => {
     let cancelled = false;
     setPlaying(false);
     setSubmission(null);
+    setSubmissionLoading(true);
+    setSubmissionError(false);
     base44.entities.ChallengeSubmission.get(submissionId)
       .then((nextSubmission) => {
-        if (!cancelled) setSubmission(nextSubmission);
+        if (!cancelled) {
+          setSubmission(nextSubmission);
+          setSubmissionError(!nextSubmission);
+        }
       })
       .catch(() => {
-        if (!cancelled) setSubmission(null);
+        if (!cancelled) {
+          setSubmission(null);
+          setSubmissionError(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSubmissionLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [submissionId]);
+  }, [submissionId, retryKey]);
 
   useEffect(() => {
     if (!user) { setHasVoted(false); return undefined; }
@@ -81,14 +100,17 @@ export default function SubmissionPlayer() {
   }, [user, submissionId]);
 
   const handleVote = async () => {
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigateToLogin(); return; }
     try {
       const res = await base44.functions.invoke("castVote", { submission_id: submissionId });
-      setSubmission((s) => ({ ...s, vote_count: res.data.vote_count }));
+      if (res?.data?.error) throw new Error(res.data.error);
+      const nextVoteCount = Number(res?.data?.vote_count);
+      if (!Number.isFinite(nextVoteCount)) throw new Error("Vote response was invalid");
+      setSubmission((s) => s ? ({ ...s, vote_count: nextVoteCount }) : s);
       setHasVoted(true);
       toast.success("Vote counted!");
     } catch (err) {
-      toast.error(err.response?.data?.error || "Couldn't cast vote");
+      toast.error(err?.response?.data?.error || err?.message || "Couldn't cast vote");
     }
   };
 
@@ -98,7 +120,22 @@ export default function SubmissionPlayer() {
     setPlaying(!playing);
   };
 
-  if (!submission) return <div className="p-8 flex justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
+  if (submissionLoading) {
+    return <div className="p-8 flex justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
+  }
+
+  if (submissionError || !submission) {
+    return (
+      <div className="max-w-md mx-auto p-8 text-center">
+        <h1 className="font-heading text-xl font-bold">Submission unavailable</h1>
+        <p className="mt-2 text-sm text-muted-foreground">This remix couldn't be loaded. It may have been removed or the connection may have failed.</p>
+        <div className="mt-4 flex justify-center gap-2">
+          <Button variant="outline" onClick={() => setRetryKey((key) => key + 1)}>Retry</Button>
+          <Button variant="ghost" onClick={() => navigate(`/challenge/${challengeId}`)}>Back to Challenge</Button>
+        </div>
+      </div>
+    );
+  }
 
   const idx = allSubs.findIndex((s) => s.id === submissionId);
   const prev = idx > 0 ? allSubs[idx - 1] : null;
@@ -141,6 +178,15 @@ export default function SubmissionPlayer() {
           <ShareButtons url={shareUrl} text={`Vote for "${submission.remix_name}" on NaliChat 🎧`} />
         </div>
       </div>
+
+      {listError && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-center text-sm" role="alert">
+          Couldn't load the challenge submission list, so Previous/Next navigation may be unavailable.
+          <button type="button" className="ml-2 font-semibold text-primary hover:underline" onClick={() => setRetryKey((key) => key + 1)}>
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="flex justify-between">
         <Button variant="outline" disabled={!prev} onClick={() => prev && navigate(`/challenge/${challengeId}/submission/${prev.id}`)} className="rounded-xl gap-1">

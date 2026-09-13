@@ -51,9 +51,16 @@ export default function Onboarding() {
       if (res?.data?.error) throw new Error(res.data.error);
       if (res?.data?.success !== true) throw new Error("Profile setup was not confirmed");
       
-      await checkUserAuth();
+      const refreshedUser = await checkUserAuth();
+      if (
+        !refreshedUser?.id ||
+        refreshedUser.id !== user?.id ||
+        refreshedUser.onboarding_completed !== true
+      ) {
+        throw new Error("Profile setup saved, but your session did not refresh. Please try again.");
+      }
       
-      // Hard redirect to prevent router loops with stale auth state
+      // Hard redirect only after the authenticated session reflects onboarding.
       window.location.href = "/";
     } catch (error) {
       toast.error(error.message || "Failed to complete setup");

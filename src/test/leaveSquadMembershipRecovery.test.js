@@ -12,6 +12,9 @@ describe('leave squad membership cleanup', () => {
 
     expect(source).toContain('Promise.allSettled(');
     expect(source).toContain('failed_member_updates');
+    expect(source).toContain('userId: user.id');
+    expect(source).toContain('squadId: normalizedSquadId');
+    expect(source).toContain("status: 'ended'");
     expect(source).toContain('Squad ended, but member cleanup was incomplete. Please retry.');
     expect(source).not.toContain('.catch(() => {});');
   });

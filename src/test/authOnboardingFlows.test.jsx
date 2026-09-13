@@ -234,7 +234,7 @@ describe('auth and onboarding flows', () => {
     } });
 
     const { container } = renderInRouter(<Onboarding />);
-    fireEvent.change(screen.getByPlaceholderText('How should we call you?'), { target: { value: 'Fresh Artist' } });
+    fireEvent.change(screen.getByPlaceholderText('What should we call you?'), { target: { value: 'Fresh Artist' } });
     fireEvent.change(container.querySelector('input[type="date"]'), { target: { value: '2000-01-01' } });
     fireEvent.change(screen.getByPlaceholderText('A short bio about your music (optional)'), { target: { value: 'Hello world' } });
     fireEvent.click(screen.getByRole('button', { name: 'Get Started' }));

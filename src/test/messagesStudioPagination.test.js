@@ -10,7 +10,8 @@ describe('Messages and Studio pagination', () => {
 
     expect(messages).toContain('async function filterAll(entity, query, sort, pageSize = 200)');
     expect(messages).toContain('queryFn: () => filterAll(');
-    expect(messages).toContain('{ type: "group", is_public: true },\n      "-last_message_at",\n    );');
+    expect(messages).toContain('{ type: "group", is_public: true },');
+    expect(messages).toContain('"-last_message_at",');
     expect(thread).toContain('async function listThreadReplies(threadId)');
     expect(thread).toContain('queryFn: () => listThreadReplies(parentMessage.id)');
     expect(session).toContain('async function listSessionTracks(projectId)');

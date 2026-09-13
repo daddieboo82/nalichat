@@ -36,7 +36,8 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
         parentId: track.id,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      return res?.data?.comments || [];
+      if (!Array.isArray(res?.data?.comments)) throw new Error("Comment list response was invalid.");
+      return res.data.comments;
     },
     enabled: !!currentUser?.id && !!track?.id,
   });
@@ -51,6 +52,11 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
         timestamp,
       });
       if (res?.data?.error) throw new Error(res.data.error);
+      const created = res?.data?.comment;
+      if (!created?.id || created.track_id !== track.id || created.parent_type !== "track") {
+        throw new Error("Comment creation was not confirmed.");
+      }
+      return created;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trackComments", currentUser?.id, track.id] });

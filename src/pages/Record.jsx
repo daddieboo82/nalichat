@@ -1,4 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
+import { validateUpload } from "@/lib/uploadValidation";
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -268,6 +269,10 @@ export default function Record() {
     try {
       const extension = recordingExtension(rec.blob.type);
       const file = new File([rec.blob], `${rec.name}.${extension}`, { type: rec.blob.type || "audio/webm" });
+      const validation = validateUpload(file);
+      if (!validation.ok) {
+        throw new Error(`${validation.error} Your local recording is still available.`);
+      }
       const { file_url } = await secureUploadFile({ file });
       const created = await base44.functions.invoke("createSharedFileRecord", {
         name: rec.name,

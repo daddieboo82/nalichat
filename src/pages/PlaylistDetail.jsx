@@ -250,12 +250,12 @@ export default function PlaylistDetail() {
 
   if (playlistError) {
     return (
-      <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+      <div className="flex h-full items-center justify-center p-6 text-center">
         <p className="font-heading text-xl font-bold">Playlist unavailable</p>
         <p className="mt-2 text-sm text-muted-foreground">We couldn't load this playlist. It may be a temporary connection problem.</p>
-        <div className="mt-4 flex gap-2">
-          <Button variant="outline" onClick={() => void refetchPlaylist()}>Retry</Button>
-          <Button variant="ghost" onClick={() => navigate("/playlists")}>Back to Playlists</Button>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <Button className="ui-hover min-h-11 rounded-xl" variant="outline" onClick={() => void refetchPlaylist()}>Retry</Button>
+          <Button className="ui-hover min-h-11 rounded-xl" variant="ghost" onClick={() => navigate("/playlists")}>Back to Playlists</Button>
         </div>
       </div>
     );
@@ -280,7 +280,7 @@ export default function PlaylistDetail() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="flex h-full flex-col bg-background">
       {/* Header */}
       <div className="h-16 border-b border-border flex items-center px-6 shrink-0 gap-3">
         <button

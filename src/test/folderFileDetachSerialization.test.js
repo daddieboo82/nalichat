@@ -11,7 +11,7 @@ describe('folder file detach serialization', () => {
     const source = await readText('base44/functions/deleteFolder/entry.ts');
 
     expect(source).toContain("req.method !== 'POST'");
-    expect(source).toContain('folderId.length > 200');
+    expect(source).toContain('!isBase44EntityId(folderId.trim())');
     expect(source).toContain('acquireSharedFileMutationLock');
     expect(source).toContain('releaseSharedFileMutationLock');
     expect(source).toContain("current?.folder_id === folder.id");

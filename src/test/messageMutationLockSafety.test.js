@@ -5,7 +5,7 @@ describe('message mutation lock safety', () => {
   it('authorizes the caller before acquiring the message mutation lock', async () => {
     const source = await readFile('base44/functions/mutateConversationMessage/entry.ts', 'utf8');
     const preview = source.indexOf('const messagePreview = await entities.Message.get(messageId)');
-    const participantCheck = source.indexOf('messagePreview.participant_ids');
+    const participantCheck = source.indexOf('if (!conversation || !participantIds.includes(user.id))');
     const lock = source.indexOf('const lockId = await acquireMessageMutationLock(entities, messageId)');
     expect(preview).toBeGreaterThan(-1);
     expect(participantCheck).toBeGreaterThan(preview);

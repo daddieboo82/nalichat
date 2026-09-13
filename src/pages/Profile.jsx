@@ -148,7 +148,11 @@ export default function Profile() {
         genres: form.genres || [],
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "update_my_profile" ||
+        res?.data?.userId !== currentUser?.id
+      ) throw new Error("Profile update was not confirmed");
     // Refresh the authoritative auth context and verify the saved profile is visible.
     const refreshedUser = await checkUserAuth();
     if (!refreshedUser?.id || refreshedUser.id !== currentUser?.id) {
@@ -170,7 +174,11 @@ export default function Profile() {
       const { file_url } = await secureUploadFile({ file });
       const res = await base44.functions.invoke("updateMyProfile", { avatar_url: file_url });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "update_my_profile" ||
+        res?.data?.userId !== currentUser?.id
+      ) throw new Error("Profile update was not confirmed");
       const refreshedUser = await checkUserAuth();
       if (
         !refreshedUser?.id ||
@@ -197,7 +205,11 @@ export default function Profile() {
       const { file_url } = await secureUploadFile({ file });
       const res = await base44.functions.invoke("updateMyProfile", { cover_url: file_url });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "update_my_profile" ||
+        res?.data?.userId !== currentUser?.id
+      ) throw new Error("Profile update was not confirmed");
       const refreshedUser = await checkUserAuth();
       if (
         !refreshedUser?.id ||

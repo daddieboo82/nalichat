@@ -110,7 +110,13 @@ function FileShareButton({ file, canShare }) {
     try {
       const res = await base44.functions.invoke("createFileShareLink", { fileId: file.id });
       const token = res?.data?.token;
-      if (!token) throw new Error("No share token returned");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "create_file_share_link" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.fileId !== file.id ||
+        !token
+      ) throw new Error("No share token returned");
       const url = `${window.location.origin}/shared-file?id=${encodeURIComponent(file.id)}&token=${encodeURIComponent(token)}`;
       const copied = await copyToClipboard(url);
       if (!copied) throw new Error("The secure link was created, but clipboard copy failed.");

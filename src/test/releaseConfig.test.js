@@ -2738,3 +2738,18 @@ describe('secure upload response identity contract', () => {
     expect(client).toContain('result?.data?.fileSize !== file.size');
   });
 });
+
+
+describe('file share-link response identity contract', () => {
+  it('binds share token creation to the authenticated user and exact file', async () => {
+    const backend = await readText('base44/functions/createFileShareLink/entry.ts');
+    const files = await readText('src/pages/Files.jsx');
+    const large = await readText('src/components/files/LargeFileTransfer.jsx');
+    expect(backend).toContain("action: 'create_file_share_link'");
+    expect(backend).toContain('userId: user.id');
+    expect(files).toContain('res?.data?.userId !== currentUser?.id');
+    expect(files).toContain('res?.data?.fileId !== file.id');
+    expect(large).toContain('share?.data?.userId !== currentUser?.id');
+    expect(large).toContain('share?.data?.fileId !== newFile.id');
+  });
+});

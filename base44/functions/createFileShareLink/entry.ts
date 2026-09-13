@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
       });
 
       return Response.json(
-        { success: true, fileId, token, expires_at: expiresAt },
+        { success: true, action: 'create_file_share_link', userId: user.id, fileId, token, expires_at: expiresAt },
         { headers: { 'Cache-Control': 'no-store' } },
       );
     } finally {

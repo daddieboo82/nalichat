@@ -76,6 +76,27 @@ Deno.serve(async (req) => {
         // Do not disclose whether an email address is registered.
         return Response.json({ success: true, method: 'email' });
       }
+
+      // External email is a higher-cost, out-of-app channel. Require a mutual
+      // NaliChat contact relationship so a signed-in user cannot spam arbitrary
+      // registered addresses by guessing emails.
+      const [outboundContacts, inboundContacts] = await Promise.all([
+        base44.asServiceRole.entities.Contact.filter(
+          { user_id: user.id, contact_user_id: registeredUser.id },
+          '-created_date',
+          1,
+        ),
+        base44.asServiceRole.entities.Contact.filter(
+          { user_id: registeredUser.id, contact_user_id: user.id },
+          '-created_date',
+          1,
+        ),
+      ]);
+      if (outboundContacts.length === 0 || inboundContacts.length === 0) {
+        // Preserve the same non-enumerating response used for unknown addresses.
+        return Response.json({ success: true, method: 'email' });
+      }
+
       // Sanitize the message body to remove CRLF sequences
       const cleanMessage = String(message)
         .replace(/[\r\n]{2,}/g, '\n\n')

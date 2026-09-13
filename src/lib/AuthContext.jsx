@@ -179,7 +179,14 @@ export const AuthProvider = ({ children }) => {
     // have permission to update the server record.
     try {
       const presenceResponse = await base44.functions.invoke('updateUserPresence', { isOnline: false });
-      if (presenceResponse?.data?.error || presenceResponse?.data?.success !== true) {
+      const expectedUserId = lastUserIdRef.current;
+      if (
+        presenceResponse?.data?.error ||
+        presenceResponse?.data?.success !== true ||
+        presenceResponse?.data?.action !== 'update_presence' ||
+        presenceResponse?.data?.userId !== expectedUserId ||
+        presenceResponse?.data?.isOnline !== false
+      ) {
         throw new Error(presenceResponse?.data?.error || 'Offline presence was not confirmed.');
       }
     } catch (error) {

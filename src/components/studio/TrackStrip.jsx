@@ -36,7 +36,14 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
         parentId: track.id,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (!Array.isArray(res?.data?.comments)) throw new Error("Comment list response was invalid.");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "list" ||
+        res?.data?.viewerUserId !== (currentUser?.id || null) ||
+        res?.data?.parentType !== "track" ||
+        res?.data?.parentId !== track.id ||
+        !Array.isArray(res?.data?.comments)
+      ) throw new Error("Comment list response was invalid.");
       return res.data.comments;
     },
     enabled: !!currentUser?.id && !!track?.id,
@@ -52,6 +59,15 @@ export default function TrackStrip({ track, onUpdate, onDelete, audioRef: extern
         timestamp,
       });
       if (res?.data?.error) throw new Error(res.data.error);
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "create" ||
+        res?.data?.userId !== currentUser?.id ||
+        res?.data?.parentType !== "track" ||
+        res?.data?.parentId !== track.id
+      ) {
+        throw new Error("Comment creation was not confirmed.");
+      }
       const created = res?.data?.comment;
       if (!created?.id || created.track_id !== track.id || created.parent_type !== "track") {
         throw new Error("Comment creation was not confirmed.");

@@ -23,7 +23,14 @@ export default function SubmissionComments({ submissionId, user }) {
         parentId: submissionId,
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      if (!Array.isArray(res?.data?.comments)) {
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "list" ||
+        res?.data?.viewerUserId !== (user?.id || null) ||
+        res?.data?.parentType !== "challenge_submission" ||
+        res?.data?.parentId !== submissionId ||
+        !Array.isArray(res?.data?.comments)
+      ) {
         throw new Error("Comment list response was invalid.");
       }
       setComments(res.data.comments);
@@ -50,6 +57,15 @@ export default function SubmissionComments({ submissionId, user }) {
         text: text.trim(),
       });
       if (res?.data?.error) throw new Error(res.data.error);
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "create" ||
+        res?.data?.userId !== user?.id ||
+        res?.data?.parentType !== "challenge_submission" ||
+        res?.data?.parentId !== submissionId
+      ) {
+        throw new Error("Comment creation was not confirmed.");
+      }
       const created = res?.data?.comment;
       if (!created?.id || created.track_id !== submissionId || created.parent_type !== "challenge_submission") {
         throw new Error("Comment creation was not confirmed.");

@@ -2689,3 +2689,20 @@ describe('track comments response identity contract', () => {
     expect(source).toContain('parentId,');
   });
 });
+
+
+describe('comment surface response isolation', () => {
+  it('validates viewer/author and exact parent on Explore, Challenges, and Studio', async () => {
+    for (const path of [
+      'src/components/explore/TrackCommentsDialog.jsx',
+      'src/components/challenges/SubmissionComments.jsx',
+      'src/components/studio/TrackStrip.jsx',
+    ]) {
+      const source = await readText(path);
+      expect(source).toContain('res?.data?.action !== "list"');
+      expect(source).toContain('res?.data?.action !== "create"');
+      expect(source).toContain('res?.data?.parentType !==');
+      expect(source).toContain('res?.data?.parentId !==');
+    }
+  });
+});

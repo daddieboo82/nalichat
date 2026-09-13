@@ -13,7 +13,8 @@ describe("auth query-cache isolation", () => {
     expect(source).toContain("previousUserId && previousUserId !== currentUser?.id");
     expect(source).toContain("queryClient.clear();");
     expect(source).toContain("lastUserIdRef.current = currentUser?.id || null;");
-    expect(source).toContain("if (lastUserIdRef.current) queryClient.clear();");
+    expect(source).toContain("const departingUserId = lastUserIdRef.current;");
+    expect(source).toContain("if (departingUserId) queryClient.clear();");
     expect(source).toContain("lastUserIdRef.current = null;");
   });
 });

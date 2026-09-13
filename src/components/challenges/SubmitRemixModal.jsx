@@ -131,7 +131,17 @@ export default function SubmitRemixModal({ open, onOpenChange, challenge, user, 
       });
       if (res?.data?.error) throw new Error(res.data.error);
       const submission = res?.data?.submission;
-      if (!submission?.id) throw new Error("Remix submission was not confirmed");
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "submit_remix" ||
+        res?.data?.userId !== user?.id ||
+        res?.data?.challengeId !== challenge.id ||
+        !submission?.id ||
+        submission.challenge_id !== challenge.id ||
+        submission.producer_id !== user?.id
+      ) {
+        throw new Error("Remix submission was not confirmed");
+      }
 
       toast.success("Remix submitted! Good luck 🎧");
       reset();

@@ -2802,3 +2802,15 @@ describe('message attachment download user binding', () => {
     expect(source).not.toContain('auth?.data?.userId !== currentUser?.id');
   });
 });
+
+
+describe('Studio invite acceptance response contract', () => {
+  it('requires the backend idempotency membership flag before consuming the invite URL', async () => {
+    const source = await readText('src/pages/Studio.jsx');
+    expect(source).toContain('accepted?.data?.action !== "accept_project_invite"');
+    expect(source).toContain('accepted?.data?.userId !== user.id');
+    expect(source).toContain('accepted?.data?.projectId !== roomId');
+    expect(source).toContain('typeof accepted?.data?.already_member !== "boolean"');
+    expect(source).toContain('Project invite acceptance was not confirmed.');
+  });
+});

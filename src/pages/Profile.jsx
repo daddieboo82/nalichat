@@ -52,6 +52,11 @@ export default function Profile() {
   const [uploading, setUploading] = useState(false);
   const avatarRef = useRef();
   const coverRef = useRef();
+  const activeUserIdRef = useRef(currentUser?.id || null);
+
+  useEffect(() => {
+    activeUserIdRef.current = currentUser?.id || null;
+  }, [currentUser?.id]);
   const queryClient = useQueryClient();
 
   const { data: targetUser, isLoading: targetUserLoading, isError: targetUserError, refetch: refetchTargetUser } = useQuery({
@@ -137,6 +142,11 @@ export default function Profile() {
   });
 
   const save = async () => {
+    const submittingUserId = currentUser?.id;
+    if (!submittingUserId || formOwnerId !== submittingUserId) {
+      toast.error("Your account changed. Please wait for your profile to reload.");
+      return;
+    }
     setSaving(true);
     try {
       const res = await base44.functions.invoke("updateMyProfile", {
@@ -151,42 +161,50 @@ export default function Profile() {
       if (
         res?.data?.success !== true ||
         res?.data?.action !== "update_my_profile" ||
-        res?.data?.userId !== currentUser?.id
+        res?.data?.userId !== submittingUserId
       ) throw new Error("Profile update was not confirmed");
     // Refresh the authoritative auth context and verify the saved profile is visible.
     const refreshedUser = await checkUserAuth();
-    if (!refreshedUser?.id || refreshedUser.id !== currentUser?.id) {
+    if (!refreshedUser?.id || refreshedUser.id !== submittingUserId) {
       throw new Error("Profile saved, but your session did not refresh.");
     }
+    if (activeUserIdRef.current !== submittingUserId) return;
     setEditing(false);
     toast.success("Profile updated.");
     } catch (error) {
       console.error("Profile update failed:", error);
-      toast.error(error?.message || "Could not update your profile. Please try again.");
-    } finally { setSaving(false); }
+      if (activeUserIdRef.current === submittingUserId) {
+        toast.error(error?.message || "Could not update your profile. Please try again.");
+      }
+    } finally {
+      if (activeUserIdRef.current === submittingUserId) setSaving(false);
+    }
   };
 
   const uploadAvatar = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    const uploadOwnerId = currentUser?.id;
+    if (!file || !uploadOwnerId || formOwnerId !== uploadOwnerId) return;
     setUploading(true);
     try {
       const { file_url } = await secureUploadFile({ file });
+      if (activeUserIdRef.current !== uploadOwnerId) return;
       const res = await base44.functions.invoke("updateMyProfile", { avatar_url: file_url });
       if (res?.data?.error) throw new Error(res.data.error);
       if (
         res?.data?.success !== true ||
         res?.data?.action !== "update_my_profile" ||
-        res?.data?.userId !== currentUser?.id
+        res?.data?.userId !== submittingUserId
       ) throw new Error("Profile update was not confirmed");
       const refreshedUser = await checkUserAuth();
       if (
         !refreshedUser?.id ||
-        refreshedUser.id !== currentUser?.id ||
+        refreshedUser.id !== uploadOwnerId ||
         refreshedUser.avatar_url !== file_url
       ) {
         throw new Error("Profile photo saved, but your session did not refresh.");
       }
+      if (activeUserIdRef.current !== uploadOwnerId) return;
       toast.success("Profile photo updated.");
     } catch (error) {
       console.error("Avatar update failed:", error);
@@ -199,25 +217,28 @@ export default function Profile() {
 
   const uploadCover = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    const uploadOwnerId = currentUser?.id;
+    if (!file || !uploadOwnerId || formOwnerId !== uploadOwnerId) return;
     setUploading(true);
     try {
       const { file_url } = await secureUploadFile({ file });
+      if (activeUserIdRef.current !== uploadOwnerId) return;
       const res = await base44.functions.invoke("updateMyProfile", { cover_url: file_url });
       if (res?.data?.error) throw new Error(res.data.error);
       if (
         res?.data?.success !== true ||
         res?.data?.action !== "update_my_profile" ||
-        res?.data?.userId !== currentUser?.id
+        res?.data?.userId !== submittingUserId
       ) throw new Error("Profile update was not confirmed");
       const refreshedUser = await checkUserAuth();
       if (
         !refreshedUser?.id ||
-        refreshedUser.id !== currentUser?.id ||
+        refreshedUser.id !== uploadOwnerId ||
         refreshedUser.cover_url !== file_url
       ) {
         throw new Error("Profile cover saved, but your session did not refresh.");
       }
+      if (activeUserIdRef.current !== uploadOwnerId) return;
       toast.success("Profile cover updated.");
     } catch (error) {
       console.error("Profile cover update failed:", error);

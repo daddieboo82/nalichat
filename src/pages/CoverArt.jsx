@@ -176,20 +176,26 @@ export default function CoverArt() {
     enabled: showPlaylistDialog && !!currentUser,
   });
 
-  const { data: playlistTracks = [], isLoading: isLoadingPlaylistTracks } = useQuery({
+  const {
+    data: playlistTrackResult = { tracks: [], unavailableCount: 0 },
+    isLoading: isLoadingPlaylistTracks,
+  } = useQuery({
     queryKey: ["playlistTracks", currentUser?.id, selectedPlaylist?.id],
     queryFn: async () => {
-      if (!selectedPlaylist?.track_ids?.length) return [];
-      const tracks = [];
-      for (const id of selectedPlaylist.track_ids) {
-        try {
-           tracks.push(await base44.entities.ArtPost.get(id));
-        } catch {}
-      }
-      return tracks.filter(t => t.creator_id === currentUser.id);
+      if (!selectedPlaylist?.track_ids?.length) return { tracks: [], unavailableCount: 0 };
+      const settled = await Promise.allSettled(
+        selectedPlaylist.track_ids.map((id) => base44.entities.ArtPost.get(id))
+      );
+      const tracks = settled
+        .filter((result) => result.status === "fulfilled" && result.value)
+        .map((result) => result.value)
+        .filter((track) => track.creator_id === currentUser.id);
+      const unavailableCount = settled.filter((result) => result.status === "rejected").length;
+      return { tracks, unavailableCount };
     },
     enabled: !!selectedPlaylist,
   });
+  const playlistTracks = playlistTrackResult.tracks;
 
   const handleImportSharedFile = async (file) => {
     try {
@@ -495,6 +501,11 @@ export default function CoverArt() {
                   <Button variant="ghost" size="sm" onClick={() => setSelectedPlaylist(null)} className="mb-2">
                     &larr; Back to Playlists
                   </Button>
+                  {playlistTrackResult.unavailableCount > 0 && !isLoadingPlaylistTracks && (
+                    <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300" role="status">
+                      {playlistTrackResult.unavailableCount} playlist track{playlistTrackResult.unavailableCount === 1 ? "" : "s"} couldn't be loaded. Showing the tracks that are available.
+                    </div>
+                  )}
                   {isLoadingPlaylistTracks ? (
                     <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
                   ) : playlistTracks.length === 0 ? (

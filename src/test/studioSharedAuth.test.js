@@ -11,7 +11,7 @@ describe('Studio shared auth state', () => {
     const source = await readText('src/pages/Studio.jsx');
     expect(source).toContain("import { useAuth } from '@/lib/AuthContext';");
     expect(source).toContain('const { user } = useAuth();');
-    expect(source).toContain('if (!roomId || !user?.id) return;');
+    expect(source).toContain('if (!roomId || !user?.id) {');
     expect(source).toContain('(project.editor_ids || []).includes(user.id)');
     expect(source).not.toContain('base44.auth.me()');
   });

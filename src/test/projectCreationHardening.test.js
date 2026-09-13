@@ -19,5 +19,14 @@ describe('project creation hardening', () => {
     expect(source).toContain('title.length > 200');
     expect(source).toContain('description.length > 3000');
     expect(source).toContain('status: 413');
+    it('binds successful creation to the authenticated owner and exact project', async () => {
+    const backend = await readText('base44/functions/createProject/entry.ts');
+    const client = await readText('src/pages/ProjectsSummary.jsx');
+    expect(backend).toContain("action: 'create_project'");
+    expect(backend).toContain('userId: user.id');
+    expect(backend).toContain('projectId: project.id');
+    expect(client).toContain('created?.data?.userId !== user?.id');
+    expect(client).toContain('project?.owner_id !== user?.id');
   });
+});
 });

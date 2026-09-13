@@ -1041,17 +1041,22 @@ describe('release configuration', () => {
   it('treats clear_access_token as a one-shot command and clears all token keys', async () => {
     const appParams = await readText('src/lib/app-params.js');
     expect(appParams).toContain('getAppParamValue("clear_access_token", { removeFromUrl: true })');
-    expect(appParams).toContain("storage.removeItem('base44_clear_access_token')");
-    expect(appParams).toContain("storage.removeItem('base44_access_token')");
-    expect(appParams).toContain("storage.removeItem('base44_token')");
+    expect(appParams).toContain("safeStorageRemove('base44_clear_access_token')");
+    expect(appParams).toContain("safeStorageRemove('base44_access_token')");
+    expect(appParams).toContain("safeStorageRemove('base44_token')");
+    expect(appParams).toContain("safeStorageRemove('token')");
   });
 
   it('does not return raw service-role User records from self-service profile mutations', async () => {
     const profile = await readText('base44/functions/updateMyProfile/entry.ts');
     const onboarding = await readText('base44/functions/completeOnboarding/entry.ts');
 
-    expect(profile).toContain('return Response.json({ success: true });');
-    expect(onboarding).toContain('return Response.json({ success: true });');
+    expect(profile).toContain('success: true');
+    expect(profile).toContain("action: 'update_my_profile'");
+    expect(profile).toContain('userId: user.id');
+    expect(onboarding).toContain('success: true');
+    expect(onboarding).toContain("action: 'complete_onboarding'");
+    expect(onboarding).toContain('userId: user.id');
     expect(profile).not.toContain('user: updated');
     expect(onboarding).not.toContain('user: updated');
   });

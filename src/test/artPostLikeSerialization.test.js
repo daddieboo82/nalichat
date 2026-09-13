@@ -17,10 +17,11 @@ describe('art post like serialization', () => {
     expect(source).toContain("req.method !== 'POST'");
     expect(source).toContain('acquireArtPostEngagementLock');
     expect(source).toContain('releaseArtPostEngagementLock');
-    expect(source).toContain('postId.length > 200');
+    expect(source).toContain('isBase44EntityId(postId)');
     expect(source).toContain('status: 409');
-    expect(source.indexOf('acquireArtPostEngagementLock')).toBeLessThan(
-      source.indexOf('entities.ArtPost.get(postId)'),
-    );
+    const lock = source.indexOf('const lockId = await acquireArtPostEngagementLock');
+    const lockedRead = source.indexOf('const post = await entities.ArtPost.get(postId)', lock);
+    expect(lock).toBeGreaterThan(-1);
+    expect(lockedRead).toBeGreaterThan(lock);
   });
 });

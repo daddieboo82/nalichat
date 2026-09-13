@@ -95,20 +95,20 @@ export default function StudioEditor() {
   return (
     <div className="h-full flex flex-col bg-background">
       <Tabs defaultValue="editor" className="h-full flex flex-col">
-        <TabsList className="w-full justify-start rounded-none border-b border-border px-6 py-3 h-auto bg-card/50">
-          <TabsTrigger value="editor" className="rounded-lg">Studio Editor</TabsTrigger>
-          <TabsTrigger value="mastering" className="rounded-lg">AI Mastering</TabsTrigger>
-          <TabsTrigger value="library" className="rounded-lg">Processed Sessions</TabsTrigger>
+        <TabsList className="no-scrollbar w-full shrink-0 justify-start gap-1 overflow-x-auto rounded-none border-b border-border/70 bg-card/80 px-3 py-2.5 backdrop-blur-xl sm:px-6 sm:py-3">
+          <TabsTrigger value="editor" className="min-h-10 shrink-0 rounded-xl px-3 sm:px-4">Studio Editor</TabsTrigger>
+          <TabsTrigger value="mastering" className="min-h-10 shrink-0 rounded-xl px-3 sm:px-4">AI Mastering</TabsTrigger>
+          <TabsTrigger value="library" className="min-h-10 shrink-0 rounded-xl px-3 sm:px-4">Processed Sessions</TabsTrigger>
         </TabsList>
 
         {/* Editor Tab */}
-        <TabsContent value="editor" className="flex-1 overflow-auto p-6">
+        <TabsContent value="editor" className="flex-1 overflow-auto px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
           <div className="max-w-4xl mx-auto space-y-6">
-            <div className="bg-card rounded-2xl border border-border p-8">
-              <div className="flex items-center justify-between mb-6">
+            <div className="ui-surface rounded-3xl border border-border/80 bg-card p-5 sm:p-8">
+              <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <h2 className="font-heading font-bold text-2xl">Studio Mastering Editor</h2>
+                  <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
+                    <h2 className="font-heading text-xl font-bold tracking-tight sm:text-2xl">Studio Mastering Editor</h2>
                     <span className="text-xs px-3 py-1 rounded-full bg-accent/20 text-accent font-semibold">AI Mastering</span>
                   </div>
                   <p className="text-muted-foreground">Preview a bounced mix, get AI mastering settings, and publish when you are ready.</p>
@@ -120,7 +120,7 @@ export default function StudioEditor() {
                   placeholder="Session title (e.g., 'Summer Vibes - v2')"
                   value={uploadTitle}
                   onChange={(e) => setUploadTitle(e.target.value)}
-                  className="rounded-xl"
+                  className="h-12 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
                 />
                 
                 <Input
@@ -130,11 +130,11 @@ export default function StudioEditor() {
                     setAudioUrl(e.target.value);
                     setPublishedPostId(null);
                   }}
-                  className="rounded-xl"
+                  className="h-12 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
                 />
 
                 {audioUrl && (
-                  <div className="flex items-center gap-2 p-4 bg-secondary/50 rounded-xl">
+                  <div className="flex items-center gap-3 rounded-2xl border border-border/50 bg-secondary/40 p-3 sm:p-4">
                     <div className="flex-1 flex items-center gap-2">
                       <button
                         onClick={async () => {
@@ -153,7 +153,7 @@ export default function StudioEditor() {
                             toast.error("Couldn't preview this audio. Please try again.");
                           }
                         }}
-                        className="w-10 h-10 rounded-lg bg-primary/20 text-primary flex items-center justify-center hover:bg-primary/30 transition-colors"
+                        className="ui-hover flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary hover:bg-primary/30 focus-visible:ring-2 focus-visible:ring-primary/40" aria-label={playing ? "Pause audio preview" : "Play audio preview"}
                       >
                         {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                       </button>
@@ -166,7 +166,7 @@ export default function StudioEditor() {
                 <Button
                    onClick={handleProcessAudio}
                    disabled={!audioUrl || processing}
-                   className="w-full rounded-xl bg-primary hover:bg-primary/90"
+                   className="ui-hover min-h-12 w-full rounded-xl bg-primary font-semibold hover:bg-primary/90 shadow-lg shadow-primary/15"
                  >
                    {processing ? (
                      <>
@@ -193,7 +193,7 @@ export default function StudioEditor() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-card rounded-2xl border border-accent/30 p-8 space-y-4"
+                className="ui-surface space-y-4 rounded-3xl border border-accent/30 bg-card p-5 sm:p-8"
               >
                 <div className="flex items-center gap-2 mb-4">
                    <Zap className="w-5 h-5 text-accent" />
@@ -233,10 +233,10 @@ export default function StudioEditor() {
                   </div>
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col gap-3 pt-4 sm:flex-row">
                    <Dialog open={shareDialog} onOpenChange={setShareDialog}>
                      <DialogTrigger asChild>
-                       <Button className="flex-1 rounded-xl bg-accent hover:bg-accent/90">
+                       <Button className="ui-hover min-h-11 flex-1 rounded-xl bg-accent font-semibold hover:bg-accent/90">
                          <Share2 className="w-4 h-4 mr-2" />
                          Share & Publish
                        </Button>
@@ -278,7 +278,7 @@ export default function StudioEditor() {
         </TabsContent>
 
         {/* Mastering Tab */}
-        <TabsContent value="mastering" className="flex-1 overflow-auto p-6">
+        <TabsContent value="mastering" className="flex-1 overflow-auto px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
           <div className="max-w-4xl mx-auto text-center text-muted-foreground py-20">
             <Zap className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p className="font-heading font-semibold mb-2">AI Mastering Engine</p>
@@ -287,7 +287,7 @@ export default function StudioEditor() {
         </TabsContent>
 
         {/* Library Tab */}
-        <TabsContent value="library" className="flex-1 overflow-auto p-6">
+        <TabsContent value="library" className="flex-1 overflow-auto px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
           <div className="max-w-4xl mx-auto text-center text-muted-foreground py-20">
             <Music className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p className="font-heading font-semibold mb-2">Your Processed Sessions</p>

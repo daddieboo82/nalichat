@@ -68,7 +68,7 @@ function ReadReceipts({ readBy, users }) {
 
 
 
-function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownload }) {
+function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownload, currentUserId }) {
   const [dlProgress, setDlProgress] = useState(null); // null = idle, 0-100 = downloading
   const isImage = message.type === "image" || message.file_type?.startsWith("image");
   const isAudio = message.type === "audio" || message.file_type?.startsWith("audio") || !!message.file_name?.match(/\.(mp3|wav|ogg|m4a|aac)$/i) || !!message.file_url?.match(/\.(mp3|wav|ogg|m4a|aac)(\?.*)?$/i);
@@ -84,14 +84,14 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
       if (
         auth?.data?.success !== true ||
         auth?.data?.action !== "authorize_message_download" ||
-        auth?.data?.userId !== currentUser?.id ||
+        auth?.data?.userId !== currentUserId ||
         auth?.data?.messageId !== message.id ||
         auth?.data?.conversationId !== message.conversation_id
       ) {
         throw new Error("Download authorization was not confirmed.");
       }
       const downloadUrl = auth?.data?.file_url;
-      if (auth?.data?.success !== true || !downloadUrl) {
+      if (typeof downloadUrl !== "string" || !downloadUrl.trim()) {
         throw new Error("Download authorization was not confirmed");
       }
       await resumableDownload(downloadUrl, auth?.data?.file_name || message.file_name || "file", (pct) => setDlProgress(pct));
@@ -280,7 +280,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           {message.type === "session" ? (
             <ChatSessionViewer message={message} currentUser={currentUser} />
           ) : hasFile ? (
-            <FileAttachment message={message} isOwn={isOwn} canTranscribe={canTranscribe} canDownload={canDownload} onOpenViewer={() => {
+            <FileAttachment message={message} isOwn={isOwn} canTranscribe={canTranscribe} canDownload={canDownload} currentUserId={currentUser?.id} onOpenViewer={() => {
               if (message.type === "audio" || message.file_type?.startsWith("audio")) {
                 onPlayAudio?.(message);
               } else {

@@ -16,8 +16,9 @@ async function fetchTranscription(_fileUrl, messageId) {
   if (transcriptionCache.has(messageId)) return transcriptionCache.get(messageId);
   const res = await base44.functions.invoke("transcribeMessageAudio", { messageId });
   if (res?.data?.error) throw new Error(res.data.error);
-  const text = res?.data?.text || "";
-  const clean = typeof text === "string" ? text.trim() : String(text).trim();
+  if (!res?.data || typeof res.data.text !== "string") throw new Error("Transcription response was invalid.");
+  const text = res.data.text;
+  const clean = text.trim();
   if (clean) {
     transcriptionCache.set(messageId, clean);
     return clean;

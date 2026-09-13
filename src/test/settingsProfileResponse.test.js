@@ -4,9 +4,9 @@ describe('Settings profile response validation', () => {
   it('requires updateMyProfile success before showing Profile updated', async () => {
     const s = await readFile('src/pages/Settings.jsx', 'utf8');
     expect(s).toContain('res?.data?.action !== "update_my_profile"');
-    expect(s).toContain('res?.data?.userId !== user.id');
+    expect(s).toContain('res?.data?.userId !== submittingUserId');
     expect(s).toContain('const refreshedUser = await checkUserAuth()');
-    expect(s).toContain('refreshedUser.id !== user.id');
+    expect(s).toContain('refreshedUser.id !== submittingUserId');
     expect(s).toContain('refreshedUser.display_name !== cleanedForm.display_name');
     expect(s).toContain('refreshedUser.avatar_url !== cleanedForm.avatar_url');
     expect(s).toContain('Profile saved, but your session did not refresh.');
@@ -20,5 +20,17 @@ describe('profile update identity response contract', () => {
     expect(backend).toContain("action: 'update_my_profile'");
     expect(backend).toContain('userId: user.id');
     expect(backend).toContain('updatedFields: Object.keys(patch).sort()');
+  });
+});
+
+
+describe('Settings in-flight account binding', () => {
+  it('does not apply upload/save completion after the active account changes', async () => {
+    const s = await readFile('src/pages/Settings.jsx', 'utf8');
+    expect(s).toContain('const uploadOwnerId = user?.id');
+    expect(s).toContain('activeUserIdRef.current !== uploadOwnerId');
+    expect(s).toContain('const submittingUserId = user?.id');
+    expect(s).toContain('formOwnerId !== submittingUserId');
+    expect(s).toContain('activeUserIdRef.current !== submittingUserId');
   });
 });

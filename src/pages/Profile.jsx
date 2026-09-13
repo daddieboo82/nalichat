@@ -54,7 +54,7 @@ export default function Profile() {
   const coverRef = useRef();
   const queryClient = useQueryClient();
 
-  const { data: targetUser } = useQuery({
+  const { data: targetUser, isLoading: targetUserLoading, isError: targetUserError, refetch: refetchTargetUser } = useQuery({
     queryKey: ["user", targetUserId],
     queryFn: async () => {
       if (!targetUserId) return null;
@@ -176,6 +176,26 @@ export default function Profile() {
   const xpForNext = ((Math.floor((user?.xp || 0) / 200) + 1) * 200);
   const xpProgress = ((user?.xp || 0) % 200) / 200 * 100;
 
+  if (targetUserId && targetUserLoading) {
+    return <div className="h-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
+  }
+  if (targetUserId && (targetUserError || !targetUser)) {
+    return (
+      <div className="h-full flex items-center justify-center p-6">
+        <div className="max-w-sm text-center">
+          <h2 className="font-heading text-xl font-bold">Profile unavailable</h2>
+          <p className="mt-2 text-sm text-muted-foreground">This profile couldn't be loaded. It may no longer be available.</p>
+          <button
+            type="button"
+            onClick={() => void refetchTargetUser()}
+            className="mt-4 rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary/50"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
   if (!user) return <div className="h-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
   if (isMe && formOwnerId !== user.id) {
     return <div className="h-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;

@@ -30,7 +30,7 @@ export async function persistChatThemePreference(themeId) {
     theme_id: themeId,
   });
   const payload = response?.data ?? response;
-  if (!payload || payload.error || payload.success !== true || !isChatThemeId(payload.theme_id) || payload.theme_id !== themeId) {
+  if (!payload || payload.error || payload.success !== true || payload.action !== "set_chat_theme" || payload.userId !== userId || !isChatThemeId(payload.theme_id) || payload.theme_id !== themeId) {
     throw new Error(payload?.error || "Unable to save chat theme.");
   }
   return payload.theme_id;

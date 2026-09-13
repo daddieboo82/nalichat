@@ -2676,3 +2676,16 @@ describe('liked-post account isolation response contract', () => {
     expect(profile).toContain('likedRes?.data?.userId !== currentUser?.id');
   });
 });
+
+
+describe('track comments response identity contract', () => {
+  it('binds list/create results to their exact target and viewer/author', async () => {
+    const source = await readText('base44/functions/trackComments/entry.ts');
+    expect(source).toContain("action: 'list'");
+    expect(source).toContain('viewerUserId: user?.id || null');
+    expect(source).toContain("action: 'create'");
+    expect(source).toContain('userId: user.id');
+    expect(source).toContain('parentType,');
+    expect(source).toContain('parentId,');
+  });
+});

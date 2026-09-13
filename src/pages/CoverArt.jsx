@@ -1,4 +1,5 @@
 import { secureUploadFile } from "@/lib/secureUpload";
+import { validateUpload } from "@/lib/uploadValidation";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -241,6 +242,12 @@ export default function CoverArt() {
     const file = event.target.files?.[0];
     const importOwnerId = currentUser?.id;
     if (!file || !importOwnerId) return;
+    const validation = validateUpload(file);
+    if (!validation.ok) {
+      toast.error(validation.error);
+      event.target.value = "";
+      return;
+    }
     
     if (!file.type.startsWith('audio/') && !file.type.startsWith('video/')) {
       toast.error('Please upload an audio file');
@@ -375,6 +382,12 @@ export default function CoverArt() {
     const uploadOwnerId = currentUser?.id;
     const targetPostId = selectedPost?.id;
     if (!file || !uploadOwnerId || !targetPostId || selectedPost?.creator_id !== uploadOwnerId) return;
+    const validation = validateUpload(file);
+    if (!validation.ok) {
+      toast.error(validation.error);
+      event.target.value = "";
+      return;
+    }
     
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file');

@@ -17,4 +17,12 @@ describe('mobile Messages viewport scrolling', () => {
     expect(thread).toContain('w-full sm:w-80 h-full min-h-0');
     expect(thread).toContain('overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]');
   });
+
+  it('does not let pull-to-refresh steal gestures from a nested scroller', async () => {
+    const pull = await readFile('src/components/layout/PullToRefresh.jsx', 'utf8');
+    expect(pull).toContain('window.getComputedStyle(node)');
+    expect(pull).toContain('node.scrollHeight > node.clientHeight');
+    expect(pull).toContain('activeScrollerRef.current = scroller || wrapper');
+    expect(pull).toContain('activeScrollerRef.current.scrollTop <= 0');
+  });
 });

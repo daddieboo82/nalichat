@@ -24,11 +24,12 @@ describe('art post view retryability', () => {
     expect(source.indexOf('await releaseSingleHourlyClaim')).toBeGreaterThan(
       source.indexOf('$inc: { views: 1 }'),
     );
-    it('validates view confirmations against the current viewer and exact post', async () => {
+  });
+
+  it('validates view confirmations against the current viewer and exact post', async () => {
     const client = await readText('src/lib/trackAnalytics.js');
     expect(client).toContain("data?.action !== 'record_art_post_view'");
     expect(client).toContain('data?.userId !== expectedUserId');
     expect(client).toContain('data?.postId !== postId');
   });
-});
 });

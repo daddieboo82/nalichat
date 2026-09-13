@@ -5,11 +5,17 @@ import {
   LOCKED_CHAT_PBKDF2_ITERATIONS,
 } from "@/lib/lockedChatCrypto";
 
-async function invokeLockedChatVault(action, payload = {}) {
+async function invokeLockedChatVault(action, payload = {}, expectedUserId) {
   try {
     const response = await base44.functions.invoke("lockedChatVault", { action, ...payload });
     const data = response?.data;
-    if (data && !data.error) return data;
+    if (
+      data &&
+      !data.error &&
+      data.success === true &&
+      data.action === action &&
+      (!expectedUserId || data.userId === expectedUserId)
+    ) return data;
     throw Object.assign(
       new Error(data?.error || "Locked chats are unavailable."),
       {
@@ -33,11 +39,11 @@ async function invokeLockedChatVault(action, payload = {}) {
   }
 }
 
-export function getLockedChatState() {
-  return invokeLockedChatVault("state");
+export function getLockedChatState(userId) {
+  return invokeLockedChatVault("state", {}, userId);
 }
 
-export async function configureLockedChatPin(pin) {
+export async function configureLockedChatPin(pin, userId) {
   const salt = createLockedChatSalt();
   const verifier = await deriveLockedChatPinVerifier(pin, {
     salt,
@@ -47,26 +53,26 @@ export async function configureLockedChatPin(pin) {
     salt,
     verifier,
     iterations: LOCKED_CHAT_PBKDF2_ITERATIONS,
-  });
+  }, userId);
 }
 
-export async function verifyLockedChatPin(pin, security) {
+export async function verifyLockedChatPin(pin, security, userId) {
   const verifier = await deriveLockedChatPinVerifier(pin, security);
-  return invokeLockedChatVault("verify_pin", { verifier });
+  return invokeLockedChatVault("verify_pin", { verifier }, userId);
 }
 
-export function setLockedConversation(conversationId, locked) {
+export function setLockedConversation(conversationId, locked, userId) {
   return invokeLockedChatVault("set_locked", {
     conversationId,
     locked: locked === true,
-  });
+  }, userId);
 }
 
-export function requestLockedChatPinReset() {
-  return invokeLockedChatVault("request_reset");
+export function requestLockedChatPinReset(userId) {
+  return invokeLockedChatVault("request_reset", {}, userId);
 }
 
-export async function completeLockedChatPinReset(code, pin) {
+export async function completeLockedChatPinReset(code, pin, userId) {
   const salt = createLockedChatSalt();
   const verifier = await deriveLockedChatPinVerifier(pin, {
     salt,
@@ -77,5 +83,5 @@ export async function completeLockedChatPinReset(code, pin) {
     salt,
     verifier,
     iterations: LOCKED_CHAT_PBKDF2_ITERATIONS,
-  });
+  }, userId);
 }

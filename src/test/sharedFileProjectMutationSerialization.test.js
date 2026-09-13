@@ -14,7 +14,7 @@ describe('shared file project mutation serialization', () => {
     expect(source).toContain('releaseProjectMembershipLock');
     expect(source).toContain('projectLockIds');
     expect(source).toContain('File project changed. Please retry.');
-    expect(source).toContain('Destination project is being updated. Please retry.');
+    expect(source).toContain('Project is being updated. Please retry.');
     expect(source).toContain('Folder destination changed. Please retry.');
     expect(source.indexOf('acquireProjectMembershipLock')).toBeLessThan(
       source.indexOf('SharedFile.update(file.id'),

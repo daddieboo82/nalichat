@@ -78,6 +78,16 @@ export default function TrackImporter({ projectId, currentUser, onSuccess }) {
           solo: false,
         });
         if (created?.data?.error) throw new Error(created.data.error);
+        const track = created?.data?.track;
+        if (
+          created?.data?.success !== true ||
+          created?.data?.action !== "create_collaborative_track" ||
+          created?.data?.userId !== currentUser?.id ||
+          created?.data?.parentId !== projectId ||
+          created?.data?.trackId !== track?.id ||
+          track?.project_id !== projectId ||
+          track?.uploaded_by !== currentUser?.id
+        ) throw new Error("Track creation was not confirmed.");
 
         setQueue(prev =>
           prev.map(i =>

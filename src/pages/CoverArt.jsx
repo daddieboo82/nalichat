@@ -44,7 +44,12 @@ export default function CoverArt() {
   const [generatingStatus, setGeneratingStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
+  const activeUserIdRef = useRef(currentUser?.id || null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    activeUserIdRef.current = currentUser?.id || null;
+  }, [currentUser?.id]);
 
 
   const importFileInputRef = useRef(null);
@@ -198,6 +203,8 @@ export default function CoverArt() {
   const playlistTracks = playlistTrackResult.tracks;
 
   const handleImportSharedFile = async (file) => {
+    const importOwnerId = currentUser?.id;
+    if (!importOwnerId || file?.uploader_id !== importOwnerId) return;
     try {
       setIsImporting(true);
       setShowFilesDialog(false);
@@ -212,7 +219,14 @@ export default function CoverArt() {
         tags: ["imported"],
       });
       if (published?.data?.error) throw new Error(published.data.error);
-      if (!published?.data?.post?.id) throw new Error("Track import was not confirmed");
+      if (
+        activeUserIdRef.current !== importOwnerId ||
+        published?.data?.success !== true ||
+        published?.data?.action !== "create_art_post" ||
+        published?.data?.userId !== importOwnerId ||
+        published?.data?.post?.creator_id !== importOwnerId ||
+        !published?.data?.post?.id
+      ) throw new Error("Track import was not confirmed");
       queryClient.invalidateQueries({ queryKey: ["myArtPosts"] });
       toast.success("Track imported successfully!");
     } catch (error) {
@@ -225,7 +239,8 @@ export default function CoverArt() {
 
   const handleImportAudio = async (event) => {
     const file = event.target.files?.[0];
-    if (!file || !currentUser) return;
+    const importOwnerId = currentUser?.id;
+    if (!file || !importOwnerId) return;
     
     if (!file.type.startsWith('audio/') && !file.type.startsWith('video/')) {
       toast.error('Please upload an audio file');
@@ -236,6 +251,7 @@ export default function CoverArt() {
       setIsImporting(true);
       toast.info('Uploading track...');
       const { file_url } = await secureUploadFile({ file });
+      if (activeUserIdRef.current !== importOwnerId) return;
       const published = await base44.functions.invoke("createArtPost", {
         title: file.name.replace(/\.[^/.]+$/, ""),
         description: "Imported track",
@@ -246,7 +262,14 @@ export default function CoverArt() {
         tags: ["imported"],
       });
       if (published?.data?.error) throw new Error(published.data.error);
-      if (!published?.data?.post?.id) throw new Error("Track import was not confirmed");
+      if (
+        activeUserIdRef.current !== importOwnerId ||
+        published?.data?.success !== true ||
+        published?.data?.action !== "create_art_post" ||
+        published?.data?.userId !== importOwnerId ||
+        published?.data?.post?.creator_id !== importOwnerId ||
+        !published?.data?.post?.id
+      ) throw new Error("Track import was not confirmed");
       queryClient.invalidateQueries({ queryKey: ["myArtPosts"] });
       toast.success("Track imported successfully!");
     } catch (error) {
@@ -337,7 +360,9 @@ export default function CoverArt() {
 
   const handleFileUpload = async (event) => {
     const file = event.target.files?.[0];
-    if (!file || !selectedPost) return;
+    const uploadOwnerId = currentUser?.id;
+    const targetPostId = selectedPost?.id;
+    if (!file || !uploadOwnerId || !targetPostId || selectedPost?.creator_id !== uploadOwnerId) return;
     
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file');
@@ -347,6 +372,7 @@ export default function CoverArt() {
     try {
       setIsUploading(true);
       const { file_url } = await secureUploadFile({ file });
+      if (activeUserIdRef.current !== uploadOwnerId || selectedPost?.id !== targetPostId) return;
       setGeneratedImage(file_url);
       toast.success('Image uploaded successfully! You can now save it to your track.');
     } catch (error) {

@@ -235,15 +235,6 @@ export default function Messages() {
       ) {
         throw new Error("User directory response was not confirmed.");
       }
-      const updated = res?.data?.message;
-      if (
-        res?.data?.success !== true ||
-        updated?.id !== messageId ||
-        !res?.data?.reactions ||
-        typeof res.data.reactions !== "object"
-      ) {
-        throw new Error("Reaction update was not confirmed.");
-      }
       return res.data?.users || [];
     },
     enabled: !!currentUser?.id,

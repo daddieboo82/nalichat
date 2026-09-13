@@ -58,6 +58,17 @@ export function useCall({ conversation, messages, currentUser, otherUser }) {
           text: JSON.stringify({ [SIGNAL_SENTINEL]: true, ...signal }),
         });
         if (res?.data?.error) throw new Error(res.data.error);
+        const sent = res?.data?.message;
+        if (
+          res?.data?.success !== true ||
+          !sent?.id ||
+          sent?.conversation_id !== conversationId ||
+          sent?.sender_id !== currentUser.id ||
+          sent?.type !== "session" ||
+          !isCallSignal(sent?.text)
+        ) {
+          throw new Error("Call signal was not confirmed.");
+        }
       } catch (e) {
         console.error("Call signal failed:", e);
         throw e;

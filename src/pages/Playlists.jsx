@@ -110,10 +110,10 @@ export default function Playlists() {
   if (isError) {
     return (
       <div className="h-full flex items-center justify-center p-6">
-        <div className="max-w-sm text-center">
+        <div className="ui-surface w-full max-w-sm rounded-3xl border border-border bg-card/70 p-6 text-center">
           <h2 className="font-heading text-xl font-bold">Playlists unavailable</h2>
           <p className="mt-2 text-sm text-muted-foreground">We couldn't load your playlists. Your saved playlists have not been removed.</p>
-          <Button className="mt-4" variant="outline" onClick={() => void refetch()}>
+          <Button className="ui-hover mt-4 min-h-11 rounded-xl" variant="outline" onClick={() => void refetch()}>
             Retry
           </Button>
         </div>
@@ -126,7 +126,7 @@ export default function Playlists() {
       {/* Header */}
       <div className="shrink-0 border-b border-border/70 bg-card/40 px-4 py-4 backdrop-blur-xl sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h1 className="text-2xl font-heading font-bold tracking-tight">Your Playlists</h1>
-        <Button onClick={() => setShowCreateDialog(true)} className="ui-hover min-h-11 gap-2 rounded-xl font-semibold shadow-lg shadow-primary/10">
+        <Button onClick={() => setShowCreateDialog(true)} className="ui-hover min-h-11 w-full gap-2 rounded-xl font-semibold shadow-lg shadow-primary/10 sm:w-auto">
           <Plus className="w-4 h-4" /> Create Playlist
         </Button></div>
       </div>
@@ -144,14 +144,14 @@ export default function Playlists() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {playlists.map((playlist) => (
               <Link
                 key={playlist.id}
                 to={`/playlist/${playlist.id}`}
-                className="ui-surface ui-hover group cursor-pointer rounded-2xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl hover:border-white/[0.12] hover:bg-card/70"
+                className="ui-surface ui-hover group cursor-pointer rounded-3xl border border-white/[0.06] bg-card/50 p-4 backdrop-blur-xl hover:border-white/[0.12] hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-primary/40"
               >
-                <div className="mb-4 flex aspect-[4/3] items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 transition-colors group-hover:from-primary/30 group-hover:to-accent/30">
+                <div className="mb-4 flex aspect-[16/10] items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 transition-colors group-hover:from-primary/30 group-hover:to-accent/30">
                   <Music className="w-8 h-8 text-primary/60" />
                 </div>
                 <h3 className="font-heading font-semibold truncate group-hover:text-primary transition-colors">
@@ -186,7 +186,7 @@ export default function Playlists() {
 
       {/* Create Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-md rounded-3xl border-border bg-card/95 p-5 sm:p-6">
           <DialogHeader>
             <DialogTitle>Create Playlist</DialogTitle>
             <DialogDescription>
@@ -216,14 +216,16 @@ export default function Playlists() {
                 className="mt-1 min-h-[110px] rounded-xl border-border/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
               <Button
                 variant="outline"
+                className="ui-hover min-h-11 rounded-xl"
                 onClick={() => setShowCreateDialog(false)}
               >
                 Cancel
               </Button>
               <Button
+                className="ui-hover min-h-11 rounded-xl"
                 onClick={handleCreate}
                 disabled={!formData.name.trim() || createPlaylistMutation.isPending}
               >

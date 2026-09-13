@@ -11,11 +11,13 @@ import ExportBounce from "@/components/studio/ExportBounce";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export default function StudioEditor() {
   const { hasEntitlement } = useSubscription();
   const canUseAi = hasEntitlement("ai.standard");
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
   const [activeSession, setActiveSession] = useState(null);
   const [collaborators, setCollaborators] = useState([]);
   const [audioUrl, setAudioUrl] = useState("");
@@ -88,18 +90,18 @@ export default function StudioEditor() {
     }
   };
 
-  const handleShare = async (platform) => {
+  const handleShare = (platform) => {
     if (!currentUser) return;
-    
-    // Create share message
     const shareText = `Check out my latest mix: ${uploadTitle} - mastered with AI!`;
-    
     if (platform === 'messages') {
-      // Store in local state for later sharing via messages
-      console.log('Share via messages:', shareText);
+      setShareDialog(false);
+      navigate('/messages', {
+        state: {
+          composeText: shareText,
+          composeSource: 'studio-editor',
+        },
+      });
     }
-    
-    setShareDialog(false);
   };
 
   return (

@@ -60,6 +60,7 @@ export default function Profile() {
       if (!targetUserId) return null;
       const res = await base44.functions.invoke("listPublicUsers", { userId: targetUserId });
       if (res?.data?.error) throw new Error(res.data.error);
+      if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
       return (res?.data?.users || [])[0] || null;
     },
     enabled: !!targetUserId,
@@ -104,6 +105,7 @@ export default function Profile() {
     queryFn: async () => {
       const res = await base44.functions.invoke("listPublicAchievements", { userId: user.id });
       if (res?.data?.error) throw new Error(res.data.error);
+      if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
       return res?.data?.achievements || [];
     },
     enabled: !!user?.id,
@@ -121,6 +123,7 @@ export default function Profile() {
         genres: form.genres || [],
       });
       if (res?.data?.error) throw new Error(res.data.error);
+      if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
     // Refresh the authoritative auth context and wait for any transient retry.
     await checkUserAuth();
     setEditing(false);
@@ -139,6 +142,7 @@ export default function Profile() {
       const { file_url } = await secureUploadFile({ file });
       const res = await base44.functions.invoke("updateMyProfile", { avatar_url: file_url });
       if (res?.data?.error) throw new Error(res.data.error);
+      if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
       await checkUserAuth();
       toast.success("Profile photo updated.");
     } catch (error) {
@@ -158,6 +162,7 @@ export default function Profile() {
       const { file_url } = await secureUploadFile({ file });
       const res = await base44.functions.invoke("updateMyProfile", { cover_url: file_url });
       if (res?.data?.error) throw new Error(res.data.error);
+      if (res?.data?.success !== true) throw new Error("Profile update was not confirmed");
       await checkUserAuth();
       toast.success("Profile cover updated.");
     } catch (error) {

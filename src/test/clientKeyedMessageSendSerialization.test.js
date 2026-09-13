@@ -11,12 +11,12 @@ describe('client-keyed message send serialization', () => {
     const source = await readText('base44/functions/sendConversationMessage/entry.ts');
 
     const lock = source.indexOf('clientSendLockId = await acquireMessageMutationLock');
-    const existing = source.indexOf('const existing = await findExistingMessage');
+    const existingAfterLock = source.indexOf('const existingAfterLock = await findExistingMessage', lock);
     const rate = source.indexOf("'conversation_message'");
     const moderation = source.indexOf('const moderation = await moderateText');
 
     expect(lock).toBeGreaterThan(-1);
-    expect(existing).toBeGreaterThan(lock);
+    expect(existingAfterLock).toBeGreaterThan(lock);
     expect(rate).toBeGreaterThan(lock);
     expect(moderation).toBeGreaterThan(lock);
     expect(source).toContain('Message send is already in progress. Please retry.');

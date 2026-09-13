@@ -2753,3 +2753,11 @@ describe('file share-link response identity contract', () => {
     expect(large).toContain('share?.data?.fileId !== newFile.id');
   });
 });
+
+
+describe('subscription trial history source', () => {
+  it('reports account-level trial usage even when the selected subscription record lacks it', async () => {
+    const source = await readText('base44/functions/checkSubscriptionStatus/entry.ts');
+    expect(source).toContain('trialUsedAt: user.trial_used_at || selected?.trial_used_at || null');
+  });
+});

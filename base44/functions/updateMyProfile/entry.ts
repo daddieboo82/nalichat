@@ -125,7 +125,12 @@ Deno.serve(async (req) => {
     }
 
     await base44.asServiceRole.entities.User.update(user.id, patch);
-    return Response.json({ success: true });
+    return Response.json({
+      success: true,
+      action: 'update_my_profile',
+      userId: user.id,
+      updatedFields: Object.keys(patch).sort(),
+    });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

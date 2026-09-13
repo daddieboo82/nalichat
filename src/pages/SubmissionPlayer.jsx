@@ -9,7 +9,20 @@ import SubmissionComments from "@/components/challenges/SubmissionComments";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
 
-const MAX_CHALLENGE_SUBMISSIONS = 500;
+async function listAllApprovedSubmissions(challengeId) {
+  const rows = [];
+  const pageSize = 200;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.ChallengeSubmission.filter(
+      { challenge_id: challengeId, status: "approved" },
+      "-vote_count",
+      pageSize,
+      skip,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
 
 export default function SubmissionPlayer() {
   const { challengeId, submissionId } = useParams();
@@ -23,12 +36,7 @@ export default function SubmissionPlayer() {
 
   useEffect(() => {
     let cancelled = false;
-    base44.entities.ChallengeSubmission
-      .filter(
-        { challenge_id: challengeId, status: "approved" },
-        "-vote_count",
-        MAX_CHALLENGE_SUBMISSIONS,
-      )
+    listAllApprovedSubmissions(challengeId)
       .then((nextSubmissions) => {
         if (!cancelled) setAllSubs(nextSubmissions || []);
       })

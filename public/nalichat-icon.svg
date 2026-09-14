@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="NaliChat">
+  <defs>
+    <radialGradient id="tile" cx="50%" cy="38%" r="80%">
+      <stop offset="0" stop-color="#202030"/>
+      <stop offset="0.6" stop-color="#14141e"/>
+      <stop offset="1" stop-color="#0a0a10"/>
+    </radialGradient>
+    <linearGradient id="neon" x1="88" y1="424" x2="424" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff2d9b"/>
+      <stop offset="0.5" stop-color="#9d3aff"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#tile)"/>
+  <rect x="28" y="28" width="456" height="456" rx="100" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width="8"/>
+  <path d="M218 132h76c82 0 118 45 118 118v54c0 74-42 118-116 118h-48l-92 62 25-72c-55-14-81-53-81-108v-54c0-74 41-118 118-118z"
+        fill="none" stroke="url(#neon)" stroke-width="30" stroke-linejoin="round" stroke-linecap="round"/>
+  <g fill="url(#neon)">
+    <rect x="174" y="260" width="34" height="92" rx="17"/>
+    <rect x="239" y="194" width="34" height="158" rx="17"/>
+    <rect x="304" y="236" width="34" height="116" rx="17"/>
+  </g>
+</svg>

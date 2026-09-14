@@ -11,5 +11,8 @@ describe('public marketing metadata', () => {
     expect(html).toContain('built-in music Studio');
     expect(html).toContain('AI-assisted music tools');
     expect(html).not.toContain('The ultimate platform for music creators');
+    expect(html).toContain('<link rel="canonical" href="https://nalichat.org/" />');
+    expect(html).toContain('"@type":"SoftwareApplication"');
+    expect(html).toContain('"applicationCategory":"CommunicationApplication"');
   });
 });

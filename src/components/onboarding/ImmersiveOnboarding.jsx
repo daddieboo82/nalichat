@@ -206,7 +206,7 @@ export default function ImmersiveOnboarding({ onDismiss }) {
                 key={current.id}
                 custom={direction}
                 variants={slideVariants}
-                initial="enter"
+                initial={step === 0 ? false : "enter"}
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.4, ease: "easeOut" }}
@@ -237,9 +237,9 @@ export default function ImmersiveOnboarding({ onDismiss }) {
 
                 {/* Title */}
                 <motion.h1
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={step === 0 ? false : { opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
+                  transition={{ delay: step === 0 ? 0 : 0.3 }}
                   className={`mb-4 bg-gradient-to-r ${current.gradient} bg-clip-text font-heading text-3xl font-black leading-[1.05] tracking-tight text-transparent sm:mb-5 sm:text-5xl md:text-6xl`}
                 >
                   {current.title}
@@ -247,9 +247,9 @@ export default function ImmersiveOnboarding({ onDismiss }) {
 
                 {/* Description */}
                 <motion.p
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={step === 0 ? false : { opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
+                  transition={{ delay: step === 0 ? 0 : 0.4 }}
                   className="mb-7 max-w-2xl text-sm leading-relaxed text-foreground/80 sm:mb-10 sm:text-lg md:text-xl"
                 >
                   {current.description}
@@ -258,9 +258,9 @@ export default function ImmersiveOnboarding({ onDismiss }) {
                 {/* Step-specific content */}
                 {current.stats && (
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={step === 0 ? false : { opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
+                    transition={{ delay: step === 0 ? 0 : 0.5 }}
                     className="mb-7 grid w-full max-w-lg grid-cols-3 gap-2 sm:mb-10 sm:gap-8"
                   >
                     {current.stats.map((stat) => (

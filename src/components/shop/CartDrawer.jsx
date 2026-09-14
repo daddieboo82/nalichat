@@ -31,7 +31,8 @@ export default function CartDrawer() {
         }
       });
 
-      if (res.data && res.data.checkoutUrl) {
+      if (res.data && res.data.checkoutUrl && res.data.checkoutId) {
+        try { localStorage.setItem(`gads_purchase_value:${res.data.checkoutId}`, String(total)); } catch {}
         window.top.location.href = res.data.checkoutUrl;
       } else {
         toast.error("Checkout failed. Please try again.");

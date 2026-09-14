@@ -47,6 +47,7 @@ export default defineConfig(({ mode }) => ({
           if (!id.includes('node_modules')) return undefined;
           if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor-react';
           if (id.includes('react-router')) return 'vendor-router';
+          if (id.includes('clsx') || id.includes('tailwind-merge') || id.includes('class-variance-authority')) return 'vendor-utils';
           if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
           if (id.includes('framer-motion')) return 'vendor-motion';
           if (id.includes('@radix-ui')) return 'vendor-radix';

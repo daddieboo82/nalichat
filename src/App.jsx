@@ -20,7 +20,6 @@ import { LockedChatsProvider } from '@/lib/LockedChatsContext';
 import { initProductAnalytics } from '@/lib/productAnalytics';
 import { getMarketingAttribution } from '@/lib/adAttribution';
 import { trackPaywallEvent } from '@/lib/paywallAnalytics';
-import { trackPaywallEvent } from '@/lib/paywallAnalytics';
 import { base44 } from '@/api/base44Client';
 
 import Login from '@/pages/Login';

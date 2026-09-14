@@ -25,25 +25,26 @@ export default function AppLoader({ onDone }) {
     return () => clearInterval(interval);
   }, []);
 
-  // progress ramp: 0→85 in 400ms, then 85→100 in 200ms, 200ms exit
+  // Keep the branded startup moment, but do not block first interaction for a full second.
+  // Ramp to completion in ~320ms, then hand off almost immediately.
   useEffect(() => {
     let v = 0;
     let completionTimer = null;
     const interval = setInterval(() => {
       const elapsed = Date.now() - startRef.current;
-      if (elapsed < 400) {
-        v = Math.min(85, (elapsed / 400) * 85);
+      if (elapsed < 220) {
+        v = Math.min(85, (elapsed / 220) * 85);
       } else {
-        v = Math.min(100, 85 + ((elapsed - 400) / 200) * 15);
+        v = Math.min(100, 85 + ((elapsed - 220) / 100) * 15);
       }
       setProgress(Math.round(v));
       if (v >= 100) {
         clearInterval(interval);
         setPhase("done");
-        completionTimer = window.setTimeout(onDone, 200);
+        completionTimer = window.setTimeout(onDone, 60);
       }
     }, 30);
-    const loadingTimer = window.setTimeout(() => setPhase("loading"), 100);
+    const loadingTimer = window.setTimeout(() => setPhase("loading"), 70);
     return () => {
       clearInterval(interval);
       window.clearTimeout(loadingTimer);

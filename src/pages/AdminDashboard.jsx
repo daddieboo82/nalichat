@@ -62,6 +62,29 @@ export default function AdminDashboard() {
     retry: false,
   });
 
+  const {
+    data: billingTestStatus,
+    isLoading: isLoadingBillingTestStatus,
+    isError: billingTestStatusError,
+    refetch: refetchBillingTestStatus,
+  } = useQuery({
+    queryKey: ["billingTestStatus", currentUser?.id],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getBillingTestStatus", {});
+      const payload = res?.data ?? res;
+      if (
+        payload?.success !== true ||
+        payload?.action !== "billing_test_status" ||
+        payload?.adminUserId !== currentUser?.id
+      ) {
+        throw new Error(payload?.error || "Billing test status was not confirmed.");
+      }
+      return payload;
+    },
+    enabled: currentUser?.role === "admin",
+    retry: false,
+  });
+
   if (isLoadingUser || (currentUser?.role === "admin" && isLoadingStats)) {
     return (
       <div className="flex justify-center p-12">
@@ -99,6 +122,22 @@ export default function AdminDashboard() {
       </div>
     );
   }
+
+  const handleTestPurchase = async () => {
+    if (!billingTestStatus?.testMode || !billingTestStatus?.priceCatalogReady) return;
+    setIsStartingTestPurchase(true);
+    try {
+      await startSubscriptionCheckout({
+        sku: testSku,
+        idempotencyKey: createCheckoutRequestKey(),
+        cancelDestination: "pricing",
+        expectedUserId: currentUser.id,
+      });
+    } catch (error) {
+      toast.error(error?.message || "Could not start test purchase.");
+      setIsStartingTestPurchase(false);
+    }
+  };
 
   const handleMakeAdmin = async () => {
     const email = adminEmail.trim();

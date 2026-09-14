@@ -14,6 +14,7 @@ const EVENT_NAMES = new Set([
   "entitlement_prompt_convert",
   "registration_view",
   "registration_started",
+  "registration_completed",
 ]);
 
 const ALLOWED_FIELDS = new Set([

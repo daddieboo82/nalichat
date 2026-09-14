@@ -653,7 +653,7 @@ export default function Home() {
               <p className="text-lg sm:text-xl text-foreground/90 font-medium mb-8 md:mb-10 max-w-3xl mx-auto leading-relaxed">
                 {user
                   ? "Jump into your messages, share your latest ideas, and connect with your team instantly."
-                  : "Join thousands of artists already chatting, sharing, and collaborating on NaliChat."}
+                  : "Start with free core chat, then bring conversations into NaliChat’s Studio and creator tools when you need more."}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center w-full max-w-sm mx-auto sm:max-w-none">
                 {user ? (
@@ -680,7 +680,7 @@ export default function Home() {
               </div>
               {!user && (
                 <p className="mt-8 text-sm font-bold text-muted-foreground tracking-wide uppercase">
-                  Core chat is free forever
+                  Core chat is free forever · No paid plan required to start
                 </p>
               )}
             </div>

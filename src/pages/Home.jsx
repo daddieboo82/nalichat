@@ -687,6 +687,18 @@ export default function Home() {
           </div>
         </motion.div>
 
+        {!user && (
+          <footer className="pb-4 text-center text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
+              <Link to="/privacy" className="min-h-10 inline-flex items-center hover:text-foreground">Privacy Policy</Link>
+              <Link to="/terms" className="min-h-10 inline-flex items-center hover:text-foreground">Terms of Service</Link>
+              <Link to="/login" className="min-h-10 inline-flex items-center hover:text-foreground">Sign In</Link>
+              <Link to="/register" className="min-h-10 inline-flex items-center hover:text-foreground">Create Account</Link>
+            </div>
+            <p className="mt-2">NaliChat · Creator messaging, music collaboration, and Studio tools</p>
+          </footer>
+        )}
+
       </section>
     </PullToRefresh>
   );

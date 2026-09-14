@@ -1,12 +1,22 @@
 import React from 'react';
-import { Clock3, Smartphone, Monitor, Laptop, Shield, Globe2, ArrowRight } from 'lucide-react';
+import { Clock3, Smartphone, Monitor, Laptop, Shield, Globe2, ArrowRight, ArrowLeft, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default function Download() {
   return (
-    <div className="flex min-h-screen min-h-[100dvh] items-center justify-center bg-background px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] text-foreground sm:py-12">
+    <div className="relative flex min-h-screen min-h-[100dvh] items-center justify-center bg-background px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(5rem,calc(env(safe-area-inset-top)+3rem))] text-foreground sm:py-12">
+      <div className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] sm:left-6 sm:top-6">
+        <Button asChild variant="outline" className="ui-hover min-h-11 rounded-xl border-border/70 bg-card/80 px-3 shadow-sm backdrop-blur sm:px-4">
+          <Link to="/" aria-label="Back to Home">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            <Home className="mr-2 h-4 w-4" />
+            <span>Home</span>
+          </Link>
+        </Button>
+      </div>
+
       <div className="w-full max-w-xl space-y-6 text-center sm:space-y-8">
         <div className="space-y-4">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 glow-primary sm:h-20 sm:w-20 sm:rounded-3xl">

@@ -197,16 +197,23 @@ const AuthenticatedApp = () => {
             campaign_landing_path: attribution?.landing_path || undefined,
             google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
         });
-        trackPaywallEvent('registration_completed', {
-            source: 'authenticated_signup',
-            campaign_source: attribution?.utm_source || undefined,
-            campaign_medium: attribution?.utm_medium || undefined,
-            campaign_name: attribution?.utm_campaign || undefined,
-            campaign_term: attribution?.utm_term || undefined,
-            campaign_content: attribution?.utm_content || undefined,
-            campaign_landing_path: attribution?.landing_path || undefined,
-            google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
-        });
+        let pendingMethod = null;
+        try {
+            pendingMethod = sessionStorage.getItem('registration_pending_method');
+            sessionStorage.removeItem('registration_pending_method');
+        } catch {}
+        if (pendingMethod === 'google') {
+            trackPaywallEvent('registration_completed', {
+                source: 'google_oauth',
+                campaign_source: attribution?.utm_source || undefined,
+                campaign_medium: attribution?.utm_medium || undefined,
+                campaign_name: attribution?.utm_campaign || undefined,
+                campaign_term: attribution?.utm_term || undefined,
+                campaign_content: attribution?.utm_content || undefined,
+                campaign_landing_path: attribution?.landing_path || undefined,
+                google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
+            });
+        }
     };
     fire();
   }, [user]);

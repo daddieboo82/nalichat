@@ -123,6 +123,48 @@ Final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_mediu
 
 Use the actual Google Ads search-term report to add negatives for irrelevant intent; do not guess negatives without query data.
 
+## RSA coverage plan
+
+Google recommends at least 2 Responsive Search Ads with Good or Excellent Ad Strength per ad group, with a unique final URL for each RSA. Keep the two RSAs meaningfully different rather than duplicating headlines. citeturn0search0turn0search2
+
+### Music Collaboration — RSA A
+
+Angle: collaborate/create together.
+
+Primary final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=music_collaboration_a`
+
+### Music Collaboration — RSA B
+
+Angle: creator workspace + audio sharing.
+
+Primary final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=music_collaboration_b`
+
+### Creator Messaging — RSA A
+
+Angle: real-time artist/creator chat.
+
+Primary final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=creator_messaging_a`
+
+### Creator Messaging — RSA B
+
+Angle: messaging plus file/audio collaboration.
+
+Primary final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=creator_messaging_b`
+
+### Music Studio — RSA A
+
+Angle: built-in Studio for creators.
+
+Primary final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=music_studio_a`
+
+### Music Studio — RSA B
+
+Angle: AI-assisted creator tools.
+
+Primary final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=music_studio_b`
+
+Keep pinning to a minimum so Google can test combinations; Google specifically recommends avoiding unnecessary pinning because it reduces the available combinations. citeturn0search0
+
 ## Measurement already implemented in Base44
 
 The NaliChat app currently captures:

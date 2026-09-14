@@ -363,52 +363,71 @@ function App() {
     setLoaded(true);
   };
 
-  // Google Ads gtag bootstrap — loads once; cross-origin relay powers the event debugger.
+  // Google Ads gtag bootstrap. GTM may already provide gtag; wait briefly so
+  // we can reuse that instance instead of downloading the same Google Ads
+  // library twice on first paint. If GTM does not provide it, fall back to the
+  // direct Ads loader so conversion events still work.
   useEffect(() => {
-    if (typeof window === 'undefined' || window.__gads_loaded) return;
-    window.__gads_loaded = true;
-    window.dataLayer = window.dataLayer || [];
-    const inIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
-    const analyticsRelayOrigin = (() => {
-      if (!inIframe) return null;
-      const host = window.location.hostname.toLowerCase();
-      const relayAllowed = host === 'localhost'
-        || host === '127.0.0.1'
-        || host.includes('preview')
-        || host.includes('sandbox');
-      if (!relayAllowed) return null;
-      try {
-        const origin = new URL(document.referrer).origin;
-        return origin && origin !== 'null' ? origin : null;
-      } catch {
-        return null;
-      }
-    })();
-    window.gtag = function gtag() {
-      window.dataLayer.push(arguments);
-      if (analyticsRelayOrigin) {
+    if (typeof window === 'undefined' || window.__gads_loaded) return undefined;
+
+    const timer = window.setTimeout(() => {
+      if (window.__gads_loaded) return;
+      window.__gads_loaded = true;
+      window.dataLayer = window.dataLayer || [];
+
+      const inIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+      const analyticsRelayOrigin = (() => {
+        if (!inIframe) return null;
+        const host = window.location.hostname.toLowerCase();
+        const relayAllowed = host === 'localhost'
+          || host === '127.0.0.1'
+          || host.includes('preview')
+          || host.includes('sandbox');
+        if (!relayAllowed) return null;
         try {
-          const args = Array.prototype.slice.call(arguments);
-          const cmd = args[0];
-          window.parent.postMessage({
-            type: 'base44_gtag_event',
-            event: {
-              source: 'gtag',
-              timestamp: new Date().toLocaleTimeString(),
-              command: cmd,
-              params: args.slice(1),
-              type: cmd === 'event' ? (args[1] || 'event') : cmd,
-            },
-          }, analyticsRelayOrigin);
-        } catch (_e) {}
+          const origin = new URL(document.referrer).origin;
+          return origin && origin !== 'null' ? origin : null;
+        } catch {
+          return null;
+        }
+      })();
+
+      const existingGtag = typeof window.gtag === 'function' ? window.gtag : null;
+      window.gtag = function gtag() {
+        if (existingGtag) {
+          existingGtag.apply(window, arguments);
+        } else {
+          window.dataLayer.push(arguments);
+        }
+        if (analyticsRelayOrigin) {
+          try {
+            const args = Array.prototype.slice.call(arguments);
+            const cmd = args[0];
+            window.parent.postMessage({
+              type: 'base44_gtag_event',
+              event: {
+                source: 'gtag',
+                timestamp: new Date().toLocaleTimeString(),
+                command: cmd,
+                params: args.slice(1),
+                type: cmd === 'event' ? (args[1] || 'event') : cmd,
+              },
+            }, analyticsRelayOrigin);
+          } catch (_e) {}
+        }
+      };
+
+      if (!existingGtag) {
+        const s = document.createElement('script');
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18416125487';
+        s.async = true;
+        document.head.appendChild(s);
+        window.gtag('js', new Date());
+        window.gtag('config', 'AW-18416125487', { send_page_view: false });
       }
-    };
-    const s = document.createElement('script');
-    s.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18416125487';
-    s.async = true;
-    document.head.appendChild(s);
-    window.gtag('js', new Date());
-    window.gtag('config', 'AW-18416125487', { send_page_view: false });
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   return (

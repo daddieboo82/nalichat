@@ -12,7 +12,7 @@ describe('marketing attribution capture', () => {
     expect(record.utm_source).toBe('google');
     expect(record.utm_medium).toBe('cpc');
     expect(record.utm_campaign).toBe('campaign-2');
-    expect(record.utm_term).toBe('music+collaboration');
+    expect(record.utm_term).toBe('music collaboration');
     expect(getMarketingAttribution().gclid).toBe('test-click');
   });
 

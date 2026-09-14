@@ -226,6 +226,80 @@ export default function AdminDashboard() {
           </>
         )}
 
+        <div className="bg-card border border-border rounded-xl p-6 mb-8">
+          <h2 className="text-xl font-bold mb-4 border-b border-border pb-2 flex items-center gap-2">
+            <CreditCard className="w-5 h-5 text-primary" />
+            Make a Test Purchase
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Starts NaliChat&apos;s real subscription checkout using Stripe test mode. This replaces the legacy Base44/Wix test-purchase screen.
+          </p>
+
+          {isLoadingBillingTestStatus ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Checking billing test configuration...
+            </div>
+          ) : billingTestStatusError ? (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+              <p className="text-sm font-semibold text-destructive">Could not verify billing test mode.</p>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => refetchBillingTestStatus()}>
+                Retry
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2 mb-4 text-sm">
+                <span className={`rounded-full border px-3 py-1 font-semibold ${billingTestStatus?.testMode ? "border-green-500/30 bg-green-500/10 text-green-600" : "border-amber-500/30 bg-amber-500/10 text-amber-600"}`}>
+                  Stripe: {billingTestStatus?.environment || "unconfigured"}
+                </span>
+                <span className={`rounded-full border px-3 py-1 font-semibold ${billingTestStatus?.priceCatalogReady ? "border-green-500/30 bg-green-500/10 text-green-600" : "border-amber-500/30 bg-amber-500/10 text-amber-600"}`}>
+                  Price catalog: {billingTestStatus?.priceCatalogReady ? "ready" : "incomplete"}
+                </span>
+              </div>
+
+              {!billingTestStatus?.testMode && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 mb-4 text-sm">
+                  Test purchases are disabled because the configured Stripe secret key is not a test key. No live checkout will be launched from this panel.
+                </div>
+              )}
+
+              {billingTestStatus?.missingPriceSecrets?.length > 0 && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 mb-4 text-sm">
+                  <p className="font-semibold mb-2">Missing or invalid test price IDs:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {billingTestStatus.missingPriceSecrets.map((name) => <li key={name}>{name}</li>)}
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-end max-w-2xl">
+                <label className="flex-1 text-sm font-medium">
+                  Test plan
+                  <select
+                    className="mt-2 min-h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={testSku}
+                    onChange={(e) => setTestSku(e.target.value)}
+                  >
+                    <option value="premium_monthly">Premium — Monthly</option>
+                    <option value="premium_yearly">Premium — Yearly</option>
+                    <option value="premium_plus_monthly">Premium Plus — Monthly</option>
+                    <option value="premium_plus_yearly">Premium Plus — Yearly</option>
+                  </select>
+                </label>
+                <Button
+                  onClick={handleTestPurchase}
+                  disabled={!billingTestStatus?.testMode || !billingTestStatus?.priceCatalogReady || isStartingTestPurchase}
+                  className="gap-2 min-h-11"
+                >
+                  {isStartingTestPurchase ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                  Make a test purchase
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+
         <div className="bg-card border border-border rounded-xl p-6">
           <h2 className="text-xl font-bold mb-4 border-b border-border pb-2 flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />

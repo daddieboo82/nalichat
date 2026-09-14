@@ -114,22 +114,30 @@ const features = [
   },
 ];
 
-const testimonials = [
+const creatorBenefits = [
   {
-    name: "Jordan K.",
-    role: "Producer",
-    avatar: "J",
+    name: "Create",
+    role: "Studio workflow",
+    avatar: "C",
     color: "from-primary to-pink-500",
-    quote: "Went from garage bedroom to 10K followers in 3 months. Found my collaborators here and released 8 tracks together.",
-    metric: "8 tracks released",
+    quote: "Record, arrange, mix, master, and export from one connected workspace.",
+    metric: "All-in-one",
   },
   {
-    name: "Dre M.",
-    role: "Beatmaker",
-    avatar: "D",
+    name: "Collaborate",
+    role: "Messaging + sharing",
+    avatar: "C",
     color: "from-yellow-500 to-orange-500",
-    quote: "Assembled my entire production team here. We ship 4 tracks a week now instead of 1. All remote. Makes real money.",
-    metric: "Team of 4",
+    quote: "Keep conversations, files, project context, and creative feedback together.",
+    metric: "Real-time",
+  },
+  {
+    name: "Grow",
+    role: "Creator presence",
+    avatar: "G",
+    color: "from-accent to-cyan-500",
+    quote: "Publish your work, build your profile, organize releases, and track engagement.",
+    metric: "Built in",
   },
 ];
 
@@ -420,8 +428,8 @@ export default function Home() {
 
                 <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-3 md:w-48 md:grid-cols-1 md:gap-3 shrink-0">
                   <div className="bg-primary/10 rounded-2xl p-4 text-center">
-                    <p className="text-2xl font-black text-primary">1K+</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Active Collabs</p>
+                    <p className="text-2xl font-black text-primary">DMs</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Direct & group</p>
                   </div>
                   <div className="bg-accent/10 rounded-2xl p-4 text-center">
                     <p className="text-2xl font-black text-accent">Live</p>
@@ -543,11 +551,11 @@ export default function Home() {
         {/* ── How it Works ── */}
         <HowItWorks />
 
-        {/* ── Testimonials ── */}
+        {/* ── Creator value ── */}
         <div>
           <div className="text-center mb-10">
-            <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">Loved by Creators</h2>
-            <p className="text-foreground/90 text-lg">What artists are saying about NaliChat</p>
+            <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">Built for the Creative Workflow</h2>
+            <p className="text-foreground/90 text-lg">Core ways NaliChat helps creators move from idea to release</p>
           </div>
           <motion.div
             variants={containerVariants}
@@ -555,7 +563,7 @@ export default function Home() {
             animate="visible"
             className="grid grid-cols-1 md:grid-cols-3 gap-4"
           >
-            {testimonials.map((t) => (
+            {creatorBenefits.map((t) => (
               <motion.div key={t.name} variants={itemVariants}>
                 <div className="bg-card/50 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-6 h-full hover:border-white/[0.12] hover:bg-card/70 transition-all duration-300">
                   <div className="flex items-center gap-1 mb-4">
@@ -594,9 +602,9 @@ export default function Home() {
           className="grid grid-cols-1 md:grid-cols-3 gap-4"
           >
           {[
-            { value: "10K+", label: "Tracks Shared", from: "from-primary", to: "to-pink-500" },
-            { value: "50K+", label: "Active Creators", from: "from-accent", to: "to-cyan-400" },
-            { value: "100K+", label: "Conversations", from: "from-pink-500", to: "to-purple-500" },
+            { value: "Studio", label: "Create & master", from: "from-primary", to: "to-pink-500" },
+            { value: "Chat", label: "Message & collaborate", from: "from-accent", to: "to-cyan-400" },
+            { value: "Files", label: "Share & organize", from: "from-pink-500", to: "to-purple-500" },
           ].map((stat) => (
             <div
               key={stat.label}

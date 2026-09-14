@@ -7,6 +7,8 @@ describe('home marketing claims', () => {
 
     expect(home).toContain('Messaging + Music Studio for Creators');
     expect(home).toContain('Start with free core chat');
+    expect(home.match(/Start Free/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(home).toContain('Free core chat · Real-time creator messaging');
     expect(home).toContain('Core chat is free forever · No paid plan required to start');
     expect(home).not.toContain('The Ultimate Messaging App for Creators');
     expect(home).not.toContain('Join thousands of artists already');

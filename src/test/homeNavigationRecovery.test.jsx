@@ -163,7 +163,7 @@ describe('home, navigation, and recovery flows', () => {
 
     fireEvent.click(intro);
 
-    expect(screen.getAllByRole('link', { name: /Get Started/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /Start Free/i }).length).toBeGreaterThan(0);
     expect(screen.getByText('Quick Start Guide')).toBeTruthy();
   });
 

@@ -257,8 +257,8 @@ export default function Home() {
           )}
 
           <h1 className="mb-5 font-heading text-4xl font-black leading-[1.02] tracking-tight drop-shadow-xl text-gradient-animate sm:text-6xl md:mb-6 md:text-8xl lg:text-[7rem]">
-            Real-Time<br className="hidden md:block" />{" "}
-            <span>Messaging</span>
+            Creator Messaging<br className="hidden md:block" />{" "}
+            <span>& Music Studio</span>
           </h1>
           <p className="mx-auto mb-8 max-w-3xl text-base font-medium leading-relaxed text-foreground/90 sm:text-xl md:mb-12 md:text-2xl">
             Message artists in real time, share high-resolution audio and voice notes, and move from conversation to Studio collaboration in one creator workspace.

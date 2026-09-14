@@ -19,7 +19,6 @@ import { NaliPresenceProvider } from '@/lib/NaliPresenceContext';
 import { LockedChatsProvider } from '@/lib/LockedChatsContext';
 import { initProductAnalytics } from '@/lib/productAnalytics';
 import { getMarketingAttribution } from '@/lib/adAttribution';
-import { getMarketingAttribution } from '@/lib/adAttribution';
 import { base44 } from '@/api/base44Client';
 
 import Login from '@/pages/Login';
@@ -180,21 +179,9 @@ const AuthenticatedApp = () => {
         if (safeLocalStorageGet(key)) return;
         safeLocalStorageSet(key, '1');
         const attribution = getMarketingAttribution();
-        const attribution = getMarketingAttribution();
         window.gtag('event', 'conversion', {
             send_to: 'AW-18416125487/twIWCJHa5OkcEK-Mv81E',
             transaction_id: user.id,
-        });
-        // Also emit a first-party signup event with non-PII campaign context so
-        // GTM/analytics can evaluate which ads and keywords drive registrations.
-        window.gtag('event', 'sign_up', {
-            method: 'nalichat',
-            campaign_source: attribution?.utm_source || undefined,
-            campaign_medium: attribution?.utm_medium || undefined,
-            campaign_name: attribution?.utm_campaign || undefined,
-            campaign_term: attribution?.utm_term || undefined,
-            campaign_content: attribution?.utm_content || undefined,
-            google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
         });
         // Also emit a first-party signup event with non-PII campaign context so
         // GTM/analytics can evaluate which ads and keywords drive registrations.

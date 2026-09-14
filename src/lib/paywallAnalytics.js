@@ -12,6 +12,8 @@ const EVENT_NAMES = new Set([
   "billing_portal_opened",
   "entitlement_prompt_view",
   "entitlement_prompt_convert",
+  "registration_view",
+  "registration_started",
 ]);
 
 const ALLOWED_FIELDS = new Set([

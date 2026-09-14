@@ -2090,7 +2090,10 @@ describe('release configuration', () => {
     expect(hook).toContain("document.addEventListener('visibilitychange', checkForUpdate)");
     expect(hook).toContain("window.addEventListener('pageshow', checkForUpdate)");
     expect(hook).toContain('15 * 60 * 1000');
-    expect(sw).toContain("const CACHE_NAME = 'nalichat-v2';");
+    expect(sw).toContain("const CACHE_NAME = 'nalichat-v3';");
+    expect(sw).toContain("url.pathname.startsWith('/assets/')");
+    expect(sw).toContain("if (!isStaticAsset) return;");
+    expect(sw).not.toContain("// Stale-while-revalidate for static assets.");
   });
 
   it('classifies every backend function that intentionally runs without user auth', async () => {

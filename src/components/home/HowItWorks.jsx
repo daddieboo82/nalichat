@@ -74,8 +74,8 @@ const steps = [
   {
     number: "08",
     icon: ShoppingCart,
-    title: "Sell Your Stems",
-    description: "List your stems on the marketplace and securely sell licenses directly to other artists and producers.",
+    title: "Share Your Sound",
+    description: "Publish your finished work to Explore so other creators can discover your music and connect with you.",
     color: "text-blue-400",
     bg: "bg-blue-400/20",
   },
@@ -87,7 +87,7 @@ export default function HowItWorks() {
       <div className="mb-8 text-center md:mb-12">
         <span className="text-xs font-bold tracking-widest text-primary uppercase bg-primary/10 px-3 py-1 rounded-full">The Full Journey</span>
         <h2 className="mb-3 mt-4 font-heading text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">How It Works</h2>
-        <p className="mx-auto max-w-2xl text-base leading-relaxed text-foreground/90 sm:text-lg">From signing up to selling your sound — NaliChat covers every step of your creative process in one place.</p>
+        <p className="mx-auto max-w-2xl text-base leading-relaxed text-foreground/90 sm:text-lg">From signing up to sharing your sound — NaliChat covers every step of your creative process in one place.</p>
       </div>
 
       <motion.div

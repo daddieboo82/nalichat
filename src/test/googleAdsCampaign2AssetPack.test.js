@@ -23,5 +23,9 @@ describe('Google Ads Campaign #2 asset pack', () => {
     expect(md).not.toContain('https://nalichat.org/download |');
     expect(md).toContain('utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2');
     expect(md).toContain('auto-tagging');
+    expect(md).toContain('## Callout assets');
+    expect(md).toContain('Free Core Chat');
+    expect(md).toContain('## Structured snippet asset');
+    expect(md).toContain('Creator Messaging`, `Music Studio`, `Audio Sharing`');
   });
 });

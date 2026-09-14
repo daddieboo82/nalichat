@@ -1,0 +1,14 @@
+name: Shell Only Diagnostic
+
+'on':
+  push:
+    branches:
+      - diag/actions-shell-only
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Shell probe
+        run: echo "github-actions-shell-only-ok"

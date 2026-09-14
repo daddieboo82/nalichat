@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { captureMarketingAttribution } from "@/lib/adAttribution";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -171,6 +172,11 @@ export default function Home() {
   // Only treat as logged-in when both the flag and the user record are present,
   // so the greeting disappears instantly on logout.
   const user = isAuthenticated ? authUser : null;
+
+  // Preserve Google Ads and UTM attribution through the anonymous signup journey.
+  useEffect(() => {
+    captureMarketingAttribution();
+  }, []);
 
   // Auto-show the welcome tour for users who finished onboarding but haven't seen it yet.
   useEffect(() => {

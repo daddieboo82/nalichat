@@ -22,9 +22,9 @@ const steps = [
     bgGradient: "from-primary/30 via-purple-600/20 to-pink-500/30",
     accent: "primary",
     stats: [
-      { value: "10K+", label: "Tracks Shared" },
-      { value: "50K+", label: "Active Creators" },
-      { value: "100K+", label: "Conversations" },
+      { value: "Studio", label: "Create" },
+      { value: "Chat", label: "Collaborate" },
+      { value: "Files", label: "Share" },
     ],
   },
   {

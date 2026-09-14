@@ -110,6 +110,8 @@ export default function PricingPlans({
   const copy = getPaywallCopy(variant);
 
   useEffect(() => {
+    // Preserve campaign context when an ad or sitelink lands directly on pricing.
+    captureMarketingAttribution();
     trackPaywallEvent("paywall_view", { variant, source: "pricing" });
     try {
       if (sessionStorage.getItem(CHECKOUT_RETURN_KEY) === "1") {

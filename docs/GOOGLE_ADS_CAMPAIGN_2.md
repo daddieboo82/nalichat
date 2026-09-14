@@ -125,7 +125,7 @@ Use the actual Google Ads search-term report to add negatives for irrelevant int
 
 ## RSA coverage plan
 
-Google recommends at least 2 Responsive Search Ads with Good or Excellent Ad Strength per ad group, with a unique final URL for each RSA. Keep the two RSAs meaningfully different rather than duplicating headlines. citeturn0search0turn0search2
+Google recommends at least 2 Responsive Search Ads with Good or Excellent Ad Strength per ad group, with a unique final URL for each RSA. Keep the two RSAs meaningfully different rather than duplicating headlines.
 
 ### Music Collaboration — RSA A
 
@@ -163,7 +163,7 @@ Angle: AI-assisted creator tools.
 
 Primary final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=music_studio_b`
 
-Keep pinning to a minimum so Google can test combinations; Google specifically recommends avoiding unnecessary pinning because it reduces the available combinations. citeturn0search0
+Keep pinning to a minimum so Google can test combinations; unnecessary pinning reduces the available combinations.
 
 ## Measurement already implemented in Base44
 

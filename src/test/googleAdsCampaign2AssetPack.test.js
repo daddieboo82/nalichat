@@ -21,5 +21,7 @@ describe('Google Ads Campaign #2 asset pack', () => {
     const sitelinkRows = md.split('\n').filter((line) => line.startsWith('| ') && line.includes('https://nalichat.org/'));
     expect(sitelinkRows.length).toBeGreaterThanOrEqual(6);
     expect(md).not.toContain('https://nalichat.org/download |');
+    expect(md).toContain('utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2');
+    expect(md).toContain('auto-tagging');
   });
 });

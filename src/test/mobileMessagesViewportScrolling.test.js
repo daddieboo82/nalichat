@@ -7,6 +7,7 @@ describe('mobile Messages viewport scrolling', () => {
     const layout = await readFile('src/components/layout/AppLayout.jsx', 'utf8');
     const messages = await readFile('src/pages/Messages.jsx', 'utf8');
     expect(layout).toContain('h-screen h-[100dvh]');
+    expect(layout).toContain("scroll={!location.pathname.startsWith('/messages')}");
     expect(messages).toContain('flex-1 h-full min-h-0 flex flex-col');
   });
 

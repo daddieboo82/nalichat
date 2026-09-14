@@ -130,12 +130,26 @@ export default function PricingPlans({
     navigate(isAuthenticated && typeof returnTo === "string" ? returnTo : isAuthenticated ? "/messages" : "/");
   };
 
+  const campaignContext = () => {
+    const attribution = getMarketingAttribution();
+    return {
+      campaign_source: attribution?.utm_source || undefined,
+      campaign_medium: attribution?.utm_medium || undefined,
+      campaign_name: attribution?.utm_campaign || undefined,
+      campaign_term: attribution?.utm_term || undefined,
+      campaign_content: attribution?.utm_content || undefined,
+      campaign_landing_path: attribution?.landing_path || undefined,
+      google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
+    };
+  };
+
   const selectPeriod = (nextPeriod) => {
     setPeriod(nextPeriod);
     trackPaywallEvent("paywall_billing_toggle", {
       variant,
       billing_period: nextPeriod,
       source: "pricing",
+      ...campaignContext(),
     });
   };
 
@@ -148,12 +162,14 @@ export default function PricingPlans({
       plan: planId,
       billing_period: period,
       sku,
+      ...campaignContext(),
     });
     trackPaywallEvent("paywall_primary_cta", {
       variant,
       plan: planId,
       billing_period: period,
       sku,
+      ...campaignContext(),
     });
 
     if (!isAuthenticated) {

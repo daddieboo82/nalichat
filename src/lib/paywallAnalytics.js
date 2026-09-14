@@ -27,6 +27,8 @@ const ALLOWED_FIELDS = new Set([
   "campaign_medium",
   "campaign_name",
   "campaign_term",
+  "campaign_content",
+  "campaign_landing_path",
   "google_ads_click",
 ]);
 

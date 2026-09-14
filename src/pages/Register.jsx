@@ -11,7 +11,8 @@ import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { clearPersistedAuthTokens, markAuthActivity, persistAuthResult } from "@/lib/authSession";
-import { captureMarketingAttribution } from "@/lib/adAttribution";
+import { captureMarketingAttribution, getMarketingAttribution } from "@/lib/adAttribution";
+import { trackPaywallEvent } from "@/lib/paywallAnalytics";
 import {
   otpErrorMessage,
   registrationErrorMessage,
@@ -32,6 +33,17 @@ export default function Register() {
   // Capture campaign parameters even when an ad links directly to /register.
   useEffect(() => {
     captureMarketingAttribution();
+    const attribution = getMarketingAttribution();
+    trackPaywallEvent("registration_view", {
+      source: "register",
+      campaign_source: attribution?.utm_source || undefined,
+      campaign_medium: attribution?.utm_medium || undefined,
+      campaign_name: attribution?.utm_campaign || undefined,
+      campaign_term: attribution?.utm_term || undefined,
+      campaign_content: attribution?.utm_content || undefined,
+      campaign_landing_path: attribution?.landing_path || undefined,
+      google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
+    });
   }, []);
 
   const handleSubmit = async (e) => {
@@ -42,6 +54,17 @@ export default function Register() {
       return;
     }
     setLoading(true);
+    const attribution = getMarketingAttribution();
+    trackPaywallEvent("registration_started", {
+      source: "email",
+      campaign_source: attribution?.utm_source || undefined,
+      campaign_medium: attribution?.utm_medium || undefined,
+      campaign_name: attribution?.utm_campaign || undefined,
+      campaign_term: attribution?.utm_term || undefined,
+      campaign_content: attribution?.utm_content || undefined,
+      campaign_landing_path: attribution?.landing_path || undefined,
+      google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
+    });
     try {
       await base44.auth.register({ email, password });
       setShowOtp(true);

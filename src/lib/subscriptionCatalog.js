@@ -15,6 +15,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
     features: Object.freeze([
       "1:1 creator messaging",
       "Group chat",
+      "NaliStudio access for recording, editing, mixing, and track projects",
     ]),
   }),
   premium: Object.freeze({
@@ -39,6 +40,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
       "Everything in Free",
       "Premium file transfer tools",
       "AI-assisted creator tools",
+      "AI-assisted Studio mastering and export tools",
       "Schedule messages",
       "Advanced message search",
       "Export chat content",
@@ -68,6 +70,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
       "Everything in Premium",
       "Higher AI usage limits",
       "Access to the best available NaliChat AI model",
+      "Highest-tier AI support for Studio workflows",
       "AI call summaries",
       "Follow-up reminders",
       "Locked chats for extra privacy",

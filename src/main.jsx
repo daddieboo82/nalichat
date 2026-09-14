@@ -4,6 +4,13 @@ import App from '@/App.jsx'
 import '@/index.css'
 import { sounds } from '@/hooks/use-sound'
 
+// Expose a non-sensitive build fingerprint for production deployment checks.
+// This lets operations verify that the live site matches the commit that was
+// tested, without exposing environment variables or authentication state.
+if (typeof document !== 'undefined') {
+  document.documentElement.dataset.naliBuild = __NALI_BUILD_SHA__;
+}
+
 // Global audio feedback — plays a subtle click on every button & interactive control.
 // Delegated listener (single handler) so it works app-wide without per-component wiring.
 if (typeof document !== "undefined") {

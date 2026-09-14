@@ -85,6 +85,17 @@ export default function Register() {
         base44.auth.setToken(token);
       }
       markAuthActivity();
+      const attribution = getMarketingAttribution();
+      trackPaywallEvent("registration_completed", {
+        source: "email_otp",
+        campaign_source: attribution?.utm_source || undefined,
+        campaign_medium: attribution?.utm_medium || undefined,
+        campaign_name: attribution?.utm_campaign || undefined,
+        campaign_term: attribution?.utm_term || undefined,
+        campaign_content: attribution?.utm_content || undefined,
+        campaign_landing_path: attribution?.landing_path || undefined,
+        google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
+      });
       try { sessionStorage.setItem("is_new_user", "true"); } catch {}
       window.location.href = safeReturnTo();
     } catch (err) {

@@ -126,7 +126,11 @@ export const AuthProvider = ({ children }) => {
       setAuthChecked(true);
       return currentUser;
     } catch (error) {
-      console.error('User auth check failed:', error);
+      const authStatus = getAuthErrorStatus(error);
+      // A 401 is the normal anonymous/expired-session outcome, not an app
+      // error. Keep the console clean for logged-out visitors while still
+      // surfacing propagation/server failures that need attention.
+      if (authStatus !== 401) console.error('User auth check failed:', error);
       // Retry only transient/propagation failures. A 401 is authoritative:
       // retrying it only leaves users staring at a spinner before they are
       // returned to the logged-out state. Fresh OAuth user propagation can

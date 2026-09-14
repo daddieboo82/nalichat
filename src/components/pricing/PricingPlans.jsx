@@ -178,6 +178,8 @@ export default function PricingPlans({
         campaign_medium: attribution?.utm_medium || undefined,
         campaign_name: attribution?.utm_campaign || undefined,
         campaign_term: attribution?.utm_term || undefined,
+        campaign_content: attribution?.utm_content || undefined,
+        campaign_landing_path: attribution?.landing_path || undefined,
         google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
       });
       await startSubscriptionCheckout({

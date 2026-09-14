@@ -1,0 +1,15 @@
+import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+
+describe('home marketing claims', () => {
+  it('uses concrete, supportable creator messaging and pricing language', () => {
+    const home = fs.readFileSync('src/pages/Home.jsx', 'utf8');
+
+    expect(home).toContain('Messaging + Music Studio for Creators');
+    expect(home).toContain('Start with free core chat');
+    expect(home).toContain('Core chat is free forever · No paid plan required to start');
+    expect(home).not.toContain('The Ultimate Messaging App for Creators');
+    expect(home).not.toContain('Join thousands of artists already');
+    expect(home).not.toContain('Desktop downloads included');
+  });
+});

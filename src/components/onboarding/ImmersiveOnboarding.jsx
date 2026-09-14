@@ -90,19 +90,9 @@ const steps = [
 
 export default function ImmersiveOnboarding({ onDismiss }) {
   const navigate = useNavigate();
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
-
-  useEffect(() => {
-    try {
-      if (sessionStorage.getItem(VISITOR_ONBOARDING_STORAGE_KEY) === "1") return;
-    } catch {}
-    // Render promptly on a true first visit; Home withholds the underlying
-    // hero while this experience is active, so no delayed overlay is needed.
-    const timer = setTimeout(() => setVisible(true), 80);
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleDismiss = () => {
     sounds.click();
@@ -151,10 +141,10 @@ export default function ImmersiveOnboarding({ onDismiss }) {
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {visible && (
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={false}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4 }}

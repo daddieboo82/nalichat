@@ -81,7 +81,10 @@ vi.mock('@/components/home/QuickStartGuide', () => ({ default: () => <div>Quick 
 vi.mock('@/components/home/StudioTutorial', () => ({ default: () => <div>Studio Tutorial</div> }));
 vi.mock('@/components/home/HowItWorks', () => ({ default: () => <div>How It Works</div> }));
 vi.mock('@/components/home/DonationButton', () => ({ default: () => <button>Donate</button> }));
-vi.mock('@/components/onboarding/ImmersiveOnboarding', () => ({ default: () => <div>Immersive Onboarding</div> }));
+vi.mock('@/components/onboarding/ImmersiveOnboarding', () => ({
+  default: ({ onDismiss }) => <button onClick={onDismiss}>Immersive Onboarding</button>,
+  VISITOR_ONBOARDING_STORAGE_KEY: 'nali_onboarding_seen',
+}));
 vi.mock('@/components/navigation/RecentlyVisited', () => ({ default: () => <div>Recently Visited</div> }));
 vi.mock('@/components/branding/Logo', () => ({ default: () => <div>Logo</div> }));
 vi.mock('@/components/ui/sheet', () => ({
@@ -137,7 +140,7 @@ describe('home, navigation, and recovery flows', () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
-    mockAuthState.current = { user: null, isAuthenticated: false, logout: vi.fn() };
+    mockAuthState.current = { user: null, isAuthenticated: false, authChecked: true, logout: vi.fn() };
     mockCartState.current = { items: [], setIsOpen: vi.fn() };
     mockBase44.auth.me.mockResolvedValue(null);
     mockBase44.auth.updateMe.mockResolvedValue(undefined);
@@ -150,10 +153,16 @@ describe('home, navigation, and recovery flows', () => {
     cleanup();
   });
 
-  it('renders the anonymous home entry flow with the immersive onboarding and auth CTA', async () => {
+  it('renders the first-visit intro exclusively, then reveals the anonymous home entry flow', async () => {
     renderWithProviders(<Home />);
 
-    expect(screen.getByText('Immersive Onboarding')).toBeTruthy();
+    const intro = screen.getByRole('button', { name: 'Immersive Onboarding' });
+    expect(intro).toBeTruthy();
+    expect(screen.queryByRole('link', { name: /Get Started/i })).toBeNull();
+    expect(screen.queryByText('Quick Start Guide')).toBeNull();
+
+    fireEvent.click(intro);
+
     expect(screen.getAllByRole('link', { name: /Get Started/i }).length).toBeGreaterThan(0);
     expect(screen.getByText('Quick Start Guide')).toBeTruthy();
   });
@@ -168,6 +177,7 @@ describe('home, navigation, and recovery flows', () => {
         welcome_tour_completed: true,
       },
       isAuthenticated: true,
+      authChecked: true,
       logout: vi.fn(),
     };
 

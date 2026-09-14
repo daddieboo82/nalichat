@@ -15,6 +15,7 @@ const EVENT_NAMES = new Set([
   "registration_view",
   "registration_started",
   "registration_completed",
+  "registration_failed",
 ]);
 
 const ALLOWED_FIELDS = new Set([

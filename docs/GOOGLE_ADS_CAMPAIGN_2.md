@@ -125,7 +125,7 @@ Suggested phrase/exact themes: `creator messaging`, `artist messaging`, `creator
 
 Prioritize headlines: `Real-Time Creator Messaging`, `Message Artists in Real Time`, `Messaging for Music Artists`, `Creator Chat and Studio`, `Free Core Creator Chat`.
 
-Final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=creator_messaging`
+Final URL: `https://nalichat.org/creator-messaging?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=creator_messaging`
 
 ### Ad group: Music Studio
 
@@ -133,7 +133,7 @@ Suggested phrase/exact themes: `music studio`, `music studio for creators`, `AI 
 
 Prioritize headlines: `Music Studio for Creators`, `Built-In Music Studio`, `AI Tools for Music Creators`, `NaliChat for Music Creators`, `Start Free with NaliChat`.
 
-Final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=music_studio`
+Final URL: `https://nalichat.org/music-studio?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=music_studio`
 
 Use the actual Google Ads search-term report to add negatives for irrelevant intent; do not guess negatives without query data.
 
@@ -157,25 +157,25 @@ Primary final URL: `https://nalichat.org/music-collaboration?utm_source=google&u
 
 Angle: real-time artist/creator chat.
 
-Primary final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=creator_messaging_a`
+Primary final URL: `https://nalichat.org/creator-messaging?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=creator_messaging_a`
 
 ### Creator Messaging — RSA B
 
 Angle: messaging plus file/audio collaboration.
 
-Primary final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=creator_messaging_b`
+Primary final URL: `https://nalichat.org/creator-messaging?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=creator_messaging_b`
 
 ### Music Studio — RSA A
 
 Angle: built-in Studio for creators.
 
-Primary final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=music_studio_a`
+Primary final URL: `https://nalichat.org/music-studio?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=music_studio_a`
 
 ### Music Studio — RSA B
 
 Angle: AI-assisted creator tools.
 
-Primary final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=music_studio_b`
+Primary final URL: `https://nalichat.org/music-studio?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=music_studio_b`
 
 Keep pinning to a minimum so Google can test combinations; unnecessary pinning reduces the available combinations.
 

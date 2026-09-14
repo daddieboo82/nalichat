@@ -71,9 +71,9 @@ const features = [
   },
   {
     icon: ShoppingCart,
-    label: "Stems Marketplace",
+    label: "Track Discovery",
     path: "/explore",
-    description: "Drop your music, discover trending tracks, and buy or sell stem licenses.",
+    description: "Drop your music, discover trending tracks, and connect with other creators.",
     gradient: "from-blue-500 to-indigo-500",
   },
   {
@@ -360,7 +360,7 @@ export default function Home() {
                 },
                 {
                   title: "📈 Build Your Presence",
-                  items: ["Release your tracks", "Stems Marketplace licensing", "Climb the leaderboard", "Grow your following"],
+                  items: ["Release your tracks", "Discover creator music", "Climb the leaderboard", "Grow your following"],
                   link: "/leaderboard",
                   linkLabel: "View Leaderboard"
                 },

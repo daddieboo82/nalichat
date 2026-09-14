@@ -112,7 +112,18 @@ export default function PricingPlans({
   useEffect(() => {
     // Preserve campaign context when an ad or sitelink lands directly on pricing.
     captureMarketingAttribution();
-    trackPaywallEvent("paywall_view", { variant, source: "pricing" });
+    const attribution = getMarketingAttribution();
+    trackPaywallEvent("paywall_view", {
+      variant,
+      source: "pricing",
+      campaign_source: attribution?.utm_source || undefined,
+      campaign_medium: attribution?.utm_medium || undefined,
+      campaign_name: attribution?.utm_campaign || undefined,
+      campaign_term: attribution?.utm_term || undefined,
+      campaign_content: attribution?.utm_content || undefined,
+      campaign_landing_path: attribution?.landing_path || undefined,
+      google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
+    });
     try {
       if (sessionStorage.getItem(CHECKOUT_RETURN_KEY) === "1") {
         sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
@@ -124,8 +135,8 @@ export default function PricingPlans({
   }, [variant]);
 
   const continueFree = () => {
-    trackPaywallEvent("paywall_secondary_cta", { variant, plan: "free", source: "pricing" });
-    trackPaywallEvent("paywall_dismissed", { variant, source: "continue_free" });
+    trackPaywallEvent("paywall_secondary_cta", { variant, plan: "free", source: "pricing", ...campaignContext() });
+    trackPaywallEvent("paywall_dismissed", { variant, source: "continue_free", ...campaignContext() });
     const returnTo = location.state?.from;
     navigate(isAuthenticated && typeof returnTo === "string" ? returnTo : isAuthenticated ? "/messages" : "/");
   };

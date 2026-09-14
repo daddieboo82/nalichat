@@ -73,6 +73,7 @@ const ThankYou = lazyWithReloadRecovery(() => import('@/pages/ThankYou'), 'thank
 const Onboarding = lazyWithReloadRecovery(() => import('@/pages/Onboarding'), 'onboarding');
 const PricingPlans = lazyWithReloadRecovery(() => import('@/components/pricing/PricingPlans'), 'pricing');
 const Privacy = lazyWithReloadRecovery(() => import('@/pages/Privacy'), 'privacy');
+const MusicCollaborationLanding = lazyWithReloadRecovery(() => import('@/pages/MusicCollaborationLanding'), 'music-collaboration');
 const Terms = lazyWithReloadRecovery(() => import('@/pages/Terms'), 'terms');
 const EncryptionDocumentation = lazyWithReloadRecovery(() => import('@/pages/EncryptionDocumentation'), 'encryption-documentation');
 const Studio = lazyWithReloadRecovery(() => import('@/pages/Studio'), 'studio');
@@ -286,6 +287,7 @@ const AuthenticatedApp = () => {
       <Routes location={location}>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/music-collaboration" element={<MusicCollaborationLanding />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/oauth-consent" element={<OAuthConsent />} />

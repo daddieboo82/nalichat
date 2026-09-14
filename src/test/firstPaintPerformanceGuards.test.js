@@ -22,6 +22,11 @@ describe('first-paint performance guards', () => {
     expect(home).toContain('const shouldShowVisitorIntro = authChecked && !user && !visitorIntroSeen;');
   });
 
+  it('sets a conservative referrer policy for public navigation', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    expect(html).toContain('<meta name="referrer" content="strict-origin-when-cross-origin" />');
+  });
+
   it('uses a lightweight local PWA icon instead of the legacy remote PNG', () => {
     const manifest = fs.readFileSync('public/manifest.json', 'utf8');
     expect(manifest).toContain('/nalichat-icon.svg');

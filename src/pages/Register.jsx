@@ -69,6 +69,17 @@ export default function Register() {
       await base44.auth.register({ email, password });
       setShowOtp(true);
     } catch (err) {
+      trackPaywallEvent("registration_failed", {
+        source: "email",
+        outcome: "register_error",
+        campaign_source: attribution?.utm_source || undefined,
+        campaign_medium: attribution?.utm_medium || undefined,
+        campaign_name: attribution?.utm_campaign || undefined,
+        campaign_term: attribution?.utm_term || undefined,
+        campaign_content: attribution?.utm_content || undefined,
+        campaign_landing_path: attribution?.landing_path || undefined,
+        google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
+      });
       setError(registrationErrorMessage(err));
     } finally {
       setLoading(false);
@@ -99,6 +110,18 @@ export default function Register() {
       try { sessionStorage.setItem("is_new_user", "true"); } catch {}
       window.location.href = safeReturnTo();
     } catch (err) {
+      const attribution = getMarketingAttribution();
+      trackPaywallEvent("registration_failed", {
+        source: "email_otp",
+        outcome: "otp_error",
+        campaign_source: attribution?.utm_source || undefined,
+        campaign_medium: attribution?.utm_medium || undefined,
+        campaign_name: attribution?.utm_campaign || undefined,
+        campaign_term: attribution?.utm_term || undefined,
+        campaign_content: attribution?.utm_content || undefined,
+        campaign_landing_path: attribution?.landing_path || undefined,
+        google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
+      });
       setError(otpErrorMessage(err));
     } finally {
       setLoading(false);
@@ -142,6 +165,18 @@ export default function Register() {
       markAuthActivity();
       await Promise.resolve(base44.auth.loginWithProvider("google", safeReturnTo()));
     } catch (err) {
+      const attribution = getMarketingAttribution();
+      trackPaywallEvent("registration_failed", {
+        source: "google",
+        outcome: "oauth_launch_error",
+        campaign_source: attribution?.utm_source || undefined,
+        campaign_medium: attribution?.utm_medium || undefined,
+        campaign_name: attribution?.utm_campaign || undefined,
+        campaign_term: attribution?.utm_term || undefined,
+        campaign_content: attribution?.utm_content || undefined,
+        campaign_landing_path: attribution?.landing_path || undefined,
+        google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
+      });
       const msg = googleLoginErrorMessage(err);
       setError(msg);
       setGoogleLoading(false);

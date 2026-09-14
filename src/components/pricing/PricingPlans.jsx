@@ -18,6 +18,7 @@ import {
   PAYWALL_CONFIG,
 } from "@/lib/paywallConfig";
 import { trackPaywallEvent } from "@/lib/paywallAnalytics";
+import { captureMarketingAttribution } from "@/lib/adAttribution";
 import {
   CHECKOUT_RETURN_KEY,
   createCheckoutRequestKey,

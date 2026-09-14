@@ -30,6 +30,20 @@ Avoid pinning unless required. If pinning is necessary, keep multiple unique opt
 
 Google RSA description limit: 90 characters.
 
+Use two distinct description sets per RSA so Google has varied benefit + CTA combinations. Keep every description under 90 characters.
+
+**Music Collaboration — RSA A:** `Create music together, share audio, and message collaborators in one workspace.` · `Start free and move from creator chat to music collaboration when inspiration hits.` · `Share voice notes and music files without leaving your creator workflow.` · `Bring your music collaborators together with messaging and built-in Studio tools.`
+
+**Music Collaboration — RSA B:** `Collaborate on music online with real-time chat, audio sharing, and creator tools.` · `Keep ideas moving with creator messaging, file sharing, and music workflows.` · `One workspace for music conversations, audio sharing, and collaborative creation.` · `Start free with NaliChat and build a smoother workflow for music collaboration.`
+
+**Creator Messaging — RSA A:** `Message artists and creators in real time, then share files or voice notes in chat.` · `Built for creator conversations with fast messaging and easy audio sharing.` · `Connect with collaborators and keep music conversations in one workspace.` · `Start free with creator messaging designed for artists and music teams.`
+
+**Creator Messaging — RSA B:** `Chat with creators, share audio and files, and keep collaboration moving.` · `Bring messaging and music collaboration together in one creator workspace.` · `Share ideas by text, voice note, or file without switching workflows.` · `Start free and keep your creator conversations connected to your music work.`
+
+**Music Studio — RSA A:** `Move from creator messaging into a built-in Studio when you are ready to create.` · `Music Studio tools and creator messaging work together in one workspace.` · `Keep your conversations, files, and music workflow connected as you create.` · `Start free with NaliChat for creator messaging and built-in Studio workflows.`
+
+**Music Studio — RSA B:** `Use AI-assisted music tools alongside messaging and collaboration workflows.` · `Support your music workflow with AI-assisted creator tools and real-time chat.` · `Bring AI-assisted tools, audio sharing, and creator conversations together.` · `Start free and explore a connected workspace for music creators.`
+
 1. Message artists, share audio and voice notes, and collaborate in one creator workspace.
 2. Start with free core chat and move conversations into NaliChat's built-in music Studio.
 3. Create, collaborate, share files, and use AI-assisted music tools in one workspace.

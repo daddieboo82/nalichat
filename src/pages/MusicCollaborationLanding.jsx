@@ -2,7 +2,18 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { MessageSquare, Music, Sparkles, FileAudio, ArrowRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { captureMarketingAttribution } from "@/lib/adAttribution";
+import { captureMarketingAttribution, getMarketingAttribution } from "@/lib/adAttribution";
+
+function attributedPath(path) {
+  const attribution = getMarketingAttribution();
+  if (!attribution) return path;
+  const params = new URLSearchParams();
+  for (const key of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "gbraid", "wbraid"]) {
+    if (attribution[key]) params.set(key, attribution[key]);
+  }
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
 
 const features = [
   { icon: MessageSquare, title: "Real-Time Creator Messaging", text: "Direct and group messaging built for artists, producers, and collaborators." },
@@ -46,12 +57,12 @@ export default function MusicCollaborationLanding() {
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg" className="min-h-12 w-full rounded-xl px-7 font-semibold sm:w-auto">
-              <Link to="/register">
+              <Link to={attributedPath("/register")}>
                 Start Free <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="min-h-12 w-full rounded-xl px-7 font-semibold sm:w-auto">
-              <Link to="/pricing">View Plans</Link>
+              <Link to={attributedPath("/pricing")}>View Plans</Link>
             </Button>
           </div>
 

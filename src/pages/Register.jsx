@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { clearPersistedAuthTokens, markAuthActivity, persistAuthResult } from "@/lib/authSession";
+import { captureMarketingAttribution } from "@/lib/adAttribution";
 import {
   otpErrorMessage,
   registrationErrorMessage,
@@ -27,6 +28,11 @@ export default function Register() {
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Capture campaign parameters even when an ad links directly to /register.
+  useEffect(() => {
+    captureMarketingAttribution();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

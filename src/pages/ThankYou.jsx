@@ -5,7 +5,6 @@ import { CheckCircle, Music, ArrowRight, Loader2, Download, CircleAlert } from "
 import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCart } from "@/lib/CartContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { pollForSubscriptionConfirmation } from "@/lib/subscriptionConfirmation";
 import { trackPaywallEvent } from "@/lib/paywallAnalytics";
@@ -14,7 +13,6 @@ import { CHECKOUT_RETURN_KEY } from "@/lib/subscriptionBilling";
 
 export default function ThankYou() {
   const queryClient = useQueryClient();
-  const { clearCart } = useCart();
   const [processing, setProcessing] = useState(true);
   const [purchaseVerification, setPurchaseVerification] = useState("processing");
   // Purchased licensed tracks resolved from verifyCheckoutPayment's item list —
@@ -172,7 +170,6 @@ export default function ThankYou() {
           setHasOtherPurchase(true);
         }
         await queryClient.invalidateQueries({ queryKey: [SUBSCRIPTION_QUERY_KEY] });
-        clearCart();
         setProcessing(false);
       } catch (error) {
         console.error("Error processing thank you:", error);
@@ -181,7 +178,7 @@ export default function ThankYou() {
     };
 
     processThankYou();
-  }, [queryClient, clearCart, checkoutId, purchaseToken, isSubscriptionCheckout]);
+  }, [queryClient, checkoutId, purchaseToken, isSubscriptionCheckout]);
 
   if (isSubscriptionCheckout) {
     const confirmed = subscriptionConfirmation === "confirmed";

@@ -22,6 +22,12 @@ const ALLOWED_FIELDS = new Set([
   "entitlement",
   "source",
   "outcome",
+  // Non-PII campaign context used to connect ad acquisition with funnel outcomes.
+  "campaign_source",
+  "campaign_medium",
+  "campaign_name",
+  "campaign_term",
+  "google_ads_click",
 ]);
 
 let reportedUnavailable = false;

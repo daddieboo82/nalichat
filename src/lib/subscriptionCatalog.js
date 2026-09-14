@@ -15,8 +15,6 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
     features: Object.freeze([
       "1:1 creator messaging",
       "Group chat",
-      "Up to 2 GB file uploads",
-      "20 AI requests per day",
     ]),
   }),
   premium: Object.freeze({
@@ -39,8 +37,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
     }),
     features: Object.freeze([
       "Everything in Free",
-      "Up to 10 GB file uploads",
-      "200 AI requests per day",
+      "Premium file transfer tools",
       "AI-assisted creator tools",
       "Schedule messages",
       "Advanced message search",
@@ -69,8 +66,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
     }),
     features: Object.freeze([
       "Everything in Premium",
-      "Up to 20 GB file uploads",
-      "1,000 AI requests per day",
+      "Higher AI usage limits",
       "Access to the best available NaliChat AI model",
       "AI call summaries",
       "Follow-up reminders",

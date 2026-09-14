@@ -13,6 +13,9 @@ describe('home marketing claims', () => {
     expect(home).toContain('real-time creator messaging, secure audio and file sharing');
     expect(home).toContain('Real-time direct & group messaging');
     expect(home).toContain('Voice notes & audio sharing');
+    expect(home).toContain('Privacy Policy');
+    expect(home).toContain('Terms of Service');
+    expect(home).toContain('NaliChat · Creator messaging, music collaboration, and Studio tools');
     expect(home).toContain('Core chat is free forever · No paid plan required to start');
     expect(home).not.toContain('The Ultimate Messaging App for Creators');
     expect(home).not.toContain('Join thousands of artists already');

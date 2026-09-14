@@ -134,7 +134,10 @@ export default function Register() {
         campaign_landing_path: attribution?.landing_path || undefined,
         google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
       });
-      try { sessionStorage.setItem("is_new_user", "true"); } catch {}
+      try {
+        sessionStorage.setItem("is_new_user", "true");
+        sessionStorage.setItem("registration_pending_method", "google");
+      } catch {}
       clearPersistedAuthTokens();
       markAuthActivity();
       await Promise.resolve(base44.auth.loginWithProvider("google", safeReturnTo()));

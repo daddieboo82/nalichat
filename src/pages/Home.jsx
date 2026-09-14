@@ -255,7 +255,7 @@ export default function Home() {
             <span>Messaging</span>
           </h1>
           <p className="mx-auto mb-8 max-w-3xl text-base font-medium leading-relaxed text-foreground/90 sm:text-xl md:mb-12 md:text-2xl">
-            Connect instantly with artists globally. Share high-res audio, drop voice notes, and collaborate seamlessly in unlimited chats.
+            Message artists in real time, share high-resolution audio and voice notes, and move from conversation to Studio collaboration in one creator workspace.
           </p>
 
           {/* CTAs */}
@@ -300,7 +300,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mx-auto mt-5 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-             ✅ One plan unlocks the app · 🚀 Exports and stems included · 💻 Desktop downloads included
+             💬 Real-time creator messaging · 🎚️ Built-in music Studio · 🤖 AI-assisted music tools
             </p>
           )}
         </motion.div>

@@ -51,6 +51,25 @@ Use at least six sitelinks across the account, campaign, or ad group.
 
 Do not use the Downloads page as an ad sitelink while it remains Coming Soon.
 
+## Callout assets
+
+Use short, non-duplicative callouts that reinforce the landing page:
+
+- Start Free
+- Free Core Chat
+- Real-Time Messaging
+- Audio & Voice Notes
+- Built-In Music Studio
+- Creator Collaboration
+- AI-Assisted Tools
+- Share Music Files
+
+## Structured snippet asset
+
+Recommended header: `Types`
+
+Values: `Creator Messaging`, `Music Studio`, `Audio Sharing`, `Voice Notes`, `Music Collaboration`, `AI Music Tools`
+
 ## Keyword-message themes
 
 Use the actual highest-volume terms from the ad group where possible. The current landing page is aligned to these supportable themes:

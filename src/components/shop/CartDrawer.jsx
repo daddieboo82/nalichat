@@ -18,7 +18,6 @@ export default function CartDrawer() {
         if (total > 0) { convParams.value = total; convParams.currency = 'USD'; }
         window.gtag('event', 'conversion', convParams);
       }
-      try { localStorage.setItem('gads_purchase_value', String(total)); } catch {}
       const checkoutItems = items.map(item => ({
         id: item.id,
         quantity: item.quantity || 1

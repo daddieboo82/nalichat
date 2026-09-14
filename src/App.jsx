@@ -425,7 +425,7 @@ function App() {
         window.gtag('js', new Date());
         window.gtag('config', 'AW-18416125487', { send_page_view: false });
       }
-    }, 1000);
+    }, 3500);
 
     return () => window.clearTimeout(timer);
   }, []);

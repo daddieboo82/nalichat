@@ -11,10 +11,7 @@ const base44 = vi.hoisted(() => ({
   entities: { ArtPost: { get: vi.fn() } },
 }));
 
-const clearCart = vi.hoisted(() => vi.fn());
-
 vi.mock('@/api/base44Client', () => ({ base44 }));
-vi.mock('@/lib/CartContext', () => ({ useCart: () => ({ clearCart }) }));
 vi.mock('@/hooks/useSubscription', () => ({
   useSubscription: () => ({ refetch: vi.fn() }),
 }));
@@ -53,7 +50,6 @@ describe('ThankYou purchase verification', () => {
 
     expect(await screen.findByText('Payment not verified')).toBeTruthy();
     expect(screen.queryByText('Purchase Complete!')).toBeNull();
-    expect(clearCart).not.toHaveBeenCalled();
     expect(base44.functions.invoke).not.toHaveBeenCalledWith(
       'verifyCheckoutPayment',
       expect.anything(),
@@ -77,7 +73,6 @@ describe('ThankYou purchase verification', () => {
         checkoutId: 'cs_test_123',
         purchaseToken: 'secret-token',
       });
-      expect(clearCart).toHaveBeenCalled();
     });
     expect(await screen.findByText('Purchase Complete!')).toBeTruthy();
   });

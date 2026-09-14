@@ -21,4 +21,19 @@ describe('marketing attribution capture', () => {
     captureMarketingAttribution('');
     expect(getMarketingAttribution().gclid).toBe('original');
   });
+
+  it('preserves the original landing page while updating later campaign context', () => {
+    window.history.replaceState({}, '', '/music-collaboration');
+    captureMarketingAttribution('?utm_source=google&utm_campaign=google_ads_campaign_2&utm_content=music_collaboration');
+    const first = getMarketingAttribution();
+
+    window.history.replaceState({}, '', '/register');
+    captureMarketingAttribution('?utm_source=google&utm_campaign=google_ads_campaign_2&utm_content=music_collaboration');
+    const later = getMarketingAttribution();
+
+    expect(later.landing_path).toBe('/music-collaboration');
+    expect(later.captured_at).toBe(first.captured_at);
+    expect(later.latest_path).toBe('/register');
+    expect(later.utm_content).toBe('music_collaboration');
+  });
 });

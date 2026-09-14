@@ -15,7 +15,6 @@ import AppLoader from '@/components/layout/AppLoader';
 import NavRipple from '@/components/layout/NavRipple';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { AudioPlayerProvider } from '@/lib/AudioPlayerContext';
-import { CartProvider } from '@/lib/CartContext';
 import { NaliPresenceProvider } from '@/lib/NaliPresenceContext';
 import { LockedChatsProvider } from '@/lib/LockedChatsContext';
 import { initProductAnalytics } from '@/lib/productAnalytics';
@@ -419,7 +418,6 @@ function App() {
           <LockedChatsProvider>
             <NaliPresenceProvider>
               <AudioPlayerProvider>
-              <CartProvider>
                 <MotionConfig reducedMotion={isLowEnd || reduceMotion ? "always" : "user"}>
                   {!loaded && <AppLoader onDone={handleSplashDone} />}
                   {!isLowEnd && <NavRipple />}
@@ -435,7 +433,6 @@ function App() {
                   <Toaster />
                   <SonnerToaster />
                 </MotionConfig>
-              </CartProvider>
               </AudioPlayerProvider>
             </NaliPresenceProvider>
           </LockedChatsProvider>

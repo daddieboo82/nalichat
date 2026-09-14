@@ -2,9 +2,22 @@ import base44 from "@base44/vite-plugin"
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { resolve } from 'path';
+import { execSync } from 'node:child_process';
+
+function resolveBuildSha() {
+  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA;
+  try {
+    return execSync('git rev-parse HEAD', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return 'unknown';
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    __NALI_BUILD_SHA__: JSON.stringify(resolveBuildSha()),
+  },
   logLevel: 'warn',
   // Use an app-specific optimization cache so Base44 preview cannot reuse
   // stale pre-bundled dependencies across dependency/toolchain upgrades.

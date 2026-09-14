@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { sounds } from "@/hooks/use-sound";
 
-const STORAGE_KEY = "nali_onboarding_seen";
+export const VISITOR_ONBOARDING_STORAGE_KEY = "nali_onboarding_seen";
 
 const steps = [
   {
@@ -88,7 +88,7 @@ const steps = [
   },
 ];
 
-export default function ImmersiveOnboarding() {
+export default function ImmersiveOnboarding({ onDismiss }) {
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
@@ -96,17 +96,19 @@ export default function ImmersiveOnboarding() {
 
   useEffect(() => {
     try {
-      if (sessionStorage.getItem(STORAGE_KEY) === "1") return;
+      if (sessionStorage.getItem(VISITOR_ONBOARDING_STORAGE_KEY) === "1") return;
     } catch {}
-    // Small delay so it feels like an intentional intro, not a flash
-    const timer = setTimeout(() => setVisible(true), 800);
+    // Render promptly on a true first visit; Home withholds the underlying
+    // hero while this experience is active, so no delayed overlay is needed.
+    const timer = setTimeout(() => setVisible(true), 80);
     return () => clearTimeout(timer);
   }, []);
 
   const handleDismiss = () => {
     sounds.click();
-    try { sessionStorage.setItem(STORAGE_KEY, "1"); } catch {}
+    try { sessionStorage.setItem(VISITOR_ONBOARDING_STORAGE_KEY, "1"); } catch {}
     setVisible(false);
+    onDismiss?.();
   };
 
   const handleNext = () => {
@@ -127,13 +129,15 @@ export default function ImmersiveOnboarding() {
 
   const handleRegister = () => {
     sounds.success();
-    try { sessionStorage.setItem(STORAGE_KEY, "1"); } catch {}
+    try { sessionStorage.setItem(VISITOR_ONBOARDING_STORAGE_KEY, "1"); } catch {}
+    onDismiss?.();
     navigate("/register");
   };
 
   const handleLogin = () => {
     sounds.click();
-    try { sessionStorage.setItem(STORAGE_KEY, "1"); } catch {}
+    try { sessionStorage.setItem(VISITOR_ONBOARDING_STORAGE_KEY, "1"); } catch {}
+    onDismiss?.();
     navigate("/login");
   };
 

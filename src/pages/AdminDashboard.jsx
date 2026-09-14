@@ -11,11 +11,14 @@ import {
   ShieldAlert,
   Crown,
   Clock3,
+  CreditCard,
+  ExternalLink,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import NaliMaintenancePanel from "@/components/admin/NaliMaintenancePanel";
+import { createCheckoutRequestKey, startSubscriptionCheckout } from "@/lib/subscriptionBilling";
 
 const EMPTY_STATS = {
   totalUsers: 0,
@@ -32,6 +35,8 @@ export default function AdminDashboard() {
   const { user: currentUser, isLoadingAuth: isLoadingUser, authError } = useAuth();
   const [adminEmail, setAdminEmail] = useState("");
   const [isMakingAdmin, setIsMakingAdmin] = useState(false);
+  const [testSku, setTestSku] = useState("premium_monthly");
+  const [isStartingTestPurchase, setIsStartingTestPurchase] = useState(false);
 
   const {
     data: stats = EMPTY_STATS,

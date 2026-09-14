@@ -17,7 +17,8 @@
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "verify:prod": "node scripts/verify-production-deploy.mjs"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.48",

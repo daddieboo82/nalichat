@@ -26,7 +26,6 @@ export default function DonationButton({ variant = "hero" }) {
           currency: 'USD',
         });
       }
-      try { localStorage.setItem('gads_purchase_value', String(amount)); } catch {}
       const response = await base44.functions.invoke("createCheckout", {
         items: [{ type: "donation", amount: amount, quantity: 1 }],
         callbackUrls: {
@@ -35,7 +34,9 @@ export default function DonationButton({ variant = "hero" }) {
         },
       });
       const checkoutUrl = response?.data?.checkoutUrl || response?.checkoutUrl;
-      if (checkoutUrl) {
+      const checkoutId = response?.data?.checkoutId || response?.checkoutId;
+      if (checkoutUrl && checkoutId) {
+        try { localStorage.setItem(`gads_purchase_value:${checkoutId}`, String(amount)); } catch {}
         window.location.href = checkoutUrl;
       } else {
         throw new Error("No checkout URL returned");

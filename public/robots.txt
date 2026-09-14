@@ -1,4 +1,10 @@
 User-agent: *
 Allow: /
+Disallow: /messages
+Disallow: /files
+Disallow: /studio
+Disallow: /settings
+Disallow: /admin
+Disallow: /webhook-test
 
 Sitemap: https://nalichat.org/sitemap.xml

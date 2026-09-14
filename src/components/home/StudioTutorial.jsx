@@ -92,9 +92,7 @@ export default function StudioTutorial() {
             <video
               key={active.video}
               src={active.video}
-              autoPlay
-              muted
-              loop
+              preload="none"
               playsInline
               controls
               className="w-full h-full object-contain bg-black"

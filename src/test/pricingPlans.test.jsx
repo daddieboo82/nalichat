@@ -54,6 +54,13 @@ function renderPricing(props = {}) {
 }
 
 describe("pricing plans", () => {
+  it("clearly explains the free starting point and paid-plan cancellation path", () => {
+    renderPricing({ variantOverride: "A" });
+    expect(screen.getByText(/No paid plan required to start/i)).toBeTruthy();
+    expect(screen.getByText(/Compare Free, Premium, and Premium Plus/i)).toBeTruthy();
+    expect(screen.getByText(/Paid subscriptions can be canceled in Settings/i)).toBeTruthy();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();

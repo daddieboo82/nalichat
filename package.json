@@ -87,8 +87,10 @@
     "zod": "^3.24.2"
   },
   "overrides": {
-    "esbuild": "0.28.2",
-    "miniflare": "5.20260910.0-alpha"
+    "base44": {
+      "esbuild": "0.28.2",
+      "miniflare": "5.20260910.0-alpha"
+    }
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",

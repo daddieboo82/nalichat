@@ -17,7 +17,7 @@
  *  reloads the page.
  */
 
-const CACHE_NAME = 'nalichat-v2';
+const CACHE_NAME = 'nalichat-v3';
 
 // App shell — pre-cached on install so the app works offline on first load.
 const APP_SHELL = [
@@ -81,7 +81,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-while-revalidate for static assets.
+  // Cache only build/public assets that are guaranteed to be account-neutral.
+  // Do not cache arbitrary same-origin GETs: signed media, user-specific files,
+  // and future read endpoints may also be same-origin and must never survive an
+  // account switch in CacheStorage.
+  const isStaticAsset =
+    url.pathname.startsWith('/assets/')
+    || url.pathname === '/manifest.json'
+    || url.pathname === '/favicon.ico'
+    || url.pathname === '/sw.js';
+  if (!isStaticAsset) return;
+
+  // Stale-while-revalidate for explicitly public static assets only.
   event.respondWith(
     caches.match(request).then((cached) => {
       const networkFetch = fetch(request)

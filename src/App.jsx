@@ -75,6 +75,8 @@ const Onboarding = lazyWithReloadRecovery(() => import('@/pages/Onboarding'), 'o
 const PricingPlans = lazyWithReloadRecovery(() => import('@/components/pricing/PricingPlans'), 'pricing');
 const Privacy = lazyWithReloadRecovery(() => import('@/pages/Privacy'), 'privacy');
 const MusicCollaborationLanding = lazyWithReloadRecovery(() => import('@/pages/MusicCollaborationLanding'), 'music-collaboration');
+const CreatorMessagingLanding = lazyWithReloadRecovery(() => import('@/pages/CreatorMessagingLanding'), 'creator-messaging');
+const MusicStudioLanding = lazyWithReloadRecovery(() => import('@/pages/MusicStudioLanding'), 'music-studio');
 const Terms = lazyWithReloadRecovery(() => import('@/pages/Terms'), 'terms');
 const EncryptionDocumentation = lazyWithReloadRecovery(() => import('@/pages/EncryptionDocumentation'), 'encryption-documentation');
 const Studio = lazyWithReloadRecovery(() => import('@/pages/Studio'), 'studio');
@@ -307,6 +309,8 @@ const AuthenticatedApp = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/music-collaboration" element={<MusicCollaborationLanding />} />
+      <Route path="/creator-messaging" element={<CreatorMessagingLanding />} />
+      <Route path="/music-studio" element={<MusicStudioLanding />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/oauth-consent" element={<OAuthConsent />} />

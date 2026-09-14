@@ -93,15 +93,35 @@ Recommended primary final URL with explicit campaign attribution:
 
 Keep Google Ads auto-tagging enabled so the landing page can also preserve `gclid`, `gbraid`, or `wbraid` when Google supplies them.
 
-For a second RSA, consider a unique relevant final URL such as:
+## Ad-group split for stronger relevance
 
-`https://nalichat.org/pricing`
+Keep each RSA tightly matched to one search-intent cluster instead of mixing every theme in one ad group.
 
-or
+### Ad group: Music Collaboration
 
-`https://nalichat.org/register`
+Suggested phrase/exact themes: `music collaboration`, `online music collaboration`, `create music together`, `music collaboration workspace`.
 
-depending on user intent.
+Prioritize headlines: `Collaborate on Music Online`, `Create Music Together`, `Music Collaboration Workspace`, `Built-In Music Studio`, `Start Free with NaliChat`.
+
+Final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=music_collaboration`
+
+### Ad group: Creator Messaging
+
+Suggested phrase/exact themes: `creator messaging`, `artist messaging`, `creator chat`, `message artists`.
+
+Prioritize headlines: `Real-Time Creator Messaging`, `Message Artists in Real Time`, `Messaging for Music Artists`, `Creator Chat and Studio`, `Free Core Creator Chat`.
+
+Final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=creator_messaging`
+
+### Ad group: Music Studio
+
+Suggested phrase/exact themes: `music studio`, `music studio for creators`, `AI music tools`, `music creator tools`.
+
+Prioritize headlines: `Music Studio for Creators`, `Built-In Music Studio`, `AI Tools for Music Creators`, `NaliChat for Music Creators`, `Start Free with NaliChat`.
+
+Final URL: `https://nalichat.org/music-collaboration?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2&utm_content=music_studio`
+
+Use the actual Google Ads search-term report to add negatives for irrelevant intent; do not guess negatives without query data.
 
 ## Measurement already implemented in Base44
 

@@ -50,7 +50,7 @@ export default function Login() {
     setError("");
     try {
       // Login must not inherit a pending registration marker from an abandoned Google signup.
-      sessionStorage.removeItem("registration_pending_method");
+      try { sessionStorage.removeItem("registration_pending_method"); } catch {}
       // A stale bearer token can override a fresh cookie-backed Google session
       // on the callback and make auth.me() report the user as logged out.
       clearPersistedAuthTokens();

@@ -11,10 +11,14 @@ export function captureMarketingAttribution(search = window.location.search) {
     }
     if (!Object.keys(captured).length) return null;
 
+    const existing = getMarketingAttribution() || {};
     const record = {
+      ...existing,
       ...captured,
-      landing_path: window.location.pathname,
-      captured_at: new Date().toISOString(),
+      landing_path: existing.landing_path || window.location.pathname,
+      captured_at: existing.captured_at || new Date().toISOString(),
+      latest_path: window.location.pathname,
+      updated_at: new Date().toISOString(),
     };
     sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(record));
     return record;

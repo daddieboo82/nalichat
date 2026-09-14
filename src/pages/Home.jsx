@@ -246,7 +246,7 @@ export default function Home() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
               </span>
-              The Ultimate Messaging App for Creators
+              Messaging + Music Studio for Creators
             </motion.div>
           )}
 

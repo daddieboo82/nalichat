@@ -12,7 +12,10 @@ describe('exact-match lookup bounds', () => {
     const external = await readText('base44/functions/sendExternalMessage/entry.ts');
     const checkout = await readText('base44/functions/createSubscriptionCheckout/entry.ts');
 
-    expect(makeAdmin.match(/User\.filter\(\{ email \}, '-created_date', 1\)/g)?.length).toBe(2);
+    expect(makeAdmin).toContain("const normalizedEmail = String(email || '').trim().toLowerCase();");
+    expect(makeAdmin).toContain("User.filter({ email: normalizedEmail }, '-created_date', 2)");
+    expect(makeAdmin).toContain("Multiple users match this email; manual reconciliation is required");
+    expect(makeAdmin).toContain("User.get(target.id)");
     expect(external).toContain('{ email: normalizedDestination }');
     expect(external).toContain('{ email: cleanDestination }');
     expect(external.match(/'-created_date',\s*1/g)?.length).toBeGreaterThanOrEqual(2);

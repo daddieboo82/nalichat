@@ -68,9 +68,11 @@ Use the actual highest-volume terms from the ad group where possible. The curren
 
 ## Final URL
 
-Recommended primary final URL:
+Recommended primary final URL with explicit campaign attribution:
 
-`https://nalichat.org/`
+`https://nalichat.org/?utm_source=google&utm_medium=cpc&utm_campaign=google_ads_campaign_2`
+
+Keep Google Ads auto-tagging enabled so the landing page can also preserve `gclid`, `gbraid`, or `wbraid` when Google supplies them.
 
 For a second RSA, consider a unique relevant final URL such as:
 

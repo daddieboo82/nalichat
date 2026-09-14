@@ -23,8 +23,10 @@ const features = [
 ];
 
 export default function MusicCollaborationLanding() {
+  // Capture synchronously so first-render CTA hrefs retain ad parameters.
+  captureMarketingAttribution();
+
   useEffect(() => {
-    captureMarketingAttribution();
     const previousTitle = document.title;
     const description = "Real-time creator messaging, audio sharing, music collaboration, a built-in Studio, and AI-assisted music tools. Start free with NaliChat.";
     document.title = "Music Collaboration & Creator Messaging | NaliChat";

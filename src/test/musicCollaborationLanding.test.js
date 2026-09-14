@@ -13,6 +13,10 @@ describe('Campaign #2 music collaboration landing page', () => {
     expect(page).toContain('View Plans');
     expect(page).toContain('Core chat is free forever');
     expect(page).toContain('captureMarketingAttribution();');
+    expect(page).toContain('attributedPath("/register")');
+    expect(page).toContain('attributedPath("/pricing")');
+    expect(page).toContain('gclid');
+    expect(page).toContain('wbraid');
     expect(page).toContain('Privacy Policy');
     expect(page).toContain('Terms of Service');
     expect(page).toContain('support@nalichat.org');

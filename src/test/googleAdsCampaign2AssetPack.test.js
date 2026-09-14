@@ -27,5 +27,10 @@ describe('Google Ads Campaign #2 asset pack', () => {
     expect(md).toContain('Free Core Chat');
     expect(md).toContain('## Structured snippet asset');
     expect(md).toContain('Creator Messaging`, `Music Studio`, `Audio Sharing`');
+    expect(md).toContain('## Ad-group split for stronger relevance');
+    expect(md).toContain('utm_content=music_collaboration');
+    expect(md).toContain('utm_content=creator_messaging');
+    expect(md).toContain('utm_content=music_studio');
+    expect(md).toContain('search-term report');
   });
 });

@@ -16,6 +16,9 @@ describe('Campaign #2 music collaboration landing page', () => {
     expect(page).toContain('Privacy Policy');
     expect(page).toContain('Terms of Service');
     expect(page).toContain('support@nalichat.org');
+    expect(page).toContain('Music Collaboration & Creator Messaging | NaliChat');
+    expect(page).toContain('meta[name="description"]');
+    expect(page).toContain('Real-time creator messaging, audio sharing, music collaboration');
     expect(assetPack).toContain('https://nalichat.org/music-collaboration?utm_source=google');
   });
 });

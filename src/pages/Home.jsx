@@ -701,6 +701,7 @@ export default function Home() {
               <Link to="/login" className="min-h-10 inline-flex items-center hover:text-foreground">Sign In</Link>
               <Link to="/register" className="min-h-10 inline-flex items-center hover:text-foreground">Create Account</Link>
               <Link to="/pricing" className="min-h-10 inline-flex items-center hover:text-foreground">View Plans</Link>
+              <a href="mailto:support@nalichat.org" className="min-h-10 inline-flex items-center hover:text-foreground">Contact Support</a>
             </div>
             <p className="mt-2">NaliChat · Creator messaging, music collaboration, and Studio tools</p>
           </footer>

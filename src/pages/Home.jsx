@@ -13,7 +13,7 @@ import StudioTutorial from "@/components/home/StudioTutorial";
 import HowItWorks from "@/components/home/HowItWorks";
 import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import WelcomeTour from "@/components/onboarding/WelcomeTour";
-import ImmersiveOnboarding from "@/components/onboarding/ImmersiveOnboarding";
+import ImmersiveOnboarding, { VISITOR_ONBOARDING_STORAGE_KEY } from "@/components/onboarding/ImmersiveOnboarding";
 import DonationButton from "@/components/home/DonationButton";
 import QuickAccessGrid from "@/components/home/QuickAccessGrid";
 import { sounds } from "@/hooks/use-sound";
@@ -160,10 +160,14 @@ const itemVariants = {
 };
 
 export default function Home() {
-  const { user: authUser, isAuthenticated } = useAuth();
+  const { user: authUser, isAuthenticated, authChecked } = useAuth();
   const queryClient = useQueryClient();
   const [showWizard, setShowWizard] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [visitorIntroSeen, setVisitorIntroSeen] = useState(() => {
+    try { return sessionStorage.getItem(VISITOR_ONBOARDING_STORAGE_KEY) === "1"; }
+    catch { return false; }
+  });
   // Only treat as logged-in when both the flag and the user record are present,
   // so the greeting disappears instantly on logout.
   const user = isAuthenticated ? authUser : null;
@@ -176,11 +180,17 @@ export default function Home() {
     }
   }, [user]);
 
+  const shouldShowVisitorIntro = authChecked && !user && !visitorIntroSeen;
+  if (shouldShowVisitorIntro) {
+    return (
+      <div className="h-full min-h-[100dvh] bg-background">
+        <ImmersiveOnboarding onDismiss={() => setVisitorIntroSeen(true)} />
+      </div>
+    );
+  }
+
   return (
     <PullToRefresh onRefresh={() => queryClient.invalidateQueries()} className="h-full overflow-auto bg-background">
-
-      {/* ── Immersive onboarding for first-time visitors ── */}
-      {!user && <ImmersiveOnboarding />}
 
       {/* ── Hero ── */}
       <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-4 pb-20 pt-[max(5.5rem,env(safe-area-inset-top))] sm:px-6 sm:pb-28 md:min-h-[700px] md:pt-28">

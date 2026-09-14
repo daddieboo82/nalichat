@@ -31,20 +31,33 @@ Deno.serve(async (req) => {
     }
 
     const { email } = await readJsonBodyLimited(req, 8 * 1024);
-    if (!email) {
-      return Response.json({ error: 'email is required' }, { status: 400 });
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 320) {
+      return Response.json({ error: 'A valid email is required' }, { status: 400 });
     }
 
-    const users = await base44.asServiceRole.entities.User.filter({ email }, '-created_date', 1);
+    const users = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail }, '-created_date', 2);
+    if (users.length > 1) {
+      return Response.json({ error: 'Multiple users match this email; manual reconciliation is required' }, { status: 409 });
+    }
     const target = users[0];
     if (!target) {
-      return Response.json({ error: `No user found with email ${email}` }, { status: 404 });
+      return Response.json({ error: 'No matching user found' }, { status: 404 });
     }
 
     await base44.asServiceRole.entities.User.update(target.id, { role: 'admin' });
 
-    const updated = await base44.asServiceRole.entities.User.filter({ email }, '-created_date', 1);
-    return Response.json({ success: true, action: 'promote_admin', adminUserId: caller.id, targetUserId: target.id, email, role: updated[0]?.role });
+    const updated = await base44.asServiceRole.entities.User.get(target.id);
+    if (!updated || updated.role !== 'admin') {
+      return Response.json({ error: 'Admin promotion was not confirmed' }, { status: 500 });
+    }
+    return Response.json({
+      success: true,
+      action: 'promote_admin',
+      adminUserId: caller.id,
+      targetUserId: target.id,
+      role: updated.role,
+    });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error);
     if (bodyError) return bodyError;

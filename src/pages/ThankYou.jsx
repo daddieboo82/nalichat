@@ -1,27 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Music, ArrowRight, Loader2, Download, CircleAlert } from "lucide-react";
+import { CheckCircle, Music, ArrowRight, Loader2, CircleAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
-import { useQueryClient } from "@tanstack/react-query";
 import { useSubscription } from "@/hooks/useSubscription";
 import { pollForSubscriptionConfirmation } from "@/lib/subscriptionConfirmation";
 import { trackPaywallEvent } from "@/lib/paywallAnalytics";
-import { SUBSCRIPTION_QUERY_KEY } from "@/lib/subscriptionClient";
 import { CHECKOUT_RETURN_KEY } from "@/lib/subscriptionBilling";
 
 export default function ThankYou() {
-  const queryClient = useQueryClient();
   const [processing, setProcessing] = useState(true);
   const [purchaseVerification, setPurchaseVerification] = useState("processing");
-  // Purchased licensed tracks resolved from verifyCheckoutPayment's item list —
-  // the standard cart flow used to confirm payment and then discard this data,
-  // so a buyer got a generic "your items are now available" message with no
-  // actual delivery of what they paid for.
-  const [purchasedTracks, setPurchasedTracks] = useState([]);
-  const [hadDonationOnly, setHadDonationOnly] = useState(false);
-  const [hasOtherPurchase, setHasOtherPurchase] = useState(false);
   const [subscriptionConfirmation, setSubscriptionConfirmation] = useState("processing");
   const { refetch: refetchSubscription } = useSubscription();
 
@@ -107,12 +97,8 @@ export default function ThankYou() {
         return;
       }
 
-      // Verify payment via backend fallback — ensures the purchase is fulfilled
-      // even if the Stripe webhook hasn't fired yet. The response's `items`
-      // list is what the buyer actually paid for; resolve any stem/track
-      // licenses so we can hand over a real download instead of a vague
-      // "your items are now available" message.
-      let purchasedItems = [];
+      // Verify the donation payment through the backend fallback so the return
+      // page never trusts Stripe query parameters by themselves.
       if (!checkoutId || !purchaseToken) {
         setPurchaseVerification("failed");
         setProcessing(false);
@@ -124,13 +110,14 @@ export default function ThankYou() {
           res?.data?.success !== true ||
           res?.data?.checkoutId !== checkoutId ||
           res?.data?.status !== 'paid' ||
-          !Array.isArray(res?.data?.items)
+          !Array.isArray(res?.data?.items) ||
+          res.data.items.length === 0 ||
+          res.data.items.some((item) => item?.type !== "donation")
         ) {
           setPurchaseVerification("failed");
           setProcessing(false);
           return;
         }
-        purchasedItems = res.data.items;
         setPurchaseVerification("confirmed");
       } catch (err) {
         console.error("Payment verification failed:", err);
@@ -139,46 +126,11 @@ export default function ThankYou() {
         return;
       }
 
-      try {
-        // Standard cart purchase flow — resolve any purchased track/stem
-        // licenses to real ArtPost records so we can deliver a download,
-        // instead of silently discarding what was actually bought.
-        const licenseItems = purchasedItems.filter((it) => it.type === "stem_license" && it.id);
-        const donationOnly = purchasedItems.some((it) => it.type === "donation");
-        const handledTypes = new Set([
-          "donation",
-          "stem_license",
-        ]);
-        if (licenseItems.length > 0) {
-          const resolved = await Promise.all(
-            licenseItems.map(async (it) => {
-              try {
-                const track = await base44.entities.ArtPost.get(it.id);
-                return track ? { id: it.id, title: track.title, file_url: track.file_url } : null;
-              } catch (err) {
-                console.error("Failed to resolve purchased track", it.id, err);
-                return null;
-              }
-            })
-          );
-          setPurchasedTracks(resolved.filter(Boolean));
-        }
-        if (donationOnly) {
-          setHadDonationOnly(true);
-        }
-        if (purchasedItems.length > 0 && purchasedItems.some((it) => !handledTypes.has(it.type))) {
-          setHasOtherPurchase(true);
-        }
-        await queryClient.invalidateQueries({ queryKey: [SUBSCRIPTION_QUERY_KEY] });
-        setProcessing(false);
-      } catch (error) {
-        console.error("Error processing thank you:", error);
-        setProcessing(false);
-      }
+      setProcessing(false);
     };
 
     processThankYou();
-  }, [queryClient, checkoutId, purchaseToken, isSubscriptionCheckout]);
+  }, [checkoutId, purchaseToken, isSubscriptionCheckout]);
 
   if (isSubscriptionCheckout) {
     const confirmed = subscriptionConfirmation === "confirmed";
@@ -253,7 +205,7 @@ export default function ThankYou() {
           <CircleAlert className="w-20 h-20 text-amber-500 mx-auto mb-6" />
           <h1 className="mb-4 font-heading text-3xl font-black tracking-tight sm:text-5xl">Payment not verified</h1>
           <p className="mb-8 text-base leading-relaxed text-muted-foreground sm:text-xl">
-            We could not verify a completed payment for this checkout. Your cart has not been cleared.
+            We could not verify a completed payment for this donation.
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
             <Button size="lg" onClick={() => window.location.reload()}>Try again</Button>
@@ -293,38 +245,10 @@ export default function ThankYou() {
         <p className="mb-8 text-base leading-relaxed text-muted-foreground sm:text-xl">
           {processing
             ? "Confirming your payment. This takes just a moment..."
-            : purchasedTracks.length > 0
-              ? "Your license purchase is confirmed. Download your track below."
-              : hadDonationOnly
-                ? "Thank you for supporting NaliChat — your donation helps fund ongoing app development."
-                : hasOtherPurchase
-                  ? "Your purchase is complete. Check the relevant area of the app to access what you bought."
-                  : "Your purchase is complete. Your items are now available."}
+            : "Thank you for supporting NaliChat — your donation helps fund ongoing app development."}
         </p>
 
-        {!processing && purchasedTracks.length > 0 && (
-          <div className="ui-surface mb-8 space-y-3 rounded-2xl border border-primary/30 bg-card p-4 text-left sm:p-6">
-            {purchasedTracks.map((track) => (
-              <div key={track.id} className="flex flex-col gap-3 rounded-xl bg-secondary/30 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="font-semibold truncate">{track.title || "Purchased track"}</p>
-                  <p className="text-xs text-muted-foreground">License purchased</p>
-                </div>
-                {track.file_url ? (
-                  <a href={track.file_url} download className="shrink-0">
-                    <Button size="sm" className="ui-hover min-h-10 rounded-xl bg-primary gap-2 hover:bg-primary/90">
-                      <Download className="w-4 h-4" /> Download
-                    </Button>
-                  </a>
-                ) : (
-                  <span className="text-xs text-muted-foreground shrink-0">File unavailable</span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {!processing && purchasedTracks.length === 0 && (
+        {!processing && (
           <div className="ui-surface mb-8 rounded-2xl border border-primary/30 bg-card p-5 sm:p-8">
             <h2 className="font-heading font-bold text-2xl mb-4 flex items-center justify-center gap-2">
               <Music className="w-6 h-6 text-primary" />

@@ -339,8 +339,8 @@ export default function Home() {
         >
           <div className="absolute -inset-px bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-2xl pointer-events-none" />
           <div className="relative z-10">
-            <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">What You Can Actually Do</h2>
-            <p className="text-foreground/90 text-lg mb-10 max-w-2xl">Everything you need to discover music, collaborate with artists, produce your sound, and grow your audience:</p>
+            <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">Creator Messaging, Music Studio & AI Tools</h2>
+            <p className="text-foreground/90 text-lg mb-10 max-w-2xl">Use NaliChat for real-time creator messaging, secure audio and file sharing, music collaboration, Studio production, and AI-assisted music workflows:</p>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
               {[
@@ -357,8 +357,8 @@ export default function Home() {
                   linkLabel: "Manage Projects"
                 },
                 {
-                  title: "💬 Connect & Collaborate",
-                  items: ["Direct & group messaging", "Real-time Co-editing", "Find collaborators", "Secure file sharing", "Contacts & notifications"],
+                  title: "💬 Creator Messaging & Collaboration",
+                  items: ["Real-time direct & group messaging", "Voice notes & audio sharing", "Real-time co-editing", "Find collaborators", "Secure file sharing"],
                   link: "/messages",
                   linkLabel: "Open Messages"
                 },

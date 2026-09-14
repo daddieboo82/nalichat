@@ -284,7 +284,7 @@ export default function Home() {
                 <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 px-7 text-base font-semibold glow-primary shimmer-hover hover:opacity-90 sm:w-auto" asChild>
                   <Link to="/register" className="w-full sm:w-auto">
                     <MessageSquare className="w-5 h-5 mr-2" />
-                    Get Started
+                    Start Free
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                   </Button>
@@ -300,7 +300,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mx-auto mt-5 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-             💬 Real-time creator messaging · 🎚️ Built-in music Studio · 🤖 AI-assisted music tools
+             Free core chat · Real-time creator messaging · Built-in music Studio · AI-assisted music tools
             </p>
           )}
         </motion.div>

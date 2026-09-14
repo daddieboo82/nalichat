@@ -32,5 +32,9 @@ describe('Google Ads Campaign #2 asset pack', () => {
     expect(md).toContain('utm_content=creator_messaging');
     expect(md).toContain('utm_content=music_studio');
     expect(md).toContain('search-term report');
+    expect(md).toContain('Music Collaboration — RSA A');
+    expect(md).toContain('Creator Messaging — RSA B');
+    expect(md).toContain('Music Studio — RSA B');
+    expect(md).toContain('Create music together, share audio');
   });
 });

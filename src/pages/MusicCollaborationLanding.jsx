@@ -14,7 +14,22 @@ const features = [
 export default function MusicCollaborationLanding() {
   useEffect(() => {
     captureMarketingAttribution();
+    const previousTitle = document.title;
+    const description = "Real-time creator messaging, audio sharing, music collaboration, a built-in Studio, and AI-assisted music tools. Start free with NaliChat.";
     document.title = "Music Collaboration & Creator Messaging | NaliChat";
+    let meta = document.querySelector('meta[name="description"]');
+    const previousDescription = meta?.getAttribute("content") || null;
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.setAttribute("name", "description");
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute("content", description);
+    return () => {
+      document.title = previousTitle;
+      if (previousDescription === null) meta?.remove();
+      else meta?.setAttribute("content", previousDescription);
+    };
   }, []);
 
   return (

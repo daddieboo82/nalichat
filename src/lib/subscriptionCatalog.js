@@ -7,20 +7,22 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
   free: Object.freeze({
     id: "free",
     name: "Free",
-    description: "Core messaging for everyone.",
+    description: "Essential messaging for staying connected with creators and teams.",
     prices: Object.freeze({
       monthly: Object.freeze({ amount: 0, label: "$0", suffix: "forever", sku: null }),
       annual: Object.freeze({ amount: 0, label: "$0", suffix: "forever", sku: null }),
     }),
     features: Object.freeze([
-      "Core 1:1 chat",
-      "Core group chat",
+      "1:1 creator messaging",
+      "Group chat",
+      "Up to 2 GB file uploads",
+      "20 AI requests per day",
     ]),
   }),
   premium: Object.freeze({
     id: "premium",
     name: "Premium",
-    description: "More power for everyday messaging and creative work.",
+    description: "Advanced messaging, AI, file, search, voice, and customization tools for active creators.",
     prices: Object.freeze({
       monthly: Object.freeze({
         amount: 7.99,
@@ -37,14 +39,20 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
     }),
     features: Object.freeze([
       "Everything in Free",
-      "Premium file transfer tools",
-      "More Premium capabilities coming later",
+      "Up to 10 GB file uploads",
+      "200 AI requests per day",
+      "AI-assisted creator tools",
+      "Schedule messages",
+      "Advanced message search",
+      "Export chat content",
+      "Premium chat themes",
+      "Voice transcription",
     ]),
   }),
   premium_plus: Object.freeze({
     id: "premium_plus",
     name: "Premium Plus",
-    description: "The highest NaliChat tier for power users.",
+    description: "The complete NaliChat experience with the highest limits, best AI access, and advanced privacy and productivity tools.",
     prices: Object.freeze({
       monthly: Object.freeze({
         amount: 14.99,
@@ -61,7 +69,12 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
     }),
     features: Object.freeze([
       "Everything in Premium",
-      "More Premium Plus capabilities coming later",
+      "Up to 20 GB file uploads",
+      "1,000 AI requests per day",
+      "Access to the best available NaliChat AI model",
+      "AI call summaries",
+      "Follow-up reminders",
+      "Locked chats for extra privacy",
     ]),
   }),
 });

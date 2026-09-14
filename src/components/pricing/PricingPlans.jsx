@@ -212,7 +212,8 @@ export default function PricingPlans({
           <p className="text-sm font-bold uppercase tracking-widest text-primary">NaliChat plans</p>
           <h1 className="mt-3 font-heading text-3xl font-black tracking-tight sm:text-5xl">{copy.headline}</h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">{copy.subhead}</p>
-          <p className="mt-4 font-semibold">Core chat is free forever</p>
+          <p className="mt-4 font-semibold">Core chat is free forever · No paid plan required to start</p>
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">Compare Free, Premium, and Premium Plus before you choose. Paid plans add creator features while your core messaging access stays available.</p>
         </div>
 
         {checkoutCanceled && (
@@ -281,7 +282,7 @@ export default function PricingPlans({
         )}
         <div className="mt-8 text-center">
           <Button className="ui-hover min-h-11 rounded-xl px-5" variant="ghost" onClick={continueFree}>Continue with Free</Button>
-          <p className="mt-2 text-sm text-muted-foreground">Cancel anytime in settings.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Paid subscriptions can be canceled in Settings. You can continue using Free afterward.</p>
         </div>
       </section>
     </div>

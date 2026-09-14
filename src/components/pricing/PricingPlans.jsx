@@ -18,7 +18,7 @@ import {
   PAYWALL_CONFIG,
 } from "@/lib/paywallConfig";
 import { trackPaywallEvent } from "@/lib/paywallAnalytics";
-import { captureMarketingAttribution } from "@/lib/adAttribution";
+import { captureMarketingAttribution, getMarketingAttribution } from "@/lib/adAttribution";
 import {
   CHECKOUT_RETURN_KEY,
   createCheckoutRequestKey,
@@ -168,11 +168,17 @@ export default function PricingPlans({
         requestKeys.current.set(sku, createCheckoutRequestKey());
       }
       try { sessionStorage.setItem(CHECKOUT_RETURN_KEY, "1"); } catch {}
+      const attribution = getMarketingAttribution();
       trackPaywallEvent("checkout_started", {
         variant,
         plan: planId,
         billing_period: period,
         sku,
+        campaign_source: attribution?.utm_source || undefined,
+        campaign_medium: attribution?.utm_medium || undefined,
+        campaign_name: attribution?.utm_campaign || undefined,
+        campaign_term: attribution?.utm_term || undefined,
+        google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
       });
       await startSubscriptionCheckout({
         sku,

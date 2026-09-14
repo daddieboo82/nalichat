@@ -161,7 +161,7 @@ export default function MobileHeader() {
             {!isAuthenticated && (
               <button
                 onClick={() => navigate("/login")}
-                className="h-11 px-3 rounded-full flex items-center gap-1 text-[11px] font-bold bg-primary/15 text-primary active:scale-95 transition-all"
+                className="h-11 px-3 rounded-full flex items-center gap-1 text-[11px] font-bold bg-primary text-primary-foreground active:scale-95 transition-all"
               >
                 <LogIn className="w-3.5 h-3.5" /> Log in
               </button>

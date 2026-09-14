@@ -8,6 +8,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { pollForSubscriptionConfirmation } from "@/lib/subscriptionConfirmation";
 import { trackPaywallEvent } from "@/lib/paywallAnalytics";
 import { CHECKOUT_RETURN_KEY } from "@/lib/subscriptionBilling";
+import { getMarketingAttribution } from "@/lib/adAttribution";
 
 export default function ThankYou() {
   const [processing, setProcessing] = useState(true);
@@ -50,12 +51,18 @@ export default function ThankYou() {
           // Analytics dedupe is best-effort; never block a confirmed purchase.
         }
         if (!alreadyTracked) {
+          const attribution = getMarketingAttribution();
           trackPaywallEvent(
             result.subscription.isTrialing ? "trial_started" : "purchase_completed",
             {
               plan: result.subscription.plan,
               billing_period: result.subscription.billingPeriod || "unknown",
               source: "subscription_thank_you",
+              campaign_source: attribution?.utm_source || undefined,
+              campaign_medium: attribution?.utm_medium || undefined,
+              campaign_name: attribution?.utm_campaign || undefined,
+              campaign_term: attribution?.utm_term || undefined,
+              google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
             },
           );
         }

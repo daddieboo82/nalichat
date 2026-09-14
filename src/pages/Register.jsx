@@ -137,6 +137,18 @@ export default function Register() {
         description: "Check your email for the new code.",
       });
     } catch (err) {
+      const attribution = getMarketingAttribution();
+      trackPaywallEvent("registration_failed", {
+        source: "email_otp",
+        outcome: "otp_resend_error",
+        campaign_source: attribution?.utm_source || undefined,
+        campaign_medium: attribution?.utm_medium || undefined,
+        campaign_name: attribution?.utm_campaign || undefined,
+        campaign_term: attribution?.utm_term || undefined,
+        campaign_content: attribution?.utm_content || undefined,
+        campaign_landing_path: attribution?.landing_path || undefined,
+        google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
+      });
       setError(resendOtpErrorMessage(err));
     }
   };

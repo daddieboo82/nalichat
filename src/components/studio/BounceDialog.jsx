@@ -285,7 +285,7 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
                   checked={canUseAi && autoMaster}
                   onCheckedChange={(checked) => {
                     if (!canUseAi) {
-                      toast.error("Premium is required for AI mastering.");
+                      toast.error("AI mastering is available with Premium. You can still bounce without AI mastering.");
                       return;
                     }
                     setAutoMaster(checked);

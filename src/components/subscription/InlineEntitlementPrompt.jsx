@@ -29,7 +29,7 @@ export default function InlineEntitlementPrompt({
           className="ui-hover min-h-11 w-full shrink-0 rounded-xl font-semibold sm:w-auto"
           onClick={() => trackPaywallEvent("entitlement_prompt_convert", { entitlement, source })}
         >
-          <Link to="/pricing">View plans</Link>
+          <Link to="/pricing">Compare plans</Link>
         </Button>
       </div>
     </div>

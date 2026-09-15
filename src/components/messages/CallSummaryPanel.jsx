@@ -109,7 +109,7 @@ export default function CallSummaryPanel({ summaryActions, participants = [], in
             </Button>
           ) : (
             <Button asChild className="w-full">
-              <Link to="/pricing">Upgrade to Premium Plus</Link>
+              <Link to="/pricing">Compare Premium Plus</Link>
             </Button>
           )}
           <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
@@ -220,7 +220,7 @@ export default function CallSummaryPanel({ summaryActions, participants = [], in
           {error.code === "AI_DAILY_QUOTA_EXHAUSTED"
             ? "Today's AI quota is used up. Try again after the UTC reset or upgrade for a higher limit."
             : error.code === "CALL_SUMMARY_UPGRADE_REQUIRED"
-            ? "Premium Plus is required to generate this summary."
+            ? "Call summaries are included with Premium Plus. Your core calling and messaging remain available without this upgrade."
             : error.message}
         </p>
       )}

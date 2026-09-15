@@ -12,7 +12,7 @@ const VARIANTS = Object.freeze({
   B: Object.freeze({
     id: "B",
     headline: "Go further with AI-powered messaging.",
-    subhead: "Faster responses, deeper insights, Studio workflows, and productivity tools built for creators."
+    subhead: "Faster responses, deeper insights, Studio workflows, and productivity tools built for creators.",
     trialCta: "Try Premium free",
     badges: Object.freeze({
       premium: "Best for everyday",

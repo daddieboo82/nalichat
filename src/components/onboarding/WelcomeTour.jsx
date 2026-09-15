@@ -12,14 +12,14 @@ const STEPS = [
   {
     icon: Sparkles,
     title: "Welcome to NaliChat!",
-    description: "Let's get you set up in two quick steps so you can start collaborating with other artists.",
+    description: "Your profile is ready. Here are two quick moves that help you get value from NaliChat right away.",
     primary: { label: "Let's Go", action: "next" },
     color: "from-primary to-pink-500",
   },
   {
     icon: UserCircle,
     title: "Complete Your Profile",
-    description: "Add your avatar, bio, and genres so other artists can discover and connect with you. It takes 30 seconds.",
+    description: "Add an avatar, bio, and genres so the right creators can recognize your sound and connect with you. It only takes about 30 seconds.",
     primary: { label: "Go to Settings", action: "navigate", path: "/settings" },
     secondary: { label: "Next", action: "next" },
     color: "from-violet-500 to-fuchsia-500",
@@ -27,7 +27,7 @@ const STEPS = [
   {
     icon: Trophy,
     title: "Join Your First Challenge",
-    description: "Browse active remix challenges, download the source track, and submit your remix to the community.",
+    description: "Put NaliChat to work: browse an active challenge, open the source track, and create something you can share with the community.",
     primary: { label: "Browse Challenges", action: "navigate", path: "/challenges" },
     secondary: { label: "Maybe Later", action: "complete" },
     color: "from-yellow-500 to-orange-500",

@@ -154,10 +154,10 @@ export default function ChatThemeSettings({ user, onPreferenceSaved }) {
         <InlineEntitlementPrompt
           entitlement={CHAT_THEME_ENTITLEMENT}
           source="settings_chat_themes"
-          title="Unlock Premium chat themes"
+          title="Premium chat themes"
           description={isError
             ? "We couldn't verify your subscription. Premium themes stay locked until verification succeeds."
-            : "Premium and Premium Plus include every curated chat theme."}
+            : "Premium and Premium Plus add every curated chat theme while your current theme remains available."}
         />
       )}
     </div>

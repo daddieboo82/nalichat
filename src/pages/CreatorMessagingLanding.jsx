@@ -58,7 +58,7 @@ export default function CreatorMessagingLanding() {
               <Link to={attributedPath("/register")}>Start Free <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="min-h-12 w-full rounded-xl px-7 font-semibold sm:w-auto">
-              <Link to={attributedPath("/pricing")}>View Plans</Link>
+              <Link to={attributedPath("/pricing")}>Compare Plans</Link>
             </Button>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">Core chat is free forever · No paid plan required to start</p>

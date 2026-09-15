@@ -251,7 +251,7 @@ export default function PricingPlans({
           <h1 className="mt-3 font-heading text-3xl font-black tracking-tight sm:text-5xl">{copy.headline}</h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">{copy.subhead}</p>
           <p className="mt-4 font-semibold">Core chat is free forever · No paid plan required to start</p>
-          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">Every plan includes creator messaging and NaliStudio. Premium adds advanced creator tools; Premium Plus adds our highest AI limits, strongest Studio AI support, and extra privacy.</p>
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">Compare Free, Premium, and Premium Plus before you choose. Every plan includes creator messaging and NaliStudio; paid tiers add stronger AI, advanced creator tools, higher limits, and extra privacy.</p>
         </div>
 
         {checkoutCanceled && (

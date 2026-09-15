@@ -137,7 +137,7 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
 
   return (
     <div className="min-w-[180px] sm:min-w-[220px]">
-      <button onClick={canDownload ? handleDownload : undefined} disabled={!canDownload} className="w-full flex items-center gap-3 hover:opacity-80 transition-opacity group text-left disabled:opacity-50 disabled:cursor-not-allowed" title={canDownload ? "Download File" : "Premium is required to download this attachment"} aria-label={canDownload ? "Download File" : "Download locked"}>
+      <button onClick={canDownload ? handleDownload : undefined} disabled={!canDownload} className="w-full flex items-center gap-3 hover:opacity-80 transition-opacity group text-left disabled:opacity-50 disabled:cursor-not-allowed" title={canDownload ? "Download File" : "Attachment downloads are available with Premium"} aria-label={canDownload ? "Download File" : "Download locked"}>
         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", isOwn ? "bg-white/20" : "bg-primary/20")}>
           <Icon className={cn("w-5 h-5", isOwn ? "text-white" : "text-primary")} />
         </div>

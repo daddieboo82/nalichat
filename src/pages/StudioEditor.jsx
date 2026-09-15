@@ -30,7 +30,7 @@ export default function StudioEditor() {
 
   const handleProcessAudio = async () => {
     if (!canUseAi) {
-      setError("Premium is required for AI mastering.");
+      setError("AI mastering is available with Premium. You can keep editing and export without AI mastering.");
       return;
     }
     if (!audioUrl) return;

@@ -52,7 +52,7 @@ export default function AiModeSelector({ mode, onModeChange, disabled = false })
             <Link
               to="/pricing"
               className="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-primary"
-              aria-label="Upgrade to Premium Plus for Deep analysis"
+              aria-label="Compare Premium Plus for Deep analysis"
             >
               <LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />
               Deep · Plus

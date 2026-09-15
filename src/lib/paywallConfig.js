@@ -1,8 +1,8 @@
 const VARIANTS = Object.freeze({
   A: Object.freeze({
     id: "A",
-    headline: "Create more. Connect better.",
-    subhead: "Messaging and Studio stay useful on Free. Upgrade when you want stronger AI, creator tools, higher limits, and advanced privacy.",
+    headline: "Upgrade your chat, not your budget.",
+    subhead: "Keep chatting free forever. Unlock smarter AI, powerful creator tools, Studio upgrades, and premium privacy.",
     trialCta: "Start 7-day free trial",
     badges: Object.freeze({
       premium: "Most popular",
@@ -11,8 +11,8 @@ const VARIANTS = Object.freeze({
   }),
   B: Object.freeze({
     id: "B",
-    headline: "Turn NaliChat into your creator command center.",
-    subhead: "Start free, then unlock advanced AI, Studio workflows, productivity tools, and premium privacy when you need more power.",
+    headline: "Go further with AI-powered messaging.",
+    subhead: "Faster responses, deeper insights, Studio workflows, and productivity tools built for creators."
     trialCta: "Try Premium free",
     badges: Object.freeze({
       premium: "Best for everyday",

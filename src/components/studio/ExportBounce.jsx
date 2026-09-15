@@ -28,7 +28,7 @@ export default function ExportBounce({ postId, title, disabled }) {
 
   const handleExport = async () => {
     if (!canMaster) {
-      toast.error("Premium is required for mastering export.");
+      toast.error("Mastering export is a Premium feature. Standard Studio tools remain available.");
       return;
     }
     if (!postId) return;
@@ -82,7 +82,7 @@ export default function ExportBounce({ postId, title, disabled }) {
           variant="outline"
           className="rounded-xl"
           disabled={disabled || !postId || !canMaster}
-          title={canMaster ? "Analyze mastering loudness and dynamics" : "Premium is required for mastering analysis"}
+          title={canMaster ? "Analyze mastering loudness and dynamics" : "Mastering analysis is available with Premium"}
         >
           <Award className="w-4 h-4 mr-2" />
           {canMaster ? "Mastering Analysis" : "Premium Analysis"}

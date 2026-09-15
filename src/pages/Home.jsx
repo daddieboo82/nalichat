@@ -481,7 +481,7 @@ export default function Home() {
                 </div>
                 <h2 className="font-heading font-bold text-2xl md:text-3xl mb-2">Your Personal Music Assistant</h2>
                 <p className="text-foreground/90 leading-relaxed">
-                  Need help? You can ask Nali to perform tasks across the app, suggest track tags, or answer absolutely anything music-related. From production tips to navigating the studio, Nali is here to help you create your best work.
+                  Premium adds Nali AI for production guidance, track-tag suggestions, Studio help, and creator questions across the app. Start with the free creator workspace, then add AI when it fits your workflow.
                 </p>
               </div>
             </div>
@@ -700,7 +700,7 @@ export default function Home() {
               <Link to="/terms" className="min-h-10 inline-flex items-center hover:text-foreground">Terms of Service</Link>
               <Link to="/login" className="min-h-10 inline-flex items-center hover:text-foreground">Sign In</Link>
               <Link to="/register" className="min-h-10 inline-flex items-center hover:text-foreground">Create Account</Link>
-              <Link to="/pricing" className="min-h-10 inline-flex items-center hover:text-foreground">View Plans</Link>
+              <Link to="/pricing" className="min-h-10 inline-flex items-center hover:text-foreground">Compare Plans</Link>
               <a href="mailto:support@nalichat.org" className="min-h-10 inline-flex items-center hover:text-foreground">Contact Support</a>
             </div>
             <p className="mt-2">NaliChat · Creator messaging, music collaboration, and Studio tools</p>

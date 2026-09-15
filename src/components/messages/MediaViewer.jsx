@@ -138,10 +138,10 @@ export default function MediaViewer({ media, isOpen, onClose, canDownload = fals
             onClick={canDownload ? handleDownload : undefined}
             disabled={downloading || !canDownload}
             className="flex items-center gap-2 bg-white text-black px-5 py-2 rounded-full text-sm font-bold hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
-            title={canDownload ? "Download" : "Premium is required to download this attachment"}
+            title={canDownload ? "Download" : "Attachment downloads are available with Premium"}
           >
             <Download className="w-4 h-4" />
-            {downloading ? "Downloading..." : canDownload ? "Download" : "Download Locked"}
+            {downloading ? "Downloading..." : canDownload ? "Download" : "Premium Download"}
           </button>
         </div>
       </div>

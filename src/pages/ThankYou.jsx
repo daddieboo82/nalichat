@@ -162,7 +162,7 @@ export default function ThankYou() {
             {subscriptionConfirmation === "processing"
               ? "Confirming subscription..."
               : confirmed
-                ? "Subscription active!"
+                ? "You’re upgraded!"
                 : timedOut
                   ? "Still processing"
                   : "We could not verify your subscription"}
@@ -172,7 +172,7 @@ export default function ThankYou() {
             {subscriptionConfirmation === "processing"
               ? "We are checking the authoritative account status. This can take a moment."
               : confirmed
-                ? "Your paid plan is confirmed and its entitlements are ready."
+                ? "Your plan is confirmed. Your upgraded creator tools and AI access are ready to use now."
                 : timedOut
                   ? "Stripe returned successfully, but the subscription update has not arrived yet. No paid access is granted until confirmation completes."
                   : "Subscription status could not be checked. No paid access was granted."}
@@ -181,12 +181,12 @@ export default function ThankYou() {
           {confirmed && (
             <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
               <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 px-8 text-base font-bold hover:opacity-90 sm:w-auto sm:h-14 sm:text-lg" asChild>
-                <Link to="/messages">
-                  Open chat
+                <Link to="/studio">
+                  Open Studio
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="ui-hover min-h-12 w-full rounded-xl sm:w-auto" asChild>
-                <Link to="/settings">Manage Billing</Link>
+                <Link to="/messages">Open Messages</Link>
               </Button>
             </div>
           )}

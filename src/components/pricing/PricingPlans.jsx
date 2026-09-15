@@ -61,7 +61,7 @@ function PlanCard({
       </div>
       {paid && period === "annual" && (
         <p className="mt-2 text-sm font-semibold text-primary">
-          Save ${annualSavings(plan.id)} per year
+          Save ${annualSavings(plan.id)} vs. paying monthly
         </p>
       )}
       <ul className="my-6 flex-1 space-y-3">
@@ -80,7 +80,7 @@ function PlanCard({
           onClick={() => onSelect(plan.id)}
         >
           {isStarting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
-          {isCurrent ? "Current plan" : isPaidSubscriber ? "Manage in Settings" : cta}
+          {isCurrent ? "Current plan" : isPaidSubscriber ? "Manage in Settings" : `${cta} — ${plan.name}`}
         </Button>
       ) : (
         <Button className="ui-hover min-h-12 w-full rounded-xl font-semibold" variant="outline" onClick={onContinueFree}>

@@ -126,8 +126,8 @@ export default function SubscriptionSettings() {
               Your existing subscription includes Premium Plus at its current external price.
             </p>
           )}
-          <p className="mt-4 text-sm text-muted-foreground">Core chat is free forever.</p>
-          <p className="text-sm text-muted-foreground">Cancel anytime in settings.</p>
+          <p className="mt-4 text-sm text-muted-foreground">Core chat and NaliStudio remain available on Free.</p>
+          <p className="text-sm text-muted-foreground">Paid plans add advanced creator, AI, and privacy tools. Cancel anytime in Settings and return to Free.</p>
         </div>
 
         {canManageBilling ? (
@@ -143,7 +143,7 @@ export default function SubscriptionSettings() {
           <Button asChild className="ui-hover min-h-11 w-full shrink-0 gap-2 rounded-xl font-semibold sm:w-auto">
             <Link to="/pricing">
               <CreditCard className="h-4 w-4" aria-hidden="true" />
-              View plans
+              Compare plans
             </Link>
           </Button>
         )}

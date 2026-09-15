@@ -102,7 +102,7 @@ export default function Onboarding() {
           </div>
           <div>
             <p className="font-heading font-bold text-lg leading-tight">Welcome to NaliChat</p>
-            <p className="text-xs text-muted-foreground">A few details and your creator space is ready.</p>
+            <p className="text-xs text-muted-foreground">Set up your profile in under a minute. You can change these details anytime.</p>
           </div>
         </div>
 
@@ -142,7 +142,7 @@ export default function Onboarding() {
           </div>
           <p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Your display name and bio appear on your creator profile. You can change these later in Settings.</p><Button onClick={handleSave} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-            {loading ? "Saving..." : "Get Started"}
+            {loading ? "Setting up your space..." : "Enter NaliChat"}
           </Button>
         </div>
       </div>

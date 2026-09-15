@@ -69,7 +69,7 @@ describe("chat theme settings", () => {
     expect(midnight.getAttribute("aria-checked")).toBe("true");
     expect(midnight.getAttribute("aria-disabled")).toBe("true");
     expect(screen.getByText(/saved Premium theme is preserved/)).toBeTruthy();
-    expect(screen.getByText("Unlock Premium chat themes")).toBeTruthy();
+    expect(screen.getByText("Premium chat themes")).toBeTruthy();
 
     fireEvent.click(midnight);
     expect(mockBase44.functions.invoke).not.toHaveBeenCalled();

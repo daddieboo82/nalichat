@@ -1,5 +1,5 @@
 name: CI
-# Registration probe: no behavioral change; validates pull_request workflow startup.
+# Registration probe: validates pull_request and main-push workflow startup.
 
 on:
   push:

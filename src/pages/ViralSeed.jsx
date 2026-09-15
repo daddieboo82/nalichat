@@ -50,7 +50,7 @@ export default function ViralSeed() {
 
   const generate = async () => {
     if (!canUseAi) {
-      setError("Premium is required to use ViralSeed AI.");
+      setError("ViralSeed AI is available with Premium. Your regular NaliChat and Studio tools remain available.");
       return;
     }
     const generation = generationRef.current;
@@ -167,7 +167,7 @@ export default function ViralSeed() {
             ) : (
               <>
                 <Sparkles className="w-5 h-5" />
-                {!canUseAi ? "Premium Required" : "Generate 5 Viral Concepts"}
+                {!canUseAi ? "Available with Premium" : "Generate 5 Viral Concepts"}
               </>
             )}
           </Button>

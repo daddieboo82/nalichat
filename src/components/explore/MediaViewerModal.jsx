@@ -180,7 +180,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                      size="lg"
                      className="min-h-12 rounded-xl border border-white/10 bg-white/10 px-5 text-sm text-white shadow-lg sm:px-8 sm:text-base"
                    >
-                     {canDownload ? "Included with App Access" : "Subscribe for Full Access"}
+                     {canDownload ? "Download included" : "Premium download"}
                    </Button>
                    {onAddToPlaylist && (
                      <Button 
@@ -245,11 +245,11 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                      <Link
                        to="/pricing"
                        onClick={() => onOpenChange(false)}
-                       title="Subscribe to unlock full downloads"
+                       title="Downloads are available with Premium"
                        className="ui-hover flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 px-5 text-sm text-white/80 transition-colors hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-white/40"
                      >
                        <Lock className="w-4 h-4" />
-                       Subscribe to unlock download
+                       Compare plans for download
                      </Link>
                    )}
                    

@@ -192,7 +192,7 @@ export default function FollowUpReminderDialog({
                   source: sourceMessage ? "message_action" : "conversation_menu",
                 })}
               >
-                Compare Premium Plus
+                View Premium Plus
               </Link>
             </Button>
           </div>

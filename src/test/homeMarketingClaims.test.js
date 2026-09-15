@@ -15,7 +15,7 @@ describe('home marketing claims', () => {
     expect(home).toContain('Voice notes & audio sharing');
     expect(home).toContain('Privacy Policy');
     expect(home).toContain('Terms of Service');
-    expect(home).toContain('View Plans');
+    expect(home).toContain('Compare Plans');
     expect(home).toContain('Contact Support');
     expect(home).toContain('mailto:support@nalichat.org');
     expect(home).toContain('to="/pricing"');

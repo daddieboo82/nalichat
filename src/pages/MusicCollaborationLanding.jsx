@@ -64,7 +64,7 @@ export default function MusicCollaborationLanding() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="min-h-12 w-full rounded-xl px-7 font-semibold sm:w-auto">
-              <Link to={attributedPath("/pricing")}>View Plans</Link>
+              <Link to={attributedPath("/pricing")}>Compare Plans</Link>
             </Button>
           </div>
 

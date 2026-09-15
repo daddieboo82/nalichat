@@ -1,0 +1,13 @@
+name: Actions Recovery Probe 972
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm runner startup
+        run: echo "GitHub Actions runner started successfully for issue 972"

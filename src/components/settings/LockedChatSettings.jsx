@@ -34,7 +34,7 @@ export default function LockedChatSettings() {
         <div className="mt-4 flex gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
           <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
           <p>
-            Premium Plus is required to lock new chats.
+            Premium Plus adds the ability to lock new chats.
             {hasLockedChats && " Your existing locked chats remain hidden and can still be opened with your PIN."}
           </p>
         </div>

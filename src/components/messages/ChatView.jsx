@@ -68,7 +68,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const toggleConversationLock = async () => {
     if (!conversation?.id || updatingLock) return;
     if (!canConfigureLockedChats) {
-      toast.error("Changing locked chats is a Premium Plus feature. Your regular chats remain available.");
+      toast.error("Premium Plus is required to change locked chats.");
       return;
     }
     if (!conversationIsLocked && !lockedChatSecurity?.configured) {

@@ -316,6 +316,8 @@ workflows:
             exit 1
           }
           echo "✅ AAB signed and verified"
+          cp "$AAB_FILE" ./app-release-bundle.aab
+          echo "✅ Signed AAB promoted to ./app-release-bundle.aab"
       - name: Verify AAB package name
         script: |
           # Search for the AAB in common bubblewrap output locations

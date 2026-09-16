@@ -118,11 +118,9 @@ workflows:
             log_user 1
             spawn bubblewrap update --skip-gradle-build
             expect {
-              "Install JDK?" { send "y\r"; exp_continue }
-              "install the JDK" { send "y\r"; exp_continue }
-              "(Y/n)" { send "y\r"; exp_continue }
-              "(y/N)" { send "y\r"; exp_continue }
-              "license" { send "y\r"; exp_continue }
+              # Do not use broad yes/no or "license" matches here. They can
+              # enqueue a stray "y" on stdin before the password prompt, which
+              # Bubblewrap then reads as a one-character keystore password.
               "Password for the Key Store" { send "$KEYSTORE_PASS\r"; exp_continue }
               "Password for the Key" { send "$KEY_PASS\r"; exp_continue }
               "Keystore password" { send "$KEYSTORE_PASS\r"; exp_continue }

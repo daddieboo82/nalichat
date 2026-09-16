@@ -320,8 +320,8 @@ workflows:
           echo "✅ Signed AAB promoted to ./app-release-bundle.aab"
       - name: Verify AAB package name
         script: |
-          # Search for the AAB in common bubblewrap output locations
-          AAB_FILE=$(find . -name "*.aab" -type f 2>/dev/null | head -1)
+          # Use the exact Gradle bundle that was signed in the prior step.
+          AAB_FILE="./app/build/outputs/bundle/release/app-release.aab"
           if [ -z "$AAB_FILE" ]; then
             echo "❌ AAB file not found — searching for any build outputs..."
             find . -name "*.aab" -o -name "*.apk" 2>/dev/null || true

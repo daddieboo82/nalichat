@@ -28,6 +28,7 @@ on:
       - 'electron/**'
       - 'src/pages/Download.jsx'
       - '.github/workflows/desktop-builds.yml'
+      - '.release-trigger'
   workflow_dispatch:
 
 env:

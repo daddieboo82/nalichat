@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 const WINDOWS_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/download/1.0.0/NaliChat-Setup.exe';
-const ANDROID_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/download/1.0.0/NaliChat.apk';
+const ANDROID_APK_URL = 'https://api.codemagic.io/artifacts/8fef19cc-9531-4ed8-b99a-522f2c36e0b6/2fb94f53-5da0-45b7-bee5-2962c112f6a9/app-release.apk';
+const ANDROID_AAB_URL = 'https://api.codemagic.io/artifacts/2bd6c8e0-c960-4509-8442-f53ee47e3c76/afdb6fd1-9cbc-41b6-9d60-9c7a8360f25a/app-release-bundle.aab';
 
 export default function Download() {
   return (
@@ -30,9 +31,14 @@ export default function Download() {
             <CardContent className="space-y-5 p-6">
               <div className="flex items-center gap-3"><Smartphone className="h-7 w-7 text-primary" /><div><h2 className="font-heading text-xl font-bold">Android</h2><p className="text-sm text-muted-foreground">NaliChat for Android</p></div></div>
               <p className="text-sm leading-relaxed text-muted-foreground">Install the official Android app directly. Google Play updates use the signed AAB release pipeline.</p>
-              <Button asChild className="ui-hover min-h-12 w-full rounded-xl font-semibold">
-                <a href={ANDROID_DOWNLOAD_URL}><DownloadIcon className="mr-2 h-4 w-4" />Download Android APK<ExternalLink className="ml-2 h-4 w-4" /></a>
-              </Button>
+              <div className="grid gap-3">
+                <Button asChild className="ui-hover min-h-12 w-full rounded-xl font-semibold">
+                  <a href={ANDROID_APK_URL}><DownloadIcon className="mr-2 h-4 w-4" />Download Android APK<ExternalLink className="ml-2 h-4 w-4" /></a>
+                </Button>
+                <Button asChild variant="outline" className="ui-hover min-h-12 w-full rounded-xl font-semibold">
+                  <a href={ANDROID_AAB_URL}><DownloadIcon className="mr-2 h-4 w-4" />Download Signed AAB<ExternalLink className="ml-2 h-4 w-4" /></a>
+                </Button>
+              </div>
             </CardContent>
           </Card>
 

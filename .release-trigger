@@ -1,0 +1,3 @@
+NaliChat release rebuild trigger
+version=1.0.2
+reason=rebuild signed AAB/APK and native desktop installers

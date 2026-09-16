@@ -377,7 +377,7 @@ workflows:
           cp "$APK_FILE" ./app-release.apk
           echo "✅ APK built at ./app-release.apk"
           ls -lh ./app-release.apk
-      - name: Publish APK to GitHub Releases
+      - name: Publish Android artifacts to GitHub Releases
         script: |
           # Upload the APK to the SAME fixed release used by Windows/macOS/the
           # in-app Download page, instead of creating a new timestamped release
@@ -392,9 +392,15 @@ workflows:
             exit 0
           fi
           RELEASE_TAG="1.0.0"
-          gh release upload "$RELEASE_TAG" ./app-release.apk --clobber \
-            || echo "⚠️  gh release upload failed — APK is still available as a build artifact"
-          echo "✅ APK published to GitHub Releases: $RELEASE_TAG"
+          gh release upload "$RELEASE_TAG" \
+            ./app-release.apk \
+            ./app-release-bundle.aab \
+            --clobber \
+            || {
+              echo "❌ GitHub Release upload failed — artifacts remain available in Codemagic"
+              exit 1
+            }
+          echo "✅ APK and signed AAB published to GitHub Releases: $RELEASE_TAG"
     artifacts:
       - app-release-bundle.aab
       - ./app/build/outputs/bundle/release/*.aab

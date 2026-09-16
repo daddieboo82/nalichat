@@ -300,6 +300,22 @@ workflows:
             echo "❌ Gradle bundle build failed with exit code $BUILD_EXIT"
             exit 1
           fi
+          AAB_FILE=$(find ./app/build/outputs/bundle/release -name "*.aab" -type f 2>/dev/null | head -1)
+          if [ -z "$AAB_FILE" ]; then
+            echo "❌ No AAB found to sign"
+            exit 1
+          fi
+          echo "🔐 Signing AAB with the verified NaliChat keystore: $AAB_FILE"
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore ./android.keystore \
+            -storepass "$KEYSTORE_PASS" \
+            -keypass "$KEY_PASS" \
+            "$AAB_FILE" "$KEY_ALIAS"
+          jarsigner -verify -verbose -certs "$AAB_FILE" | grep -q "jar verified" || {
+            echo "❌ AAB signature verification failed immediately after signing"
+            exit 1
+          }
+          echo "✅ AAB signed and verified"
       - name: Verify AAB package name
         script: |
           # Search for the AAB in common bubblewrap output locations

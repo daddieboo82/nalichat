@@ -261,13 +261,13 @@ workflows:
             echo "❌ Cannot read keystore — check CM_KEYSTORE_PASSWORD / CM_KEY_ALIAS"
             exit 1
           }
-          echo "✅ Keystore verified, starting Bubblewrap build"
+          echo "✅ Keystore verified, starting signed Gradle bundle build"
           # Bubblewrap prompts for keystore/key passwords interactively — handle them via expect
           set +e
           expect << EOF 2>&1 | tee /tmp/bubblewrap_build.log
             set timeout 1800
             log_user 1
-            spawn bubblewrap build
+            spawn sh -c {cd app && ./gradlew clean bundleRelease --no-daemon}
             expect {
               "Install JDK?" { send "y\r"; exp_continue }
               "install the JDK" { send "y\r"; exp_continue }
@@ -289,7 +289,7 @@ workflows:
           EOF
           BUILD_EXIT=${PIPESTATUS[0]}
           echo ""
-          echo "=== Bubblewrap build exit code: $BUILD_EXIT ==="
+          echo "=== Gradle bundle build exit code: $BUILD_EXIT ==="
           echo "=== Looking for AAB files ==="
           find . -name "*.aab" -type f 2>/dev/null || echo "No AAB found"
           echo "=== Build output directory ==="
@@ -300,7 +300,7 @@ workflows:
           echo "=== Extracted error messages ==="
           grep -i -A 5 "FAILURE\|What went wrong\|Could not\|Cannot\|Error\|Exception\|failed" /tmp/bubblewrap_build.log | head -60
           if [ $BUILD_EXIT -ne 0 ]; then
-            echo "❌ bubblewrap build failed with exit code $BUILD_EXIT"
+            echo "❌ Gradle bundle build failed with exit code $BUILD_EXIT"
             exit 1
           fi
       - name: Verify AAB package name
@@ -342,9 +342,9 @@ workflows:
           if jarsigner -verify -verbose -certs "$AAB_FILE" 2>&1 | grep -q "jar verified"; then
             echo "✅ AAB is SIGNED and verified"
           else
-            echo "⚠️  jarsigner verification result:"
+            echo "❌ jarsigner verification failed:"
             jarsigner -verify -verbose "$AAB_FILE" 2>&1 | tail -20
-            echo "⚠️  AAB may not be properly signed — check build logs"
+            exit 1
           fi
           # Print the signing certificate fingerprint for comparison
           keytool -printcert -jarfile "$AAB_FILE" 2>/dev/null | grep -E "Owner|Issuer|SHA256" || echo "  (no cert info found)"

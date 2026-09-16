@@ -267,7 +267,7 @@ workflows:
           expect << EOF 2>&1 | tee /tmp/bubblewrap_build.log
             set timeout 1800
             log_user 1
-            spawn sh -c {cd app && ./gradlew clean bundleRelease --no-daemon}
+            spawn sh -c {chmod +x ./gradlew && ./gradlew clean bundleRelease --no-daemon}
             expect {
               # Gradle signing prompts only; no broad yes/no matches that can
               # queue stray input before a password request.
@@ -349,9 +349,8 @@ workflows:
         script: |
           # Build a release APK for direct download (sideloading outside Play Store)
           export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/share/android-sdk}}"
-          cd ./app
+          chmod +x ./gradlew
           ./gradlew assembleRelease --no-daemon
-          cd ..
           APK_FILE=$(find . -name "*.apk" -path "*/release/*" -type f 2>/dev/null | head -1)
           if [ -z "$APK_FILE" ]; then
             echo "❌ APK not found — build may have failed"

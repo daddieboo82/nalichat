@@ -121,6 +121,8 @@ workflows:
               # Answer only the exact JDK installation question. Avoid broad
               # yes/no matches that could enqueue input for later prompts.
               "Do you want Bubblewrap to install the JDK" { send "y\r"; exp_continue }
+              "Do you want Bubblewrap to install the Android SDK" { send "y\r"; exp_continue }
+              "Do you agree to the Android SDK terms and conditions" { send "y\r"; exp_continue }
               "Password for the Key Store" { send "$KEYSTORE_PASS\r"; exp_continue }
               "Password for the Key" { send "$KEY_PASS\r"; exp_continue }
               "Keystore password" { send "$KEYSTORE_PASS\r"; exp_continue }

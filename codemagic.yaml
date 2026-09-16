@@ -228,7 +228,7 @@ workflows:
           else:
               content += sc
           if rsc not in content:
-              content = content.replace('release {', 'release {\n            ' + rsc, 1)
+              content = re.sub(r'(buildTypes\s*\{[\s\S]*?release\s*\{)', lambda m: m.group(1) + '\n            ' + rsc, content, count=1)
           with open(gf, 'w') as f:
               f.write(content)
           print(f"Signing config injected into {gf}")

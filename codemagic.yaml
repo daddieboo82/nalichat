@@ -408,12 +408,6 @@ workflows:
     # Play, you must create the app listing and upload that first version
     # manually through the Play Console web UI - this automation only works
     # for updates after that.
-    publishing:
-      google_play:
-        credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
-        track: internal
-        submit_as_draft: true
-
   # NOTE: the macOS DMG and Windows EXE builds that used to live here were
   # moved to .github/workflows/desktop-builds.yml.
   #

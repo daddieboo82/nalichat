@@ -227,7 +227,7 @@ workflows:
               content = content.replace('buildTypes {', sc + '    buildTypes {', 1)
           else:
               content += sc
-          if 'signingConfig' not in content:
+          if rsc not in content:
               content = content.replace('release {', 'release {\n            ' + rsc, 1)
           with open(gf, 'w') as f:
               f.write(content)

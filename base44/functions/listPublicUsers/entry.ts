@@ -163,7 +163,14 @@ export default async function(req) {
     }
 
     const [allUsers, achievements, contacts, inboundContacts, conversations] = await Promise.all([
-      base44.asServiceRole.entities.User.list('-created_date', MAX_DISCOVERY_USERS),
+      // Prefer profiles that have actually completed onboarding. New accounts can
+      // otherwise consume the bounded discovery window before they are eligible
+      // for the public directory, leaving Messenger's contact discovery empty.
+      base44.asServiceRole.entities.User.filter(
+        { onboarding_completed: true },
+        '-created_date',
+        MAX_DISCOVERY_USERS,
+      ),
       includeAchievementCounts
         ? base44.asServiceRole.entities.Achievement.list('-created_date', MAX_DISCOVERY_ACHIEVEMENTS)
         : Promise.resolve([]),

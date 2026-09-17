@@ -777,7 +777,7 @@ export default function Messages() {
   ));
 
   return (
-    <div className="relative h-full min-h-0 sm:h-[calc(100vh-80px)] p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden">
+    <div className="relative h-full min-h-0 min-w-0 p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden touch-pan-y">
       <div className="w-full max-w-7xl h-full max-h-full flex flex-col sm:flex-row bg-card/60 sm:bg-card/40 backdrop-blur-3xl sm:border border-border/40 sm:rounded-[2.5rem] shadow-none sm:shadow-2xl overflow-hidden relative">
         
         {/* Sidebar */}
@@ -860,7 +860,7 @@ export default function Messages() {
                       queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] }),
                       queryClient.invalidateQueries({ queryKey: ["public-conversations"] }),
                     ]);
-                  }} className="flex-1 overflow-y-auto">
+                  }} className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]">
                     {conversationsError ? (
                       <div className="m-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
                         Couldn't load conversations. Pull to refresh or try again.

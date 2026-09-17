@@ -20,4 +20,11 @@ describe('private group mutual-contact authorization', () => {
     const s = await readFile('src/pages/Messages.jsx', 'utf8');
     expect(s).toContain('users={otherUsers.filter((candidate) => candidate.can_group_chat === true)}');
   });
+
+  it('explains mutual-contact eligibility and empty search results in the group picker', async () => {
+    const s = await readFile('src/components/messages/GroupChatDialog.jsx', 'utf8');
+    expect(s).toContain('No group members available yet');
+    expect(s).toContain('Add someone as a contact and have them add you back');
+    expect(s).toContain('No people match your search.');
+  });
 });

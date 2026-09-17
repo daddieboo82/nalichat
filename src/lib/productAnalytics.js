@@ -37,10 +37,32 @@ function ensureSession() {
   return session;
 }
 function track(name, properties = {}) {
+  const currentSession = ensureSession();
   try {
-    const result = base44.analytics?.track?.({ eventName: name, properties: { ...properties, product_session_id: ensureSession().id } });
+    const result = base44.analytics?.track?.({ eventName: name, properties: { ...properties, product_session_id: currentSession.id } });
     if (result?.catch) result.catch(() => {});
   } catch {}
+  const funnelEvents = new Set([
+    "homepage_view", "signup_click", "registration_view", "registration_started",
+    "registration_completed", "registration_failed", "first_message", "studio_open", "first_upload"
+  ]);
+  if (funnelEvents.has(name)) {
+    try {
+      const record = {
+        event_name: name,
+        source: properties.source || "product",
+        session_id: currentSession.id,
+        user_id: properties.user_id || "",
+        route: properties.route || window.location.pathname,
+        campaign_source: properties.campaign_source || "",
+        campaign_medium: properties.campaign_medium || "",
+        campaign_name: properties.campaign_name || "",
+        metadata: properties,
+      };
+      const saved = base44.entities.ActivationFunnel.create(record);
+      if (saved?.catch) saved.catch(() => {});
+    } catch {}
+  }
 }
 function accrueForegroundUntil(t = now()) {
   const s = ensureSession();

@@ -544,7 +544,7 @@ export default function Messages() {
         recordSquadActivity("message", msg.id, currentUser?.id);
         trackProductEvent("message_sent", {
           message_type: msg.type || "text",
-          conversation_type: selectedConversation?.type || "unknown",
+          conversation_id_present: Boolean(ctx?.conversationId),
         });
         try {
           const key = `nali_activation_first_message:${currentUser?.id || "unknown"}`;

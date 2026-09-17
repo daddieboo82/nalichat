@@ -2030,8 +2030,11 @@ describe('release configuration', () => {
     expect(html).not.toContain('store-manifest.json');
 
     const download = await readText('src/pages/Download.jsx');
-    expect(download).toContain('Coming Soon');
-    expect(download).toContain('Downloads are temporarily unavailable');
+    expect(download).toContain('Download NaliChat');
+    expect(download).toContain('Official NaliChat apps for Android and Windows.');
+    expect(download).toContain("const WINDOWS_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/download/1.0.0/NaliChat-Setup.exe';");
+    expect(download).toContain('ANDROID_APK_URL');
+    expect(download).toContain('ANDROID_AAB_URL');
     expect(download).not.toContain('releases/latest/download');
     expect(download).not.toContain('nalichat.base44.app');
 

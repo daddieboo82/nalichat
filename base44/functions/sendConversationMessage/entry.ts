@@ -504,6 +504,7 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
 
       messageData.participant_ids = lockedParticipantIds;
 
+    try {
     if (clientMessageKey) {
       const messageId = await deterministicMessageId(user.id, conversationId, clientMessageKey);
       clientSendLockId = await acquireMessageMutationLock(

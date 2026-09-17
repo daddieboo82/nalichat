@@ -116,7 +116,10 @@ test.describe('mobile logout and account switch', () => {
   );
 
   test('mobile logout clears the first session before the second account signs in', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile-chromium', 'Mobile navigation flow only.');
+    test.skip(
+      !['mobile-chromium', 'iphone-16-simulation'].includes(testInfo.project.name),
+      'Mobile navigation flow only.',
+    );
 
     await login(page, email, password);
     await page.goto('/');

@@ -27,12 +27,23 @@ export default function Analytics() {
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = currentUser?.role === "admin";
+  const [funnelWindow, setFunnelWindow] = React.useState("30d");
 
   const { data: funnelEvents = [] } = useQuery({
     queryKey: ["activationFunnel", currentUser?.id],
     queryFn: async () => isAdmin ? base44.entities.ActivationFunnel.list("-created_date", 500) : [],
     enabled: Boolean(currentUser && isAdmin),
   });
+
+  const filteredFunnelEvents = React.useMemo(() => {
+    if (funnelWindow === "all") return funnelEvents;
+    const days = funnelWindow === "7d" ? 7 : 30;
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    return funnelEvents.filter(event => {
+      const created = new Date(event.created_date || event.created_at || 0).getTime();
+      return Number.isFinite(created) && created >= cutoff;
+    });
+  }, [funnelEvents, funnelWindow]);
 
   const funnel = React.useMemo(() => {
     const steps = [
@@ -42,7 +53,7 @@ export default function Analytics() {
       ["studio_open", "Studio Open"], ["first_upload", "First Upload"], ["return_visit", "Return Visit"],
     ];
     const counts = Object.fromEntries(steps.map(([name]) => [name, new Set(
-      funnelEvents.filter(e => e.event_name === name).map(e => e.user_id || e.session_id || e.id)
+      filteredFunnelEvents.filter(e => e.event_name === name).map(e => e.user_id || e.session_id || e.id)
     ).size]));
     const base = counts.homepage_view || 0;
     return steps.map(([name, label], index) => {
@@ -55,7 +66,7 @@ export default function Analytics() {
         dropoff: index === 0 ? 0 : Math.max(0, previousCount - count),
       };
     });
-  }, [funnelEvents]);
+  }, [filteredFunnelEvents]);
 
   const { data: userPosts = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["userAnalytics", currentUser?.id],
@@ -139,12 +150,24 @@ export default function Analytics() {
           <>
         {isAdmin && (
           <Card className="ui-surface rounded-3xl border border-primary/20 bg-card/60 p-4 backdrop-blur-xl sm:p-5">
-            <div className="mb-4 flex items-end justify-between gap-4">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="font-heading text-lg font-semibold tracking-tight">Visitor Activation Funnel</h2>
                 <p className="mt-1 text-sm text-muted-foreground">Unique users or sessions across the latest 500 activation events.</p>
               </div>
-              <span className="text-xs text-muted-foreground">Admin</span>
+              <div className="flex items-center gap-2">
+                {[['7d', '7 days'], ['30d', '30 days'], ['all', 'All']].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setFunnelWindow(value)}
+                    className={`min-h-9 rounded-lg border px-3 text-xs font-semibold transition-colors ${funnelWindow === value ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background/50 text-muted-foreground hover:text-foreground'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <span className="ml-1 text-xs text-muted-foreground">Admin</span>
+              </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-9">
               {funnel.map((step, index) => (

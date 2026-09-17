@@ -45,10 +45,16 @@ export default function Analytics() {
       funnelEvents.filter(e => e.event_name === name).map(e => e.user_id || e.session_id || e.id)
     ).size]));
     const base = counts.homepage_view || 0;
-    return steps.map(([name, label]) => ({
-      name, label, count: counts[name] || 0,
-      rate: base > 0 ? Math.round(((counts[name] || 0) / base) * 100) : 0,
-    }));
+    return steps.map(([name, label], index) => {
+      const count = counts[name] || 0;
+      const previousCount = index > 0 ? counts[steps[index - 1][0]] || 0 : 0;
+      return {
+        name, label, count,
+        rate: base > 0 ? Math.round((count / base) * 100) : 0,
+        previousRate: index === 0 ? 100 : previousCount > 0 ? Math.round((count / previousCount) * 100) : 0,
+        dropoff: index === 0 ? 0 : Math.max(0, previousCount - count),
+      };
+    });
   }, [funnelEvents]);
 
   const { data: userPosts = [], isLoading, isError, refetch } = useQuery({
@@ -146,8 +152,11 @@ export default function Analytics() {
                   <p className="text-xs font-medium text-muted-foreground">{step.label}</p>
                   <p className="mt-2 text-2xl font-heading font-bold tabular-nums">{step.count}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {index === 0 ? "Baseline" : `${step.rate}% of homepage`}
+                    {index === 0 ? "Baseline" : `${step.previousRate}% from prior · ${step.rate}% overall`}
                   </p>
+                  {index > 0 && step.dropoff > 0 && (
+                    <p className="mt-1 text-[11px] text-muted-foreground/80">{step.dropoff} drop-off</p>
+                  )}
                 </div>
               ))}
             </div>

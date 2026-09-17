@@ -372,7 +372,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       </div>
 
       {/* Messages Area */}
-      <div ref={scrollRef} onScroll={handleScroll} className="chat-theme-messages flex-1 min-h-0 overflow-y-scroll touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] [touch-action:pan-y] px-4 sm:px-6 pt-24 pb-4 space-y-0.5 custom-scrollbar">
+      <div ref={scrollRef} onScroll={handleScroll} className="chat-theme-messages flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] [touch-action:pan-y] px-4 sm:px-6 pt-24 pb-4 space-y-0.5 custom-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />

@@ -550,7 +550,10 @@ export default function Messages() {
           const key = `nali_activation_first_message:${currentUser?.id || "unknown"}`;
           if (localStorage.getItem(key) !== "1") {
             localStorage.setItem(key, "1");
-            trackProductEvent("first_message", { message_type: msg.type || "text" });
+            trackProductEvent("first_message", {
+              user_id: currentUser?.id || "",
+              message_type: msg.type || "text",
+            });
           }
         } catch {}
       }

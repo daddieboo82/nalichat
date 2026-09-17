@@ -490,6 +490,62 @@ workflows:
   # to one fixed release tag shared by all three platforms.
 
 
+  ios-sauce-qa:
+    name: NaliChat iOS Sauce Labs QA IPA
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.base6a1f5ee134147461560c2b37.app
+      vars:
+        BUNDLE_ID: com.base6a1f5ee134147461560c2b37.app
+        APP_NAME: NaliChat Messenger
+        APP_VERSION: "1.0"
+        IOS_DEPLOYMENT_TARGET: "15.0"
+        XCODE_WORKSPACE: ios/App/App.xcworkspace
+        XCODE_SCHEME: App
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+          npm install --no-save @capacitor/core@^7 @capacitor/cli@^7 @capacitor/ios@^7 @capacitor/assets@^3 sharp@^0.34
+      - name: Build Sauce Labs QA app
+        script: |
+          cat > capacitor.config.json << EOF
+          {"appId":"$BUNDLE_ID","appName":"$APP_NAME","webDir":"dist","ios":{"contentInset":"automatic","scheme":"NaliChat"}}
+          EOF
+          npm run build
+          rm -rf ios assets
+          npx cap add ios
+          mkdir -p assets
+          node --input-type=module << 'NODE'
+          import sharp from "sharp";
+          await sharp("public/nalichat-icon.svg").resize(1024,1024,{fit:"contain",background:"#1a0f2e"}).png().toFile("assets/icon.png");
+          await sharp({create:{width:2732,height:2732,channels:4,background:"#1a0f2e"}}).png().toFile("assets/splash.png");
+          NODE
+          npx capacitor-assets generate --ios
+          npx cap sync ios
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $APP_NAME" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $APP_VERSION" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST"
+          sed -i '' -E "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+;/IPHONEOS_DEPLOYMENT_TARGET = $IOS_DEPLOYMENT_TARGET;/g" ios/App/App.xcodeproj/project.pbxproj
+          xcode-project use-profiles
+          xcode-project build-ipa --workspace "$XCODE_WORKSPACE" --scheme "$XCODE_SCHEME"
+          mkdir -p build/sauce
+          IPA=$(find build/ios/ipa -name '*.ipa' -type f | head -1)
+          test -n "$IPA"
+          cp "$IPA" build/sauce/NaliChat-Sauce-QA.ipa
+          echo "Sauce Labs QA IPA: build/sauce/NaliChat-Sauce-QA.ipa"
+    artifacts:
+      - build/sauce/NaliChat-Sauce-QA.ipa
+      - /tmp/xcodebuild_logs/*.log
+
   ios-ipa:
     name: NaliChat iOS IPA
     instance_type: mac_mini_m2

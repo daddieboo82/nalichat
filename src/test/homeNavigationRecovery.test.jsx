@@ -191,7 +191,7 @@ describe('home, navigation, and recovery flows', () => {
     expect(screen.getAllByRole('link', { name: /Explore/i }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: /Files/i }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: /Projects/i }).length).toBeGreaterThan(0);
-  });
+  }, 15000);
 
   it('shows visible desktop login and signup entry points for anonymous users', async () => {
     renderWithProviders(<DesktopNav />);

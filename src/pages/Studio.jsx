@@ -105,11 +105,11 @@ async function listPersistedTracks(projectId) {
 }
 
 export default function Studio() {
-  useEffect(() => {
-    trackProductEvent("studio_open", { route: "/studio" });
-  }, []);
   const navigate = useNavigate();
   const { user } = useAuth();
+  useEffect(() => {
+    trackProductEvent("studio_open", { route: "/studio", user_id: user?.id || "" });
+  }, [user?.id]);
   const studioStorageOwner = user?.id || null;
   const masterFxStorageKey = studioStorageOwner ? `nalistudio_master_fx:${studioStorageOwner}` : null;
   const autosaveStorageKey = studioStorageOwner ? `nalistudio_project_autosave:${studioStorageOwner}` : null;
@@ -1862,7 +1862,11 @@ export default function Studio() {
         const key = `nali_activation_first_upload:${user?.id || "unknown"}`;
         if (localStorage.getItem(key) !== "1") {
           localStorage.setItem(key, "1");
-          trackProductEvent("first_upload", { source: "studio_import", file_type: file.type || "unknown" });
+          trackProductEvent("first_upload", {
+            user_id: user?.id || "",
+            source: "studio_import",
+            file_type: file.type || "unknown",
+          });
         }
       } catch {}
       e.target.value = null;

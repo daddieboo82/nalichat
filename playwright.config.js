@@ -22,6 +22,14 @@ export default defineConfig({
       name: 'mobile-chromium',
       use: { ...devices['Pixel 5'] },
     },
+    {
+      name: 'iphone-16-simulation',
+      use: {
+        ...devices['iPhone 15'],
+        viewport: { width: 393, height: 852 },
+        screen: { width: 393, height: 852 },
+      },
+    },
   ],
   webServer: remoteBaseURL
     ? undefined

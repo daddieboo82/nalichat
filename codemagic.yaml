@@ -644,5 +644,7 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        # Upload the signed IPA to App Store Connect only. External TestFlight
+        # submission stays manual until Apple beta-contact metadata is complete.
+        submit_to_testflight: false
         submit_to_app_store: false

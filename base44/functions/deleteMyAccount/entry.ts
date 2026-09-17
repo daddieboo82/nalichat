@@ -333,6 +333,18 @@ Deno.serve(async (req) => {
       },
     );
 
+    // Remove block relationships owned by or targeting the deleted account.
+    await processMatchingBatches(
+      entities.UserBlock,
+      { blocker_id: user.id },
+      (block) => entities.UserBlock.delete(block.id),
+    );
+    await processMatchingBatches(
+      entities.UserBlock,
+      { blocked_user_id: user.id },
+      (block) => entities.UserBlock.delete(block.id),
+    );
+
     // Remove references to the deleted account from other users' contact lists.
     await processMatchingBatches(
       entities.Contact,

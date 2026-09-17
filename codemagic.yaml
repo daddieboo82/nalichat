@@ -493,6 +493,8 @@ workflows:
   ios-ipa:
     name: NaliChat iOS IPA
     instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: "Codemagic API Key"
     max_build_duration: 60
     environment:
       ios_signing:
@@ -580,3 +582,8 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false

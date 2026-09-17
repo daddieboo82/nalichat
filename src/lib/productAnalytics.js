@@ -4,6 +4,7 @@ const LEGACY_SESSION_KEY = "nali_product_session";
 const sessionKeyFor = (userId) => `nali_product_session:${userId || "anonymous"}`;
 let sessionStorageKey = sessionKeyFor(null);
 const FLUSH_INTERVAL_MS = 15_000;
+const RETURN_VISIT_KEY = "nali_product_last_visit_date";
 let initialized = false;
 let session = null;
 let flushTimer = null;
@@ -44,7 +45,7 @@ function track(name, properties = {}) {
   } catch {}
   const funnelEvents = new Set([
     "homepage_view", "signup_click", "registration_view", "registration_started",
-    "registration_completed", "registration_failed", "onboarding_complete", "first_message", "studio_open", "first_upload"
+    "registration_completed", "registration_failed", "onboarding_complete", "first_message", "studio_open", "first_upload", "return_visit"
   ]);
   if (funnelEvents.has(name)) {
     try {
@@ -107,6 +108,14 @@ export function initProductAnalytics(userId = null) {
   initialized = true;
   const s = ensureSession();
   track("product_session_started", { route: window.location.pathname, returning_tab_session: s.startedAt !== s.lastActiveAt });
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const lastVisitDate = localStorage.getItem(RETURN_VISIT_KEY);
+    if (lastVisitDate && lastVisitDate !== today) {
+      track("return_visit", { previous_visit_date: lastVisitDate, route: window.location.pathname });
+    }
+    localStorage.setItem(RETURN_VISIT_KEY, today);
+  } catch {}
   const routeCheck = () => {
     const route = window.location.pathname + window.location.search;
     if (route !== lastRoute) {

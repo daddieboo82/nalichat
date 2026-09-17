@@ -11,6 +11,7 @@ describe('GlobalInviteDialog SMS abuse protection', () => {
     const source = await readText('src/components/GlobalInviteDialog.jsx');
     expect(source).toContain('const normalized = trimmed.replace(/[\\s()-]/g, "");');
     expect(source).toContain('window.location.href = `sms:');
+    expect(source).toContain('disabled={!phone.trim()}');
     expect(source).not.toContain('base44.functions.invoke("sendSmsInvite"');
   });
 });

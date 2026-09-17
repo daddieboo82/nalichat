@@ -19,7 +19,8 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
     "verify:prod": "node scripts/verify-production-deploy.mjs",
-    "verify:release": "npm run lint && npm run typecheck && npm test && npm run build"
+    "verify:release": "npm run lint && npm run typecheck && npm test && npm run build",
+    "ci:base44": "bash scripts/base44-ci.sh"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.48",

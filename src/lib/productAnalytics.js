@@ -45,7 +45,8 @@ function track(name, properties = {}) {
   } catch {}
   const funnelEvents = new Set([
     "homepage_view", "signup_click", "registration_view", "registration_started",
-    "registration_completed", "registration_failed", "onboarding_complete", "first_message", "studio_open", "first_upload", "return_visit"
+    "registration_completed", "registration_failed", "onboarding_complete", "messenger_discovery_view",
+    "contact_added", "messenger_discovery_message_click", "first_message", "studio_open", "first_upload", "return_visit"
   ]);
   if (funnelEvents.has(name)) {
     try {

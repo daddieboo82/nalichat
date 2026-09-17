@@ -174,7 +174,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
   }
 
   return (
-    <div className="custom-scrollbar flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] sm:overflow-hidden">
+    <div data-testid="messages-contacts-scroll" className="custom-scrollbar flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] sm:overflow-hidden">
       <div className="shrink-0 space-y-3 px-4 pb-3 pt-2 sm:space-y-4 sm:px-6 sm:pb-4">
         <div className="flex gap-2">
           <Button variant={tab === "contacts" ? "default" : "outline"} size="sm" onClick={() => setTab("contacts")} className="ui-hover min-h-11 flex-1 rounded-xl font-semibold focus-visible:ring-2 focus-visible:ring-primary/40">My Contacts</Button>
@@ -250,7 +250,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
             )}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div data-testid="messages-contact-list" className="space-y-3">
             {filtered.map((user) => {
               const contactRecord = contacts.find(c => c.contact_user_id === user.id);
               

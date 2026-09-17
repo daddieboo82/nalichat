@@ -65,6 +65,10 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
       return res.data?.users || [];
     },
     enabled: !!currentUserId,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 45_000,
+    staleTime: 20_000,
   });
 
   const deleteContactMutation = useMutation({

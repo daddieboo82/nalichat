@@ -77,7 +77,18 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
           <Input value={name} onChange={e => setName(e.target.value)} placeholder="Group name..." className="bg-secondary/50 border-0 rounded-xl" title="Group name" aria-label="Group name" />
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search people..." className="bg-secondary/50 border-0 rounded-xl" title="Search people" aria-label="Search people" />
           <div className="max-h-64 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] space-y-1">
-            {filtered.map(u => (
+            {users.length === 0 ? (
+              <div className="rounded-xl border border-border/50 bg-secondary/30 px-4 py-5 text-center">
+                <p className="text-sm font-semibold text-foreground">No group members available yet</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  Add someone as a contact and have them add you back before creating a private group.
+                </p>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                No people match your search.
+              </div>
+            ) : filtered.map(u => (
               <button key={u.id} onClick={() => toggle(u.id)}
                 className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left", selected.includes(u.id) ? "bg-primary/10 border border-primary/20" : "hover:bg-secondary")}
                 title={`Toggle ${u.display_name || u.full_name}`}

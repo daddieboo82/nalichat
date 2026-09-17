@@ -38,7 +38,8 @@ export default function Analytics() {
     const steps = [
       ["homepage_view", "Homepage"], ["signup_click", "Signup Click"],
       ["registration_started", "Registration Started"], ["registration_completed", "Registered"],
-      ["first_message", "First Message"], ["studio_open", "Studio Open"], ["first_upload", "First Upload"],
+      ["onboarding_complete", "Profile Setup"], ["first_message", "First Message"],
+      ["studio_open", "Studio Open"], ["first_upload", "First Upload"],
     ];
     const counts = Object.fromEntries(steps.map(([name]) => [name, new Set(
       funnelEvents.filter(e => e.event_name === name).map(e => e.user_id || e.session_id || e.id)
@@ -139,7 +140,7 @@ export default function Analytics() {
               </div>
               <span className="text-xs text-muted-foreground">Admin</span>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
               {funnel.map((step, index) => (
                 <div key={step.name} className="rounded-2xl border border-border/60 bg-background/40 p-3">
                   <p className="text-xs font-medium text-muted-foreground">{step.label}</p>

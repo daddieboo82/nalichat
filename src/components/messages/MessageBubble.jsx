@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Pencil, Sparkles, Volume2, Share2, Flag, RefreshCw, AlertCircle } from "lucide-react";
+import { Download, FileText, Music, Film, Reply, Smile, Maximize2, MessageSquareQuote, MessageSquare, Copy, Trash2, Pencil, Sparkles, Volume2, Share2, Flag, Ban, RefreshCw, AlertCircle } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -177,6 +177,24 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
   const [contextMenuPos, setContextMenuPos] = useState(null);
   const [reportOpen, setReportOpen] = useState(false);
   const longPressTimer = useRef(null);
+
+  const handleBlockUser = async () => {
+    if (isOwn || !message.sender_id) return;
+    const sender = users?.find((u) => u.id === message.sender_id);
+    const label = sender?.display_name || sender?.full_name || message.sender_name || "this user";
+    if (!window.confirm(`Block ${label}? They will no longer be able to send you direct messages.`)) return;
+    try {
+      const res = await base44.functions.invoke("blockUser", { user_id: message.sender_id });
+      if (res?.data?.success !== true || res?.data?.action !== "block_user") {
+        throw new Error("Block was not confirmed");
+      }
+      toast.success(`${label} blocked`);
+      setContextMenuPos(null);
+    } catch (error) {
+      console.error("Failed to block user:", error);
+      toast.error("Couldn't block this user. Please try again.");
+    }
+  };
 
   const hasFile = message.file_url && message.type !== "text";
   const isAudioMessage = !!(message.file_url && (message.type === "audio" || message.file_type?.startsWith("audio") || message.file_name?.match(/\.(mp3|wav|ogg|m4a|aac)$/i)));
@@ -554,6 +572,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
           ...(canUseAi && message.text ? [{ icon: Volume2, label: "Read Aloud", onClick: () => speakText(message.text) }] : []),
           ...(isOwn && message.type === "text" ? [{ icon: Pencil, label: "Edit", onClick: () => onEdit?.(message) }] : []),
           ...((canDelete !== undefined ? canDelete : isOwn) ? [{ icon: Trash2, label: "Delete", onClick: () => { if (navigator.vibrate) navigator.vibrate(40); onDelete?.(message.id); }, destructive: true }] : []),
+          ...(!isOwn ? [{ icon: Ban, label: "Block User", onClick: handleBlockUser, destructive: true }] : []),
           { icon: Flag, label: "Report", onClick: () => setReportOpen(true), destructive: true },
         ]}
       />

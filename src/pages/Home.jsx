@@ -15,6 +15,7 @@ import StudioTutorial from "@/components/home/StudioTutorial";
 import HowItWorks from "@/components/home/HowItWorks";
 import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import WelcomeTour from "@/components/onboarding/WelcomeTour";
+import ImmersiveOnboarding, { VISITOR_ONBOARDING_STORAGE_KEY } from "@/components/onboarding/ImmersiveOnboarding";
 
 import QuickAccessGrid from "@/components/home/QuickAccessGrid";
 import { sounds } from "@/hooks/use-sound";
@@ -165,9 +166,17 @@ export default function Home() {
   const queryClient = useQueryClient();
   const [showWizard, setShowWizard] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [visitorIntroSeen, setVisitorIntroSeen] = useState(() => {
+    try {
+      return localStorage.getItem(VISITOR_ONBOARDING_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
   // Only treat as logged-in when both the flag and the user record are present,
   // so the greeting disappears instantly on logout.
   const user = isAuthenticated ? authUser : null;
+  const shouldShowVisitorIntro = authChecked && !user && !visitorIntroSeen;
 
   // Preserve Google Ads and UTM attribution through the anonymous signup journey.
   useEffect(() => {
@@ -189,6 +198,21 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [user]);
+
+  if (shouldShowVisitorIntro) {
+    return (
+      <ImmersiveOnboarding
+        onDismiss={() => {
+          try {
+            localStorage.setItem(VISITOR_ONBOARDING_STORAGE_KEY, "true");
+          } catch {
+            // Storage may be unavailable in private/restricted browser contexts.
+          }
+          setVisitorIntroSeen(true);
+        }}
+      />
+    );
+  }
 
   return (
     <PullToRefresh onRefresh={() => queryClient.invalidateQueries()} className="h-full overflow-auto bg-background">
@@ -289,7 +313,7 @@ export default function Home() {
                     onClick={() => trackProductEvent("signup_click", { source: "home_hero", cta: "start_creating_free" })}
                   >
                     <MessageSquare className="w-5 h-5 mr-2" />
-                    Start Creating Free
+                    Start Free
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                   </Button>
@@ -675,7 +699,7 @@ export default function Home() {
                         onClick={() => trackProductEvent("signup_click", { source: "home_bottom_cta", cta: "start_creating_free" })}
                       >
                         <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
-                        Start Creating Free
+                        Start Free
                         <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2 md:ml-3" />
                       </Link>
                       </Button>

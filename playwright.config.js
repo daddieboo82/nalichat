@@ -28,6 +28,8 @@ export default defineConfig({
         ...devices['iPhone 15'],
         viewport: { width: 393, height: 852 },
         screen: { width: 393, height: 852 },
+        video: 'on',
+        screenshot: 'on',
       },
     },
   ],

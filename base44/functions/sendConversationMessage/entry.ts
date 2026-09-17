@@ -237,6 +237,27 @@ async function sendAuthenticated(base44: any, user: any, body: any) {
   }
 
   const otherParticipantIds = conversation.participant_ids.filter((id: string) => id !== user.id);
+
+  // A direct-message block is enforced in both directions: the blocker cannot
+  // accidentally re-engage, and the blocked user cannot continue contacting
+  // the blocker. Group conversations are not disabled wholesale because they
+  // may contain unrelated participants; clients can suppress blocked members'
+  // content separately.
+  if (conversation.type === 'dm' && otherParticipantIds.length === 1) {
+    const otherUserId = otherParticipantIds[0];
+    const [outboundBlocks, inboundBlocks] = await Promise.all([
+      base44.asServiceRole.entities.UserBlock.filter(
+        { blocker_id: user.id, blocked_user_id: otherUserId }, '-created_date', 1,
+      ),
+      base44.asServiceRole.entities.UserBlock.filter(
+        { blocker_id: otherUserId, blocked_user_id: user.id }, '-created_date', 1,
+      ),
+    ]);
+    if (outboundBlocks.length || inboundBlocks.length) {
+      return Response.json({ error: 'user_blocked', code: 'USER_BLOCKED' }, { status: 403 });
+    }
+  }
+
     if (user.is_banned) {
       // Appeals are intentionally limited to a direct 1:1 conversation with an
       // administrator. Merely including an admin in a group must not turn that

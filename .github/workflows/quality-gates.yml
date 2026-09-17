@@ -40,3 +40,29 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+
+  production-authenticated-e2e:
+    name: Production authenticated E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      E2E_BASE_URL: https://nalichat.org
+      E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+      E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+      E2E_SECOND_USER_EMAIL: ${{ secrets.E2E_SECOND_USER_EMAIL }}
+      E2E_SECOND_USER_PASSWORD: ${{ secrets.E2E_SECOND_USER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Require production E2E credentials
+        run: |
+          test -n "$E2E_USER_EMAIL"
+          test -n "$E2E_USER_PASSWORD"
+          test -n "$E2E_SECOND_USER_EMAIL"
+          test -n "$E2E_SECOND_USER_PASSWORD"
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e -- e2e/authenticated-smoke.spec.js --project=mobile-chromium --project=iphone-16-simulation

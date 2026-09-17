@@ -67,6 +67,34 @@ test.describe('authenticated production smoke', () => {
     await expect(page.getByText(fileName, { exact: false })).toBeVisible({ timeout: 30000 });
   });
 
+  test('mobile Messages Network remains vertically scrollable', async ({ page }, testInfo) => {
+    test.skip(
+      !['mobile-chromium', 'iphone-16-simulation'].includes(testInfo.project.name),
+      'Mobile contacts scroll flow only.',
+    );
+
+    await page.goto('/messages');
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/messages');
+    await page.getByRole('button', { name: /^network$/i }).click();
+
+    const contactsScroll = page.getByTestId('messages-contacts-scroll');
+    await expect(contactsScroll).toBeVisible({ timeout: 30000 });
+    await expect(contactsScroll).toHaveCSS('overflow-y', 'auto');
+
+    const before = await contactsScroll.evaluate((node) => ({
+      top: node.scrollTop,
+      height: node.scrollHeight,
+      client: node.clientHeight,
+    }));
+
+    if (before.height > before.client) {
+      await contactsScroll.evaluate((node) => node.scrollTo({ top: node.scrollHeight, behavior: 'instant' }));
+      await expect.poll(() => contactsScroll.evaluate((node) => node.scrollTop)).toBeGreaterThan(before.top);
+      await contactsScroll.evaluate((node) => node.scrollTo({ top: 0, behavior: 'instant' }));
+      await expect.poll(() => contactsScroll.evaluate((node) => node.scrollTop)).toBe(0);
+    }
+  });
+
   test('authenticated session survives reload and protected navigation', async ({ page }) => {
     await page.goto('/messages');
     await expect.poll(() => new URL(page.url()).pathname).toBe('/messages');

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -41,6 +41,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [tab, setTab] = useState("contacts"); // "contacts" | "discover"
+  const initialTabResolvedRef = useRef(false);
   const queryClient = useQueryClient();
 
   const { data: contacts = [], isLoading: loadingContacts, isError: contactsError, refetch: refetchContacts } = useQuery({
@@ -113,6 +114,23 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
     },
     onError: () => toast.error("Couldn't add contact. Please try again."),
   });
+
+  useEffect(() => {
+    initialTabResolvedRef.current = false;
+    setTab("contacts");
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (
+      initialTabResolvedRef.current
+      || !currentUserId
+      || loadingContacts
+      || contactsError
+    ) return;
+
+    initialTabResolvedRef.current = true;
+    if (contacts.length === 0) setTab("discover");
+  }, [contacts.length, contactsError, currentUserId, loadingContacts]);
 
   const contactUserIds = new Set(contacts.map(c => c.contact_user_id));
 

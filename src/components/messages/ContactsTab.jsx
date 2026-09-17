@@ -141,6 +141,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
   const listToShow = tab === "contacts" 
     ? allUsers.filter(u => contactUserIds.has(u.id))
     : allUsers.filter(u => u.id !== currentUserId && !contactUserIds.has(u.id));
+  const hasDiscoverablePeople = allUsers.some(u => u.id !== currentUserId);
 
   const filtered = listToShow.filter(u => {
     const publicRole = u.artist_role || (["artist", "producer", "engineer", "ar"].includes(u.role) ? u.role : "artist");
@@ -212,7 +213,24 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
         )}
         {!usersError && filtered.length === 0 ? (
           <div className="text-center py-10 text-muted-foreground">
-            <p className="text-sm font-semibold text-foreground">No people found</p><p className="mt-1 text-xs">Try another name, genre, location, or role.</p>
+            <p className="text-sm font-semibold text-foreground">
+              {tab === "contacts" && hasDiscoverablePeople ? "No contacts yet" : "No people found"}
+            </p>
+            <p className="mt-1 text-xs">
+              {tab === "contacts" && hasDiscoverablePeople
+                ? "Discover creators and add someone to start your contact list."
+                : "Try another name, genre, location, or role."}
+            </p>
+            {tab === "contacts" && hasDiscoverablePeople && (
+              <Button
+                type="button"
+                size="sm"
+                className="ui-hover mt-4 min-h-11 rounded-xl px-5 font-semibold"
+                onClick={() => setTab("discover")}
+              >
+                Discover People
+              </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-3">

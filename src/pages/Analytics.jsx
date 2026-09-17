@@ -26,6 +26,29 @@ async function listAllUserPosts(userId) {
 export default function Analytics() {
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
+  const isAdmin = currentUser?.role === "admin";
+
+  const { data: funnelEvents = [] } = useQuery({
+    queryKey: ["activationFunnel", currentUser?.id],
+    queryFn: async () => isAdmin ? base44.entities.ActivationFunnel.list("-created_date", 500) : [],
+    enabled: Boolean(currentUser && isAdmin),
+  });
+
+  const funnel = React.useMemo(() => {
+    const steps = [
+      ["homepage_view", "Homepage"], ["signup_click", "Signup Click"],
+      ["registration_started", "Registration Started"], ["registration_completed", "Registered"],
+      ["first_message", "First Message"], ["studio_open", "Studio Open"], ["first_upload", "First Upload"],
+    ];
+    const counts = Object.fromEntries(steps.map(([name]) => [name, new Set(
+      funnelEvents.filter(e => e.event_name === name).map(e => e.user_id || e.session_id || e.id)
+    ).size]));
+    const base = counts.homepage_view || 0;
+    return steps.map(([name, label]) => ({
+      name, label, count: counts[name] || 0,
+      rate: base > 0 ? Math.round(((counts[name] || 0) / base) * 100) : 0,
+    }));
+  }, [funnelEvents]);
 
   const { data: userPosts = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["userAnalytics", currentUser?.id],
@@ -107,6 +130,29 @@ export default function Analytics() {
           </div>
         ) : (
           <>
+        {isAdmin && (
+          <Card className="ui-surface rounded-3xl border border-primary/20 bg-card/60 p-4 backdrop-blur-xl sm:p-5">
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <h2 className="font-heading text-lg font-semibold tracking-tight">Visitor Activation Funnel</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Unique users or sessions across the latest 500 activation events.</p>
+              </div>
+              <span className="text-xs text-muted-foreground">Admin</span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+              {funnel.map((step, index) => (
+                <div key={step.name} className="rounded-2xl border border-border/60 bg-background/40 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">{step.label}</p>
+                  <p className="mt-2 text-2xl font-heading font-bold tabular-nums">{step.count}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {index === 0 ? "Baseline" : `${step.rate}% of homepage`}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
         {/* Stat Cards */}
         <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           {statCards.map((stat, i) => {

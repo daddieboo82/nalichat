@@ -14,8 +14,7 @@ import StudioTutorial from "@/components/home/StudioTutorial";
 import HowItWorks from "@/components/home/HowItWorks";
 import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import WelcomeTour from "@/components/onboarding/WelcomeTour";
-import ImmersiveOnboarding, { VISITOR_ONBOARDING_STORAGE_KEY } from "@/components/onboarding/ImmersiveOnboarding";
-import DonationButton from "@/components/home/DonationButton";
+
 import QuickAccessGrid from "@/components/home/QuickAccessGrid";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
@@ -165,10 +164,6 @@ export default function Home() {
   const queryClient = useQueryClient();
   const [showWizard, setShowWizard] = useState(false);
   const [showTour, setShowTour] = useState(false);
-  const [visitorIntroSeen, setVisitorIntroSeen] = useState(() => {
-    try { return sessionStorage.getItem(VISITOR_ONBOARDING_STORAGE_KEY) === "1"; }
-    catch { return false; }
-  });
   // Only treat as logged-in when both the flag and the user record are present,
   // so the greeting disappears instantly on logout.
   const user = isAuthenticated ? authUser : null;
@@ -185,15 +180,6 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [user]);
-
-  const shouldShowVisitorIntro = authChecked && !user && !visitorIntroSeen;
-  if (shouldShowVisitorIntro) {
-    return (
-      <div className="h-full min-h-[100dvh] bg-background">
-        <ImmersiveOnboarding onDismiss={() => setVisitorIntroSeen(true)} />
-      </div>
-    );
-  }
 
   return (
     <PullToRefresh onRefresh={() => queryClient.invalidateQueries()} className="h-full overflow-auto bg-background">
@@ -257,11 +243,11 @@ export default function Home() {
           )}
 
           <h1 className="mb-5 font-heading text-4xl font-black leading-[1.02] tracking-tight drop-shadow-xl text-gradient-animate sm:text-6xl md:mb-6 md:text-8xl lg:text-[7rem]">
-            Creator Messaging<br className="hidden md:block" />{" "}
-            <span>& Music Studio</span>
+            Create. Connect.<br className="hidden md:block" />{" "}
+            <span>Make Something.</span>
           </h1>
           <p className="mx-auto mb-8 max-w-3xl text-base font-medium leading-relaxed text-foreground/90 sm:text-xl md:mb-12 md:text-2xl">
-            Message artists in real time, share high-resolution audio and voice notes, and move from conversation to Studio collaboration in one creator workspace.
+            Message creators, make music, share high-resolution audio, and collaborate in one workspace. Start free and create something now.
           </p>
 
           {/* CTAs */}
@@ -290,17 +276,12 @@ export default function Home() {
                 <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 px-7 text-base font-semibold glow-primary shimmer-hover hover:opacity-90 sm:w-auto" asChild>
                   <Link to="/register" className="w-full sm:w-auto">
                     <MessageSquare className="w-5 h-5 mr-2" />
-                    Start Free
+                    Start Creating Free
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                   </Button>
               </>
             )}
-          </div>
-
-          {/* Donation button */}
-          <div className="mt-8 flex justify-center">
-            <DonationButton />
           </div>
 
           {/* Trust strip */}
@@ -677,7 +658,7 @@ export default function Home() {
                     <Button size="lg" className="w-full sm:w-auto rounded-xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30" asChild>
                       <Link to="/register" className="w-full sm:w-auto">
                         <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
-                        Start Free
+                        Start Creating Free
                         <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2 md:ml-3" />
                       </Link>
                       </Button>

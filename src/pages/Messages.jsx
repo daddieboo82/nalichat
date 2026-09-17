@@ -777,7 +777,7 @@ export default function Messages() {
   ));
 
   return (
-    <div className="relative h-full min-h-0 min-w-0 p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden touch-pan-y">
+    <div className="relative h-full min-h-0 sm:h-[calc(100vh-80px)] sm:max-h-[calc(100dvh-80px)] min-w-0 p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden touch-pan-y">
       <div className="w-full max-w-7xl h-full max-h-full flex flex-col sm:flex-row bg-card/60 sm:bg-card/40 backdrop-blur-3xl sm:border border-border/40 sm:rounded-[2.5rem] shadow-none sm:shadow-2xl overflow-hidden relative">
         
         {/* Sidebar */}

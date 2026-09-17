@@ -41,7 +41,7 @@ function PlanCard({
 
   return (
     <article
-      className={`ui-surface relative flex h-full flex-col rounded-3xl border p-5 sm:p-6 ${
+      className={`ui-surface relative flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border p-5 sm:p-6 ${
         badge ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-border bg-card"
       }`}
       aria-labelledby={`${plan.id}-plan-title`}
@@ -55,20 +55,20 @@ function PlanCard({
         {plan.name}
       </h2>
       <p className="mt-2 min-h-10 text-sm text-muted-foreground">{plan.description}</p>
-      <div className="mt-6">
-        <span className="font-heading text-4xl font-black">{price.label}</span>
-        <span className="ml-2 text-sm text-muted-foreground">{price.suffix}</span>
+      <div className="mt-6 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="max-w-full break-words font-heading text-4xl font-black leading-none">{price.label}</span>
+        <span className="min-w-0 break-words text-sm text-muted-foreground">{price.suffix}</span>
       </div>
       {paid && period === "annual" && (
-        <p className="mt-2 text-sm font-semibold text-primary">
+        <p className="mt-2 break-words text-sm font-semibold leading-relaxed text-primary">
           Save ${annualSavings(plan.id)} vs. paying monthly
         </p>
       )}
       <ul className="my-6 flex-1 space-y-3">
         {plan.features.map((feature) => (
-          <li key={feature} className="flex items-start gap-3 text-sm">
+          <li key={feature} className="flex min-w-0 items-start gap-3 text-sm leading-relaxed">
             <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-            <span>{feature}</span>
+            <span className="min-w-0 break-words">{feature}</span>
           </li>
         ))}
       </ul>

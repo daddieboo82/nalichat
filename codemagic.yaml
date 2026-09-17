@@ -14,6 +14,8 @@ workflows:
       vars:
         PACKAGE_ID: com.nalichat
         KEYSTORE_ALIAS: nalichat
+        VERSION_CODE: 5
+        VERSION_NAME: 1.0.3
       node: 20
       java: 17
     triggering:
@@ -133,6 +135,54 @@ workflows:
             tail -50 /tmp/bubblewrap_update.log
             exit 1
           fi
+      - name: Enforce release version metadata
+        script: |
+          # Bubblewrap update can prompt interactively and mutate the version.
+          # Reapply the approved release values after generation and fail if
+          # the generated Gradle file cannot be updated.
+          export VERSION_CODE VERSION_NAME
+          python3 << 'PYEOF'
+          import json, os, re
+          version_code = int(os.environ["VERSION_CODE"])
+          version_name = os.environ["VERSION_NAME"]
+
+          with open("./twa-manifest.json", "r", encoding="utf-8") as f:
+              manifest = json.load(f)
+          manifest["appVersionCode"] = version_code
+          manifest["appVersionName"] = version_name
+          with open("./twa-manifest.json", "w", encoding="utf-8") as f:
+              json.dump(manifest, f, indent=2)
+              f.write("\n")
+
+          gradle_files = ["./app/build.gradle", "./app/build.gradle.kts"]
+          updated = False
+          for path in gradle_files:
+              if not os.path.isfile(path):
+                  continue
+              with open(path, "r", encoding="utf-8") as f:
+                  content = f.read()
+              content, code_count = re.subn(
+                  r"versionCode(?:\s*=)?\s*\d+",
+                  f"versionCode = {version_code}" if path.endswith(".kts") else f"versionCode {version_code}",
+                  content,
+                  count=1,
+              )
+              content, name_count = re.subn(
+                  r"versionName(?:\s*=)?\s*[\"'][^\"']*[\"']",
+                  f'versionName = "{version_name}"' if path.endswith(".kts") else f'versionName "{version_name}"',
+                  content,
+                  count=1,
+              )
+              if code_count != 1 or name_count != 1:
+                  raise SystemExit(f"Could not enforce version metadata in {path}")
+              with open(path, "w", encoding="utf-8") as f:
+                  f.write(content)
+              updated = True
+              print(f"Version enforced in {path}: {version_name} ({version_code})")
+          if not updated:
+              raise SystemExit("No generated app Gradle file found")
+          PYEOF
+          grep -n -E "versionCode|versionName" ./app/build.gradle ./app/build.gradle.kts 2>/dev/null || true
       - name: Enforce applicationId in Gradle files
         script: |
           fix_gradle_file() {

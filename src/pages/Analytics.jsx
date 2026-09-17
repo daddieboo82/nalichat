@@ -45,6 +45,22 @@ export default function Analytics() {
     });
   }, [funnelEvents, funnelWindow]);
 
+  const messengerActivation = React.useMemo(() => {
+    const countUnique = (name) => new Set(
+      filteredFunnelEvents.filter(e => e.event_name === name).map(e => e.user_id || e.session_id || e.id)
+    ).size;
+    const viewed = countUnique("messenger_discovery_view");
+    const added = countUnique("contact_added");
+    const messageClicks = countUnique("messenger_discovery_message_click");
+    const firstMessages = countUnique("first_message");
+    return [
+      { label: "Discovery Viewed", count: viewed, rate: 100 },
+      { label: "Contact Added", count: added, rate: viewed > 0 ? Math.round((added / viewed) * 100) : 0 },
+      { label: "Message Clicked", count: messageClicks, rate: viewed > 0 ? Math.round((messageClicks / viewed) * 100) : 0 },
+      { label: "First Message", count: firstMessages, rate: viewed > 0 ? Math.round((firstMessages / viewed) * 100) : 0 },
+    ];
+  }, [filteredFunnelEvents]);
+
   const funnel = React.useMemo(() => {
     const steps = [
       ["homepage_view", "Homepage"], ["signup_click", "Signup Click"],
@@ -182,6 +198,21 @@ export default function Analytics() {
                   )}
                 </div>
               ))}
+            </div>
+            <div className="mt-5 border-t border-border/60 pt-4">
+              <div className="mb-3">
+                <h3 className="font-heading text-sm font-semibold">Messenger Activation</h3>
+                <p className="mt-1 text-xs text-muted-foreground">See whether creator discovery is turning into conversations.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {messengerActivation.map((step, index) => (
+                  <div key={step.label} className="rounded-2xl border border-border/60 bg-background/40 p-3">
+                    <p className="text-xs font-medium text-muted-foreground">{step.label}</p>
+                    <p className="mt-2 text-xl font-heading font-bold tabular-nums">{step.count}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{index === 0 ? "Baseline" : `${step.rate}% of discovery viewers`}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </Card>
         )}

@@ -1,5 +1,6 @@
 import { secureUploadFile } from "@/lib/secureUpload";
 import { validateUpload } from "@/lib/uploadValidation";
+import { trackProductEvent } from "@/lib/productAnalytics";
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -104,6 +105,9 @@ async function listPersistedTracks(projectId) {
 }
 
 export default function Studio() {
+  useEffect(() => {
+    trackProductEvent("studio_open", { route: "/studio" });
+  }, []);
   const navigate = useNavigate();
   const { user } = useAuth();
   const studioStorageOwner = user?.id || null;
@@ -1850,6 +1854,17 @@ export default function Studio() {
         fadeOut: 0
       }]);
       toast.success(`Imported ${file.name}`);
+      trackProductEvent("studio_audio_import", {
+        file_type: file.type || "unknown",
+        duration_seconds: Math.round(Math.max(1, duration)),
+      });
+      try {
+        const key = `nali_activation_first_upload:${user?.id || "unknown"}`;
+        if (localStorage.getItem(key) !== "1") {
+          localStorage.setItem(key, "1");
+          trackProductEvent("first_upload", { source: "studio_import", file_type: file.type || "unknown" });
+        }
+      } catch {}
       e.target.value = null;
     }
   };

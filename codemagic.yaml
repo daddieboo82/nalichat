@@ -8,7 +8,7 @@ workflows:
     max_build_duration: 30
     environment:
       android_signing:
-        - nalichat
+        - nalichat_play_2026
       groups:
         - keystore_credentials
       vars:

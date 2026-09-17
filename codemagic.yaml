@@ -3,6 +3,39 @@
 # Package ID: com.nalichat | Host: nalichat.org
 
 workflows:
+  mobile-e2e-audit:
+    name: NaliChat Authenticated Mobile Browser Audit
+    instance_type: linux_x2
+    max_build_duration: 30
+    environment:
+      groups:
+        - e2e_credentials
+      vars:
+        E2E_BASE_URL: https://nalichat.org
+      node: 20
+    scripts:
+      - name: Verify protected E2E credentials
+        script: |
+          for key in E2E_USER_EMAIL E2E_USER_PASSWORD E2E_SECOND_USER_EMAIL E2E_SECOND_USER_PASSWORD; do
+            if [ -z "$(printenv "$key")" ]; then
+              echo "Missing required protected variable: $key"
+              exit 1
+            fi
+          done
+          echo "All protected E2E variables are available."
+      - name: Install dependencies
+        script: npm ci
+      - name: Install mobile browser engines
+        script: npx playwright install --with-deps chromium webkit
+      - name: Run authenticated Android and iPhone browser audit
+        script: |
+          npx playwright test e2e/authenticated-smoke.spec.js \
+            --project=mobile-chromium \
+            --project=iphone-16-simulation
+    artifacts:
+      - playwright-report/**
+      - test-results/**
+
   android-aab:
     name: NaliChat Android AAB
     max_build_duration: 30

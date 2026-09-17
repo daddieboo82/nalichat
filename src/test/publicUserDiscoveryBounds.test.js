@@ -12,7 +12,9 @@ describe('public user discovery bounds', () => {
 
     expect(source).toContain('MAX_DISCOVERY_USERS = 1000');
     expect(source).toContain('MAX_DISCOVERY_ACHIEVEMENTS = 5000');
-    expect(source).toContain("User.list('-created_date', MAX_DISCOVERY_USERS)");
+    expect(source).toContain("User.filter(");
+    expect(source).toContain("{ onboarding_completed: true }");
+    expect(source).toMatch(/User\.filter\([\s\S]*?onboarding_completed:\s*true[\s\S]*?'-created_date'[\s\S]*?MAX_DISCOVERY_USERS/);
     expect(source).toContain("Achievement.list('-created_date', MAX_DISCOVERY_ACHIEVEMENTS)");
 
     expect(source).toContain('async function filterAllRows(');

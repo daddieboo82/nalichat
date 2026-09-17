@@ -103,7 +103,13 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
                 placeholder="+1 555 123 4567"
                 className="flex-1 text-sm rounded-lg bg-background border-border"
               />
-              <Button onClick={openSms} className="shrink-0 rounded-lg">Open SMS</Button>
+              <Button
+                onClick={openSms}
+                disabled={!phone.trim()}
+                className="shrink-0 rounded-lg"
+              >
+                Open SMS
+              </Button>
             </div>
             {smsStatus ? (
               <p className={`text-xs mt-2 flex items-center gap-1.5 font-medium ${smsStatus.type === "success" ? "text-green-500" : "text-destructive"}`}>

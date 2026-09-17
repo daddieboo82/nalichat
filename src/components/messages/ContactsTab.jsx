@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, Trash2, MessageSquare, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { trackProductEvent } from "@/lib/productAnalytics";
 
 const roleColors = {
   artist: "bg-primary/20 text-primary border-primary/30",
@@ -112,7 +113,12 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
       }
       return res.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      trackProductEvent("contact_added", {
+        user_id: currentUserId || "",
+        source: "messenger_discovery",
+        target_user_id: data?.targetUserId || "",
+      });
       queryClient.invalidateQueries({ queryKey: ["contacts", currentUserId] });
       queryClient.invalidateQueries({ queryKey: ["users", "presence", currentUserId] });
     },
@@ -142,6 +148,17 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
     ? allUsers.filter(u => contactUserIds.has(u.id))
     : allUsers.filter(u => u.id !== currentUserId && !contactUserIds.has(u.id));
   const hasDiscoverablePeople = allUsers.some(u => u.id !== currentUserId);
+  const discoveryTrackedRef = useRef(false);
+
+  useEffect(() => {
+    if (tab !== "discover" || loadingUsers || usersError || !currentUserId || discoveryTrackedRef.current) return;
+    discoveryTrackedRef.current = true;
+    trackProductEvent("messenger_discovery_view", {
+      user_id: currentUserId,
+      available_people: allUsers.filter(u => u.id !== currentUserId).length,
+      has_contacts: contacts.length > 0,
+    });
+  }, [allUsers, contacts.length, currentUserId, loadingUsers, tab, usersError]);
 
   const filtered = listToShow.filter(u => {
     const publicRole = u.artist_role || (["artist", "producer", "engineer", "ar"].includes(u.role) ? u.role : "artist");
@@ -280,7 +297,14 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
                     <Button 
                       size="sm" 
                       className="ui-hover min-h-11 flex-1 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 border-0 text-xs"
-                      onClick={() => onMessageContact(user)}
+                      onClick={() => {
+                        trackProductEvent("messenger_discovery_message_click", {
+                          user_id: currentUserId || "",
+                          source: tab === "discover" ? "discover" : "contacts",
+                          target_user_id: user.id,
+                        });
+                        onMessageContact(user);
+                      }}
                     >
                       <MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Message
                     </Button>

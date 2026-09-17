@@ -32,4 +32,11 @@ describe('mobile Messages viewport scrolling', () => {
     expect(search).toContain('max-h-[85dvh]');
     expect(search).toContain('overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]');
   });
+
+  it('scrolls the entire contacts panel on mobile while preserving the desktop list scroller', async () => {
+    const contacts = await readFile('src/components/messages/ContactsTab.jsx', 'utf8');
+    expect(contacts).toContain('overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] sm:overflow-hidden');
+    expect(contacts).toContain('sm:flex-1 sm:shrink sm:overflow-y-auto sm:overscroll-contain');
+    expect(contacts).toContain('pb-[max(5rem,env(safe-area-inset-bottom))]');
+  });
 });

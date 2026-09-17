@@ -10,4 +10,11 @@ describe('Contacts load recovery', () => {
     expect(s).toContain('if (contactsError) void refetchContacts();');
     expect(s).toContain('!usersError && filtered.length === 0');
   });
+
+  it('opens discovery for a new user whose saved contact list is empty', async () => {
+    const s = await readFile('src/components/messages/ContactsTab.jsx', 'utf8');
+    expect(s).toContain('initialTabResolvedRef.current = true');
+    expect(s).toContain('if (contacts.length === 0) setTab("discover")');
+    expect(s).toContain('setTab("contacts")');
+  });
 });

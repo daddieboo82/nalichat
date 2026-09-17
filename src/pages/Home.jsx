@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { captureMarketingAttribution } from "@/lib/adAttribution";
+import { captureMarketingAttribution, getMarketingAttribution } from "@/lib/adAttribution";
+import { trackProductEvent } from "@/lib/productAnalytics";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -171,6 +172,14 @@ export default function Home() {
   // Preserve Google Ads and UTM attribution through the anonymous signup journey.
   useEffect(() => {
     captureMarketingAttribution();
+    const attribution = getMarketingAttribution();
+    trackProductEvent("homepage_view", {
+      authenticated: Boolean(user),
+      campaign_source: attribution?.utm_source || undefined,
+      campaign_medium: attribution?.utm_medium || undefined,
+      campaign_name: attribution?.utm_campaign || undefined,
+      campaign_landing_path: attribution?.landing_path || undefined,
+    });
   }, []);
 
   // Auto-show the welcome tour for users who finished onboarding but haven't seen it yet.
@@ -274,7 +283,11 @@ export default function Home() {
             ) : (
               <>
                 <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 px-7 text-base font-semibold glow-primary shimmer-hover hover:opacity-90 sm:w-auto" asChild>
-                  <Link to="/register" className="w-full sm:w-auto">
+                  <Link
+                    to="/register"
+                    className="w-full sm:w-auto"
+                    onClick={() => trackProductEvent("signup_click", { source: "home_hero", cta: "start_creating_free" })}
+                  >
                     <MessageSquare className="w-5 h-5 mr-2" />
                     Start Creating Free
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -656,7 +669,11 @@ export default function Home() {
                   ) : (
                   <>
                     <Button size="lg" className="w-full sm:w-auto rounded-xl h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary transition-all hover:scale-105 shadow-xl shadow-primary/30" asChild>
-                      <Link to="/register" className="w-full sm:w-auto">
+                      <Link
+                        to="/register"
+                        className="w-full sm:w-auto"
+                        onClick={() => trackProductEvent("signup_click", { source: "home_bottom_cta", cta: "start_creating_free" })}
+                      >
                         <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
                         Start Creating Free
                         <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2 md:ml-3" />

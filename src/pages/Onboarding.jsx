@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, CheckCircle2, Music, UserRound, MapPin, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import OnboardingNaliGuide from "@/components/onboarding/OnboardingNaliGuide";
+import { trackProductEvent } from "@/lib/productAnalytics";
 
 export default function Onboarding() {
   const { user, checkUserAuth, isAuthenticated } = useAuth();
@@ -73,6 +74,11 @@ export default function Onboarding() {
         throw new Error("Profile setup saved, but your session did not refresh. Please try again.");
       }
       
+      trackProductEvent("onboarding_complete", {
+        user_id: submittingUserId,
+        source: "profile_setup",
+      });
+
       // Hard redirect only after the authenticated session reflects onboarding.
       window.location.href = "/";
     } catch (error) {

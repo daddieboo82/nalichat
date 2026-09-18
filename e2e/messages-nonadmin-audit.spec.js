@@ -94,8 +94,12 @@ test.describe('Messages non-admin production audit', () => {
       const inputA = pageA.getByRole('textbox', { name: 'Message Input' });
       await expect(inputA).toBeVisible({ timeout: 30000 });
       await expect(inputA).toBeEnabled({ timeout: 30000 });
-      await inputA.click();
-      await inputA.pressSequentially(token, { delay: 10 });
+      await inputA.evaluate((el, value) => {
+        const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+        setter.call(el, value);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }, token);
       await pageA.getByRole('button', { name: 'Send Message' }).click();
       await expect(pageA.getByText(token, { exact: true }).last()).toBeVisible({ timeout: 30000 });
 
@@ -104,8 +108,12 @@ test.describe('Messages non-admin production audit', () => {
       const inputB = pageB.getByRole('textbox', { name: 'Message Input' });
       await expect(inputB).toBeVisible({ timeout: 30000 });
       await expect(inputB).toBeEnabled({ timeout: 30000 });
-      await inputB.click();
-      await inputB.pressSequentially(reply, { delay: 10 });
+      await inputB.evaluate((el, value) => {
+        const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+        setter.call(el, value);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }, reply);
       await pageB.getByRole('button', { name: 'Send Message' }).click();
       await expect(pageB.getByText(reply, { exact: true }).last()).toBeVisible({ timeout: 30000 });
       await expect(pageA.getByText(reply, { exact: true }).last()).toBeVisible({ timeout: 45000 });

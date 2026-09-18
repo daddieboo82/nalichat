@@ -12,7 +12,7 @@ describe('DM creation idempotency', () => {
 
     expect(source).toContain('async function dmConversationId');
     expect(source).toContain("hashedConversationId('dm', pair)");
-    expect(source).toContain('const raced = await entities.Conversation.get(id)');
+    expect(source).toContain('const raced = await base44.entities.Conversation.get(id)');
     expect(source).toContain('duplicate: true');
     expect(source).toContain("req.method !== 'POST'");
     expect(source).toContain('participant_ids must contain only strings');

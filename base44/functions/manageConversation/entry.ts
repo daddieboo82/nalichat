@@ -264,6 +264,24 @@ Deno.serve(async (req) => {
     const action = body?.action;
     const entities = base44.asServiceRole.entities;
 
+    if (action === 'list_member_conversations') {
+      const rows = await listAllRows(
+        entities.Conversation,
+        { participant_ids: user.id },
+        '-last_message_at',
+      );
+      const conversations = rows.filter((conversation: any) =>
+        Array.isArray(conversation?.participant_ids)
+        && conversation.participant_ids.includes(user.id)
+      );
+      return Response.json({
+        success: true,
+        action: 'list_member_conversations',
+        userId: user.id,
+        conversations,
+      });
+    }
+
     const timeoutActive = user.timeout_until && new Date(user.timeout_until).getTime() > Date.now();
     if (timeoutActive && ['create_dm', 'create_group', 'create_public', 'join_public', 'rename'].includes(action)) {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });

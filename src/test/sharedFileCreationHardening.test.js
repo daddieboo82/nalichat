@@ -16,6 +16,8 @@ describe('shared file creation hardening', () => {
     );
     expect(source).toContain("typeof body?.name !== 'string'");
     expect(source).toContain("typeof body?.file_url !== 'string'");
+    expect(source).toContain("'base44.app'");
+    expect(source).toContain("parsed.protocol !== 'https:'");
     expect(source).toContain("typeof body.description !== 'string'");
     expect(source).toContain('name.length > 255');
     expect(source).toContain('description.length > 1000');

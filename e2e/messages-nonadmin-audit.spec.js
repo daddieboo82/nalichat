@@ -67,6 +67,51 @@ test.describe('Messages non-admin production audit', () => {
     expect(diagnostics.filter(x => / 401 | 403 /.test(` ${x} `) && !/\/entities\/User\/me(?:[/?#]|$)/.test(x)), 'No authorization failures should occur while opening the DM').toEqual([]);
   });
 
+  test('two non-admin accounts can exchange a real DM', async ({ browser }) => {
+    const a = await browser.newContext();
+    const b = await browser.newContext();
+    const pageA = await a.newPage();
+    const pageB = await b.newPage();
+    const token = `NaliChat E2E ${Date.now()}`;
+    const reply = `${token} reply`;
+
+    try {
+      await login(pageA, primary);
+      await login(pageB, secondary);
+      await pageA.goto('/messages');
+      await pageB.goto('/messages');
+      await openNetwork(pageA);
+
+      const search = pageA.getByPlaceholder(/Search by name, genre, or location/i);
+      await expect(search).toBeVisible({ timeout: 30000 });
+      await search.fill(secondary.email);
+      const messageButtons = pageA.getByTestId('messages-contacts-scroll').getByRole('button', { name: /^message$/i });
+      if (await messageButtons.count() === 0) {
+        await search.fill('');
+      }
+      await expect.poll(async () => messageButtons.count(), { timeout: 30000 }).toBeGreaterThan(0);
+      await messageButtons.first().click();
+
+      const inputA = pageA.getByRole('textbox', { name: 'Message Input' });
+      await expect(inputA).toBeVisible({ timeout: 30000 });
+      await inputA.fill(token);
+      await pageA.getByRole('button', { name: 'Send Message' }).click();
+      await expect(pageA.getByText(token, { exact: true }).last()).toBeVisible({ timeout: 30000 });
+
+      await pageB.goto('/messages');
+      await expect(pageB.getByText(token, { exact: true }).last()).toBeVisible({ timeout: 45000 });
+      const inputB = pageB.getByRole('textbox', { name: 'Message Input' });
+      await expect(inputB).toBeVisible({ timeout: 30000 });
+      await inputB.fill(reply);
+      await pageB.getByRole('button', { name: 'Send Message' }).click();
+      await expect(pageB.getByText(reply, { exact: true }).last()).toBeVisible({ timeout: 30000 });
+      await expect(pageA.getByText(reply, { exact: true }).last()).toBeVisible({ timeout: 45000 });
+    } finally {
+      await a.close();
+      await b.close();
+    }
+  });
+
   test('two non-admin sessions can independently reach Network', async ({ browser }) => {
     for (const account of [primary, secondary]) {
       const context = await browser.newContext();

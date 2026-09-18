@@ -335,6 +335,26 @@ Deno.serve(async (req) => {
           return Response.json({ error: 'banned' }, { status: 403 });
         }
 
+        // Enforce direct-message blocks before returning an existing thread or
+        // creating a new one. sendConversationMessage performs the same check,
+        // but blocking DM creation/opening here avoids presenting a conversation
+        // that the caller can never use.
+        const [outboundBlocks, inboundBlocks] = await Promise.all([
+          entities.UserBlock.filter(
+            { blocker_id: user.id, blocked_user_id: otherUserId },
+            '-created_date',
+            1,
+          ),
+          entities.UserBlock.filter(
+            { blocker_id: otherUserId, blocked_user_id: user.id },
+            '-created_date',
+            1,
+          ),
+        ]);
+        if (outboundBlocks.length || inboundBlocks.length) {
+          return Response.json({ error: 'user_blocked', code: 'USER_BLOCKED' }, { status: 403 });
+        }
+
         const candidates = await listAllRows(
           entities.Conversation,
           { type: 'dm', participant_ids: user.id },

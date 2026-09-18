@@ -167,11 +167,12 @@ export default async function(req) {
     }
 
     const [allUsers, achievements, contacts, inboundContacts, conversations] = await Promise.all([
-      // Prefer profiles that have actually completed onboarding. New accounts can
-      // otherwise consume the bounded discovery window before they are eligible
-      // for the public directory, leaving Messenger's contact discovery empty.
-      base44.asServiceRole.entities.User.filter(
-        { onboarding_completed: true },
+      // Query the bounded service-role user directory, then apply onboarding and
+      // moderation eligibility in the explicit public projection below. Some
+      // Base44 environments do not reliably filter boolean custom User fields;
+      // when that happens the filtered query can stall Messenger indefinitely
+      // for ordinary accounts even though service-role User.list remains valid.
+      base44.asServiceRole.entities.User.list(
         '-created_date',
         MAX_DISCOVERY_USERS,
       ),

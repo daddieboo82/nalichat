@@ -8,6 +8,10 @@ import { acquireFolderMutationLock, releaseFolderMutationLock } from '../../shar
 
 const FREE_FILE_LIMIT = 250 * 1024 * 1024;
 const PREMIUM_FILE_LIMIT = 20 * 1024 * 1024 * 1024;
+// secureUploadFile currently caps accepted uploads at 100 MB. When the storage
+// provider does not support HEAD or range probes, accept that already-validated
+// client size only within the same conservative ceiling.
+const MAX_UNVERIFIED_FILE_SIZE = 100 * 1024 * 1024;
 const FILE_TYPES = new Set(['audio', 'image', 'video', 'session', 'document', 'other']);
 
 async function hasLargeUploadAccess(entities: any, userId: string): Promise<boolean> {
@@ -186,10 +190,10 @@ Deno.serve(async (req) => {
     }
 
     const storedFileSize = await resolveStoredFileSize(fileUrl);
-    if (storedFileSize === null) {
+    if (storedFileSize === null && claimedFileSize > MAX_UNVERIFIED_FILE_SIZE) {
       return Response.json({ error: 'Could not verify uploaded file size' }, { status: 400 });
     }
-    const fileSize = storedFileSize;
+    const fileSize = storedFileSize ?? claimedFileSize;
 
     if (fileSize > PREMIUM_FILE_LIMIT) {
       return Response.json({ error: 'Files larger than 20GB are not supported' }, { status: 413 });

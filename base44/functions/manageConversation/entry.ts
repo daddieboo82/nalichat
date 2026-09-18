@@ -265,12 +265,21 @@ Deno.serve(async (req) => {
     const entities = base44.asServiceRole.entities;
 
     if (action === 'list_member_conversations') {
-      const rows = await listAllRows(
-        entities.Conversation,
-        { participant_ids: user.id },
-        '-last_message_at',
-      );
-      const conversations = rows.filter((conversation: any) =>
+      // Read in caller mode so Conversation RLS evaluates against the real
+      // member rather than the service-role identity. The caller can read only
+      // their conversations plus discoverable public rooms; filter the latter
+      // out before returning the private list.
+      const visibleRows: any[] = [];
+      for (let skip = 0; skip < 5000; skip += PAGE_SIZE) {
+        const page = await base44.entities.Conversation.list(
+          '-last_message_at',
+          PAGE_SIZE,
+          skip,
+        );
+        visibleRows.push(...page);
+        if (page.length < PAGE_SIZE) break;
+      }
+      const conversations = visibleRows.filter((conversation: any) =>
         Array.isArray(conversation?.participant_ids)
         && conversation.participant_ids.includes(user.id)
       );
@@ -373,23 +382,23 @@ Deno.serve(async (req) => {
           return Response.json({ error: 'user_blocked', code: 'USER_BLOCKED' }, { status: 403 });
         }
 
-        const candidates = await listAllRows(
-          entities.Conversation,
-          { type: 'dm', participant_ids: user.id },
-          '-last_message_at',
-        );
-        const existing = candidates.find((conversation: any) => {
-          const ids = Array.isArray(conversation.participant_ids) ? conversation.participant_ids : [];
-          return ids.length === 2 && ids.includes(user.id) && ids.includes(otherUserId);
-        });
-        if (existing) return Response.json({ success: true, action: 'create_dm', userId: user.id, conversationId: existing.id, conversation: existing });
+        const id = await dmConversationId(user.id, otherUserId);
+        const existing = await base44.entities.Conversation.get(id).catch(() => null);
+        const existingIds = Array.isArray(existing?.participant_ids) ? existing.participant_ids : [];
+        if (
+          existing?.type === 'dm'
+          && existingIds.length === 2
+          && existingIds.includes(user.id)
+          && existingIds.includes(otherUserId)
+        ) {
+          return Response.json({ success: true, action: 'create_dm', userId: user.id, conversationId: existing.id, conversation: existing });
+        }
 
         const rate = await consumeHourlyLimit(entities, user.id, 'conversation_create', 60);
         if (!rate.allowed) {
           return Response.json({ error: 'Conversation creation rate limit exceeded. Please try again later.' }, { status: 429 });
         }
 
-        const id = await dmConversationId(user.id, otherUserId);
         try {
           const conversation = await entities.Conversation.create({
             id,
@@ -399,7 +408,7 @@ Deno.serve(async (req) => {
           });
           return Response.json({ success: true, action: 'create_dm', userId: user.id, conversationId: conversation.id, conversation });
         } catch (createError) {
-          const raced = await entities.Conversation.get(id).catch(() => null);
+          const raced = await base44.entities.Conversation.get(id).catch(() => null);
           const racedIds = Array.isArray(raced?.participant_ids) ? raced.participant_ids : [];
           if (
             raced?.type === 'dm'

@@ -12,6 +12,14 @@ let lastRoute = null;
 let foregroundSince = null;
 
 function now() { return Date.now(); }
+function supportsCredentialedAnalyticsTransport() {
+  if (typeof navigator === "undefined") return false;
+  // Base44's analytics batch endpoint currently responds with a wildcard
+  // origin while using credentials. WebKit rejects that combination, so keep
+  // product analytics non-blocking on iPhone/iPad until the endpoint supplies
+  // an explicit origin. Funnel events below continue to use app entities.
+  return !/iPad|iPhone|iPod/.test(navigator.userAgent || "");
+}
 function safeGet() {
   try {
     const saved = sessionStorage.getItem(sessionStorageKey);
@@ -39,10 +47,12 @@ function ensureSession() {
 }
 function track(name, properties = {}) {
   const currentSession = ensureSession();
-  try {
-    const result = base44.analytics?.track?.({ eventName: name, properties: { ...properties, product_session_id: currentSession.id } });
-    if (result?.catch) result.catch(() => {});
-  } catch {}
+  if (supportsCredentialedAnalyticsTransport()) {
+    try {
+      const result = base44.analytics?.track?.({ eventName: name, properties: { ...properties, product_session_id: currentSession.id } });
+      if (result?.catch) result.catch(() => {});
+    } catch {}
+  }
   const funnelEvents = new Set([
     "homepage_view", "signup_click", "registration_view", "registration_started",
     "registration_completed", "registration_failed", "onboarding_complete", "messenger_discovery_view",

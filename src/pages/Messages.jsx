@@ -222,17 +222,34 @@ export default function Messages() {
   }, [location.pathname, location.search, location.state, navigate]);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible") return;
-      // Immediately refresh the active chat and conversation list when returning
-      // to the tab. Presence itself is maintained app-wide in App.jsx.
-      queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id, selectedConvId] });
-      queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
-      queryClient.invalidateQueries({ queryKey: ["users", "presence", currentUser?.id] });
+    const refreshMessagesPresence = async () => {
+      if (!currentUser?.id || document.visibilityState !== "visible") return;
+      // Messages is the presence-sensitive surface. Refresh this user's heartbeat
+      // immediately before reloading the directory so non-admin accounts do not
+      // depend on the slower app-shell heartbeat to appear in Active Now.
+      try {
+        await base44.functions.invoke('updateUserPresence', { isOnline: true });
+      } catch (error) {
+        console.warn('Messages presence refresh failed:', error);
+      }
+      queryClient.invalidateQueries({ queryKey: ["users", "presence", currentUser.id] });
     };
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id, selectedConvId] });
+      queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
+      refreshMessagesPresence();
+    };
+
+    refreshMessagesPresence();
+    const presenceHeartbeat = window.setInterval(refreshMessagesPresence, 30_000);
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.clearInterval(presenceHeartbeat);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [currentUser?.id, queryClient, selectedConvId]);
 
   const { data: users = [], isError: usersError } = useQuery({

@@ -24,7 +24,11 @@
         "read": {
           "$or": [
             {
-              "data.participant_ids": "{{user.id}}"
+              "data.participant_ids": {
+                "$in": [
+                  "{{user.id}}"
+                ]
+              }
             },
             {
               "user_condition": {
@@ -46,7 +50,11 @@
         "read": {
           "$or": [
             {
-              "data.participant_ids": "{{user.id}}"
+              "data.participant_ids": {
+                "$in": [
+                  "{{user.id}}"
+                ]
+              }
             },
             {
               "user_condition": {
@@ -93,10 +101,19 @@
     "read": {
       "$or": [
         {
-          "data.participant_ids": "{{user.id}}"
+          "data.participant_ids": {
+            "$in": [
+              "{{user.id}}"
+            ]
+          }
         },
         {
           "data.is_public": true
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
         }
       ]
     },

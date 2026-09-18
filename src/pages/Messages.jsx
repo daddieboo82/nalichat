@@ -722,7 +722,11 @@ export default function Messages() {
         }
         return [conv, ...rows];
       });
-      void queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
+      // Do not immediately invalidate this optimistic cache entry. The direct
+      // member query can briefly lag behind the service-role create for
+      // non-admin users; an immediate refetch would erase the new DM and make
+      // the deep-link resolver close it as "missing". The normal 5-second
+      // conversation poll will reconcile the authoritative row.
       if (lockedConversationIds.includes(conv.id) && !lockedChatsUnlocked) {
         setLockedLinkConversationId(conv.id);
         setShowLockedAccess(true);

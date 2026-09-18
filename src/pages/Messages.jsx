@@ -134,7 +134,7 @@ export default function Messages() {
   const navigate = useNavigate();
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [messageHistoryLimit, setMessageHistoryLimit] = useState(200);
-  const [sidebarTab, setSidebarTab] = useState("contacts");
+  const [sidebarTab, setSidebarTab] = useState("chats");
   const [lockedLinkConversationId, setLockedLinkConversationId] = useState(null);
   const [showLockedAccess, setShowLockedAccess] = useState(false);
   const { hasEntitlement } = useSubscription();

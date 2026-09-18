@@ -303,6 +303,7 @@ const AuthenticatedApp = () => {
       <span
         data-testid="auth-state"
         data-state={isAuthenticated ? "authenticated" : "anonymous"}
+        data-user-id={user?.id || ""}
         className="sr-only"
         aria-hidden="true"
       />

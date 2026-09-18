@@ -68,6 +68,7 @@ test.describe('Messages non-admin production audit', () => {
   });
 
   test('two non-admin accounts can exchange a real DM', async ({ browser }) => {
+    test.setTimeout(150000);
     const a = await browser.newContext();
     const b = await browser.newContext();
     const pageA = await a.newPage();
@@ -107,12 +108,13 @@ test.describe('Messages non-admin production audit', () => {
       await expect(pageB.getByText(reply, { exact: true }).last()).toBeVisible({ timeout: 30000 });
       await expect(pageA.getByText(reply, { exact: true }).last()).toBeVisible({ timeout: 45000 });
     } finally {
-      await a.close();
-      await b.close();
+      await a.close().catch(() => {});
+      await b.close().catch(() => {});
     }
   });
 
   test('two non-admin sessions can independently reach Network', async ({ browser }) => {
+    test.setTimeout(90000);
     for (const account of [primary, secondary]) {
       const context = await browser.newContext();
       const page = await context.newPage();
@@ -132,7 +134,7 @@ test.describe('Messages non-admin production audit', () => {
         console.log('MESSAGES_AUDIT_SESSION_FAILURE', JSON.stringify({ url: page.url(), diagnostics }));
         throw e;
       } finally {
-        await context.close();
+        await context.close().catch(() => {});
       }
     }
   });

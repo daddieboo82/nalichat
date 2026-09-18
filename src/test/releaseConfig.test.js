@@ -521,7 +521,13 @@ describe('release configuration', () => {
     const readRule = conversation.properties.participant_ids.rls?.read;
     expect(readRule?.$or).toBeTruthy();
     expect(readRule.$or).toEqual(expect.arrayContaining([
-      expect.objectContaining({ 'data.participant_ids': '{{user.id}}' }),
+      expect.objectContaining({ 'data.participant_ids': { $in: ['{{user.id}}'] } }),
+      expect.objectContaining({ user_condition: { role: 'admin' } }),
+    ]));
+    expect(readRule.$or).toEqual(expect.arrayContaining([
+      expect.objectContaining({ user_condition: { role: 'admin' } }),
+    ]));
+    expect(conversation.rls.read?.$or).toEqual(expect.arrayContaining([
       expect.objectContaining({ user_condition: { role: 'admin' } }),
     ]));
     expect(conversation.properties.participant_ids.rls?.write?.user_condition?.role).toBe('admin');
@@ -1365,7 +1371,7 @@ describe('release configuration', () => {
     const conversation = await readJson('base44/entities/Conversation.jsonc');
     const rule = conversation.properties.last_message_text.rls?.read;
     expect(rule?.$or).toEqual(expect.arrayContaining([
-      expect.objectContaining({ 'data.participant_ids': '{{user.id}}' }),
+      expect.objectContaining({ 'data.participant_ids': { $in: ['{{user.id}}'] } }),
       expect.objectContaining({ user_condition: { role: 'admin' } }),
     ]));
   });

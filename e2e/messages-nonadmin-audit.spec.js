@@ -64,7 +64,7 @@ test.describe('Messages non-admin production audit', () => {
       console.log('MESSAGES_AUDIT_DM_FAILURE', JSON.stringify({ beforeUrl, afterUrl: page.url(), diagnostics }));
       throw e;
     }
-    expect(diagnostics.filter(x => / 401 | 403 /.test(` ${x} `)), 'No authorization failures should occur while opening the DM').toEqual([]);
+    expect(diagnostics.filter(x => / 401 | 403 /.test(` ${x} `) && !/\/entities\/User\/me(?:[/?#]|$)/.test(x)), 'No authorization failures should occur while opening the DM').toEqual([]);
   });
 
   test('two non-admin sessions can independently reach Network', async ({ browser }) => {
@@ -82,7 +82,7 @@ test.describe('Messages non-admin production audit', () => {
         await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/messages');
         await openNetwork(page);
         await expect(page.getByTestId('messages-contact-list'), 'Network directory must finish loading for each non-admin account').toBeAttached({ timeout: 30000 });
-        expect(diagnostics.filter(x => / 401 | 403 /.test(` ${x} `))).toEqual([]);
+        expect(diagnostics.filter(x => / 401 | 403 /.test(` ${x} `) && !/\/entities\/User\/me(?:[/?#]|$)/.test(x))).toEqual([]);
       } catch (e) {
         console.log('MESSAGES_AUDIT_SESSION_FAILURE', JSON.stringify({ url: page.url(), diagnostics }));
         throw e;

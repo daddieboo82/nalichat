@@ -56,11 +56,21 @@ workflows:
         script: npm ci
       - name: Install audit browsers
         script: |
-          # Codemagic images already carry browser system libraries. Avoid
-          # Playwright's apt install path here because Ubuntu unattended-upgrades
-          # can temporarily hold the dpkg frontend lock and fail an otherwise
-          # healthy audit before tests start.
-          npx playwright install chromium webkit
+          # Codemagic can briefly run unattended-upgrades at boot. Wait for its
+          # apt/dpkg locks instead of racing it, then install Playwright's exact
+          # Linux dependencies and browser binaries.
+          for i in $(seq 1 60); do
+            if ! fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 && \
+               ! fuser /var/lib/dpkg/lock >/dev/null 2>&1 && \
+               ! fuser /var/lib/apt/lists/lock >/dev/null 2>&1 && \
+               ! fuser /var/cache/apt/archives/lock >/dev/null 2>&1; then
+              break
+            fi
+            echo "Waiting for Ubuntu package manager lock... ($i/60)"
+            sleep 5
+          done
+          sudo dpkg --configure -a
+          npx playwright install --with-deps chromium webkit
       - name: Audit Messages as non-admin accounts
         script: npx playwright test e2e/messages-nonadmin-audit.spec.js --project=mobile-chromium --project=iphone-16-simulation
     artifacts:

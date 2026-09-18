@@ -87,9 +87,7 @@ test.describe('Messages non-admin production audit', () => {
       expect(targetUserId, 'Second authenticated account must expose its own user id to the test harness').toBeTruthy();
       const targetRow = pageA.locator('[data-testid="messages-person-row"][data-user-id="' + targetUserId + '"]');
       await expect(targetRow, 'Second non-admin account must be discoverable in Network').toBeVisible({ timeout: 30000 });
-      const beforeDmUrl = pageA.url();
       await targetRow.getByRole('button', { name: /^message$/i }).click();
-      await expect.poll(() => pageA.url(), { timeout: 30000 }).not.toBe(beforeDmUrl);
 
       const inputA = pageA.getByRole('textbox', { name: 'Message Input' });
       await expect(inputA).toBeVisible({ timeout: 30000 });

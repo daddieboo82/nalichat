@@ -167,11 +167,10 @@ export default async function(req) {
     }
 
     const [allUsers, achievements, contacts, inboundContacts, conversations] = await Promise.all([
-      // Query the bounded service-role user directory, then apply onboarding and
-      // moderation eligibility in the explicit public projection below. Some
-      // Base44 environments do not reliably filter boolean custom User fields;
-      // when that happens the filtered query can stall Messenger indefinitely
-      // for ordinary accounts even though service-role User.list remains valid.
+      // Query the bounded service-role user directory, then apply moderation and
+      // public-profile eligibility in the explicit projection below. This avoids
+      // unreliable boolean custom-field filtering and keeps older legitimate
+      // accounts discoverable in Messenger.
       base44.asServiceRole.entities.User.list(
         '-created_date',
         MAX_DISCOVERY_USERS,
@@ -253,7 +252,7 @@ export default async function(req) {
     // Explicit public projection. Never return email, phone, birthdate, Stripe
     // identifiers, trial state, moderation state, or other account-only fields.
     const publicUsers = visibleUsers
-      .filter((u) => u.onboarding_completed && !u.is_banned && String(u.display_name || '').trim())
+      .filter((u) => !u.is_banned && String(u.display_name || '').trim())
       .map((u) => publicUserProjection(
         u,
         achievementCount[u.id] || 0,

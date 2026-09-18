@@ -83,7 +83,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-h-0 bg-background/20">
       {/* Search Bar */}
-      <div className="shrink-0 border-b border-border/40 bg-background/85 px-4 pb-3 pt-2 backdrop-blur-xl sm:px-6">
+      <div className="shrink-0 border-b border-border/30 bg-background/70 px-4 pb-3 pt-3 backdrop-blur-xl sm:px-6">
         <div className="relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
           <Input
@@ -92,14 +92,14 @@ export default React.memo(function ConversationList({ conversations, myConversat
             placeholder="Search messages or find people..."
             title="Search conversations"
             aria-label="Search conversations"
-            className="h-12 pl-11 pr-4 bg-secondary/45 border border-border/50 rounded-2xl shadow-sm focus:bg-background/90 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-all text-sm placeholder:text-muted-foreground/60"
+            className="h-11 pl-11 pr-4 bg-secondary/55 border border-border/50 rounded-2xl shadow-inner focus:bg-background/90 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-all text-sm placeholder:text-muted-foreground/60"
           />
         </div>
       </div>
 
       {/* Trending Topics */}
       {!search && (
-        <div className="pl-4 sm:pl-6 mt-3 mb-3 flex gap-2 overflow-x-auto no-scrollbar shrink-0 pb-2 after:content-[''] after:w-6 after:shrink-0">
+        <div className="pl-4 sm:pl-6 mt-3 mb-2 flex gap-2 overflow-x-auto no-scrollbar shrink-0 pb-2 after:content-[''] after:w-6 after:shrink-0">
           <span className="text-xs font-bold text-muted-foreground uppercase flex items-center shrink-0 mr-1">Trending:</span>
           {["#TikTokMusic", "#ViralSounds", "#DrakeVsKendrick", "#AIinMusic", "#Eurovision", "#Grammys", "#BeatMakers"].map(topic => (
              <button
@@ -115,7 +115,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
 
       {/* Filters */}
       {!search && (
-        <div className="px-4 sm:px-6 mb-4 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
+        <div className="px-4 sm:px-6 mb-3 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
           {["all", "unread", "groups"].map(f => (
             <button
               key={f}
@@ -137,9 +137,12 @@ export default React.memo(function ConversationList({ conversations, myConversat
 
       {/* Active Now — horizontal avatar strip (Messenger pattern) */}
       {!search && onlineUsers.length > 0 && (
-        <div className="px-4 sm:px-6 mb-4 shrink-0">
-          <p className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-[0.16em] mb-2 px-1">Active Now</p>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+        <div className="mx-3 sm:mx-4 mb-3 shrink-0 rounded-2xl border border-border/35 bg-gradient-to-r from-primary/[0.07] via-secondary/35 to-accent/[0.06] px-3 py-3">
+          <div className="mb-2 flex items-center justify-between px-1">
+            <p className="text-[11px] font-bold text-foreground/80 uppercase tracking-[0.14em]">Active Now</p>
+            <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-bold text-green-500">{onlineUsers.length} online</span>
+          </div>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             {onlineUsers.map(u => (
               <button
                 key={u.id}
@@ -149,7 +152,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
                     toast.error("Couldn't start this conversation. Please try again.");
                   });
                 }}
-                className="ui-hover flex min-w-[68px] min-h-[84px] flex-col items-center justify-center gap-1.5 shrink-0 group rounded-2xl py-2 hover:bg-secondary/35 transition-all touch-manipulation focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="ui-hover flex min-w-[64px] min-h-[78px] flex-col items-center justify-center gap-1.5 shrink-0 group rounded-2xl px-1 py-1.5 hover:bg-background/70 transition-all touch-manipulation focus-visible:ring-2 focus-visible:ring-primary/40"
                 title={`Message ${u.display_name || u.full_name}`}
                 aria-label={`Message ${u.display_name || u.full_name}`}
               >
@@ -210,10 +213,10 @@ export default React.memo(function ConversationList({ conversations, myConversat
               key={conv.id}
               onClick={() => onSelect(conv.id)}
               className={cn(
-                "ui-hover w-full min-h-[72px] flex items-center gap-3.5 p-3.5 rounded-2xl transition-all text-left group relative touch-manipulation focus-visible:ring-2 focus-visible:ring-primary/40",
+                "ui-hover w-full min-h-[72px] flex items-center gap-3.5 p-3.5 rounded-2xl transition-all duration-200 text-left group relative touch-manipulation focus-visible:ring-2 focus-visible:ring-primary/40",
                 isSelected
-                  ? "bg-primary/[0.09] shadow-md shadow-black/10 border border-primary/20 z-10"
-                  : "hover:bg-secondary/50 active:bg-secondary/60 border border-transparent"
+                  ? "bg-gradient-to-r from-primary/[0.14] to-primary/[0.05] shadow-md shadow-black/10 border border-primary/25 z-10"
+                  : "hover:bg-secondary/55 active:bg-secondary/65 border border-transparent hover:border-border/35"
               )}
               title={`Open chat with ${displayName}`}
               aria-label={`Open chat with ${displayName}`}

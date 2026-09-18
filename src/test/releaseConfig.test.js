@@ -524,9 +524,6 @@ describe('release configuration', () => {
       expect.objectContaining({ 'data.participant_ids': { $in: ['{{user.id}}'] } }),
       expect.objectContaining({ user_condition: { role: 'admin' } }),
     ]));
-    expect(readRule.$or).toEqual(expect.arrayContaining([
-      expect.objectContaining({ user_condition: { role: 'admin' } }),
-    ]));
     expect(conversation.rls.read?.$or).toEqual(expect.arrayContaining([
       expect.objectContaining({ user_condition: { role: 'admin' } }),
     ]));

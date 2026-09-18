@@ -265,13 +265,13 @@ Deno.serve(async (req) => {
     const entities = base44.asServiceRole.entities;
 
     if (action === 'list_member_conversations') {
-      // Read in caller mode so Conversation RLS evaluates against the real
-      // member rather than the service-role identity. The caller can read only
-      // their conversations plus discoverable public rooms; filter the latter
-      // out before returning the private list.
+      // Read with service role after Conversation RLS grants explicit admin
+      // access, then return only rows whose participant array contains the
+      // authenticated caller. The bounded scan avoids relying on array-query
+      // semantics that previously returned an empty list for non-admin users.
       const visibleRows: any[] = [];
       for (let skip = 0; skip < 5000; skip += PAGE_SIZE) {
-        const page = await base44.entities.Conversation.list(
+        const page = await entities.Conversation.list(
           '-last_message_at',
           PAGE_SIZE,
           skip,

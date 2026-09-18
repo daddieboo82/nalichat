@@ -2093,9 +2093,13 @@ describe('release configuration', () => {
     expect(hook).toContain("document.addEventListener('visibilitychange', checkForUpdate)");
     expect(hook).toContain("window.addEventListener('pageshow', checkForUpdate)");
     expect(hook).toContain('15 * 60 * 1000');
-    expect(sw).toContain("const CACHE_NAME = 'nalichat-v3';");
+    expect(sw).toContain("const CACHE_NAME = 'nalichat-v4';");
     expect(sw).toContain("url.pathname.startsWith('/assets/')");
     expect(sw).toContain("if (!isStaticAsset) return;");
+    expect(sw).toContain('.then(() => self.skipWaiting())');
+    expect(sw).not.toContain("url.pathname === '/sw.js'");
+    expect(hook).toContain('const hadControllerAtStart = Boolean(navigator.serviceWorker.controller);');
+    expect(hook).toContain('if (!hadControllerAtStart && !updateAppliedRef.current) return;');
     expect(sw).not.toContain("// Stale-while-revalidate for static assets.");
   });
 

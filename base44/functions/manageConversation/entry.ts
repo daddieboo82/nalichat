@@ -510,7 +510,7 @@ Deno.serve(async (req) => {
           && raced?.name === name
           && sameParticipants
         ) {
-          return Response.json({ success: true, action: 'create_dm', userId: user.id, conversationId: raced.id, conversation: raced, duplicate: true });
+          return Response.json({ success: true, action: 'create_group', userId: user.id, conversationId: raced.id, clientRequestKey, conversation: raced, duplicate: true });
         }
         throw createError;
       }

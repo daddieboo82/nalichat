@@ -834,7 +834,7 @@ export default function Messages() {
 
   return (
     <div className="relative h-full min-h-0 sm:h-[calc(100vh-80px)] sm:max-h-[calc(100dvh-80px)] min-w-0 p-0 sm:p-4 md:p-6 flex justify-center overflow-hidden touch-pan-y">
-      <div className="w-full max-w-7xl h-full max-h-full flex flex-col sm:flex-row bg-card/60 sm:bg-card/40 backdrop-blur-3xl sm:border border-border/40 sm:rounded-[2.5rem] shadow-none sm:shadow-2xl overflow-hidden relative">
+      <div className="w-full max-w-7xl h-full max-h-full flex flex-col sm:flex-row bg-card/70 sm:bg-card/55 backdrop-blur-3xl sm:border border-border/50 sm:rounded-[2rem] shadow-none sm:shadow-[0_24px_80px_-28px_rgba(0,0,0,0.55)] overflow-hidden relative ring-1 ring-white/[0.03]">
         
         {/* Sidebar */}
         <div className={cn(
@@ -842,9 +842,12 @@ export default function Messages() {
           selectedConvId ? "hidden sm:flex" : "flex"
         )}>
           {/* Header */}
-          <div className="px-6 pt-8 pb-2 flex flex-col shrink-0">
+          <div className="px-4 pt-5 pb-3 sm:px-6 sm:pt-7 flex flex-col shrink-0 bg-gradient-to-b from-primary/[0.07] to-transparent">
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-heading font-bold tracking-tight">Messages</h1>
+              <div>
+                <h1 className="text-[26px] font-heading font-bold tracking-tight leading-none">Messages</h1>
+                <p className="mt-1.5 text-xs font-medium text-muted-foreground">Connect, collaborate, create.</p>
+              </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20" title="New Conversation Options" aria-label="New Conversation Options">
@@ -884,20 +887,20 @@ export default function Messages() {
             </div>
             
             {/* Tabs */}
-            <div className="flex gap-6 border-b border-border/40 pb-0">
+            <div className="grid grid-cols-2 gap-1 rounded-2xl border border-border/40 bg-secondary/40 p-1">
               <button 
                 onClick={() => setSidebarTab("chats")}
-                className={cn("pb-3 text-sm font-semibold transition-colors relative", sidebarTab === "chats" ? "text-foreground" : "text-muted-foreground hover:text-foreground")}
+                className={cn("relative min-h-10 rounded-xl px-4 text-sm font-semibold transition-all", sidebarTab === "chats" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
               >
                 Chats
-                {sidebarTab === "chats" && <motion.div layoutId="activeTabMsg" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+                {sidebarTab === "chats" && <motion.div layoutId="activeTabMsg" className="absolute inset-x-4 bottom-0 h-0.5 rounded-full bg-primary" />}
               </button>
               <button 
                 onClick={() => setSidebarTab("contacts")}
-                className={cn("pb-3 text-sm font-semibold transition-colors relative", sidebarTab === "contacts" ? "text-foreground" : "text-muted-foreground hover:text-foreground")}
+                className={cn("relative min-h-10 rounded-xl px-4 text-sm font-semibold transition-all", sidebarTab === "contacts" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
               >
                 Network
-                {sidebarTab === "contacts" && <motion.div layoutId="activeTabMsg" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+                {sidebarTab === "contacts" && <motion.div layoutId="activeTabMsg" className="absolute inset-x-4 bottom-0 h-0.5 rounded-full bg-primary" />}
               </button>
             </div>
           </div>

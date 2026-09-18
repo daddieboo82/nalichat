@@ -250,7 +250,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
               const contactRecord = contacts.find(c => c.contact_user_id === user.id);
               
               return (
-                <div key={user.id} className="ui-surface group flex flex-col gap-3 rounded-3xl border border-border/50 bg-card/70 p-4 transition-all hover:border-primary/30">
+                <div key={user.id} data-testid="messages-person-row" data-user-id={user.id} className="ui-surface group flex flex-col gap-3 rounded-3xl border border-border/50 bg-card/70 p-4 transition-all hover:border-primary/30">
                   <div className="flex items-center gap-3">
                     <div className="relative shrink-0">
                       <Avatar className="w-12 h-12 rounded-xl">

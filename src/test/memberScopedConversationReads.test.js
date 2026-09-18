@@ -11,7 +11,8 @@ describe('member-scoped conversation reads', () => {
     expect(source).toContain('res?.data?.userId !== currentUser.id');
     expect(source).toContain('conversation?.participant_ids?.includes(currentUser.id)');
     expect(backend).toContain("if (action === 'list_member_conversations')");
-    expect(backend).toContain('{ participant_ids: user.id }');
+    expect(backend).toContain('await base44.entities.Conversation.list(');
+    expect(backend).toContain('skip < 5000');
     expect(backend).toContain('conversation.participant_ids.includes(user.id)');
     expect(source).not.toContain('queryFn: () => base44.entities.Conversation.list("-last_message_at")');
   });

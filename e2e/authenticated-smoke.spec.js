@@ -14,6 +14,7 @@ async function login(page, userEmail, userPassword) {
   await page.getByRole('button', { name: /^log in$/i }).click();
 
   await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).not.toBe('/login');
+  await expect(page.getByText('Loading app...', { exact: true })).toBeHidden({ timeout: 30000 });
 }
 
 async function expectProtectedRoute(page, route) {
@@ -23,7 +24,7 @@ async function expectProtectedRoute(page, route) {
   page.on('pageerror', (error) => pageErrors.push(error.message));
   page.on('requestfailed', (request) => {
     const failure = request.failure()?.errorText || '';
-    if (!/ERR_ABORTED|NS_BINDING_ABORTED/i.test(failure)) {
+    if (!/ERR_ABORTED|NS_BINDING_ABORTED|Load request cancelled/i.test(failure)) {
       failedRequests.push(`${request.method()} ${request.url()} :: ${failure}`);
     }
   });
@@ -155,6 +156,8 @@ test.describe('mobile logout and account switch', () => {
     await page.getByRole('button', { name: /log out/i }).click();
 
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/');
+    await page.getByRole('button', { name: /open menu/i }).click();
+    await expect(page.getByRole('button', { name: /^log in$/i })).toBeVisible({ timeout: 30000 });
     await page.goto('/messages');
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/login');
 

@@ -36,6 +36,35 @@ workflows:
       - playwright-report/**
       - test-results/**
 
+  messages-nonadmin-audit:
+    name: NaliChat Messages Non-Admin Audit v2
+    instance_type: linux_x2
+    max_build_duration: 30
+    environment:
+      groups:
+        - e2e_credentials
+      vars:
+        E2E_BASE_URL: https://nalichat.org
+      node: 20
+    scripts:
+      - name: Verify two protected test accounts
+        script: |
+          for key in E2E_USER_EMAIL E2E_USER_PASSWORD E2E_SECOND_USER_EMAIL E2E_SECOND_USER_PASSWORD; do
+            test -n "$(printenv "$key")" || { echo "Missing $key"; exit 1; }
+          done
+      - name: Install dependencies
+        script: npm ci
+      - name: Install audit browsers
+        script: npx playwright install --with-deps chromium webkit
+      - name: Audit Messages as non-admin accounts
+        script: |
+          npx playwright test e2e/messages-nonadmin-audit.spec.js \\
+            --project=mobile-chromium \\
+            --project=iphone-16-simulation
+    artifacts:
+      - playwright-report/**
+      - test-results/**
+
   android-aab:
     name: NaliChat Android AAB
     max_build_duration: 30

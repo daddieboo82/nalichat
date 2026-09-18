@@ -83,15 +83,12 @@ test.describe('Messages non-admin production audit', () => {
       await pageB.goto('/messages');
       await openNetwork(pageA);
 
-      const search = pageA.getByPlaceholder(/Search by name, genre, or location/i);
-      await expect(search).toBeVisible({ timeout: 30000 });
-      const targetName = await pageB.locator('[data-testid="auth-state"]').getAttribute('data-display-name').catch(() => null);
-      if (targetName) await search.fill(targetName);
-      const messageButtons = pageA.getByTestId('messages-contacts-scroll').getByRole('button', { name: /^message$/i });
-      if (!targetName || await messageButtons.count() === 0) await search.fill('');
-      await expect.poll(async () => messageButtons.count(), { timeout: 30000 }).toBeGreaterThan(0);
+      const targetUserId = await pageB.locator('[data-testid="auth-state"]').getAttribute('data-user-id');
+      expect(targetUserId, 'Second authenticated account must expose its own user id to the test harness').toBeTruthy();
+      const targetRow = pageA.locator('[data-testid="messages-person-row"][data-user-id="' + targetUserId + '"]');
+      await expect(targetRow, 'Second non-admin account must be discoverable in Network').toBeVisible({ timeout: 30000 });
       const beforeDmUrl = pageA.url();
-      await messageButtons.first().click();
+      await targetRow.getByRole('button', { name: /^message$/i }).click();
       await expect.poll(() => pageA.url(), { timeout: 30000 }).not.toBe(beforeDmUrl);
 
       const inputA = pageA.getByRole('textbox', { name: 'Message Input' });

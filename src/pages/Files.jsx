@@ -318,7 +318,13 @@ export default function Files() {
           return [...uploadedFiles, ...existing.filter((file) => !uploadedIds.has(file.id))];
         });
       }
-      queryClient.invalidateQueries({ queryKey: ["shared-files", currentUser?.id] });
+      // The create response is authoritative. Mark the query stale without an
+      // immediate refetch, because the list endpoint can briefly lag behind the
+      // successful write and would otherwise erase the optimistic cache entry.
+      queryClient.invalidateQueries({
+        queryKey: ["shared-files", currentUser?.id],
+        refetchType: "none",
+      });
       if (failures.length === 0) {
         toast({ title: "Upload complete", description: `${uploaded} file${uploaded === 1 ? "" : "s"} uploaded.` });
       } else if (uploaded > 0) {

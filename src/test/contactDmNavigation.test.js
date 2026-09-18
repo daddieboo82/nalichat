@@ -11,6 +11,8 @@ describe('contacts message navigation', () => {
     const source = await readText('src/pages/Messages.jsx');
 
     expect(source).toContain('const [sidebarTab, setSidebarTab] = useState("contacts");');
+    expect(source).toContain('isFetched: conversationsFetched');
+    expect(source).toContain('!location.search || !conversationsFetched');
     expect(source).toContain('onMessageContact={async (u) => {');
     expect(source).toContain('await startDM(u);');
     expect(source.indexOf('await startDM(u);')).toBeLessThan(

@@ -197,7 +197,12 @@ export default async function(req) {
         : Promise.resolve([]),
     ]);
 
-    const presenceVisibleTo = new Set<string>([user.id]);
+    // Messenger Active Now is a public discovery surface. When presence is
+    // explicitly requested, eligible public profiles can expose a fresh online
+    // heartbeat; publicUserProjection still enforces the last_seen freshness gate.
+    const presenceVisibleTo = new Set<string>(
+      includePresence ? allUsers.map((candidate: any) => candidate.id).filter(Boolean) : [user.id],
+    );
     const inboundContactOwners = new Set(
       inboundContacts.map((contact: any) => contact.user_id).filter(Boolean),
     );
@@ -208,9 +213,6 @@ export default async function(req) {
       }
     }
     for (const contact of contacts) {
-      // Contact lists are unilateral. Reveal presence only when the relationship
-      // is mutual, otherwise simply adding a public profile would become an
-      // online-status tracking primitive.
       if (contact.contact_user_id && inboundContactOwners.has(contact.contact_user_id)) {
         presenceVisibleTo.add(contact.contact_user_id);
       }

@@ -16,5 +16,7 @@ describe('contacts message navigation', () => {
       source.indexOf('setSidebarTab("chats");'),
     );
     expect(source).toContain('} catch {}');
+    expect(source).toContain('queryClient.setQueryData(["conversations", currentUser?.id]');
+    expect(source).toContain('return [conv, ...rows];');
   });
 });

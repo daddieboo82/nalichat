@@ -19,12 +19,17 @@ async function login(page, userEmail, userPassword) {
   );
   await expect(page.locator('[data-testid="auth-state"][data-state="authenticated"]')).toBeAttached({ timeout: 30000 });
   await expect(page.getByText('Loading app...', { exact: true })).toBeHidden({ timeout: 30000 });
+  // The login handler performs a hard redirect after the SDK resolves. Give
+  // that navigation a brief stabilization window before starting another one.
+  await page.waitForTimeout(750);
 }
 
 async function expectProtectedRoute(page, route) {
+  await page.goto(route);
+  await page.waitForLoadState('domcontentloaded');
+
   const pageErrors = [];
   const failedRequests = [];
-
   page.on('pageerror', (error) => pageErrors.push(error.message));
   page.on('requestfailed', (request) => {
     const failure = request.failure()?.errorText || '';
@@ -33,10 +38,10 @@ async function expectProtectedRoute(page, route) {
     }
   });
 
-  await page.goto(route);
-  await page.waitForLoadState('domcontentloaded');
   await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).not.toBe('/login');
+  await expect(page.locator('[data-testid="auth-state"][data-state="authenticated"]')).toBeAttached({ timeout: 30000 });
   await expect(page.locator('body')).toBeVisible();
+  await page.waitForTimeout(500);
 
   expect(pageErrors, `page errors on ${route}`).toEqual([]);
   expect(failedRequests, `failed requests on ${route}`).toEqual([]);

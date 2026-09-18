@@ -57,10 +57,7 @@ workflows:
       - name: Install audit browsers
         script: npx playwright install --with-deps chromium webkit
       - name: Audit Messages as non-admin accounts
-        script: |
-          npx playwright test e2e/messages-nonadmin-audit.spec.js \\
-            --project=mobile-chromium \\
-            --project=iphone-16-simulation
+        script: npx playwright test e2e/messages-nonadmin-audit.spec.js --project=mobile-chromium --project=iphone-16-simulation
     artifacts:
       - playwright-report/**
       - test-results/**

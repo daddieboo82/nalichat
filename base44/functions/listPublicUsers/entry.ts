@@ -149,6 +149,10 @@ export default async function(req) {
         success: true,
         viewerUserId: user.id,
         requestedUserId,
+        contacts: contacts.map((contact: any) => ({
+          id: contact.id,
+          contact_user_id: contact.contact_user_id,
+        })),
         users: [publicUserProjection(
           target,
           targetAchievements.length,
@@ -260,6 +264,10 @@ export default async function(req) {
       success: true,
       viewerUserId: user.id,
       requestedUserId: null,
+      contacts: contacts.map((contact: any) => ({
+        id: contact.id,
+        contact_user_id: contact.contact_user_id,
+      })),
       users: publicUsers,
       truncated: {
         users: allUsers.length >= MAX_DISCOVERY_USERS,

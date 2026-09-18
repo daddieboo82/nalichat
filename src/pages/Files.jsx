@@ -310,19 +310,24 @@ export default function Files() {
 
       return { uploaded, uploadedFiles, failures, total: filesArray.length };
     },
-    onSuccess: ({ uploaded, uploadedFiles, failures, total }) => {
+    onSuccess: async ({ uploaded, uploadedFiles, failures, total }) => {
+      const sharedFilesQueryKey = ["shared-files", currentUser?.id];
+      // A Files page load may still be fetching its initial list while an
+      // upload completes. Cancel that stale request before writing the
+      // authoritative create response, otherwise its older result can erase
+      // the new file from the mobile UI.
+      await queryClient.cancelQueries({ queryKey: sharedFilesQueryKey });
       if (uploaded > 0) {
         sounds.upload();
-        queryClient.setQueryData(["shared-files", currentUser?.id], (existing = []) => {
+        queryClient.setQueryData(sharedFilesQueryKey, (existing = []) => {
           const uploadedIds = new Set(uploadedFiles.map((file) => file.id));
           return [...uploadedFiles, ...existing.filter((file) => !uploadedIds.has(file.id))];
         });
       }
-      // The create response is authoritative. Mark the query stale without an
-      // immediate refetch, because the list endpoint can briefly lag behind the
-      // successful write and would otherwise erase the optimistic cache entry.
+      // Mark the query stale without an immediate refetch because the list
+      // endpoint can briefly lag behind the successful write.
       queryClient.invalidateQueries({
-        queryKey: ["shared-files", currentUser?.id],
+        queryKey: sharedFilesQueryKey,
         refetchType: "none",
       });
       if (failures.length === 0) {

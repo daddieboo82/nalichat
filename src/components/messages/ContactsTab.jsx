@@ -23,19 +23,18 @@ const roleIcons = {
   ar: "📋",
 };
 
-async function listAllContacts(userId) {
-  const rows = [];
-  const pageSize = 200;
-  for (let skip = 0; ; skip += pageSize) {
-    const page = await base44.entities.Contact.filter(
-      { user_id: userId },
-      "-created_date",
-      pageSize,
-      skip,
-    );
-    rows.push(...page);
-    if (page.length < pageSize) return rows;
+async function loadMessengerDirectory(currentUserId) {
+  const res = await base44.functions.invoke('listPublicUsers', { includePresence: true });
+  if (res?.data?.error) throw new Error(res.data.error);
+  if (
+    res?.data?.success !== true ||
+    res?.data?.viewerUserId !== currentUserId ||
+    !Array.isArray(res?.data?.users) ||
+    !Array.isArray(res?.data?.contacts)
+  ) {
+    throw new Error("Messenger directory response was not confirmed.");
   }
+  return { users: res.data.users, contacts: res.data.contacts };
 }
 
 export default function ContactsTab({ currentUserId, onMessageContact }) {
@@ -45,32 +44,28 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
   const initialTabResolvedRef = useRef(false);
   const queryClient = useQueryClient();
 
-  const { data: contacts = [], isLoading: loadingContacts, isError: contactsError, refetch: refetchContacts } = useQuery({
-    queryKey: ["contacts", currentUserId],
-    queryFn: () => currentUserId ? listAllContacts(currentUserId) : [],
-    enabled: !!currentUserId,
-  });
-
-  const { data: allUsers = [], isLoading: loadingUsers, isError: usersError, refetch: refetchUsers } = useQuery({
-    queryKey: ["users", "presence", currentUserId],
-    queryFn: async () => {
-      const res = await base44.functions.invoke('listPublicUsers', { includePresence: true });
-      if (res?.data?.error) throw new Error(res.data.error);
-      if (
-        res?.data?.success !== true ||
-        res?.data?.viewerUserId !== currentUserId ||
-        !Array.isArray(res?.data?.users)
-      ) {
-        throw new Error("User directory response was not confirmed.");
-      }
-      return res.data?.users || [];
-    },
+  const {
+    data: directory = { users: [], contacts: [] },
+    isLoading: loadingDirectory,
+    isError: directoryError,
+    refetch: refetchDirectory,
+  } = useQuery({
+    queryKey: ["messenger-directory", currentUserId],
+    queryFn: () => loadMessengerDirectory(currentUserId),
     enabled: !!currentUserId,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
     refetchInterval: 45_000,
     staleTime: 20_000,
   });
+  const allUsers = directory.users || [];
+  const contacts = directory.contacts || [];
+  const loadingContacts = loadingDirectory;
+  const loadingUsers = loadingDirectory;
+  const contactsError = directoryError;
+  const usersError = directoryError;
+  const refetchContacts = refetchDirectory;
+  const refetchUsers = refetchDirectory;
 
   const deleteContactMutation = useMutation({
     mutationFn: async (contactId) => {
@@ -86,7 +81,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["contacts", currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ["messenger-directory", currentUserId] });
       queryClient.invalidateQueries({ queryKey: ["users", "presence", currentUserId] });
     },
     onError: () => toast.error("Couldn't remove contact. Please try again."),
@@ -119,7 +114,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
         source: "messenger_discovery",
         target_user_id: data?.targetUserId || "",
       });
-      queryClient.invalidateQueries({ queryKey: ["contacts", currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ["messenger-directory", currentUserId] });
       queryClient.invalidateQueries({ queryKey: ["users", "presence", currentUserId] });
     },
     onError: () => toast.error("Couldn't add contact. Please try again."),

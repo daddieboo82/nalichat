@@ -279,6 +279,7 @@ export default function Files() {
       setUploading(true);
       const currentFolderObj = currentFolderId ? folders.find(f => f.id === currentFolderId) : null;
       let uploaded = 0;
+      const uploadedFiles = [];
       const failures = [];
 
       for (const file of filesArray) {
@@ -300,17 +301,24 @@ export default function Files() {
             created?.data?.fileId !== created?.data?.file?.id ||
             created?.data?.file?.uploader_id !== currentUser?.id
           ) throw new Error("File upload was not confirmed");
+          uploadedFiles.push(created.data.file);
           uploaded += 1;
         } catch (error) {
           failures.push({ name: file.name, message: error?.message || "Upload failed" });
         }
       }
 
-      return { uploaded, failures, total: filesArray.length };
+      return { uploaded, uploadedFiles, failures, total: filesArray.length };
     },
-    onSuccess: ({ uploaded, failures, total }) => {
-      if (uploaded > 0) sounds.upload();
-      queryClient.invalidateQueries({ queryKey: ["shared-files"] });
+    onSuccess: ({ uploaded, uploadedFiles, failures, total }) => {
+      if (uploaded > 0) {
+        sounds.upload();
+        queryClient.setQueryData(["shared-files", currentUser?.id], (existing = []) => {
+          const uploadedIds = new Set(uploadedFiles.map((file) => file.id));
+          return [...uploadedFiles, ...existing.filter((file) => !uploadedIds.has(file.id))];
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["shared-files", currentUser?.id] });
       if (failures.length === 0) {
         toast({ title: "Upload complete", description: `${uploaded} file${uploaded === 1 ? "" : "s"} uploaded.` });
       } else if (uploaded > 0) {

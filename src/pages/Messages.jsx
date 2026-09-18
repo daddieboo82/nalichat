@@ -243,7 +243,11 @@ export default function Messages() {
     staleTime: 20_000,
   });
 
-  const { data: conversations = [], isError: conversationsError } = useQuery({
+  const {
+    data: conversations = [],
+    isError: conversationsError,
+    isFetched: conversationsFetched,
+  } = useQuery({
     queryKey: ["conversations", currentUser?.id],
     queryFn: async () => {
       const res = await base44.functions.invoke("manageConversation", {
@@ -294,7 +298,7 @@ export default function Messages() {
   const myConversations = partitionedConversations.visible;
 
   useEffect(() => {
-    if (!lockedChatsReady || !currentUser?.id || !location.search) return;
+    if (!lockedChatsReady || !currentUser?.id || !location.search || !conversationsFetched) return;
     const requestedId = new URLSearchParams(location.search).get("id");
     if (!requestedId) return;
 
@@ -332,6 +336,7 @@ export default function Messages() {
     }
   }, [
     location.search,
+    conversationsFetched,
     conversations,
     currentUser?.id,
     lockedChatsReady,

@@ -88,6 +88,16 @@ async function filterAll(entity, query, sort, pageSize = 200) {
   }
 }
 
+async function listAll(entity, sort, pageSize = 200) {
+  const rows = [];
+  for (let skip = 0; skip < 5000; skip += pageSize) {
+    const page = await entity.list(sort, pageSize, skip);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+  return rows;
+}
+
 function updateMessageHistory(cache, updater) {
   if (Array.isArray(cache)) return updater(cache);
   const current = cache && typeof cache === "object"
@@ -250,19 +260,11 @@ export default function Messages() {
   } = useQuery({
     queryKey: ["conversations", currentUser?.id],
     queryFn: async () => {
-      const res = await base44.functions.invoke("manageConversation", {
-        action: "list_member_conversations",
-      });
-      if (res?.data?.error) throw new Error(res.data.error);
-      if (
-        res?.data?.success !== true ||
-        res?.data?.action !== "list_member_conversations" ||
-        res?.data?.userId !== currentUser.id ||
-        !Array.isArray(res?.data?.conversations)
-      ) {
-        throw new Error("Conversation list response was not confirmed.");
-      }
-      return res.data.conversations.filter((conversation) =>
+      const rows = await listAll(
+        base44.entities.Conversation,
+        "-last_message_at",
+      );
+      return rows.filter((conversation) =>
         conversation?.participant_ids?.includes(currentUser.id)
       );
     },

@@ -281,7 +281,7 @@ describe('release configuration', () => {
     const standardAgent = await readJson('base44/agents/studio_ai.jsonc');
     const plusAgent = await readJson('base44/agents/studio_ai_plus.jsonc');
 
-    expect(standardAgent.model).toBeUndefined();
+    expect(standardAgent.model).toBe('automatic');
     expect(plusAgent.model).toBe('claude_opus_4_8');
 
     const standardFunctions = (standardAgent.tool_configs || [])
@@ -1095,12 +1095,13 @@ describe('release configuration', () => {
   it('keeps DM and group targets aligned with public-user eligibility', async () => {
     const manage = await readText('base44/functions/manageConversation/entry.ts');
 
-    expect(manage).toContain('otherUser.onboarding_completed');
     expect(manage).toContain('!otherUser.is_banned');
     expect(manage).toContain("String(otherUser.display_name || '').trim()");
+    expect(manage).not.toContain('otherUser.onboarding_completed');
     expect(manage).toContain("error: 'Recipient unavailable'");
     expect(manage).toContain('candidate.is_banned');
     expect(manage).toContain("String(candidate.display_name || '').trim()");
+    expect(manage).not.toContain('candidate.onboarding_completed');
     expect(manage).toContain("error: 'One or more participants are unavailable'");
     expect(manage).toContain('if (user.is_banned && !otherIsAdmin)');
   });

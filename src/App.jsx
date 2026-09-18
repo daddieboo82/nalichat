@@ -300,6 +300,12 @@ const AuthenticatedApp = () => {
 
   return (
     <>
+      <span
+        data-testid="auth-state"
+        data-state={isAuthenticated ? "authenticated" : "anonymous"}
+        className="sr-only"
+        aria-hidden="true"
+      />
       <Suspense fallback={
         <div className="fixed inset-0 flex items-center justify-center bg-background">
           <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />

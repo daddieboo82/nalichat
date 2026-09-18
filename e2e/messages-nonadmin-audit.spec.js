@@ -85,13 +85,14 @@ test.describe('Messages non-admin production audit', () => {
 
       const search = pageA.getByPlaceholder(/Search by name, genre, or location/i);
       await expect(search).toBeVisible({ timeout: 30000 });
-      await search.fill(secondary.email);
+      const targetName = await pageB.locator('[data-testid="auth-state"]').getAttribute('data-display-name').catch(() => null);
+      if (targetName) await search.fill(targetName);
       const messageButtons = pageA.getByTestId('messages-contacts-scroll').getByRole('button', { name: /^message$/i });
-      if (await messageButtons.count() === 0) {
-        await search.fill('');
-      }
+      if (!targetName || await messageButtons.count() === 0) await search.fill('');
       await expect.poll(async () => messageButtons.count(), { timeout: 30000 }).toBeGreaterThan(0);
+      const beforeDmUrl = pageA.url();
       await messageButtons.first().click();
+      await expect.poll(() => pageA.url(), { timeout: 30000 }).not.toBe(beforeDmUrl);
 
       const inputA = pageA.getByRole('textbox', { name: 'Message Input' });
       await expect(inputA).toBeVisible({ timeout: 30000 });

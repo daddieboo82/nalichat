@@ -42,8 +42,6 @@ workflows:
     environment:
       android_signing:
         - nalichat_play_2026
-      groups:
-        - keystore_credentials
       vars:
         PACKAGE_ID: com.nalichat
         KEYSTORE_ALIAS: nalichat

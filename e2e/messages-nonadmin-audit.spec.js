@@ -13,13 +13,20 @@ async function login(page, account) {
   await expect(page.getByText('Loading app...', { exact: true })).toBeHidden({ timeout: 30000 });
 }
 
+async function openNetwork(page) {
+  const network = page.getByRole('button', { name: /^network$/i });
+  await expect(network, 'Messages must expose the Network tab').toBeVisible({ timeout: 30000 });
+  await network.click();
+  await expect(page.getByTestId('messages-contacts-scroll'), 'Network must render the contacts/discovery panel').toBeVisible({ timeout: 30000 });
+}
+
 test.describe('Messages non-admin production audit', () => {
   test.skip(!(primary.email && primary.password && secondary.email && secondary.password), 'Both protected E2E accounts are required.');
 
   test('contacts populate and a contact opens a DM', async ({ page }) => {
     const diagnostics = [];
     page.on('response', r => {
-      if (/message|contact|conversation|user/i.test(r.url()) && r.status() >= 400)
+      if (/message|contact|conversation|user|listPublicUsers/i.test(r.url()) && r.status() >= 400)
         diagnostics.push(`${r.status()} ${r.request().method()} ${r.url()}`);
     });
     page.on('pageerror', e => diagnostics.push(`PAGEERROR ${e.message}`));
@@ -28,43 +35,60 @@ test.describe('Messages non-admin production audit', () => {
     await page.goto('/messages');
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/messages');
 
-    const network = page.getByRole('button', { name: /^network$/i });
-    if (await network.count()) await network.click();
+    try {
+      await openNetwork(page);
+    } catch (e) {
+      console.log('MESSAGES_AUDIT_NETWORK_FAILURE', JSON.stringify({ url: page.url(), diagnostics }));
+      throw e;
+    }
 
     const scroll = page.getByTestId('messages-contacts-scroll');
-    await expect(scroll, 'Messages contact panel must render for a normal account').toBeVisible({ timeout: 30000 });
+    const contactList = page.getByTestId('messages-contact-list');
+    await expect(contactList, 'Network directory must finish loading').toBeAttached({ timeout: 30000 });
 
-    const candidates = scroll.locator('button, [role="button"], a').filter({ hasNotText: /^$/ });
-    await expect.poll(async () => candidates.count(), {
-      message: 'Expected at least one selectable contact for the non-admin account',
+    const messageButtons = scroll.getByRole('button', { name: /^message$/i });
+    await expect.poll(async () => messageButtons.count(), {
+      message: 'Expected at least one discoverable/contact user with a Message button',
       timeout: 30000,
     }).toBeGreaterThan(0);
 
     const beforeUrl = page.url();
-    const first = candidates.first();
-    const label = ((await first.innerText().catch(() => '')) || (await first.getAttribute('aria-label')) || 'unknown').trim();
-    console.log('MESSAGES_AUDIT_CONTACT', label);
+    const first = messageButtons.first();
+    console.log('MESSAGES_AUDIT_MESSAGE_BUTTONS', await messageButtons.count());
     await first.click();
 
     const composer = page.locator('textarea, input[placeholder*="message" i], [contenteditable="true"]').first();
     try {
-      await expect(composer, 'Selecting a contact must open a usable DM composer').toBeVisible({ timeout: 15000 });
+      await expect(composer, 'Selecting a person must open a usable DM composer').toBeVisible({ timeout: 15000 });
     } catch (e) {
-      console.log('MESSAGES_AUDIT_DIAGNOSTICS', JSON.stringify({ beforeUrl, afterUrl: page.url(), diagnostics }));
+      console.log('MESSAGES_AUDIT_DM_FAILURE', JSON.stringify({ beforeUrl, afterUrl: page.url(), diagnostics }));
       throw e;
     }
     expect(diagnostics.filter(x => / 401 | 403 /.test(` ${x} `)), 'No authorization failures should occur while opening the DM').toEqual([]);
   });
 
-  test('two non-admin sessions can independently reach Messages', async ({ browser }) => {
+  test('two non-admin sessions can independently reach Network', async ({ browser }) => {
     for (const account of [primary, secondary]) {
       const context = await browser.newContext();
       const page = await context.newPage();
-      await login(page, account);
-      await page.goto('/messages');
-      await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/messages');
-      await expect(page.getByTestId('messages-contacts-scroll')).toBeVisible({ timeout: 30000 });
-      await context.close();
+      const diagnostics = [];
+      page.on('response', r => {
+        if (/message|contact|conversation|user|listPublicUsers/i.test(r.url()) && r.status() >= 400)
+          diagnostics.push(`${r.status()} ${r.request().method()} ${r.url()}`);
+      });
+      try {
+        await login(page, account);
+        await page.goto('/messages');
+        await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/messages');
+        await openNetwork(page);
+        await expect(page.getByTestId('messages-contact-list'), 'Network directory must finish loading for each non-admin account').toBeAttached({ timeout: 30000 });
+        expect(diagnostics.filter(x => / 401 | 403 /.test(` ${x} `))).toEqual([]);
+      } catch (e) {
+        console.log('MESSAGES_AUDIT_SESSION_FAILURE', JSON.stringify({ url: page.url(), diagnostics }));
+        throw e;
+      } finally {
+        await context.close();
+      }
     }
   });
 });

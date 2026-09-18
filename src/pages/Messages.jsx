@@ -124,7 +124,7 @@ export default function Messages() {
   const navigate = useNavigate();
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [messageHistoryLimit, setMessageHistoryLimit] = useState(200);
-  const [sidebarTab, setSidebarTab] = useState("chats");
+  const [sidebarTab, setSidebarTab] = useState("contacts");
   const [lockedLinkConversationId, setLockedLinkConversationId] = useState(null);
   const [showLockedAccess, setShowLockedAccess] = useState(false);
   const { hasEntitlement } = useSubscription();
@@ -245,11 +245,23 @@ export default function Messages() {
 
   const { data: conversations = [], isError: conversationsError } = useQuery({
     queryKey: ["conversations", currentUser?.id],
-    queryFn: () => filterAll(
-      base44.entities.Conversation,
-      { participant_ids: currentUser.id },
-      "-last_message_at",
-    ),
+    queryFn: async () => {
+      const res = await base44.functions.invoke("manageConversation", {
+        action: "list_member_conversations",
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      if (
+        res?.data?.success !== true ||
+        res?.data?.action !== "list_member_conversations" ||
+        res?.data?.userId !== currentUser.id ||
+        !Array.isArray(res?.data?.conversations)
+      ) {
+        throw new Error("Conversation list response was not confirmed.");
+      }
+      return res.data.conversations.filter((conversation) =>
+        conversation?.participant_ids?.includes(currentUser.id)
+      );
+    },
     enabled: !!currentUser?.id,
     refetchInterval: 5000,
     staleTime: 3000,

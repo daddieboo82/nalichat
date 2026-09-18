@@ -6,7 +6,7 @@ describe('Messages public directory query', () => {
   it('validates only the directory response and does not reference reaction variables from another mutation', async () => {
     const source = await readFile('src/pages/Messages.jsx', 'utf8');
     const start = source.indexOf('queryKey: ["users", "presence", currentUser?.id]');
-    const end = source.indexOf('const { data: conversations', start);
+    const end = source.indexOf('queryKey: ["conversations", currentUser?.id]', start);
     const block = source.slice(start, end);
 
     expect(block).toContain('res?.data?.viewerUserId !== currentUser?.id');

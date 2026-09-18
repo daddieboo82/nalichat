@@ -55,7 +55,12 @@ workflows:
       - name: Install dependencies
         script: npm ci
       - name: Install audit browsers
-        script: npx playwright install --with-deps chromium webkit
+        script: |
+          # Codemagic images already carry browser system libraries. Avoid
+          # Playwright's apt install path here because Ubuntu unattended-upgrades
+          # can temporarily hold the dpkg frontend lock and fail an otherwise
+          # healthy audit before tests start.
+          npx playwright install chromium webkit
       - name: Audit Messages as non-admin accounts
         script: npx playwright test e2e/messages-nonadmin-audit.spec.js --project=mobile-chromium --project=iphone-16-simulation
     artifacts:

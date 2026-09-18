@@ -28,6 +28,7 @@ export function usePwaUpdate() {
 
     if (isDev || isNative) return;
 
+    const hadControllerAtStart = Boolean(navigator.serviceWorker.controller);
     let registration;
     let updateInterval;
     let disposed = false;
@@ -90,12 +91,11 @@ export function usePwaUpdate() {
       })
       .catch(() => {});
 
-    // When a new SW takes control *because the user applied an update*, reload
-    // to get fresh content. The first-ever install also fires controllerchange
-    // (sw.js calls clients.claim() on activate), and reloading there threw
-    // first-time visitors out of whatever they were doing, so it is ignored.
+    // Reload existing controlled clients whenever a new worker takes over so
+    // signed-in users cannot remain on an old Messages bundle. Still ignore the
+    // first-ever install, which has no controller at hook startup.
     const handleControllerChange = () => {
-      if (!updateAppliedRef.current) return;
+      if (!hadControllerAtStart && !updateAppliedRef.current) return;
       if (reloadedRef.current) return;
       reloadedRef.current = true;
       window.location.reload();

@@ -63,6 +63,22 @@ test.describe('authenticated production smoke', () => {
 
 
   test('uploads and surfaces a small file in Files', async ({ page }) => {
+    const uploadResponses = [];
+    page.on('response', async (response) => {
+      if (!/\/functions\/(secureUploadFile|createSharedFileRecord)(?:\/|$)/.test(response.url())) return;
+      let body = '';
+      try {
+        body = await response.text();
+      } catch {
+        body = '<response body unavailable>';
+      }
+      uploadResponses.push({
+        url: response.url(),
+        status: response.status(),
+        body: body.slice(0, 2000),
+      });
+    });
+
     await page.goto('/files');
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/files');
 
@@ -74,7 +90,12 @@ test.describe('authenticated production smoke', () => {
       buffer: Buffer.from('NaliChat production E2E upload check'),
     });
 
-    await expect(page.getByText(fileName, { exact: false })).toBeVisible({ timeout: 30000 });
+    try {
+      await expect(page.getByText(fileName, { exact: false })).toBeVisible({ timeout: 30000 });
+    } catch (error) {
+      console.log('UPLOAD_PIPELINE_DIAGNOSTICS', JSON.stringify(uploadResponses));
+      throw error;
+    }
   });
 
   test('mobile Messages Network remains vertically scrollable', async ({ page }, testInfo) => {

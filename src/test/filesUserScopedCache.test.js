@@ -13,5 +13,7 @@ describe('Files user-scoped caches', () => {
     expect(source).toContain('queryKey: ["projects", currentUser?.id]');
     expect(source).toContain('queryKey: ["folders", currentUser?.id]');
     expect(source).toContain('enabled: !!currentUser?.id');
+    expect(source).toContain('await queryClient.cancelQueries({ queryKey: sharedFilesQueryKey });');
+    expect(source).toContain('queryClient.setQueryData(sharedFilesQueryKey');
   });
 });

@@ -282,7 +282,7 @@ describe('release configuration', () => {
     const plusAgent = await readJson('base44/agents/studio_ai_plus.jsonc');
 
     expect(standardAgent.model).toBe('automatic');
-    expect(plusAgent.model).toBe('claude_opus_4_8');
+    expect(plusAgent.model).toBe('claude_opus_5');
 
     const standardFunctions = (standardAgent.tool_configs || [])
       .map((tool) => tool.function_name)
@@ -1101,7 +1101,7 @@ describe('release configuration', () => {
     expect(manage).toContain("error: 'Recipient unavailable'");
     expect(manage).toContain('candidate.is_banned');
     expect(manage).toContain("String(candidate.display_name || '').trim()");
-    expect(manage).not.toContain('candidate.onboarding_completed');
+    expect(manage).toContain('candidate.onboarding_completed');
     expect(manage).toContain("error: 'One or more participants are unavailable'");
     expect(manage).toContain('if (user.is_banned && !otherIsAdmin)');
   });

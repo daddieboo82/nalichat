@@ -228,6 +228,7 @@ export default function Messages() {
       // to the tab. Presence itself is maintained app-wide in App.jsx.
       queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id, selectedConvId] });
       queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
+      queryClient.invalidateQueries({ queryKey: ["users", "presence", currentUser?.id] });
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -249,8 +250,10 @@ export default function Messages() {
       return res.data?.users || [];
     },
     enabled: !!currentUser?.id,
-    refetchInterval: 45_000,
-    staleTime: 20_000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 15_000,
+    staleTime: 10_000,
   });
 
   const {

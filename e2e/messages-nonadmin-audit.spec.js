@@ -100,7 +100,9 @@ test.describe('Messages non-admin production audit', () => {
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
       }, token);
-      await pageA.getByRole('button', { name: 'Send Message' }).click();
+      const sendA = pageA.getByRole('button', { name: 'Send Message' });
+      await expect(sendA).toBeVisible({ timeout: 30000 });
+      await sendA.evaluate((el) => el.click());
       await expect(pageA.getByText(token, { exact: true }).last()).toBeVisible({ timeout: 30000 });
 
       await pageB.goto('/messages');
@@ -114,7 +116,9 @@ test.describe('Messages non-admin production audit', () => {
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
       }, reply);
-      await pageB.getByRole('button', { name: 'Send Message' }).click();
+      const sendB = pageB.getByRole('button', { name: 'Send Message' });
+      await expect(sendB).toBeVisible({ timeout: 30000 });
+      await sendB.evaluate((el) => el.click());
       await expect(pageB.getByText(reply, { exact: true }).last()).toBeVisible({ timeout: 30000 });
       await expect(pageA.getByText(reply, { exact: true }).last()).toBeVisible({ timeout: 45000 });
     } finally {

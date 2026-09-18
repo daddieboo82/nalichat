@@ -709,7 +709,20 @@ export default function Messages() {
         !conv.participant_ids.includes(currentUser.id) ||
         !conv.participant_ids.includes(otherUser.id)
       ) throw new Error("Conversation was not created");
-      await queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
+      // Seed the freshly created/found DM into the member-scoped cache before
+      // navigating. Non-admin clients can otherwise briefly re-query before the
+      // new service-role-created conversation is visible through entity RLS,
+      // causing the deep-link resolver to classify the chat as missing and
+      // immediately close it.
+      queryClient.setQueryData(["conversations", currentUser?.id], (old = []) => {
+        const rows = Array.isArray(old) ? old : [];
+        const existingIndex = rows.findIndex((row) => row?.id === conv.id);
+        if (existingIndex >= 0) {
+          return rows.map((row, index) => index === existingIndex ? { ...row, ...conv } : row);
+        }
+        return [conv, ...rows];
+      });
+      void queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
       if (lockedConversationIds.includes(conv.id) && !lockedChatsUnlocked) {
         setLockedLinkConversationId(conv.id);
         setShowLockedAccess(true);

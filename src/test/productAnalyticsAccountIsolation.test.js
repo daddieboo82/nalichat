@@ -15,6 +15,8 @@ describe("product analytics account isolation", () => {
     expect(analytics).toContain("session = null;");
     expect(analytics).toContain("lastRoute = null;");
     expect(analytics).toContain("sessionStorage.removeItem(LEGACY_SESSION_KEY)");
+    expect(analytics).toContain('return !/iPad|iPhone|iPod/.test(navigator.userAgent || "");');
+    expect(analytics).toContain("if (supportsCredentialedAnalyticsTransport())");
     expect(app).toContain("useEffect(() => initProductAnalytics(user?.id || null), [user?.id]);");
   });
 });

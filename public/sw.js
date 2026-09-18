@@ -17,7 +17,7 @@
  *  reloads the page.
  */
 
-const CACHE_NAME = 'nalichat-v3';
+const CACHE_NAME = 'nalichat-v4';
 
 // App shell — pre-cached on install so the app works offline on first load.
 const APP_SHELL = [
@@ -29,11 +29,13 @@ const APP_SHELL = [
 // ── Install ──────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      cache.addAll(APP_SHELL).catch(() => {
-        // If any individual asset fails, just skip it — the SW still installs.
-      })
-    )
+    caches.open(CACHE_NAME)
+      .then((cache) =>
+        cache.addAll(APP_SHELL).catch(() => {
+          // If any individual asset fails, just skip it — the SW still installs.
+        })
+      )
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -88,8 +90,7 @@ self.addEventListener('fetch', (event) => {
   const isStaticAsset =
     url.pathname.startsWith('/assets/')
     || url.pathname === '/manifest.json'
-    || url.pathname === '/favicon.ico'
-    || url.pathname === '/sw.js';
+    || url.pathname === '/favicon.ico';
   if (!isStaticAsset) return;
 
   // Stale-while-revalidate for explicitly public static assets only.

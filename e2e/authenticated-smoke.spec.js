@@ -13,7 +13,11 @@ async function login(page, userEmail, userPassword) {
   await page.locator('#password').fill(userPassword);
   await page.getByRole('button', { name: /^log in$/i }).click();
 
-  await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).not.toBe('/login');
+  await page.waitForURL(
+    (url) => new URL(url).pathname !== '/login',
+    { timeout: 30000, waitUntil: 'domcontentloaded' },
+  );
+  await expect(page.locator('[data-testid="auth-state"][data-state="authenticated"]')).toBeAttached({ timeout: 30000 });
   await expect(page.getByText('Loading app...', { exact: true })).toBeHidden({ timeout: 30000 });
 }
 
@@ -151,13 +155,11 @@ test.describe('mobile logout and account switch', () => {
     );
 
     await login(page, email, password);
-    await page.goto('/');
     await page.getByRole('button', { name: /open menu/i }).click();
     await page.getByRole('button', { name: /log out/i }).click();
 
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/');
-    await page.getByRole('button', { name: /open menu/i }).click();
-    await expect(page.getByRole('button', { name: /^log in$/i })).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid="auth-state"][data-state="anonymous"]')).toBeAttached({ timeout: 30000 });
     await page.goto('/messages');
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/login');
 

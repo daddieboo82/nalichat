@@ -68,7 +68,7 @@ test.describe('Messages non-admin production audit', () => {
   });
 
   test('two non-admin accounts can exchange a real DM', async ({ browser }) => {
-    test.setTimeout(150000);
+    test.setTimeout(240000);
     const a = await browser.newContext();
     const b = await browser.newContext();
     const pageA = await a.newPage();
@@ -95,7 +95,9 @@ test.describe('Messages non-admin production audit', () => {
 
       const inputA = pageA.getByRole('textbox', { name: 'Message Input' });
       await expect(inputA).toBeVisible({ timeout: 30000 });
-      await inputA.fill(token);
+      await expect(inputA).toBeEnabled({ timeout: 30000 });
+      await inputA.click();
+      await inputA.pressSequentially(token, { delay: 10 });
       await pageA.getByRole('button', { name: 'Send Message' }).click();
       await expect(pageA.getByText(token, { exact: true }).last()).toBeVisible({ timeout: 30000 });
 
@@ -103,7 +105,9 @@ test.describe('Messages non-admin production audit', () => {
       await expect(pageB.getByText(token, { exact: true }).last()).toBeVisible({ timeout: 45000 });
       const inputB = pageB.getByRole('textbox', { name: 'Message Input' });
       await expect(inputB).toBeVisible({ timeout: 30000 });
-      await inputB.fill(reply);
+      await expect(inputB).toBeEnabled({ timeout: 30000 });
+      await inputB.click();
+      await inputB.pressSequentially(reply, { delay: 10 });
       await pageB.getByRole('button', { name: 'Send Message' }).click();
       await expect(pageB.getByText(reply, { exact: true }).last()).toBeVisible({ timeout: 30000 });
       await expect(pageA.getByText(reply, { exact: true }).last()).toBeVisible({ timeout: 45000 });

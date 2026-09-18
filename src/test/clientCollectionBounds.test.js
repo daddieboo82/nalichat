@@ -21,7 +21,9 @@ describe('client collection read behavior', () => {
     expect(versions).toMatch(/TrackVersion\.filter\([\s\S]*pageSize,[\s\S]*skip/);
 
     // Complete-data surfaces must not silently truncate older accessible rows.
-    expect(contacts).toContain('async function listAllContacts(userId)');
+    // Messenger contacts now come from the authenticated service-backed directory.
+    expect(contacts).toContain('async function loadMessengerDirectory(currentUserId)');
+    expect(contacts).toContain("base44.functions.invoke('listPublicUsers', { includePresence: true })");
     expect(newChat).toContain('async function listAllContacts(userId)');
     expect(files).toContain('async function listAllAccessible(entity, sort = "-created_date", pageSize = 200)');
     expect(summary).toContain('async function listAllRows(entity, sort = "-created_date", pageSize = 200)');

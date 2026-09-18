@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
-const WINDOWS_DOWNLOAD_URL = 'https://github.com/daddieboo82/nalichat/releases/download/1.0.0/NaliChat-Setup.exe';
+const WINDOWS_DOWNLOAD_URL = 'https://nalichat-downloads.netlify.app/downloads/NaliChat-Portable.exe';
 const ANDROID_APK_URL = 'https://api.codemagic.io/artifacts/8fef19cc-9531-4ed8-b99a-522f2c36e0b6/2fb94f53-5da0-45b7-bee5-2962c112f6a9/app-release.apk';
 const ANDROID_AAB_URL = 'https://api.codemagic.io/artifacts/2bd6c8e0-c960-4509-8442-f53ee47e3c76/afdb6fd1-9cbc-41b6-9d60-9c7a8360f25a/app-release-bundle.aab';
 
@@ -44,8 +44,8 @@ export default function Download() {
 
           <Card className="ui-surface rounded-3xl border-primary/20 bg-card/70 text-left backdrop-blur-xl">
             <CardContent className="space-y-5 p-6">
-              <div className="flex items-center gap-3"><Monitor className="h-7 w-7 text-primary" /><div><h2 className="font-heading text-xl font-bold">Windows</h2><p className="text-sm text-muted-foreground">NaliChat desktop installer</p></div></div>
-              <p className="text-sm leading-relaxed text-muted-foreground">Download the Windows installer for the full NaliChat desktop experience.</p>
+              <div className="flex items-center gap-3"><Monitor className="h-7 w-7 text-primary" /><div><h2 className="font-heading text-xl font-bold">Windows</h2><p className="text-sm text-muted-foreground">NaliChat portable desktop app</p></div></div>
+              <p className="text-sm leading-relaxed text-muted-foreground">Download the portable Windows app for the full NaliChat desktop experience — no installer required.</p>
               <Button asChild className="ui-hover min-h-12 w-full rounded-xl font-semibold">
                 <a href={WINDOWS_DOWNLOAD_URL}><DownloadIcon className="mr-2 h-4 w-4" />Download for Windows<ExternalLink className="ml-2 h-4 w-4" /></a>
               </Button>

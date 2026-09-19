@@ -644,12 +644,8 @@ export default function Studio() {
       if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
       if (headerPlayheadRef.current) headerPlayheadRef.current.style.left = `${newTime * 20 * zoom}px`;
 
-      // Drive professional mix automation from the transport without triggering React renders.
-      tracksRef.current.forEach(track => {
-        if (track.audioUrl && mixEngineRef.current?.isRouted(track.id)) {
-          mixEngineRef.current.syncAutomation(track.id, track, newTime, tracksRef.current);
-        }
-      });
+      // Drive the full automation frame in one pass for responsive large sessions.
+      mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
       
       if (isRecording && recordingStartTime !== null) {
         // Use real elapsed time (performance.now) for accurate sync with the actual audio recording
@@ -813,6 +809,8 @@ export default function Studio() {
     if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
     if (headerPlayheadRef.current) headerPlayheadRef.current.style.left = `${newTime * 20 * zoom}px`;
     Object.values(audioElementsRef.current).forEach(audio => { audio.currentTime = newTime; });
+    // Scrubbing/seeking must immediately audition the automation state at the destination.
+    mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
   };
 
   const togglePlay = () => {

@@ -178,6 +178,18 @@ export function createMixEngine() {
       return this.syncTrack(trackId, automated, { gain });
     },
 
+    /** Apply a whole automation frame in O(n), avoiding per-track rescans. */
+    syncAutomationFrame(tracks = [], time = 0) {
+      const automatedTracks = (tracks || []).map(track => automatedTrackState(track, time));
+      const hasSolo = automatedTracks.some(track => track.solo);
+      automatedTracks.forEach(track => {
+        if (!entries.has(track.id)) return;
+        const audible = !track.muted && (!hasSolo || !!track.solo);
+        this.syncTrack(track.id, track, { gain: audible ? trackGainValue(track) : 0 });
+      });
+      return automatedTracks;
+    },
+
     /** Update master fader / master inserts. Rebuilds the bus when inserts change. */
     syncMaster({ masterVolume, masterFx }) {
       const volumeChanged = masterVolume !== masterState.masterVolume;

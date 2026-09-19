@@ -227,36 +227,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Reuse any still-valid pending checkout for this SKU before taking a new
-    // checkout lease. This prevents abandoned browser attempts from turning
-    // into 409s while Stripe still has a usable Checkout Session.
-    const reusableAttempt = subscriptions.find(
-      (subscription: Record<string, unknown>) => (
-        subscription.provider === 'stripe'
-        && subscription.sku === sku.sku
-        && subscription.status === 'pending'
-        && typeof subscription.checkout_url === 'string'
-        && typeof subscription.checkout_id === 'string'
-        && typeof subscription.checkout_expires_at === 'string'
-        && Date.parse(subscription.checkout_expires_at as string) > Date.now()
-      ),
-    );
-    if (reusableAttempt) {
-      return Response.json({
-        success: true,
-        action: 'create_subscription_checkout',
-        userId: user.id,
-        sku: sku.sku,
-        idempotencyKey: requestKey,
-        successDestination: body.callbackDestinations.success,
-        cancelDestination: body.callbackDestinations.cancel,
-        checkoutUrl: reusableAttempt.checkout_url,
-        checkoutId: reusableAttempt.checkout_id,
-        trialApplied: false,
-        reused: true,
-      });
-    }
-
     const checkoutLeaseCutoff = new Date(Date.now() - CHECKOUT_LEASE_MS).toISOString();
     const currentUsers = await base44.asServiceRole.entities.User.filter({ id: user.id }, '-created_date', 1);
     const currentUser = currentUsers[0];

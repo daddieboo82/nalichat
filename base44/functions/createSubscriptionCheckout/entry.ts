@@ -328,7 +328,6 @@ Deno.serve(async (req) => {
           metadata,
           subscription_data: {
             metadata,
-            ...(trialApplied ? { trial_period_days: TRIAL_DAYS } : {}),
           },
         },
         'POST',

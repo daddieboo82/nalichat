@@ -586,7 +586,30 @@ export default function Studio() {
     setTracksWithHistory(prev => prev.map(t => t.id === id ? { ...t, [prop]: !t[prop] } : t));
   };
 
+  const [draggedTrackId, setDraggedTrackId] = useState(null);
+  const [draggedTrackOffsetY, setDraggedTrackOffsetY] = useState(0);
+
+  const handleTrackDragStart = (start) => {
+    setDraggedTrackId(start.draggableId);
+    setDraggedTrackOffsetY(0);
+  };
+
+  const handleTrackDragUpdate = (update) => {
+    if (!update.destination) return;
+    const sourceIndex = update.source.index;
+    const destinationIndex = update.destination.index;
+    if (sourceIndex === destinationIndex) { setDraggedTrackOffsetY(0); return; }
+    const rowHeight = (t) => t.trackType === 'vca' ? 96 : t.trackType === 'folder' ? 48 : (t.height || (t.showAutomation ? 176 : 112));
+    const low = Math.min(sourceIndex, destinationIndex);
+    const high = Math.max(sourceIndex, destinationIndex);
+    const crossed = tracks.slice(low, high + 1).filter((_, i) => i !== (sourceIndex - low));
+    const distance = crossed.reduce((sum, t) => sum + rowHeight(t), 0);
+    setDraggedTrackOffsetY(destinationIndex > sourceIndex ? distance : -distance);
+  };
+
   const handleReorderTracks = (result) => {
+    setDraggedTrackId(null);
+    setDraggedTrackOffsetY(0);
     if (!result.destination || result.destination.index === result.source.index) return;
     sounds.click();
     setTracksWithHistory(prev => {
@@ -2214,7 +2237,7 @@ export default function Studio() {
         <div className="w-44 sm:w-72 md:w-96 border-r border-white/10 bg-white/[0.03] backdrop-blur-md flex flex-col sticky left-0 z-10 shrink-0 rounded-l-2xl">
           {/* Spacer matching the timeline ruler — sticky so it stays aligned at top */}
           <div className="h-8 shrink-0 sticky top-0 z-20 border-b border-white/10 bg-[#12101C]/80 backdrop-blur-md" />
-          <DragDropContext onDragEnd={handleReorderTracks}>
+          <DragDropContext onDragStart={handleTrackDragStart} onDragUpdate={handleTrackDragUpdate} onDragEnd={handleReorderTracks}>
             <Droppable droppableId="studio-track-headers">
               {(dropProvided) => (
                 <div ref={dropProvided.innerRef} {...dropProvided.droppableProps}>
@@ -2363,9 +2386,11 @@ export default function Studio() {
                 <div
                   key={track.id}
                   onClick={(e) => handleTrackClick(e, track.id)}
-                  style={{ height: track.trackType === 'vca' ? '96px' : track.trackType === 'folder' ? '48px' : (track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px')), flexShrink: 0 }}
+                  data-testid={`studio-track-row-${track.id}`}
+                  style={{ height: track.trackType === 'vca' ? '96px' : track.trackType === 'folder' ? '48px' : (track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px')), flexShrink: 0, transform: String(track.id) === String(draggedTrackId) ? `translateY(${draggedTrackOffsetY}px)` : undefined }}
                   className={cn(
                     "border-b border-border/20 relative group transition-none shrink-0",
+                    String(track.id) === String(draggedTrackId) && "z-30 ring-2 ring-primary/50 shadow-xl opacity-90",
                     track.muted ? "opacity-30" : "",
                     selectedTrackIds.includes(track.id) ? "bg-primary/15 shadow-[inset_0_0_30px_hsl(var(--primary)/0.1)]" : "",
                     tracks.some(t => t.solo) && !track.solo && "opacity-40 grayscale"
@@ -2610,6 +2635,8 @@ export default function Studio() {
                           target.addEventListener('pointerup', handleUp);
                         }
                       }}
+                      data-testid={`studio-audio-clip-${track.id}`}
+                      data-track-id={String(track.id)}
                       className="audio-clip absolute top-2 bottom-2 rounded-r-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors shadow-sm"
                       style={{ 
                         left: `${(track.startTime !== undefined ? track.startTime : 0) * 20 * zoom}px`,
@@ -2818,7 +2845,7 @@ export default function Studio() {
                         onCommit={() => pushToHistory(tracksRef.current)}
                       />
 
-                      <div className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>
+                      <div data-testid={`studio-waveform-${track.id}`} className={cn("absolute overflow-hidden pointer-events-none", track.showAutomation ? "top-6 bottom-16" : "top-4 bottom-2")} style={{ left: 0, right: 0 }}>
                         <div style={{ position: 'absolute', left: `${-(track.clipStart || 0) * 20 * zoom}px`, width: `${(track.fullDuration || track.duration || 40) * 20 * zoom}px`, height: '100%' }}>
                           <TrackWaveformSVG track={track} />
                         </div>

@@ -29,6 +29,8 @@ export default function TrackHeader({
       ref={dragProvided.innerRef}
       {...dragProvided.draggableProps}
       onClick={(e) => handleTrackClick(e, track.id)}
+      data-testid={`studio-track-header-${track.id}`}
+      data-track-id={String(track.id)}
       style={{ ...dragProvided.draggableProps.style, height: track.height ? `${track.height}px` : (track.showAutomation ? '176px' : '112px') }}
       className={cn(
         "border-b border-border/40 p-3 flex flex-col justify-between transition-none cursor-pointer border-l-4 relative group/header",

@@ -29,7 +29,7 @@ workflows:
         script: npx playwright install --with-deps chromium webkit
       - name: Run authenticated Android and iPhone browser audit
         script: |
-          npx playwright test e2e/authenticated-smoke.spec.js \
+          npx playwright test e2e/authenticated-smoke.spec.js e2e/studio-track-drag.spec.js \
             --project=mobile-chromium \
             --project=iphone-16-simulation
     artifacts:

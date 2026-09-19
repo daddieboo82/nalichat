@@ -197,6 +197,7 @@ export async function renderInstrumentPhrase({
   bpm = 120,
   songKey = 'C Maj',
   bars = 4,
+  midiNotes = [],
 } = {}) {
   if (!isSynthesizable(instrument)) {
     throw new Error('External MIDI routes to outboard gear and cannot be rendered internally.');
@@ -215,7 +216,27 @@ export async function renderInstrumentPhrase({
 
   const { root, steps } = parseKey(songKey);
 
-  if (instrument === 'drums') {
+  // Editable MIDI clips take priority over the generated starter phrase.
+  // Notes use beat-based timing so tempo changes preserve the musical performance.
+  if (Array.isArray(midiNotes) && midiNotes.length > 0) {
+    midiNotes.forEach(note => {
+      const midi = Math.max(0, Math.min(127, Number(note.note) || 60));
+      const t = Math.max(0, Number(note.startBeat) || 0) * beat;
+      const dur = Math.max(0.03, (Number(note.durationBeats) || 1) * beat);
+      const velocity = Math.max(1, Math.min(127, Number(note.velocity) || 100)) / 127;
+      const noteGain = offline.createGain();
+      noteGain.gain.value = velocity;
+      noteGain.connect(master);
+      const freq = midiToFreq(midi);
+      if (instrument === 'bass') voiceBass(offline, noteGain, freq, t, dur);
+      else if (instrument === 'piano') voicePiano(offline, noteGain, freq, t, dur);
+      else if (instrument === 'drums') {
+        if (midi === 36 || midi === 35) voiceKick(offline, noteGain, t);
+        else if (midi === 38 || midi === 40) voiceSnare(offline, noteGain, t);
+        else noiseBurst(offline, noteGain, t, Math.min(0.2, dur), { type: 'highpass', freq: 8000, peak: 0.16 });
+      } else voiceSynth(offline, noteGain, freq, t, dur);
+    });
+  } else if (instrument === 'drums') {
     const step = beat / 2; // eighth notes
     const totalSteps = Math.floor(seconds / step);
     for (let i = 0; i < totalSteps; i++) {

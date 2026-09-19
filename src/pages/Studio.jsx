@@ -46,6 +46,7 @@ import ClipGainLine from '@/components/studio/ClipGainLine';
 import SpotDialog from '@/components/studio/SpotDialog';
 import SelectionRegion from '@/components/studio/SelectionRegion';
 import AutomationLane from '@/components/studio/AutomationLane';
+import PianoRoll from '@/components/studio/PianoRoll';
 import CrossfadeOverlay from '@/components/studio/CrossfadeOverlay';
 const BeatDetectiveDialog = lazy(() => import('@/components/studio/BeatDetectiveDialog'));
 import TrackCommitDialog from '@/components/studio/TrackCommitDialog';
@@ -179,6 +180,7 @@ export default function Studio() {
   const [newTrackInstrument, setNewTrackInstrument] = useState('default');
   const [newTrackMidiChannel, setNewTrackMidiChannel] = useState('1');
   const [selectedTrackIds, setSelectedTrackIds] = useState([]);
+  const [pianoRollTrackId, setPianoRollTrackId] = useState(null);
 
   const maxTracks = MAX_TRACKS;
   const [recordingStartTime, setRecordingStartTime] = useState(null);
@@ -1597,7 +1599,7 @@ export default function Studio() {
       color: ["bg-green-500", "bg-blue-500", "bg-purple-500", "bg-yellow-500", "bg-pink-500"][newId % 5],
       volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0,
       // Instrument choice is persisted so the track can actually be rendered later.
-      ...(isInstrument ? { instrument: newTrackInstrument, midiChannel: newTrackMidiChannel } : {}),
+      ...(isInstrument ? { instrument: newTrackInstrument, midiChannel: newTrackMidiChannel, midiNotes: [] } : {}),
     }]);
     setCreatingTrack(false);
     setSelectedTrackIds([newId]);
@@ -1624,6 +1626,7 @@ export default function Studio() {
         bpm,
         songKey,
         bars: 4,
+        midiNotes: track.midiNotes || [],
       });
       setTracksWithHistory(prev => prev.map(t => {
         if (t.id !== trackId) return t;
@@ -2196,6 +2199,13 @@ export default function Studio() {
             </Button>
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleSave}>
               <Save className="w-4 h-4" /> Save
+            </Button>
+            <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={() => {
+              const selected = tracks.find(t => selectedTrackIds.includes(t.id));
+              if (!selected || !['midi','instrument'].includes(selected.type)) return toast.error('Select a MIDI or Software Instrument track first');
+              setPianoRollTrackId(selected.id);
+            }}>
+              <Keyboard className="w-4 h-4" /> Piano Roll
             </Button>
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild><Button className="gap-2 rounded-xl bg-gradient-to-r from-primary to-pink-500 hover:opacity-90 glow-primary"><Download className="w-4 h-4" /> Export</Button></DropdownMenuTrigger>
@@ -2969,6 +2979,14 @@ export default function Studio() {
           </div>
         </div>
       </div>
+
+      {pianoRollTrackId && tracks.find(t => t.id === pianoRollTrackId) && (
+        <PianoRoll
+          track={tracks.find(t => t.id === pianoRollTrackId)}
+          onClose={() => setPianoRollTrackId(null)}
+          onChange={(midiNotes) => setTracksWithHistory(prev => prev.map(t => t.id === pianoRollTrackId ? { ...t, midiNotes } : t))}
+        />
+      )}
 
       <Suspense fallback={null}>
       <MixerPanel

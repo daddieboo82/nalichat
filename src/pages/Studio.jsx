@@ -1020,7 +1020,7 @@ export default function Studio() {
   }, []);
 
   const stopRecordingProcess = (keepPlaying = false) => {
-    if (midiRecordingRef.current) {
+    if (midiRecordingRef.current && (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive')) {
       midiRecordingRef.current = false;
       const stopBeat = currentTimeRef.current * (bpmRef.current / 60);
       const heldNotes = [...midiActiveNotesRef.current.values()];
@@ -1101,18 +1101,26 @@ export default function Studio() {
           }
         }
         
+        const stopBeat = currentTimeRef.current * (bpmRef.current / 60);
+        const heldMidiNotes = midiRecordingRef.current ? [...midiActiveNotesRef.current.values()] : [];
+        midiRecordingRef.current = false;
+        midiActiveNotesRef.current.clear();
         setTracksWithHistory(prev => prev.map(t => {
-          if (t.armed) {
-            return { 
-              ...t, 
-              waveform: realWaveform, 
-              armed: false, 
-              audioUrl, 
-              startTime: recordingStartTime !== null ? recordingStartTime : currentTimeRef.current,
-              duration: recordedDuration || (recordingStartTime !== null ? Math.max(1, currentTimeRef.current - recordingStartTime) : 10)
-            };
+          if (!t.armed) return t;
+          if (['midi', 'instrument'].includes(t.type)) {
+            const finalized = heldMidiNotes.filter(note => note.trackId === t.id).map(note => ({
+              id: crypto.randomUUID(), note: note.note,
+              startBeat: Math.round(note.startBeat * 4) / 4,
+              durationBeats: Math.max(.25, Math.round((stopBeat - note.startBeat) * 4) / 4),
+              velocity: note.velocity,
+            }));
+            return { ...t, armed: false, midiNotes: [...(t.midiNotes || []), ...finalized].sort((a, b) => a.startBeat - b.startBeat) };
           }
-          return t;
+          return {
+            ...t, waveform: realWaveform, armed: false, audioUrl,
+            startTime: recordingStartTime !== null ? recordingStartTime : currentTimeRef.current,
+            duration: recordedDuration || (recordingStartTime !== null ? Math.max(1, currentTimeRef.current - recordingStartTime) : 10)
+          };
         }));
         setRecordingStartTime(null);
         toast.success("Recording saved!");
@@ -1258,11 +1266,17 @@ export default function Studio() {
           if (e.data.size > 0) audioChunksRef.current.push(e.data);
         };
         mediaRecorder.start(200); // 200ms chunks to reduce memory spikes
+
+        const hasArmedMidi = tracks.some(t => t.armed && ['midi', 'instrument'].includes(t.type));
+        if (hasArmedMidi && midiAccessRef?.inputs?.size > 0) {
+          midiActiveNotesRef.current.clear();
+          midiRecordingRef.current = true;
+        }
         
         setIsRecording(true);
         setRecordingStartTime(currentTimeRef.current);
-        setActivity("Recording 🎙️");
-        toast.success("Recording started (Mic active)");
+        setActivity(hasArmedMidi && midiRecordingRef.current ? "Recording Audio + MIDI 🎙️🎹" : "Recording 🎙️");
+        toast.success(hasArmedMidi && midiRecordingRef.current ? "Audio + MIDI recording started" : "Recording started (Mic active)");
         sounds.recStart();
       } catch (err) {
         toast.error("Microphone access denied. Please allow mic permissions in your browser.");

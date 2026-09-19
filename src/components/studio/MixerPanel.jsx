@@ -105,6 +105,8 @@ export default function MixerPanel({
             {tracks.map(track => {
               const fxCount = countActiveEffects(getTrackEffects(track));
               const sendLevel = Math.max(0, Math.min(100, track.send1 || 0));
+              const send2Level = Math.max(0, Math.min(100, track.send2 || 0));
+              const send3Level = Math.max(0, Math.min(100, track.send3 || 0));
               const isFxOpen = fxTarget === track.id;
               return (
               <div key={track.id} className="w-36 h-full bg-background/50 border border-border/50 rounded-lg p-2.5 flex flex-col justify-between shrink-0 shadow-sm relative">
@@ -124,6 +126,16 @@ export default function MixerPanel({
                     onValueCommit={commit}
                     className="w-full [&_[role=slider]]:h-2.5 [&_[role=slider]]:w-2.5 [&_[role=slider]]:bg-primary/80"
                   />
+                  <div className="text-[8px] text-muted-foreground font-semibold flex justify-between mt-1">
+                    <span className={cn(send2Level > 0 && 'text-primary/90')}>Send 2 (Delay)</span>
+                    <span className="font-mono text-[8px] text-primary/80">{send2Level}%</span>
+                  </div>
+                  <Slider value={[send2Level]} max={100} aria-label={`Send 2 delay level for ${track.name}`} onValueChange={(val) => updateTrack(track.id, { send2: val[0] })} onValueCommit={commit} className="w-full [&_[role=slider]]:h-2.5 [&_[role=slider]]:w-2.5" />
+                  <div className="text-[8px] text-muted-foreground font-semibold flex justify-between mt-1">
+                    <span className={cn(send3Level > 0 && 'text-primary/90')}>Send 3 (Cue)</span>
+                    <span className="font-mono text-[8px] text-primary/80">{send3Level}%</span>
+                  </div>
+                  <Slider value={[send3Level]} max={100} aria-label={`Send 3 cue level for ${track.name}`} onValueChange={(val) => updateTrack(track.id, { send3: val[0] })} onValueCommit={commit} className="w-full [&_[role=slider]]:h-2.5 [&_[role=slider]]:w-2.5" />
                 </div>
 
                 {/* Panning */}

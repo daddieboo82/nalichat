@@ -290,6 +290,7 @@ export function connectTrackChain(context, source, track, { destination, reverbB
   if (destination) output.connect(destination);
 
   let sendGain = null;
+  const sendGains = [];
   const send = clamp(num(track?.send1, 0), 0, 100) / 100;
   if (reverbBus && send > 0) {
     sendGain = context.createGain();
@@ -297,9 +298,42 @@ export function connectTrackChain(context, source, track, { destination, reverbB
     output.connect(sendGain);
     sendGain.connect(reverbBus);
     nodes.push(sendGain);
+    sendGains.push(sendGain);
   }
 
-  return { nodes, trackGain, output, sendGain };
+  // Additional professional sends are real parallel signal paths. Send 2 feeds a
+  // short delay return and Send 3 is a clean cue/aux return.
+  const send2 = clamp(num(track?.send2, 0), 0, 100) / 100;
+  if (send2 > 0 && destination) {
+    const delaySend = context.createGain();
+    const delay = context.createDelay(2);
+    const feedback = context.createGain();
+    const returnGain = context.createGain();
+    delaySend.gain.value = send2;
+    delay.delayTime.value = 0.22;
+    feedback.gain.value = 0.28;
+    returnGain.gain.value = 0.45;
+    output.connect(delaySend);
+    delaySend.connect(delay);
+    delay.connect(feedback);
+    feedback.connect(delay);
+    delay.connect(returnGain);
+    returnGain.connect(destination);
+    nodes.push(delaySend, delay, feedback, returnGain);
+    sendGains.push(delaySend);
+  }
+
+  const send3 = clamp(num(track?.send3, 0), 0, 100) / 100;
+  if (send3 > 0 && destination) {
+    const cueSend = context.createGain();
+    cueSend.gain.value = send3;
+    output.connect(cueSend);
+    cueSend.connect(destination);
+    nodes.push(cueSend);
+    sendGains.push(cueSend);
+  }
+
+  return { nodes, trackGain, output, sendGain, sendGains };
 }
 
 /** Master bus: send return + master inserts + master fader. */

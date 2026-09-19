@@ -140,7 +140,9 @@ export function createMixEngine() {
       const structureChanged =
         !prev ||
         JSON.stringify(prev.effects || prev.plugins || {}) !== JSON.stringify((track && (track.effects || track.plugins)) || {}) ||
-        (prev.send1 || 0) !== ((track && track.send1) || 0);
+        (prev.send1 || 0) !== ((track && track.send1) || 0) ||
+        (prev.send2 || 0) !== ((track && track.send2) || 0) ||
+        (prev.send3 || 0) !== ((track && track.send3) || 0);
 
       if (structureChanged) {
         rebuild(trackId, track || {}, nextGain);

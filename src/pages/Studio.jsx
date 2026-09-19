@@ -3133,6 +3133,8 @@ export default function Studio() {
               volume: 100,
               pan: 50,
               send1: 0,
+              send2: 0,
+              send3: 0,
               plugins: {},
               fadeIn: 0,
               fadeOut: 0,

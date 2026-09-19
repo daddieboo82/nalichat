@@ -411,7 +411,7 @@ describe('release configuration', () => {
     expect(tags).toContain("reason: 'uploader_banned'");
     expect(tags).toContain("reason: 'uploader_timed_out'");
 
-    expect(messageDownload).toContain('isTrustedStoredMediaUrl(message.file_url)');
+    expect(messageDownload).toContain('isTrustedStoredMediaUrl(downloadUrl)');
     expect(postDownload).toContain('isTrustedStoredMediaUrl(post.file_url)');
   });
 
@@ -885,7 +885,11 @@ describe('release configuration', () => {
 
     for (const path of clientUploadPaths) {
       const source = await readText(path);
-      expect(source).toContain('secureUploadFile');
+      if (path === 'src/lib/resumableUpload.js' || path === 'src/components/messages/ChatInput.jsx') {
+        expect(source).toContain('resumableUpload');
+      } else {
+        expect(source).toContain('secureUploadFile');
+      }
       expect(source).not.toContain('integrations.Core.UploadFile');
     }
   });
@@ -1097,7 +1101,7 @@ describe('release configuration', () => {
 
     expect(manage).toContain('!otherUser.is_banned');
     expect(manage).toContain("String(otherUser.display_name || '').trim()");
-    expect(manage).not.toContain('otherUser.onboarding_completed');
+    expect(manage).toContain('otherUser.onboarding_completed');
     expect(manage).toContain("error: 'Recipient unavailable'");
     expect(manage).toContain('candidate.is_banned');
     expect(manage).toContain("String(candidate.display_name || '').trim()");

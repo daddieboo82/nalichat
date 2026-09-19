@@ -7,10 +7,10 @@ async function readText(path) {
 }
 
 describe('entitlement and push cleanup bounds', () => {
-  it('routes large-file entitlement through the paginated resolver', async () => {
+  it('keeps Nali Transfer free of legacy subscription size gating', async () => {
     const source = await readText('base44/functions/createSharedFileRecord/entry.ts');
-    expect(source).toContain("resolveUserSubscription(entities.Subscription, userId)");
-    expect(source).toContain('return access.hasPaidAccess');
+    expect(source).not.toContain('resolveUserSubscription(');
+    expect(source).not.toContain('hasPaidAccess');
     expect(source).not.toContain('Subscription.filter({ user_id: userId })');
   });
 

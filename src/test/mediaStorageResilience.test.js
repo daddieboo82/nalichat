@@ -89,7 +89,9 @@ describe('media storage resilience', () => {
     const source = await readText('src/lib/resumableUpload.js');
     expect(source).not.toContain('const STORAGE_KEY =');
     expect(source).not.toContain('localStorage.setItem(STORAGE_KEY,');
-    expect(source).toContain('try { localStorage.setItem(STORAGE_KEY_DL, String(received)); } catch {}');
-    expect(source).toContain('try { localStorage.removeItem(STORAGE_KEY_DL); } catch {}');
+    expect(source).toContain('sessionStorage.setItem(storageKey, String(offset + value.length));');
+    expect(source).toContain('sessionStorage.removeItem(storageKey);');
+    expect(source).toContain('window.showSaveFilePicker');
+    expect(source).toContain('createWritable({ keepExistingData: true })');
   });
 });

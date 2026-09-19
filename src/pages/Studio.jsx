@@ -3119,7 +3119,8 @@ export default function Studio() {
         <PianoRoll
           track={tracks.find(t => t.id === pianoRollTrackId)}
           onClose={() => setPianoRollTrackId(null)}
-          onChange={(midiNotes) => setTracksWithHistory(prev => prev.map(t => t.id === pianoRollTrackId ? { ...t, midiNotes } : t))}
+          onChange={(midiNotes) => setTracks(prev => prev.map(t => t.id === pianoRollTrackId ? { ...t, midiNotes } : t))}
+          onCommit={() => pushToHistory(tracksRef.current)}
         />
       )}
 

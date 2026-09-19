@@ -9,7 +9,7 @@ const LOW = 36;
 const HIGH = 84;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-export default function PianoRoll({ track, onChange, onClose, bars = 4 }) {
+export default function PianoRoll({ track, onChange, onCommit, onClose, bars = 4 }) {
   const notes = track?.midiNotes || [];
   const [selected, setSelected] = useState(null);
   const [drag, setDrag] = useState(null);
@@ -25,13 +25,15 @@ export default function PianoRoll({ track, onChange, onClose, bars = 4 }) {
     const note = { id: crypto.randomUUID(), note: pitches[row], startBeat, durationBeats: 1, velocity: 100 };
     onChange([...notes, note].sort((a,b) => a.startBeat - b.startBeat));
     setSelected(note.id);
+    queueMicrotask(() => onCommit?.());
   };
 
   const update = (patch) => onChange(notes.map(n => n.id === selected ? { ...n, ...patch } : n));
-  const remove = () => { onChange(notes.filter(n => n.id !== selected)); setSelected(null); };
-  const quantize = () => onChange(notes.map(n => ({ ...n, startBeat: clamp(Math.round(n.startBeat * 4) / 4, 0, Math.max(0, totalBeats - Math.max(.25, n.durationBeats || .25))) })).sort((a,b) => a.startBeat - b.startBeat));
-  const transpose = (semitones) => onChange(notes.map(n => ({ ...n, note: clamp(n.note + semitones, LOW, HIGH) })));
-  const normalizeVelocity = () => onChange(notes.map(n => ({ ...n, velocity: 100 })));
+  const commitChange = (next) => { onChange(next); queueMicrotask(() => onCommit?.()); };
+  const remove = () => { commitChange(notes.filter(n => n.id !== selected)); setSelected(null); };
+  const quantize = () => commitChange(notes.map(n => ({ ...n, startBeat: clamp(Math.round(n.startBeat * 4) / 4, 0, Math.max(0, totalBeats - Math.max(.25, n.durationBeats || .25))) })).sort((a,b) => a.startBeat - b.startBeat));
+  const transpose = (semitones) => commitChange(notes.map(n => ({ ...n, note: clamp(n.note + semitones, LOW, HIGH) })));
+  const normalizeVelocity = () => commitChange(notes.map(n => ({ ...n, velocity: 100 })));
 
   const startDrag = (e, note, mode = 'move') => {
     e.preventDefault(); e.stopPropagation(); setSelected(note.id);
@@ -57,7 +59,7 @@ export default function PianoRoll({ track, onChange, onClose, bars = 4 }) {
       onChange(notes.map(n => n.id === drag.id ? { ...n, startBeat, note } : n));
     }
   };
-  const endDrag = () => setDrag(null);
+  const endDrag = () => { if (drag) onCommit?.(); setDrag(null); };
 
   return <div className="border-t border-border bg-card/95">
     <div className="h-10 px-3 flex items-center gap-3 border-b border-border">

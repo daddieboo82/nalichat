@@ -39,12 +39,18 @@ export default function PianoRoll({ track, onChange, onClose, bars = 4 }) {
     if (!drag) return;
     const dxBeats = Math.round(((e.clientX - drag.x) / BEAT_W) * 4) / 4;
     if (drag.mode === 'resize') {
-      const durationBeats = clamp(Math.round((drag.duration + dxBeats) * 4) / 4, .25, totalBeats);
+      const maxDuration = Math.max(.25, totalBeats - drag.startBeat);
+      const durationBeats = clamp(Math.round((drag.duration + dxBeats) * 4) / 4, .25, maxDuration);
+      const current = notes.find(n => n.id === drag.id);
+      if (current?.durationBeats === durationBeats) return;
       onChange(notes.map(n => n.id === drag.id ? { ...n, durationBeats } : n));
     } else {
       const dyNotes = Math.round((e.clientY - drag.y) / ROW_H);
-      const startBeat = clamp(drag.startBeat + dxBeats, 0, totalBeats - .25);
+      const dragged = notes.find(n => n.id === drag.id);
+      const duration = Math.max(.25, dragged?.durationBeats || drag.duration || .25);
+      const startBeat = clamp(drag.startBeat + dxBeats, 0, Math.max(0, totalBeats - duration));
       const note = clamp(drag.pitch - dyNotes, LOW, HIGH);
+      if (dragged?.startBeat === startBeat && dragged?.note === note) return;
       onChange(notes.map(n => n.id === drag.id ? { ...n, startBeat, note } : n));
     }
   };

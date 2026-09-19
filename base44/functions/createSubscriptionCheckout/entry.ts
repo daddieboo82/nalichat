@@ -15,7 +15,7 @@ import { APP_BASE_URL } from '../../shared/appConfig.ts';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const TRIAL_DAYS = 7;
-const CHECKOUT_LEASE_MS = 24 * 60 * 60 * 1000;
+const CHECKOUT_LEASE_MS = 5 * 60 * 1000;
 
 async function loadUserSubscriptions(entity: any, userId: string) {
   const rows: any[] = [];
@@ -208,6 +208,32 @@ Deno.serve(async (req) => {
       : '';
     const claimIsStale = !activeClaimedAt || activeClaimedAt < checkoutLeaseCutoff;
     if (activeClaimId && activeClaimId !== requestKey && !claimIsStale) {
+      const activeAttempt = subscriptions.find(
+        (subscription: Record<string, unknown>) => (
+          subscription.checkout_request_key === activeClaimId
+          && subscription.provider === 'stripe'
+          && subscription.sku === sku.sku
+          && typeof subscription.checkout_url === 'string'
+          && typeof subscription.checkout_id === 'string'
+          && typeof subscription.checkout_expires_at === 'string'
+          && Date.parse(subscription.checkout_expires_at as string) > Date.now()
+        ),
+      );
+      if (activeAttempt) {
+        return Response.json({
+          success: true,
+          action: 'create_subscription_checkout',
+          userId: user.id,
+          sku: sku.sku,
+          idempotencyKey: activeClaimId,
+          successDestination: activeAttempt.checkout_success_destination,
+          cancelDestination: activeAttempt.checkout_cancel_destination,
+          checkoutUrl: activeAttempt.checkout_url,
+          checkoutId: activeAttempt.checkout_id,
+          trialApplied: false,
+          reused: true,
+        });
+      }
       return Response.json(
         { error: 'Another subscription checkout is already in progress' },
         { status: 409 },

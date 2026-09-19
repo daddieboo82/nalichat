@@ -89,6 +89,36 @@ const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const num = (value, fallback) => (typeof value === 'number' && Number.isFinite(value) ? value : fallback);
 const param = (effect, key, fallback) => num(effect?.params?.[key], fallback);
 
+/** Evaluate sorted automation breakpoints at a transport time. Mute uses stepped values. */
+export function automationValueAt(points, time, fallback = 0, { step = false } = {}) {
+  const valid = (points || []).filter(p => Number.isFinite(p?.time) && Number.isFinite(p?.value)).sort((a, b) => a.time - b.time);
+  if (!valid.length) return fallback;
+  if (time <= valid[0].time) return valid[0].value;
+  for (let i = 1; i < valid.length; i++) {
+    const right = valid[i];
+    const left = valid[i - 1];
+    if (time <= right.time) {
+      if (step || right.time === left.time) return left.value;
+      const ratio = (time - left.time) / (right.time - left.time);
+      return left.value + (right.value - left.value) * ratio;
+    }
+  }
+  return valid[valid.length - 1].value;
+}
+
+export function automatedTrackState(track, time) {
+  if (!track) return track;
+  return {
+    ...track,
+    volume: automationValueAt(track.automationPoints, time, track.volume ?? 75),
+    pan: automationValueAt(track.panAutomationPoints, time, track.pan ?? 50),
+    send1: automationValueAt(track.send1AutomationPoints, time, track.send1 ?? 0),
+    send2: automationValueAt(track.send2AutomationPoints, time, track.send2 ?? 0),
+    send3: automationValueAt(track.send3AutomationPoints, time, track.send3 ?? 0),
+    muted: automationValueAt(track.muteAutomationPoints, time, track.muted ? 100 : 0, { step: true }) >= 50,
+  };
+}
+
 // Ordered so both the rack UI and the audio graph agree on insert order.
 export const FX_CHAIN_ORDER = ['eq', 'comp', 'reverb', 'delay'];
 
@@ -290,6 +320,19 @@ export function trackPanValue(track) {
   return clamp((num(track?.pan, 50) - 50) / 50, -1, 1);
 }
 
+function scheduleAutomation(paramNode, points, fallback, mapValue = value => value, { step = false } = {}) {
+  if (!paramNode || !(points || []).length) return;
+  const valid = points.filter(p => Number.isFinite(p?.time) && Number.isFinite(p?.value)).sort((a, b) => a.time - b.time);
+  if (!valid.length) return;
+  paramNode.cancelScheduledValues(0);
+  paramNode.setValueAtTime(mapValue(automationValueAt(valid, 0, fallback, { step })), 0);
+  valid.forEach(point => {
+    const value = mapValue(point.value);
+    if (step) paramNode.setValueAtTime(value, Math.max(0, point.time));
+    else paramNode.linearRampToValueAtTime(value, Math.max(0, point.time));
+  });
+}
+
 /**
  * Build a full channel strip: fader -> inserts -> pan -> master, plus the
  * post-fader Send 1 tap into the shared reverb bus.
@@ -329,6 +372,33 @@ export function connectTrackChain(context, source, track, { destination, reverbB
     return sendGain;
   });
   const sendGain = sendGains[0] || null;
+
+  // OfflineAudioContext can schedule the exact same automation curves used by
+  // realtime playback, keeping exported mixes aligned with what the user hears.
+  if (typeof context.startRendering === 'function') {
+    const clipGain = Math.pow(10, clamp(num(track?.clipGain, 0), -24, 24) / 20);
+    const volumePoints = track?.automationPoints || [];
+    const mutePoints = track?.muteAutomationPoints || [];
+    const gainTimes = [...new Set([...volumePoints, ...mutePoints].map(p => p?.time).filter(Number.isFinite))].sort((a, b) => a - b);
+    if (gainTimes.length) {
+      trackGain.gain.cancelScheduledValues(0);
+      const gainAt = time => {
+        const volume = automationValueAt(volumePoints, time, track?.volume ?? 75);
+        const muted = automationValueAt(mutePoints, time, track?.muted ? 100 : 0, { step: true }) >= 50;
+        return muted ? 0 : clamp(volume, 0, 100) / 100 * clipGain;
+      };
+      trackGain.gain.setValueAtTime(gainAt(0), 0);
+      gainTimes.forEach(time => {
+        const muteBoundary = mutePoints.some(p => p.time === time);
+        if (muteBoundary) trackGain.gain.setValueAtTime(gainAt(time), Math.max(0, time));
+        else trackGain.gain.linearRampToValueAtTime(gainAt(time), Math.max(0, time));
+      });
+    }
+    if (output?.pan) scheduleAutomation(output.pan, track?.panAutomationPoints, track?.pan ?? 50, value => clamp((value - 50) / 50, -1, 1));
+    sendGains.forEach((node, index) => {
+      if (node) scheduleAutomation(node.gain, track?.[`send${index + 1}AutomationPoints`], track?.[`send${index + 1}`] ?? 0, value => clamp(value, 0, 100) / 100);
+    });
+  }
 
   return { nodes, trackGain, output, sendGain, sendGains };
 }

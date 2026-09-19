@@ -14,6 +14,7 @@ import {
   connectMasterChain,
   connectTrackChain,
   trackGainValue,
+  automatedTrackState,
 } from '@/lib/audioProcessing';
 
 const isSameOriginUrl = (url) => {
@@ -165,6 +166,16 @@ export function createMixEngine() {
         sendGain.gain.setTargetAtTime(value, context.currentTime, 0.01);
       });
       return true;
+    },
+
+    /** Evaluate and apply track automation at the current transport position. */
+    syncAutomation(trackId, track, time, allTracks = []) {
+      const automated = automatedTrackState(track || {}, time);
+      const automatedTracks = (allTracks || []).map(t => t.id === trackId ? automated : automatedTrackState(t, time));
+      const hasSolo = automatedTracks.some(t => t.solo);
+      const audible = automated.muted ? false : (hasSolo ? !!automated.solo : true);
+      const gain = audible ? trackGainValue(automated) : 0;
+      return this.syncTrack(trackId, automated, { gain });
     },
 
     /** Update master fader / master inserts. Rebuilds the bus when inserts change. */

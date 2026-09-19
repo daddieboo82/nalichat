@@ -2791,7 +2791,12 @@ export default function Studio() {
                       </div>
 
                       <div className="absolute top-1 left-4 text-[10px] font-medium text-white/50 pointer-events-none flex items-center gap-1 truncate max-w-[90%]">
-                        {track.name} - Take 1
+                        {(track.playlists || []).find(p => p.id === track.activePlaylistId)?.name || `${track.name} - Main`}
+                        {(track.playlists || []).length > 0 && (
+                          <span className="rounded bg-black/40 px-1 text-[9px] text-white/60">
+                            {(track.playlists || []).length} takes
+                          </span>
+                        )}
                         {track.locked && <Link2 className="w-3 h-3 text-red-400" />}
                         {track.elasticAudio && <Activity className="w-3 h-3 text-blue-400" />}
                       </div>

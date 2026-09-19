@@ -33,7 +33,7 @@ describe('Nali AI end-to-end audit invariants', () => {
       allowed_operations: tool.allowed_operations,
     }));
     expect(normalize(plus)).toEqual(normalize(standard));
-    expect(plus.model).toBe('claude_opus_4_8');
+    expect(plus.model).toBe('claude_opus_5');
 
     for (const agent of [standard, plus]) {
       for (const tool of agent.tool_configs || []) {

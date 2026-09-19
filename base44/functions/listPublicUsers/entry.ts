@@ -254,7 +254,7 @@ export default async function(req) {
     // Explicit public projection. Never return email, phone, birthdate, Stripe
     // identifiers, trial state, moderation state, or other account-only fields.
     const publicUsers = visibleUsers
-      .filter((u) => !u.is_banned && String(u.display_name || '').trim())
+      .filter((u) => u.onboarding_completed && !u.is_banned && String(u.display_name || '').trim())
       .map((u) => publicUserProjection(
         u,
         achievementCount[u.id] || 0,

@@ -350,6 +350,7 @@ Deno.serve(async (req) => {
         const otherIsAdmin = otherUser?.role === 'admin';
         const otherIsDiscoverable = Boolean(
           otherUser
+          && otherUser.onboarding_completed
           && !otherUser.is_banned
           && String(otherUser.display_name || '').trim()
         );

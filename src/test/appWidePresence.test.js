@@ -19,10 +19,12 @@ describe('app-wide user presence', () => {
     expect(app).toContain('}, [isAuthenticated, user?.id]);');
   });
 
-  it('does not run a second presence heartbeat inside Messages', async () => {
+  it('refreshes presence on the presence-sensitive Messages surface', async () => {
     const messages = await readFile('src/pages/Messages.jsx', 'utf8');
-    expect(messages).not.toContain('functions.invoke("updateUserPresence"');
-    expect(messages).toContain('Presence itself is maintained app-wide in App.jsx.');
+    expect(messages).toContain("base44.functions.invoke('updateUserPresence', { isOnline: true })");
+    expect(messages).toContain('const presenceHeartbeat = window.setInterval(refreshMessagesPresence, 30_000);');
+    expect(messages).toContain('window.clearInterval(presenceHeartbeat);');
     expect(messages).toContain('queryKey: ["messages", currentUser?.id, selectedConvId]');
+    expect(messages).toContain('queryKey: ["users", "presence", currentUser.id]');
   });
 });

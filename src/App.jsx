@@ -250,16 +250,28 @@ const AuthenticatedApp = () => {
     };
   }, [isAuthenticated, logout]);
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-          <p className="text-sm text-muted-foreground font-heading">Loading app...</p>
-        </div>
-      </div>
-    );
-  }
+  // Public routes must not be blocked by the remote auth/public-settings probe.
+  // A slow or unavailable auth endpoint should never hide login, registration,
+  // password recovery, shared-file downloads, or the production 404 page.
+  const PUBLIC_PATHS = new Set([
+    '/login', '/register', '/forgot-password', '/reset-password', '/oauth-consent',
+    '/shared-file', '/download', '/privacy', '/terms', '/encryption-documentation',
+    '/music-collaboration', '/creator-messaging', '/music-studio', '/pricing',
+    '/pricingplans', '/thankyou',
+  ]);
+  const routePath = location.pathname.toLowerCase();
+  const isKnownPublicPath = PUBLIC_PATHS.has(routePath);
+  const isUnknownPath = ![
+    '/', '/explore', '/challenges', '/onboarding', '/studio', '/messages', '/files',
+    '/settings', '/record', '/leaderboard', '/profile', '/playlists', '/analytics',
+    '/cover-art', '/webhook-test', '/projects-summary', '/create-challenge', '/squad',
+    '/admin', '/business', '/viral-seed',
+  ].some((path) => routePath === path || routePath.startsWith(`${path}/`))
+    && !isKnownPublicPath;
+
+  // ProtectedRoute owns the auth-loading state for protected pages. Public
+  // settings are non-blocking so public routes and anonymous redirects render
+  // even when the remote settings probe is slow.
 
   if (authError) {
     if (authError.type === 'user_not_registered') {

@@ -18,10 +18,13 @@ const getAuthErrorStatus = (error) => {
 const shouldRetryAuthError = (error) => {
   const status = getAuthErrorStatus(error);
   if (status === 401) return false;
-  if (status == null) return true;
+  if (status === 408) return false;
+  // A status-less failure on the initial session probe usually means the
+  // browser has no usable session or the endpoint is unreachable. Treat it as
+  // terminal so anonymous visitors are not held on protected routes for the
+  // full retry backoff. Explicit propagation/server statuses remain retryable.
+  if (status == null) return false;
   return status === 403
-    || status === 404
-    || status === 408
     || status === 409
     || status === 425
     || status === 429
@@ -40,10 +43,6 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
 
-  useEffect(() => {
-    checkAppState();
-  }, []);
-
   const checkAppState = async () => {
     try {
       setIsLoadingPublicSettings(true);
@@ -60,9 +59,10 @@ export const AuthProvider = ({ children }) => {
         interceptResponses: true
       });
       
-      // Fetch public settings first.  If this fails we still try to resolve the
-      // user session below — a 403 on public-settings for a brand-new Google
-      // user must not swallow the valid access_token and leave the app logged out.
+      // Resolve public settings and the user session independently. A slow
+      // public-settings request must not delay anonymous protected-route
+      // redirects or authenticated session discovery.
+      const userAuthPromise = checkUserAuth();
       try {
         const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
         if (publicSettings) setAppPublicSettings(publicSettings);
@@ -90,11 +90,10 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      // Always resolve the user session, even when there is no bearer token.
       // Google/platform OAuth may complete with a same-origin cookie-backed
-      // session and no access_token in the callback URL. Requiring appParams.token
-      // here incorrectly treated that valid SSO session as logged out.
-      await checkUserAuth();
+      // session and no access_token in the callback URL. The session probe was
+      // started in parallel above so public-settings latency cannot block it.
+      await userAuthPromise;
       setIsLoadingPublicSettings(false);
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -111,7 +110,18 @@ export const AuthProvider = ({ children }) => {
     const generation = existingGeneration ?? ++authCheckGenerationRef.current;
     try {
       setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
+      // Do not let a stalled SDK/session request hold protected navigation
+      // indefinitely. 2.5 seconds bounds the initial session probe; explicit
+      // server/propagation failures are still handled by the retry policy below.
+      const authRequest = Promise.resolve().then(() => base44.auth.me());
+      const currentUser = await Promise.race([
+        authRequest,
+        new Promise((_, reject) => window.setTimeout(() => {
+          const timeoutError = new Error('Authentication check timed out');
+          timeoutError.status = 408;
+          reject(timeoutError);
+        }, 2500)),
+      ]);
       if (generation !== authCheckGenerationRef.current) return null;
       const previousUserId = lastUserIdRef.current;
       if (previousUserId && previousUserId !== currentUser?.id) {
@@ -164,6 +174,32 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
   }, [queryClient]);
+
+  useEffect(() => {
+    // Start the session probe directly on mount. Public app settings are useful
+    // metadata, but they must never own or delay authentication state.
+    checkUserAuth();
+
+    const loadPublicSettings = async () => {
+      setIsLoadingPublicSettings(true);
+      try {
+        const appClient = createAxiosClient({
+          baseURL: `/api/apps/public`,
+          headers: { 'X-App-Id': appParams.appId },
+          token: appParams.token,
+          interceptResponses: true
+        });
+        const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
+        if (publicSettings) setAppPublicSettings(publicSettings);
+      } catch (error) {
+        console.error('Public settings check failed:', error);
+      } finally {
+        setIsLoadingPublicSettings(false);
+      }
+    };
+    loadPublicSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const logout = useCallback(async () => {
     // Invalidate any profile/session refresh already in flight before logout

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Search, Users, Hash, UserPlus, MessageSquare } from "lucide-react";
+import { Search, Users, Hash, UserPlus, MessageSquare, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { base44 } from "@/api/base44Client";
@@ -213,10 +213,10 @@ export default React.memo(function ConversationList({ conversations, myConversat
               key={conv.id}
               onClick={() => onSelect(conv.id)}
               className={cn(
-                "ui-hover w-full min-h-[72px] flex items-center gap-3.5 p-3.5 rounded-2xl transition-all duration-200 text-left group relative touch-manipulation focus-visible:ring-2 focus-visible:ring-primary/40",
+                "ui-surface ui-hover w-full min-h-[82px] flex items-center gap-3.5 p-3.5 rounded-3xl transition-all duration-200 text-left group relative touch-manipulation focus-visible:ring-2 focus-visible:ring-primary/40 border",
                 isSelected
-                  ? "bg-gradient-to-r from-primary/[0.14] to-primary/[0.05] shadow-md shadow-black/10 border border-primary/25 z-10"
-                  : "hover:bg-secondary/55 active:bg-secondary/65 border border-transparent hover:border-border/35"
+                  ? "bg-gradient-to-r from-primary/[0.14] to-primary/[0.05] shadow-lg shadow-black/10 border-primary/30 z-10"
+                  : "bg-card/65 border-border/45 hover:bg-card/90 hover:border-primary/25 hover:shadow-md active:bg-secondary/65"
               )}
               title={`Open chat with ${displayName}`}
               aria-label={`Open chat with ${displayName}`}
@@ -252,9 +252,17 @@ export default React.memo(function ConversationList({ conversations, myConversat
                     )}
                   </div>
                 </div>
-                <p className={cn("text-[13px] truncate leading-snug select-none", isSelected ? "text-foreground/60" : unread ? "text-muted-foreground font-medium" : "text-muted-foreground/65")} aria-hidden="true">
-                  {conv.last_message_text ? "•••" : <span className="italic opacity-60">Start chatting...</span>}
-                </p>
+                <div className="flex min-w-0 items-center gap-2">
+                  {conv.type !== "group" && other?.location && (
+                    <span className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground/70">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{other.location}</span>
+                    </span>
+                  )}
+                  <p className={cn("min-w-0 flex-1 truncate text-[12px] leading-snug select-none", isSelected ? "text-foreground/60" : unread ? "text-muted-foreground font-medium" : "text-muted-foreground/65")} aria-hidden="true">
+                    {conv.last_message_text ? "New message" : <span className="italic opacity-60">Start chatting...</span>}
+                  </p>
+                </div>
               </div>
             </button>
           );

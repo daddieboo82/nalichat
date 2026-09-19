@@ -369,6 +369,7 @@ describe('core usage flow coverage', () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 375 });
     renderWithProviders(<Messages />, ['/messages']);
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Chats' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Mobile DM' }));
 
     await screen.findByText('Conversation: Mobile DM');
@@ -431,6 +432,7 @@ describe('core usage flow coverage', () => {
 
     renderWithProviders(<Messages />);
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Chats' }));
     const startDmButton = await screen.findByRole('button', { name: 'Start DM' });
     await waitFor(() => expect(startDmButton.disabled).toBe(false));
     fireEvent.click(startDmButton);

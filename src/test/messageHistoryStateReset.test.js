@@ -6,7 +6,7 @@ describe('message history state reset', () => {
     const s = await readFile('src/pages/Messages.jsx', 'utf8');
     const accountReset = s.indexOf('previousUserId !== nextUserId');
     expect(s.indexOf('setMessageHistoryLimit(200);', accountReset)).toBeGreaterThan(accountReset);
-    expect(s).toContain('if (location.pathname === "/messages" && !location.search) {\n      setSelectedConvId(null);\n      setMessageHistoryLimit(200);');
+    expect(s).toMatch(/if \(location\.pathname === "\/messages" && !location\.search\) \{\r?\n\s+setSelectedConvId\(null\);\r?\n\s+setMessageHistoryLimit\(200\);/);
     expect(s).toContain('resolution.status === "locked"');
     expect(s).toContain('resolution.status === "missing"');
     expect((s.match(/setMessageHistoryLimit\(200\);/g) || []).length).toBeGreaterThanOrEqual(5);

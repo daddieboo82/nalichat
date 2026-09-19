@@ -12,6 +12,7 @@ describe('auth identity request freshness', () => {
 
   it('keeps frontend identity resolution centralized in AuthContext', async () => {
     const auth = await readFile('src/lib/AuthContext.jsx', 'utf8');
-    expect(auth).toContain('const currentUser = await base44.auth.me();');
+    expect(auth).toContain('const authRequest = Promise.resolve().then(() => base44.auth.me());');
+    expect(auth).toContain('const currentUser = await Promise.race([');
   });
 });

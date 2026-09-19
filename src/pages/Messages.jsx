@@ -134,7 +134,7 @@ export default function Messages() {
   const navigate = useNavigate();
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [messageHistoryLimit, setMessageHistoryLimit] = useState(200);
-  const [sidebarTab, setSidebarTab] = useState("chats");
+  const [sidebarTab, setSidebarTab] = useState("contacts");
   const [lockedLinkConversationId, setLockedLinkConversationId] = useState(null);
   const [showLockedAccess, setShowLockedAccess] = useState(false);
   const { hasEntitlement } = useSubscription();
@@ -269,8 +269,8 @@ export default function Messages() {
     enabled: !!currentUser?.id,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
-    refetchInterval: 15_000,
-    staleTime: 10_000,
+    refetchInterval: 45_000,
+    staleTime: 20_000,
   });
 
   const {

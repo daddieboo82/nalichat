@@ -19,14 +19,15 @@ describe('Google login session recovery', () => {
     expect(login).toContain('setGoogleLoading(false);');
   });
 
-  it('always checks the live user session after public settings, even without a bearer token', async () => {
+  it('checks the live user session independently from public settings, even without a bearer token', async () => {
     const auth = await readText('src/lib/AuthContext.jsx');
+    const authCheck = auth.indexOf('checkUserAuth();');
     const publicSettingsBlock = auth.indexOf('const publicSettings = await appClient.get');
-    const authCheck = auth.indexOf('await checkUserAuth();', publicSettingsBlock);
 
-    expect(publicSettingsBlock).toBeGreaterThan(-1);
-    expect(authCheck).toBeGreaterThan(publicSettingsBlock);
-    expect(auth).toContain('Google/platform OAuth may complete with a same-origin cookie-backed');
+    expect(authCheck).toBeGreaterThan(-1);
+    expect(publicSettingsBlock).toBeGreaterThan(authCheck);
+    expect(auth).toContain('Start the session probe directly on mount.');
+    expect(auth).toContain('must never own or delay authentication state.');
     expect(auth).not.toContain('if (appParams.token) {\n        await checkUserAuth();');
   });
 

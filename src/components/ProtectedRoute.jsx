@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -10,14 +10,12 @@ const DefaultFallback = () => (
 );
 
 export default function ProtectedRoute({ children, fallback = <DefaultFallback />, unauthenticatedElement }) {
-  const { isAuthenticated, isLoadingAuth, authChecked, authError, checkUserAuth, user } = useAuth();
+  const { isAuthenticated, isLoadingAuth, authChecked, authError, user } = useAuth();
   const location = useLocation();
 
-  useEffect(() => {
-    if (!authChecked && !isLoadingAuth) {
-      checkUserAuth();
-    }
-  }, [authChecked, isLoadingAuth, checkUserAuth]);
+  // AuthProvider owns the initial session bootstrap. Starting another auth
+  // probe here can invalidate the provider's in-flight generation and leave
+  // protected routes permanently waiting on stale loading state.
 
   if (isLoadingAuth || !authChecked) {
     return fallback;

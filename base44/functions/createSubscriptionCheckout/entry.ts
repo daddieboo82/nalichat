@@ -198,22 +198,25 @@ Deno.serve(async (req) => {
     }
 
     const checkoutLeaseCutoff = new Date(Date.now() - CHECKOUT_LEASE_MS).toISOString();
-    await base44.asServiceRole.entities.User.updateMany(
-      {
-        id: user.id,
-        $or: [
-          { stripe_checkout_claim_id: null },
-          { stripe_checkout_claim_id: requestKey },
-          { stripe_checkout_claimed_at: { $lt: checkoutLeaseCutoff } },
-        ],
-      },
-      {
-        $set: {
-          stripe_checkout_claim_id: requestKey,
-          stripe_checkout_claimed_at: now,
-        },
-      },
-    );
+    const currentUsers = await base44.asServiceRole.entities.User.filter({ id: user.id }, '-created_date', 1);
+    const currentUser = currentUsers[0];
+    const activeClaimId = typeof currentUser?.stripe_checkout_claim_id === 'string'
+      ? currentUser.stripe_checkout_claim_id
+      : '';
+    const activeClaimedAt = typeof currentUser?.stripe_checkout_claimed_at === 'string'
+      ? currentUser.stripe_checkout_claimed_at
+      : '';
+    const claimIsStale = !activeClaimedAt || activeClaimedAt < checkoutLeaseCutoff;
+    if (activeClaimId && activeClaimId !== requestKey && !claimIsStale) {
+      return Response.json(
+        { error: 'Another subscription checkout is already in progress' },
+        { status: 409 },
+      );
+    }
+    await base44.asServiceRole.entities.User.update(user.id, {
+      stripe_checkout_claim_id: requestKey,
+      stripe_checkout_claimed_at: now,
+    });
     const checkoutClaimUsers = await base44.asServiceRole.entities.User.filter({ id: user.id }, '-created_date', 1);
     if (
       checkoutClaimUsers.length !== 1
@@ -257,18 +260,13 @@ Deno.serve(async (req) => {
         // The checkout lease above guarantees only this requestKey owns the
         // active checkout slot. If an older abandoned checkout left a stale
         // trial_claim_id behind, the new lease holder may safely replace it.
-        await base44.asServiceRole.entities.User.updateMany(
-          {
-            id: user.id,
-            trial_used_at: null,
-            stripe_checkout_claim_id: requestKey,
-          },
-          {
-            $set: {
-              trial_claim_id: requestKey,
-            },
-          },
-        );
+        const trialClaimUsers = await base44.asServiceRole.entities.User.filter({ id: user.id }, '-created_date', 1);
+        const trialClaimUser = trialClaimUsers[0];
+        if (!trialClaimUser?.trial_used_at && trialClaimUser?.stripe_checkout_claim_id === requestKey) {
+          await base44.asServiceRole.entities.User.update(user.id, {
+            trial_claim_id: requestKey,
+          });
+        }
         const refreshedUsers = await base44.asServiceRole.entities.User.filter({ id: user.id }, '-created_date', 1);
         trialApplied = refreshedUsers.length === 1
           && !refreshedUsers[0].trial_used_at
@@ -381,21 +379,20 @@ Deno.serve(async (req) => {
       && !cleanupSessionCreated
     ) {
       try {
-        await cleanupBase44.asServiceRole.entities.User.updateMany(
-          {
-            id: cleanupUserId,
-            stripe_checkout_claim_id: cleanupRequestKey,
-          },
-          {
-            $set: {
-              stripe_checkout_claim_id: null,
-              stripe_checkout_claimed_at: null,
-              ...(cleanupTrialClaimed ? {
-                trial_claim_id: null,
-              } : {}),
-            },
-          },
+        const cleanupUsers = await cleanupBase44.asServiceRole.entities.User.filter(
+          { id: cleanupUserId },
+          '-created_date',
+          1,
         );
+        if (cleanupUsers[0]?.stripe_checkout_claim_id === cleanupRequestKey) {
+          await cleanupBase44.asServiceRole.entities.User.update(cleanupUserId, {
+            stripe_checkout_claim_id: null,
+            stripe_checkout_claimed_at: null,
+            ...(cleanupTrialClaimed && cleanupUsers[0]?.trial_claim_id === cleanupRequestKey ? {
+              trial_claim_id: null,
+            } : {}),
+          });
+        }
 
       } catch (cleanupError) {
         console.error('Subscription checkout cleanup failed:', cleanupError);

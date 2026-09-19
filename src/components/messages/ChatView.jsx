@@ -303,7 +303,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   const avatarGradient = gradients[(displayName?.charCodeAt(0) || 0) % gradients.length];
 
   return (
-    <div className={cn("chat-theme flex-1 flex flex-col overflow-hidden relative min-h-0", theme.className)} data-chat-theme={theme.id}>
+    <div className={cn("chat-theme flex-1 flex flex-col overflow-hidden relative min-h-0 h-full max-h-full", theme.className)} data-chat-theme={theme.id}>
       {/* Floating Header */}
       <div className="absolute top-0 left-0 right-0 z-20 p-2 sm:p-4 pointer-events-none">
         <div className="chat-theme-header h-16 bg-background/88 backdrop-blur-2xl border border-border/55 rounded-2xl sm:rounded-3xl flex items-center px-2.5 sm:px-4 gap-2.5 sm:gap-3 shadow-[0_16px_40px_-20px_rgba(0,0,0,0.65)] pointer-events-auto transition-all ring-1 ring-white/[0.03]">
@@ -539,7 +539,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       </div>
 
       {/* Input Area — flex child so it always sits at the bottom of the column */}
-      <div className="shrink-0 z-20 p-2 sm:p-4" style={{ marginBottom: `${keyboardOffset}px` }}>
+      <div data-testid="message-composer" className="shrink-0 z-30 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:p-4 bg-background/80 backdrop-blur-xl" style={{ transform: keyboardOffset > 0 ? `translateY(-${keyboardOffset}px)` : undefined, marginBottom: keyboardOffset > 0 ? `-${keyboardOffset}px` : undefined }}>
         {isBlocked ? moderationBanner : (
         <div className="chat-theme-composer w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-visible bg-background/90 backdrop-blur-2xl border border-border/50">
           <ChatInput

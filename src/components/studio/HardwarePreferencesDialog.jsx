@@ -144,9 +144,6 @@ export default function HardwarePreferencesDialog({ open, onOpenChange, hardware
                 <SelectContent className="z-[300]">
                   <SelectItem value="Mono (1.0)">Mono (1.0)</SelectItem>
                   <SelectItem value="Stereo (2.0)">Stereo (2.0)</SelectItem>
-                  <SelectItem value="Surround (5.1)">Surround (5.1)</SelectItem>
-                  <SelectItem value="Surround (7.1)">Surround (7.1)</SelectItem>
-                  <SelectItem value="Atmos (7.1.4)">Atmos (7.1.4)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

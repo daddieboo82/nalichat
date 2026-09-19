@@ -551,6 +551,7 @@ export default function Studio() {
   const historyRef = useRef([]);
   const historyIndexRef = useRef(-1);
   const tracksRef = useRef(tracks);
+  const automationLatchRef = useRef(new Map());
 
   useEffect(() => {
     tracksRef.current = tracks;
@@ -645,6 +646,28 @@ export default function Studio() {
       if (timeDisplayRef.current) timeDisplayRef.current.textContent = formatTime(newTime);
       if (playheadRef.current) playheadRef.current.style.left = `${newTime * 20 * zoom}px`;
       if (headerPlayheadRef.current) headerPlayheadRef.current.style.left = `${newTime * 20 * zoom}px`;
+
+      // Latch keeps the last touched value writing; Write continuously overwrites with the live control value.
+      if (automationLatchRef.current.size > 0 || tracksRef.current.some(t => t.automationWriteMode === 'write')) {
+        setTracks(prev => prev.map(track => {
+          const writeMode = track.automationWriteMode || 'read';
+          if (writeMode !== 'latch' && writeMode !== 'write') return track;
+          const property = track.automationMode || 'volume';
+          const values = { volume: track.volume ?? 75, pan: track.pan ?? 50, send1: track.send1 ?? 0, send2: track.send2 ?? 0, send3: track.send3 ?? 0 };
+          const value = writeMode === 'latch' ? automationLatchRef.current.get(`${track.id}:${property}`) : values[property];
+          if (value === undefined) return track;
+          const keys = { volume: 'automationPoints', pan: 'panAutomationPoints', send1: 'send1AutomationPoints', send2: 'send2AutomationPoints', send3: 'send3AutomationPoints' };
+          const key = keys[property];
+          if (!key) return track;
+          const existing = track[key] || [];
+          const last = existing[existing.length - 1];
+          if (last && newTime - last.time < 0.08) return track;
+          const points = writeMode === 'write'
+            ? existing.filter(p => Math.abs(p.time - newTime) > 0.12)
+            : existing;
+          return { ...track, [key]: [...points, { time: newTime, value }].sort((a, b) => a.time - b.time) };
+        }));
+      }
 
       // Drive the full automation frame in one pass for responsive large sessions.
       mixEngineRef.current?.syncAutomationFrame(tracksRef.current, newTime);
@@ -860,6 +883,7 @@ export default function Studio() {
       Object.values(audioElementsRef.current).forEach(audio => {
         audio.pause();
       });
+      automationLatchRef.current.clear();
     }
     
     setIsPlaying(!isPlaying);
@@ -1308,6 +1332,7 @@ export default function Studio() {
       const mode = t.automationWriteMode || 'read';
       if (!isPlaying || mode === 'read' || t.automationMode !== 'volume') return { ...t, volume: value };
       const time = currentTimeRef.current;
+      if (mode === 'latch') automationLatchRef.current.set(`${trackId}:volume`, value);
       const points = [...(t.automationPoints || [])];
       const windowSeconds = mode === 'write' ? 0.12 : 0.08;
       const filtered = points.filter(p => Math.abs(p.time - time) > windowSeconds);
@@ -1327,6 +1352,7 @@ export default function Studio() {
       const property = Object.keys(data).find(key => keys[key] && t.automationMode === key);
       if (!property) return next;
       const time = currentTimeRef.current;
+      if (mode === 'latch') automationLatchRef.current.set(`${trackId}:${property}`, data[property]);
       const points = [...(t[keys[property]] || [])].filter(p => Math.abs(p.time - time) > (mode === 'write' ? 0.12 : 0.08));
       points.push({ time, value: data[property] });
       points.sort((a, b) => a.time - b.time);

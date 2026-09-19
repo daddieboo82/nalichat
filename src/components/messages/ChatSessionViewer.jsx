@@ -164,7 +164,13 @@ export default function ChatSessionViewer({ message, currentUser }) {
   };
 
   const stopRecording = () => {
-    mediaRecorderRef.current?.stop();
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state === "inactive") {
+      setIsRecording(false);
+      return;
+    }
+    try { recorder.requestData?.(); } catch {}
+    recorder.stop();
     setIsRecording(false);
   };
 

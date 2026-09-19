@@ -2647,7 +2647,7 @@ export default function Studio() {
                             if (!hasDragged) {
                               if (Math.abs(deltaX) < 3) return; // Ignore tiny movement so a plain click doesn't highlight the clip
                               hasDragged = true;
-                              Object.assign(target.style, { zIndex: '50', opacity: '0.9', filter: 'brightness(1.2)', boxShadow: '0 0 20px hsl(var(--primary)/0.5), inset 0 0 0 2px hsl(var(--primary))' });
+                              Object.assign(target.style, { zIndex: '50', opacity: '0.94', filter: 'brightness(1.16)', boxShadow: '0 8px 28px hsl(var(--primary)/0.45), inset 0 0 0 2px hsl(var(--primary))', cursor: 'grabbing', willChange: 'left' });
                             }
                             const deltaTime = deltaX / (20 * zoom);
                             let newStartTime = Math.max(0, initialStartTime + deltaTime);
@@ -2658,7 +2658,7 @@ export default function Studio() {
                           };
                           
                           const handleUp = (upEvent) => {
-                            Object.assign(target.style, { zIndex: '', opacity: '', filter: '', boxShadow: '' });
+                            Object.assign(target.style, { zIndex: '', opacity: '', filter: '', boxShadow: '', cursor: '', willChange: '' });
                             target.releasePointerCapture(upEvent.pointerId);
                             target.removeEventListener('pointermove', handleMove);
                             target.removeEventListener('pointerup', handleUp);
@@ -2676,7 +2676,11 @@ export default function Studio() {
                       }}
                       data-testid={`studio-audio-clip-${track.id}`}
                       data-track-id={String(track.id)}
-                      className="audio-clip absolute top-2 bottom-2 rounded-r-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-colors shadow-sm"
+                      className={cn(
+                        "audio-clip absolute top-2 bottom-2 rounded-r-lg border border-white/10 bg-card/60 backdrop-blur overflow-hidden group-hover:border-white/30 transition-[border-color,box-shadow,filter,opacity] duration-100 shadow-sm touch-none select-none",
+                        selectedTrackIds.includes(track.id) && "border-primary/60 ring-1 ring-primary/30 shadow-[0_0_18px_hsl(var(--primary)/0.18)]",
+                        track.locked && "cursor-not-allowed opacity-80"
+                      )}
                       style={{ 
                         left: `${(track.startTime !== undefined ? track.startTime : 0) * 20 * zoom}px`,
                         width: `${(track.duration !== undefined ? track.duration : 40) * 20 * zoom}px`

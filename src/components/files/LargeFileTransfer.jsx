@@ -6,9 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { resumableUpload } from "@/lib/resumableUpload";
-import { validateUpload } from "@/lib/uploadValidation";
 import { UploadCloud, FileText, CheckCircle2 } from "lucide-react";
-import { EntitlementGate } from "@/components/subscription/EntitlementGate";
 import { copyToClipboard } from "@/lib/clipboard";
 
 function LargeFileTransferContent({ currentUser }) {
@@ -17,16 +15,18 @@ function LargeFileTransferContent({ currentUser }) {
   const [message, setMessage] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [shareLink, setShareLink] = useState("");
   const fileInputRef = useRef(null);
+  const transferRef = useRef(null);
+  const cancelledRef = useRef(false);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    const validation = validateUpload(selectedFile);
-    if (!validation.ok) {
-      toast.error(validation.error);
+    if (!selectedFile.name || selectedFile.size <= 0) {
+      toast.error("The selected file is empty or invalid.");
       return;
     }
 
@@ -40,19 +40,28 @@ function LargeFileTransferContent({ currentUser }) {
       toast.error("Please select a file to transfer.");
       return;
     }
+    cancelledRef.current = false;
     setIsUploading(true);
     setUploadProgress(0);
 
     try {
       // 1. Resumable Upload
-      const file_url = await resumableUpload(file, (progress) => {
+      const transferPromise = resumableUpload(file, (progress) => {
         setUploadProgress(progress);
       });
+      transferRef.current = transferPromise.controller;
+      const transfer = await transferPromise;
+      transferRef.current = null;
+      const file_url = transfer?.file_url;
+      if (!file_url) throw new Error("Transfer verification returned no download URL.");
 
       // 2. Create SharedFile record
       const created = await base44.functions.invoke("createSharedFileRecord", {
         name: file.name,
         file_url,
+        storage_provider: "supabase",
+        storage_bucket: transfer.bucket,
+        storage_path: transfer.objectPath,
         file_type: file.type.startsWith("audio") ? "audio" : file.type.startsWith("video") ? "video" : "other",
         file_size: file.size,
         description: message,
@@ -94,10 +103,32 @@ function LargeFileTransferContent({ currentUser }) {
 
     } catch (error) {
       console.error(error);
-      toast.error("Transfer failed. Please try again.");
+      if (!cancelledRef.current) toast.error("Transfer failed. Please try again.");
     } finally {
+      transferRef.current = null;
       setIsUploading(false);
+      setIsPaused(false);
     }
+  };
+
+  const pauseTransfer = async () => {
+    await transferRef.current?.pause?.();
+    setIsPaused(true);
+  };
+
+  const resumeTransfer = () => {
+    transferRef.current?.resume?.();
+    setIsPaused(false);
+  };
+
+  const cancelTransfer = async () => {
+    cancelledRef.current = true;
+    await transferRef.current?.cancel?.();
+    transferRef.current = null;
+    setIsUploading(false);
+    setIsPaused(false);
+    setUploadProgress(0);
+    toast.info("Transfer cancelled.");
   };
 
   return (
@@ -105,8 +136,8 @@ function LargeFileTransferContent({ currentUser }) {
       {/* Left side: Form */}
       <div className="flex-1 p-6 md:p-8 space-y-6">
         <div>
-          <h2 className="text-2xl font-bold font-heading mb-1">Transfer Large Files</h2>
-          <p className="text-sm text-muted-foreground">Secure Premium transfers with upload limits based on file type.</p>
+          <h2 className="text-2xl font-bold font-heading mb-1">Nali Transfer</h2>
+          <p className="text-sm text-muted-foreground">Send big. Resume anytime. No NaliChat file-size limit.</p>
         </div>
 
         {shareLink ? (
@@ -182,7 +213,17 @@ function LargeFileTransferContent({ currentUser }) {
                   <span>{Math.round(uploadProgress)}%</span>
                 </div>
                 <Progress value={uploadProgress} className="h-2" />
-                <p className="text-[10px] text-muted-foreground text-center">Keep this page open until the upload finishes.</p>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" className="flex-1" onClick={isPaused ? resumeTransfer : pauseTransfer}>
+                    {isPaused ? "Resume" : "Pause"}
+                  </Button>
+                  <Button type="button" variant="destructive" className="flex-1" onClick={cancelTransfer}>
+                    Cancel
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground text-center">
+                  {isPaused ? "Paused — resume when you're ready." : "Nali Transfer can recover interrupted uploads."}
+                </p>
               </div>
             ) : (
               <Button 
@@ -212,14 +253,5 @@ function LargeFileTransferContent({ currentUser }) {
 }
 
 export default function LargeFileTransfer({ currentUser }) {
-  return (
-    <EntitlementGate
-      entitlement="files.large_upload"
-      title="Large file transfers are a Premium feature"
-      description="Choose Premium or Premium Plus for secure large-file transfer tools within current upload limits."
-      source="large_file_transfer"
-    >
-      <LargeFileTransferContent currentUser={currentUser} />
-    </EntitlementGate>
-  );
+  return <LargeFileTransferContent currentUser={currentUser} />;
 }

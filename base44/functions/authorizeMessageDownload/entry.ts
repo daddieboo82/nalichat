@@ -5,6 +5,8 @@ import { requireEntitlement } from '../../shared/entitlementAccess.ts';
 import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isConversationId } from '../../shared/conversationIds.ts';
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import { getSupabaseConfig } from '../../shared/supabase.ts';
 import {
   acquireConversationMembershipLock,
   releaseConversationMembershipLock,
@@ -85,9 +87,29 @@ Deno.serve(async (req) => {
         }
       }
 
-      if (!message.file_url) return Response.json({ error: 'Message has no downloadable media' }, { status: 400 });
-      if (!isTrustedStoredMediaUrl(message.file_url)) {
-        return Response.json({ error: 'Stored message media host is not allowed' }, { status: 400 });
+      let downloadUrl = message.file_url;
+      if (
+        message.storage_provider === 'supabase'
+        && message.storage_bucket === 'nalichat-transfers'
+        && typeof message.storage_path === 'string'
+        && message.storage_path.startsWith(`users/${message.sender_id}/`)
+        && !message.storage_path.includes('..')
+      ) {
+        const { url, serviceKey } = getSupabaseConfig();
+        const supabase = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+        const { data: signed, error: signedError } = await supabase.storage
+          .from(message.storage_bucket)
+          .createSignedUrl(message.storage_path, 15 * 60);
+        if (signedError || !signed?.signedUrl) {
+          console.error('authorizeMessageDownload signed URL error:', signedError);
+          return Response.json({ error: 'Could not authorize transfer download' }, { status: 502 });
+        }
+        downloadUrl = signed.signedUrl;
+      } else {
+        if (!downloadUrl) return Response.json({ error: 'Message has no downloadable media' }, { status: 400 });
+        if (!isTrustedStoredMediaUrl(downloadUrl)) {
+          return Response.json({ error: 'Stored message media host is not allowed' }, { status: 400 });
+        }
       }
       return Response.json({
         success: true,
@@ -95,7 +117,7 @@ Deno.serve(async (req) => {
         userId: user.id,
         messageId: message.id,
         conversationId: conversation.id,
-        file_url: message.file_url,
+        file_url: downloadUrl,
         file_name: message.file_name || 'file',
       });
     } finally {

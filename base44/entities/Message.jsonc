@@ -34,6 +34,18 @@
     "file_url": {
       "type": "string"
     },
+    "storage_provider": {
+      "type": "string",
+      "description": "Server-managed storage provider for persistent Nali Transfer attachments."
+    },
+    "storage_bucket": {
+      "type": "string",
+      "description": "Private storage bucket for the attachment."
+    },
+    "storage_path": {
+      "type": "string",
+      "description": "Private object path used to mint fresh authorized download URLs."
+    },
     "file_name": {
       "type": "string"
     },

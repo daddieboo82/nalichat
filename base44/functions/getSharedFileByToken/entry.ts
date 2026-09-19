@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import { getSupabaseConfig } from '../../shared/supabase.ts';
 
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
@@ -87,7 +89,25 @@ Deno.serve(async (req) => {
     if (!constantTimeEqual(candidate, String(file.share_token_hash))) {
       return Response.json({ error: 'Invalid or expired share link' }, { status: 404 });
     }
-    if (!isTrustedStoredUrl(file.file_url)) {
+    let downloadUrl = file.file_url;
+    if (
+      file.storage_provider === 'supabase'
+      && file.storage_bucket === 'nalichat-transfers'
+      && typeof file.storage_path === 'string'
+      && file.storage_path.startsWith(`users/${file.uploader_id}/`)
+      && !file.storage_path.includes('..')
+    ) {
+      const { url, serviceKey } = getSupabaseConfig();
+      const supabase = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+      const { data: signed, error: signedError } = await supabase.storage
+        .from(file.storage_bucket)
+        .createSignedUrl(file.storage_path, 15 * 60);
+      if (signedError || !signed?.signedUrl) {
+        console.error('getSharedFileByToken signed URL error:', signedError);
+        return Response.json({ error: 'Could not authorize shared-file download' }, { status: 502 });
+      }
+      downloadUrl = signed.signedUrl;
+    } else if (!isTrustedStoredUrl(downloadUrl)) {
       return Response.json({ error: 'Shared file media host is not allowed' }, { status: 400 });
     }
 
@@ -99,7 +119,7 @@ Deno.serve(async (req) => {
       file: {
         id: file.id,
         name: file.name,
-        file_url: file.file_url,
+        file_url: downloadUrl,
         file_type: file.file_type,
         file_size: file.file_size,
       },

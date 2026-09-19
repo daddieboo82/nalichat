@@ -2,22 +2,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 import { consumeHourlyLimit } from '../../shared/rateLimit.ts';
 import { isBase44EntityId } from '../../shared/workflowEvents.ts';
-import { resolveUserSubscription } from '../../shared/subscriptionAccess.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 import { acquireFolderMutationLock, releaseFolderMutationLock } from '../../shared/folderMutationLock.ts';
 
-const FREE_FILE_LIMIT = 250 * 1024 * 1024;
-const PREMIUM_FILE_LIMIT = 20 * 1024 * 1024 * 1024;
-// secureUploadFile currently caps accepted uploads at 100 MB. When the storage
-// provider does not support HEAD or range probes, accept that already-validated
-// client size only within the same conservative ceiling.
-const MAX_UNVERIFIED_FILE_SIZE = 100 * 1024 * 1024;
+// Nali Transfer has no NaliChat application-level total file-size ceiling.
+// Storage/provider capacity and per-request limits remain in force.
 const FILE_TYPES = new Set(['audio', 'image', 'video', 'session', 'document', 'other']);
-
-async function hasLargeUploadAccess(entities: any, userId: string): Promise<boolean> {
-  const access = await resolveUserSubscription(entities.Subscription, userId);
-  return access.hasPaidAccess;
-}
 
 const TRUSTED_MEDIA_HOSTS = [
   'storage.googleapis.com',
@@ -37,10 +27,13 @@ function cleanUploadedMediaUrl(value: unknown) {
     const parsed = new URL(raw);
     if (parsed.protocol !== 'https:') return '';
     const hostname = parsed.hostname.toLowerCase();
-    const trusted = TRUSTED_MEDIA_HOSTS.some(
+    const trustedBase44 = TRUSTED_MEDIA_HOSTS.some(
       (host) => hostname === host || hostname.endsWith('.' + host),
     );
-    return trusted ? parsed.toString() : '';
+    const trustedNaliTransfer =
+      hostname === 'xznlhezufooynxekoezl.supabase.co' &&
+      parsed.pathname.startsWith('/storage/v1/object/sign/nalichat-transfers/');
+    return (trustedBase44 || trustedNaliTransfer) ? parsed.toString() : '';
   } catch {
     return '';
   }
@@ -122,6 +115,17 @@ Deno.serve(async (req) => {
     if (body?.file_size != null && typeof body.file_size !== 'number') {
       return Response.json({ error: 'file_size must be a non-negative number' }, { status: 400 });
     }
+    const storageProvider = body?.storage_provider === 'supabase' ? 'supabase' : null;
+    const storageBucket = storageProvider ? String(body?.storage_bucket || '').trim() : null;
+    const storagePath = storageProvider ? String(body?.storage_path || '').trim() : null;
+    if (storageProvider && (
+      storageBucket !== 'nalichat-transfers'
+      || !storagePath
+      || !storagePath.startsWith(`users/${user.id}/`)
+      || storagePath.includes('..')
+    )) {
+      return Response.json({ error: 'Invalid Nali Transfer storage identity' }, { status: 400 });
+    }
 
     const name = body.name.trim();
     const description = typeof body.description === 'string' ? body.description : '';
@@ -193,17 +197,12 @@ Deno.serve(async (req) => {
     }
 
     const storedFileSize = await resolveStoredFileSize(fileUrl);
-    if (storedFileSize === null && claimedFileSize > MAX_UNVERIFIED_FILE_SIZE) {
+    if (storedFileSize === null && claimedFileSize <= 0) {
       return Response.json({ error: 'Could not verify uploaded file size' }, { status: 400 });
     }
+    // No NaliChat total-size ceiling. Prefer provider-verified size whenever
+    // available; transfer uploads are separately verified before this call.
     const fileSize = storedFileSize ?? claimedFileSize;
-
-    if (fileSize > PREMIUM_FILE_LIMIT) {
-      return Response.json({ error: 'Files larger than 20GB are not supported' }, { status: 413 });
-    }
-    if (fileSize > FREE_FILE_LIMIT && !(await hasLargeUploadAccess(entities, user.id))) {
-      return Response.json({ error: 'Premium is required for files larger than 250MB' }, { status: 403 });
-    }
 
     const fileType = typeof body.file_type === 'string' ? body.file_type.trim() : 'other';
     if (!FILE_TYPES.has(fileType)) {
@@ -339,6 +338,9 @@ Deno.serve(async (req) => {
       const file = await entities.SharedFile.create({
         name,
         file_url: fileUrl,
+        storage_provider: storageProvider,
+        storage_bucket: storageBucket,
+        storage_path: storagePath,
         file_type: fileType,
         file_size: fileSize,
         uploader_id: user.id,

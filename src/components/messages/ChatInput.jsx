@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Paperclip, Mic, X, StopCircle, UploadCloud, Smile, Layers, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resumableUpload } from "@/lib/resumableUpload";
-import { validateUpload } from "@/lib/uploadValidation";
 import { toast } from "sonner";
 import { sounds } from "@/hooks/use-sound";
 import { motion } from "framer-motion";
@@ -104,12 +103,11 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
   };
 
   const uploadFile = async (file) => {
-    // Validate before showing a progress row so oversized/invalid files fail
-    // immediately with a reason instead of after a long transfer.
-    const check = validateUpload(file);
-    if (!check.ok) {
+    // Message attachments use Nali Transfer, which intentionally has no
+    // NaliChat application-level total file-size ceiling.
+    if (!(file instanceof File) || !file.name || file.size <= 0) {
       sounds.error();
-      toast.error(check.error);
+      toast.error("The selected file is empty or invalid.");
       return;
     }
     const id = `${file.name}-${Date.now()}`;
@@ -119,9 +117,9 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       setUploads(u => u.map(x => x.id === id ? { ...x, progress: pct } : x));
     };
 
-    let file_url;
+    let transfer;
     try {
-      file_url = await resumableUpload(file, updateProgress);
+      transfer = await resumableUpload(file, updateProgress);
       if (!mountedRef.current) return;
     } catch (err) {
       // Previously this failed silently apart from a red bar, leaving the user
@@ -141,7 +139,23 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
     const isVideo = file.type.startsWith("video");
     const type = isImage ? "image" : isAudio ? "audio" : isVideo ? "video" : "file";
     
-    const payload = { text: "", type, file_url, file_name: file.name, file_size: file.size, file_type: file.type };
+    const file_url = transfer?.file_url;
+    if (!file_url) {
+      sounds.error();
+      toast.error(`Couldn't verify ${file.name}.`);
+      return;
+    }
+    const payload = {
+      text: "",
+      type,
+      file_url,
+      file_name: file.name,
+      file_size: transfer.fileSize || file.size,
+      file_type: file.type,
+      storage_provider: "supabase",
+      storage_bucket: transfer.bucket,
+      storage_path: transfer.objectPath,
+    };
     if (replyTo) {
       payload.reply_to_text = replyTo.text || `[${replyTo.type}]`;
       payload.reply_to_sender = replyTo.sender_name;

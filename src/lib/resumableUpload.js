@@ -1,117 +1,208 @@
-import { secureUploadFile } from "@/lib/secureUpload";
-/**
- * Resumable chunked file upload utility.
- * Splits files into chunks, tracks progress in localStorage,
- * and can resume from where it left off if interrupted.
- */
+import * as tus from "tus-js-client";
+import { base44 } from "@/api/base44Client";
 
-import { validateUpload } from "@/lib/uploadValidation";
+const TUS_CHUNK_SIZE = 6 * 1024 * 1024;
 
-const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB threshold for progress UX
-
-/**
- * Upload a file with resume support.
- * @param {File} file
- * @param {(progress: number) => void} onProgress - 0..100
- * @param {{ accept?: string, maxBytes?: number }} [options] - validation options
- * @returns {Promise<string>} file_url
- */
-export async function resumableUpload(file, onProgress, options = {}) {
-  // Reject bad input before spending a long transfer on it.
-  const { ok, error } = validateUpload(file, options);
-  if (!ok) throw new Error(error);
-
-  // For small files (< 1MB), upload directly without chunking
-  if (file.size <= CHUNK_SIZE) {
-    onProgress?.(10);
-    const { file_url } = await secureUploadFile({ file });
-    onProgress?.(100);
-    return file_url;
+function assertTransferFile(file) {
+  if (!(file instanceof File) || !file.name || file.size <= 0) {
+    throw new Error("The selected file is empty or invalid.");
   }
-
-  // Large files: upload the full file directly (chunking is not supported server-side for merging).
-  // Do not trust or reuse legacy browser-persisted upload URLs across sessions/accounts.
-  onProgress?.(10);
-  const { file_url } = await secureUploadFile({ file });
-  onProgress?.(100);
-  return file_url;
 }
 
 /**
- * Download a file with progress tracking and resume via Content-Range.
- * Falls back to direct link if range requests unsupported.
- * @param {string} url
- * @param {string} fileName
- * @param {(progress: number) => void} onProgress
+ * Upload through Nali Transfer. There is intentionally no NaliChat total-size
+ * ceiling here; the underlying storage provider/account capacity still applies.
+ *
+ * The returned Promise exposes controller.pause/resume/cancel synchronously so
+ * callers can control a transfer while still awaiting its completion.
  */
-export async function resumableDownload(url, fileName, onProgress) {
-  const STORAGE_KEY_DL = `dl_${fileName}_${url.slice(-20)}`;
-  // Partial bytes are not persisted, so a saved offset cannot be safely
-  // resumed: concatenating the response would produce a corrupt file.
-  // Clear stale progress and restart from the beginning instead.
-  let savedBytes = 0;
-  try {
-    savedBytes = parseInt(localStorage.getItem(STORAGE_KEY_DL) || "0", 10);
-    if (savedBytes > 0) localStorage.removeItem(STORAGE_KEY_DL);
-  } catch {
-    savedBytes = 0;
-  }
+export function resumableUpload(file, onProgress) {
+  assertTransferFile(file);
 
-  const triggerFallback = () => {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName || "download";
-    a.target = "_blank";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    onProgress?.(100);
+  let upload;
+  let cancelled = false;
+  let paused = false;
+
+  const promise = (async () => {
+    const authorization = await base44.functions.invoke("createResumableTransferUpload", {
+      file_name: file.name,
+      file_size: file.size,
+      content_type: file.type || "application/octet-stream",
+    });
+    const auth = authorization?.data || authorization;
+    if (!auth?.token || !auth?.tusEndpoint || !auth?.bucket || !auth?.objectPath) {
+      throw new Error(auth?.error || "Could not authorize resumable transfer.");
+    }
+    if (cancelled) throw new Error("Transfer cancelled.");
+
+    return await new Promise((resolve, reject) => {
+      upload = new tus.Upload(file, {
+        endpoint: auth.tusEndpoint,
+        chunkSize: TUS_CHUNK_SIZE,
+        retryDelays: [0, 3000, 5000, 10000, 20000],
+        uploadDataDuringCreation: true,
+        removeFingerprintOnSuccess: true,
+        headers: { "x-signature": auth.token },
+        metadata: {
+          bucketName: auth.bucket,
+          objectName: auth.objectPath,
+          contentType: file.type || "application/octet-stream",
+          cacheControl: "3600",
+        },
+        onProgress(bytesUploaded, bytesTotal) {
+          onProgress?.(bytesTotal ? Math.round((bytesUploaded / bytesTotal) * 100) : 0);
+        },
+        onError(error) {
+          reject(error);
+        },
+        async onSuccess() {
+          try {
+            const finalized = await base44.functions.invoke("finalizeResumableTransferUpload", {
+              objectPath: auth.objectPath,
+            });
+            const result = finalized?.data || finalized;
+            if (
+              result?.success !== true ||
+              result?.action !== "finalize_resumable_transfer_upload" ||
+              result?.userId !== auth.userId ||
+              typeof result?.file_url !== "string"
+            ) {
+              throw new Error(result?.error || "Transfer verification failed.");
+            }
+            onProgress?.(100);
+            resolve({
+              file_url: result.file_url,
+              bucket: result.bucket,
+              objectPath: result.objectPath,
+              fileName: file.name,
+              fileSize: result.fileSize,
+              contentType: file.type || "application/octet-stream",
+            });
+          } catch (error) {
+            reject(error);
+          }
+        },
+      });
+
+      upload.findPreviousUploads()
+        .then((previous) => {
+          if (previous.length) upload.resumeFromPreviousUpload(previous[0]);
+          if (cancelled) return reject(new Error("Transfer cancelled."));
+          if (!paused) upload.start();
+        })
+        .catch(reject);
+    });
+  })();
+
+  promise.controller = {
+    pause: () => {
+      paused = true;
+      return upload?.abort(false);
+    },
+    resume: () => {
+      if (cancelled) return;
+      paused = false;
+      return upload?.start();
+    },
+    cancel: () => {
+      cancelled = true;
+      paused = false;
+      return upload?.abort(true);
+    },
   };
+  return promise;
+}
 
-  let response;
-  try {
-    response = await fetch(url);
-  } catch {
-    triggerFallback();
-    return;
-  }
-
-  // If server doesn't support range or content-length, fall back
-  if (!response.ok && response.status !== 206) {
-    triggerFallback();
-    return;
-  }
-
-  const contentLength = response.headers.get("content-length");
-  const contentType = response.headers.get("content-type") || "";
-  const total = contentLength ? parseInt(contentLength, 10) : 0;
-
-  const reader = response.body?.getReader();
-  if (!reader) { triggerFallback(); return; }
-
+export async function resumableDownload(urlOrProvider, fileName, onProgress) {
+  const getUrl = typeof urlOrProvider === "function" ? urlOrProvider : async () => urlOrProvider;
+  const storageKey = `nali-transfer-download:${fileName || "download"}`;
+  const supportsFilePicker = typeof window.showSaveFilePicker === "function";
+  let fileHandle = null;
+  let writable = null;
+  let offset = 0;
   const chunks = [];
-  let received = 0;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    received += value.length;
-    try { localStorage.setItem(STORAGE_KEY_DL, String(received)); } catch {}
-    if (total > 0) onProgress?.(Math.round((received / total) * 100));
+  if (supportsFilePicker) {
+    fileHandle = await window.showSaveFilePicker({ suggestedName: fileName || "download" });
+    const existing = await fileHandle.getFile();
+    offset = existing.size;
+    writable = await fileHandle.createWritable({ keepExistingData: true });
+    if (offset > 0) await writable.seek(offset);
+  } else {
+    // Fallback browsers can retry within the current session. We deliberately
+    // do not claim cross-restart byte persistence without a writable file handle.
+    const savedOffset = Number(sessionStorage.getItem(storageKey) || 0);
+    offset = Number.isFinite(savedOffset) && savedOffset > 0 ? savedOffset : 0;
   }
 
-  // Merge and trigger download
-  const blob = new Blob(chunks, { type: contentType });
-  const dlUrl = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = dlUrl;
-  a.download = fileName || "download";
-  a.target = "_blank"; // Ensure fallback behavior
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(dlUrl);
-  try { localStorage.removeItem(STORAGE_KEY_DL); } catch {}
-  onProgress?.(100);
+  // Range requests let an interrupted transfer continue from the last confirmed
+  // byte. A URL provider may mint a fresh signed URL before each retry.
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const url = await getUrl();
+    const headers = offset > 0 ? { Range: `bytes=${offset}-` } : {};
+    let response;
+    try {
+      response = await fetch(url, { headers });
+    } catch (error) {
+      if (attempt === 5) throw error;
+      continue;
+    }
+
+    if (offset > 0 && response.status !== 206) {
+      // The origin cannot continue this partial transfer. Restart safely.
+      offset = 0;
+      chunks.length = 0;
+      sessionStorage.removeItem(storageKey);
+      if (writable) {
+        await writable.truncate(0);
+        await writable.seek(0);
+      }
+      continue;
+    }
+    if (!response.ok && response.status !== 206) throw new Error("Download request failed.");
+
+    const contentRange = response.headers.get("content-range");
+    const rangeTotal = contentRange?.match(/\/(\d+)$/)?.[1];
+    const responseLength = Number(response.headers.get("content-length") || 0);
+    const total = Number(rangeTotal || (responseLength ? offset + responseLength : 0));
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("Streaming download is unavailable.");
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (writable) {
+          await writable.write(value);
+        } else {
+          chunks.push(value);
+          sessionStorage.setItem(storageKey, String(offset + value.length));
+        }
+        offset += value.length;
+        if (total > 0) onProgress?.(Math.min(99, Math.round((offset / total) * 100)));
+      }
+      sessionStorage.removeItem(storageKey);
+      if (writable) {
+        await writable.close();
+        writable = null;
+      } else {
+        const dlUrl = URL.createObjectURL(new Blob(chunks, {
+          type: response.headers.get("content-type") || "application/octet-stream",
+        }));
+        const a = document.createElement("a");
+        a.href = dlUrl;
+        a.download = fileName || "download";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(dlUrl);
+      }
+      onProgress?.(100);
+      return;
+    } catch (error) {
+      if (attempt === 5) throw error;
+    }
+  }
+
+  throw new Error("Download could not be resumed.");
 }

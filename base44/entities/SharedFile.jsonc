@@ -17,6 +17,42 @@
         }
       }
     },
+    "storage_provider": {
+      "type": "string",
+      "description": "Server-managed storage provider for persistent Nali Transfer objects.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "storage_bucket": {
+      "type": "string",
+      "description": "Server-managed private storage bucket.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "storage_path": {
+      "type": "string",
+      "description": "Server-managed private object path used to mint fresh authorized download URLs.",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
     "file_type": {
       "type": "string",
       "enum": [

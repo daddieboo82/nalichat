@@ -52,7 +52,19 @@ export default function SharedFileDownload() {
     if (!file) return;
     setState("downloading");
     try {
-      await resumableDownload(file.file_url, file.name || "NaliChat-file");
+      const refreshUrl = async () => {
+        const res = await base44.functions.invoke("getSharedFileByToken", { fileId, token });
+        const refreshed = res?.data?.file;
+        if (
+          res?.data?.success !== true ||
+          res?.data?.action !== "get_shared_file_by_token" ||
+          res?.data?.fileId !== fileId ||
+          typeof refreshed?.file_url !== "string" ||
+          !refreshed.file_url.trim()
+        ) throw new Error("Could not refresh download authorization.");
+        return refreshed.file_url;
+      };
+      await resumableDownload(refreshUrl, file.name || "NaliChat-file");
       setState("ready");
     } catch {
       setState("error");

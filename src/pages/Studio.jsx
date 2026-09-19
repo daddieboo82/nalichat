@@ -1302,7 +1302,37 @@ export default function Studio() {
   };
 
   const updateVolume = (trackId, val) => {
-    setTracks(tracks.map(t => t.id === trackId ? { ...t, volume: val[0] } : t));
+    const value = val[0];
+    setTracks(prev => prev.map(t => {
+      if (t.id !== trackId) return t;
+      const mode = t.automationWriteMode || 'read';
+      if (!isPlaying || mode === 'read' || t.automationMode !== 'volume') return { ...t, volume: value };
+      const time = currentTimeRef.current;
+      const points = [...(t.automationPoints || [])];
+      const windowSeconds = mode === 'write' ? 0.12 : 0.08;
+      const filtered = points.filter(p => Math.abs(p.time - time) > windowSeconds);
+      filtered.push({ time, value });
+      filtered.sort((a, b) => a.time - b.time);
+      return { ...t, volume: value, automationPoints: filtered };
+    }));
+  };
+
+  const updateAutomatableTrack = (trackId, data) => {
+    setTracks(prev => prev.map(t => {
+      if (t.id !== trackId) return t;
+      const next = { ...t, ...data };
+      const mode = t.automationWriteMode || 'read';
+      if (!isPlaying || mode === 'read') return next;
+      const keys = { pan: 'panAutomationPoints', send1: 'send1AutomationPoints', send2: 'send2AutomationPoints', send3: 'send3AutomationPoints' };
+      const property = Object.keys(data).find(key => keys[key] && t.automationMode === key);
+      if (!property) return next;
+      const time = currentTimeRef.current;
+      const points = [...(t[keys[property]] || [])].filter(p => Math.abs(p.time - time) > (mode === 'write' ? 0.12 : 0.08));
+      points.push({ time, value: data[property] });
+      points.sort((a, b) => a.time - b.time);
+      next[keys[property]] = points;
+      return next;
+    }));
   };
 
   const handleTrackClick = (e, trackId) => {
@@ -3049,7 +3079,7 @@ export default function Studio() {
         updateVolume={updateVolume}
         toggleMute={toggleMute}
         toggleSolo={toggleSolo}
-        updateTrack={(trackId, data) => setTracks(prev => prev.map(t => t.id === trackId ? { ...t, ...data } : t))}
+        updateTrack={updateAutomatableTrack}
         onCommitTrack={() => pushToHistory(tracksRef.current)}
         onOpenFX={openTrackFx}
         onOpenMasterFX={openMasterFx}

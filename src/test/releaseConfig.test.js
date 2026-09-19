@@ -2059,7 +2059,8 @@ describe('release configuration', () => {
 
     expect(messages).toContain('useLocation, useNavigate');
     expect(messages).toContain('navigate(\`\${location.pathname}\${nextSearch}\`, { replace: true })');
-    expect(messages).toContain('className="relative h-full min-h-0 sm:h-[calc(100vh-80px)]');
+    expect(messages).toContain('className="relative h-[100dvh] min-h-0 sm:h-[calc(100vh-80px)]');
+    expect(messages).toContain('[touch-action:pan-y]');
     expect(messages).not.toContain('className="absolute inset-0 sm:relative');
   });
 

@@ -15,7 +15,9 @@ import React, { useRef, useCallback } from 'react';
 export default function AutomationLane({ track, onPointsChange, onCommit, zoom, trackDuration = 40 }) {
   const laneRef = useRef(null);
   const modes = ['volume', 'pan', 'send1', 'send2', 'send3', 'mute'];
+  const writeModes = ['read', 'touch', 'latch', 'write'];
   const autoMode = modes.includes(track.automationMode) ? track.automationMode : 'volume';
+  const writeMode = writeModes.includes(track.automationWriteMode) ? track.automationWriteMode : 'read';
   const pointsKey = {
     volume: 'automationPoints',
     pan: 'panAutomationPoints',
@@ -123,6 +125,13 @@ export default function AutomationLane({ track, onPointsChange, onCommit, zoom, 
     return path;
   };
 
+  const toggleWriteMode = (e) => {
+    e.stopPropagation();
+    const next = writeModes[(writeModes.indexOf(writeMode) + 1) % writeModes.length];
+    onPointsChange(points, autoMode, { automationWriteMode: next });
+    onCommit();
+  };
+
   const toggleMode = (e) => {
     e.stopPropagation();
     const newMode = modes[(modes.indexOf(autoMode) + 1) % modes.length];
@@ -153,6 +162,13 @@ export default function AutomationLane({ track, onPointsChange, onCommit, zoom, 
         title="Cycle Volume, Pan, Reverb Send, Delay Send, Cue Send, and Mute automation"
       >
         {label} ⇄
+      </button>
+      <button
+        onClick={toggleWriteMode}
+        className={`absolute top-1 left-24 text-[9px] font-mono pointer-events-auto z-20 px-1.5 py-0.5 rounded transition-colors ${writeMode === 'read' ? 'bg-black/40 text-muted-foreground' : 'bg-primary/20 text-primary'}`}
+        title="Cycle automation write mode: Read, Touch, Latch, Write"
+      >
+        {writeMode.toUpperCase()}
       </button>
 
       {/* Pan center line */}

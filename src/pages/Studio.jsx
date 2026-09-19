@@ -2506,8 +2506,9 @@ export default function Studio() {
                     <AutomationLane
                       track={track}
                       zoom={zoom}
-                      onPointsChange={(newPoints, mode) => setTracks(prev => prev.map(t => {
+                      onPointsChange={(newPoints, mode, meta = null) => setTracks(prev => prev.map(t => {
                         if (t.id !== track.id) return t;
+                        if (meta) return { ...t, ...meta };
                         const keys = {
                           volume: 'automationPoints',
                           pan: 'panAutomationPoints',

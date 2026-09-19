@@ -251,6 +251,33 @@ export function createReverbBus(context, destination, { size = 65, damp = 45, le
   return { input, output, nodes: [input, preDelay, damping, convolver, output] };
 }
 
+/** Shared "Send 2 (Delay)" return bus. */
+export function createDelayBus(context, destination, { time = 0.22, feedback = 0.28, level = 0.45 } = {}) {
+  const input = context.createGain();
+  const delay = context.createDelay(2);
+  const feedbackGain = context.createGain();
+  const output = context.createGain();
+  delay.delayTime.value = clamp(num(time, 0.22), 0.01, 2);
+  feedbackGain.gain.value = clamp(num(feedback, 0.28), 0, 0.85);
+  output.gain.value = clamp(num(level, 0.45), 0, 1);
+  input.connect(delay);
+  delay.connect(feedbackGain);
+  feedbackGain.connect(delay);
+  delay.connect(output);
+  output.connect(destination);
+  return { input, output, nodes: [input, delay, feedbackGain, output] };
+}
+
+/** Shared "Send 3 (Cue)" return bus. */
+export function createCueBus(context, destination, { level = 1 } = {}) {
+  const input = context.createGain();
+  const output = context.createGain();
+  output.gain.value = clamp(num(level, 1), 0, 1);
+  input.connect(output);
+  output.connect(destination);
+  return { input, output, nodes: [input, output] };
+}
+
 /** Fader value for a track (volume + clip gain), mute/solo handled by callers. */
 export function trackGainValue(track) {
   const volume = clamp(num(track?.volume, 75), 0, 100) / 100;
@@ -267,7 +294,7 @@ export function trackPanValue(track) {
  * Build a full channel strip: fader -> inserts -> pan -> master, plus the
  * post-fader Send 1 tap into the shared reverb bus.
  */
-export function connectTrackChain(context, source, track, { destination, reverbBus, gain } = {}) {
+export function connectTrackChain(context, source, track, { destination, reverbBus, delayBus, cueBus, gain } = {}) {
   const nodes = [];
   const trackGain = context.createGain();
   trackGain.gain.value = num(gain, trackGainValue(track));
@@ -289,49 +316,19 @@ export function connectTrackChain(context, source, track, { destination, reverbB
 
   if (destination) output.connect(destination);
 
-  let sendGain = null;
-  const sendGains = [];
-  const send = clamp(num(track?.send1, 0), 0, 100) / 100;
-  if (reverbBus && send > 0) {
-    sendGain = context.createGain();
-    sendGain.gain.value = send;
+  // Persistent post-fader sends. Keeping all three nodes alive lets the realtime
+  // engine move send levels smoothly without rebuilding the channel strip.
+  const sendTargets = [reverbBus, delayBus, cueBus];
+  const sendGains = sendTargets.map((bus, index) => {
+    if (!bus) return null;
+    const sendGain = context.createGain();
+    sendGain.gain.value = clamp(num(track?.[`send${index + 1}`], 0), 0, 100) / 100;
     output.connect(sendGain);
-    sendGain.connect(reverbBus);
+    sendGain.connect(bus);
     nodes.push(sendGain);
-    sendGains.push(sendGain);
-  }
-
-  // Additional professional sends are real parallel signal paths. Send 2 feeds a
-  // short delay return and Send 3 is a clean cue/aux return.
-  const send2 = clamp(num(track?.send2, 0), 0, 100) / 100;
-  if (send2 > 0 && destination) {
-    const delaySend = context.createGain();
-    const delay = context.createDelay(2);
-    const feedback = context.createGain();
-    const returnGain = context.createGain();
-    delaySend.gain.value = send2;
-    delay.delayTime.value = 0.22;
-    feedback.gain.value = 0.28;
-    returnGain.gain.value = 0.45;
-    output.connect(delaySend);
-    delaySend.connect(delay);
-    delay.connect(feedback);
-    feedback.connect(delay);
-    delay.connect(returnGain);
-    returnGain.connect(destination);
-    nodes.push(delaySend, delay, feedback, returnGain);
-    sendGains.push(delaySend);
-  }
-
-  const send3 = clamp(num(track?.send3, 0), 0, 100) / 100;
-  if (send3 > 0 && destination) {
-    const cueSend = context.createGain();
-    cueSend.gain.value = send3;
-    output.connect(cueSend);
-    cueSend.connect(destination);
-    nodes.push(cueSend);
-    sendGains.push(cueSend);
-  }
+    return sendGain;
+  });
+  const sendGain = sendGains[0] || null;
 
   return { nodes, trackGain, output, sendGain, sendGains };
 }
@@ -347,8 +344,10 @@ export function connectMasterChain(context, { masterFx, masterVolume = 100, dest
   connectPluginChain(context, input, masterFx, volume, nodes);
   volume.connect(target);
   const reverbBus = createReverbBus(context, input);
-  nodes.push(...reverbBus.nodes);
-  return { input, volume, reverbBus: reverbBus.input, nodes };
+  const delayBus = createDelayBus(context, input);
+  const cueBus = createCueBus(context, input);
+  nodes.push(...reverbBus.nodes, ...delayBus.nodes, ...cueBus.nodes);
+  return { input, volume, reverbBus: reverbBus.input, delayBus: delayBus.input, cueBus: cueBus.input, nodes };
 }
 
 // Apply a biquad filter offline (real DSP) and return new AudioBuffer
@@ -418,6 +417,8 @@ export async function renderMixToBuffer(tracks, options = {}) {
     connectTrackChain(offline, src, track, {
       destination: master.input,
       reverbBus: master.reverbBus,
+      delayBus: master.delayBus,
+      cueBus: master.cueBus,
     });
     src.start(Math.max(0, track.startTime || 0));
   });

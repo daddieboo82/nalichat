@@ -66,10 +66,13 @@ export function createMixEngine() {
     const built = connectTrackChain(context, entry.source, track, {
       destination: master.input,
       reverbBus: master.reverbBus,
+      delayBus: master.delayBus,
+      cueBus: master.cueBus,
       gain,
     });
     entry.nodes = built.nodes;
     entry.trackGain = built.trackGain;
+    entry.sendGains = built.sendGains;
     entry.track = track;
     entry.gain = gain;
   };
@@ -139,10 +142,7 @@ export function createMixEngine() {
       const prev = entry.track;
       const structureChanged =
         !prev ||
-        JSON.stringify(prev.effects || prev.plugins || {}) !== JSON.stringify((track && (track.effects || track.plugins)) || {}) ||
-        (prev.send1 || 0) !== ((track && track.send1) || 0) ||
-        (prev.send2 || 0) !== ((track && track.send2) || 0) ||
-        (prev.send3 || 0) !== ((track && track.send3) || 0);
+        JSON.stringify(prev.effects || prev.plugins || {}) !== JSON.stringify((track && (track.effects || track.plugins)) || {});
 
       if (structureChanged) {
         rebuild(trackId, track || {}, nextGain);
@@ -159,6 +159,11 @@ export function createMixEngine() {
         const value = Math.max(-1, Math.min(1, ((track?.pan ?? 50) - 50) / 50));
         panner.pan.setTargetAtTime(value, context.currentTime, 0.01);
       }
+      entry.sendGains?.forEach((sendGain, index) => {
+        if (!sendGain) return;
+        const value = Math.max(0, Math.min(100, track?.[`send${index + 1}`] ?? 0)) / 100;
+        sendGain.gain.setTargetAtTime(value, context.currentTime, 0.01);
+      });
       return true;
     },
 

@@ -110,9 +110,15 @@ export default function PianoRoll({ track, onChange, onCommit, onClose, bars = 4
         </div>
       </div>
     </div>
+    <div className="h-20 border-t border-border bg-background/70 flex">
+      <div className="w-12 shrink-0 border-r border-border px-1 py-1 text-[8px] text-muted-foreground">VEL<br/>127<br/><span className="opacity-60">1</span></div>
+      <div className="relative overflow-hidden flex-1" style={{ minWidth: totalBeats * BEAT_W }}>
+        {notes.map(n => <button key={`vel-${n.id}`} type="button" title={`Velocity ${n.velocity || 100}`} onClick={()=>setSelected(n.id)} className={`absolute bottom-0 w-2 rounded-t-sm ${selected===n.id?'bg-primary':'bg-primary/55'}`} style={{ left:n.startBeat*BEAT_W + Math.max(0, Math.min(n.durationBeats*BEAT_W/2 - 4, 8)), height:`${Math.max(3, ((n.velocity || 100) / 127) * 72)}px` }} />)}
+      </div>
+    </div>
     {selectedNote && <div className="h-12 px-3 border-t border-border flex items-center gap-4 text-[10px]">
-      <span>Velocity {selectedNote.velocity}</span><Slider className="w-28" min={1} max={127} step={1} value={[selectedNote.velocity]} onValueChange={v=>update({velocity:v[0]})}/>
-      <span>Length</span><Slider className="w-28" min={.25} max={8} step={.25} value={[selectedNote.durationBeats]} onValueChange={v=>update({durationBeats:v[0]})}/>
+      <span>Velocity {selectedNote.velocity}</span><Slider className="w-28" min={1} max={127} step={1} value={[selectedNote.velocity]} onValueChange={v=>update({velocity:v[0]})} onValueCommit={()=>onCommit?.()}/>
+      <span>Length</span><Slider className="w-28" min={.25} max={8} step={.25} value={[selectedNote.durationBeats]} onValueChange={v=>update({durationBeats:v[0]})} onValueCommit={()=>onCommit?.()}/>
       <span>Start {selectedNote.startBeat.toFixed(2)} beats</span>
     </div>}
   </div>;

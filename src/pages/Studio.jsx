@@ -1326,6 +1326,36 @@ export default function Studio() {
     setTracksWithHistory(prev => [...prev, { ...track, id: nextId, name: `${track.name} (Copy)` }]); toast.success("Track duplicated");
   };
 
+  // Take playlists keep alternate performances on the same track.
+  const createTakePlaylist = (track) => {
+    const playlists = Array.isArray(track.playlists) ? track.playlists : [];
+    const take = {
+      id: `take-${Date.now()}`,
+      name: `${track.name}.${String(playlists.length + 1).padStart(2, '0')}`,
+      audioUrl: track.audioUrl || null,
+      file_url: track.file_url || track.audioUrl || null,
+      waveform: compactWaveform(track.waveform),
+      startTime: track.startTime || 0,
+      duration: track.duration || 0,
+      clipGain: track.clipGain || 0,
+      fadeIn: track.fadeIn || 0,
+      fadeOut: track.fadeOut || 0,
+    };
+    setTracksWithHistory(prev => prev.map(t => t.id === track.id ? { ...t, playlists: [...playlists, take], activePlaylistId: take.id } : t));
+    toast.success(`Saved ${take.name} to Take Playlists`);
+  };
+
+  const recallTakePlaylist = (track, playlistId) => {
+    const take = (track.playlists || []).find(p => p.id === playlistId);
+    if (!take) return;
+    setTracksWithHistory(prev => prev.map(t => t.id === track.id ? {
+      ...t, activePlaylistId: take.id, audioUrl: take.audioUrl, file_url: take.file_url || take.audioUrl,
+      waveform: take.waveform || [], startTime: take.startTime || 0, duration: take.duration || 0,
+      clipGain: take.clipGain || 0, fadeIn: take.fadeIn || 0, fadeOut: take.fadeOut || 0,
+    } : t));
+    toast.success(`Recalled ${take.name}`);
+  };
+
   // Pro Tools-style Heal Split: rejoin two clips that were split from the same source.
   // Finds the "other half" (same splitFrom parent) and merges them back into one clip.
   const handleHealSplit = (track) => {
@@ -2275,6 +2305,8 @@ export default function Studio() {
                             handleRepeatClip={handleRepeatClip}
                             handleToggleGroup={handleToggleGroup}
                             duplicateTrack={duplicateTrack}
+                            createTakePlaylist={createTakePlaylist}
+                            recallTakePlaylist={recallTakePlaylist}
                             deleteTrack={deleteTrack}
                             setSelectedTrackIds={setSelectedTrackIds}
                             setShowBeatDetective={setShowBeatDetective}

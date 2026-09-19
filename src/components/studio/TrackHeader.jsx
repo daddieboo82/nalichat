@@ -18,7 +18,7 @@ export default function TrackHeader({
   updateVolume, pushToHistory, tracksRef,
   setRenamingTrack, setNewTrackName,
   handleHealSplit, handleRepeatClip, handleToggleGroup,
-  duplicateTrack, deleteTrack,
+  duplicateTrack, createTakePlaylist, recallTakePlaylist, deleteTrack,
   setSelectedTrackIds, setShowBeatDetective, setShowCommitDialog,
   setShowAudioSuite, setShowFadePresets,
 }) {
@@ -109,6 +109,16 @@ export default function TrackHeader({
               <DropdownMenuItem onSelect={() => handleToggleGroup(track)}>
                 <Users className="w-4 h-4 mr-2" /> {track.groupId ? 'Ungroup' : 'Group Selected'}
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => createTakePlaylist?.(track)} disabled={!track.audioUrl}>
+                <Repeat className="w-4 h-4 mr-2" /> Save Current Take
+              </DropdownMenuItem>
+              {(track.playlists || []).map((take) => (
+                <DropdownMenuItem key={take.id} onSelect={() => recallTakePlaylist?.(track, take.id)}>
+                  <Circle className="w-3 h-3 mr-2" /> {take.name}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => { setSelectedTrackIds([track.id]); setShowBeatDetective(true); }}>
                 <Activity className="w-4 h-4 mr-2" /> Beat Detective
               </DropdownMenuItem>

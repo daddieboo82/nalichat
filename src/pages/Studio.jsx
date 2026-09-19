@@ -168,6 +168,8 @@ export default function Studio() {
   const audioContextRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const midiActiveNotesRef = useRef(new Map());
+  const midiRecordingRef = useRef(false);
   const audioElementsRef = useRef({});
   const mixEngineRef = useRef(null);
   const fxFallbackNotifiedRef = useRef(false);
@@ -933,6 +935,30 @@ export default function Studio() {
               };
             }
             hasMidi = midiAccessRef.inputs.size > 0;
+            midiAccessRef.inputs.forEach(input => {
+              input.onmidimessage = (event) => {
+                if (!midiRecordingRef.current) return;
+                const [status, note, velocity] = event.data || [];
+                const command = status & 0xf0;
+                const channel = (status & 0x0f) + 1;
+                const armedMidi = tracksRef.current.filter(t => t.armed && ['midi', 'instrument'].includes(t.type) && Number(t.midiChannel || 1) === channel);
+                if (!armedMidi.length) return;
+                const beatNow = currentTimeRef.current * (bpm / 60);
+                armedMidi.forEach(track => {
+                  const key = `${track.id}:${channel}:${note}`;
+                  if (command === 0x90 && velocity > 0) {
+                    midiActiveNotesRef.current.set(key, { trackId: track.id, note, startBeat: beatNow, velocity });
+                  } else if (command === 0x80 || (command === 0x90 && velocity === 0)) {
+                    const active = midiActiveNotesRef.current.get(key);
+                    if (!active) return;
+                    midiActiveNotesRef.current.delete(key);
+                    const durationBeats = Math.max(.25, Math.round((beatNow - active.startBeat) * 4) / 4);
+                    const recorded = { id: crypto.randomUUID(), note: active.note, startBeat: Math.round(active.startBeat * 4) / 4, durationBeats, velocity: active.velocity };
+                    setTracks(prev => prev.map(t => t.id === active.trackId ? { ...t, midiNotes: [...(t.midiNotes || []), recorded].sort((a,b) => a.startBeat - b.startBeat) } : t));
+                  }
+                });
+              };
+            });
           } catch (e) {
             console.warn("MIDI access denied or unsupported");
           }
@@ -968,6 +994,16 @@ export default function Studio() {
   }, []);
 
   const stopRecordingProcess = (keepPlaying = false) => {
+    if (midiRecordingRef.current) {
+      midiRecordingRef.current = false;
+      midiActiveNotesRef.current.clear();
+      setTracksWithHistory(prev => prev.map(t => t.armed && ['midi', 'instrument'].includes(t.type) ? { ...t, armed: false } : t));
+      setRecordingStartTime(null);
+      if (!keepPlaying) Object.values(audioElementsRef.current).forEach(audio => audio.pause());
+      sounds.recStop();
+      toast.success('MIDI recording stopped');
+      return;
+    }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.onstop = async () => {
         const recordingMimeType =
@@ -1120,6 +1156,22 @@ export default function Studio() {
     if (isPlaying) setIsPlaying(false);
 
     if (!isRecording) {
+      const armedMidiOnly = tracks.some(t => t.armed && ['midi', 'instrument'].includes(t.type)) && !tracks.some(t => t.armed && !['midi', 'instrument'].includes(t.type));
+      if (armedMidiOnly) {
+        if (!midiAccessRef || midiAccessRef.inputs.size === 0) {
+          toast.error('No MIDI input detected. Connect a MIDI controller and refresh MIDI devices.');
+          return;
+        }
+        midiActiveNotesRef.current.clear();
+        midiRecordingRef.current = true;
+        setIsRecording(true);
+        setRecordingStartTime(currentTimeRef.current);
+        recordingStartRealRef.current = performance.now();
+        setActivity('Recording MIDI 🎹');
+        toast.success('MIDI recording started');
+        sounds.recStart();
+        return;
+      }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
           audio: { 

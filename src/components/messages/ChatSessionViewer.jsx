@@ -155,7 +155,7 @@ export default function ChatSessionViewer({ message, currentUser }) {
         }
       };
       mediaRecorderRef.current = recorder;
-      recorder.start();
+      recorder.start(1000);
       if (mountedRef.current) setIsRecording(true);
     } catch (e) {
       console.error(e);

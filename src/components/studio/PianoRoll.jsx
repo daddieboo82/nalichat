@@ -14,6 +14,7 @@ export default function PianoRoll({ track, onChange, onCommit, onClose, bars = 4
   const [selected, setSelected] = useState(null);
   const [drag, setDrag] = useState(null);
   const [grid, setGrid] = useState(.25);
+  const [quantizeStrength, setQuantizeStrength] = useState(100);
   const totalBeats = bars * 4;
   const pitches = useMemo(() => Array.from({ length: HIGH - LOW + 1 }, (_, i) => HIGH - i), []);
   const selectedNote = notes.find(n => n.id === selected);
@@ -33,9 +34,19 @@ export default function PianoRoll({ track, onChange, onCommit, onClose, bars = 4
   const update = (patch) => onChange(notes.map(n => n.id === selected ? { ...n, ...patch } : n));
   const commitChange = (next) => { onChange(next); queueMicrotask(() => onCommit?.()); };
   const remove = () => { commitChange(notes.filter(n => n.id !== selected)); setSelected(null); };
-  const quantize = () => commitChange(notes.map(n => ({ ...n, startBeat: clamp(Math.round(n.startBeat / grid) * grid, 0, Math.max(0, totalBeats - Math.max(.25, n.durationBeats || .25))) })).sort((a,b) => a.startBeat - b.startBeat));
+  const quantize = () => commitChange(notes.map(n => {
+    const target = Math.round(n.startBeat / grid) * grid;
+    const startBeat = n.startBeat + (target - n.startBeat) * (quantizeStrength / 100);
+    return { ...n, startBeat: clamp(Math.round(startBeat * 1000) / 1000, 0, Math.max(0, totalBeats - Math.max(.25, n.durationBeats || .25))) };
+  }).sort((a,b) => a.startBeat - b.startBeat));
   const transpose = (semitones) => commitChange(notes.map(n => ({ ...n, note: clamp(n.note + semitones, LOW, HIGH) })));
   const normalizeVelocity = () => commitChange(notes.map(n => ({ ...n, velocity: 100 })));
+  const shapeVelocity = (amount) => commitChange(notes.map(n => ({ ...n, velocity: clamp((n.velocity || 100) + amount, 1, 127) })));
+  const humanize = () => commitChange(notes.map(n => ({
+    ...n,
+    startBeat: clamp(Math.round((n.startBeat + (Math.random() - .5) * Math.min(grid * .35, .08)) * 1000) / 1000, 0, Math.max(0, totalBeats - Math.max(.25, n.durationBeats || .25))),
+    velocity: clamp((n.velocity || 100) + Math.round((Math.random() - .5) * 12), 1, 127),
+  })).sort((a,b) => a.startBeat - b.startBeat));
 
   const startDrag = (e, note, mode = 'move') => {
     e.preventDefault(); e.stopPropagation(); setSelected(note.id);
@@ -71,10 +82,18 @@ export default function PianoRoll({ track, onChange, onCommit, onClose, bars = 4
         <select value={grid} onChange={e=>setGrid(Number(e.target.value))} className="h-7 rounded border border-border bg-background px-1 text-[10px]" title="MIDI grid resolution">
           <option value={1}>1/4</option><option value={.5}>1/8</option><option value={.25}>1/16</option><option value={.125}>1/32</option>
         </select>
-        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" title="Quantize all notes to the selected grid" onClick={quantize}><Magnet className="w-3.5 h-3.5 mr-1"/>Quantize</Button>
+        <select value={quantizeStrength} onChange={e=>setQuantizeStrength(Number(e.target.value))} className="h-7 rounded border border-border bg-background px-1 text-[10px]" title="Quantize strength">
+          <option value={25}>25%</option><option value={50}>50%</option><option value={75}>75%</option><option value={100}>100%</option>
+        </select>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" title="Quantize all notes to the selected grid and strength" onClick={quantize}><Magnet className="w-3.5 h-3.5 mr-1"/>Quantize</Button>
+        <Button size="sm" variant="ghost" className="h-7 px-2" title="Transpose down one octave" onClick={()=>transpose(-12)}>-12</Button>
         <Button size="sm" variant="ghost" className="h-7 px-2" title="Transpose all notes down one semitone" onClick={()=>transpose(-1)}><ArrowDown className="w-3.5 h-3.5"/></Button>
         <Button size="sm" variant="ghost" className="h-7 px-2" title="Transpose all notes up one semitone" onClick={()=>transpose(1)}><ArrowUp className="w-3.5 h-3.5"/></Button>
-        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" title="Set all note velocities to 100" onClick={normalizeVelocity}>Vel 100</Button>
+        <Button size="sm" variant="ghost" className="h-7 px-2" title="Transpose up one octave" onClick={()=>transpose(12)}>+12</Button>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" title="Reduce all velocities by 5" onClick={()=>shapeVelocity(-5)}>Vel−</Button>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" title="Set all note velocities to 100" onClick={normalizeVelocity}>100</Button>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" title="Increase all velocities by 5" onClick={()=>shapeVelocity(5)}>Vel+</Button>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" title="Add subtle timing and velocity variation" onClick={humanize}>Humanize</Button>
         {selectedNote && <Button size="sm" variant="ghost" className="h-7 px-2" onClick={remove}><Trash2 className="w-3.5 h-3.5"/></Button>}
         <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onClose}><X className="w-3.5 h-3.5"/></Button>
       </div>

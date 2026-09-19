@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Magnet, Trash2, X } from 'lucide-react';
 
 const ROW_H = 18;
 const BEAT_W = 44;
@@ -29,6 +29,9 @@ export default function PianoRoll({ track, onChange, onClose, bars = 4 }) {
 
   const update = (patch) => onChange(notes.map(n => n.id === selected ? { ...n, ...patch } : n));
   const remove = () => { onChange(notes.filter(n => n.id !== selected)); setSelected(null); };
+  const quantize = () => onChange(notes.map(n => ({ ...n, startBeat: clamp(Math.round(n.startBeat * 4) / 4, 0, Math.max(0, totalBeats - Math.max(.25, n.durationBeats || .25))) })).sort((a,b) => a.startBeat - b.startBeat));
+  const transpose = (semitones) => onChange(notes.map(n => ({ ...n, note: clamp(n.note + semitones, LOW, HIGH) })));
+  const normalizeVelocity = () => onChange(notes.map(n => ({ ...n, velocity: 100 })));
 
   const startDrag = (e, note, mode = 'move') => {
     e.preventDefault(); e.stopPropagation(); setSelected(note.id);
@@ -60,7 +63,11 @@ export default function PianoRoll({ track, onChange, onClose, bars = 4 }) {
     <div className="h-10 px-3 flex items-center gap-3 border-b border-border">
       <strong className="text-xs">Piano Roll — {track?.name}</strong>
       <span className="text-[10px] text-muted-foreground">{notes.length} notes · 1/16 grid</span>
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1">
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" title="Quantize all notes to the 1/16 grid" onClick={quantize}><Magnet className="w-3.5 h-3.5 mr-1"/>Quantize</Button>
+        <Button size="sm" variant="ghost" className="h-7 px-2" title="Transpose all notes down one semitone" onClick={()=>transpose(-1)}><ArrowDown className="w-3.5 h-3.5"/></Button>
+        <Button size="sm" variant="ghost" className="h-7 px-2" title="Transpose all notes up one semitone" onClick={()=>transpose(1)}><ArrowUp className="w-3.5 h-3.5"/></Button>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" title="Set all note velocities to 100" onClick={normalizeVelocity}>Vel 100</Button>
         {selectedNote && <Button size="sm" variant="ghost" className="h-7 px-2" onClick={remove}><Trash2 className="w-3.5 h-3.5"/></Button>}
         <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onClose}><X className="w-3.5 h-3.5"/></Button>
       </div>

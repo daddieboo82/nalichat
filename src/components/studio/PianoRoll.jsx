@@ -13,6 +13,7 @@ export default function PianoRoll({ track, onChange, onCommit, onClose, bars = 4
   const notes = track?.midiNotes || [];
   const [selected, setSelected] = useState(null);
   const [drag, setDrag] = useState(null);
+  const [grid, setGrid] = useState(.25);
   const totalBeats = bars * 4;
   const pitches = useMemo(() => Array.from({ length: HIGH - LOW + 1 }, (_, i) => HIGH - i), []);
   const selectedNote = notes.find(n => n.id === selected);
@@ -20,7 +21,8 @@ export default function PianoRoll({ track, onChange, onCommit, onClose, bars = 4
   const addNote = (e) => {
     if (e.target !== e.currentTarget) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const startBeat = clamp(Math.floor(((e.clientX - rect.left) / BEAT_W) * 4) / 4, 0, totalBeats - .25);
+    const rawBeat = (e.clientX - rect.left) / BEAT_W;
+    const startBeat = clamp(Math.floor(rawBeat / grid) * grid, 0, totalBeats - .25);
     const row = clamp(Math.floor((e.clientY - rect.top) / ROW_H), 0, pitches.length - 1);
     const note = { id: crypto.randomUUID(), note: pitches[row], startBeat, durationBeats: 1, velocity: 100 };
     onChange([...notes, note].sort((a,b) => a.startBeat - b.startBeat));
@@ -31,7 +33,7 @@ export default function PianoRoll({ track, onChange, onCommit, onClose, bars = 4
   const update = (patch) => onChange(notes.map(n => n.id === selected ? { ...n, ...patch } : n));
   const commitChange = (next) => { onChange(next); queueMicrotask(() => onCommit?.()); };
   const remove = () => { commitChange(notes.filter(n => n.id !== selected)); setSelected(null); };
-  const quantize = () => commitChange(notes.map(n => ({ ...n, startBeat: clamp(Math.round(n.startBeat * 4) / 4, 0, Math.max(0, totalBeats - Math.max(.25, n.durationBeats || .25))) })).sort((a,b) => a.startBeat - b.startBeat));
+  const quantize = () => commitChange(notes.map(n => ({ ...n, startBeat: clamp(Math.round(n.startBeat / grid) * grid, 0, Math.max(0, totalBeats - Math.max(.25, n.durationBeats || .25))) })).sort((a,b) => a.startBeat - b.startBeat));
   const transpose = (semitones) => commitChange(notes.map(n => ({ ...n, note: clamp(n.note + semitones, LOW, HIGH) })));
   const normalizeVelocity = () => commitChange(notes.map(n => ({ ...n, velocity: 100 })));
 
@@ -42,10 +44,10 @@ export default function PianoRoll({ track, onChange, onCommit, onClose, bars = 4
   };
   const moveDrag = (e) => {
     if (!drag) return;
-    const dxBeats = Math.round(((e.clientX - drag.x) / BEAT_W) * 4) / 4;
+    const dxBeats = Math.round(((e.clientX - drag.x) / BEAT_W) / grid) * grid;
     if (drag.mode === 'resize') {
       const maxDuration = Math.max(.25, totalBeats - drag.startBeat);
-      const durationBeats = clamp(Math.round((drag.duration + dxBeats) * 4) / 4, .25, maxDuration);
+      const durationBeats = clamp(Math.round((drag.duration + dxBeats) / grid) * grid, Math.min(.25, grid), maxDuration);
       const current = notes.find(n => n.id === drag.id);
       if (current?.durationBeats === durationBeats) return;
       onChange(notes.map(n => n.id === drag.id ? { ...n, durationBeats } : n));
@@ -64,9 +66,12 @@ export default function PianoRoll({ track, onChange, onCommit, onClose, bars = 4
   return <div className="border-t border-border bg-card/95">
     <div className="h-10 px-3 flex items-center gap-3 border-b border-border">
       <strong className="text-xs">Piano Roll — {track?.name}</strong>
-      <span className="text-[10px] text-muted-foreground">{notes.length} notes · 1/16 grid</span>
+      <span className="text-[10px] text-muted-foreground">{notes.length} notes · {grid === 1 ? '1/4' : grid === .5 ? '1/8' : grid === .25 ? '1/16' : '1/32'} grid</span>
       <div className="ml-auto flex items-center gap-1">
-        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" title="Quantize all notes to the 1/16 grid" onClick={quantize}><Magnet className="w-3.5 h-3.5 mr-1"/>Quantize</Button>
+        <select value={grid} onChange={e=>setGrid(Number(e.target.value))} className="h-7 rounded border border-border bg-background px-1 text-[10px]" title="MIDI grid resolution">
+          <option value={1}>1/4</option><option value={.5}>1/8</option><option value={.25}>1/16</option><option value={.125}>1/32</option>
+        </select>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" title="Quantize all notes to the selected grid" onClick={quantize}><Magnet className="w-3.5 h-3.5 mr-1"/>Quantize</Button>
         <Button size="sm" variant="ghost" className="h-7 px-2" title="Transpose all notes down one semitone" onClick={()=>transpose(-1)}><ArrowDown className="w-3.5 h-3.5"/></Button>
         <Button size="sm" variant="ghost" className="h-7 px-2" title="Transpose all notes up one semitone" onClick={()=>transpose(1)}><ArrowUp className="w-3.5 h-3.5"/></Button>
         <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" title="Set all note velocities to 100" onClick={normalizeVelocity}>Vel 100</Button>

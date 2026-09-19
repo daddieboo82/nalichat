@@ -221,7 +221,9 @@ export default function Studio() {
 
   // Session musical settings shown in the transport (BPM, time signature, key)
   const [bpm, setBpm] = useState(120);
+  const bpmRef = useRef(120);
   const [bpmInput, setBpmInput] = useState('120');
+  useEffect(() => { bpmRef.current = bpm; }, [bpm]);
   const [isEditingBpm, setIsEditingBpm] = useState(false);
   const [timeSignature, setTimeSignature] = useState('4/4');
   const [songKey, setSongKey] = useState('C Maj');
@@ -967,7 +969,7 @@ export default function Studio() {
                 const channel = (status & 0x0f) + 1;
                 const armedMidi = tracksRef.current.filter(t => t.armed && ['midi', 'instrument'].includes(t.type) && Number(t.midiChannel || 1) === channel);
                 if (!armedMidi.length) return;
-                const beatNow = currentTimeRef.current * (bpm / 60);
+                const beatNow = currentTimeRef.current * (bpmRef.current / 60);
                 armedMidi.forEach(track => {
                   const key = `${track.id}:${channel}:${note}`;
                   if (command === 0x90 && velocity > 0) {
@@ -1020,8 +1022,20 @@ export default function Studio() {
   const stopRecordingProcess = (keepPlaying = false) => {
     if (midiRecordingRef.current) {
       midiRecordingRef.current = false;
+      const stopBeat = currentTimeRef.current * (bpmRef.current / 60);
+      const heldNotes = [...midiActiveNotesRef.current.values()];
       midiActiveNotesRef.current.clear();
-      setTracksWithHistory(prev => prev.map(t => t.armed && ['midi', 'instrument'].includes(t.type) ? { ...t, armed: false } : t));
+      setTracksWithHistory(prev => prev.map(t => {
+        if (!t.armed || !['midi', 'instrument'].includes(t.type)) return t;
+        const finalized = heldNotes.filter(note => note.trackId === t.id).map(note => ({
+          id: crypto.randomUUID(),
+          note: note.note,
+          startBeat: Math.round(note.startBeat * 4) / 4,
+          durationBeats: Math.max(.25, Math.round((stopBeat - note.startBeat) * 4) / 4),
+          velocity: note.velocity,
+        }));
+        return { ...t, armed: false, midiNotes: [...(t.midiNotes || []), ...finalized].sort((a, b) => a.startBeat - b.startBeat) };
+      }));
       setRecordingStartTime(null);
       if (!keepPlaying) Object.values(audioElementsRef.current).forEach(audio => audio.pause());
       sounds.recStop();

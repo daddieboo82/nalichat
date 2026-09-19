@@ -14,18 +14,30 @@ import React, { useRef, useCallback } from 'react';
  */
 export default function AutomationLane({ track, onPointsChange, onCommit, zoom, trackDuration = 40 }) {
   const laneRef = useRef(null);
-  // 'volume' (default) or 'pan' — toggled via the lane header
-  const autoMode = track.automationMode || 'volume';
-  const pointsKey = autoMode === 'pan' ? 'panAutomationPoints' : 'automationPoints';
+  const modes = ['volume', 'pan', 'send1', 'send2', 'send3', 'mute'];
+  const autoMode = modes.includes(track.automationMode) ? track.automationMode : 'volume';
+  const pointsKey = {
+    volume: 'automationPoints',
+    pan: 'panAutomationPoints',
+    send1: 'send1AutomationPoints',
+    send2: 'send2AutomationPoints',
+    send3: 'send3AutomationPoints',
+    mute: 'muteAutomationPoints',
+  }[autoMode];
   const points = track[pointsKey] || [];
   const clipStart = track.startTime || 0;
   const clipDuration = track.duration || trackDuration;
   const clipWidth = clipDuration * 20 * zoom;
-  const baseValue = autoMode === 'pan' ? (track.pan ?? 50) : (track.volume ?? 75);
-  const label = autoMode === 'pan' ? 'PAN AUTO' : 'VOL AUTO';
-  const hint = autoMode === 'pan'
-    ? 'Click to add a pan automation point (top=L, center=C, bottom=R)'
-    : 'Click anywhere to add a volume automation point';
+  const baseValue = autoMode === 'pan' ? (track.pan ?? 50)
+    : autoMode === 'mute' ? (track.muted ? 100 : 0)
+    : autoMode.startsWith('send') ? (track[autoMode] ?? 0)
+    : (track.volume ?? 75);
+  const labels = { volume: 'VOL AUTO', pan: 'PAN AUTO', send1: 'REV SEND', send2: 'DLY SEND', send3: 'CUE SEND', mute: 'MUTE AUTO' };
+  const label = labels[autoMode];
+  const hint = autoMode === 'pan' ? 'Click to add pan automation'
+    : autoMode === 'mute' ? 'Click high for muted, low for unmuted'
+    : autoMode.startsWith('send') ? 'Click to automate send level'
+    : 'Click anywhere to add volume automation point';
 
   // Convert a point {time, value} to pixel coordinates
   const timeToX = useCallback((time) => {
@@ -46,7 +58,8 @@ export default function AutomationLane({ track, onPointsChange, onCommit, zoom, 
     if (!rect) return;
     const x = e.clientX - rect.left;
     const time = clipStart + x / (20 * zoom);
-    const value = Math.max(0, Math.min(100, 100 - ((e.clientY - rect.top) / rect.height) * 100));
+    let value = Math.max(0, Math.min(100, 100 - ((e.clientY - rect.top) / rect.height) * 100));
+    if (autoMode === 'mute') value = value >= 50 ? 100 : 0;
     const newPoint = { time: Math.max(clipStart, Math.min(clipStart + clipDuration, time)), value };
     const sortedPoints = [...points, newPoint].sort((a, b) => a.time - b.time);
     onPointsChange(sortedPoints, autoMode);
@@ -68,7 +81,8 @@ export default function AutomationLane({ track, onPointsChange, onCommit, zoom, 
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
       const newTime = Math.max(clipStart, Math.min(clipStart + clipDuration, startPoint.time + deltaX / (20 * zoom)));
-      const newValue = Math.max(0, Math.min(100, startPoint.value - (deltaY / rect.height) * 100));
+      let newValue = Math.max(0, Math.min(100, startPoint.value - (deltaY / rect.height) * 100));
+      if (autoMode === 'mute') newValue = newValue >= 50 ? 100 : 0;
       const newPoints = [...points];
       newPoints[index] = { time: newTime, value: newValue };
       newPoints.sort((a, b) => a.time - b.time);
@@ -111,8 +125,11 @@ export default function AutomationLane({ track, onPointsChange, onCommit, zoom, 
 
   const toggleMode = (e) => {
     e.stopPropagation();
-    const newMode = autoMode === 'volume' ? 'pan' : 'volume';
-    onPointsChange([], newMode); // empty call just to trigger mode change via parent
+    const newMode = modes[(modes.indexOf(autoMode) + 1) % modes.length];
+    onPointsChange(track[{
+      volume: 'automationPoints', pan: 'panAutomationPoints', send1: 'send1AutomationPoints',
+      send2: 'send2AutomationPoints', send3: 'send3AutomationPoints', mute: 'muteAutomationPoints'
+    }[newMode]] || [], newMode);
   };
 
   return (
@@ -133,7 +150,7 @@ export default function AutomationLane({ track, onPointsChange, onCommit, zoom, 
       <button
         onClick={toggleMode}
         className="absolute top-1 left-2 text-[9px] font-mono text-primary/60 hover:text-primary pointer-events-auto z-20 bg-black/40 px-1.5 py-0.5 rounded transition-colors"
-        title="Click to toggle between Volume and Pan automation"
+        title="Cycle Volume, Pan, Reverb Send, Delay Send, Cue Send, and Mute automation"
       >
         {label} ⇄
       </button>

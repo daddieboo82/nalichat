@@ -2441,9 +2441,16 @@ export default function Studio() {
                       zoom={zoom}
                       onPointsChange={(newPoints, mode) => setTracks(prev => prev.map(t => {
                         if (t.id !== track.id) return t;
-                        if (mode === 'pan') return { ...t, panAutomationPoints: newPoints, automationMode: 'pan' };
-                        if (mode === 'volume') return { ...t, automationPoints: newPoints, automationMode: 'volume' };
-                        return t;
+                        const keys = {
+                          volume: 'automationPoints',
+                          pan: 'panAutomationPoints',
+                          send1: 'send1AutomationPoints',
+                          send2: 'send2AutomationPoints',
+                          send3: 'send3AutomationPoints',
+                          mute: 'muteAutomationPoints',
+                        };
+                        const key = keys[mode];
+                        return key ? { ...t, [key]: newPoints, automationMode: mode } : t;
                       }))}
                       onCommit={() => pushToHistory(tracksRef.current)}
                     />

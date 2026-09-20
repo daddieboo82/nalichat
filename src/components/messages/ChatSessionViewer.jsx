@@ -175,9 +175,9 @@ export default function ChatSessionViewer({ message, currentUser }) {
   };
 
   return (
-    <div className="flex flex-col h-[400px] w-[280px] sm:w-[400px] md:w-[500px] bg-background border border-border/50 rounded-xl overflow-hidden mt-2 relative">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 bg-secondary/30">
-        <h3 className="font-semibold text-sm truncate max-w-[200px]">Live Session: {message.text || "Untitled"}</h3>
+    <div className="flex flex-col h-[min(400px,60dvh)] w-full min-w-0 sm:h-[400px] sm:w-[400px] md:w-[500px] bg-background border border-border/50 rounded-xl overflow-hidden mt-2 relative">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-b border-border/50 bg-secondary/30">
+        <h3 className="font-semibold text-sm truncate min-w-0 flex-1 max-w-[200px]">Live Session: {message.text || "Untitled"}</h3>
         <div className="flex items-center gap-2">
           {uploading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           {isRecording ? (

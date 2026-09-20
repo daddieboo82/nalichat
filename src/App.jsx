@@ -257,7 +257,7 @@ const AuthenticatedApp = () => {
     '/login', '/register', '/forgot-password', '/reset-password', '/oauth-consent',
     '/shared-file', '/download', '/privacy', '/terms', '/encryption-documentation',
     '/music-collaboration', '/creator-messaging', '/music-studio', '/pricing',
-    '/pricingplans', '/thankyou',
+    '/pricingplans', '/thankyou', '/subscription_thank_you',
   ]);
   const routePath = location.pathname.toLowerCase();
   const isKnownPublicPath = PUBLIC_PATHS.has(routePath);
@@ -293,7 +293,7 @@ const AuthenticatedApp = () => {
   // from Terms/Privacy and cannot complete a password reset.
   const ONBOARDING_EXEMPT_PATHS = new Set([
     '/onboarding', '/login', '/register', '/forgot-password', '/reset-password',
-    '/privacy', '/terms', '/download', '/thankyou', '/oauth-consent', '/shared-file',
+    '/privacy', '/terms', '/download', '/thankyou', '/subscription_thank_you', '/oauth-consent', '/shared-file',
   ]);
   const currentPath = location.pathname.toLowerCase();
 
@@ -349,6 +349,7 @@ const AuthenticatedApp = () => {
       <Route path="/viral-seed" element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login?returnTo=%2Fviral-seed" replace />}><ViralSeed /></ProtectedRoute>} />
         <Route path="/ThankYou" element={<ThankYou />} />
         <Route path="/thankyou" element={<ThankYou />} />
+        <Route path="/subscription_thank_you" element={<ThankYou />} />
       </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`} replace />} />}>
         <Route path="/studio" element={<Studio />} />

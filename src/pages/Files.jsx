@@ -731,7 +731,7 @@ export default function Files() {
                         <p className="font-medium text-sm truncate">{folder.name}</p>
                         <p className="text-xs text-muted-foreground mt-1 truncate">
                           {files.filter(f => f.folder_id === folder.id).length} files
-                          {folder.project_id && projects.find(p => p.id === folder.project_id) && ` â€¢ ${projects.find(p => p.id === folder.project_id).title}`}
+                          {folder.project_id && projects.find(p => p.id === folder.project_id) && ` • ${projects.find(p => p.id === folder.project_id).title}`}
                         </p>
                       </div>
                     </div>
@@ -774,11 +774,11 @@ export default function Files() {
                           )}
                           <div className="mt-1 mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                             <span className="text-[10px] text-muted-foreground">
-                              {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "â€”"}
+                              {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "—"}
                             </span>
-                            <span className="text-[10px] text-muted-foreground">â€¢</span>
+                            <span className="text-[10px] text-muted-foreground">•</span>
                             <span className="text-[10px] text-muted-foreground">{file.uploader_name || "Unknown"}</span>
-                            <span className="text-[10px] text-muted-foreground">â€¢</span>
+                            <span className="text-[10px] text-muted-foreground">•</span>
                             <span className="text-[10px] text-muted-foreground">
                               {file.created_date && !isNaN(new Date(file.created_date).getTime()) ? formatDistanceToNow(new Date(file.created_date), { addSuffix: true }) : "..."}
                             </span>
@@ -859,11 +859,11 @@ export default function Files() {
                       )}
                       <div className="mt-1 mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="text-[10px] text-muted-foreground">
-                          {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "â€”"}
+                          {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "—"}
                         </span>
-                        <span className="text-[10px] text-muted-foreground">â€¢</span>
+                        <span className="text-[10px] text-muted-foreground">•</span>
                         <span className="text-[10px] text-muted-foreground">{file.uploader_name || "Unknown"}</span>
-                        <span className="text-[10px] text-muted-foreground">â€¢</span>
+                        <span className="text-[10px] text-muted-foreground">•</span>
                         <span className="text-[10px] text-muted-foreground">
                           {file.created_date && !isNaN(new Date(file.created_date).getTime()) ? formatDistanceToNow(new Date(file.created_date), { addSuffix: true }) : "..."}
                         </span>

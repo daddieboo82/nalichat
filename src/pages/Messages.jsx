@@ -352,10 +352,12 @@ export default function Messages() {
       setLockedLinkConversationId(requestedId);
       setShowLockedAccess(true);
     } else if (resolution.status === "missing") {
-      // The conversation may have been deleted or this user may have been
-      // removed while a mobile deep link is still open. Clear every selected
-      // chat surface and normalize the URL so Messages returns to its list
-      // instead of rendering a stale/empty conversation.
+      // A newly-created DM can briefly be absent from a non-admin member query
+      // while the service-role write becomes visible. If this is already the
+      // selected chat, keep the mobile chat surface open and let the normal
+      // conversation poll reconcile it instead of immediately bouncing back to
+      // the list. Truly stale deep links still normalize back to /messages.
+      if (selectedConvId === requestedId) return;
       setSelectedConvId(null);
       setMessageHistoryLimit(200);
       setLockedLinkConversationId(null);
@@ -366,6 +368,7 @@ export default function Messages() {
     }
   }, [
     location.search,
+    selectedConvId,
     conversationsFetched,
     conversations,
     currentUser?.id,

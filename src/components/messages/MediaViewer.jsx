@@ -50,11 +50,11 @@ export default function MediaViewer({ media, isOpen, onClose, canDownload = fals
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 z-50 flex items-stretch justify-center p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
-        className="relative bg-black/95 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-none w-full h-full min-h-0 overflow-hidden flex flex-col sm:h-auto sm:max-w-4xl sm:max-h-[90dvh] sm:rounded-2xl"
+        className="relative bg-black/95 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-2xl max-w-4xl w-full max-h-[90dvh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -71,7 +71,7 @@ export default function MediaViewer({ media, isOpen, onClose, canDownload = fals
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-h-0 overflow-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] flex items-center justify-center bg-black/60 relative">
+        <div className="flex-1 overflow-auto flex items-center justify-center bg-black/60 relative">
           {(isImage || isVideo) && (
             <div 
               className="absolute inset-0 opacity-20 pointer-events-none z-0"
@@ -128,7 +128,7 @@ export default function MediaViewer({ media, isOpen, onClose, canDownload = fals
         </div>
 
         {/* Footer */}
-        <div className="px-3 sm:px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-white/10 bg-white/5 flex flex-wrap items-center justify-between gap-2">
+        <div className="px-4 py-3 border-t border-white/10 bg-white/5 flex items-center justify-between">
           <p className="text-xs text-white/50 font-mono">
             {media.file_size
               ? `${(media.file_size / 1024 / 1024).toFixed(1)} MB`

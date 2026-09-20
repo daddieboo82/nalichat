@@ -102,7 +102,7 @@ export default function StudioEditor() {
         </TabsList>
 
         {/* Editor Tab */}
-        <TabsContent value="editor" className="flex-1 overflow-auto px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
+        <TabsContent value="editor" className="flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
           <div className="max-w-4xl mx-auto space-y-6">
             <div className="ui-surface rounded-3xl border border-border/80 bg-card p-5 sm:p-8">
               <div className="mb-6 flex items-start justify-between gap-4">
@@ -278,7 +278,7 @@ export default function StudioEditor() {
         </TabsContent>
 
         {/* Mastering Tab */}
-        <TabsContent value="mastering" className="flex-1 overflow-auto px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
+        <TabsContent value="mastering" className="flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
           <div className="max-w-4xl mx-auto text-center text-muted-foreground py-20">
             <Zap className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p className="font-heading font-semibold mb-2">AI Mastering Engine</p>
@@ -287,7 +287,7 @@ export default function StudioEditor() {
         </TabsContent>
 
         {/* Library Tab */}
-        <TabsContent value="library" className="flex-1 overflow-auto px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
+        <TabsContent value="library" className="flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
           <div className="max-w-4xl mx-auto text-center text-muted-foreground py-20">
             <Music className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p className="font-heading font-semibold mb-2">Your Processed Sessions</p>

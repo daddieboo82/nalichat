@@ -56,8 +56,8 @@ export default function EmojiReactionPicker({ onSelect, onClose, position = "top
 
   return (
     <div className={cn(
-      "absolute z-[60] bg-card border border-border/60 rounded-2xl shadow-2xl p-3 w-[280px] sm:w-80 backdrop-blur-xl",
-      position === "bottom" ? "bottom-full mb-2 -left-2 sm:left-0" : "top-full mt-2 -left-32 sm:left-0"
+      "fixed inset-x-2 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-[60] bg-card border border-border/60 rounded-2xl shadow-2xl p-3 w-auto max-h-[min(70dvh,30rem)] backdrop-blur-xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:w-80 sm:max-h-none",
+      position === "bottom" ? "sm:bottom-full sm:mb-2 sm:left-0" : "sm:top-full sm:mt-2 sm:left-0"
     )}>
       <div className="mb-3 flex items-center gap-2">
         <Search className="w-4 h-4 text-muted-foreground absolute left-5" />
@@ -102,7 +102,7 @@ export default function EmojiReactionPicker({ onSelect, onClose, position = "top
         </div>
       )}
 
-      <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
+      <div className="grid grid-cols-6 min-[380px]:grid-cols-8 gap-1 max-h-[min(48dvh,16rem)] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] sm:grid-cols-8 sm:max-h-48">
         {filteredEmojis.map((emoji, i) => (
           <button
             type="button"
@@ -115,7 +115,7 @@ export default function EmojiReactionPicker({ onSelect, onClose, position = "top
             }}
             title={`Select emoji ${emoji}`}
             aria-label={`Select emoji ${emoji}`}
-            className="w-11 h-11 flex items-center justify-center text-lg hover:bg-primary/20 rounded-lg transition-all hover:scale-110 active:scale-95"
+            className="w-full aspect-square min-h-10 flex items-center justify-center text-lg hover:bg-primary/20 rounded-lg transition-all hover:scale-110 active:scale-95"
           >
             {emoji}
           </button>

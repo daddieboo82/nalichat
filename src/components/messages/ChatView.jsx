@@ -103,8 +103,14 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
     const vv = window.visualViewport;
     const onResize = () => {
       if (!vv) return;
-      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      setKeyboardOffset(offset);
+      const layoutHeight = document.documentElement?.clientHeight || window.innerHeight;
+      const viewportAlreadyResized = layoutHeight < window.screen.height * 0.8;
+      const rawOffset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      // Modern Android commonly resizes the layout viewport for the keyboard;
+      // lifting again would double-shift the composer. Only compensate when the
+      // visual viewport is actually being overlaid (not already resized).
+      const offset = viewportAlreadyResized ? 0 : rawOffset;
+      setKeyboardOffset(offset > 80 ? offset : 0);
     };
     if (vv) {
       vv.addEventListener('resize', onResize);

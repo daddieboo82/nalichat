@@ -518,21 +518,26 @@ export default function Studio() {
   // Demo audio is generated locally so it always plays (the old hosted sample 404'd)
   const handleLoadDemo = async () => {
     const toastId = toast.loading("Preparing demo session...");
+    const base = { volume: 75, pan: 50, muted: false, solo: false, armed: false, startTime: 0, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 };
+    // Enter the editor immediately so slower mobile devices never appear stuck on Welcome.
+    setTracks([
+      { ...base, id: 1, name: "Demo Lead", color: "bg-purple-500", waveform: generateWaveform(400), duration: 20, audioUrl: null },
+      { ...base, id: 2, name: "Demo Bassline", color: "bg-blue-500", waveform: generateWaveform(400), duration: 20, audioUrl: null },
+    ]);
+    setShowWelcome(false);
     try {
       const [lead, beat] = await Promise.all([
         generateMelody({ seconds: 20, bpm: 90 }),
         generateMelody({ seconds: 20, bpm: 120 })
       ]);
-      const base = { volume: 75, pan: 50, muted: false, solo: false, armed: false, startTime: 0, locked: false, grouped: false, showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0 };
       setTracks([
         { ...base, id: 1, name: "Demo Lead", color: "bg-purple-500", waveform: lead.waveform, duration: lead.duration, audioUrl: lead.url },
         { ...base, id: 2, name: "Demo Bassline", color: "bg-blue-500", waveform: beat.waveform, duration: beat.duration, audioUrl: beat.url },
       ]);
-      setShowWelcome(false);
       toast.success("Demo session ready", { id: toastId });
     } catch (e) {
       console.error("Demo session failed", e);
-      toast.error("Couldn't build the demo session", { id: toastId });
+      toast.error("Demo audio could not be generated; the demo editor is still available.", { id: toastId });
     }
   };
 

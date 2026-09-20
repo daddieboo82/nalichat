@@ -148,12 +148,12 @@ export default function MessageSearch({
 
   return (
     <div
-      className="absolute inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center p-4"
+      className="absolute inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-stretch justify-center p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="message-search-title"
     >
-      <div className="bg-card border border-border/60 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85dvh] flex flex-col overflow-hidden">
+      <div className="bg-card border border-border/60 rounded-none shadow-2xl w-full h-full min-h-0 flex flex-col overflow-hidden sm:h-auto sm:max-w-2xl sm:max-h-[85dvh] sm:rounded-2xl">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40">
           <Search className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
           <h2 id="message-search-title" className="sr-only">Search messages</h2>

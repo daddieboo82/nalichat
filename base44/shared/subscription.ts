@@ -15,7 +15,7 @@ export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 export const BILLING_PERIODS = ['monthly', 'annual'] as const;
 export type BillingPeriod = (typeof BILLING_PERIODS)[number];
 
-export const BILLING_PROVIDERS = ['stripe', 'wix', 'manual', 'unknown'] as const;
+export const BILLING_PROVIDERS = ['stripe', 'paypal', 'wix', 'manual', 'unknown'] as const;
 export type BillingProvider = (typeof BILLING_PROVIDERS)[number];
 
 export const ENTITLEMENT_KEYS = [

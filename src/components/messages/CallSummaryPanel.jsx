@@ -62,8 +62,8 @@ export default function CallSummaryPanel({ summaryActions, participants = [], in
   return (
     <section
       className={cn(
-        "rounded-2xl border border-border/70 bg-background/95 p-4 shadow-xl backdrop-blur",
-        inCall ? "mt-5 w-full max-w-md" : "absolute right-4 top-20 z-40 w-[min(26rem,calc(100%-2rem))]",
+        "rounded-2xl border border-border/70 bg-background/95 p-4 shadow-xl backdrop-blur overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]",
+        inCall ? "mt-5 w-full max-w-md max-h-[min(70dvh,36rem)]" : "absolute inset-x-2 top-16 z-40 w-auto max-h-[calc(100dvh-5rem)] sm:inset-x-auto sm:right-4 sm:top-20 sm:w-[min(26rem,calc(100%-2rem))] sm:max-h-[calc(100dvh-6rem)]",
       )}
       aria-labelledby="call-summary-heading"
       aria-live="polite"

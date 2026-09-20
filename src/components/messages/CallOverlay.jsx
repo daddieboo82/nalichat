@@ -84,7 +84,7 @@ export default function CallOverlay({
   };
 
   return (
-    <div className="absolute inset-0 z-50 bg-background/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-200">
+    <div className="absolute inset-0 z-50 bg-background/95 backdrop-blur-3xl flex flex-col items-center justify-center px-4 py-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 overflow-hidden animate-in fade-in zoom-in duration-200">
       {/* Remote video — full screen for connected video calls */}
       {showRemoteVideo && (
         <video
@@ -98,14 +98,14 @@ export default function CallOverlay({
       {/* Center avatar + info for non-video-connected states */}
       {!showRemoteVideo && (
         <>
-          <Avatar className="w-32 h-32 mb-6 shadow-2xl ring-4 ring-primary/20">
+          <Avatar className="w-24 h-24 sm:w-32 sm:h-32 mb-4 sm:mb-6 shadow-2xl ring-4 ring-primary/20 shrink-0">
             <AvatarImage src={avatarSrc} />
             <AvatarFallback className={cn("text-4xl text-white font-bold bg-gradient-to-br", avatarGradient)}>
               {displayName?.[0]?.toUpperCase() || "?"}
             </AvatarFallback>
           </Avatar>
 
-          <h2 className="text-3xl font-heading font-bold mb-2">{displayName}</h2>
+          <h2 className="w-full max-w-[90vw] truncate text-center text-2xl sm:text-3xl font-heading font-bold mb-2">{displayName}</h2>
 
           <p className="text-muted-foreground mb-2 flex items-center gap-2 min-h-[24px]">
             {isIncoming ? (
@@ -133,7 +133,7 @@ export default function CallOverlay({
 
       {/* Duration badge for connected video calls */}
       {showRemoteVideo && (
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 px-4 py-1.5 rounded-full bg-background/60 backdrop-blur-md text-sm font-medium">
+        <div className="absolute top-[max(1rem,env(safe-area-inset-top))] sm:top-8 left-1/2 -translate-x-1/2 z-10 px-4 py-1.5 rounded-full bg-background/60 backdrop-blur-md text-sm font-medium">
           {formatDuration(duration)}
         </div>
       )}
@@ -147,13 +147,13 @@ export default function CallOverlay({
           muted
           className={cn(
             "absolute rounded-2xl shadow-2xl border-2 border-white/10 object-cover z-10",
-            isConnected ? "top-6 right-6 w-32 h-44 sm:w-40 sm:h-52" : "top-6 right-6 w-24 h-32"
+            isConnected ? "top-[max(1rem,env(safe-area-inset-top))] right-3 w-24 h-32 sm:top-6 sm:right-6 sm:w-40 sm:h-52" : "top-[max(1rem,env(safe-area-inset-top))] right-3 w-20 h-28 sm:top-6 sm:right-6 sm:w-24 sm:h-32"
           )}
         />
       )}
 
       {/* Controls */}
-      <div className={cn("flex items-center gap-6", (isIncoming || (!isConnected && !isIncoming)) && "mt-10")}>
+      <div className={cn("relative z-20 flex flex-wrap items-center justify-center gap-4 sm:gap-6", showRemoteVideo && "absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-3 right-3", (isIncoming || (!isConnected && !isIncoming)) && "mt-6 sm:mt-10")}>
         {isIncoming ? (
           <>
             <Button

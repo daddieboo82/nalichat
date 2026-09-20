@@ -99,7 +99,7 @@ export default function PricingPlans({
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const { subscription, isLoading, isError, error, refetch } = useSubscription();
-  const [period, setPeriod] = useState("annual");
+  const [period, setPeriod] = useState("monthly");
   const [startingPlan, setStartingPlan] = useState(null);
   const [checkoutCanceled, setCheckoutCanceled] = useState(false);
   const requestKeys = useRef(new Map());
@@ -250,8 +250,8 @@ export default function PricingPlans({
           <p className="text-sm font-bold uppercase tracking-widest text-primary">NaliChat plans</p>
           <h1 className="mt-3 font-heading text-3xl font-black tracking-tight sm:text-5xl">{copy.headline}</h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">{copy.subhead}</p>
-          <p className="mt-4 font-semibold">No paid plan required to start. Upgrade only when your workflow needs more.</p>
-          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">Compare Free, Premium, and Premium Plus. Every plan includes creator messaging and NaliStudio; paid plans unlock NALI.ai, larger file transfers, advanced messaging tools, and higher limits.</p>
+          <p className="mt-4 font-semibold">Create more. Send bigger files. Unlock NALI.ai. Stay month-to-month.</p>
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">Monthly Premium starts at just $7.99 with no long-term commitment. Upgrade for larger file transfers, advanced messaging, AI-powered Studio tools, and more NALI.ai access.</p>
           <div className="mx-auto mt-6 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-5">{[[MessageSquare,"Messages"],[Music2,"Studio"],[Files,"File sharing"],[Sparkles,"NALI.ai"],[ShieldCheck,"Privacy"]].map(([Icon,label]) => <div key={label} className="rounded-xl border border-border/60 bg-card/60 px-3 py-2 text-xs font-semibold"><Icon className="mx-auto mb-1 h-4 w-4 text-primary" />{label}</div>)}</div>
         </div>
 
@@ -303,8 +303,8 @@ export default function PricingPlans({
               key={planId}
               plan={SUBSCRIPTION_CATALOG[planId]}
               period={period}
-              badge={copy.badges[planId]}
-              cta={paidCta}
+              badge={period === "monthly" ? (planId === "premium" ? "Best value to get started" : "Maximum power") : copy.badges[planId]}
+              cta={period === "monthly" ? (planId === "premium" ? "Upgrade to Premium" : "Go Premium Plus") : paidCta}
               isCurrent={paidSubscriber && subscription.plan === planId}
               isPaidSubscriber={paidSubscriber}
               isStarting={startingPlan === planId || isLoading}

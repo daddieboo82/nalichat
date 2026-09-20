@@ -40,7 +40,8 @@ export async function startSubscriptionCheckout({
     payload?.action !== "create_subscription_checkout" ||
     (expectedUserId && payload?.userId !== expectedUserId) ||
     payload?.sku !== sku ||
-    payload?.idempotencyKey !== idempotencyKey ||
+    typeof payload?.idempotencyKey !== "string" ||
+    !payload.idempotencyKey.trim() ||
     payload?.successDestination !== "subscription_thank_you" ||
     payload?.cancelDestination !== cancelDestination ||
     typeof payload?.checkoutUrl !== "string" ||

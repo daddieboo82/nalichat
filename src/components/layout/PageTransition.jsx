@@ -16,7 +16,7 @@ export default function PageTransition({ children, scroll = true }) {
       animate="animate"
       exit="exit"
       transition={{ duration: 0.12, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`relative h-full w-full ${scroll ? "overflow-y-auto" : "overflow-hidden"}`}
+      className={`relative h-full min-h-0 w-full ${scroll ? "overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]" : "overflow-hidden"}`}
     >
       {children}
     </motion.div>

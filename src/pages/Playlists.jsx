@@ -132,7 +132,7 @@ export default function Playlists() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
+      <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
         <PullToRefresh onRefresh={handleRefresh}>
         {playlists.length === 0 ? (
           <div className="ui-surface flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-3xl border border-white/[0.06] bg-card/40 p-6 text-muted-foreground">

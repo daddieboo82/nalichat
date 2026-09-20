@@ -147,7 +147,7 @@ export default function Login() {
               id="password"
               type="password"
               autoComplete="current-password"
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="h-12 rounded-xl border-border/70 bg-background/70 pl-10 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"

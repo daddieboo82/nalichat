@@ -20,6 +20,13 @@ test.describe('Studio clip dragging', () => {
     await page.goto('/studio');
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/studio');
 
+    const welcome = page.getByRole('heading', { name: /welcome to studio/i });
+    await expect(welcome).toBeVisible({ timeout: 30000 });
+    const demoButton = page.getByRole('button', { name: /load demo project/i });
+    await expect(demoButton).toBeVisible();
+    await demoButton.click();
+    await expect(welcome).toBeHidden({ timeout: 30000 });
+
     const clip = page.locator('[data-testid^="studio-audio-clip-"]').first();
     await expect(clip).toBeVisible({ timeout: 30000 });
     const trackId = await clip.getAttribute('data-track-id');
@@ -57,3 +64,4 @@ test.describe('Studio clip dragging', () => {
     expect(Math.abs((waveAfter.x - waveBefore.x) - (clipAfter.x - clipBefore.x))).toBeLessThanOrEqual(1);
   });
 });
+

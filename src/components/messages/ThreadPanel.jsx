@@ -156,7 +156,7 @@ export default function ThreadPanel({ parentMessage, currentUser, targetMessageI
   };
 
   return (
-    <div className="w-full sm:w-80 h-full min-h-0 border-l border-border flex flex-col bg-card/70 backdrop-blur-sm shrink-0">
+    <div className="absolute inset-0 z-40 w-full h-full min-h-0 border-l border-border flex flex-col bg-card/95 backdrop-blur-xl shrink-0 sm:static sm:z-auto sm:w-80 sm:bg-card/70 sm:backdrop-blur-sm">
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
         <div className="flex items-center gap-2">

@@ -8,8 +8,9 @@ const HANDLED = new Set([
   'BILLING.SUBSCRIPTION.SUSPENDED',
   'BILLING.SUBSCRIPTION.EXPIRED',
   'PAYMENT.SALE.COMPLETED',
-  'PAYMENT.SALE.DENIED',
+  'BILLING.SUBSCRIPTION.PAYMENT.FAILED',
   'PAYMENT.SALE.REFUNDED',
+  'PAYMENT.SALE.REVERSED',
 ]);
 
 function apiBase() {
@@ -52,8 +53,8 @@ async function verify(req: Request, event: any, token: string) {
 function state(type: string, resource: any) {
   if (type === 'BILLING.SUBSCRIPTION.ACTIVATED' || type === 'PAYMENT.SALE.COMPLETED') return 'active';
   if (type === 'BILLING.SUBSCRIPTION.CANCELLED' || type === 'BILLING.SUBSCRIPTION.EXPIRED') return 'canceled';
-  if (type === 'BILLING.SUBSCRIPTION.SUSPENDED' || type === 'PAYMENT.SALE.DENIED') return 'unpaid';
-  if (type === 'PAYMENT.SALE.REFUNDED') return 'canceled';
+  if (type === 'BILLING.SUBSCRIPTION.SUSPENDED' || type === 'BILLING.SUBSCRIPTION.PAYMENT.FAILED') return 'unpaid';
+  if (type === 'PAYMENT.SALE.REFUNDED' || type === 'PAYMENT.SALE.REVERSED') return 'canceled';
   const s = String(resource?.status || '').toUpperCase();
   if (s === 'ACTIVE') return 'active';
   if (s === 'CANCELLED' || s === 'EXPIRED') return 'canceled';

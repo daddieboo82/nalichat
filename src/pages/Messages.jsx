@@ -580,9 +580,9 @@ export default function Messages() {
         if (f.is_banned) {
           toast.error("You have been banned for repeated policy violations. To appeal, message an admin.");
         } else if (f.action_taken === "timeout") {
-          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. 2nd offence — you are timed out for 48 hours.`);
+          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. 2nd offence â€” you are timed out for 48 hours.`);
         } else {
-          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. This is your 1st warning — a 2nd offence is a 48-hour timeout.`);
+          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. This is your 1st warning â€” a 2nd offence is a 48-hour timeout.`);
         }
         void checkUserAuth();
         return;
@@ -857,7 +857,7 @@ export default function Messages() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h1 className="text-[26px] font-heading font-bold tracking-tight leading-none">Messages</h1>
-                <p className="mt-1.5 text-xs font-medium text-muted-foreground">Connect, collaborate, create.</p>
+                <div className="mt-1.5 flex items-center gap-2"><p className="text-xs font-medium text-muted-foreground">Connect, collaborate, create.</p><button type="button" onClick={() => navigate('/files')} className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary transition hover:bg-primary/20">Files</button></div>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

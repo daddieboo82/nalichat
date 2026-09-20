@@ -4,7 +4,7 @@ import { trackProductEvent } from "@/lib/productAnalytics";
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Square, Circle, Mic, Settings2, Volume2, Save, Download, FastForward, Rewind, Maximize2, Pause, Layers, Keyboard, Upload, Activity, Crosshair, Link2, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Loader2, Check, Edit2, ChevronLeft, RefreshCw, ListTodo, AudioLines, Folder } from 'lucide-react';
+import { Play, Square, Circle, Mic, Settings2, Volume2, Save, Download, FastForward, Rewind, Maximize2, Pause, Layers, Keyboard, Upload, Activity, Crosshair, Link2, SlidersHorizontal, Wand2, Image as ImageIcon, Users, Video, VideoOff, Loader2, Check, Edit2, ChevronLeft, RefreshCw, ListTodo, AudioLines, Folder, FolderOpen } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -2362,6 +2362,9 @@ export default function Studio() {
             </Button>
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleImportClick}>
               <Upload className="w-4 h-4" /> Upload Files
+            </Button>
+            <Button variant="outline" className="gap-2 rounded-xl border-primary/30 bg-primary/5 text-primary hover:bg-primary/10" onClick={() => navigate('/files')}>
+              <FolderOpen className="w-4 h-4" /> File Hub
             </Button>
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleSave}>
               <Save className="w-4 h-4" /> Save

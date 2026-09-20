@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen, FolderArchive, X, CheckSquare, Plus, ChevronRight, Play, Pause, Share2, Edit } from "lucide-react";
+import { Upload, Search, Music, Image, Film, FileText, File, Download, Trash2, Loader2, FolderOpen, FolderArchive, X, CheckSquare, Plus, ChevronRight, Play, Pause, Share2, Edit, MessageSquare, Link2, Sparkles } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -540,7 +540,7 @@ export default function Files() {
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold">Files</h1>
-            <p className="text-sm text-muted-foreground">Share music, sessions, art & more</p>
+            <p className="text-sm text-muted-foreground">Your creative transfer hub — upload once, share anywhere.</p>
           </div>
           {typeFilter !== "transfer" && (
             <div className="flex flex-wrap items-center gap-2">
@@ -566,7 +566,21 @@ export default function Files() {
           )}
         </div>
 
-        <div className="mb-5 flex flex-wrap items-center gap-2 sm:gap-4">
+                <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <button type="button" onClick={() => setShowUploadModal(true)} className="group rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/15 to-primary/5 p-4 text-left transition hover:border-primary/40 hover:-translate-y-0.5">
+            <div className="mb-2 flex items-center gap-2 text-primary"><Upload className="h-4 w-4"/><span className="text-sm font-bold">Send a file</span></div>
+            <p className="text-xs leading-relaxed text-muted-foreground">Upload audio, video, artwork, documents, or full session files.</p>
+          </button>
+          <button type="button" onClick={() => setTypeFilter('transfer')} className="group rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/15 to-accent/5 p-4 text-left transition hover:border-accent/40 hover:-translate-y-0.5">
+            <div className="mb-2 flex items-center gap-2 text-accent"><Sparkles className="h-4 w-4"/><span className="text-sm font-bold">Large transfer</span></div>
+            <p className="text-xs leading-relaxed text-muted-foreground">Move large creative files with a dedicated transfer workflow.</p>
+          </button>
+          <button type="button" onClick={() => navigate('/messages')} className="group rounded-2xl border border-chart-3/20 bg-gradient-to-br from-chart-3/15 to-chart-3/5 p-4 text-left transition hover:border-chart-3/40 hover:-translate-y-0.5">
+            <div className="mb-2 flex items-center gap-2 text-chart-3"><MessageSquare className="h-4 w-4"/><span className="text-sm font-bold">Share in Messages</span></div>
+            <p className="text-xs leading-relaxed text-muted-foreground">Jump into a conversation and attach files directly to your collaboration.</p>
+          </button>
+        </div>
+<div className="mb-5 flex flex-wrap items-center gap-2 sm:gap-4">
           {typeFilter !== "transfer" && (
             <>
               <Button 
@@ -717,7 +731,7 @@ export default function Files() {
                         <p className="font-medium text-sm truncate">{folder.name}</p>
                         <p className="text-xs text-muted-foreground mt-1 truncate">
                           {files.filter(f => f.folder_id === folder.id).length} files
-                          {folder.project_id && projects.find(p => p.id === folder.project_id) && ` • ${projects.find(p => p.id === folder.project_id).title}`}
+                          {folder.project_id && projects.find(p => p.id === folder.project_id) && ` â€¢ ${projects.find(p => p.id === folder.project_id).title}`}
                         </p>
                       </div>
                     </div>
@@ -760,11 +774,11 @@ export default function Files() {
                           )}
                           <div className="mt-1 mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                             <span className="text-[10px] text-muted-foreground">
-                              {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "—"}
+                              {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "â€”"}
                             </span>
-                            <span className="text-[10px] text-muted-foreground">•</span>
+                            <span className="text-[10px] text-muted-foreground">â€¢</span>
                             <span className="text-[10px] text-muted-foreground">{file.uploader_name || "Unknown"}</span>
-                            <span className="text-[10px] text-muted-foreground">•</span>
+                            <span className="text-[10px] text-muted-foreground">â€¢</span>
                             <span className="text-[10px] text-muted-foreground">
                               {file.created_date && !isNaN(new Date(file.created_date).getTime()) ? formatDistanceToNow(new Date(file.created_date), { addSuffix: true }) : "..."}
                             </span>
@@ -845,11 +859,11 @@ export default function Files() {
                       )}
                       <div className="mt-1 mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="text-[10px] text-muted-foreground">
-                          {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "—"}
+                          {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : "â€”"}
                         </span>
-                        <span className="text-[10px] text-muted-foreground">•</span>
+                        <span className="text-[10px] text-muted-foreground">â€¢</span>
                         <span className="text-[10px] text-muted-foreground">{file.uploader_name || "Unknown"}</span>
-                        <span className="text-[10px] text-muted-foreground">•</span>
+                        <span className="text-[10px] text-muted-foreground">â€¢</span>
                         <span className="text-[10px] text-muted-foreground">
                           {file.created_date && !isNaN(new Date(file.created_date).getTime()) ? formatDistanceToNow(new Date(file.created_date), { addSuffix: true }) : "..."}
                         </span>

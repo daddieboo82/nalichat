@@ -174,7 +174,7 @@ export default function ThankYou() {
               : confirmed
                 ? "Your plan is confirmed. Your upgraded creator tools and AI access are ready to use now."
                 : timedOut
-                  ? "Stripe returned successfully, but the subscription update has not arrived yet. No paid access is granted until confirmation completes."
+                  ? "Your payment provider returned successfully, but the subscription update has not arrived yet. No paid access is granted until confirmation completes."
                   : "Subscription status could not be checked. No paid access was granted."}
           </p>
 

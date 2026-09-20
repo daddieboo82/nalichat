@@ -256,7 +256,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               className="text-sm font-bold tracking-[0.2em] text-primary mb-4 uppercase drop-shadow-md"
             >
-              Welcome back, {(user.display_name || user.full_name)?.split(" ")[0] || "Creator"} Ã°Å¸Å¡â‚¬
+              Welcome back, {(user.display_name || user.full_name)?.split(" ")[0] || "Creator"} 🚀
             </motion.p>
           )}
 
@@ -324,7 +324,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mx-auto mt-5 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-             Free messaging Â· NaliStudio included Â· File sharing up to 2 GB per file Â· Upgrade for NALI.ai and larger transfers
+             Free messaging · NaliStudio included · File sharing up to 2 GB per file · Upgrade for NALI.ai and larger transfers
             </p>
           )}
         </motion.div>
@@ -369,37 +369,37 @@ export default function Home() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
               {[
                 {
-                  title: "Ã°Å¸Å½Â§ Produce in the Studio",
+                  title: "🎧 Produce in the Studio",
                   items: ["Full DAW Interface", "Live Video Jam Rooms", "AI Stem Separation", "AI Stem Generation", "AI Mastering", "AI BPM/Genre/Key Tagging"],
                   link: "/studio",
                   linkLabel: "Open Studio"
                 },
                 {
-                  title: "Ã°Å¸â€œÂ Projects & Organization",
+                  title: "📁 Projects & Organization",
                   items: ["Create & manage projects", "Organize tracks & stems", "Set milestones & statuses", "Folders for files"],
                   link: "/projects-summary",
                   linkLabel: "Manage Projects"
                 },
                 {
-                  title: "Ã°Å¸â€™Â¬ Creator Messaging & Collaboration",
+                  title: "💬 Creator Messaging & Collaboration",
                   items: ["Real-time direct & group messaging", "Voice notes & audio sharing", "Real-time co-editing", "Find collaborators", "Secure file sharing"],
                   link: "/messages",
                   linkLabel: "Open Messages"
                 },
                 {
-                  title: "Ã°Å¸Å½Â¨ Create & Share",
+                  title: "🎨 Create & Share",
                   items: ["Art posts with album art", "AI Cover Art Generation", "Cloud File Storage", "Custom Playlists"],
                   link: "/explore",
                   linkLabel: "Explore"
                 },
                 {
-                  title: "Ã°Å¸â€œË† Build Your Presence",
+                  title: "📈 Build Your Presence",
                   items: ["Release your tracks", "Discover creator music", "Climb the leaderboard", "Grow your following"],
                   link: "/leaderboard",
                   linkLabel: "View Leaderboard"
                 },
                 {
-                  title: "Ã°Å¸â€˜Â¤ Showcase Talent",
+                  title: "👤 Showcase Talent",
                   items: ["Creator Profiles", "Earn Achievements", "Display Portfolio", "Level Up Status"],
                   link: "/profile",
                   linkLabel: "View Profile"
@@ -677,7 +677,7 @@ export default function Home() {
               <p className="text-lg sm:text-xl text-foreground/90 font-medium mb-8 md:mb-10 max-w-3xl mx-auto leading-relaxed">
                 {user
                   ? "Jump into your messages, share your latest ideas, and connect with your team instantly."
-                  : "Start with free core chat, then bring conversations into NaliChatÃ¢â‚¬â„¢s Studio and creator tools when you need more."}
+                  : "Start with free core chat, then bring conversations into NaliChat’s Studio and creator tools when you need more."}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center w-full max-w-sm mx-auto sm:max-w-none">
                 {user ? (
@@ -708,7 +708,7 @@ export default function Home() {
               </div>
               {!user && (
                 <p className="mt-8 text-sm font-bold text-muted-foreground tracking-wide uppercase">
-                  Core chat is free forever Ã‚Â· No paid plan required to start
+                  Core chat is free forever · No paid plan required to start
                 </p>
               )}
             </div>
@@ -725,7 +725,7 @@ export default function Home() {
               <Link to="/pricing" className="min-h-10 inline-flex items-center hover:text-foreground">Compare Plans</Link>
               <a href="mailto:support@nalichat.org" className="min-h-10 inline-flex items-center hover:text-foreground">Contact Support</a>
             </div>
-            <p className="mt-2">NaliChat Ã‚Â· Creator messaging, music collaboration, and Studio tools</p>
+            <p className="mt-2">NaliChat · Creator messaging, music collaboration, and Studio tools</p>
           </footer>
         )}
 

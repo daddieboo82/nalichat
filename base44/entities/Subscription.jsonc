@@ -46,6 +46,7 @@
       "type": "string",
       "enum": [
         "stripe",
+        "paypal",
         "wix",
         "manual",
         "unknown"
@@ -54,7 +55,15 @@
     },
     "subscription_id": {
       "type": "string",
-      "description": "Stripe subscription ID (from Stripe webhook)"
+      "description": "External billing subscription ID"
+    },
+    "paypal_plan_id": {
+      "type": "string",
+      "description": "PayPal billing plan ID used by the external subscription"
+    },
+    "paypal_environment": {
+      "type": "string",
+      "description": "PayPal environment used for this subscription"
     },
     "checkout_id": {
       "type": "string",

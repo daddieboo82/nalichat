@@ -92,7 +92,7 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
   };
 
   return (
-    <div className="w-72 border-l border-border bg-card/60 backdrop-blur-sm flex flex-col shrink-0">
+    <div className="absolute inset-0 z-40 w-full h-full min-h-0 border-l border-border bg-card/95 backdrop-blur-xl flex flex-col shrink-0 sm:static sm:z-auto sm:w-72 sm:bg-card/60 sm:backdrop-blur-sm">
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-border/50 shrink-0">
         <span className="font-heading font-semibold text-sm">Group Info</span>
@@ -101,7 +101,7 @@ export default function GroupInfoPanel({ conversation, users, currentUser, onClo
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-5">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-5">
         {/* Group identity */}
         <div className="flex flex-col items-center gap-3 py-2">
           <div className="w-16 h-16 rounded-2xl bg-primary/15 flex items-center justify-center border border-primary/20">

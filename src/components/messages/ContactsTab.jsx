@@ -169,7 +169,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
   }
 
   return (
-    <div data-testid="messages-contacts-scroll" className="custom-scrollbar flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] sm:overflow-hidden">
+    <div data-testid="messages-contacts-scroll" className="custom-scrollbar flex h-full min-h-0 flex-col overflow-hidden">
       <div className="shrink-0 space-y-3 px-4 pb-3 pt-2 sm:space-y-4 sm:px-6 sm:pb-4">
         <div className="flex gap-2">
           <Button variant={tab === "contacts" ? "default" : "outline"} size="sm" onClick={() => setTab("contacts")} className="ui-hover min-h-11 flex-1 rounded-xl font-semibold focus-visible:ring-2 focus-visible:ring-primary/40">My Contacts</Button>
@@ -201,7 +201,7 @@ export default function ContactsTab({ currentUserId, onMessageContact }) {
         </div>
       </div>
 
-      <div className="min-h-0 shrink-0 overflow-visible px-4 pb-[max(5rem,env(safe-area-inset-bottom))] sm:flex-1 sm:shrink sm:overflow-y-auto sm:overscroll-contain sm:px-6 sm:pb-6 sm:[-webkit-overflow-scrolling:touch]">
+      <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-4 pb-[max(5rem,env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch] sm:px-6 sm:pb-6">
         {(contactsError || usersError) && (
           <div className="mb-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs leading-relaxed text-destructive" role="alert">
             <p>

@@ -2538,7 +2538,7 @@ describe('billing session response contracts', () => {
     expect(client).toContain('payload?.sku !== sku');
     expect(client).toContain('payload?.returnDestination !== returnDestination');
     expect(checkout).toContain("action: 'create_paypal_subscription'");
-    expect(checkout).toContain("'/subscription_thank_you?subscription=1'");
+    expect(checkout).toContain("'/ThankYou?subscription=1'");
     expect(portal).toContain("action: 'create_billing_portal'");
   });
 });

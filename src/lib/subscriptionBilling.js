@@ -26,24 +26,13 @@ export async function startSubscriptionCheckout({
   invoke = base44.functions.invoke,
   redirect = (url) => window.location.assign(url),
 }) {
-  const response = await invoke("createSubscriptionCheckout", {
-    sku,
-    idempotencyKey,
-    callbackDestinations: {
-      success: "subscription_thank_you",
-      cancel: cancelDestination,
-    },
-  });
+  const response = await invoke("createPayPalSubscription", { sku });
   const payload = responsePayload(response);
   if (
     payload?.success !== true ||
-    payload?.action !== "create_subscription_checkout" ||
+    payload?.action !== "create_paypal_subscription" ||
     (expectedUserId && payload?.userId !== expectedUserId) ||
     payload?.sku !== sku ||
-    typeof payload?.idempotencyKey !== "string" ||
-    !payload.idempotencyKey.trim() ||
-    payload?.successDestination !== "subscription_thank_you" ||
-    payload?.cancelDestination !== cancelDestination ||
     typeof payload?.checkoutUrl !== "string" ||
     !payload.checkoutUrl.trim()
   ) {

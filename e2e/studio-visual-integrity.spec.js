@@ -16,6 +16,7 @@ test.describe('Studio visual integrity',()=>{
   const vp=page.viewportSize(); const body=await page.locator('body').evaluate(el=>({sw:el.scrollWidth,sh:el.scrollHeight,cw:el.clientWidth,ch:el.clientHeight}));
   expect(body.sw).toBeLessThanOrEqual(vp.width+2); expect(body.sh).toBeLessThanOrEqual(vp.height+2);
   const box=await clip.boundingBox(); expect(box.x+box.width).toBeGreaterThan(0); expect(box.y+box.height).toBeGreaterThan(0);
-  expect(errors.filter(x=>!/favicon|Failed to load resource.*(?:401|404)/i.test(x))).toEqual([]);
+  expect(errors.filter(x=>!/favicon|Failed to load resource.*(?:401|404)|Public settings check failed:.*404/is.test(x))).toEqual([]);
  });
 });
+

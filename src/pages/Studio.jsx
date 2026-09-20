@@ -2444,7 +2444,7 @@ export default function Studio() {
       />
 
       {/* Main Workspace */}
-      <div className="flex-1 overflow-auto bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+      <div className="flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-black/40 backdrop-blur-sm relative z-10 mx-2 sm:mx-3 rounded-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
         {/* Jam Room Floating Overlay */}
         <JamRoomOverlay jamRoomActive={jamRoomActive} defaultRole={defaultRole} setDefaultRole={setDefaultRole} roomId={roomId} />
         {/* Unified scroll — left pane + waveforms move together in one container */}

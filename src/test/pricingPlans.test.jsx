@@ -56,8 +56,8 @@ function renderPricing(props = {}) {
 describe("pricing plans", () => {
   it("clearly explains the free starting point and paid-plan cancellation path", () => {
     renderPricing({ variantOverride: "A" });
-    expect(screen.getByText(/No paid plan required to start/i)).toBeTruthy();
-    expect(screen.getByText(/Compare Free, Premium, and Premium Plus/i)).toBeTruthy();
+    expect(screen.getByText(/Create more\. Send bigger files\. Unlock NALI\.ai\. Stay month-to-month\./i)).toBeTruthy();
+    expect(screen.getByText(/Monthly Premium starts at just \$7\.99 with no long-term commitment/i)).toBeTruthy();
     expect(screen.getByText(/Paid subscriptions can be canceled in Settings/i)).toBeTruthy();
   });
 
@@ -82,14 +82,14 @@ describe("pricing plans", () => {
 
   afterEach(cleanup);
 
-  it("renders variant A, defaults yearly, and toggles to monthly prices", () => {
+  it("renders variant A, defaults monthly, and toggles to yearly prices", () => {
     renderPricing({ variantOverride: "A" });
 
     expect(screen.getByRole("heading", { name: "Upgrade your chat, not your budget." })).toBeTruthy();
-    expect(screen.getByText("Most popular")).toBeTruthy();
-    expect(screen.getByText("$59.99")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Monthly" }));
+    expect(screen.getByText("Best value to get started")).toBeTruthy();
     expect(screen.getByText("$7.99")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Yearly" }));
+    expect(screen.getByText("$59.99")).toBeTruthy();
   });
 
   it("renders variant B copy and server-eligibility-aware purchase language", () => {
@@ -97,20 +97,21 @@ describe("pricing plans", () => {
     renderPricing({ variantOverride: "B" });
 
     expect(screen.getByRole("heading", { name: "Go further with AI-powered messaging." })).toBeTruthy();
-    expect(screen.getByText("Best for everyday")).toBeTruthy();
+    expect(screen.getByText("Best value to get started")).toBeTruthy();
     expect(screen.queryByText("Try Premium free")).toBeNull();
-    expect(screen.getAllByRole("button", { name: "Choose plan" })).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Upgrade to Premium" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Go Premium Plus" })).toBeTruthy();
   });
 
   it("sends the approved plan and period SKU to checkout once", async () => {
     renderPricing({ variantOverride: "A" });
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Start 7-day free trial" })[0]);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start 7-day free trial" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
 
     await waitFor(() => expect(mockStartCheckout).toHaveBeenCalledTimes(1));
     expect(mockStartCheckout).toHaveBeenCalledWith({
-      sku: "premium_yearly",
+      sku: "premium_monthly",
       idempotencyKey: "checkout_request_1234",
       expectedUserId: "user-1",
     });

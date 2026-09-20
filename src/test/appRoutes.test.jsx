@@ -199,6 +199,15 @@ describe('app routing guards', () => {
     expect(window.location.pathname).toBe('/thankyou');
   });
 
+  it('keeps the legacy PayPal subscription callback reachable', async () => {
+    window.history.pushState({}, '', '/subscription_thank_you?subscription=1');
+
+    render(<App />);
+
+    await screen.findByText('Thank You Page');
+    expect(window.location.pathname).toBe('/subscription_thank_you');
+  });
+
   it('keeps core chat available to authenticated free users', async () => {
     mockAuthState.current = {
       ...mockAuthState.current,

@@ -43,8 +43,7 @@ Deno.serve(async (req) => {
     if (existing) return Response.json({ success: true, reused: true, webhookId: existing });
 
     const accessToken = await token();
-    const url = new URL(req.url);
-    const webhookUrl = url.origin + '/api/apps/' + url.pathname.split('/')[3] + '/functions/paypalWebhook';
+    const webhookUrl = 'https://base44-dispatcher-production.base44.workers.dev/api/apps/6a1f5ee134147461560c2b37/functions/paypalWebhook';
     const r = await fetch(apiBase() + '/v1/notifications/webhooks', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },

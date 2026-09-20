@@ -59,7 +59,7 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-      <DialogContent className="bg-card border-border max-w-md">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-md max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] bg-card border-border sm:w-full">
          <DialogHeader>
            <DialogTitle className="font-heading">Send External Message</DialogTitle>
            <DialogDescription>Send an email message to a registered NaliChat user</DialogDescription>

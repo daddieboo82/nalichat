@@ -48,6 +48,10 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user || user.role !== 'admin') return Response.json({ error: 'Admin required' }, { status: 403 });
+    const existingPlanIds = Object.fromEntries(PLANS.map((p) => [p.sku, secrets.get('PAYPAL_' + p.sku.toUpperCase() + '_PLAN_ID')]).filter(([, id]) => Boolean(id)));
+    if (Object.keys(existingPlanIds).length === PLANS.length) {
+      return Response.json({ success: true, reused: true, plans: existingPlanIds });
+    }
     const accessToken = await token();
     const product = await paypal('/v1/catalogs/products', accessToken, {
       name: 'NaliChat Membership',
@@ -57,6 +61,8 @@ Deno.serve(async (req) => {
     });
     const plans: Record<string, string> = {};
     for (const p of PLANS) {
+      const existing = existingPlanIds[p.sku];
+      if (existing) { plans[p.sku] = existing; continue; }
       const plan = await paypal('/v1/billing/plans', accessToken, {
         product_id: product.id,
         name: p.name,

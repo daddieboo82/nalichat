@@ -244,7 +244,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
       initial={{ opacity: 0, y: 8, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className={cn("flex gap-2 group mb-0.5 py-0.5", isOwn ? "flex-row-reverse" : "flex-row", showAvatar ? "mt-4" : "mt-0.5")}
+      className={cn("flex gap-2 group mb-0.5 py-0.5 touch-pan-y", isOwn ? "flex-row-reverse" : "flex-row", showAvatar ? "mt-4" : "mt-0.5")}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => { setShowActions(false); }}
       onContextMenu={handleContextMenu}

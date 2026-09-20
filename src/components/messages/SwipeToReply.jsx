@@ -49,7 +49,6 @@ export default function SwipeToReply({ children, isOwn, onReply, disabled }) {
     }
 
     if (active.current) {
-      e.preventDefault?.();
       // For own messages (right-aligned), swipe left; for others, swipe right
       const direction = isOwn ? -1 : 1;
       const clamped = Math.max(0, Math.min(SWIPE_MAX, dx * direction));
@@ -98,7 +97,7 @@ export default function SwipeToReply({ children, isOwn, onReply, disabled }) {
           transition: isDragging ? "none" : "transform 0.25s cubic-bezier(0.2, 0, 0, 1)",
           willChange: isDragging ? "transform" : "auto",
         }}
-        className={cn("relative z-10", isDragging && "touch-none")}
+        className="relative z-10 touch-pan-y"
       >
         {children}
       </div>

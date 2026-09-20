@@ -68,7 +68,7 @@ export default function GroupChatDialog({ open, onOpenChange, users, onCreate })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-card border-border">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-md max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] bg-card border-border sm:w-full">
          <DialogHeader>
            <DialogTitle className="font-heading flex items-center gap-2"><Users className="w-5 h-5 text-primary" /> New Group</DialogTitle>
            <DialogDescription>Create a group chat and add members</DialogDescription>

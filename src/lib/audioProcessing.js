@@ -549,7 +549,9 @@ export async function renderMixToMp3(tracks, options = {}) {
 export async function generateMelody({ seconds = 8, bpm = 120 } = {}) {
   const sampleRate = 44100;
   const length = Math.floor(seconds * sampleRate);
-  const offline = new OfflineAudioContext(2, length, sampleRate);
+  const OfflineCtx = globalThis.OfflineAudioContext || globalThis.webkitOfflineAudioContext;
+  if (!OfflineCtx) throw new Error("Offline audio rendering is not supported on this device.");
+  const offline = new OfflineCtx(2, length, sampleRate);
 
   // C minor pad-ish progression: Cm, Ab, Eb, Bb
   const chords = [

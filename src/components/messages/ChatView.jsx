@@ -511,7 +511,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 10 }}
             onClick={() => scrollToBottom('smooth')}
-            className="absolute bottom-32 right-6 z-20 w-11 h-11 rounded-full bg-card border border-border/60 shadow-2xl flex items-center justify-center hover:bg-secondary/80 transition-colors"
+            className="absolute bottom-28 right-3 sm:bottom-32 sm:right-6 z-20 w-11 h-11 rounded-full bg-card border border-border/60 shadow-2xl flex items-center justify-center hover:bg-secondary/80 transition-colors"
             title="Scroll to latest"
             aria-label="Scroll to latest"
           >
@@ -527,14 +527,14 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
 
       {/* Typing indicator */}
       {typingUsers.length > 0 && (
-        <div className="absolute bottom-24 left-6 z-10 px-4 py-2 text-[11px] font-medium text-muted-foreground bg-background/80 backdrop-blur-md rounded-full border border-border/50 shadow-sm flex items-center gap-2">
+        <div className="absolute bottom-20 left-3 right-16 sm:bottom-24 sm:left-6 sm:right-auto z-10 px-3 sm:px-4 py-2 text-[11px] font-medium text-muted-foreground bg-background/80 backdrop-blur-md rounded-full border border-border/50 shadow-sm flex items-center gap-2 min-w-0">
           <TypingIndicator />
-          <span>{typingUsers.map(u => u.display_name).filter(Boolean).join(", ")} typing</span>
+          <span className="truncate">{typingUsers.map(u => u.display_name).filter(Boolean).join(", ")} typing</span>
         </div>
       )}
 
       {/* Proactive Nali context hint — subtle, dismissible, respects presence level */}
-      <div className="absolute bottom-24 right-6 z-10">
+      <div className="hidden sm:block absolute bottom-24 right-6 z-10">
         <NaliContextHint surface="chat" contextLabel={conversation?.id || "chat"} />
       </div>
 

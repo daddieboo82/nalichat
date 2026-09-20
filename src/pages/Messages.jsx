@@ -580,9 +580,9 @@ export default function Messages() {
         if (f.is_banned) {
           toast.error("You have been banned for repeated policy violations. To appeal, message an admin.");
         } else if (f.action_taken === "timeout") {
-          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. 2nd offence â€” you are timed out for 48 hours.`);
+          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. 2nd offence — you are timed out for 48 hours.`);
         } else {
-          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. This is your 1st warning â€” a 2nd offence is a 48-hour timeout.`);
+          toast.error(`Message blocked for ${labels[f.category] || "a policy violation"}. This is your 1st warning — a 2nd offence is a 48-hour timeout.`);
         }
         void checkUserAuth();
         return;

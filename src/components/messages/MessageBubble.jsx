@@ -122,7 +122,7 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
 
   if (isAudio) {
     return (
-      <div className="flex flex-col gap-2 min-w-[200px] sm:min-w-[240px]">
+      <div className="flex flex-col gap-2 min-w-0 w-full sm:min-w-[240px]">
         <CustomMediaPlayer src={message.file_url} title={message.file_name || "Audio Message"} className="shadow-md" />
         {canTranscribe && <VoiceTranscription message={message} isOwn={isOwn} />}
         <button onClick={() => onOpenViewer(message)} className="text-[10px] text-muted-foreground hover:text-foreground flex items-center justify-end gap-1 transition-colors mt-1 font-medium px-1">
@@ -136,13 +136,13 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
   const size = message.file_size ? `${(message.file_size / 1024 / 1024).toFixed(1)} MB` : "";
 
   return (
-    <div className="min-w-[180px] sm:min-w-[220px]">
+    <div className="min-w-0 w-full sm:min-w-[220px]">
       <button onClick={canDownload ? handleDownload : undefined} disabled={!canDownload} className="w-full flex items-center gap-3 hover:opacity-80 transition-opacity group text-left disabled:opacity-50 disabled:cursor-not-allowed" title={canDownload ? "Download File" : "Attachment downloads are available with Premium"} aria-label={canDownload ? "Download File" : "Download locked"}>
         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", isOwn ? "bg-white/20" : "bg-primary/20")}>
           <Icon className={cn("w-5 h-5", isOwn ? "text-white" : "text-primary")} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate max-w-[140px] sm:max-w-[180px]">{message.file_name || "File"}</p>
+          <p className="text-sm font-medium truncate min-w-0 max-w-[min(140px,50vw)] sm:max-w-[180px]">{message.file_name || "File"}</p>
           <p className="text-[10px] opacity-60">
             {dlProgress !== null ? `${dlProgress}%` : size}
           </p>

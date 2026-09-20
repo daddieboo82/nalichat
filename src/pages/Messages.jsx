@@ -235,20 +235,28 @@ export default function Messages() {
       queryClient.invalidateQueries({ queryKey: ["users", "presence", currentUser.id] });
     };
 
-    const handleVisibilityChange = () => {
+    const refreshVisibleMessages = () => {
       if (document.visibilityState !== "visible") return;
       queryClient.invalidateQueries({ queryKey: ["messages", currentUser?.id, selectedConvId] });
       queryClient.invalidateQueries({ queryKey: ["conversations", currentUser?.id] });
+      queryClient.invalidateQueries({ queryKey: ["users", "presence", currentUser?.id] });
       refreshMessagesPresence();
     };
 
     refreshMessagesPresence();
     const presenceHeartbeat = window.setInterval(refreshMessagesPresence, 30_000);
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    // Mobile browsers can resume from the back/forward cache without firing the
+    // same focus lifecycle as desktop. Refresh on all resume signals so Active
+    // Now and the current DM cannot remain stale after returning to Messages.
+    document.addEventListener("visibilitychange", refreshVisibleMessages);
+    window.addEventListener("focus", refreshVisibleMessages);
+    window.addEventListener("pageshow", refreshVisibleMessages);
     return () => {
       window.clearInterval(presenceHeartbeat);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("visibilitychange", refreshVisibleMessages);
+      window.removeEventListener("focus", refreshVisibleMessages);
+      window.removeEventListener("pageshow", refreshVisibleMessages);
     };
   }, [currentUser?.id, queryClient, selectedConvId]);
 

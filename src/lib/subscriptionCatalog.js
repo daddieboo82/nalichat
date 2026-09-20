@@ -38,7 +38,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
     }),
     features: Object.freeze([
       "Everything in Free",
-      "Large file uploads up to 10 GB per file",
+      "Premium file transfer tools",
       "NALI.ai creator assistance - up to 200 requests per UTC day",
       "AI-assisted Studio mastering and export tools",
       "Schedule messages",
@@ -68,7 +68,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
     }),
     features: Object.freeze([
       "Everything in Premium",
-      "Large file uploads up to 20 GB per file",
+      "Premium file transfer tools with resumable transfers",
       "Highest AI limit - up to 1,000 requests per UTC day",
       "Best available NaliChat AI model and highest-tier Studio AI support",
       "AI call summaries",

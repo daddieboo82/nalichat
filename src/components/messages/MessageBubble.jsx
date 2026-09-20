@@ -111,7 +111,7 @@ function FileAttachment({ message, isOwn, onOpenViewer, canTranscribe, canDownlo
   if (isImage) {
     return (
       <div className="relative group">
-        <img src={message.file_url} alt={message.file_name} loading="lazy" decoding="async" className="rounded-xl w-full max-w-[280px] sm:max-w-[300px] max-h-[220px] object-cover block cursor-pointer hover:brightness-90 transition-all" onClick={() => onOpenViewer(message)} />
+        <img src={message.file_url} alt={message.file_name} loading="lazy" decoding="async" className="rounded-xl w-full min-w-0 max-w-full sm:max-w-[300px] max-h-[220px] object-cover block cursor-pointer hover:brightness-90 transition-all" onClick={() => onOpenViewer(message)} />
         <button onClick={() => onOpenViewer(message)} className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity hover:bg-black/60" title="Expand Image" aria-label="Expand Image">
           <Maximize2 className="w-4 h-4 text-white" />
         </button>
@@ -272,7 +272,7 @@ export default React.memo(function MessageBubble({ message, isOwn, canDelete, sh
         ) : null}
       </div>
 
-      <div className={cn("max-w-[72%] sm:max-w-[65%] flex flex-col", isOwn && "items-end", message.type === "session" && "max-w-[90%] sm:max-w-[85%]")}>
+      <div className={cn("min-w-0 max-w-[82%] sm:max-w-[65%] flex flex-col", isOwn && "items-end", message.type === "session" && "max-w-[94%] sm:max-w-[85%]")}>
         {showAvatar && !isOwn && (
           <p className="chat-message-meta text-[11px] text-muted-foreground/70 mb-1 ml-1 font-semibold">{message.sender_name}</p>
         )}

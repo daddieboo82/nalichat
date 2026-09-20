@@ -399,7 +399,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
               <Layers className="w-5 h-5 text-indigo-400" />
             </button>
           </PopoverTrigger>
-          <PopoverContent side="top" align="start" className="w-64 p-3 rounded-xl border border-border/60 shadow-xl bg-card/95 backdrop-blur-md mb-2">
+          <PopoverContent side="top" align="start" collisionPadding={8} className="w-[min(16rem,calc(100vw-1rem))] p-3 rounded-xl border border-border/60 shadow-xl bg-card/95 backdrop-blur-md mb-2">
             <div className="space-y-3">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Features</h4>
               
@@ -598,7 +598,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
       </div>
 
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-        <DialogContent className="bg-card border-border shadow-2xl max-w-md">
+        <DialogContent className="bg-card border-border shadow-2xl w-[calc(100vw-1rem)] max-w-md max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] sm:w-full">
           <DialogHeader>
             <DialogTitle className="font-heading text-lg">Upload File</DialogTitle>
           </DialogHeader>

@@ -8,6 +8,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { openBillingPortal } from "@/lib/subscriptionBilling";
 import { trackPaywallEvent } from "@/lib/paywallAnalytics";
 import { useAuth } from "@/lib/AuthContext";
+import { base44 } from "@/api/base44Client";
 
 export function subscriptionPlanLabel(plan) {
   if (plan === "premium_plus") return "Premium Plus";

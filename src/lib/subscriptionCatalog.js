@@ -7,21 +7,21 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
   free: Object.freeze({
     id: "free",
     name: "Free",
-    description: "Essential messaging for staying connected with creators and teams.",
+    description: "Start creating with core messaging, Studio, and generous file uploads at no cost.",
     prices: Object.freeze({
       monthly: Object.freeze({ amount: 0, label: "$0", suffix: "forever", sku: null }),
       annual: Object.freeze({ amount: 0, label: "$0", suffix: "forever", sku: null }),
     }),
     features: Object.freeze([
-      "1:1 creator messaging",
-      "Group chat",
+      "Direct and group creator messaging",
+      "File sharing and uploads up to 2 GB per file",
       "NaliStudio access for recording, editing, mixing, and track projects",
     ]),
   }),
   premium: Object.freeze({
     id: "premium",
     name: "Premium",
-    description: "Advanced messaging, AI, file, search, voice, and customization tools for active creators.",
+    description: "For active creators who want NALI.ai, larger file transfers, and advanced messaging tools.",
     prices: Object.freeze({
       monthly: Object.freeze({
         amount: 7.99,
@@ -38,8 +38,8 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
     }),
     features: Object.freeze([
       "Everything in Free",
-      "Premium file transfer tools",
-      "AI-assisted creator tools",
+      "Large file uploads up to 10 GB per file",
+      "NALI.ai creator assistance - up to 200 requests per UTC day",
       "AI-assisted Studio mastering and export tools",
       "Schedule messages",
       "Advanced message search",
@@ -51,7 +51,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
   premium_plus: Object.freeze({
     id: "premium_plus",
     name: "Premium Plus",
-    description: "The complete NaliChat experience with the highest limits, best AI access, and advanced privacy and productivity tools.",
+    description: "For power creators who want the highest file limits, strongest AI access, privacy, and productivity tools.",
     prices: Object.freeze({
       monthly: Object.freeze({
         amount: 14.99,
@@ -68,9 +68,9 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
     }),
     features: Object.freeze([
       "Everything in Premium",
-      "Higher AI usage limits",
-      "Access to the best available NaliChat AI model",
-      "Highest-tier AI support for Studio workflows",
+      "Large file uploads up to 20 GB per file",
+      "Highest AI limit - up to 1,000 requests per UTC day",
+      "Best available NaliChat AI model and highest-tier Studio AI support",
       "AI call summaries",
       "Follow-up reminders",
       "Locked chats for extra privacy",

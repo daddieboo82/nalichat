@@ -217,7 +217,7 @@ export default function Home() {
   return (
     <PullToRefresh onRefresh={() => queryClient.invalidateQueries()} className="h-full overflow-auto bg-background">
 
-      {/* ── Hero ── */}
+      {/* Ã¢â€â‚¬Ã¢â€â‚¬ Hero Ã¢â€â‚¬Ã¢â€â‚¬ */}
       <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-4 pb-20 pt-[max(5.5rem,env(safe-area-inset-top))] sm:px-6 sm:pb-28 md:min-h-[700px] md:pt-28">
         {/* Animated blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -256,7 +256,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               className="text-sm font-bold tracking-[0.2em] text-primary mb-4 uppercase drop-shadow-md"
             >
-              Welcome back, {(user.display_name || user.full_name)?.split(" ")[0] || "Creator"} 🚀
+              Welcome back, {(user.display_name || user.full_name)?.split(" ")[0] || "Creator"} Ã°Å¸Å¡â‚¬
             </motion.p>
           )}
 
@@ -271,16 +271,16 @@ export default function Home() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
               </span>
-              Messaging + Music Studio for Creators
+              Messages + Studio + File Sharing + AI
             </motion.div>
           )}
 
           <h1 className="mb-5 font-heading text-4xl font-black leading-[1.02] tracking-tight drop-shadow-xl text-gradient-animate sm:text-6xl md:mb-6 md:text-8xl lg:text-[7rem]">
-            Create. Connect.<br className="hidden md:block" />{" "}
-            <span>Make Something.</span>
+            Create. Collaborate.<br className="hidden md:block" />{" "}
+            <span>Share Everything.</span>
           </h1>
           <p className="mx-auto mb-8 max-w-3xl text-base font-medium leading-relaxed text-foreground/90 sm:text-xl md:mb-12 md:text-2xl">
-            Message creators, make music, share high-resolution audio, and collaborate in one workspace. Start free and create something now.
+            Message your team, produce in NaliStudio, move large creative files, and use AI-assisted creator tools without bouncing between apps. Start free.
           </p>
 
           {/* CTAs */}
@@ -324,16 +324,16 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mx-auto mt-5 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-             Free core chat · Real-time creator messaging · Built-in music Studio · AI-assisted music tools
+             Free messaging Â· NaliStudio included Â· File sharing up to 2 GB per file Â· Upgrade for NALI.ai and larger transfers
             </p>
           )}
         </motion.div>
       </section>
 
-      {/* ── Quick Access for logged-in users ── */}
+      {/* Ã¢â€â‚¬Ã¢â€â‚¬ Quick Access for logged-in users Ã¢â€â‚¬Ã¢â€â‚¬ */}
       {user && <QuickAccessGrid />}
 
-      {/* ── Pillar pills ── */}
+      {/* Ã¢â€â‚¬Ã¢â€â‚¬ Pillar pills Ã¢â€â‚¬Ã¢â€â‚¬ */}
       <section className="relative z-10 overflow-hidden border-y border-border/70 bg-card/50 py-3 backdrop-blur-xl sm:py-4">
         <motion.div
           initial={{ opacity: 0 }}
@@ -354,7 +354,7 @@ export default function Home() {
 
       <section className="relative z-10 mx-auto max-w-7xl space-y-14 px-4 py-12 sm:space-y-20 sm:px-6 sm:py-16 lg:space-y-24 lg:py-20">
 
-        {/* ── What You Can Do ── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ What You Can Do Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -363,43 +363,43 @@ export default function Home() {
         >
           <div className="absolute -inset-px bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-2xl pointer-events-none" />
           <div className="relative z-10">
-            <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">Creator Messaging, Music Studio & AI Tools</h2>
-            <p className="text-foreground/90 text-lg mb-10 max-w-2xl">Use NaliChat for real-time creator messaging, secure audio and file sharing, music collaboration, Studio production, and AI-assisted music workflows:</p>
+            <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">One Creative Workflow: Message, Make, Share</h2>
+            <p className="text-foreground/90 text-lg mb-10 max-w-2xl">Keep the creative loop together: talk through the idea, build it in Studio, share the files, get feedback, and publish from the same creator workspace.</p>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
               {[
                 {
-                  title: "🎧 Produce in the Studio",
+                  title: "Ã°Å¸Å½Â§ Produce in the Studio",
                   items: ["Full DAW Interface", "Live Video Jam Rooms", "AI Stem Separation", "AI Stem Generation", "AI Mastering", "AI BPM/Genre/Key Tagging"],
                   link: "/studio",
                   linkLabel: "Open Studio"
                 },
                 {
-                  title: "📁 Projects & Organization",
+                  title: "Ã°Å¸â€œÂ Projects & Organization",
                   items: ["Create & manage projects", "Organize tracks & stems", "Set milestones & statuses", "Folders for files"],
                   link: "/projects-summary",
                   linkLabel: "Manage Projects"
                 },
                 {
-                  title: "💬 Creator Messaging & Collaboration",
+                  title: "Ã°Å¸â€™Â¬ Creator Messaging & Collaboration",
                   items: ["Real-time direct & group messaging", "Voice notes & audio sharing", "Real-time co-editing", "Find collaborators", "Secure file sharing"],
                   link: "/messages",
                   linkLabel: "Open Messages"
                 },
                 {
-                  title: "🎨 Create & Share",
+                  title: "Ã°Å¸Å½Â¨ Create & Share",
                   items: ["Art posts with album art", "AI Cover Art Generation", "Cloud File Storage", "Custom Playlists"],
                   link: "/explore",
                   linkLabel: "Explore"
                 },
                 {
-                  title: "📈 Build Your Presence",
+                  title: "Ã°Å¸â€œË† Build Your Presence",
                   items: ["Release your tracks", "Discover creator music", "Climb the leaderboard", "Grow your following"],
                   link: "/leaderboard",
                   linkLabel: "View Leaderboard"
                 },
                 {
-                  title: "👤 Showcase Talent",
+                  title: "Ã°Å¸â€˜Â¤ Showcase Talent",
                   items: ["Creator Profiles", "Earn Achievements", "Display Portfolio", "Level Up Status"],
                   link: "/profile",
                   linkLabel: "View Profile"
@@ -426,13 +426,13 @@ export default function Home() {
           </div>
         </motion.div>
 
-        {/* ── Quick Start Guide ── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Quick Start Guide Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <QuickStartGuide />
 
-        {/* ── Studio Video Tutorial ── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Studio Video Tutorial Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <StudioTutorial />
 
-        {/* ── Messaging Hero Card ── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Messaging Hero Card Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -479,7 +479,7 @@ export default function Home() {
           </Link>
         </motion.div>
 
-        {/* ── Nali AI Banner ── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Nali AI Banner Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -506,7 +506,7 @@ export default function Home() {
           </div>
         </motion.div>
 
-        {/* ── Features Grid ── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Features Grid Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <div>
           <div className="mb-10 md:mb-12 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
@@ -553,7 +553,7 @@ export default function Home() {
           </motion.div>
         </div>
 
-        {/* ── Interactive Tutorial ── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Interactive Tutorial Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -582,10 +582,10 @@ export default function Home() {
 
         <WelcomeTour open={showTour} onClose={() => setShowTour(false)} />
 
-        {/* ── How it Works ── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ How it Works Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <HowItWorks />
 
-        {/* ── Creator value ── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Creator value Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <div>
           <div className="text-center mb-10">
             <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">Built for the Creative Workflow</h2>
@@ -628,7 +628,7 @@ export default function Home() {
           </motion.div>
         </div>
 
-        {/* ── Stats ── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Stats Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -653,7 +653,7 @@ export default function Home() {
           ))}
         </motion.div>
 
-        {/* ── Final CTA ── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Final CTA Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -677,7 +677,7 @@ export default function Home() {
               <p className="text-lg sm:text-xl text-foreground/90 font-medium mb-8 md:mb-10 max-w-3xl mx-auto leading-relaxed">
                 {user
                   ? "Jump into your messages, share your latest ideas, and connect with your team instantly."
-                  : "Start with free core chat, then bring conversations into NaliChat’s Studio and creator tools when you need more."}
+                  : "Start with free core chat, then bring conversations into NaliChatÃ¢â‚¬â„¢s Studio and creator tools when you need more."}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center w-full max-w-sm mx-auto sm:max-w-none">
                 {user ? (
@@ -708,7 +708,7 @@ export default function Home() {
               </div>
               {!user && (
                 <p className="mt-8 text-sm font-bold text-muted-foreground tracking-wide uppercase">
-                  Core chat is free forever · No paid plan required to start
+                  Core chat is free forever Ã‚Â· No paid plan required to start
                 </p>
               )}
             </div>
@@ -725,7 +725,7 @@ export default function Home() {
               <Link to="/pricing" className="min-h-10 inline-flex items-center hover:text-foreground">Compare Plans</Link>
               <a href="mailto:support@nalichat.org" className="min-h-10 inline-flex items-center hover:text-foreground">Contact Support</a>
             </div>
-            <p className="mt-2">NaliChat · Creator messaging, music collaboration, and Studio tools</p>
+            <p className="mt-2">NaliChat Ã‚Â· Creator messaging, music collaboration, and Studio tools</p>
           </footer>
         )}
 

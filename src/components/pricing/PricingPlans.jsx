@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, MessageSquare, Music2, Files, Sparkles, ShieldCheck } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -250,8 +250,9 @@ export default function PricingPlans({
           <p className="text-sm font-bold uppercase tracking-widest text-primary">NaliChat plans</p>
           <h1 className="mt-3 font-heading text-3xl font-black tracking-tight sm:text-5xl">{copy.headline}</h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">{copy.subhead}</p>
-          <p className="mt-4 font-semibold">Core chat is free forever · No paid plan required to start</p>
-          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">Compare Free, Premium, and Premium Plus before you choose. Every plan includes creator messaging and NaliStudio; paid tiers add stronger AI, advanced creator tools, higher limits, and extra privacy.</p>
+          <p className="mt-4 font-semibold">No paid plan required to start. Upgrade only when your workflow needs more.</p>
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">Compare Free, Premium, and Premium Plus. Every plan includes creator messaging and NaliStudio; paid plans unlock NALI.ai, larger file transfers, advanced messaging tools, and higher limits.</p>
+          <div className="mx-auto mt-6 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-5">{[[MessageSquare,"Messages"],[Music2,"Studio"],[Files,"File sharing"],[Sparkles,"NALI.ai"],[ShieldCheck,"Privacy"]].map(([Icon,label]) => <div key={label} className="rounded-xl border border-border/60 bg-card/60 px-3 py-2 text-xs font-semibold"><Icon className="mx-auto mb-1 h-4 w-4 text-primary" />{label}</div>)}</div>
         </div>
 
         {checkoutCanceled && (

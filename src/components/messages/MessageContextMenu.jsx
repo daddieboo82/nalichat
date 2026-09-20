@@ -9,6 +9,12 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function MessageContextMenu({ position, items, onClose }) {
   if (!position) return null;
 
+  const menuWidth = 190;
+  const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1024;
+  const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 768;
+  const safeLeft = Math.max(8, Math.min(position.x, viewportWidth - menuWidth - 8));
+  const safeTop = Math.max(8, Math.min(position.y, viewportHeight - Math.min(items.length * 48 + 12, viewportHeight - 16)));
+
   const handleKeyDown = (e) => {
     if (e.key === "Escape") onClose();
   };
@@ -22,7 +28,7 @@ export default function MessageContextMenu({ position, items, onClose }) {
           exit={{ opacity: 0, scale: 0.9, y: -4 }}
           transition={{ duration: 0.12, ease: "easeOut" }}
           className="fixed z-[100] min-w-[190px] rounded-xl bg-popover/95 backdrop-blur-xl border border-border/60 shadow-2xl p-1.5"
-          style={{ left: position.x, top: position.y }}
+          style={{ left: safeLeft, top: safeTop, maxHeight: "calc(100dvh - 16px)", overflowY: "auto" }}
           onClick={(e) => e.stopPropagation()}
         >
           {items.map((item, i) => (

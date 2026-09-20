@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     if (!planId) return Response.json({ error: 'PayPal plan is not configured yet', missingSecret: item.secret }, { status: 503 });
 
     const token = await accessToken();
-    const successUrl = new URL('/subscription_thank_you?subscription=1', APP_BASE_URL).toString();
+    const successUrl = new URL('/ThankYou?subscription=1', APP_BASE_URL).toString();
     const cancelUrl = new URL('/pricing', APP_BASE_URL).toString();
     const res = await fetch(apiBase() + '/v1/billing/subscriptions', {
       method: 'POST',

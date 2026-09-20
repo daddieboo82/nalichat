@@ -68,12 +68,12 @@ export default function Login() {
     <AuthLayout
       icon={LogIn}
       title="Welcome back"
-      subtitle="Pick up where you left off in NaliChat."
+      subtitle="Sign in and get back to your messages, Studio projects, and shared files."
       footer={
         <>
           Don't have an account?{" "}
           <Link to={`/register?returnTo=${encodeURIComponent(safeReturnTo())}`} className="ui-hover min-h-9 rounded-lg px-2 py-1 font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40">
-            Create one
+            Create a free account
           </Link>
         </>
       }
@@ -147,7 +147,7 @@ export default function Login() {
               id="password"
               type="password"
               autoComplete="current-password"
-              placeholder="••••••••"
+              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="h-12 rounded-xl border-border/70 bg-background/70 pl-10 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"

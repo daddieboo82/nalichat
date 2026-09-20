@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, CheckCircle2, Music, UserRound, MapPin, CalendarDays } from "lucide-react";
+import { Loader2, CheckCircle2, Music, UserRound, MapPin, CalendarDays, MessageSquare, Files, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import OnboardingNaliGuide from "@/components/onboarding/OnboardingNaliGuide";
 import { trackProductEvent } from "@/lib/productAnalytics";
@@ -108,11 +108,11 @@ export default function Onboarding() {
           </div>
           <div>
             <p className="font-heading font-bold text-lg leading-tight">Welcome to NaliChat</p>
-            <p className="text-xs text-muted-foreground">Set up your profile in under a minute. You can change these details anytime.</p>
+            <p className="text-xs text-muted-foreground">Set up your creator profile in under a minute, then jump straight into NaliChat.</p>
           </div>
         </div>
 
-        <div className="mb-5 grid grid-cols-3 gap-2" aria-label="Setup progress"><div className="h-1.5 rounded-full bg-primary" /><div className="h-1.5 rounded-full bg-primary/25" /><div className="h-1.5 rounded-full bg-primary/25" /></div><div className="space-y-4">
+        <div className="mb-5 grid grid-cols-3 gap-2" aria-label="Setup progress"><div className="h-1.5 rounded-full bg-primary" /><div className="h-1.5 rounded-full bg-primary/25" /><div className="h-1.5 rounded-full bg-primary/25" /></div><div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="What you can do after setup">{[[MessageSquare,"Message"],[Music,"Create"],[Files,"Share files"],[Sparkles,"Use AI"]].map(([Icon,label]) => <div key={label} className="rounded-xl border border-border/60 bg-secondary/20 px-2 py-2 text-center text-[11px] font-semibold text-muted-foreground"><Icon className="mx-auto mb-1 h-4 w-4 text-primary" aria-hidden="true" />{label}</div>)}</div><div className="space-y-4">
           <div className="space-y-1.5">
             <label className="flex items-center gap-2 text-sm font-semibold"><UserRound className="h-4 w-4 text-primary" aria-hidden="true" />Display Name <span className="text-primary">*</span></label>
             <Input
@@ -146,9 +146,9 @@ export default function Onboarding() {
               placeholder="City, Country"
             className="min-h-11 rounded-xl border-border/70 bg-background/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20" />
           </div>
-          <p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Your display name and bio appear on your creator profile. You can change these later in Settings.</p><Button onClick={handleSave} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
+          <p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Only your display name and birthdate are required. Bio and location are optional and can be added later in Settings.</p><Button onClick={handleSave} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-            {loading ? "Saving..." : "Get Started"}
+            {loading ? "Saving..." : "Enter NaliChat"}
           </Button>
         </div>
       </div>

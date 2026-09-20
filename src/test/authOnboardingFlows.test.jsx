@@ -210,7 +210,7 @@ describe('auth and onboarding flows', () => {
     };
 
     renderInRouter(<Onboarding />);
-    fireEvent.click(screen.getByRole('button', { name: 'Get Started' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliChat' }));
 
     await waitFor(() => {
       expect(mockToast.error).toHaveBeenCalledWith('Please fill in your name and birthdate');
@@ -237,7 +237,7 @@ describe('auth and onboarding flows', () => {
     fireEvent.change(screen.getByPlaceholderText('What should we call you?'), { target: { value: 'Fresh Artist' } });
     fireEvent.change(container.querySelector('input[type="date"]'), { target: { value: '2000-01-01' } });
     fireEvent.change(screen.getByPlaceholderText('A short bio about your music (optional)'), { target: { value: 'Hello world' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Get Started' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Enter NaliChat' }));
 
     await waitFor(() => {
       expect(mockBase44.functions.invoke).toHaveBeenCalledWith('completeOnboarding', {

@@ -305,7 +305,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
   return (
     <div className={cn("chat-theme flex-1 flex flex-col overflow-hidden relative min-h-0 h-full max-h-full", theme.className)} data-chat-theme={theme.id}>
       {/* Floating Header */}
-      <div className="absolute top-0 left-0 right-0 z-20 p-2 sm:p-4 pointer-events-none">
+      <div className="shrink-0 z-20 p-2 sm:p-4 pointer-events-none">
         <div className="chat-theme-header h-16 bg-background/88 backdrop-blur-2xl border border-border/55 rounded-2xl sm:rounded-3xl flex items-center px-2.5 sm:px-4 gap-2.5 sm:gap-3 shadow-[0_16px_40px_-20px_rgba(0,0,0,0.65)] pointer-events-auto transition-all ring-1 ring-white/[0.03]">
           <button onClick={onBack} className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-foreground bg-secondary/75 hover:bg-secondary transition-colors shrink-0" title="Go Back" aria-label="Go Back">
             <ArrowLeft className="w-4 h-4" />
@@ -372,7 +372,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       </div>
 
       {/* Messages Area */}
-      <div ref={scrollRef} onScroll={handleScroll} className="chat-theme-messages flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] [touch-action:pan-y] bg-gradient-to-b from-primary/[0.025] via-transparent to-accent/[0.025] px-3 sm:px-6 pt-24 pb-4 space-y-0.5 custom-scrollbar">
+      <div ref={scrollRef} onScroll={handleScroll} className="chat-theme-messages flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] [touch-action:pan-y] bg-gradient-to-b from-primary/[0.025] via-transparent to-accent/[0.025] px-3 sm:px-6 pt-2 sm:pt-4 pb-4 space-y-0.5 custom-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />

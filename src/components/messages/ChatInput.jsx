@@ -382,7 +382,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
         </div>
       )}
 
-      <div className="p-2.5 sm:p-3 flex items-end gap-1.5 sm:gap-2">
+      <div className="p-2.5 sm:p-3 flex items-end gap-1 sm:gap-2 min-w-0">
         <input ref={fileInputRef} type="file" className="hidden" multiple onChange={handleFileChange} accept="*/*" title="File Upload" aria-label="File Upload" />
 
         {/* Start Session / Additional Features */}
@@ -391,7 +391,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             <button
               type="button"
               disabled={isRecording || anyUploading}
-              className={cn("w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5 touch-manipulation",
+              className={cn("w-8 h-9 sm:w-9 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5 touch-manipulation",
                 showFeatures ? "text-primary bg-primary/15" : "text-muted-foreground hover:text-primary hover:bg-primary/10")}
               title="Additional Features"
               aria-label="Additional Features"
@@ -475,7 +475,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             type="button"
             onClick={(e) => { e.preventDefault(); setShowEmoji(!showEmoji); }}
             disabled={isRecording}
-            className={cn("w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5 touch-manipulation",
+            className={cn("w-8 h-9 sm:w-9 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5 touch-manipulation",
               showEmoji ? "text-primary bg-primary/15" : "text-muted-foreground hover:text-primary hover:bg-primary/10")}
             title="Add Emoji"
             aria-label="Add Emoji"
@@ -500,7 +500,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
           type="button"
           onClick={(e) => { e.preventDefault(); setShowUploadDialog(true); }}
           disabled={anyUploading || isRecording}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shrink-0 mb-0.5 touch-manipulation"
+          className="w-8 h-9 sm:w-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shrink-0 mb-0.5 touch-manipulation"
           title="Attach File"
           aria-label="Attach File"
         >
@@ -542,7 +542,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
             placeholder={dragOver ? "📎 Drop files here..." : "Message..."}
             title="Message Input"
             aria-label="Message Input"
-            className="flex-1 bg-secondary/30 border border-border/50 rounded-2xl px-4 py-2.5 text-sm resize-none min-h-[40px] max-h-[120px] focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 placeholder:text-muted-foreground/50 transition-all"
+            className="flex-1 min-w-0 bg-secondary/30 border border-border/50 rounded-2xl px-3 sm:px-4 py-2.5 text-sm resize-none min-h-[40px] max-h-[120px] focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 placeholder:text-muted-foreground/50 transition-all"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();

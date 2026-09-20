@@ -108,7 +108,9 @@ test.describe('authenticated production smoke', () => {
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/messages');
     await page.getByRole('button', { name: /^network$/i }).click();
 
-    const contactsScroll = page.getByTestId('messages-contacts-scroll');
+    const contactsPanel = page.getByTestId('messages-contacts-scroll');
+    await expect(contactsPanel).toBeVisible({ timeout: 30000 });
+    const contactsScroll = page.getByTestId('messages-contact-list').locator('..');
     await expect(contactsScroll).toBeVisible({ timeout: 30000 });
     await expect(contactsScroll).toHaveCSS('overflow-y', 'auto');
 

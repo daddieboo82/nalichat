@@ -15,7 +15,8 @@ async function login(page) {
 test.describe('Studio clip dragging', () => {
   test.skip(!(email && password), 'Studio drag E2E requires authenticated E2E credentials.');
 
-  test('waveform stays attached to the clip while dragging', async ({ page }) => {
+  test('waveform stays attached to the clip while dragging', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'iphone-16-simulation', 'Mouse drag precision is covered by Chromium; iPhone uses touch interaction.');
     await login(page);
     await page.goto('/studio');
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 30000 }).toBe('/studio');

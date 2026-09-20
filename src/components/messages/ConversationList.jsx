@@ -175,7 +175,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
       )}
 
       {/* List */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-1 space-y-1.5 custom-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y px-3 sm:px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-1 space-y-1.5 custom-scrollbar [-webkit-overflow-scrolling:touch]">
         {searchResults.filteredChats.length === 0 && !search && (
           <div className="text-center py-12 px-6">
             <div className="inline-flex w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 items-center justify-center mb-4">

@@ -307,7 +307,7 @@ export default React.memo(function ChatView({ conversation, messages, isLoading,
       {/* Floating Header */}
       <div className="shrink-0 z-20 p-2 sm:p-4 pointer-events-none">
         <div className="chat-theme-header h-16 bg-background/88 backdrop-blur-2xl border border-border/55 rounded-2xl sm:rounded-3xl flex items-center px-2.5 sm:px-4 gap-2.5 sm:gap-3 shadow-[0_16px_40px_-20px_rgba(0,0,0,0.65)] pointer-events-auto transition-all ring-1 ring-white/[0.03]">
-          <button onClick={onBack} className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-foreground bg-secondary/75 hover:bg-secondary transition-colors shrink-0" title="Go Back" aria-label="Go Back">
+          <button onClick={onBack} className="w-10 h-10 sm:w-11 sm:h-11 sm:hidden rounded-full flex items-center justify-center text-foreground bg-secondary/75 hover:bg-secondary transition-colors shrink-0" title="Go Back" aria-label="Go Back">
             <ArrowLeft className="w-4 h-4" />
           </button>
           

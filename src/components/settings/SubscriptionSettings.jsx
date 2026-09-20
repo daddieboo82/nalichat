@@ -36,6 +36,22 @@ export default function SubscriptionSettings() {
     if (openingPortal) return;
     setOpeningPortal(true);
     try {
+      if (subscription.provider === "paypal") {
+        const response = await base44.functions.invoke("cancelPayPalSubscription", {});
+        const payload = response?.data ?? response;
+        if (
+          payload?.success !== true ||
+          payload?.action !== "cancel_paypal_subscription" ||
+          (user?.id && payload?.userId !== user.id)
+        ) {
+          throw new Error(payload?.error || "Could not cancel PayPal subscription");
+        }
+        toast.success(payload.alreadyCanceled ? "PayPal subscription is already canceled." : "Cancellation sent to PayPal. Your plan will update after confirmation.");
+        await refetch();
+        setOpeningPortal(false);
+        return;
+      }
+
       await openBillingPortal({ expectedUserId: user?.id });
       trackPaywallEvent("billing_portal_opened", {
         plan: subscription.plan,
@@ -74,7 +90,7 @@ export default function SubscriptionSettings() {
 
   const trialEnd = formattedDate(subscription.trialEndDate);
   const periodEnd = formattedDate(subscription.currentPeriodEnd);
-  const canManageBilling = subscription.provider === "stripe";
+  const canManageBilling = subscription.provider === "stripe" || subscription.provider === "paypal";
 
   return (
     <div className="ui-surface rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:p-6">
@@ -137,7 +153,7 @@ export default function SubscriptionSettings() {
             ) : (
               <CreditCard className="h-4 w-4" aria-hidden="true" />
             )}
-            {openingPortal ? "Opening..." : "Manage Billing"}
+            {openingPortal ? (subscription.provider === "paypal" ? "Canceling..." : "Opening...") : (subscription.provider === "paypal" ? "Cancel PayPal Subscription" : "Manage Billing")}
           </Button>
         ) : (
           <Button asChild className="ui-hover min-h-11 w-full shrink-0 gap-2 rounded-xl font-semibold sm:w-auto">

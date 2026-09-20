@@ -217,7 +217,7 @@ export default function Home() {
   return (
     <PullToRefresh onRefresh={() => queryClient.invalidateQueries()} className="h-full overflow-auto bg-background">
 
-      {/* Ã¢â€â‚¬Ã¢â€â‚¬ Hero Ã¢â€â‚¬Ã¢â€â‚¬ */}
+      {/* — Hero — */}
       <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-4 pb-20 pt-[max(5.5rem,env(safe-area-inset-top))] sm:px-6 sm:pb-28 md:min-h-[700px] md:pt-28">
         {/* Animated blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -330,10 +330,10 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Ã¢â€â‚¬Ã¢â€â‚¬ Quick Access for logged-in users Ã¢â€â‚¬Ã¢â€â‚¬ */}
+      {/* — Quick Access for logged-in users — */}
       {user && <QuickAccessGrid />}
 
-      {/* Ã¢â€â‚¬Ã¢â€â‚¬ Pillar pills Ã¢â€â‚¬Ã¢â€â‚¬ */}
+      {/* — Pillar pills — */}
       <section className="relative z-10 overflow-hidden border-y border-border/70 bg-card/50 py-3 backdrop-blur-xl sm:py-4">
         <motion.div
           initial={{ opacity: 0 }}
@@ -354,7 +354,7 @@ export default function Home() {
 
       <section className="relative z-10 mx-auto max-w-7xl space-y-14 px-4 py-12 sm:space-y-20 sm:px-6 sm:py-16 lg:space-y-24 lg:py-20">
 
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ What You Can Do Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* — What You Can Do — */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -426,13 +426,13 @@ export default function Home() {
           </div>
         </motion.div>
 
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Quick Start Guide Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* — Quick Start Guide — */}
         <QuickStartGuide />
 
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Studio Video Tutorial Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* — Studio Video Tutorial — */}
         <StudioTutorial />
 
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Messaging Hero Card Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* — Messaging Hero Card — */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -479,7 +479,7 @@ export default function Home() {
           </Link>
         </motion.div>
 
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Nali AI Banner Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* — Nali AI Banner — */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -506,7 +506,7 @@ export default function Home() {
           </div>
         </motion.div>
 
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Features Grid Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* — Features Grid — */}
         <div>
           <div className="mb-10 md:mb-12 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
@@ -553,7 +553,7 @@ export default function Home() {
           </motion.div>
         </div>
 
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Interactive Tutorial Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* — Interactive Tutorial — */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -582,10 +582,10 @@ export default function Home() {
 
         <WelcomeTour open={showTour} onClose={() => setShowTour(false)} />
 
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ How it Works Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* — How it Works — */}
         <HowItWorks />
 
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Creator value Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* — Creator value — */}
         <div>
           <div className="text-center mb-10">
             <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">Built for the Creative Workflow</h2>
@@ -628,7 +628,7 @@ export default function Home() {
           </motion.div>
         </div>
 
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Stats Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* — Stats — */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -653,7 +653,7 @@ export default function Home() {
           ))}
         </motion.div>
 
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Final CTA Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* — Final CTA — */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}

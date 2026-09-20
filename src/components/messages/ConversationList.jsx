@@ -31,7 +31,9 @@ export default React.memo(function ConversationList({ conversations, myConversat
     } catch { return false; }
   };
 
-  const onlineUsers = (users || []).filter(u => u.is_online && u.id !== currentUserId).slice(0, 12);
+  const onlineUsers = (users || [])
+    .filter(u => u.is_online && u.id !== currentUserId)
+    .sort((a, b) => (a.display_name || a.full_name || "").localeCompare(b.display_name || b.full_name || ""));
 
   // Searching applies globally to find NEW people to message too
   const searchResults = useMemo(() => {
@@ -142,7 +144,7 @@ export default React.memo(function ConversationList({ conversations, myConversat
             <p className="text-[11px] font-bold text-foreground/80 uppercase tracking-[0.14em]">Active Now</p>
             <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-bold text-green-500">{onlineUsers.length} online</span>
           </div>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          <div className="flex gap-2 overflow-x-auto overscroll-x-contain touch-pan-x no-scrollbar pb-1 [-webkit-overflow-scrolling:touch]">
             {onlineUsers.map(u => (
               <button
                 key={u.id}

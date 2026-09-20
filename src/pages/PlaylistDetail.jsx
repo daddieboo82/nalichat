@@ -424,7 +424,7 @@ export default function PlaylistDetail() {
         )}
 
         {/* Tracks List */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]">
           <h3 className="text-sm font-semibold text-muted-foreground mb-3">
             PLAYLIST TRACKS
           </h3>

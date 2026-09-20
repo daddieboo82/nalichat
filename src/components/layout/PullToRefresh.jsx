@@ -87,7 +87,7 @@ export default function PullToRefresh({ onRefresh, className, children }) {
   const progress = Math.min(pull / THRESHOLD, 1);
 
   return (
-    <div className="relative h-full overflow-hidden">
+    <div className="relative h-full min-h-0 flex flex-col overflow-hidden">
       <div
         className="absolute inset-x-0 top-0 flex items-center justify-center pointer-events-none z-10"
         style={{ height: pull, opacity: progress }}
@@ -105,7 +105,7 @@ export default function PullToRefresh({ onRefresh, className, children }) {
       </div>
       <div
         ref={scrollRef}
-        className={className}
+        className={cn("min-h-0 flex-1", className)}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}

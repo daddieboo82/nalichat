@@ -9,17 +9,14 @@ vi.mock("@/api/base44Client", () => ({
 }));
 
 describe("subscription billing client", () => {
-  it("invokes checkout with only an approved SKU contract and server callbacks", async () => {
+  it("invokes PayPal checkout with only an approved SKU", async () => {
     const invoke = vi.fn().mockResolvedValue({
       data: {
         success: true,
-        action: "create_subscription_checkout",
+        action: "create_paypal_subscription",
         userId: "user-123",
         sku: "premium_plus_yearly",
-        idempotencyKey: "checkout_request_1234",
-        successDestination: "subscription_thank_you",
-        cancelDestination: "pricing",
-        checkoutUrl: "https://checkout.stripe.test/session",
+        checkoutUrl: "https://www.paypal.com/checkoutnow?token=test",
       },
     });
     const redirect = vi.fn();
@@ -32,28 +29,20 @@ describe("subscription billing client", () => {
       redirect,
     });
 
-    expect(invoke).toHaveBeenCalledWith("createSubscriptionCheckout", {
+    expect(invoke).toHaveBeenCalledWith("createPayPalSubscription", {
       sku: "premium_plus_yearly",
-      idempotencyKey: "checkout_request_1234",
-      callbackDestinations: {
-        success: "subscription_thank_you",
-        cancel: "pricing",
-      },
     });
-    expect(redirect).toHaveBeenCalledWith("https://checkout.stripe.test/session");
+    expect(redirect).toHaveBeenCalledWith("https://www.paypal.com/checkoutnow?token=test");
   });
 
   it("rejects a checkout response for another account", async () => {
     const invoke = vi.fn().mockResolvedValue({
       data: {
         success: true,
-        action: "create_subscription_checkout",
+        action: "create_paypal_subscription",
         userId: "other-user",
         sku: "premium_plus_yearly",
-        idempotencyKey: "checkout_request_1234",
-        successDestination: "subscription_thank_you",
-        cancelDestination: "pricing",
-        checkoutUrl: "https://checkout.stripe.test/session",
+        checkoutUrl: "https://www.paypal.com/checkoutnow?token=test",
       },
     });
     const redirect = vi.fn();

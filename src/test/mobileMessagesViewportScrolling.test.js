@@ -15,7 +15,8 @@ describe('mobile Messages viewport scrolling', () => {
     const chat = await readFile('src/components/messages/ChatView.jsx', 'utf8');
     const thread = await readFile('src/components/messages/ThreadPanel.jsx', 'utf8');
     expect(chat).toContain('overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]');
-    expect(thread).toContain('w-full sm:w-80 h-full min-h-0');
+    expect(thread).toContain('absolute inset-0 z-40 w-full h-full min-h-0');
+    expect(thread).toContain('sm:static sm:z-auto sm:w-80');
     expect(thread).toContain('overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]');
   });
 
@@ -33,10 +34,11 @@ describe('mobile Messages viewport scrolling', () => {
     expect(search).toContain('overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]');
   });
 
-  it('scrolls the entire contacts panel on mobile while preserving the desktop list scroller', async () => {
+  it('keeps contact controls fixed while the people list scrolls on mobile and desktop', async () => {
     const contacts = await readFile('src/components/messages/ContactsTab.jsx', 'utf8');
-    expect(contacts).toContain('overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] sm:overflow-hidden');
-    expect(contacts).toContain('sm:flex-1 sm:shrink sm:overflow-y-auto sm:overscroll-contain');
+    expect(contacts).toContain('flex h-full min-h-0 flex-col overflow-hidden');
+    expect(contacts).toContain('min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y');
+    expect(contacts).toContain('[-webkit-overflow-scrolling:touch]');
     expect(contacts).toContain('pb-[max(5rem,env(safe-area-inset-bottom))]');
   });
 });

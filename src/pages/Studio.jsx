@@ -1972,11 +1972,34 @@ export default function Studio() {
         }
       }
 
-      if (roomId) {
+      let targetProjectId = roomId;
+      let createdNewProject = false;
+      if (!targetProjectId) {
+        if (!user?.id) throw new Error("Sign in to save this Studio session to your session library.");
+        const requestedTitle = projectName.trim() || "Untitled Project";
+        const created = await base44.functions.invoke("createProject", {
+          title: requestedTitle,
+          description: "Studio session",
+        });
+        if (created?.data?.error) throw new Error(created.data.error);
+        const project = created?.data?.project;
+        if (
+          created?.data?.success !== true ||
+          created?.data?.action !== "create_project" ||
+          created?.data?.userId !== user.id ||
+          created?.data?.projectId !== project?.id ||
+          project?.owner_id !== user.id ||
+          project?.title !== requestedTitle
+        ) throw new Error("Studio session project was not created.");
+        targetProjectId = project.id;
+        createdNewProject = true;
+      }
+
+      if (targetProjectId) {
         const saved = await base44.functions.invoke("mutateProject", {
-          projectId: roomId,
+          projectId: targetProjectId,
           data: {
-            title: projectName,
+            title: projectName.trim() || "Untitled Project",
             bpm,
             key: songKey,
             master_fx: masterFx || {},
@@ -1989,11 +2012,20 @@ export default function Studio() {
           saved?.data?.success !== true ||
           saved?.data?.action !== "update_project" ||
           saved?.data?.userId !== user?.id ||
-          saved?.data?.projectId !== roomId ||
-          saved?.data?.project?.id !== roomId ||
+          saved?.data?.projectId !== targetProjectId ||
+          saved?.data?.project?.id !== targetProjectId ||
           !Array.isArray(saved?.data?.updatedFields) ||
           !expectedUpdatedFields.every((field) => saved.data.updatedFields.includes(field))
         ) throw new Error("Project save was not confirmed.");
+      }
+
+      if (createdNewProject && targetProjectId) {
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set("room", targetProjectId);
+        nextParams.delete("invite");
+        setSearchParams(nextParams, { replace: true });
+        setCanEditProject(true);
+        setJamRoomActive(false);
       }
 
       // Replace transient blob URLs in memory with their uploaded URLs so future
@@ -2007,7 +2039,9 @@ export default function Studio() {
       toast.success(
         localPersistenceFailed
           ? "Shared project saved. Local autosave is unavailable on this device."
-          : "Project saved successfully!",
+          : createdNewProject
+            ? "Studio session saved to My Sessions!"
+            : "Project saved successfully!",
         { id: toastId },
       );
       return true;

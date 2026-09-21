@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Heart, ListVideo, Play, Upload } from "lucide-react";
+import { ArrowLeft, Heart, ListVideo, PictureInPicture2, Play, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -37,6 +37,7 @@ export default function LiveTV() {
   const [favorites, setFavorites] = useState(() => { try { return JSON.parse(localStorage.getItem("nalichat:live-tv:favorites") || "[]"); } catch { return []; } });
   const [recent, setRecent] = useState(() => { try { return JSON.parse(localStorage.getItem("nalichat:live-tv:recent") || "[]"); } catch { return []; } });
   const fileRef = useRef(null);
+  const videoRef = useRef(null);
 
   useEffect(() => { try { localStorage.setItem("nalichat:live-tv:favorites", JSON.stringify(favorites)); } catch {} }, [favorites]);
   useEffect(() => { try { localStorage.setItem("nalichat:live-tv:recent", JSON.stringify(recent)); } catch {} }, [recent]);
@@ -57,6 +58,15 @@ export default function LiveTV() {
     setChannels(parsed);
     if (parsed[0]) chooseChannel(parsed[0]); else setSelected(null);
     setError(parsed.length ? "" : "No playable HTTP/HTTPS channels were found in this playlist.");
+  };
+
+  const openPictureInPicture = async () => {
+    const video = videoRef.current;
+    if (!video || typeof video.requestPictureInPicture !== "function") {
+      setError("Picture-in-picture is not available in this browser.");
+      return;
+    }
+    try { await video.requestPictureInPicture(); setError(""); } catch { setError("Picture-in-picture could not be started."); }
   };
 
   const loadFile = async (file) => {
@@ -95,9 +105,9 @@ export default function LiveTV() {
         <section className="overflow-hidden rounded-2xl border bg-black">
           {selected ? (
             <div>
-              <video key={selected.url} src={selected.url} controls playsInline className="aspect-video w-full bg-black" />
+              <video ref={videoRef} key={selected.url} src={selected.url} controls playsInline className="aspect-video w-full bg-black" onError={() => setError("This channel could not play in the browser. Some M3U sources require a compatible HLS/CORS-enabled provider.")} />
               <div className="bg-card p-4">
-                <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold">{selected.name}</h2><p className="text-xs text-muted-foreground">{selected.group}</p></div><Button type="button" size="icon" variant="ghost" aria-label="Toggle favorite" onClick={() => toggleFavorite(selected)}><Heart className={`h-5 w-5 ${favorites.some((item) => item.url === selected.url) ? "fill-current text-primary" : ""}`} /></Button></div>
+                <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold">{selected.name}</h2><p className="text-xs text-muted-foreground">{selected.group}</p></div><div className="flex items-center gap-1"><Button type="button" size="icon" variant="ghost" aria-label="Picture in picture" onClick={openPictureInPicture}><PictureInPicture2 className="h-5 w-5" /></Button><Button type="button" size="icon" variant="ghost" aria-label="Toggle favorite" onClick={() => toggleFavorite(selected)}><Heart className={`h-5 w-5 ${favorites.some((item) => item.url === selected.url) ? "fill-current text-primary" : ""}`} /></Button></div></div>
               </div>
             </div>
           ) : (

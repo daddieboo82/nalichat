@@ -51,8 +51,8 @@ describe("AiModeSelector", () => {
       isError: false,
     };
     renderSelector();
-    const upgrade = screen.getByRole("link", { name: "Compare Premium Plus for Deep analysis" });
-    expect(upgrade.getAttribute("href")).toBe("/pricing");
+    const upgrade = screen.getByRole("link", { name: "Unlock Premium Plus Deep analysis" });
+    expect(upgrade.getAttribute("href")).toBe("/pricing?source=ai_mode_selector&feature=ai.deep_analysis");
     expect(screen.getByText(/not private reasoning traces/i)).toBeTruthy();
   });
 

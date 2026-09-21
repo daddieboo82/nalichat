@@ -225,9 +225,6 @@ export default function MixerPanel({
 
               <div className="text-[10px] font-mono text-center font-bold text-primary/90 mb-2">{masterVolume === 0 ? '-∞' : (20 * Math.log10(masterVolume / 100)).toFixed(1)} dB</div>
 
-              <div className="flex gap-1 w-full mb-2 opacity-0 pointer-events-none">
-                <Button type="button" size="icon" className="w-full h-7">M</Button>
-              </div>
 
               <Button
                 type="button"

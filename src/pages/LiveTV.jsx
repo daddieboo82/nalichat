@@ -54,7 +54,13 @@ export default function LiveTV() {
     const isHls = /\.m3u8(?:$|[?#])/i.test(selected.url);
     if (!isHls || video.canPlayType("application/vnd.apple.mpegurl")) return undefined;
     if (!Hls.isSupported()) { setError("This browser cannot play this HLS stream."); return undefined; }
-    const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+    const hls = new Hls({
+      enableWorker: true,
+      lowLatencyMode: true,
+      manifestLoadingTimeOut: 15000,
+      levelLoadingTimeOut: 15000,
+      fragLoadingTimeOut: 20000,
+    });
     let recoveredMediaError = false;
     hls.loadSource(selected.url);
     hls.attachMedia(video);
@@ -71,7 +77,8 @@ export default function LiveTV() {
         hls.recoverMediaError();
         return;
       }
-      setError("This channel could not be played. The stream may be offline or may block browser playback.");
+      const detail = data?.details ? ` (${data.details})` : "";
+      setError(`This channel could not be played${detail}. Try another channel; some free streams are offline or block browser playback.`);
     });
     return () => hls.destroy();
   }, [selected?.url]);
@@ -152,7 +159,7 @@ export default function LiveTV() {
         <section className="overflow-hidden rounded-2xl border bg-black">
           {selected ? (
             <div>
-              <video ref={videoRef} key={selected.url} src={/\.m3u8(?:$|[?#])/i.test(selected.url) ? undefined : selected.url} controls playsInline className="aspect-video w-full bg-black" onError={() => setError("This channel could not play in the browser. Some sources require a compatible CORS-enabled provider.")} />
+              <video ref={videoRef} key={selected.url} src={/\.m3u8(?:$|[?#])/i.test(selected.url) ? undefined : selected.url} controls autoPlay muted playsInline preload="auto" className="aspect-video w-full bg-black" onCanPlay={(e) => { setError(""); e.currentTarget.play().catch(() => {}); }} onError={() => setError("This channel could not play in the browser. Try another channel; the source may be offline or may block browser playback.")} />
               <div className="bg-card p-4">
                 <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold">{selected.name}</h2><p className="text-xs text-muted-foreground">{selected.group}</p></div><div className="flex items-center gap-1"><Button type="button" size="icon" variant="ghost" aria-label="Picture in picture" onClick={openPictureInPicture}><PictureInPicture2 className="h-5 w-5" /></Button><Button type="button" size="icon" variant="ghost" aria-label="Toggle favorite" onClick={() => toggleFavorite(selected)}><Heart className={`h-5 w-5 ${favorites.some((item) => item.url === selected.url) ? "fill-current text-primary" : ""}`} /></Button></div></div>
               </div>

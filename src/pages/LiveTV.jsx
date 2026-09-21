@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ListVideo, Play, Upload } from "lucide-react";
+import { ArrowLeft, Heart, ListVideo, Play, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -34,7 +34,20 @@ export default function LiveTV() {
   const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const [favorites, setFavorites] = useState(() => { try { return JSON.parse(localStorage.getItem("nalichat:live-tv:favorites") || "[]"); } catch { return []; } });
+  const [recent, setRecent] = useState(() => { try { return JSON.parse(localStorage.getItem("nalichat:live-tv:recent") || "[]"); } catch { return []; } });
   const fileRef = useRef(null);
+
+  useEffect(() => { try { localStorage.setItem("nalichat:live-tv:favorites", JSON.stringify(favorites)); } catch {} }, [favorites]);
+  useEffect(() => { try { localStorage.setItem("nalichat:live-tv:recent", JSON.stringify(recent)); } catch {} }, [recent]);
+
+  const chooseChannel = (channel) => {
+    setSelected(channel);
+    setRecent((items) => [channel, ...items.filter((item) => item.url !== channel.url)].slice(0, 12));
+  };
+  const toggleFavorite = (channel) => setFavorites((items) =>
+    items.some((item) => item.url === channel.url) ? items.filter((item) => item.url !== channel.url) : [channel, ...items]
+  );
   const filtered = useMemo(() => channels.filter((c) =>
     (c.name + " " + c.group).toLowerCase().includes(query.toLowerCase())
   ), [channels, query]);
@@ -42,7 +55,7 @@ export default function LiveTV() {
   const loadText = (text) => {
     const parsed = parseM3u(text);
     setChannels(parsed);
-    setSelected(parsed[0] || null);
+    if (parsed[0]) chooseChannel(parsed[0]); else setSelected(null);
     setError(parsed.length ? "" : "No playable HTTP/HTTPS channels were found in this playlist.");
   };
 
@@ -84,8 +97,7 @@ export default function LiveTV() {
             <div>
               <video key={selected.url} src={selected.url} controls playsInline className="aspect-video w-full bg-black" />
               <div className="bg-card p-4">
-                <h2 className="font-semibold">{selected.name}</h2>
-                <p className="text-xs text-muted-foreground">{selected.group}</p>
+                <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold">{selected.name}</h2><p className="text-xs text-muted-foreground">{selected.group}</p></div><Button type="button" size="icon" variant="ghost" aria-label="Toggle favorite" onClick={() => toggleFavorite(selected)}><Heart className={`h-5 w-5 ${favorites.some((item) => item.url === selected.url) ? "fill-current text-primary" : ""}`} /></Button></div>
               </div>
             </div>
           ) : (
@@ -97,8 +109,9 @@ export default function LiveTV() {
 
         <aside className="max-h-[70vh] overflow-y-auto rounded-2xl border bg-card p-2">
           <div className="flex items-center gap-2 px-2 py-2 text-sm font-semibold"><ListVideo className="h-4 w-4" />Channels ({filtered.length})</div>
+          {favorites.length > 0 && <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Favorites: {favorites.length} · Recent: {recent.length}</p>}
           {filtered.map((channel, index) => (
-            <button key={channel.url + index} type="button" onClick={() => setSelected(channel)}
+            <button key={channel.url + index} type="button" onClick={() => chooseChannel(channel)}
               className="flex min-h-14 w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-secondary">
               {channel.logo ? <img src={channel.logo} alt="" className="h-9 w-9 rounded-lg object-cover" /> : <Play className="h-5 w-5 text-primary" />}
               <span className="min-w-0"><span className="block truncate text-sm font-medium">{channel.name}</span><span className="block truncate text-xs text-muted-foreground">{channel.group}</span></span>

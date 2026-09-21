@@ -109,7 +109,7 @@ export default function CallSummaryPanel({ summaryActions, participants = [], in
             </Button>
           ) : (
             <Button asChild className="w-full">
-              <Link to="/pricing">Compare Premium Plus</Link>
+              <Link to="/pricing?source=call_summary&feature=ai.call_summary">Unlock call summaries</Link>
             </Button>
           )}
           <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
@@ -170,7 +170,7 @@ export default function CallSummaryPanel({ summaryActions, participants = [], in
               </Button>
             ) : (
               <Button asChild className="mt-4 w-full">
-                <Link to="/pricing">Restore Premium Plus to generate</Link>
+                <Link to="/pricing?source=call_summary_generate&feature=ai.call_summary">Restore Premium Plus</Link>
               </Button>
             )
           )}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import Hls from "hls.js";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Heart, ListVideo, PictureInPicture2, Play, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,19 @@ export default function LiveTV() {
 
   useEffect(() => { try { localStorage.setItem("nalichat:live-tv:favorites", JSON.stringify(favorites)); } catch {} }, [favorites]);
   useEffect(() => { try { localStorage.setItem("nalichat:live-tv:recent", JSON.stringify(recent)); } catch {} }, [recent]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !selected?.url) return undefined;
+    const isHls = /\.m3u8(?:$|[?#])/i.test(selected.url);
+    if (!isHls || video.canPlayType("application/vnd.apple.mpegurl")) return undefined;
+    if (!Hls.isSupported()) { setError("This browser cannot play this HLS stream."); return undefined; }
+    const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+    hls.loadSource(selected.url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.ERROR, (_event, data) => { if (data?.fatal) setError("This channel could not be played. Check that the stream is online and permits browser playback."); });
+    return () => hls.destroy();
+  }, [selected?.url]);
 
   const chooseChannel = (channel) => {
     setSelected(channel);
@@ -105,7 +119,7 @@ export default function LiveTV() {
         <section className="overflow-hidden rounded-2xl border bg-black">
           {selected ? (
             <div>
-              <video ref={videoRef} key={selected.url} src={selected.url} controls playsInline className="aspect-video w-full bg-black" onError={() => setError("This channel could not play in the browser. Some M3U sources require a compatible HLS/CORS-enabled provider.")} />
+              <video ref={videoRef} key={selected.url} src={/\.m3u8(?:$|[?#])/i.test(selected.url) ? undefined : selected.url} controls playsInline className="aspect-video w-full bg-black" onError={() => setError("This channel could not play in the browser. Some sources require a compatible CORS-enabled provider.")} />
               <div className="bg-card p-4">
                 <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold">{selected.name}</h2><p className="text-xs text-muted-foreground">{selected.group}</p></div><div className="flex items-center gap-1"><Button type="button" size="icon" variant="ghost" aria-label="Picture in picture" onClick={openPictureInPicture}><PictureInPicture2 className="h-5 w-5" /></Button><Button type="button" size="icon" variant="ghost" aria-label="Toggle favorite" onClick={() => toggleFavorite(selected)}><Heart className={`h-5 w-5 ${favorites.some((item) => item.url === selected.url) ? "fill-current text-primary" : ""}`} /></Button></div></div>
               </div>

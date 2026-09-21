@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FolderOpen, FileText, CheckCircle2, Circle, Users, Calendar, Link2, Copy, Plus } from 'lucide-react';
+import { Loader2, FolderOpen, FileText, CheckCircle2, Circle, Users, Calendar, Link2, Copy, Plus, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -40,6 +40,7 @@ export default function ProjectsSummary() {
   const [isCreating, setIsCreating] = useState(false);
   const [inviteLinks, setInviteLinks] = useState({});
   const [creatingInviteId, setCreatingInviteId] = useState(null);
+  const [projectSearch, setProjectSearch] = useState("");
 
   useEffect(() => {
     if (searchParams.get('new') === 'true') {
@@ -207,6 +208,12 @@ export default function ProjectsSummary() {
     );
   }
 
+  const visibleProjects = data.projects.filter((project) => {
+    const term = projectSearch.trim().toLowerCase();
+    if (!term) return true;
+    return [project.title, project.description, project.status].some(value => String(value || '').toLowerCase().includes(term));
+  });
+
   return (
     <div className="mx-auto h-full max-w-5xl overflow-y-auto px-4 py-5 pb-[max(2rem,env(safe-area-inset-bottom))] custom-scrollbar sm:p-6">
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -219,6 +226,13 @@ export default function ProjectsSummary() {
         </Button>
       </div>
 
+      {data.projects.length > 0 && (
+        <div className="relative mb-6">
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={projectSearch} onChange={(e) => setProjectSearch(e.target.value)} placeholder="Find a Studio session by name, description, or status..." className="h-12 rounded-2xl border-border/60 bg-card/60 pl-11" />
+        </div>
+      )}
+
       {data.projects.length === 0 ? (
         <div className="ui-surface rounded-3xl border border-white/[0.06] bg-card/50 px-5 py-12 text-center backdrop-blur-xl">
           <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -227,7 +241,14 @@ export default function ProjectsSummary() {
         </div>
       ) : (
         <div className="space-y-6 pb-12">
-          {data.projects.map((project, idx) => {
+          {visibleProjects.length === 0 && (
+            <div className="rounded-3xl border border-border/60 bg-card/50 px-5 py-10 text-center">
+              <Search className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+              <p className="font-semibold">No sessions match “{projectSearch}”</p>
+              <p className="mt-1 text-sm text-muted-foreground">Try another project name, description, or status.</p>
+            </div>
+          )}
+          {visibleProjects.map((project, idx) => {
             const projectMilestones = data.milestones.filter(m => m.project_id === project.id);
             const projectFiles = data.sharedFiles.filter(f => f.project_id === project.id);
             

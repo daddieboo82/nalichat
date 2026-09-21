@@ -1,9 +1,9 @@
 const VARIANTS = Object.freeze({
   A: Object.freeze({
     id: "A",
-    headline: "Upgrade your chat, not your budget.",
-    subhead: "Keep chatting free forever. Unlock smarter AI, powerful creator tools, Studio upgrades, and premium privacy.",
-    trialCta: "Start 7-day free trial",
+    headline: "Finish more music with everything in one place.",
+    subhead: "Upgrade when you’re ready for more NALI.ai, bigger creative transfers, advanced Studio workflows, and premium creator tools.",
+    trialCta: "Choose Premium",
     badges: Object.freeze({
       premium: "Most popular",
       premium_plus: "Best value",
@@ -11,9 +11,9 @@ const VARIANTS = Object.freeze({
   }),
   B: Object.freeze({
     id: "B",
-    headline: "Go further with AI-powered messaging.",
-    subhead: "Faster responses, deeper insights, Studio workflows, and productivity tools built for creators.",
-    trialCta: "Try Premium free",
+    headline: "Turn ideas into finished releases faster.",
+    subhead: "Keep your conversations, sessions, files, and AI-assisted creator workflow together—then unlock more power when you need it.",
+    trialCta: "Choose Premium",
     badges: Object.freeze({
       premium: "Best for everyday",
       premium_plus: "Power users",

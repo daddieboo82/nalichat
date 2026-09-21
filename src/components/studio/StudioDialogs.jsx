@@ -7,7 +7,7 @@ import { INSTRUMENTS, MIDI_CHANNELS, getInstrument } from '@/lib/instruments';
 import { toast } from 'sonner';
 
 export default function StudioDialogs({
-  creatingTrack, setCreatingTrack, newTrackName, setNewTrackName, newTrackType, setNewTrackType, handleCreateTrackConfirm,
+  creatingTrack, setCreatingTrack, newTrackName, setNewTrackName, newTrackType, setNewTrackType, newTrackCount, setNewTrackCount, handleCreateTrackConfirm,
   newTrackInstrument, setNewTrackInstrument, newTrackMidiChannel, setNewTrackMidiChannel,
   renamingTrack, setRenamingTrack, setTracksWithHistory,
   pendingTimeSignature, setPendingTimeSignature, setTimeSignature,
@@ -22,6 +22,10 @@ export default function StudioDialogs({
           <div className="space-y-4 py-2">
             <div className="space-y-2"><label className="text-sm font-medium">Track Name</label>
               <Input value={newTrackName} onChange={(e) => setNewTrackName(e.target.value)} onFocus={(e) => setTimeout(() => e.target.select(), 0)} onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTrackConfirm(); }} autoFocus />
+            </div>
+            <div className="space-y-2"><label className="text-sm font-medium">Number of Tracks</label>
+              <Input type="number" min="1" max="64" value={newTrackCount} onChange={(e) => setNewTrackCount(Math.max(1, Math.min(64, Number(e.target.value) || 1)))} />
+              <p className="text-[11px] text-muted-foreground">Create up to 64 tracks at once. They will be numbered automatically.</p>
             </div>
             <div className="space-y-2"><label className="text-sm font-medium">Track Type</label>
               <Select value={newTrackType} onValueChange={setNewTrackType}>
@@ -63,7 +67,7 @@ export default function StudioDialogs({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreatingTrack(false)}>Cancel</Button>
-            <Button onClick={handleCreateTrackConfirm}>Create</Button>
+            <Button onClick={handleCreateTrackConfirm}>Create {newTrackCount > 1 ? `${newTrackCount} Tracks` : 'Track'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

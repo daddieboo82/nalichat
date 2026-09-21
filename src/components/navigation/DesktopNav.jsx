@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import {
   Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users,
-  Settings, LogOut, LogIn, HelpCircle, UserPlus, Mic, Radio,
+  Settings, LogOut, LogIn, HelpCircle, UserPlus, Mic, Radio, Tv,
   Wand2, AudioLines, Plus, Gem, Swords, Rocket, Smartphone
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
@@ -19,6 +19,7 @@ const NAV_GROUPS = [
     items: [
       { icon: Home, label: "Home", path: "/" },
       { icon: Compass, label: "Explore", path: "/explore" },
+      { icon: Tv, label: "Live TV", path: "/live-tv" },
     ],
   },
   {

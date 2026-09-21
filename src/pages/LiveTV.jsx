@@ -130,10 +130,30 @@ export default function LiveTV() {
 
   const loadFreeTv = async () => {
     setError("");
+    const providers = [
+      "https://iptv-org.github.io/iptv/index.m3u",
+      "https://iptv-org.github.io/iptv/categories/movies.m3u",
+      "https://iptv-org.github.io/iptv/categories/news.m3u",
+      "https://iptv-org.github.io/iptv/categories/sports.m3u",
+      "https://iptv-org.github.io/iptv/categories/music.m3u",
+      "https://iptv-org.github.io/iptv/categories/kids.m3u",
+      "https://iptv-org.github.io/iptv/categories/documentary.m3u",
+      "https://iptv-org.github.io/iptv/categories/entertainment.m3u",
+      "https://iptv-org.github.io/iptv/categories/weather.m3u",
+    ];
     try {
-      const response = await fetch("https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8");
-      if (!response.ok) throw new Error("Playlist unavailable");
-      loadText(await response.text());
+      const results = await Promise.allSettled(providers.map(async (url) => {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Playlist unavailable: ${url}`);
+        return response.text();
+      }));
+      const merged = results
+        .filter((result) => result.status === "fulfilled")
+        .flatMap((result) => parseM3u(result.value));
+      const unique = Array.from(new Map(merged.map((channel) => [channel.url, channel])).values());
+      setChannels(unique);
+      if (unique[0]) chooseChannel(unique[0]); else setSelected(null);
+      setError(unique.length ? "" : "Free TV could not be loaded right now. You can still import an M3U/M3U8 playlist.");
     } catch {
       setError("Free TV could not be loaded right now. You can still import an M3U/M3U8 playlist.");
     }

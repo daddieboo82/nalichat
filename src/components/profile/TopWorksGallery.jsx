@@ -1,8 +1,44 @@
-import { Star, Music, Headphones, TrendingUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Star, Music, Headphones, TrendingUp, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getLikeCount } from "@/lib/engagement";
+import { toast } from "sonner";
 
 export default function TopWorksGallery({ posts }) {
+  const audioRef = useRef(null);
+  const [playingId, setPlayingId] = useState(null);
+
+  useEffect(() => () => {
+    audioRef.current?.pause();
+    audioRef.current = null;
+  }, []);
+
+  const togglePreview = async (post) => {
+    const url = post.file_url || (/\.(mp3|wav|ogg|m4a|aac)(\?|$)/i.test(post.image_url || "") ? post.image_url : "");
+    if (!url) {
+      toast.info("No playable audio is attached to this work.");
+      return;
+    }
+    if (playingId === post.id && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setPlayingId(null);
+      return;
+    }
+    audioRef.current?.pause();
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    audio.onended = () => { audioRef.current = null; setPlayingId(null); };
+    audio.onerror = () => { audioRef.current = null; setPlayingId(null); toast.error("This track could not be played."); };
+    try {
+      await audio.play();
+      setPlayingId(post.id);
+    } catch {
+      audioRef.current = null;
+      setPlayingId(null);
+      toast.error("This track could not be played.");
+    }
+  };
   // Sort by likes + views (engagement metric)
   const topWorks = posts
     .sort((a, b) => (getLikeCount(b) + (b.views || 0)) - (getLikeCount(a) + (a.views || 0)))
@@ -114,10 +150,18 @@ export default function TopWorksGallery({ posts }) {
 
             {/* Play button overlay */}
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40">
-              <button className="w-12 h-12 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors">
-                <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                  <polygon points="5 3 19 12 5 21" />
-                </svg>
+              <button
+                type="button"
+                onClick={(event) => { event.stopPropagation(); togglePreview(post); }}
+                className="w-12 h-12 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors"
+                aria-label={playingId === post.id ? `Pause ${post.title || "track"}` : `Play ${post.title || "track"}`}
+                title={playingId === post.id ? "Pause preview" : "Play preview"}
+              >
+                {playingId === post.id ? <Pause className="w-5 h-5 text-white" /> : (
+                  <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <polygon points="5 3 19 12 5 21" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>

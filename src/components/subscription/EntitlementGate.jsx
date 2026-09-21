@@ -17,7 +17,7 @@ export function EntitlementGate({
   entitlement,
   children,
   title = "Premium feature",
-  description = "This is an optional upgrade. Compare plans to unlock it while keeping your core NaliChat experience on Free.",
+  description = "Unlock this creator tool with Premium while keeping your core NaliChat experience on Free.",
   source = "entitlement_gate",
 }) {
   const { isEntitled, isLoading, isError, refetch } = useEntitlement(entitlement);
@@ -52,7 +52,7 @@ export function EntitlementGate({
           </Button>
         )}
         <Button className="ui-hover min-h-11 rounded-xl font-semibold" asChild onClick={() => trackPaywallEvent("entitlement_prompt_convert", { entitlement, source })}>
-          <Link to="/pricing">Compare plans</Link>
+          <Link to={`/pricing?source=${encodeURIComponent(source)}&feature=${encodeURIComponent(entitlement)}`}>Unlock with Premium</Link>
         </Button>
       </div>
     </div>

@@ -108,6 +108,8 @@ export default function PricingPlans({
     [user?.id, variantOverride],
   );
   const copy = getPaywallCopy(variant);
+  const upgradeFeature = new URLSearchParams(location.search).get("feature");
+  const upgradeSource = new URLSearchParams(location.search).get("source");
 
   useEffect(() => {
     // Preserve campaign context when an ad or sitelink lands directly on pricing.
@@ -247,13 +249,14 @@ export default function PricingPlans({
     <div className="h-full min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background">
       <section className="mx-auto max-w-6xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:py-14">
         <div className="text-center">
-          <p className="text-sm font-bold uppercase tracking-widest text-primary">NaliChat plans</p>
+          <p className="text-sm font-bold uppercase tracking-widest text-primary">{upgradeFeature ? "Unlock your next creator tool" : "NaliChat plans"}</p>
           <h1 className="mt-3 font-heading text-3xl font-black tracking-tight sm:text-5xl">{copy.headline}</h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">{copy.subhead}</p>
           <p className="mt-4 font-semibold">Make music. Find collaborators. Finish songs. Release more.</p>
           <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">Premium starts at $7.99/month. Unlock more NALI.ai, larger creative transfers, advanced messaging, and deeper Studio tools. Cancel anytime in Settings.</p>
           <div className="mx-auto mt-5 max-w-2xl rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
-            <span className="font-bold">Why creators upgrade:</span> fewer app switches, more room for creative files, and premium tools available right where the work happens.
+            <span className="font-bold">{upgradeFeature ? "You came here to unlock a premium creator feature:" : "Why creators upgrade:"}</span>{" "}
+            {upgradeFeature ? `${upgradeFeature.replaceAll(".", " ")}. Choose the plan that fits your workflow below.` : "fewer app switches, more room for creative files, and premium tools available right where the work happens."}
           </div>
           <div className="mx-auto mt-6 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-5">{[[MessageSquare,"Messages"],[Music2,"Studio"],[Files,"File sharing"],[Sparkles,"NALI.ai"],[ShieldCheck,"Privacy"]].map(([Icon,label]) => <div key={label} className="rounded-xl border border-border/60 bg-card/60 px-3 py-2 text-xs font-semibold"><Icon className="mx-auto mb-1 h-4 w-4 text-primary" />{label}</div>)}</div>
         </div>

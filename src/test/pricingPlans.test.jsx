@@ -56,8 +56,8 @@ function renderPricing(props = {}) {
 describe("pricing plans", () => {
   it("clearly explains the free starting point and paid-plan cancellation path", () => {
     renderPricing({ variantOverride: "A" });
-    expect(screen.getByText(/Create more\. Send bigger files\. Unlock NALI\.ai\. Stay month-to-month\./i)).toBeTruthy();
-    expect(screen.getByText(/Monthly Premium starts at just \$7\.99 with no long-term commitment/i)).toBeTruthy();
+    expect(screen.getByText(/Make music\. Find collaborators\. Finish songs\. Release more\./i)).toBeTruthy();
+    expect(screen.getByText(/Premium starts at \$7\.99\/month/i)).toBeTruthy();
     expect(screen.getByText(/Paid subscriptions can be canceled in Settings/i)).toBeTruthy();
   });
 
@@ -85,7 +85,7 @@ describe("pricing plans", () => {
   it("renders variant A, defaults monthly, and toggles to yearly prices", () => {
     renderPricing({ variantOverride: "A" });
 
-    expect(screen.getByRole("heading", { name: "Upgrade your chat, not your budget." })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Finish more music with everything in one place." })).toBeTruthy();
     expect(screen.getByText("Best value to get started")).toBeTruthy();
     expect(screen.getByText("$7.99")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Yearly" }));
@@ -96,7 +96,7 @@ describe("pricing plans", () => {
     mockSubscription.current.subscription.trialEligible = false;
     renderPricing({ variantOverride: "B" });
 
-    expect(screen.getByRole("heading", { name: "Go further with AI-powered messaging." })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Turn ideas into finished releases faster." })).toBeTruthy();
     expect(screen.getByText("Best value to get started")).toBeTruthy();
     expect(screen.queryByText("Try Premium free")).toBeNull();
     expect(screen.getByRole("button", { name: "Upgrade to Premium" })).toBeTruthy();

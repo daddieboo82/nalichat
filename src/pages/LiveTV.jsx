@@ -55,13 +55,29 @@ export default function LiveTV() {
     if (!isHls || video.canPlayType("application/vnd.apple.mpegurl")) return undefined;
     if (!Hls.isSupported()) { setError("This browser cannot play this HLS stream."); return undefined; }
     const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+    let recoveredMediaError = false;
     hls.loadSource(selected.url);
     hls.attachMedia(video);
-    hls.on(Hls.Events.ERROR, (_event, data) => { if (data?.fatal) setError("This channel could not be played. Check that the stream is online and permits browser playback."); });
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      setError("");
+      video.play().catch(() => {
+        // Browsers may still require a user gesture; controls remain available.
+      });
+    });
+    hls.on(Hls.Events.ERROR, (_event, data) => {
+      if (!data?.fatal) return;
+      if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !recoveredMediaError) {
+        recoveredMediaError = true;
+        hls.recoverMediaError();
+        return;
+      }
+      setError("This channel could not be played. The stream may be offline or may block browser playback.");
+    });
     return () => hls.destroy();
   }, [selected?.url]);
 
   const chooseChannel = (channel) => {
+    setError("");
     setSelected(channel);
     setRecent((items) => [channel, ...items.filter((item) => item.url !== channel.url)].slice(0, 12));
   };

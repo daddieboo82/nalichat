@@ -249,15 +249,30 @@ export default function Home() {
             </motion.div>
           </div>
 
-          {/* Personalized greeting */}
+          {/* Personalized post-login activation */}
           {user && (
-            <motion.p
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-sm font-bold tracking-[0.2em] text-primary mb-4 uppercase drop-shadow-md"
+              className="mx-auto mb-6 max-w-2xl rounded-3xl border border-primary/30 bg-card/80 p-4 text-left shadow-xl backdrop-blur-md sm:p-5"
             >
-              Welcome back, {(user.display_name || user.full_name)?.split(" ")[0] || "Creator"} 🚀
-            </motion.p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                Welcome back, {(user.display_name || user.full_name)?.split(" ")[0] || "Creator"}
+              </p>
+              <h2 className="mt-1 font-heading text-xl font-black sm:text-2xl">Make something happen in the next 60 seconds.</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Meet a creator, start a conversation, or jump straight into your next track.</p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <Button asChild className="min-h-11 rounded-xl">
+                  <Link to="/messages"><MessageSquare className="mr-2 h-4 w-4" />Meet creators</Link>
+                </Button>
+                <Button asChild variant="outline" className="min-h-11 rounded-xl">
+                  <Link to="/studio"><Music className="mr-2 h-4 w-4" />Start a track</Link>
+                </Button>
+                <Button asChild variant="outline" className="min-h-11 rounded-xl">
+                  <Link to="/explore"><Sparkles className="mr-2 h-4 w-4" />Find inspiration</Link>
+                </Button>
+              </div>
+            </motion.div>
           )}
 
           {!user && (
@@ -275,13 +290,17 @@ export default function Home() {
             </motion.div>
           )}
 
-          <h1 className="mb-5 font-heading text-4xl font-black leading-[1.02] tracking-tight drop-shadow-xl text-gradient-animate sm:text-6xl md:mb-6 md:text-8xl lg:text-[7rem]">
-            Create. Collaborate.<br className="hidden md:block" />{" "}
-            <span>Share Everything.</span>
-          </h1>
-          <p className="mx-auto mb-8 max-w-3xl text-base font-medium leading-relaxed text-foreground/90 sm:text-xl md:mb-12 md:text-2xl">
-            Message your team, produce in NaliStudio, move large creative files, and use AI-assisted creator tools without bouncing between apps. Start free.
-          </p>
+          {!user && (
+            <>
+              <h1 className="mb-5 font-heading text-4xl font-black leading-[1.02] tracking-tight drop-shadow-xl text-gradient-animate sm:text-6xl md:mb-6 md:text-8xl lg:text-[7rem]">
+                Create. Collaborate.<br className="hidden md:block" />{" "}
+                <span>Share Everything.</span>
+              </h1>
+              <p className="mx-auto mb-8 max-w-3xl text-base font-medium leading-relaxed text-foreground/90 sm:text-xl md:mb-12 md:text-2xl">
+                Message your team, produce in NaliStudio, move large creative files, and use AI-assisted creator tools without bouncing between apps. Start free.
+              </p>
+            </>
+          )}
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full max-w-sm mx-auto sm:max-w-none">

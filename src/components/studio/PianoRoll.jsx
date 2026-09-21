@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { ArrowDown, ArrowUp, Magnet, Trash2, X } from 'lucide-react';
@@ -18,6 +18,54 @@ export default function PianoRoll({ track, onChange, onCommit, onClose, bars = 4
   const totalBeats = bars * 4;
   const pitches = useMemo(() => Array.from({ length: HIGH - LOW + 1 }, (_, i) => HIGH - i), []);
   const selectedNote = notes.find(n => n.id === selected);
+  const audioCtxRef = useRef(null);
+  const activeVoicesRef = useRef(new Set());
+
+  const stopPreviewVoices = () => {
+    activeVoicesRef.current.forEach(({ osc, gain }) => {
+      try {
+        const now = audioCtxRef.current?.currentTime || 0;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setTargetAtTime(0.0001, now, 0.015);
+        osc.stop(now + 0.08);
+      } catch {}
+    });
+    activeVoicesRef.current.clear();
+  };
+
+  const previewNote = async (midi, velocity = 100) => {
+    if (typeof window === 'undefined') return;
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) return;
+    const ctx = audioCtxRef.current || new AudioContextCtor();
+    audioCtxRef.current = ctx;
+    if (ctx.state === 'suspended') await ctx.resume();
+    stopPreviewVoices();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    const now = ctx.currentTime;
+    const level = Math.max(0.04, Math.min(0.35, (Number(velocity) || 100) / 127 * 0.3));
+    osc.type = track?.instrument === 'bass' ? 'sine' : track?.instrument === 'piano' ? 'triangle' : 'sawtooth';
+    osc.frequency.value = 440 * Math.pow(2, (Number(midi) - 69) / 12);
+    filter.type = 'lowpass';
+    filter.frequency.value = track?.instrument === 'bass' ? 650 : 3200;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(level, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + (track?.instrument === 'piano' ? 0.7 : 0.45));
+    osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+    const voice = { osc, gain };
+    activeVoicesRef.current.add(voice);
+    osc.onended = () => activeVoicesRef.current.delete(voice);
+    osc.start(now); osc.stop(now + (track?.instrument === 'piano' ? 0.72 : 0.48));
+  };
+
+  useEffect(() => () => {
+    stopPreviewVoices();
+    const ctx = audioCtxRef.current;
+    audioCtxRef.current = null;
+    if (ctx && ctx.state !== 'closed') ctx.close().catch(() => {});
+  }, []);
 
   const addNote = (e) => {
     if (e.target !== e.currentTarget) return;
@@ -28,6 +76,7 @@ export default function PianoRoll({ track, onChange, onCommit, onClose, bars = 4
     const note = { id: crypto.randomUUID(), note: pitches[row], startBeat, durationBeats: 1, velocity: 100 };
     onChange([...notes, note].sort((a,b) => a.startBeat - b.startBeat));
     setSelected(note.id);
+    previewNote(note.note, note.velocity);
     queueMicrotask(() => onCommit?.());
   };
 
@@ -99,8 +148,11 @@ export default function PianoRoll({ track, onChange, onCommit, onClose, bars = 4
       </div>
     </div>
     <div className="flex h-64">
-      <div className="w-12 shrink-0 overflow-hidden border-r border-border bg-background">
-        {pitches.map(p => <div key={p} className="h-[18px] px-1 text-[8px] text-muted-foreground border-b border-border/30">{p % 12 === 0 ? `C${Math.floor(p/12)-1}` : ''}</div>)}
+      <div className="w-12 shrink-0 overflow-hidden border-r border-border bg-background" aria-label="Piano keyboard">
+        {pitches.map(p => {
+          const black = [1,3,6,8,10].includes(p % 12);
+          return <button key={p} type="button" aria-label={`Play MIDI note ${p}`} title={`Play MIDI note ${p}`} onPointerDown={() => previewNote(p)} onPointerUp={stopPreviewVoices} onPointerCancel={stopPreviewVoices} onPointerLeave={stopPreviewVoices} className={`block w-full h-[18px] px-1 text-[8px] text-left border-b border-border/30 active:bg-primary active:text-primary-foreground ${black ? 'bg-foreground/80 text-background' : 'bg-background text-muted-foreground'}`}>{p % 12 === 0 ? `C${Math.floor(p/12)-1}` : ''}</button>;
+        })}
       </div>
       <div className="overflow-auto flex-1">
         <div onDoubleClick={addNote} className="relative cursor-crosshair" style={{ width: totalBeats * BEAT_W, height: pitches.length * ROW_H, backgroundSize: `${BEAT_W/4}px ${ROW_H}px`, backgroundImage: 'linear-gradient(to right, hsl(var(--border)/.35) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border)/.25) 1px, transparent 1px)' }}>

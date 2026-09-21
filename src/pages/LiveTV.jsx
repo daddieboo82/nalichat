@@ -52,7 +52,24 @@ export default function LiveTV() {
     const video = videoRef.current;
     if (!video || !selected?.url) return undefined;
     const isHls = /\.m3u8(?:$|[?#])/i.test(selected.url);
-    if (!isHls || video.canPlayType("application/vnd.apple.mpegurl")) return undefined;
+    if (!isHls) return undefined;
+
+    // Safari/iOS supports HLS natively. The JSX intentionally leaves src empty
+    // for HLS URLs, so native-HLS browsers must receive the source here.
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      setError("");
+      video.src = selected.url;
+      video.load();
+      video.play().catch(() => {
+        // A user gesture may still be required; native controls remain available.
+      });
+      return () => {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+      };
+    }
+
     if (!Hls.isSupported()) { setError("This browser cannot play this HLS stream."); return undefined; }
     const hls = new Hls({
       enableWorker: true,

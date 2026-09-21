@@ -131,15 +131,7 @@ export default function LiveTV() {
   const loadFreeTv = async () => {
     setError("");
     const providers = [
-      "https://iptv-org.github.io/iptv/index.m3u",
-      "https://iptv-org.github.io/iptv/categories/movies.m3u",
-      "https://iptv-org.github.io/iptv/categories/news.m3u",
-      "https://iptv-org.github.io/iptv/categories/sports.m3u",
-      "https://iptv-org.github.io/iptv/categories/music.m3u",
-      "https://iptv-org.github.io/iptv/categories/kids.m3u",
-      "https://iptv-org.github.io/iptv/categories/documentary.m3u",
-      "https://iptv-org.github.io/iptv/categories/entertainment.m3u",
-      "https://iptv-org.github.io/iptv/categories/weather.m3u",
+      "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8",
     ];
     try {
       const results = await Promise.allSettled(providers.map(async (url) => {

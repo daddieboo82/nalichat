@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Hls from "hls.js";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Heart, ListVideo, PictureInPicture2, Play, Upload } from "lucide-react";
+import { ArrowLeft, Heart, ListVideo, PictureInPicture2, Play, Upload, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -83,6 +83,17 @@ export default function LiveTV() {
     try { await video.requestPictureInPicture(); setError(""); } catch { setError("Picture-in-picture could not be started."); }
   };
 
+  const loadFreeTv = async () => {
+    setError("");
+    try {
+      const response = await fetch("https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8");
+      if (!response.ok) throw new Error("Playlist unavailable");
+      loadText(await response.text());
+    } catch {
+      setError("Free TV could not be loaded right now. You can still import an M3U/M3U8 playlist.");
+    }
+  };
+
   const loadFile = async (file) => {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
@@ -97,7 +108,7 @@ export default function LiveTV() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Inspiration break</p>
-          <h1 className="font-heading text-3xl font-black">Live TV</h1>
+          <h1 className="font-heading text-3xl font-black">NaliVision</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Watch channels you are authorized to access, then jump back into your recording session.
           </p>
@@ -107,7 +118,8 @@ export default function LiveTV() {
 
       <section className="rounded-2xl border bg-card p-4">
         <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import M3U</Button>
+          <Button type="button" onClick={loadFreeTv}><Tv className="mr-2 h-4 w-4" />Free TV</Button>
+          <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import M3U</Button>
           <input ref={fileRef} className="hidden" type="file" accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl" onChange={(e) => loadFile(e.target.files?.[0])} />
           <Input className="min-w-52 flex-1" placeholder="Search imported channels" value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
@@ -126,7 +138,7 @@ export default function LiveTV() {
             </div>
           ) : (
             <div className="flex aspect-video items-center justify-center p-8 text-center text-sm text-white/60">
-              Import an authorized M3U playlist to start your inspiration break.
+              Choose Free TV or import an authorized M3U playlist to start your inspiration break.
             </div>
           )}
         </section>

@@ -1,10 +1,23 @@
 import { expect, test } from '@playwright/test';
 
+const email = process.env.E2E_USER_EMAIL;
+const password = process.env.E2E_USER_PASSWORD;
+
+async function login(page) {
+  await page.goto('/login');
+  await page.locator('#email').fill(email);
+  await page.locator('#password').fill(password);
+  await page.getByRole('button', { name: /^log in$/i }).click();
+  await page.waitForURL((url) => new URL(url).pathname !== '/login', { timeout: 30000 });
+}
+
 test.describe('NaliVision E2E audit', () => {
+  test.skip(!(email && password), 'Set E2E_USER_EMAIL and E2E_USER_PASSWORD.');
   test('loads Free TV, lists channels, and plays a browser-compatible HLS channel', async ({ page }) => {
     const browserErrors = [];
     page.on('pageerror', (error) => browserErrors.push(error.message));
 
+    await login(page);
     await page.goto('/live-tv');
     await expect(page.getByRole('heading', { name: 'NaliVision' })).toBeVisible();
 

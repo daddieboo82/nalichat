@@ -2137,6 +2137,41 @@ export default function Studio() {
     }
   };
 
+  const handleSaveSessionToDevice = () => {
+    try {
+      const portableTracks = tracks.map((track) => portableTrackState(track, track.audioUrl || track.file_url || ""));
+      const payload = {
+        format: "nalichat-studio-session",
+        version: 1,
+        saved_at: new Date().toISOString(),
+        project: {
+          title: projectName.trim() || "Untitled Project",
+          bpm,
+          key: songKey,
+          timeSignature,
+          masterVolume,
+          masterFx: masterFx || {},
+          audioSettings,
+          tracks: portableTracks,
+        },
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const safeName = (projectName.trim() || "Untitled Project").replace(/[^a-z0-9_-]+/gi, "_");
+      link.href = url;
+      link.download = `${safeName}.nalistudio.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Studio session saved to this device.");
+    } catch (error) {
+      console.error("Device session save failed", error);
+      toast.error("Could not save this Studio session to your device.");
+    }
+  };
+
   const [isDownloading, setIsDownloading] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState('wav');
@@ -2401,9 +2436,21 @@ export default function Studio() {
             <Button variant="outline" className="gap-2 rounded-xl border-primary/30 bg-primary/5 text-primary hover:bg-primary/10" onClick={() => navigate('/files')}>
               <FolderOpen className="w-4 h-4" /> File Hub
             </Button>
-            <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={handleSave}>
-              <Save className="w-4 h-4" /> Save
-            </Button>
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2 rounded-xl border-border/50">
+                  <Save className="w-4 h-4" /> Save
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={handleSave} className="cursor-pointer py-2">
+                  <Save className="w-4 h-4 mr-2" /> Save to My Sessions
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSaveSessionToDevice} className="cursor-pointer py-2">
+                  <Download className="w-4 h-4 mr-2" /> Save Session to Device
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" className="gap-2 rounded-xl border-border/50" onClick={() => {
               const selected = tracks.find(t => selectedTrackIds.includes(t.id));
               if (!selected || !['midi','instrument'].includes(selected.type)) return toast.error('Select a MIDI or Software Instrument track first');

@@ -108,7 +108,10 @@ async function listPersistedTracks(projectId) {
 export default function Studio() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const studioOpenTrackedRef = useRef(false);
   useEffect(() => {
+    if (studioOpenTrackedRef.current) return;
+    studioOpenTrackedRef.current = true;
     trackProductEvent("studio_open", { route: "/studio", user_id: user?.id || "" });
   }, [user?.id]);
   const studioStorageOwner = user?.id || null;

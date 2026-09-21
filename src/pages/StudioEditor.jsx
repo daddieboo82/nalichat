@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Play, Pause, Share2, Loader2, Wand2, Music, Zap, Radio } from "lucide-react";
 import { motion } from "framer-motion";
@@ -94,15 +93,7 @@ export default function StudioEditor() {
 
   return (
     <div className="h-full flex flex-col bg-background">
-      <Tabs defaultValue="editor" className="h-full flex flex-col">
-        <TabsList className="no-scrollbar w-full shrink-0 justify-start gap-1 overflow-x-auto rounded-none border-b border-border/70 bg-card/80 px-3 py-2.5 backdrop-blur-xl sm:px-6 sm:py-3">
-          <TabsTrigger value="editor" className="min-h-10 shrink-0 rounded-xl px-3 sm:px-4">Studio Editor</TabsTrigger>
-          <TabsTrigger value="mastering" className="min-h-10 shrink-0 rounded-xl px-3 sm:px-4">AI Mastering</TabsTrigger>
-          <TabsTrigger value="library" className="min-h-10 shrink-0 rounded-xl px-3 sm:px-4">Processed Sessions</TabsTrigger>
-        </TabsList>
-
-        {/* Editor Tab */}
-        <TabsContent value="editor" className="flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
+      <div className="flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
           <div className="max-w-4xl mx-auto space-y-6">
             <div className="ui-surface rounded-3xl border border-border/80 bg-card p-5 sm:p-8">
               <div className="mb-6 flex items-start justify-between gap-4">
@@ -275,26 +266,7 @@ export default function StudioEditor() {
               </motion.div>
             )}
           </div>
-        </TabsContent>
-
-        {/* Mastering Tab */}
-        <TabsContent value="mastering" className="flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
-          <div className="max-w-4xl mx-auto text-center text-muted-foreground py-20">
-            <Zap className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p className="font-heading font-semibold mb-2">AI Mastering Engine</p>
-            <p className="text-sm">Upload a session in the Editor tab to apply professional mastering</p>
-          </div>
-        </TabsContent>
-
-        {/* Library Tab */}
-        <TabsContent value="library" className="flex-1 min-h-0 overflow-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6">
-          <div className="max-w-4xl mx-auto text-center text-muted-foreground py-20">
-            <Music className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p className="font-heading font-semibold mb-2">Your Processed Sessions</p>
-            <p className="text-sm">Sessions you've processed will appear here</p>
-          </div>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   );
 }

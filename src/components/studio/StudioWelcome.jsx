@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, Plus, Undo, Layers, ChevronLeft } from 'lucide-react';
+import { Mic, Plus, Undo, Layers, ChevronLeft, FolderOpen } from 'lucide-react';
 
 export default function StudioWelcome({
   hasAutosave,
@@ -28,6 +28,10 @@ export default function StudioWelcome({
             <Undo className="w-5 h-5 mr-3" /> Pick Up Where I Left Off
           </Button>
           
+          <Button onClick={() => navigate('/projects-summary')} className="ui-hover min-h-14 w-full justify-start rounded-xl text-base font-semibold border-primary/40 text-primary" variant="outline">
+            <FolderOpen className="w-5 h-5 mr-3" /> Browse My Studio Sessions
+          </Button>
+
           <Button onClick={handleLoadDemo} className="ui-hover min-h-14 w-full justify-start rounded-xl text-base font-medium" variant="secondary">
             <Layers className="w-5 h-5 mr-3" /> Load Demo Project
           </Button>

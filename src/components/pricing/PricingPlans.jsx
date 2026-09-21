@@ -241,7 +241,7 @@ export default function PricingPlans({
   }
 
   const paidSubscriber = subscription.hasPaidAccess;
-  const paidCta = subscription.trialEligible ? copy.trialCta : "Choose plan";
+  const paidCta = "Choose plan";
 
   return (
     <div className="h-full min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background">
@@ -250,8 +250,11 @@ export default function PricingPlans({
           <p className="text-sm font-bold uppercase tracking-widest text-primary">NaliChat plans</p>
           <h1 className="mt-3 font-heading text-3xl font-black tracking-tight sm:text-5xl">{copy.headline}</h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">{copy.subhead}</p>
-          <p className="mt-4 font-semibold">Create more. Send bigger files. Unlock NALI.ai. Stay month-to-month.</p>
-          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">Monthly Premium starts at just $7.99 with no long-term commitment. Upgrade for larger file transfers, advanced messaging, AI-powered Studio tools, and more NALI.ai access.</p>
+          <p className="mt-4 font-semibold">Make music. Find collaborators. Finish songs. Release more.</p>
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">Premium starts at $7.99/month. Unlock more NALI.ai, larger creative transfers, advanced messaging, and deeper Studio tools. Cancel anytime in Settings.</p>
+          <div className="mx-auto mt-5 max-w-2xl rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+            <span className="font-bold">Why creators upgrade:</span> fewer app switches, more room for creative files, and premium tools available right where the work happens.
+          </div>
           <div className="mx-auto mt-6 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-5">{[[MessageSquare,"Messages"],[Music2,"Studio"],[Files,"File sharing"],[Sparkles,"NALI.ai"],[ShieldCheck,"Privacy"]].map(([Icon,label]) => <div key={label} className="rounded-xl border border-border/60 bg-card/60 px-3 py-2 text-xs font-semibold"><Icon className="mx-auto mb-1 h-4 w-4 text-primary" />{label}</div>)}</div>
         </div>
 

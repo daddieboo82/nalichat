@@ -243,13 +243,13 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
 
                    {post.file_url && !canDownload && (
                      <Link
-                       to="/pricing"
+                       to="/pricing?source=explore_download&feature=media.download"
                        onClick={() => onOpenChange(false)}
                        title="Downloads are available with Premium"
                        className="ui-hover flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 px-5 text-sm text-white/80 transition-colors hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-white/40"
                      >
                        <Lock className="w-4 h-4" />
-                       Compare plans for download
+                       Unlock downloads with Premium
                      </Link>
                    )}
                    

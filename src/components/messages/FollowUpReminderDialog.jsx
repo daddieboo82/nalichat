@@ -187,12 +187,12 @@ export default function FollowUpReminderDialog({
             </p>
             <Button asChild className="mt-5">
               <Link
-                to="/pricing"
+                to="/pricing?source=follow_up_reminder&feature=reminders.follow_up"
                 onClick={() => trackFollowUpEvent("follow_up_prompt_convert", {
                   source: sourceMessage ? "message_action" : "conversation_menu",
                 })}
               >
-                View Premium Plus
+                Unlock follow-up reminders
               </Link>
             </Button>
           </div>

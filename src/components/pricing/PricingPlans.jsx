@@ -117,7 +117,8 @@ export default function PricingPlans({
     const attribution = getMarketingAttribution();
     trackPaywallEvent("paywall_view", {
       variant,
-      source: "pricing",
+      source: upgradeSource || "pricing",
+      feature: upgradeFeature || undefined,
       campaign_source: attribution?.utm_source || undefined,
       campaign_medium: attribution?.utm_medium || undefined,
       campaign_name: attribution?.utm_campaign || undefined,
@@ -134,7 +135,7 @@ export default function PricingPlans({
     } catch {
       // Checkout remains usable even when session storage is blocked.
     }
-  }, [variant]);
+  }, [variant, upgradeFeature, upgradeSource]);
 
   const continueFree = () => {
     trackPaywallEvent("paywall_secondary_cta", { variant, plan: "free", source: "pricing", ...campaignContext() });

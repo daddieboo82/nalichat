@@ -183,6 +183,7 @@ export default function Studio() {
   const [newTrackName, setNewTrackName] = useState("");
   const [creatingTrack, setCreatingTrack] = useState(false);
   const [newTrackType, setNewTrackType] = useState('audio');
+  const [newTrackCount, setNewTrackCount] = useState(1);
   const [newTrackInstrument, setNewTrackInstrument] = useState('default');
   const [newTrackMidiChannel, setNewTrackMidiChannel] = useState('1');
   const [selectedTrackIds, setSelectedTrackIds] = useState([]);
@@ -1757,22 +1758,31 @@ export default function Studio() {
     const newId = nextTrackId(tracks);
     setNewTrackName(`New Track ${newId}`);
     setNewTrackType('audio');
+    setNewTrackCount(1);
     setCreatingTrack(true);
   };
   const handleCreateTrackConfirm = () => {
     if (!newTrackName.trim()) return;
-    const newId = nextTrackId(tracks);
+    const count = Math.max(1, Math.min(64, Number(newTrackCount) || 1));
+    const available = Math.max(0, maxTracks - tracks.length);
+    if (available < count) return toast.error(`Only ${available} more track${available === 1 ? '' : 's'} can be added to this session.`);
     const isInstrument = newTrackType === 'midi' || newTrackType === 'instrument';
-    setTracksWithHistory([...tracks, {
-      id: newId, name: newTrackName.trim(), type: newTrackType,
-      color: ["bg-green-500", "bg-blue-500", "bg-purple-500", "bg-yellow-500", "bg-pink-500"][newId % 5],
-      volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0,
-      // Instrument choice is persisted so the track can actually be rendered later.
-      ...(isInstrument ? { instrument: newTrackInstrument, midiChannel: newTrackMidiChannel, midiNotes: [] } : {}),
-    }]);
+    let nextId = nextTrackId(tracks);
+    const createdTracks = Array.from({ length: count }, (_, index) => {
+      const id = nextId++;
+      return {
+        id,
+        name: count === 1 ? newTrackName.trim() : `${newTrackName.trim()} ${index + 1}`,
+        type: newTrackType,
+        color: ["bg-green-500", "bg-blue-500", "bg-purple-500", "bg-yellow-500", "bg-pink-500"][id % 5],
+        volume: 75, pan: 50, muted: false, solo: false, armed: false, waveform: [], startTime: 0, duration: 0,
+        ...(isInstrument ? { instrument: newTrackInstrument, midiChannel: newTrackMidiChannel, midiNotes: [] } : {}),
+      };
+    });
+    setTracksWithHistory([...tracks, ...createdTracks]);
     setCreatingTrack(false);
-    setSelectedTrackIds([newId]);
-    toast.success(isInstrument
+    setSelectedTrackIds(createdTracks.map(track => track.id));
+    toast.success(count > 1 ? `${count} tracks added` : isInstrument
       ? `${getInstrument(newTrackInstrument).name} track added — press Render to generate audio`
       : "Track added");
   };
@@ -2044,52 +2054,40 @@ export default function Studio() {
   };
 
   const handleFileChange = async (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (file) {
-      const validation = validateUpload(file, { accept: "audio" });
-      if (!validation.ok) {
-        toast.error(validation.error);
-        e.target.value = null;
-        return;
-      }
-      if (tracks.length >= maxTracks) {
-        toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
-        e.target.value = null;
-        return;
-      }
-      
-      const newId = nextTrackId(tracks);
-      const colors = ["bg-green-500"];
-      const fileUrl = URL.createObjectURL(file);
-
-      toast.info(`Importing ${file.name}...`);
-      const { waveform, duration } = await decodeWaveform(file);
-      
-      setTracksWithHistory([...tracks, {
-        id: newId,
-        name: file.name,
-        color: colors[newId % colors.length],
-        volume: 75,
-        pan: 50,
-        muted: false,
-        solo: false,
-        armed: false,
-        waveform,
-        startTime: 0,
-        duration: Math.max(1, duration),
-        audioUrl: fileUrl,
-        locked: false,
-        grouped: false,
-        showAutomation: false,
-        elasticAudio: false,
-        fadeIn: 0,
-        fadeOut: 0
-      }]);
-      toast.success(`Imported ${file.name}`);
-      trackProductEvent("studio_audio_import", {
-        file_type: file.type || "unknown",
-        duration_seconds: Math.round(Math.max(1, duration)),
+    const files = Array.from(e.target.files || []);
+    if (files.length) {
+      const validFiles = files.filter((file) => {
+        const validation = validateUpload(file, { accept: "audio" });
+        if (!validation.ok) toast.error(`${file.name}: ${validation.error}`);
+        return validation.ok;
       });
+      const available = Math.max(0, maxTracks - tracks.length);
+      const filesToImport = validFiles.slice(0, available);
+      if (!filesToImport.length) {
+        if (available === 0) toast.error(`Track limit reached (${maxTracks}). You have reached the current studio limit.`);
+        e.target.value = null;
+        return;
+      }
+      if (validFiles.length > available) toast.error(`Only the first ${available} selected files can fit in this session.`);
+      toast.info(`Importing ${filesToImport.length} track${filesToImport.length === 1 ? '' : 's'}...`);
+      let nextId = nextTrackId(tracks);
+      const imported = [];
+      for (const file of filesToImport) {
+        const fileUrl = URL.createObjectURL(file);
+        const { waveform, duration } = await decodeWaveform(file);
+        imported.push({
+          id: nextId++, name: file.name, color: "bg-green-500", volume: 75, pan: 50,
+          muted: false, solo: false, armed: false, waveform, startTime: 0,
+          duration: Math.max(1, duration), audioUrl: fileUrl, locked: false, grouped: false,
+          showAutomation: false, elasticAudio: false, fadeIn: 0, fadeOut: 0
+        });
+        trackProductEvent("studio_audio_import", { file_type: file.type || "unknown", duration_seconds: Math.round(Math.max(1, duration)) });
+      }
+      setTracksWithHistory([...tracks, ...imported]);
+      setSelectedTrackIds(imported.map(track => track.id));
+      toast.success(`Imported ${imported.length} track${imported.length === 1 ? '' : 's'}`);
+      const file = filesToImport[0];
+      const duration = imported[0]?.duration || 0;
       try {
         const key = `nali_activation_first_upload:${user?.id || "unknown"}`;
         if (localStorage.getItem(key) !== "1") {
@@ -2356,7 +2354,7 @@ export default function Studio() {
 
 
           <div className="flex flex-wrap items-center justify-end gap-2 pl-2 min-w-0">
-            <input type="file" ref={fileInputRef} className="hidden" accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} />
+            <input type="file" ref={fileInputRef} className="hidden" multiple accept="audio/*,.wav,.wave,.mp3,.mid,.midi,.flac,.ogg,.m4a,.aac,.wma,.aiff,.aif" onChange={handleFileChange} />
             <Button id="milestones-btn" onClick={() => setShowMilestones(true)} variant="outline" size="sm" className="gap-2 rounded-xl border-border/50 hover:bg-secondary transition-colors">
               <ListTodo className="w-4 h-4" /> Milestones
             </Button>
@@ -3221,6 +3219,7 @@ export default function Studio() {
         creatingTrack={creatingTrack} setCreatingTrack={setCreatingTrack}
         newTrackName={newTrackName} setNewTrackName={setNewTrackName}
         newTrackType={newTrackType} setNewTrackType={setNewTrackType}
+        newTrackCount={newTrackCount} setNewTrackCount={setNewTrackCount}
         newTrackInstrument={newTrackInstrument} setNewTrackInstrument={setNewTrackInstrument}
         newTrackMidiChannel={newTrackMidiChannel} setNewTrackMidiChannel={setNewTrackMidiChannel}
         handleCreateTrackConfirm={handleCreateTrackConfirm}

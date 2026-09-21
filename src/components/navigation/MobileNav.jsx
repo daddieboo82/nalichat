@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { Home, Compass, MessageSquare, User, Plus } from "lucide-react";
+import { Home, Compass, MessageSquare, User, Plus, Tv } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/AuthContext";
 const TABS = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Compass, label: "Explore", path: "/explore" },
+  { icon: Tv, label: "TV", path: "/live-tv" },
   { icon: Plus, label: "New Project", path: "/projects-summary?new=true", isAction: true },
   { icon: MessageSquare, label: "Messages", path: "/messages" },
   { icon: User, label: "Profile", path: "/profile" },
@@ -20,6 +21,7 @@ const storageKeyFor = (userId) => `mobile_nav_stacks:${userId || "anonymous"}`;
 function getTabForPath(pathname) {
   if (pathname === "/" || pathname.startsWith("/playlist")) return "/";
   if (pathname.startsWith("/explore")) return "/explore";
+  if (pathname.startsWith("/live-tv")) return "/live-tv";
   if (pathname.startsWith("/messages")) return "/messages";
   if (pathname.startsWith("/profile")) return "/profile";
   return null;

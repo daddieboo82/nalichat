@@ -22,6 +22,11 @@ function parseM3u(text) {
       try {
         const url = new URL(line);
         if (!["http:", "https:"].includes(url.protocol)) throw new Error("Unsupported protocol");
+        // NaliVision currently plays direct browser-compatible media/HLS URLs.
+        // Skip webpage links (for example YouTube/Twitch channel pages) that are not media streams.
+        const host = url.hostname.toLowerCase();
+        const isKnownWebPage = host === "youtube.com" || host.endsWith(".youtube.com") || host === "youtu.be" || host === "twitch.tv" || host.endsWith(".twitch.tv");
+        if (isKnownWebPage) throw new Error("Webpage URL is not a direct stream");
         channels.push({ ...meta, url: url.href });
       } catch {}
       meta = null;

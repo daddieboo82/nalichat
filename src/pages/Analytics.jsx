@@ -211,19 +211,36 @@ export default function Analytics() {
                 </div>
               ))}
             </div>
-            <div className="mt-5 border-t border-border/60 pt-4">
-              <div className="mb-3">
-                <h3 className="font-heading text-sm font-semibold">Messenger Activation</h3>
-                <p className="mt-1 text-xs text-muted-foreground">See whether creator discovery is turning into conversations.</p>
+            <div className="mt-5 grid gap-5 border-t border-border/60 pt-4 lg:grid-cols-2">
+              <div>
+                <div className="mb-3">
+                  <h3 className="font-heading text-sm font-semibold">Messenger Activation</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">See whether creator discovery is turning into conversations.</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {messengerActivation.map((step, index) => (
+                    <div key={step.label} className="rounded-2xl border border-border/60 bg-background/40 p-3">
+                      <p className="text-xs font-medium text-muted-foreground">{step.label}</p>
+                      <p className="mt-2 text-xl font-heading font-bold tabular-nums">{step.count}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{index === 0 ? "Baseline" : `${step.rate}% of discovery viewers`}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {messengerActivation.map((step, index) => (
-                  <div key={step.label} className="rounded-2xl border border-border/60 bg-background/40 p-3">
-                    <p className="text-xs font-medium text-muted-foreground">{step.label}</p>
-                    <p className="mt-2 text-xl font-heading font-bold tabular-nums">{step.count}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{index === 0 ? "Baseline" : `${step.rate}% of discovery viewers`}</p>
-                  </div>
-                ))}
+              <div>
+                <div className="mb-3">
+                  <h3 className="font-heading text-sm font-semibold">Studio Activation</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">Measure whether opening Studio turns into importing audio.</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {studioActivation.map((step, index) => (
+                    <div key={step.label} className="rounded-2xl border border-border/60 bg-background/40 p-3">
+                      <p className="text-xs font-medium text-muted-foreground">{step.label}</p>
+                      <p className="mt-2 text-xl font-heading font-bold tabular-nums">{step.count}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{index === 0 ? "Baseline" : `${step.rate}% of Studio openers`}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </Card>

@@ -7,7 +7,7 @@ const LEGACY_STORAGE_KEY = "nali_recent_pages";
 const storageKeyFor = (userId) => `nali_recent_pages:${userId || "anonymous"}`;
 const MAX_ITEMS = 4;
 // Paths that shouldn't be tracked (transient/auth pages)
-const EXCLUDE = ["/login", "/register", "/forgot-password", "/reset-password", "/onboarding"];
+const EXCLUDE = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/onboarding"];
 
 const ICONS = {
   "/": "🏠",
@@ -44,7 +44,12 @@ export default function RecentlyVisited({ onNavigate, currentPath }) {
           sessionStorage.removeItem(LEGACY_STORAGE_KEY);
         }
       }
-      setRecent(JSON.parse(raw || "[]"));
+      const parsed = JSON.parse(raw || "[]");
+      // Plaza is a navigation home, not a storefront destination. Remove legacy
+      // entries so Recent stays useful after the NaliBase hub migration.
+      const cleaned = parsed.filter(path => path !== "/");
+      if (cleaned.length !== parsed.length) sessionStorage.setItem(storageKey, JSON.stringify(cleaned));
+      setRecent(cleaned);
     } catch { setRecent([]); }
   }, [currentPath, storageKey, user?.id]);
 
@@ -82,7 +87,7 @@ export default function RecentlyVisited({ onNavigate, currentPath }) {
             )}
           >
             <span className="text-sm">{ICONS[path] || "📄"}</span>
-            <span className="capitalize">{path === "/" ? "Home" : path.split("/")[1].replace(/-/g, " ")}</span>
+            <span className="capitalize">{path.split("/")[1].replace(/-/g, " ")}</span>
           </button>
         ))}
       </div>

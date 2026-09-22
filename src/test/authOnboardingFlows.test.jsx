@@ -160,7 +160,7 @@ describe('auth and onboarding flows', () => {
     unmount();
     renderInRouter(<Register />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Continue with Google/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Join free with Google/i }));
     expect(sessionStorage.getItem('is_new_user')).toBe('true');
     expect(mockBase44.auth.loginWithProvider).toHaveBeenLastCalledWith('google', '/');
   });

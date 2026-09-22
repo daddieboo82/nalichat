@@ -349,6 +349,7 @@ export default function Home() {
         </motion.div>
       </section>
 
+      {!user && <>
       {/* — Pillar pills — */}
       <section className="relative z-10 overflow-hidden border-y border-border/70 bg-card/50 py-3 backdrop-blur-xl sm:py-4">
         <motion.div
@@ -731,6 +732,8 @@ export default function Home() {
             </div>
           </div>
         </motion.div>
+
+      </>}
 
         {!user && (
           <footer className="pb-4 text-center text-sm text-muted-foreground">

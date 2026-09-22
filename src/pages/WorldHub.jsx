@@ -3,6 +3,7 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, MessageSquare, Music, Compass, FolderKanban, Video, Trophy, Users, UserPlus, Mic, Wand2, ListMusic, BarChart3, FolderOpen, Upload, Images, Film, Swords, Medal, Rocket, UserRound, Map, Sparkles, Store, Building2, Navigation, MapPin, Radio, Clock3 } from 'lucide-react';
 import { trackProductEvent } from '@/lib/productAnalytics';
+import { useAuth } from '@/lib/AuthContext';
 import { rememberWorldContext } from '@/lib/nalibaseWorldContext';
 
 const worlds = {
@@ -97,10 +98,11 @@ function WorldSplash({world,onComplete}) {
 }
 
 export default function WorldHub(){
+  const { user }=useAuth();
   const {worldId}=useParams(); const world=worlds[worldId]; const [splash,setSplash]=useState(true);
   const finishSplash=useCallback(()=>setSplash(false),[]);
   useEffect(()=>setSplash(true),[worldId]);
-  useEffect(()=>{ if(world) rememberWorldContext(worldId); },[worldId,world]);
+  useEffect(()=>{ if(world) rememberWorldContext(worldId,user?.id); },[worldId,world,user?.id]);
   if(!world) return <Navigate to="/" replace/>;
   const WorldIcon=world.icon;
   return <>

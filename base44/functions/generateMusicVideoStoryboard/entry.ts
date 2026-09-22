@@ -35,11 +35,14 @@ Return ONLY JSON: {"summary":"...","scenes":[{"title":"...","prompt":"...","moti
 Exactly ${count} scenes. Every prompt must describe an original, copyright-safe, high-detail 16:9 animation frame with consistent characters/world, cinematic lighting, no text/logos/celebrity likeness. Motion describes camera/parallax/particle movement. Make scenes progress as one continuous video and reflect the lyrics/mood.`;
   const plan=cleanJson(await base44.asServiceRole.integrations.Core.InvokeLLM({prompt}));
   const scenes=Array.isArray(plan.scenes)?plan.scenes.slice(0,count):[];
+  if(!scenes.length) return Response.json({error:'AI could not create a storyboard for this song. Please try again.'},{status:502});
   const generated=[];
   for(let i=0;i<scenes.length;i++){
-    const s=scenes[i]||{};
-    const image=await base44.asServiceRole.integrations.Core.GenerateImage({prompt:String(s.prompt||'cinematic original animated music video scene')});
-    generated.push({id:i+1,title:String(s.title||`Scene ${i+1}`),prompt:String(s.prompt||''),motion:String(s.motion||'slow cinematic push-in'),image_url:image?.url||''});
+    const s=scenes[i]||{}, scenePrompt=String(s.prompt||'cinematic original animated music video scene');
+    let imageUrl='';
+    try { const image=await base44.asServiceRole.integrations.Core.GenerateImage({prompt:scenePrompt}); imageUrl=String(image?.url||''); }
+    catch(e){ console.error(`Music video scene ${i+1} image failed`,e instanceof Error?e.message:e); }
+    generated.push({id:i+1,title:String(s.title||`Scene ${i+1}`),prompt:scenePrompt,motion:String(s.motion||'slow cinematic push-in'),image_url:imageUrl});
   }
   return Response.json({summary:String(plan.summary||''),transcript,scenes:generated});
  } catch(error) {

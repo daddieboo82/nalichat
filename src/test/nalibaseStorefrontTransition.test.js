@@ -9,6 +9,6 @@ describe('NaliBase storefront entry transition',()=>{
     expect(layout).toContain('<StorefrontEntryTransition />');
     expect(transition).toContain('Entering storefront');
     expect(transition).toContain('{world.label} MALL');
-    expect(transition).toContain('getWorldForPath');
+    expect(transition).toContain('resolveWorldForLocation');
   });
 });

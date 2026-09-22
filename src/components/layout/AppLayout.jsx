@@ -14,7 +14,8 @@ import GlobalInviteDialog from "@/components/GlobalInviteDialog";
 import GlobalMessageDialog from "@/components/GlobalMessageDialog";
 import GlobalHelpDialog from "@/components/GlobalHelpDialog";
 import GlobalAudioPlayer from "@/components/audio/GlobalAudioPlayer";
-import WorldContinuityBar from "@/components/layout/WorldContinuityBar";\nimport WorldAtmosphere from "@/components/layout/WorldAtmosphere";
+import WorldContinuityBar from "@/components/layout/WorldContinuityBar";
+import WorldAtmosphere from "@/components/layout/WorldAtmosphere";
 
 export default function AppLayout() {
   const location = useLocation();

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
-import { getWorldForPath } from "@/lib/nalibaseWorldContext";
+import { resolveWorldForLocation } from "@/lib/nalibaseWorldContext";
 
 const TABS = [
   { icon: Home, label: "Plaza", path: "/" },
@@ -58,7 +58,7 @@ export default function MobileNav() {
   const path = location.pathname;
   const currentEntry = path + location.search;
 
-  const activeWorld = getWorldForPath(path, location.state?.fromWorld);
+  const activeWorld = resolveWorldForLocation(path, location.state?.fromWorld);
   const isActive = (tabPath) => {
     if (tabPath === "/") return path === "/";
     const worldId = tabPath.startsWith("/world/") ? tabPath.slice(7) : "";

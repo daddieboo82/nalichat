@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
+import { getWorldForPath } from "@/lib/nalibaseWorldContext";
 
 const TABS = [
   { icon: Home, label: "Plaza", path: "/" },
@@ -18,7 +19,8 @@ const TABS = [
 const LEGACY_STORAGE_KEY = "mobile_nav_stacks";
 const storageKeyFor = (userId) => `mobile_nav_stacks:${userId || "anonymous"}`;
 
-function getTabForPath(pathname) {
+function getTabForPath(pathname, preferredWorld = "") {
+  if (preferredWorld) return `/world/${preferredWorld}`;
   if (pathname === "/") return "/";
   if (pathname.startsWith("/world/connect") || pathname.startsWith("/messages") || pathname.startsWith("/profile")) return "/world/connect";
   if (pathname.startsWith("/world/create") || pathname.startsWith("/studio") || pathname.startsWith("/record")) return "/world/create";
@@ -56,19 +58,24 @@ export default function MobileNav() {
   const path = location.pathname;
   const currentEntry = path + location.search;
 
-  const isActive = (tabPath) => tabPath === "/" ? path === "/" : path.startsWith(tabPath);
+  const activeWorld = getWorldForPath(path, location.state?.fromWorld);
+  const isActive = (tabPath) => {
+    if (tabPath === "/") return path === "/";
+    const worldId = tabPath.startsWith("/world/") ? tabPath.slice(7) : "";
+    return path.startsWith(tabPath) || (!!worldId && activeWorld?.id === worldId);
+  };
 
   const [stacks, setStacks] = useState(() => loadStacks(storageKey, user?.id));
-  const activeTabRef = useRef(getTabForPath(path));
+  const activeTabRef = useRef(getTabForPath(path, location.state?.fromWorld));
 
   useEffect(() => {
     setStacks(loadStacks(storageKey, user?.id));
-    activeTabRef.current = getTabForPath(path);
-  }, [storageKey, user?.id]);
+    activeTabRef.current = getTabForPath(path, location.state?.fromWorld);
+  }, [storageKey, user?.id, path, location.state?.fromWorld]);
 
   // Track which tab is active and push navigation entries to the correct tab stack
   useEffect(() => {
-    const tab = getTabForPath(path);
+    const tab = getTabForPath(path, location.state?.fromWorld);
     if (tab === null) return; // Pages not owned by any tab (e.g. /studio, /settings) don't modify stacks
 
     const prev = activeTabRef.current;
@@ -96,7 +103,7 @@ export default function MobileNav() {
       saveStacks(storageKey, next);
       return next;
     });
-  }, [path, location.search, storageKey]);
+  }, [path, location.search, storageKey, location.state?.fromWorld]);
 
   const handleTap = (tabPath) => {
     const active = isActive(tabPath);

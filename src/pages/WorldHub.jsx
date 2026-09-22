@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, MessageSquare, Music, Compass, FolderKanban, Video, Trophy, Users, UserPlus, Mic, Wand2, ListMusic, BarChart3, FolderOpen, Upload, Images, Film, Swords, Medal, Rocket, UserRound, Map, Sparkles, Store, Building2, Navigation, MapPin, Radio, Clock3 } from 'lucide-react';
 import { trackProductEvent } from '@/lib/productAnalytics';
 import { useAuth } from '@/lib/AuthContext';
-import { rememberWorldContext } from '@/lib/nalibaseWorldContext';
+import { rememberWorldContext, WORLD_CONTEXTS } from '@/lib/nalibaseWorldContext';
 
 const worlds = {
   connect: {
@@ -13,10 +13,10 @@ const worlds = {
     glow:'from-pink-500/40 via-primary/15 to-transparent', orb:'from-pink-500 via-fuchsia-500 to-violet-700', icon:MessageSquare,
     landmarks:['Signal Tower','Creator Boulevard','Collab Plaza','Profile Heights'], scene:['Live conversations ripple across Signal Tower.','Creators are gathering on Creator Boulevard.','Collaboration rooms are open in Collab Plaza.'],
     districts:[
-      ['Messages','DMs, group conversations and real-time collaboration.','/messages',MessageSquare],
-      ['Creator Network','Discover creators and build your circle.','/explore',Users],
-      ['Your Profile','Show the world who you are and what you make.','/profile',UserRound],
-      ['Collaboration Projects','Keep shared creative work moving.','/projects-summary',UserPlus],
+      ['Messages','DMs, group conversations and real-time collaboration.',MessageSquare],
+      ['Creator Network','Discover creators and build your circle.',Users],
+      ['Your Profile','Show the world who you are and what you make.',UserRound],
+      ['Collaboration Projects','Keep shared creative work moving.',UserPlus],
     ]
   },
   create: {
@@ -25,10 +25,10 @@ const worlds = {
     glow:'from-cyan-500/40 via-blue-500/15 to-transparent', orb:'from-cyan-400 via-blue-500 to-indigo-700', icon:Music,
     landmarks:['Studio Core','Sound Lab','Art District','Playlist Terminal'], scene:['Studio Core is active with new sessions.','Sound Lab is ready for recording and mixing.','The Art District is open for release visuals.'],
     districts:[
-      ['NaliStudio','Record, arrange, edit and mix your music.','/studio',Music],
-      ['Quick Record','Capture an idea before it disappears.','/record',Mic],
-      ['Cover Art Lab','Create artwork for your next release.','/cover-art',Wand2],
-      ['Playlists','Organize music and build collections.','/playlists',ListMusic],
+      ['NaliStudio','Record, arrange, edit and mix your music.',Music],
+      ['Quick Record','Capture an idea before it disappears.',Mic],
+      ['Cover Art Lab','Create artwork for your next release.',Wand2],
+      ['Playlists','Organize music and build collections.',ListMusic],
     ]
   },
   discover: {
@@ -37,10 +37,10 @@ const worlds = {
     glow:'from-violet-500/40 via-fuchsia-500/15 to-transparent', orb:'from-violet-500 via-fuchsia-500 to-purple-800', icon:Compass,
     landmarks:['Discovery Grid','Sound Trails','Momentum Tower','Insight Observatory'], scene:['New signals are moving through the Discovery Grid.','Sound Trails are open for exploration.','Momentum Tower is tracking creator movement.'],
     districts:[
-      ['Explore','Browse tracks, creators and what is happening now.','/explore',Compass],
-      ['Playlists','Move through curated collections and sounds.','/playlists',ListMusic],
-      ['Leaderboard','See creators building momentum.','/leaderboard',Medal],
-      ['Creator Analytics','Understand your own reach and growth.','/analytics',BarChart3],
+      ['Explore','Browse tracks, creators and what is happening now.',Compass],
+      ['Playlists','Move through curated collections and sounds.',ListMusic],
+      ['Leaderboard','See creators building momentum.',Medal],
+      ['Creator Analytics','Understand your own reach and growth.',BarChart3],
     ]
   },
   share: {
@@ -49,10 +49,10 @@ const worlds = {
     glow:'from-emerald-500/40 via-teal-500/15 to-transparent', orb:'from-emerald-400 via-teal-500 to-cyan-800', icon:FolderKanban,
     landmarks:['File Vault','Project Dock','Transfer Bridge','Import Terminal'], scene:['The File Vault is ready for creative assets.','Project Dock is open for collaboration handoffs.','Transfer Bridge connects projects to creation.'],
     districts:[
-      ['File Vault','Access shared files and creative assets.','/files',FolderOpen],
-      ['Projects','Organize collaborations around the work.','/projects-summary',FolderKanban],
-      ['Messages','Send context with every handoff.','/messages',MessageSquare],
-      ['Studio Import','Bring shared material straight into creation.','/studio',Upload],
+      ['File Vault','Access shared files and creative assets.',FolderOpen],
+      ['Projects','Organize collaborations around the work.',FolderKanban],
+      ['Messages','Send context with every handoff.',MessageSquare],
+      ['Studio Import','Bring shared material straight into creation.',Upload],
     ]
   },
   visualize: {
@@ -61,10 +61,10 @@ const worlds = {
     glow:'from-orange-500/40 via-rose-500/15 to-transparent', orb:'from-orange-400 via-rose-500 to-red-800', icon:Video,
     landmarks:['Cinema Core','Cover Gallery','Scene Forge','Inspiration Deck'], scene:['Cinema Core is ready for visual concepts.','Cover Gallery is open for new identities.','Scene Forge is preparing cinematic ideas.'],
     districts:[
-      ['Music Video Lab','Build visual concepts and music-video experiences.','/music-video-generator',Film],
-      ['Cover Art Lab','Shape the visual identity of a release.','/cover-art',Images],
-      ['Studio','Return to the sound that drives the visual.','/studio',Music],
-      ['Explore','See what other creators are releasing.','/explore',Compass],
+      ['Music Video Lab','Build visual concepts and music-video experiences.',Film],
+      ['Cover Art Lab','Shape the visual identity of a release.',Images],
+      ['Studio','Return to the sound that drives the visual.',Music],
+      ['Explore','See what other creators are releasing.',Compass],
     ]
   },
   compete: {
@@ -73,10 +73,10 @@ const worlds = {
     glow:'from-yellow-500/40 via-amber-500/15 to-transparent', orb:'from-yellow-300 via-amber-500 to-orange-800', icon:Trophy,
     landmarks:['Challenge Arena','Rank Tower','Squad Grounds','Victory Hall'], scene:['Challenge Arena is open for competition.','Rank Tower is tracking creative momentum.','Squad Grounds are ready for teams.'],
     districts:[
-      ['Challenge Arena','Enter live creative challenges.','/challenges',Swords],
-      ['Leaderboards','Track rankings and standout creators.','/leaderboard',Trophy],
-      ['Create a Challenge','Launch a competition for the community.','/create-challenge',Rocket],
-      ['Squads','Build a team and compete together.','/squad',Users],
+      ['Challenge Arena','Enter live creative challenges.',Swords],
+      ['Leaderboards','Track rankings and standout creators.',Trophy],
+      ['Create a Challenge','Launch a competition for the community.',Rocket],
+      ['Squads','Build a team and compete together.',Users],
     ]
   },
 };
@@ -99,11 +99,11 @@ function WorldSplash({world,onComplete}) {
 
 export default function WorldHub(){
   const { user }=useAuth();
-  const {worldId}=useParams(); const world=worlds[worldId]; const [splash,setSplash]=useState(true);
+  const {worldId}=useParams(); const world=worlds[worldId]; const canonicalWorld=WORLD_CONTEXTS[worldId]; const [splash,setSplash]=useState(true);
   const finishSplash=useCallback(()=>setSplash(false),[]);
   useEffect(()=>setSplash(true),[worldId]);
   useEffect(()=>{ if(world) rememberWorldContext(worldId,user?.id); },[worldId,world,user?.id]);
-  if(!world) return <Navigate to="/" replace/>;
+  if(!world || !canonicalWorld) return <Navigate to="/" replace/>;
   const WorldIcon=world.icon;
   return <>
     <AnimatePresence>{splash&&<WorldSplash key={worldId} world={world} onComplete={finishSplash}/>}</AnimatePresence>
@@ -148,8 +148,8 @@ export default function WorldHub(){
             <div className="absolute inset-0 flex items-center justify-around">{world.landmarks.map(x=><div key={x} className="flex flex-col items-center gap-2"><MapPin className="h-4 w-4 text-white/30"/><span className="rounded-full bg-black/70 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-white/40">{x}</span></div>)}</div>
           </div>
           <div className="mb-8"><div className="flex items-center gap-2 text-white/40"><Building2 className="h-4 w-4"/><p className="text-xs font-black uppercase tracking-[.28em]">Inside the mall</p></div><h2 className="mt-2 font-heading text-3xl font-black sm:text-5xl">Walk the concourse. Choose a storefront.</h2><p className="mt-3 max-w-2xl text-sm text-white/50">Every storefront opens into a complete NaliBase experience while keeping you connected to this world.</p></div>
-          <div className="grid gap-5 md:grid-cols-2">{world.districts.map(([name,description,path,Icon],index)=><motion.div key={name} initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:index*.06}} whileHover={{y:-7,scale:1.01}}>
-            <Link id={"storefront-"+index} to={path} state={{fromWorld:worldId}} onClick={()=>trackProductEvent('post_login_action',{source:`${worldId}_world`,action:`open_${name.toLowerCase().replace(/\s+/g,'_')}`})} className="group relative flex min-h-64 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[.055] p-7 shadow-2xl backdrop-blur-2xl transition hover:border-white/25">
+          <div className="grid gap-5 md:grid-cols-2">{world.districts.map(([name,description,Icon],index)=><motion.div key={name} initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:index*.06}} whileHover={{y:-7,scale:1.01}}>
+            <Link id={"storefront-"+index} to={canonicalWorld.storefronts[index].path} state={{fromWorld:worldId}} onClick={()=>trackProductEvent('post_login_action',{source:`${worldId}_world`,action:`open_${name.toLowerCase().replace(/\s+/g,'_')}`})} className="group relative flex min-h-64 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[.055] p-7 shadow-2xl backdrop-blur-2xl transition hover:border-white/25">
               <div className={`absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-to-br ${world.orb} opacity-10 blur-3xl transition group-hover:opacity-25`}/>
               <div className="relative z-10 flex w-full flex-col"><div className="flex items-start justify-between"><div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/15 bg-black/30"><Icon className="h-7 w-7"/></div><ArrowRight className="h-6 w-6 text-white/35 transition group-hover:translate-x-2 group-hover:text-white"/></div><div className="mt-auto pt-12"><div className="flex items-center gap-2 text-white/35"><Store className="h-3.5 w-3.5"/><p className="text-[10px] font-black uppercase tracking-[.22em]">Storefront {String(index+1).padStart(2,'0')}</p></div><h3 className="mt-2 font-heading text-3xl font-black">{name}</h3><p className="mt-2 max-w-md text-sm leading-relaxed text-white/55">{description}</p></div></div>
             </Link>

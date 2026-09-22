@@ -21,7 +21,25 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import Logo from "@/components/branding/Logo";
-import { getLastVisitedWorld } from "@/lib/nalibaseWorldContext";
+import { getLastVisitedWorld, WORLD_CONTEXTS, WORLD_ORDER } from "@/lib/nalibaseWorldContext";
+
+const PLAZA_WORLD_DETAILS = Object.freeze({
+  connect: { subtitle: "NaliChat", description: "Meet creators, message, share and collaborate.", icon: MessageSquare },
+  create: { subtitle: "NaliStudio", description: "Record, produce, mix and build your next idea.", icon: Music },
+  discover: { subtitle: "Creator World", description: "Explore creators, music, challenges and inspiration.", icon: Sparkles },
+  share: { subtitle: "Files & Projects", description: "Move creative files and keep projects connected.", icon: FolderKanban },
+  visualize: { subtitle: "Music Video Lab", description: "Turn songs and concepts into visual experiences.", icon: Video },
+  compete: { subtitle: "Challenges", description: "Enter challenges, climb leaderboards and get discovered.", icon: Trophy },
+});
+
+const PLAZA_WORLDS = WORLD_ORDER.map((id) => ({
+  id,
+  title: WORLD_CONTEXTS[id].label,
+  path: WORLD_CONTEXTS[id].path,
+  gradient: WORLD_CONTEXTS[id].plazaGradient,
+  action: `enter_${id}`,
+  ...PLAZA_WORLD_DETAILS[id],
+}));
 
 const features = [
   {
@@ -266,14 +284,7 @@ export default function Home() {
                 </div>
               )}
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {[
-                  { title: "CONNECT", subtitle: "NaliChat", description: "Meet creators, message, share and collaborate.", path: "/world/connect", icon: MessageSquare, gradient: "from-primary/35 to-pink-500/15", action: "enter_connect" },
-                  { title: "CREATE", subtitle: "NaliStudio", description: "Record, produce, mix and build your next idea.", path: "/world/create", icon: Music, gradient: "from-cyan-500/30 to-accent/15", action: "enter_create" },
-                  { title: "DISCOVER", subtitle: "Creator World", description: "Explore creators, music, challenges and inspiration.", path: "/world/discover", icon: Sparkles, gradient: "from-violet-500/30 to-fuchsia-500/15", action: "enter_discover" },
-                  { title: "SHARE", subtitle: "Files & Projects", description: "Move creative files and keep projects connected.", path: "/world/share", icon: FolderKanban, gradient: "from-emerald-500/30 to-teal-500/15", action: "enter_share" },
-                  { title: "VISUALIZE", subtitle: "Music Video Lab", description: "Turn songs and concepts into visual experiences.", path: "/world/visualize", icon: Video, gradient: "from-orange-500/30 to-rose-500/15", action: "enter_visualize" },
-                  { title: "COMPETE", subtitle: "Challenges", description: "Enter challenges, climb leaderboards and get discovered.", path: "/world/compete", icon: Trophy, gradient: "from-yellow-500/30 to-amber-500/15", action: "enter_compete" },
-                ].map((world) => {
+                {PLAZA_WORLDS.map((world) => {
                   const WorldIcon = world.icon;
                   return (
                     <motion.div key={world.title} whileHover={{ y: -5, scale: 1.015 }} whileTap={{ scale: 0.985 }} transition={{ duration: 0.2 }}>

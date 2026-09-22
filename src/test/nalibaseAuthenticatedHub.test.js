@@ -9,7 +9,7 @@ describe('authenticated NaliBase hub',()=>{
     expect(gate).toBeGreaterThan(-1);
     expect(gate).toBeLessThan(pillar);
     expect(source).toContain('Where do you want to go?');
-    expect(source).toContain('/world/connect');
-    expect(source).toContain('/world/compete');
+    expect(source).toContain('const PLAZA_WORLDS = WORLD_ORDER.map');
+    expect(source).toContain('path: WORLD_CONTEXTS[id].path');
   });
 });

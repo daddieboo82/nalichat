@@ -79,7 +79,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
         <Link to="/" className="ui-hover shrink-0 rounded-xl px-1.5 py-1 focus-visible:ring-2 focus-visible:ring-primary/40">
           <div className="flex items-center gap-2">
             <Logo size={30} className="group-hover:scale-105 transition-transform shadow-lg shadow-primary/30" />
-            <span className="font-heading font-extrabold text-sm text-gradient-animate hidden xl:inline tracking-tight">NaliChat</span>
+            <span className="font-heading font-extrabold text-sm text-gradient-animate hidden xl:inline tracking-tight">NaliBase</span>
           </div>
         </Link>
 

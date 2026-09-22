@@ -99,7 +99,7 @@ export default function MobileHeader() {
   const title =
     TITLES[path] ||
     Object.entries(TITLES).find(([k]) => k !== "/" && path.startsWith(k))?.[1] ||
-    "NaliChat";
+    "NaliBase";
 
   const handleBack = () => {
     if (location.state?.from) {
@@ -184,7 +184,7 @@ export default function MobileHeader() {
           <SheetHeader className="p-4 pb-2 border-b border-white/[0.06]">
             <SheetTitle className="flex items-center gap-2">
               <Logo size={30} />
-              <span className="font-heading font-extrabold text-gradient-animate tracking-tight">NaliChat</span>
+              <span className="font-heading font-extrabold text-gradient-animate tracking-tight">NaliBase</span>
             </SheetTitle>
             <SheetDescription className="sr-only">All features and navigation</SheetDescription>
           </SheetHeader>
@@ -255,7 +255,7 @@ export default function MobileHeader() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold">Log in</p>
-                      <p className="text-[11px] text-muted-foreground">Access your NaliChat account</p>
+                      <p className="text-[11px] text-muted-foreground">Access your NaliBase account</p>
                     </div>
                   </button>
                   <button

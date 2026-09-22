@@ -14,7 +14,7 @@ import GlobalInviteDialog from "@/components/GlobalInviteDialog";
 import GlobalMessageDialog from "@/components/GlobalMessageDialog";
 import GlobalHelpDialog from "@/components/GlobalHelpDialog";
 import GlobalAudioPlayer from "@/components/audio/GlobalAudioPlayer";
-import WorldContinuityBar from "@/components/layout/WorldContinuityBar";
+import WorldContinuityBar from "@/components/layout/WorldContinuityBar";\nimport WorldAtmosphere from "@/components/layout/WorldAtmosphere";
 
 export default function AppLayout() {
   const location = useLocation();
@@ -44,7 +44,7 @@ export default function AppLayout() {
   }, [user?.id]);
 
   return (
-    <div className="h-screen h-[100dvh] flex flex-col bg-background overflow-hidden">
+    <div className="relative h-screen h-[100dvh] flex flex-col bg-background overflow-hidden">\n      <WorldAtmosphere />
       {/* Mobile Header */}
       {!isDesktop && <MobileHeader />}
 

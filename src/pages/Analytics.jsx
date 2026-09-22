@@ -61,12 +61,24 @@ export default function Analytics() {
     ];
   }, [filteredFunnelEvents]);
 
+  const studioActivation = React.useMemo(() => {
+    const countUnique = (name) => new Set(
+      filteredFunnelEvents.filter(e => e.event_name === name).map(e => e.user_id || e.session_id || e.id)
+    ).size;
+    const opened = countUnique("studio_open");
+    const uploaded = countUnique("first_upload");
+    return [
+      { label: "Studio Opened", count: opened, rate: 100 },
+      { label: "First Audio Import", count: uploaded, rate: opened > 0 ? Math.round((uploaded / opened) * 100) : 0 },
+    ];
+  }, [filteredFunnelEvents]);
+
   const funnel = React.useMemo(() => {
     const steps = [
       ["homepage_view", "Homepage"], ["signup_click", "Signup Click"],
       ["registration_started", "Registration Started"], ["registration_completed", "Registered"],
-      ["onboarding_complete", "Profile Setup"], ["first_message", "First Message"],
-      ["studio_open", "Studio Open"], ["first_upload", "First Upload"], ["return_visit", "Return Visit"],
+      ["onboarding_complete", "Profile Setup"], ["post_login_action", "Post-login Action"],
+      ["activation_complete", "Activated"], ["return_visit", "Return Visit"],
     ];
     const counts = Object.fromEntries(steps.map(([name]) => [name, new Set(
       filteredFunnelEvents.filter(e => e.event_name === name).map(e => e.user_id || e.session_id || e.id)
@@ -185,7 +197,7 @@ export default function Analytics() {
                 <span className="ml-1 text-xs text-muted-foreground">Admin</span>
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-9">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
               {funnel.map((step, index) => (
                 <div key={step.name} className="rounded-2xl border border-border/60 bg-background/40 p-3">
                   <p className="text-xs font-medium text-muted-foreground">{step.label}</p>

@@ -50,6 +50,11 @@ export function getLastVisitedWorld(userId='') {
   } catch (_) { return null; }
 }
 
+export function clearActiveWorldContext() {
+  if (typeof window === 'undefined') return;
+  try { window.sessionStorage.removeItem(WORLD_SESSION_KEY); } catch (_) {}
+}
+
 export function getRememberedWorldForPath(pathname='') {
   if (typeof window === 'undefined') return '';
   try {

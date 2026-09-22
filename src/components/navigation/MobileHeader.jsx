@@ -164,7 +164,7 @@ export default function MobileHeader() {
 
           <div className="p-4 space-y-5">
             {/* Recently Visited */}
-            <RecentlyVisited onNavigate={handleNavigate} currentPath={path} />
+            <RecentlyVisited onNavigate={handleNavigate} currentPath={path} currentWorldId={activeWorld?.id || ''} />
 
             {MENU_GROUPS.map((group) => (
               <div key={group.label}>

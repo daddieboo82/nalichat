@@ -179,12 +179,12 @@ describe('home, navigation, and recovery flows', () => {
 
     expect(screen.getByText('NaliBase')).toBeTruthy();
     expect(screen.getByText('Where do you want to go?')).toBeTruthy();
-    expect(screen.getByText('CONNECT').closest('a')?.getAttribute('href')).toBe('/messages');
-    expect(screen.getByText('CREATE').closest('a')?.getAttribute('href')).toBe('/studio');
-    expect(screen.getByText('DISCOVER').closest('a')?.getAttribute('href')).toBe('/explore');
-    expect(screen.getByText('SHARE').closest('a')?.getAttribute('href')).toBe('/files');
-    expect(screen.getByText('VISUALIZE').closest('a')?.getAttribute('href')).toBe('/music-video-generator');
-    expect(screen.getByText('COMPETE').closest('a')?.getAttribute('href')).toBe('/challenges');
+    expect(screen.getByText('CONNECT').closest('a')?.getAttribute('href')).toBe('/world/connect');
+    expect(screen.getByText('CREATE').closest('a')?.getAttribute('href')).toBe('/world/create');
+    expect(screen.getByText('DISCOVER').closest('a')?.getAttribute('href')).toBe('/world/discover');
+    expect(screen.getByText('SHARE').closest('a')?.getAttribute('href')).toBe('/world/share');
+    expect(screen.getByText('VISUALIZE').closest('a')?.getAttribute('href')).toBe('/world/visualize');
+    expect(screen.getByText('COMPETE').closest('a')?.getAttribute('href')).toBe('/world/compete');
   }, 15000);
 
   it('shows visible desktop login and signup entry points for anonymous users', async () => {

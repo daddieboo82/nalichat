@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { InferenceClient } from 'npm:@huggingface/inference';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
-const MODEL = 'Wan-AI/Wan2.1-T2V-1.3B';
+const MODEL = 'Wan-AI/Wan2.2-TI2V-5B';
 const PROVIDER = 'fal-ai';
 Deno.serve(async (req) => {
   try {
@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
         num_frames: 81,
         guidance_scale: 5,
         num_inference_steps: 28,
-        negative_prompt: String(negative_prompt || 'text, logo, watermark, celebrity likeness, distorted anatomy, low quality'),
+        negative_prompt: [String(negative_prompt || 'text, logo, watermark, celebrity likeness, distorted anatomy, low quality')],
       },
     });
     const bytes = new Uint8Array(await video.arrayBuffer());

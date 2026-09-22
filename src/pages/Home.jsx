@@ -733,9 +733,10 @@ export default function Home() {
           </div>
         </motion.div>
 
+        </section>
       </>}
 
-        {!user && (
+      {!user && (
           <footer className="pb-4 text-center text-sm text-muted-foreground">
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
               <Link to="/privacy" className="min-h-10 inline-flex items-center hover:text-foreground">Privacy Policy</Link>
@@ -749,7 +750,6 @@ export default function Home() {
           </footer>
         )}
 
-      </section>
     </PullToRefresh>
   );
 }

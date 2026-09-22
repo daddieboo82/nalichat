@@ -40,7 +40,7 @@ export default function InteractiveWizard({ open, onOpenChange }) {
                 </div>
                 <h2 className="text-2xl font-black font-heading mb-4 text-gradient-animate tracking-tight">Step 1: The Studio</h2>
                 <p className="text-muted-foreground mb-8 text-base leading-relaxed">
-                  NaliChat features a fully-fledged browser DAW. You can record audio, add multiple tracks,
+                  NaliStudio inside the CREATE world features a fully-fledged browser DAW. You can record audio, add multiple tracks,
                   apply effects, and edit waveforms right from your browser.
                 </p>
                 <Button className="w-full h-12 text-lg rounded-xl bg-primary hover:opacity-90 mt-auto" onClick={handleNext}>

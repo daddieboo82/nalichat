@@ -1,11 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Building2, Home, Store } from 'lucide-react';
-import { getWorldForPath } from '@/lib/nalibaseWorldContext';
+import { resolveWorldForLocation } from '@/lib/nalibaseWorldContext';
 
 export default function WorldContinuityBar() {
   const location = useLocation();
   const { pathname } = location;
-  const world = getWorldForPath(pathname, location.state?.fromWorld);
+  const world = resolveWorldForLocation(pathname, location.state?.fromWorld);
   if (!world || pathname.startsWith('/world/')) return null;
   const siblings = world.storefronts || [];
   return <div className="relative z-30 shrink-0 border-b border-white/[0.07] bg-black/80 px-3 py-2 backdrop-blur-xl">

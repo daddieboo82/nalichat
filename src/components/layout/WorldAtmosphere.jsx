@@ -1,10 +1,10 @@
 import { useLocation } from 'react-router-dom';
-import { getWorldForPath } from '@/lib/nalibaseWorldContext';
+import { resolveWorldForLocation } from '@/lib/nalibaseWorldContext';
 
 export default function WorldAtmosphere() {
   const location = useLocation();
   const { pathname } = location;
-  const world = getWorldForPath(pathname, location.state?.fromWorld);
+  const world = resolveWorldForLocation(pathname, location.state?.fromWorld);
   if (!world || pathname.startsWith('/world/')) return null;
   return <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
     <div className={'absolute inset-0 bg-gradient-to-br ' + world.glow + ' opacity-60'} />

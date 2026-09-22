@@ -28,3 +28,27 @@ export function getWorldForPath(pathname='', preferredWorld='') {
   const match = PATH_WORLD.find(([pattern]) => pattern.test(pathname));
   return match ? { id: match[1], ...WORLD_CONTEXTS[match[1]] } : null;
 }
+
+const WORLD_SESSION_KEY = 'nalibase.activeWorld';
+
+export function rememberWorldContext(worldId='') {
+  if (typeof window === 'undefined' || !WORLD_CONTEXTS[worldId]) return;
+  try { window.sessionStorage.setItem(WORLD_SESSION_KEY, worldId); } catch (_) {}
+}
+
+export function getRememberedWorldForPath(pathname='') {
+  if (typeof window === 'undefined') return '';
+  try {
+    const worldId = window.sessionStorage.getItem(WORLD_SESSION_KEY) || '';
+    if (!WORLD_CONTEXTS[worldId]) return '';
+    const matches = WORLD_CONTEXTS[worldId].storefronts.some(({path}) => pathname === path || pathname.startsWith(path + '/'));
+    return matches ? worldId : '';
+  } catch (_) { return ''; }
+}
+
+export function resolveWorldForLocation(pathname='', stateWorld='') {
+  const preferred = stateWorld || getRememberedWorldForPath(pathname);
+  const world = getWorldForPath(pathname, preferred);
+  if (stateWorld && world?.id === stateWorld) rememberWorldContext(stateWorld);
+  return world;
+}

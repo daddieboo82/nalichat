@@ -8,7 +8,7 @@ describe('NaliBase immersion shell',()=>{
     const atmosphere=await read('components/layout/WorldAtmosphere.jsx');
     expect(layout).toContain('<WorldAtmosphere />');
     expect(layout).toContain('<WorldContinuityBar />');
-    expect(atmosphere).toContain('getWorldForPath');
+    expect(atmosphere).toContain('resolveWorldForLocation');
   });
   it('brands global navigation as NaliBase',async()=>{
     const desktop=await read('components/navigation/DesktopNav.jsx');

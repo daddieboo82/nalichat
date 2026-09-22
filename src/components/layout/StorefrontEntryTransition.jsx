@@ -2,13 +2,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Building2, Store } from 'lucide-react';
-import { getWorldForPath } from '@/lib/nalibaseWorldContext';
+import { resolveWorldForLocation } from '@/lib/nalibaseWorldContext';
 
 const seen = new Set();
 export default function StorefrontEntryTransition() {
   const location = useLocation();
   const { pathname } = location;
-  const world = getWorldForPath(pathname, location.state?.fromWorld);
+  const world = resolveWorldForLocation(pathname, location.state?.fromWorld);
   const [visible,setVisible]=useState(false);
   useEffect(()=>{
     if (!world || pathname.startsWith('/world/') || seen.has(`${world.id}:${pathname}`)) return;

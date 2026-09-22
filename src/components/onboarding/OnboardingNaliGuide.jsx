@@ -21,7 +21,7 @@ export default function OnboardingNaliGuide({ step, profileComplete }) {
     openedRef.current = true;
     const greeting =
       "I'm a brand-new user who just landed on the onboarding screen. " +
-      "Welcome me warmly to NaliChat, then walk me through setting up my profile. " +
+      "Welcome me warmly to NaliBase, then walk me through setting up my profile. " +
       "Explain what the Display Name, Birthdate, Location, and Bio fields are for and why they matter. " +
       "Keep it short, friendly, and encouraging — I'm new here!";
     window.dispatchEvent(

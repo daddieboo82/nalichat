@@ -46,7 +46,7 @@ export default function DeleteAccountDialog() {
     <div className="mt-10 pt-8 border-t border-destructive/20">
       <h2 className="text-sm font-semibold text-destructive mb-1">Danger Zone</h2>
       <p className="text-xs text-muted-foreground mb-4">
-        Permanently delete your NaliChat account. Some shared or billing-related records may be retained where required. This action cannot be undone.
+        Permanently delete your NaliBase account. Some shared or billing-related records may be retained where required. This action cannot be undone.
       </p>
       <AlertDialog>
         <AlertDialogTrigger asChild>

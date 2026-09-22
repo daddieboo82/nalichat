@@ -182,7 +182,7 @@ export default function AdminDashboard() {
             Business Dashboard
           </h1>
           <p className="text-muted-foreground mt-2">
-            Server-authoritative account and subscription health metrics for NaliChat.
+            Server-authoritative account and subscription health metrics for NaliBase.
           </p>
         </div>
 

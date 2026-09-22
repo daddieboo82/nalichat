@@ -11,7 +11,7 @@ export function loginErrorMessage(error) {
     return 'Too many login attempts. Please try again shortly.';
   }
   if (/network|fetch|timeout|timed out|connection/.test(msg)) {
-    return 'Could not reach NaliChat. Check your connection and try again.';
+    return 'Could not reach NaliBase. Check your connection and try again.';
   }
   return 'Could not log in. Please try again.';
 }
@@ -42,7 +42,7 @@ export function registrationErrorMessage(error) {
     return 'Too many signup attempts. Please try again shortly.';
   }
   if (/network|fetch|timeout|timed out|connection/.test(msg)) {
-    return 'Could not reach NaliChat. Check your connection and try again.';
+    return 'Could not reach NaliBase. Check your connection and try again.';
   }
   return 'Could not create your account. Please try again.';
 }
@@ -80,7 +80,7 @@ export function resetPasswordErrorMessage(error) {
     return 'Too many reset attempts. Please try again shortly.';
   }
   if (/network|fetch|timeout|timed out|connection/.test(msg)) {
-    return 'Could not reach NaliChat. Check your connection and try again.';
+    return 'Could not reach NaliBase. Check your connection and try again.';
   }
   return 'Could not reset your password. Please request a new link and try again.';
 }

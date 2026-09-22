@@ -75,7 +75,7 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
       <DialogContent className="bg-card border-border max-w-md">
         <DialogHeader>
           <DialogTitle className="font-heading">Invite Collaborators</DialogTitle>
-          <DialogDescription>Share this link to invite others to join NaliChat</DialogDescription>
+          <DialogDescription>Share this link to invite others to join NaliBase</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -144,8 +144,8 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
                 onClick={async () => {
                   try {
                     await navigator.share({
-                      title: 'Join NaliChat',
-                      text: "I'm using NaliChat to collaborate on music. Join me here!",
+                      title: 'Join NaliBase',
+                      text: "Explore NaliBase with me — connect, create, discover and collaborate.",
                       url: inviteUrl,
                     });
                   } catch (err) {

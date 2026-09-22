@@ -24,7 +24,7 @@ export default function TutorialTopics({ onPick }) {
         {TOPICS.map(({ label, icon: Icon }) => (
           <button
             key={label}
-            onClick={() => onPick(`Give me a step-by-step beginner tutorial on ${label} in NaliChat. Keep it clear and actionable.`)}
+            onClick={() => onPick(`Give me a step-by-step beginner tutorial on ${label} in NaliBase. Keep it clear and actionable.`)}
             className="flex items-center gap-2 text-xs bg-secondary/50 hover:bg-accent/10 border border-border hover:border-accent/40 text-foreground px-3 py-2.5 rounded-xl transition-all group"
           >
             <span className="text-accent group-hover:scale-110 transition-transform"><Icon className="w-4 h-4" /></span>

@@ -15,7 +15,7 @@ const steps = [
   {
     id: "welcome",
     icon: Sparkles,
-    title: "Welcome to NaliChat",
+    title: "Welcome to NaliBase",
     subtitle: "Your creator workspace, all in one place",
     description: "Message collaborators, build tracks in Studio, share files, and grow your creator profile without bouncing between apps.",
     gradient: "from-primary via-purple-500 to-pink-500",

@@ -75,7 +75,7 @@ export default function RecordingGuide({ open, onClose }) {
   useEffect(() => {
     if (!open) return;
     const narration = [
-      "Welcome! I'll walk you through recording in NaliChat. You can do this — let's start by allowing microphone access.",
+      "Welcome! I'll walk you through recording in NaliBase. You can do this — let's start by allowing microphone access.",
       "Click the button to allow microphone access. Your browser will ask for permission — choose Allow.",
       "Pick the microphone you want to use from the list. If you're not sure, the default is fine.",
       "Say something out loud and watch the level meter move. Aim for the green zone when you speak normally.",

@@ -219,7 +219,7 @@ export default function ThankYou() {
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
             <Button size="lg" onClick={() => window.location.reload()}>Try again</Button>
             <Button size="lg" variant="outline" asChild>
-              <Link to="/">Back to NaliChat</Link>
+              <Link to="/">Back to NaliBase</Link>
             </Button>
           </div>
         </div>
@@ -254,7 +254,7 @@ export default function ThankYou() {
         <p className="mb-8 text-base leading-relaxed text-muted-foreground sm:text-xl">
           {processing
             ? "Confirming your payment. This takes just a moment..."
-            : "Thank you for supporting NaliChat — your donation helps fund ongoing app development."}
+            : "Thank you for supporting NaliBase — your donation helps fund ongoing app development."}
         </p>
 
         {!processing && (

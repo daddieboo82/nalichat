@@ -87,7 +87,7 @@ export default function HowItWorks() {
       <div className="mb-8 text-center md:mb-12">
         <span className="text-xs font-bold tracking-widest text-primary uppercase bg-primary/10 px-3 py-1 rounded-full">The Full Journey</span>
         <h2 className="mb-3 mt-4 font-heading text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">How It Works</h2>
-        <p className="mx-auto max-w-2xl text-base leading-relaxed text-foreground/90 sm:text-lg">From signing up to sharing your sound — NaliChat covers every step of your creative process in one place.</p>
+        <p className="mx-auto max-w-2xl text-base leading-relaxed text-foreground/90 sm:text-lg">From signing up to sharing your sound — NaliBase connects every step of your creative journey across six worlds.</p>
       </div>
 
       <motion.div

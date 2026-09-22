@@ -11,8 +11,8 @@ import { toast } from "sonner";
 const STEPS = [
   {
     icon: Sparkles,
-    title: "Welcome to NaliChat!",
-    description: "Your profile is ready. Here are two quick moves that help you get value from NaliChat right away.",
+    title: "Welcome to NaliBase!",
+    description: "Your profile is ready. Here are two quick moves that help you get value from NaliBase right away.",
     primary: { label: "Let's Go", action: "next" },
     color: "from-primary to-pink-500",
   },
@@ -27,7 +27,7 @@ const STEPS = [
   {
     icon: Trophy,
     title: "Join Your First Challenge",
-    description: "Put NaliChat to work: browse an active challenge, open the source track, and create something you can share with the community.",
+    description: "Put NaliBase to work: browse an active challenge, open the source track, and create something you can share with the community.",
     primary: { label: "Browse Challenges", action: "navigate", path: "/challenges" },
     secondary: { label: "Maybe Later", action: "complete" },
     color: "from-yellow-500 to-orange-500",

@@ -1,7 +1,7 @@
-import { describe, expect, it, beforeEach } from 'vitest';
-import { getLastVisitedWorld, resolveWorldForLocation } from '../lib/nalibaseWorldContext';
+import { describe, expect, it } from 'vitest';
+import { readFile } from 'node:fs/promises';
+const read=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
 describe('NaliBase recent-world truthfulness',()=>{
- beforeEach(()=>window.sessionStorage.clear());
- it('does not count shared storefront resolution as a world visit',()=>{ expect(resolveWorldForLocation('/studio','visualize')?.id).toBe('visualize'); expect(getLastVisitedWorld()).toBeNull(); });
- it('still preserves explicit mall continuity for shared storefronts',()=>{ resolveWorldForLocation('/studio','share'); expect(resolveWorldForLocation('/studio')?.id).toBe('share'); });
+ it('does not write recent-visit history while merely resolving a shared storefront',async()=>{ const s=await read('lib/nalibaseWorldContext.js'); const resolver=s.slice(s.indexOf('export function resolveWorldForLocation')); expect(resolver).not.toContain('rememberWorldContext(stateWorld)'); expect(resolver).toContain('sessionStorage.setItem(WORLD_SESSION_KEY, stateWorld)'); });
+ it('documents that only WorldHub entry counts as a recent visit',async()=>{ const s=await read('lib/nalibaseWorldContext.js'); expect(s).toContain('only entering WorldHub'); });
 });

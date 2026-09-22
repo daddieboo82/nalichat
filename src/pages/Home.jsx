@@ -231,32 +231,48 @@ export default function Home() {
             transition={{ delay: 0.15, duration: 0.5 }}
             className="mb-6 font-heading text-4xl font-black tracking-tight text-gradient-animate drop-shadow-xl sm:text-5xl md:text-6xl"
           >
-            NaliChat
+            {user ? "NaliBase" : "NaliChat"}
           </motion.h1>
 
-          {/* Personalized post-login activation */}
+          {/* NaliBase hub: the logged-in home is a launch world, not a dashboard. */}
           {user && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mx-auto mb-6 max-w-2xl rounded-3xl border border-primary/30 bg-card/80 p-4 text-left shadow-xl backdrop-blur-md sm:p-5"
-            >
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-                Welcome back, {(user.display_name || user.full_name)?.split(" ")[0] || "Creator"}
+            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="mx-auto mb-8 w-full max-w-5xl text-left">
+              <p className="text-center text-xs font-bold uppercase tracking-[0.28em] text-primary">
+                Welcome to NaliBase, {(user.display_name || user.full_name)?.split(" ")[0] || "Creator"}
               </p>
-              <h2 className="mt-1 font-heading text-xl font-black sm:text-2xl">Make something happen in the next 60 seconds.</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Meet a creator, start a conversation, or jump straight into your next track.</p>
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                <Button asChild className="min-h-11 rounded-xl">
-                  <Link to="/messages" onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "home_activation", action: "meet_creators" })}><MessageSquare className="mr-2 h-4 w-4" />Meet creators</Link>
-                </Button>
-                <Button asChild variant="outline" className="min-h-11 rounded-xl">
-                  <Link to="/studio" onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "home_activation", action: "start_track" })}><Music className="mr-2 h-4 w-4" />Start a track</Link>
-                </Button>
-                <Button asChild variant="outline" className="min-h-11 rounded-xl">
-                  <Link to="/explore" onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "home_activation", action: "find_inspiration" })}><Sparkles className="mr-2 h-4 w-4" />Find inspiration</Link>
-                </Button>
+              <h2 className="mt-2 text-center font-heading text-3xl font-black sm:text-5xl">Where do you want to go?</h2>
+              <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground sm:text-base">Your entertainment and creativity universe. Choose a world and step inside.</p>
+              <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {[
+                  { title: "CONNECT", subtitle: "NaliChat", description: "Meet creators, message, share and collaborate.", path: "/messages", icon: MessageSquare, gradient: "from-primary/35 to-pink-500/15", action: "enter_connect" },
+                  { title: "CREATE", subtitle: "NaliStudio", description: "Record, produce, mix and build your next idea.", path: "/studio", icon: Music, gradient: "from-cyan-500/30 to-accent/15", action: "enter_create" },
+                  { title: "DISCOVER", subtitle: "Creator World", description: "Explore creators, music, challenges and inspiration.", path: "/explore", icon: Sparkles, gradient: "from-violet-500/30 to-fuchsia-500/15", action: "enter_discover" },
+                  { title: "SHARE", subtitle: "Files & Projects", description: "Move creative files and keep projects connected.", path: "/files", icon: FolderKanban, gradient: "from-emerald-500/30 to-teal-500/15", action: "enter_share" },
+                  { title: "VISUALIZE", subtitle: "Music Video Lab", description: "Turn songs and concepts into visual experiences.", path: "/music-video-generator", icon: Video, gradient: "from-orange-500/30 to-rose-500/15", action: "enter_visualize" },
+                  { title: "COMPETE", subtitle: "Challenges", description: "Enter challenges, climb leaderboards and get discovered.", path: "/challenges", icon: Trophy, gradient: "from-yellow-500/30 to-amber-500/15", action: "enter_compete" },
+                ].map((world) => {
+                  const WorldIcon = world.icon;
+                  return (
+                    <motion.div key={world.title} whileHover={{ y: -5, scale: 1.015 }} whileTap={{ scale: 0.985 }} transition={{ duration: 0.2 }}>
+                      <Link to={world.path} onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: world.action })} className={`group relative flex min-h-44 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${world.gradient} p-5 shadow-xl backdrop-blur-xl transition-all hover:border-white/25 hover:shadow-2xl`}>
+                        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-3xl transition-transform group-hover:scale-150" />
+                        <div className="relative z-10 flex w-full flex-col">
+                          <div className="flex items-start justify-between">
+                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-black/20"><WorldIcon className="h-5 w-5" /></div>
+                            <ArrowRight className="h-5 w-5 text-foreground/50 transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
+                          </div>
+                          <div className="mt-auto pt-5">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-foreground/60">{world.subtitle}</p>
+                            <h3 className="mt-1 font-heading text-2xl font-black tracking-tight">{world.title}</h3>
+                            <p className="mt-1 text-xs leading-relaxed text-foreground/70">{world.description}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  );
+                })}
               </div>
+              <p className="mt-5 text-center text-xs text-muted-foreground">One identity. Multiple worlds. Return to NaliBase anytime to choose your next experience.</p>
             </motion.div>
           )}
 
@@ -289,26 +305,7 @@ export default function Home() {
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full max-w-sm mx-auto sm:max-w-none">
-            {user ? (
-              <>
-                <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 px-7 text-base font-semibold glow-primary shimmer-hover hover:opacity-90 sm:w-auto" asChild>
-                  <Link to="/messages" className="w-full sm:w-auto">
-                    <MessageSquare className="w-5 h-5 mr-2" />
-                    Open Messages
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Link>
-                  </Button>
-
-                <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-accent to-cyan-500 px-7 text-base font-semibold glow-accent shimmer-hover hover:opacity-90 sm:w-auto" asChild>
-                  <Link to="/studio" className="w-full sm:w-auto">
-                    <Music className="w-5 h-5 mr-2" />
-                    Open Studio
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Link>
-                  </Button>
-
-              </>
-            ) : (
+            {user ? null : (
               <>
                 <Button size="lg" className="ui-hover min-h-12 w-full rounded-xl bg-gradient-to-r from-primary to-pink-500 px-7 text-base font-semibold glow-primary shimmer-hover hover:opacity-90 sm:w-auto" asChild>
                   <Link
@@ -335,7 +332,7 @@ export default function Home() {
       </section>
 
       {/* — Quick Access for logged-in users — */}
-      {user && <QuickAccessGrid />}
+      {!user && <QuickAccessGrid />}
 
       {/* — Pillar pills — */}
       <section className="relative z-10 overflow-hidden border-y border-border/70 bg-card/50 py-3 backdrop-blur-xl sm:py-4">

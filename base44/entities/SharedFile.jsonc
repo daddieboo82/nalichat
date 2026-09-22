@@ -173,7 +173,7 @@
         "type": "string"
       },
       "default": [],
-      "description": "Users allowed to read this file inside NaliChat",
+      "description": "Users allowed to read this file inside NaliBase",
       "rls": {
         "read": true,
         "write": {

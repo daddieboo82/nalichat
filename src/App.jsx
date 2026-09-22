@@ -96,7 +96,7 @@ const ViralSeed = lazyWithReloadRecovery(() => import('@/pages/ViralSeed'), 'vir
 const Download = lazyWithReloadRecovery(() => import('@/pages/Download'), 'download');
 const OAuthConsent = lazyWithReloadRecovery(() => import('@/pages/OAuthConsent'), 'oauth-consent');
 const SharedFileDownload = lazyWithReloadRecovery(() => import('@/pages/SharedFileDownload'), 'shared-file-download');
-const LiveTV = lazyWithReloadRecovery(() => import('@/pages/LiveTV'), 'live-tv');
+const MusicVideoGenerator = lazyWithReloadRecovery(() => import('@/pages/MusicVideoGenerator'), 'music-video-generator');
 
 function safeLocalStorageGet(key) {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -356,7 +356,7 @@ const AuthenticatedApp = () => {
         <Route path="/studio" element={<Studio />} />
         <Route element={<AppLayout />}>
           <Route path="/messages" element={<Messages />} />
-          <Route path="/live-tv" element={<LiveTV />} />
+          <Route path="/music-video-generator" element={<MusicVideoGenerator />} />
           <Route path="/files" element={<Files />} />
 
           <Route path="/settings" element={<Settings />} />

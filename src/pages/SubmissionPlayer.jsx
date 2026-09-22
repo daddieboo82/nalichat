@@ -195,7 +195,7 @@ export default function SubmissionPlayer() {
         </Button>
 
         <div className="flex justify-center">
-          <ShareButtons url={shareUrl} text={`Vote for "${submission.remix_name}" on NaliChat 🎧`} />
+          <ShareButtons url={shareUrl} text={`Vote for "${submission.remix_name}" on NaliBase 🎧`} />
         </div>
       </div>
 

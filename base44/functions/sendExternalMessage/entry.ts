@@ -45,10 +45,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Message must be 5000 characters or fewer' }, { status: 413 });
     }
 
-    const name = String(user.display_name || user.full_name || 'Someone on NaliChat')
+    const name = String(user.display_name || user.full_name || 'Someone on NaliBase')
       .replace(/[\r\n]/g, ' ')
       .trim()
-      .slice(0, 80) || 'Someone on NaliChat';
+      .slice(0, 80) || 'Someone on NaliBase';
 
     if (type === 'email') {
       // Prevent open email relay: only allow sending to registered app users.
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       }
 
       // External email is a higher-cost, out-of-app channel. Require a mutual
-      // NaliChat contact relationship so a signed-in user cannot spam arbitrary
+      // NaliBase contact relationship so a signed-in user cannot spam arbitrary
       // registered addresses by guessing emails.
       const [outboundContacts, inboundContacts] = await Promise.all([
         base44.asServiceRole.entities.Contact.filter(
@@ -105,14 +105,14 @@ Deno.serve(async (req) => {
       const registeredEmail = String(registeredUser.email || cleanDestination).trim();
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: registeredEmail,
-        subject: `Message from ${name} via NaliChat`,
-        body: `${name} sent you a message on NaliChat:\n\n"${cleanMessage}"\n\n---\nReply by joining NaliChat to connect directly.`,
+        subject: `Message from ${name} via NaliBase`,
+        body: `${name} sent you a message on NaliBase:\n\n"${cleanMessage}"\n\n---\nReply by joining NaliBase to connect directly.`,
       });
       return Response.json({ success: true, method: 'email' });
     }
 
     if (type === 'sms') {
-      // External SMS-to-user messaging is disabled until NaliChat has a
+      // External SMS-to-user messaging is disabled until NaliBase has a
       // verified-phone ownership flow. A self-entered profile phone number is
       // not sufficient proof that the destination belongs to an app user.
       return Response.json(

@@ -31,7 +31,7 @@ export const CHAT_THEMES = [
   {
     id: DEFAULT_CHAT_THEME_ID,
     name: 'Nali',
-    description: 'The classic NaliChat dark canvas.',
+    description: 'The classic NaliBase dark canvas.',
     premium: false,
     className: 'chat-theme--default',
     tokens: {

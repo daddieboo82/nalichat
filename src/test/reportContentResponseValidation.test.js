@@ -10,6 +10,6 @@ describe('content report response validation', () => {
     expect(s).toContain('res?.data?.userId !== user?.id');
     expect(s).toContain('res?.data?.contentType !== contentType');
     expect(s).toContain('res?.data?.contentId !== contentId');
-    expect(s).toContain('Report submitted. Thank you for helping keep NaliChat safe.');
+    expect(s).toContain('Report submitted. Thank you for helping keep NaliBase safe.');
   });
 });

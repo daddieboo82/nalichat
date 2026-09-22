@@ -49,7 +49,7 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
       return;
     }
 
-    const body = `I'm using NaliChat to collaborate on music. Join me here: ${inviteUrl}`;
+    const body = `I'm using NaliBase to collaborate on music. Join me here: ${inviteUrl}`;
     window.location.href = `sms:${encodeURIComponent(normalized)}?&body=${encodeURIComponent(body)}`;
     setSmsStatus({ type: "success", message: "Your SMS app was opened with the invite ready to send." });
   };
@@ -118,7 +118,7 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
               </p>
             ) : (
               <p className="text-xs text-muted-foreground mt-2">
-                NaliChat opens your SMS app; you review and send the invite yourself.
+                NaliBase opens your SMS app; you review and send the invite yourself.
               </p>
             )}
           </div>
@@ -128,8 +128,8 @@ export default function GlobalInviteDialog({ open, onOpenChange }) {
               variant="outline"
               className="flex-1 rounded-lg"
               onClick={() => {
-                const subject = "Join me on NaliChat";
-                const body = `I'm using NaliChat to collaborate on music. Join me here: ${inviteUrl}`;
+                const subject = "Join me on NaliBase";
+                const body = `I'm using NaliBase to collaborate on music. Join me here: ${inviteUrl}`;
                 window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
               }}
             >

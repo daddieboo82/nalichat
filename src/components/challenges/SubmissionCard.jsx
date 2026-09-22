@@ -68,7 +68,7 @@ export default function SubmissionCard({ submission, challengeId, hasVoted, isOw
           </Button>
           {showShare && (
             <div className="absolute bottom-full right-0 z-10 mb-2 rounded-2xl border border-border bg-popover p-2 shadow-xl">
-              <ShareButtons url={shareUrl} text={`Vote for "${submission.remix_name}" on NaliChat 🎧`} />
+              <ShareButtons url={shareUrl} text={`Vote for "${submission.remix_name}" on NaliBase 🎧`} />
             </div>
           )}
         </div>

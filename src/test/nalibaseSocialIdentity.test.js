@@ -1,0 +1,5 @@
+// @vitest-environment node
+import {describe,expect,it} from 'vitest'; import {readFile} from 'node:fs/promises';
+const read=p=>readFile(new URL('../../'+p,import.meta.url),'utf8');
+const files=['src/components/GlobalInviteDialog.jsx','src/components/GlobalMessageDialog.jsx','src/components/ReportContentDialog.jsx','src/components/explore/MediaViewerModal.jsx','src/components/challenges/SubmissionCard.jsx','src/pages/SubmissionPlayer.jsx','base44/functions/lockedChatVault/entry.ts','base44/functions/sendExternalMessage/entry.ts','base44/functions/mutateContact/entry.ts','base44/shared/chatThemes.ts'];
+describe('NaliBase social identity',()=>{ for(const file of files) it(`${file} uses umbrella identity`,async()=>{const s=await read(file); expect(s).not.toContain('NaliChat'); expect(s).toContain('NaliBase');}); it('uses NaliBase fallback for follow-up pushes',async()=>{const s=await read('base44/shared/followUpReminders.ts'); expect(s).toContain("notificationPayload.actor_name || 'NaliBase'");});});

@@ -898,7 +898,7 @@ export async function processDueFollowUpReminders({
       if (sendPush) {
         try {
           await sendPush(reminder.owner_id, {
-            title: String(notificationPayload.actor_name || 'NaliChat'),
+            title: String(notificationPayload.actor_name || 'NaliBase'),
             body: String(notificationPayload.message || 'You have a reminder'),
             url: String(notificationPayload.link || '/'),
           });

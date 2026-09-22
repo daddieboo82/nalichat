@@ -372,8 +372,8 @@ Deno.serve(async (req) => {
       try {
         await base44.asServiceRole.integrations.Core.SendEmail({
           to: user.email,
-          subject: 'Your NaliChat locked-chat PIN reset code',
-          body: `Your verification code is ${code}. It expires in 10 minutes. This changes only the NaliChat app lock; it does not change your account password or message encryption.`,
+          subject: 'Your NaliBase locked-chat PIN reset code',
+          body: `Your verification code is ${code}. It expires in 10 minutes. This changes only the NaliBase app lock; it does not change your account password or message encryption.`,
         });
       } catch {
         await base44.asServiceRole.entities.LockedChatResetChallenge.delete(challenge.id);

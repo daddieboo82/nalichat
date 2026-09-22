@@ -49,7 +49,7 @@ export default function ReportContentDialog({ open, onClose, contentType, conten
       ) {
         throw new Error("Report submission was not confirmed");
       }
-      toast.success("Report submitted. Thank you for helping keep NaliChat safe.");
+      toast.success("Report submitted. Thank you for helping keep NaliBase safe.");
       setReason("");
       onClose();
     } catch (e) {
@@ -90,7 +90,7 @@ export default function ReportContentDialog({ open, onClose, contentType, conten
 
             <div className="p-4">
               <p className="text-xs text-muted-foreground mb-3">
-                Help us keep NaliChat safe. Why are you reporting this content?
+                Help us keep NaliBase safe. Why are you reporting this content?
               </p>
               <div className="space-y-1.5 max-h-[280px] overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch]">
                 {REPORT_REASONS.map((r) => (

@@ -199,7 +199,7 @@ export default function GlobalMessageDialog({ open, onOpenChange }) {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{user.display_name || user.full_name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user.location || user.artist_role || "NaliChat member"}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.location || user.artist_role || "NaliBase member"}</p>
                     </div>
                     <Badge className={`text-[10px] ${roleColors[user.artist_role] || "bg-secondary text-secondary-foreground"} border-0`}>
                       {user.artist_role?.toUpperCase()}

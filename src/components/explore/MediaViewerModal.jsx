@@ -259,7 +259,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                      onClick={async (e) => {
                        e.preventDefault();
                        e.stopPropagation();
-                       const textToShare = `Check out this track: ${post.title} on NaliChat!`;
+                       const textToShare = `Check out this track: ${post.title} on NaliBase!`;
                        if (navigator.share) {
                          try {
                            await navigator.share({

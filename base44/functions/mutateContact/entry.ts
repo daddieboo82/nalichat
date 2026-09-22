@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
           id: deterministicId,
           user_id: user.id,
           contact_user_id: target.id,
-          contact_name: target.display_name || target.full_name || 'NaliChat User',
+          contact_name: target.display_name || target.full_name || 'NaliBase User',
           contact_avatar: target.avatar_url || null,
         });
         return Response.json({ success: true, action: 'add', userId: user.id, targetUserId: target.id, contact, existing: false });

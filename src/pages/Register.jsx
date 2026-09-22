@@ -260,8 +260,8 @@ export default function Register() {
   return (
     <AuthLayout
       icon={UserPlus}
-      title="Create your account"
-      subtitle="Sign up to get started"
+      title="Join NaliChat free"
+      subtitle="Start with Google in one tap, or use your email. No payment required."
       footer={
         <>
           Already have an account?{" "}
@@ -273,7 +273,7 @@ export default function Register() {
     >
       <Button
         variant="outline"
-        className="ui-hover mb-6 h-12 w-full rounded-xl text-sm font-semibold"
+        className="ui-hover mb-3 h-14 w-full rounded-xl bg-white text-sm font-bold text-black shadow-lg hover:bg-white/90"
         onClick={handleGoogle}
         disabled={googleLoading || loading}
         aria-busy={googleLoading ? "true" : undefined}
@@ -286,17 +286,19 @@ export default function Register() {
         ) : (
           <>
             <GoogleIcon className="w-5 h-5 mr-2" />
-            Continue with Google
+            Join free with Google
           </>
         )}
       </Button>
 
-      <div className="relative mb-6">
+      <p className="mb-5 text-center text-xs font-medium text-muted-foreground">Fastest option · No password to create · Free core messaging + NaliStudio</p>
+
+      <div className="relative mb-5">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">or</span>
+          <span className="bg-card px-3 text-muted-foreground">or sign up with email</span>
         </div>
       </div>
 
@@ -306,7 +308,7 @@ export default function Register() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4"><p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Use an email you can access now. We’ll send a 6-digit verification code before your account is ready.</p>
+      <form onSubmit={handleSubmit} className="space-y-4"><p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Email signup takes about a minute. We’ll send one 6-digit verification code.</p>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <div className="relative">

@@ -15,7 +15,6 @@ import StudioTutorial from "@/components/home/StudioTutorial";
 import HowItWorks from "@/components/home/HowItWorks";
 import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import WelcomeTour from "@/components/onboarding/WelcomeTour";
-import ImmersiveOnboarding, { VISITOR_ONBOARDING_STORAGE_KEY } from "@/components/onboarding/ImmersiveOnboarding";
 
 import QuickAccessGrid from "@/components/home/QuickAccessGrid";
 import { sounds } from "@/hooks/use-sound";
@@ -166,17 +165,9 @@ export default function Home() {
   const queryClient = useQueryClient();
   const [showWizard, setShowWizard] = useState(false);
   const [showTour, setShowTour] = useState(false);
-  const [visitorIntroSeen, setVisitorIntroSeen] = useState(() => {
-    try {
-      return localStorage.getItem(VISITOR_ONBOARDING_STORAGE_KEY) === "true";
-    } catch {
-      return false;
-    }
-  });
   // Only treat as logged-in when both the flag and the user record are present,
   // so the greeting disappears instantly on logout.
   const user = isAuthenticated ? authUser : null;
-  const shouldShowVisitorIntro = authChecked && !user && !visitorIntroSeen;
 
   // Preserve Google Ads and UTM attribution through the anonymous signup journey.
   useEffect(() => {
@@ -198,21 +189,6 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [user]);
-
-  if (shouldShowVisitorIntro) {
-    return (
-      <ImmersiveOnboarding
-        onDismiss={() => {
-          try {
-            localStorage.setItem(VISITOR_ONBOARDING_STORAGE_KEY, "true");
-          } catch {
-            // Storage may be unavailable in private/restricted browser contexts.
-          }
-          setVisitorIntroSeen(true);
-        }}
-      />
-    );
-  }
 
   return (
     <PullToRefresh onRefresh={() => queryClient.invalidateQueries()} className="h-full overflow-auto bg-background">

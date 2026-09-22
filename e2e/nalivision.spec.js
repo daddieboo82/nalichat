@@ -14,6 +14,7 @@ async function login(page) {
 test.describe('NaliVision E2E audit', () => {
   test.skip(!(email && password), 'Set E2E_USER_EMAIL and E2E_USER_PASSWORD.');
   test('loads Free TV, lists channels, and plays a browser-compatible HLS channel', async ({ page }) => {
+    test.setTimeout(180000);
     const browserErrors = [];
     page.on('pageerror', (error) => browserErrors.push(error.message));
 

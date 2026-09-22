@@ -153,16 +153,10 @@ describe('home, navigation, and recovery flows', () => {
     cleanup();
   });
 
-  it('renders the first-visit intro exclusively, then reveals the anonymous home entry flow', async () => {
+  it('shows the anonymous home conversion flow immediately on first visit', async () => {
     renderWithProviders(<Home />);
 
-    const intro = screen.getByRole('button', { name: 'Immersive Onboarding' });
-    expect(intro).toBeTruthy();
-    expect(screen.queryByRole('link', { name: /Get Started/i })).toBeNull();
-    expect(screen.queryByText('Quick Start Guide')).toBeNull();
-
-    fireEvent.click(intro);
-
+    expect(screen.queryByRole('button', { name: 'Immersive Onboarding' })).toBeNull();
     expect(screen.getAllByRole('link', { name: /Start Free/i }).length).toBeGreaterThan(0);
     expect(screen.getByText('Quick Start Guide')).toBeTruthy();
   });

@@ -296,8 +296,8 @@ export default function Home() {
               </div>
               <div className="mt-5 flex flex-col items-center gap-2 text-center">
                 <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/50">
-                  <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"/><span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"/></span>
-                  Central Plaza · All six malls open
+                  <MapPin className="h-3 w-3" />
+                  Central Plaza · Six worlds
                 </div>
                 <p className="text-xs text-muted-foreground">One identity. Multiple worlds. Return to NaliBase anytime to choose your next experience.</p>
               </div>

@@ -3,6 +3,7 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, MessageSquare, Music, Compass, FolderKanban, Video, Trophy, Users, UserPlus, Mic, Wand2, ListMusic, BarChart3, FolderOpen, Upload, Images, Film, Swords, Medal, Rocket, UserRound, Map, Sparkles, Store, Building2, Navigation, MapPin, Radio, Clock3 } from 'lucide-react';
 import { trackProductEvent } from '@/lib/productAnalytics';
+import { rememberWorldContext } from '@/lib/nalibaseWorldContext';
 
 const worlds = {
   connect: {
@@ -99,6 +100,7 @@ export default function WorldHub(){
   const {worldId}=useParams(); const world=worlds[worldId]; const [splash,setSplash]=useState(true);
   const finishSplash=useCallback(()=>setSplash(false),[]);
   useEffect(()=>setSplash(true),[worldId]);
+  useEffect(()=>{ if(world) rememberWorldContext(worldId); },[worldId,world]);
   if(!world) return <Navigate to="/" replace/>;
   const WorldIcon=world.icon;
   return <>

@@ -12,6 +12,7 @@ import { sounds } from "@/hooks/use-sound";
 import { cn } from "@/lib/utils";
 import RecentlyVisited from "@/components/navigation/RecentlyVisited";
 import Logo from "@/components/branding/Logo";
+import { resolveWorldForLocation } from "@/lib/nalibaseWorldContext";
 
 const SUBPAGE_PREFIXES = ["/playlist/", "/record", "/settings", "/analytics"];
 
@@ -66,10 +67,12 @@ export default function MobileHeader() {
   const hasDynamicSegment = path.split("/").filter(Boolean).length > 1 && !ROOT_PATHS.has(path);
   const isSubPage = location.state?.from || hasDynamicSegment || !ROOT_PATHS.has(path) || location.search.length > 0;
 
-  const title =
+  const activeWorld = resolveWorldForLocation(path, location.state?.fromWorld);
+  const baseTitle =
     TITLES[path] ||
     Object.entries(TITLES).find(([k]) => k !== "/" && path.startsWith(k))?.[1] ||
     "NaliBase";
+  const title = activeWorld && !path.startsWith('/world/') ? `${activeWorld.label} · ${baseTitle}` : baseTitle;
 
   const handleBack = () => {
     if (location.state?.from) {

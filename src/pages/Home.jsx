@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import Logo from "@/components/branding/Logo";
+import { getLastVisitedWorld } from "@/lib/nalibaseWorldContext";
 
 const features = [
   {
@@ -189,6 +190,8 @@ export default function Home() {
     }
   }, [user]);
 
+  const lastVisitedWorld = user ? getLastVisitedWorld() : null;
+
   return (
     <PullToRefresh onRefresh={() => queryClient.invalidateQueries()} className="h-full overflow-auto bg-background">
 
@@ -252,6 +255,15 @@ export default function Home() {
                   <motion.span className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 rounded-full bg-white/70 shadow-[0_0_12px_rgba(255,255,255,.55)]" animate={{ y: [0, 12, 0], opacity: [.45, 1, .45] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }} />
                 </div>
               </div>
+              {lastVisitedWorld && (
+                <div className="mb-4 flex justify-center">
+                  <Link to={`/world/${lastVisitedWorld.id}`} onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: `return_${lastVisitedWorld.id}` })} className="group inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-left backdrop-blur-xl transition hover:border-white/25 hover:bg-white/[.06]">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/45">Recently visited</span>
+                    <span className="font-heading text-sm font-black">{lastVisitedWorld.title}</span>
+                    <ArrowRight className="h-4 w-4 text-foreground/45 transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
+                  </Link>
+                </div>
+              )}
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {[
                   { title: "CONNECT", subtitle: "NaliChat", description: "Meet creators, message, share and collaborate.", path: "/world/connect", icon: MessageSquare, gradient: "from-primary/35 to-pink-500/15", action: "enter_connect" },

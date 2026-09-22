@@ -1626,7 +1626,7 @@ describe('release configuration', () => {
     expect(dialog).toContain('res?.data?.success !== true || res?.data?.method !== "email"');
     expect(dialog).toContain('External message request was not confirmed.');
     expect(dialog).toContain('setErrorMsg(err?.message ||');
-    expect(dialog).toContain('If that address can receive NaliChat messages, it will be delivered.');
+    expect(dialog).toContain('If that address can receive NaliBase messages, it will be delivered.');
     expect(dialog).not.toContain('Send SMS');
     expect(dialog).not.toContain('Phone number');
   });

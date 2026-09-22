@@ -62,7 +62,7 @@ describe('ThankYou purchase verification', () => {
         success: true,
         checkoutId: 'cs_test_123',
         status: 'paid',
-        items: [{ type: 'donation', name: 'Donation to NaliChat' }],
+        items: [{ type: 'donation', name: 'Donation to NaliBase' }],
       },
     });
 

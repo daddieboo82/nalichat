@@ -19,7 +19,7 @@ describe('home marketing claims', () => {
     expect(home).toContain('Contact Support');
     expect(home).toContain('mailto:support@nalichat.org');
     expect(home).toContain('to="/pricing"');
-    expect(home).toContain('NaliChat · Creator messaging, music collaboration, and Studio tools');
+    expect(home).toContain('NaliBase · Six connected worlds for creativity, entertainment, collaboration, and discovery');
     expect(home).toContain('Six worlds. One identity. Endless creative movement.');
     expect(home).toContain('Core chat is free forever · No paid plan required to start');
     expect(home).not.toContain('The Ultimate Messaging App for Creators');

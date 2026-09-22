@@ -64,7 +64,7 @@ export async function sendPushToUser(
           },
         },
         JSON.stringify({
-          title: payload.title || 'NaliChat',
+          title: payload.title || 'NaliBase',
           body: payload.body || 'You have a new notification',
           url: payload.url || '/',
         }),

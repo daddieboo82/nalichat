@@ -164,7 +164,7 @@ self.addEventListener('push', (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'NaliChat', {
+    self.registration.showNotification(data.title || 'NaliBase', {
       body: data.body || 'You have a new notification',
       icon: '/favicon.ico',
       badge: '/favicon.ico',

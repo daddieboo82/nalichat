@@ -331,9 +331,6 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* — Quick Access for logged-in users — */}
-      {!user && <QuickAccessGrid />}
-
       {/* — Pillar pills — */}
       <section className="relative z-10 overflow-hidden border-y border-border/70 bg-card/50 py-3 backdrop-blur-xl sm:py-4">
         <motion.div

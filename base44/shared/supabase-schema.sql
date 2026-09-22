@@ -1,4 +1,4 @@
--- NaliChat — Supabase table schema for Base44 data sync
+-- NaliBase — Supabase table schema for Base44 data sync
 -- Run this in your Supabase SQL Editor (Dashboard → SQL → New Query)
 -- These tables mirror the Base44 entities for backup/external access.
 

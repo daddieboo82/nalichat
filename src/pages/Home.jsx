@@ -580,7 +580,7 @@ export default function Home() {
           <div className="ui-surface flex flex-col items-start justify-between gap-6 rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.12] sm:p-8 md:flex-row md:items-center">
             <div>
               <h3 className="font-heading font-bold text-2xl mb-2 text-foreground">Interactive Tutorial</h3>
-              <p className="text-muted-foreground text-lg">New to NaliChat? Take our interactive onboarding wizard to get up to speed in seconds.</p>
+              <p className="text-muted-foreground text-lg">New to NaliBase? Take our interactive onboarding wizard to get up to speed in seconds.</p>
             </div>
             <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row">
               <Button onClick={() => setShowWizard(true)} size="lg" className="ui-hover h-12 w-full rounded-xl bg-indigo-500 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 focus-visible:ring-2 focus-visible:ring-indigo-400/50 sm:h-14 sm:w-auto sm:px-8 sm:text-base">
@@ -606,7 +606,7 @@ export default function Home() {
         <div>
           <div className="text-center mb-10">
             <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">Built for the Creative Workflow</h2>
-            <p className="text-foreground/90 text-lg">Core ways NaliChat helps creators move from idea to release</p>
+            <p className="text-foreground/90 text-lg">Core ways NaliBase helps creators move from idea to release</p>
           </div>
           <motion.div
             variants={containerVariants}

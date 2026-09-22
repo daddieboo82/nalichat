@@ -250,7 +250,7 @@ export default function PricingPlans({
     <div className="h-full min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background">
       <section className="mx-auto max-w-6xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:py-14">
         <div className="text-center">
-          <p className="text-sm font-bold uppercase tracking-widest text-primary">{upgradeFeature ? "Unlock your next creator tool" : "NaliChat plans"}</p>
+          <p className="text-sm font-bold uppercase tracking-widest text-primary">{upgradeFeature ? "Unlock your next creator tool" : "NaliBase plans"}</p>
           <h1 className="mt-3 font-heading text-3xl font-black tracking-tight sm:text-5xl">{copy.headline}</h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">{copy.subhead}</p>
           <p className="mt-4 font-semibold">Make music. Find collaborators. Finish songs. Release more.</p>

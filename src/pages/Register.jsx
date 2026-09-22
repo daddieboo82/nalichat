@@ -271,7 +271,7 @@ export default function Register() {
   return (
     <AuthLayout
       icon={UserPlus}
-      title="Join NaliChat free"
+      title="Join NaliBase free"
       subtitle="Start with Google in one tap, or use your email. No payment required."
       footer={
         <>

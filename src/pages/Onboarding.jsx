@@ -107,8 +107,8 @@ export default function Onboarding() {
             <Music className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="font-heading font-bold text-lg leading-tight">Welcome to NaliChat</p>
-            <p className="text-xs text-muted-foreground">Set up your creator profile in under a minute, then jump straight into NaliChat.</p>
+            <p className="font-heading font-bold text-lg leading-tight">Welcome to NaliBase</p>
+            <p className="text-xs text-muted-foreground">Set up your creator profile in under a minute, then enter the NaliBase Plaza.</p>
           </div>
         </div>
 
@@ -148,7 +148,7 @@ export default function Onboarding() {
           </div>
           <p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Only your display name and birthdate are required. Bio and location are optional and can be added later in Settings.</p><Button onClick={handleSave} disabled={loading} className="ui-hover mt-2 min-h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/15" size="lg">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-            {loading ? "Saving..." : "Enter NaliChat"}
+            {loading ? "Saving..." : "Enter NaliBase"}
           </Button>
         </div>
       </div>

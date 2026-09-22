@@ -41,7 +41,7 @@ export default function ForgotPassword() {
           If an account exists with that email, you'll receive a password reset link shortly.
         </p><p className="mt-2 text-xs text-muted-foreground">Check your inbox and spam folder. The message may take a minute to arrive.</p></div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4"><p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Enter the email connected to your NaliChat account. For privacy, we won’t reveal whether an account exists.</p>
+        <form onSubmit={handleSubmit} className="space-y-4"><p className="rounded-xl bg-secondary/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">Enter the email connected to your NaliBase account. For privacy, we won’t reveal whether an account exists.</p>
           <div className="space-y-2">
             <Label htmlFor="email">Email address</Label>
             <div className="relative">

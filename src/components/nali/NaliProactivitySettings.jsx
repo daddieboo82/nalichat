@@ -18,7 +18,7 @@ export default function NaliProactivitySettings() {
         <h3 className="font-heading font-semibold text-lg text-foreground">Nali Presence</h3>
       </div>
       <p className="text-sm text-muted-foreground mb-4">
-        Control how Nali shows up across NaliChat. Nali never interrupts — it only offers help you can dismiss.
+        Control how Nali shows up across NaliBase. Nali never interrupts — it only offers help you can dismiss.
       </p>
       <div className="space-y-2">
         {LEVELS.map(({ value, label, desc, icon: Icon }) => (

@@ -101,7 +101,7 @@ export default function AppLoader({ onDone }) {
 
             {/* Word mark */}
             <div className="text-center">
-              <h1 className="text-4xl font-heading font-black text-gradient-animate tracking-tight">NaliChat</h1>
+              <h1 className="text-4xl font-heading font-black text-gradient-animate tracking-tight">NaliBase</h1>
               <p className="text-xs text-muted-foreground/60 mt-1 tracking-widest uppercase">Music Collaboration</p>
             </div>
 

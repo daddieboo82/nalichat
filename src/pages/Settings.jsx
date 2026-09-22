@@ -313,7 +313,7 @@ export default function Settings() {
             <div className="ui-surface flex flex-col justify-between gap-4 rounded-3xl border border-white/[0.06] bg-card/50 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:p-6">
               <div>
                 <h3 className="font-heading font-semibold text-lg text-foreground">Interactive Tutorial</h3>
-                <p className="text-sm text-muted-foreground mt-1">Take an interactive tour to learn how to use NaliChat's studio and collaboration tools.</p>
+                <p className="text-sm text-muted-foreground mt-1">Take an interactive tour to learn how to use NaliBase's worlds and creative tools.</p>
               </div>
               <Button onClick={() => setShowWizard(true)} className="ui-hover min-h-11 w-full rounded-xl border-0 bg-primary font-semibold text-white hover:bg-primary/90 sm:w-auto">
                 Start Tutorial

@@ -140,7 +140,7 @@ export default function Leaderboard() {
             <Trophy className="w-8 h-8 text-yellow-400" />
           </div>
           <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">Leaderboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">Top creators across NaliChat</p>
+          <p className="text-muted-foreground text-sm mt-1">Top creators across NaliBase</p>
           {myRank > 0 && (
             <div className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
               <Star className="w-4 h-4" /> You're #{myRank}

@@ -5,31 +5,21 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
-import { resolveWorldForLocation } from "@/lib/nalibaseWorldContext";
+import { getWorldForPath, resolveWorldForLocation, WORLD_CONTEXTS, WORLD_ORDER } from "@/lib/nalibaseWorldContext";
 
+const WORLD_ICONS = { connect: MessageSquare, create: Music, discover: Compass, share: FolderKanban, visualize: Film, compete: Trophy };
 const TABS = [
   { icon: Home, label: "Plaza", path: "/" },
-  { icon: MessageSquare, label: "Connect", path: "/world/connect" },
-  { icon: Music, label: "Create", path: "/world/create" },
-  { icon: Compass, label: "Discover", path: "/world/discover" },
-  { icon: FolderKanban, label: "Share", path: "/world/share" },
-  { icon: Film, label: "Visualize", path: "/world/visualize" },
-  { icon: Trophy, label: "Compete", path: "/world/compete" },
+  ...WORLD_ORDER.map((id) => ({ icon: WORLD_ICONS[id], label: WORLD_CONTEXTS[id].label[0] + WORLD_CONTEXTS[id].label.slice(1).toLowerCase(), path: WORLD_CONTEXTS[id].path })),
 ];
 
 const LEGACY_STORAGE_KEY = "mobile_nav_stacks";
 const storageKeyFor = (userId) => `mobile_nav_stacks:${userId || "anonymous"}`;
 
 function getTabForPath(pathname, preferredWorld = "") {
-  if (preferredWorld) return `/world/${preferredWorld}`;
   if (pathname === "/") return "/";
-  if (pathname.startsWith("/world/connect") || pathname.startsWith("/messages") || pathname.startsWith("/profile")) return "/world/connect";
-  if (pathname.startsWith("/world/create") || pathname.startsWith("/studio") || pathname.startsWith("/record")) return "/world/create";
-  if (pathname.startsWith("/world/discover") || pathname.startsWith("/explore") || pathname.startsWith("/playlist") || pathname.startsWith("/analytics")) return "/world/discover";
-  if (pathname.startsWith("/world/share") || pathname.startsWith("/files") || pathname.startsWith("/projects-summary")) return "/world/share";
-  if (pathname.startsWith("/world/visualize") || pathname.startsWith("/music-video-generator") || pathname.startsWith("/cover-art")) return "/world/visualize";
-  if (pathname.startsWith("/world/compete") || pathname.startsWith("/challenge") || pathname.startsWith("/leaderboard") || pathname.startsWith("/squad")) return "/world/compete";
-  return null;
+  const world = getWorldForPath(pathname, preferredWorld);
+  return world?.path || null;
 }
 
 function loadStacks(storageKey, userId) {

@@ -104,7 +104,7 @@ export default function ChatInput({ onSend, replyTo, onCancelReply, editingMessa
 
   const uploadFile = async (file) => {
     // Message attachments use Nali Transfer, which intentionally has no
-    // NaliChat application-level total file-size ceiling.
+    // NaliBase application-level total file-size ceiling.
     if (!(file instanceof File) || !file.name || file.size <= 0) {
       sounds.error();
       toast.error("The selected file is empty or invalid.");

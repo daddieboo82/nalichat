@@ -62,7 +62,7 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
       <DialogContent className="w-[calc(100vw-1rem)] max-w-md max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] bg-card border-border sm:w-full">
          <DialogHeader>
            <DialogTitle className="font-heading">Send External Message</DialogTitle>
-           <DialogDescription>Send an email message to a registered NaliChat user</DialogDescription>
+           <DialogDescription>Send an email message to a registered NaliBase user</DialogDescription>
          </DialogHeader>
 
         {status === "success" ? (
@@ -70,7 +70,7 @@ export default function ExternalMessageDialog({ open, onOpenChange }) {
             <CheckCircle className="w-12 h-12 text-green-500" />
             <p className="font-heading font-semibold text-lg">Request Accepted</p>
             <p className="text-sm text-muted-foreground">
-              If that address can receive NaliChat messages, it will be delivered.
+              If that address can receive NaliBase messages, it will be delivered.
             </p>
             <Button onClick={reset} variant="outline" className="mt-2">Send Another</Button>
           </div>

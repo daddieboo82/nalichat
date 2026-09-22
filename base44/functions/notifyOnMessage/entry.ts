@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
       created += 1;
       try {
         await sendPushToUser(entities, recipientId, {
-          title: isLockedChat ? 'NaliChat' : (notification.actor_name || 'NaliChat'),
+          title: isLockedChat ? 'NaliBase' : (notification.actor_name || 'NaliBase'),
           body: notification.message,
           url: notification.link,
         });

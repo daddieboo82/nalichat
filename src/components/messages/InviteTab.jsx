@@ -46,14 +46,14 @@ export default function InviteTab() {
       return;
     }
 
-    const body = `I'm using NaliChat to collaborate on music. Join me here: ${inviteLink}`;
+    const body = `I'm using NaliBase to collaborate on music. Join me here: ${inviteLink}`;
     window.location.href = `sms:${encodeURIComponent(normalized)}?&body=${encodeURIComponent(body)}`;
     setSmsStatus({ type: 'success', message: 'Your SMS app was opened with the invite ready to send.' });
   };
 
   const openEmail = () => {
-    const subject = 'Join me on NaliChat';
-    const body = `I'm using NaliChat to collaborate on music. Join me here: ${inviteLink}`;
+    const subject = 'Join me on NaliBase';
+    const body = `I'm using NaliBase to collaborate on music. Join me here: ${inviteLink}`;
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
@@ -107,13 +107,13 @@ export default function InviteTab() {
             </p>
           ) : (
             <p className="text-xs text-muted-foreground mt-2">
-              NaliChat opens your SMS app; you review and send the invite yourself.
+              NaliBase opens your SMS app; you review and send the invite yourself.
             </p>
           )}
         </div>
 
         <p className="text-xs text-muted-foreground">
-          NaliChat never sends invite email or SMS messages to arbitrary recipients on your behalf.
+          NaliBase never sends invite email or SMS messages to arbitrary recipients on your behalf.
         </p>
       </div>
     </div>

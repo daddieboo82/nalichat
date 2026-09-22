@@ -97,7 +97,7 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
       canvas.width = CARD_SIZE;
       canvas.height = CARD_SIZE;
 
-      // Background — NaliChat gradient
+      // Background — NaliBase gradient
       const bgGrad = ctx.createLinearGradient(0, 0, CARD_SIZE, CARD_SIZE);
       bgGrad.addColorStop(0, "#1a1033");
       bgGrad.addColorStop(0.5, "#2d1b69");
@@ -248,10 +248,10 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
       ctx.font = "bold 36px 'Space Grotesk', sans-serif";
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
-      ctx.fillText("NaliChat", 130, footerY + 52);
+      ctx.fillText("NaliBase", 130, footerY + 52);
       ctx.fillStyle = "rgba(255,255,255,0.5)";
       ctx.font = "500 24px 'Inter', sans-serif";
-      ctx.fillText("Made in NaliChat", 130, footerY + 84);
+      ctx.fillText("Made in NaliBase", 130, footerY + 84);
       // URL on right
       ctx.fillStyle = "rgba(20, 184, 166, 0.9)";
       ctx.font = "600 28px 'Inter', sans-serif";
@@ -292,7 +292,7 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
       if (!res.ok) throw new Error(`Voice card fetch failed: ${res.status}`);
       const blob = await res.blob();
       const file = new File([blob], "nalichat-voice-card.png", { type: "image/png" });
-      const shareText = `Voice note from ${message?.sender_name || "NaliChat"} — transcribed & shared via NaliChat`;
+      const shareText = `Voice note from ${message?.sender_name || "NaliBase"} — transcribed & shared via NaliBase`;
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], text: shareText });
       } else if (navigator.share) {
@@ -321,7 +321,7 @@ export default function VoiceCardDialog({ message, isOpen, onClose }) {
             Shareable Voice Card
           </DialogTitle>
           <DialogDescription className="text-xs">
-            A branded card with the transcript, waveform, and a NaliChat watermark — ready for TikTok, Instagram, or X.
+            A branded card with the transcript, waveform, and a NaliBase watermark — ready for TikTok, Instagram, or X.
           </DialogDescription>
         </DialogHeader>
 

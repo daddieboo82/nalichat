@@ -74,10 +74,10 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
   const buildShareText = () => {
     if (!result) return "";
     if (mode === "meme") {
-      return `${result.caption}\n\nMade in NaliChat`;
+      return `${result.caption}\n\nMade in NaliBase`;
     }
     const scriptText = result.scenes?.map((s, i) => `Scene ${i + 1} (${s.duration}): ${s.text}`).join("\n");
-    return `${result.caption}\n\n${scriptText}\n\n#${result.hashtags?.join(" #")}\n\nMade in NaliChat`;
+    return `${result.caption}\n\n${scriptText}\n\n#${result.hashtags?.join(" #")}\n\nMade in NaliBase`;
   };
 
   const handleCopy = async () => {
@@ -137,7 +137,7 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
       ctx.font = "bold 22px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("✨ Made in NaliChat", canvas.width / 2, img.naturalHeight + watermarkHeight / 2);
+      ctx.fillText("✨ Made in NaliBase", canvas.width / 2, img.naturalHeight + watermarkHeight / 2);
 
       canvas.toBlob((blob) => {
         if (!blob) {
@@ -150,7 +150,7 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
         a.download = "nalichat-meme.png";
         a.click();
         URL.revokeObjectURL(url);
-        toast.success("Downloaded with NaliChat watermark!");
+        toast.success("Downloaded with NaliBase watermark!");
       });
     } catch {
       const a = document.createElement("a");
@@ -257,7 +257,7 @@ export default function ViralMomentDialog({ message, isOpen, onClose }) {
                   <img src={result.image_url} alt="AI meme" className="w-full rounded-xl" />
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-primary to-primary/80 py-1.5 px-3 flex items-center justify-center gap-1.5">
                     <Sparkles className="w-3 h-3 text-white" />
-                    <span className="text-[11px] font-bold text-white tracking-wide">Made in NaliChat</span>
+                    <span className="text-[11px] font-bold text-white tracking-wide">Made in NaliBase</span>
                   </div>
                 </div>
                 <div className="bg-secondary/60 rounded-lg px-3 py-2.5">

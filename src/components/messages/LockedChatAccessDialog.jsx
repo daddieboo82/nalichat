@@ -115,7 +115,7 @@ export default function LockedChatAccessDialog({
           </DialogTitle>
           <DialogDescription>
             {isSetup
-              ? "This app lock hides selected chats on this device. It is not end-to-end encryption and does not hide messages from NaliChat servers."
+              ? "This app lock hides selected chats on this device. It is not end-to-end encryption and does not hide messages from NaliBase servers."
               : isReset
                 ? "Resetting changes only this app lock. Your messages and account password are not changed."
                 : "Enter your local PIN to start a five-minute access session. Leaving the app locks chats immediately."}

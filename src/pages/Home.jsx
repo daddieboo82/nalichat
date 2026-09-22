@@ -241,7 +241,18 @@ export default function Home() {
               </p>
               <h2 className="mt-2 text-center font-heading text-3xl font-black sm:text-5xl">Where do you want to go?</h2>
               <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground sm:text-base">Your entertainment and creativity universe. Choose a world and step inside.</p>
-              <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mx-auto mt-6 max-w-3xl" aria-label="NaliBase Central Plaza map">
+                <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-foreground/45">
+                  <span className="h-px flex-1 bg-gradient-to-r from-transparent to-white/15" />
+                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">You are here · Central Plaza</span>
+                  <span className="h-px flex-1 bg-gradient-to-l from-transparent to-white/15" />
+                </div>
+                <div className="relative mx-auto mt-2 h-5 max-w-2xl" aria-hidden="true">
+                  <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-gradient-to-b from-white/20 to-transparent" />
+                  <motion.span className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 rounded-full bg-white/70 shadow-[0_0_12px_rgba(255,255,255,.55)]" animate={{ y: [0, 12, 0], opacity: [.45, 1, .45] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }} />
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {[
                   { title: "CONNECT", subtitle: "NaliChat", description: "Meet creators, message, share and collaborate.", path: "/world/connect", icon: MessageSquare, gradient: "from-primary/35 to-pink-500/15", action: "enter_connect" },
                   { title: "CREATE", subtitle: "NaliStudio", description: "Record, produce, mix and build your next idea.", path: "/world/create", icon: Music, gradient: "from-cyan-500/30 to-accent/15", action: "enter_create" },

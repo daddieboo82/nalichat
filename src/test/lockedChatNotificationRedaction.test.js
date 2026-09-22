@@ -14,7 +14,7 @@ describe('locked chat notification redaction', () => {
     expect(source).toContain('LockedConversationPreference.filter(');
     expect(source).toContain('const isLockedChat = lockedRecipientIds.has(recipientId);');
     expect(source).toContain('...lockedNotification(conversation.id)');
-    expect(source).toContain("title: isLockedChat ? 'NaliChat'");
+    expect(source).toContain("title: isLockedChat ? 'NaliBase'");
     expect(helper).toContain("actor_name: 'Locked chat'");
     expect(helper).toContain("message = 'New message in a locked chat.'");
     expect(helper).toContain('locked_chat: true');

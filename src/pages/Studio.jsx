@@ -1,6 +1,6 @@
 import { secureUploadFile } from "@/lib/secureUpload";
 import { validateUpload } from "@/lib/uploadValidation";
-import { trackProductEvent } from "@/lib/productAnalytics";
+import { markActivationComplete, trackProductEvent } from "@/lib/productAnalytics";
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -2129,6 +2129,9 @@ export default function Studio() {
           trackProductEvent("first_upload", {
             user_id: user?.id || "",
             source: "studio_import",
+            file_type: file.type || "unknown",
+          });
+          markActivationComplete(user?.id, "first_upload", {
             file_type: file.type || "unknown",
           });
         }

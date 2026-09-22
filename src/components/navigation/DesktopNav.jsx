@@ -12,17 +12,15 @@ import { sounds } from "@/hooks/use-sound";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Logo from "@/components/branding/Logo";
 import { Button } from "@/components/ui/button";
-import { resolveWorldForLocation } from "@/lib/nalibaseWorldContext";
+import { resolveWorldForLocation, WORLD_CONTEXTS, WORLD_ORDER } from "@/lib/nalibaseWorldContext";
 
+const WORLD_ICONS = { connect: MessageSquare, create: Music, discover: Compass, share: FileText, visualize: Film, compete: Trophy };
 const NAV_GROUPS = [
-  { label: "NaliBase Worlds", items: [
-    { icon: MessageSquare, label: "Connect", path: "/world/connect" },
-    { icon: Music, label: "Create", path: "/world/create" },
-    { icon: Compass, label: "Discover", path: "/world/discover" },
-    { icon: FileText, label: "Share", path: "/world/share" },
-    { icon: Film, label: "Visualize", path: "/world/visualize" },
-    { icon: Trophy, label: "Compete", path: "/world/compete" },
-  ]},
+  { label: "NaliBase Worlds", items: WORLD_ORDER.map((id) => ({
+    icon: WORLD_ICONS[id],
+    label: WORLD_CONTEXTS[id].label[0] + WORLD_CONTEXTS[id].label.slice(1).toLowerCase(),
+    path: WORLD_CONTEXTS[id].path,
+  })) },
 ];
 
 export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick }) {

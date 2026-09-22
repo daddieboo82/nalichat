@@ -25,7 +25,9 @@ Deno.serve(async (req) => {
         num_frames: 81,
         guidance_scale: 5,
         num_inference_steps: 28,
-        negative_prompt: [String(negative_prompt || 'text, logo, watermark, celebrity likeness, distorted anatomy, low quality')],
+        // fal.ai's Wan 2.2 endpoint currently validates this field as a single string,
+        // even though the generic Hugging Face task schema documents string[].
+        negative_prompt: String(negative_prompt || 'text, logo, watermark, celebrity likeness, distorted anatomy, low quality') as any,
       },
     });
     const bytes = new Uint8Array(await video.arrayBuffer());

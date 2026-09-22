@@ -116,12 +116,12 @@ export default async function(req) {
         const displayName = user.display_name || user.full_name || 'there';
         await base44.asServiceRole.integrations.Core.SendEmail({
           to: user.email,
-          subject: 'Finish setting up your NaliChat profile',
+          subject: 'Finish setting up your NaliBase profile',
           html: `
             <div style="font-family: 'Inter', sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
               <h2 style="color: #9d50bb; margin-bottom: 16px;">Hey ${displayName}! 👋</h2>
               <p style="color: #333; line-height: 1.6;">
-                We noticed you haven't finished setting up your NaliChat profile yet.
+                We noticed you haven't finished setting up your NaliBase profile yet.
                 It only takes a minute — just add your display name and birthdate to unlock
                 the full studio, messaging, and collaboration features.
               </p>
@@ -133,11 +133,11 @@ export default async function(req) {
               </div>
               <p style="color: #888; font-size: 13px; line-height: 1.5;">
                 If you're having trouble, just reply to this email and we'll help you out.<br/>
-                — The NaliChat Team
+                — The NaliBase Team
               </p>
             </div>
           `,
-          text: `Hey ${displayName}! We noticed you haven't finished setting up your NaliChat profile yet. Complete it here: ${onboardingLink}`,
+          text: `Hey ${displayName}! We noticed you haven't finished setting up your NaliBase profile yet. Complete it here: ${onboardingLink}`,
         });
 
         // Mark this user as re-engaged so we don't email them again

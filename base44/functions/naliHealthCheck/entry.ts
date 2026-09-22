@@ -174,7 +174,7 @@ Snapshot coverage:
 `.trim();
 
     const llmResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `You are Nali, the AI assistant for NaliChat (a music collaboration app). This is your weekly app health report for the app owner. Based on the data snapshot below, write a concise, friendly report that:
+      prompt: `You are Nali, the AI assistant for NaliBase (an entertainment and creativity universe). This is your weekly app health report for the app owner. Based on the data snapshot below, write a concise, friendly report that:
 1. Summarizes any concrete issues that need fixing (use the detected issues).
 2. Clearly states that this is a lightweight recent-record snapshot, not a complete database audit, whenever any truncation flag is true.
 3. Suggests 2-4 practical enhancements or things worth keeping an eye on, based on usage patterns.
@@ -218,7 +218,7 @@ ${dataSummary}`,
         base44.asServiceRole.integrations.Core.SendEmail({
           from_name: 'Nali',
           to: admin.email,
-          subject: `🎧 NaliChat Weekly Health Check — ${headline}`,
+          subject: `🎧 NaliBase Weekly Health Check — ${headline}`,
           body: report,
         })
       )

@@ -83,6 +83,7 @@ const Studio = lazyWithReloadRecovery(() => import('@/pages/Studio'), 'studio');
 const AdminDashboard = lazyWithReloadRecovery(() => import('@/pages/AdminDashboard'), 'admin-dashboard');
 const Record = lazyWithReloadRecovery(() => import('@/pages/Record'), 'record');
 const CoverArt = lazyWithReloadRecovery(() => import('@/pages/CoverArt'), 'cover-art');
+const WorldHub = lazyWithReloadRecovery(() => import('@/pages/WorldHub'), 'world-hub');
 const WebhookTest = lazyWithReloadRecovery(() => import('@/pages/WebhookTest'), 'webhook-test');
 const ProjectsSummary = lazyWithReloadRecovery(() => import('@/pages/ProjectsSummary'), 'projects-summary');
 const ChallengeHub = lazyWithReloadRecovery(() => import('@/pages/ChallengeHub'), 'challenge-hub');
@@ -355,6 +356,7 @@ const AuthenticatedApp = () => {
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`} replace />} />}>
         <Route path="/studio" element={<Studio />} />
         <Route element={<AppLayout />}>
+          <Route path="/world/:worldId" element={<WorldHub />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/music-video-generator" element={<MusicVideoGenerator />} />
           <Route path="/files" element={<Files />} />

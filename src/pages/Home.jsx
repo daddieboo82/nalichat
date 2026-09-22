@@ -244,12 +244,12 @@ export default function Home() {
               <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground sm:text-base">Your entertainment and creativity universe. Choose a world and step inside.</p>
               <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {[
-                  { title: "CONNECT", subtitle: "NaliChat", description: "Meet creators, message, share and collaborate.", path: "/messages", icon: MessageSquare, gradient: "from-primary/35 to-pink-500/15", action: "enter_connect" },
-                  { title: "CREATE", subtitle: "NaliStudio", description: "Record, produce, mix and build your next idea.", path: "/studio", icon: Music, gradient: "from-cyan-500/30 to-accent/15", action: "enter_create" },
-                  { title: "DISCOVER", subtitle: "Creator World", description: "Explore creators, music, challenges and inspiration.", path: "/explore", icon: Sparkles, gradient: "from-violet-500/30 to-fuchsia-500/15", action: "enter_discover" },
-                  { title: "SHARE", subtitle: "Files & Projects", description: "Move creative files and keep projects connected.", path: "/files", icon: FolderKanban, gradient: "from-emerald-500/30 to-teal-500/15", action: "enter_share" },
-                  { title: "VISUALIZE", subtitle: "Music Video Lab", description: "Turn songs and concepts into visual experiences.", path: "/music-video-generator", icon: Video, gradient: "from-orange-500/30 to-rose-500/15", action: "enter_visualize" },
-                  { title: "COMPETE", subtitle: "Challenges", description: "Enter challenges, climb leaderboards and get discovered.", path: "/challenges", icon: Trophy, gradient: "from-yellow-500/30 to-amber-500/15", action: "enter_compete" },
+                  { title: "CONNECT", subtitle: "NaliChat", description: "Meet creators, message, share and collaborate.", path: "/world/connect", icon: MessageSquare, gradient: "from-primary/35 to-pink-500/15", action: "enter_connect" },
+                  { title: "CREATE", subtitle: "NaliStudio", description: "Record, produce, mix and build your next idea.", path: "/world/create", icon: Music, gradient: "from-cyan-500/30 to-accent/15", action: "enter_create" },
+                  { title: "DISCOVER", subtitle: "Creator World", description: "Explore creators, music, challenges and inspiration.", path: "/world/discover", icon: Sparkles, gradient: "from-violet-500/30 to-fuchsia-500/15", action: "enter_discover" },
+                  { title: "SHARE", subtitle: "Files & Projects", description: "Move creative files and keep projects connected.", path: "/world/share", icon: FolderKanban, gradient: "from-emerald-500/30 to-teal-500/15", action: "enter_share" },
+                  { title: "VISUALIZE", subtitle: "Music Video Lab", description: "Turn songs and concepts into visual experiences.", path: "/world/visualize", icon: Video, gradient: "from-orange-500/30 to-rose-500/15", action: "enter_visualize" },
+                  { title: "COMPETE", subtitle: "Challenges", description: "Enter challenges, climb leaderboards and get discovered.", path: "/world/compete", icon: Trophy, gradient: "from-yellow-500/30 to-amber-500/15", action: "enter_compete" },
                 ].map((world) => {
                   const WorldIcon = world.icon;
                   return (

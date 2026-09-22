@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       created += 1;
       try {
         await sendPushToUser(entities, recipientId, {
-          title: notification.actor_name || 'NaliChat',
+          title: notification.actor_name || 'NaliBase',
           body: notification.message,
           url: notification.link,
         });

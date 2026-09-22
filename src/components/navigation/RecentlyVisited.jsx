@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
+import { resolveWorldForLocation } from "@/lib/nalibaseWorldContext";
 
 const LEGACY_STORAGE_KEY = "nali_recent_pages";
 const storageKeyFor = (userId) => `nali_recent_pages:${userId || "anonymous"}`;
@@ -75,10 +76,12 @@ export default function RecentlyVisited({ onNavigate, currentPath }) {
         <Clock className="w-3 h-3" /> Recent
       </h3>
       <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-        {recent.map(path => (
+        {recent.map(path => {
+          const world = resolveWorldForLocation(path);
+          return (
           <button
             key={path}
-            onClick={() => onNavigate(path)}
+            onClick={() => onNavigate(path, world?.id || '')}
             className={cn(
               "ui-hover flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary/40",
               path === currentPath
@@ -89,7 +92,8 @@ export default function RecentlyVisited({ onNavigate, currentPath }) {
             <span className="text-sm">{ICONS[path] || "📄"}</span>
             <span className="capitalize">{path.split("/")[1].replace(/-/g, " ")}</span>
           </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

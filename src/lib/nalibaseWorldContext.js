@@ -63,6 +63,11 @@ export function getRememberedWorldForPath(pathname='') {
 export function resolveWorldForLocation(pathname='', stateWorld='') {
   const preferred = stateWorld || getRememberedWorldForPath(pathname);
   const world = getWorldForPath(pathname, preferred);
-  if (stateWorld && world?.id === stateWorld) rememberWorldContext(stateWorld);
+  // Keep shared-storefront mall continuity separate from account-scoped visit history.
+  // Explicit navigation state may update the active mall, but only entering WorldHub
+  // should count as a recently visited world.
+  if (stateWorld && world?.id === stateWorld && typeof window !== 'undefined') {
+    try { window.sessionStorage.setItem(WORLD_SESSION_KEY, stateWorld); } catch (_) {}
+  }
   return world;
 }

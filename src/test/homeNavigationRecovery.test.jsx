@@ -130,6 +130,7 @@ function MobileNavHarness() {
         <Route path="/explore" element={<div>Explore page</div>} />
         <Route path="/messages" element={<div>Messages page</div>} />
         <Route path="/profile" element={<button onClick={() => navigate('/profile?id=42')}>Go profile detail</button>} />
+        <Route path="/world/:worldId" element={<div>World mall</div>} />
       </Routes>
     </>
   );

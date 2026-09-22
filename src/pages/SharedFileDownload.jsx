@@ -64,7 +64,7 @@ export default function SharedFileDownload() {
         ) throw new Error("Could not refresh download authorization.");
         return refreshed.file_url;
       };
-      await resumableDownload(refreshUrl, file.name || "NaliChat-file");
+      await resumableDownload(refreshUrl, file.name || "NaliBase-file");
       setState("ready");
     } catch {
       setState("error");
@@ -89,7 +89,7 @@ export default function SharedFileDownload() {
           <>
             <ShieldCheck className="w-12 h-12 text-primary mx-auto mb-4" />
             <h1 className="text-2xl font-heading font-bold mb-2">{file?.name || "Shared file"}</h1>
-            <p className="text-muted-foreground mb-6">Securely shared through NaliChat.</p>
+            <p className="text-muted-foreground mb-6">Securely shared through NaliBase.</p>
             <Button onClick={download} disabled={state === "downloading"} className="w-full h-12">
               {state === "downloading"
                 ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />

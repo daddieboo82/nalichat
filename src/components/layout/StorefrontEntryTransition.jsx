@@ -6,8 +6,9 @@ import { getWorldForPath } from '@/lib/nalibaseWorldContext';
 
 const seen = new Set();
 export default function StorefrontEntryTransition() {
-  const { pathname } = useLocation();
-  const world = getWorldForPath(pathname);
+  const location = useLocation();
+  const { pathname } = location;
+  const world = getWorldForPath(pathname, location.state?.fromWorld);
   const [visible,setVisible]=useState(false);
   useEffect(()=>{
     if (!world || pathname.startsWith('/world/') || seen.has(pathname)) return;

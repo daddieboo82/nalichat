@@ -18,7 +18,11 @@ const PATH_WORLD = [
   [/^\/explore(?:\/|$)/, 'discover'], [/^\/playlists(?:\/|$)/, 'discover'], [/^\/playlist(?:\/|$)/, 'discover'],
 ];
 
-export function getWorldForPath(pathname='') {
+export function getWorldForPath(pathname='', preferredWorld='') {
+  if (preferredWorld && WORLD_CONTEXTS[preferredWorld]) {
+    const storefrontMatch = WORLD_CONTEXTS[preferredWorld].storefronts.some(({path}) => pathname === path || pathname.startsWith(path + '/'));
+    if (storefrontMatch) return { id: preferredWorld, ...WORLD_CONTEXTS[preferredWorld] };
+  }
   const direct = pathname.match(/^\/world\/([^/]+)/)?.[1];
   if (direct && WORLD_CONTEXTS[direct]) return { id: direct, ...WORLD_CONTEXTS[direct] };
   const match = PATH_WORLD.find(([pattern]) => pattern.test(pathname));

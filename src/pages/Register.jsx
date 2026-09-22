@@ -30,6 +30,13 @@ export default function Register() {
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [emailStartedTracked, setEmailStartedTracked] = useState(false);
+
+  const markEmailRegistrationStarted = () => {
+    if (emailStartedTracked) return;
+    setEmailStartedTracked(true);
+    trackProductEvent("registration_started", { source: "email", stage: "form_interaction" });
+  };
 
   // Capture campaign parameters even when an ad links directly to /register.
   useEffect(() => {
@@ -57,7 +64,10 @@ export default function Register() {
     }
     setLoading(true);
     const attribution = getMarketingAttribution();
-    trackProductEvent("registration_started", { source: "email" });
+    if (!emailStartedTracked) {
+      setEmailStartedTracked(true);
+      trackProductEvent("registration_started", { source: "email", stage: "submit" });
+    }
     trackPaywallEvent("registration_started", {
       source: "email",
       campaign_source: attribution?.utm_source || undefined,
@@ -72,7 +82,8 @@ export default function Register() {
       await base44.auth.register({ email, password });
       setShowOtp(true);
     } catch (err) {
-      trackProductEvent("registration_failed", { source: "email", outcome: "register_error" });
+      const safeReason = registrationErrorMessage(err);
+      trackProductEvent("registration_failed", { source: "email", outcome: "register_error", reason: safeReason });
       trackPaywallEvent("registration_failed", {
         source: "email",
         outcome: "register_error",
@@ -84,7 +95,7 @@ export default function Register() {
         campaign_landing_path: attribution?.landing_path || undefined,
         google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
       });
-      setError(registrationErrorMessage(err));
+      setError(safeReason);
     } finally {
       setLoading(false);
     }
@@ -320,7 +331,7 @@ export default function Register() {
               autoFocus
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); markEmailRegistrationStarted(); }}
               className="h-12 rounded-xl border-border/70 bg-background/70 pl-10 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               required
             />
@@ -336,7 +347,7 @@ export default function Register() {
               autoComplete="new-password"
               placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); markEmailRegistrationStarted(); }}
               className="h-12 rounded-xl border-border/70 bg-background/70 pl-10 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               required
             />
@@ -352,7 +363,7 @@ export default function Register() {
               autoComplete="new-password"
               placeholder="••••••••"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => { setConfirmPassword(e.target.value); markEmailRegistrationStarted(); }}
               className="h-12 rounded-xl border-border/70 bg-background/70 pl-10 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               required
             />

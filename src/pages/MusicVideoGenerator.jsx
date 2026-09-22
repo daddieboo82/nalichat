@@ -1,5 +1,5 @@
 import { useEffect,useRef,useState } from "react";
-import { ArrowLeft,Download,Film,Music2,Sparkles,Upload,Wand2 } from "lucide-react";
+import { ArrowLeft, Film } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { secureUploadFile } from "@/lib/secureUpload";

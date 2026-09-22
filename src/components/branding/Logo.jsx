@@ -2,7 +2,7 @@ import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * NaliChat logo mark — "Chat + Wave Fuse".
+ * NaliBase logo mark — "Chat + Wave Fuse".
  * A rounded chat-bubble outline whose tail curls into the first of three
  * diagonal sound-wave bars, so message and sound read as one continuous
  * shape. Vivid neon gradient (magenta → purple → cyan) flows across both
@@ -13,8 +13,9 @@ import { cn } from "@/lib/utils";
  *   size     — pixel size (default 32)
  *   className — extra classes on the wrapper
  *   glow     — toggle the outer neon glow (default true)
+ *   label    — accessible brand label (default "NaliBase logo")
  */
-export default function Logo({ size = 32, className, glow = true }) {
+export default function Logo({ size = 32, className, glow = true, label = "NaliBase logo" }) {
   const uid = useId();
   const tileId = `nali-tile-${uid}`;
   const neonId = `nali-neon-${uid}`;
@@ -29,7 +30,7 @@ export default function Logo({ size = 32, className, glow = true }) {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className="w-full h-full"
-        aria-label="NaliChat logo"
+        aria-label={label}
       >
         <defs>
           <radialGradient id={tileId} cx="0.5" cy="0.38" r="0.8">

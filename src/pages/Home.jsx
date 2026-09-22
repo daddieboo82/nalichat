@@ -258,8 +258,9 @@ export default function Home() {
               {lastVisitedWorld && (
                 <div className="mb-4 flex justify-center">
                   <Link to={`/world/${lastVisitedWorld.id}`} onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: `return_${lastVisitedWorld.id}` })} className="group inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-left backdrop-blur-xl transition hover:border-white/25 hover:bg-white/[.06]">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/45">Recently visited</span>
-                    <span className="font-heading text-sm font-black">{lastVisitedWorld.title}</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/45">Continue your journey</span>
+                    <span className="font-heading text-sm font-black">Return to {lastVisitedWorld.label}</span>
+                    <span className="hidden text-xs text-foreground/50 sm:inline">{lastVisitedWorld.name}</span>
                     <ArrowRight className="h-4 w-4 text-foreground/45 transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
                   </Link>
                 </div>

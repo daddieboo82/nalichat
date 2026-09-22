@@ -12,6 +12,7 @@ describe("recently visited account isolation", () => {
     expect(source).toContain('nali_recent_pages:${userId || "anonymous"}');
     expect(source).toContain('sessionStorage.getItem(storageKey)');
     expect(source).toContain('sessionStorage.setItem(storageKey, JSON.stringify(updated))');
+    expect(source).toContain('fromWorld: WORLD_CONTEXTS[currentWorldId] ? currentWorldId : ""');
     expect(source).toContain('if (!raw && !user?.id)');
     expect(source).toContain('sessionStorage.removeItem(LEGACY_STORAGE_KEY)');
   });

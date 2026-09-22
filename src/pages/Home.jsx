@@ -225,6 +225,15 @@ export default function Home() {
             </motion.div>
           </div>
 
+          <motion.h1
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.5 }}
+            className="mb-6 font-heading text-4xl font-black tracking-tight text-foreground sm:text-5xl md:text-6xl"
+          >
+            NaliChat
+          </motion.h1>
+
           {/* Personalized post-login activation */}
           {user && (
             <motion.div

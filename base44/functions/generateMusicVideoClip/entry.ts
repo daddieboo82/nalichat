@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { InferenceClient } from 'npm:@huggingface/inference@4.13.5';
+import { InferenceClient } from 'npm:@huggingface/inference';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const MODEL = 'Wan-AI/Wan2.1-T2V-1.3B';

@@ -16,7 +16,6 @@ import HowItWorks from "@/components/home/HowItWorks";
 import InteractiveWizard from "@/components/onboarding/InteractiveWizard";
 import WelcomeTour from "@/components/onboarding/WelcomeTour";
 
-import QuickAccessGrid from "@/components/home/QuickAccessGrid";
 import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -746,7 +745,7 @@ export default function Home() {
               <Link to="/pricing" className="min-h-10 inline-flex items-center hover:text-foreground">Compare Plans</Link>
               <a href="mailto:support@nalichat.org" className="min-h-10 inline-flex items-center hover:text-foreground">Contact Support</a>
             </div>
-            <p className="mt-2">NaliChat · Creator messaging, music collaboration, and Studio tools</p>
+            <p className="mt-2">NaliBase · Six connected worlds for creativity, entertainment, collaboration, and discovery</p>
           </footer>
         )}
 

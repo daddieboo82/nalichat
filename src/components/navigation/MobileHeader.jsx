@@ -16,7 +16,7 @@ import Logo from "@/components/branding/Logo";
 const SUBPAGE_PREFIXES = ["/playlist/", "/record", "/settings", "/analytics"];
 
 const TITLES = {
-  "/": "Home",
+  "/": "NaliBase Plaza",
   "/explore": "Explore",
   "/messages": "Messages",
   "/profile": "Profile",
@@ -237,7 +237,7 @@ export default function MobileHeader() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold">Sign up</p>
-                      <p className="text-[11px] text-muted-foreground">Create a NaliChat account</p>
+                      <p className="text-[11px] text-muted-foreground">Create your NaliBase account</p>
                     </div>
                   </button>
                 </>

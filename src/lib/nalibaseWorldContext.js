@@ -32,18 +32,20 @@ export function getWorldForPath(pathname='', preferredWorld='') {
 const WORLD_SESSION_KEY = 'nalibase.activeWorld';
 const WORLD_VISIT_KEY = 'nalibase.lastWorld';
 
-export function rememberWorldContext(worldId='') {
+const visitKeyFor = (userId='') => `${WORLD_VISIT_KEY}:${userId || 'anonymous'}`;
+
+export function rememberWorldContext(worldId='', userId='') {
   if (typeof window === 'undefined' || !WORLD_CONTEXTS[worldId]) return;
   try {
     window.sessionStorage.setItem(WORLD_SESSION_KEY, worldId);
-    window.sessionStorage.setItem(WORLD_VISIT_KEY, worldId);
+    window.sessionStorage.setItem(visitKeyFor(userId), worldId);
   } catch (_) {}
 }
 
-export function getLastVisitedWorld() {
+export function getLastVisitedWorld(userId='') {
   if (typeof window === 'undefined') return null;
   try {
-    const worldId = window.sessionStorage.getItem(WORLD_VISIT_KEY) || '';
+    const worldId = window.sessionStorage.getItem(visitKeyFor(userId)) || '';
     return WORLD_CONTEXTS[worldId] ? { id: worldId, ...WORLD_CONTEXTS[worldId] } : null;
   } catch (_) { return null; }
 }

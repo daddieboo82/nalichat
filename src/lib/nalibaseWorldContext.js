@@ -7,6 +7,8 @@ export const WORLD_CONTEXTS = Object.freeze({
   compete: { label: 'COMPETE', name: 'Arena World', path: '/world/compete', plazaGradient: 'from-yellow-500/30 to-amber-500/15', storefronts: [{label:'Challenges',path:'/challenges'},{label:'Leaderboard',path:'/leaderboard'},{label:'Create Challenge',path:'/create-challenge'},{label:'Squads',path:'/squad'}], glow: 'from-yellow-500/25 via-amber-500/5 to-transparent' },
 });
 
+export const WORLD_ORDER = Object.freeze(['connect', 'create', 'discover', 'share', 'visualize', 'compete']);
+
 const PATH_WORLD = [
   [/^\/messages(?:\/|$)/, 'connect'], [/^\/profile(?:\/|$)/, 'connect'],
   [/^\/studio(?:\/|$)/, 'create'], [/^\/record(?:\/|$)/, 'create'],

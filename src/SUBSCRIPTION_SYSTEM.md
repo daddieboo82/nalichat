@@ -1,8 +1,8 @@
-# NaliChat Subscription System
+# NaliBase Subscription System
 
 ## Canonical product model
 
-NaliChat has three canonical plans:
+NaliBase has three canonical plans:
 
 - `free`: core 1:1 and group chat
 - `premium`: the standard paid entitlement set
@@ -38,7 +38,7 @@ Also configure:
 Do not store secret values or production price IDs in source. The Stripe environment is
 derived directly from `STRIPE_SECRET_KEY`, so metadata cannot disagree with the key
 that actually talks to Stripe. Checkout and portal redirects are resolved from
-server-approved destination identifiers against the canonical NaliChat origin;
+server-approved destination identifiers against the canonical NaliBase origin;
 arbitrary client callback URLs are rejected.
 
 ## Checkout retry semantics
@@ -63,8 +63,8 @@ favors preventing duplicate trials over automatically releasing an ambiguous
 network failure. Operators can inspect an `incomplete` record and its
 `checkout_error`; clients should retry it with the same idempotency key.
 
-One Stripe customer is persisted per NaliChat user. Checkout and subscription
-metadata include the NaliChat user ID, canonical plan, billing period, SKU, and
+One Stripe customer is persisted per NaliBase user. Checkout and subscription
+metadata include the NaliBase user ID, canonical plan, billing period, SKU, and
 environment. Billing portal creation requires authentication, a locally owned
 customer ID, a successful Stripe customer ownership check, and a server-approved
 return destination.

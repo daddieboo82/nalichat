@@ -12,6 +12,7 @@ import { sounds } from "@/hooks/use-sound";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Logo from "@/components/branding/Logo";
 import { Button } from "@/components/ui/button";
+import { resolveWorldForLocation } from "@/lib/nalibaseWorldContext";
 
 const NAV_GROUPS = [
   { label: "NaliBase Worlds", items: [
@@ -35,8 +36,11 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
   };
 
 
-  const isActive = (path) =>
-    location.pathname === path || (path !== "/" && location.pathname.startsWith(path));
+  const activeWorld = resolveWorldForLocation(location.pathname, location.state?.fromWorld);
+  const isActive = (path) => {
+    const worldId = path.match(/^\/world\/([^/]+)/)?.[1];
+    return location.pathname === path || (path !== "/" && location.pathname.startsWith(path)) || Boolean(worldId && activeWorld?.id === worldId);
+  };
 
   return (
     <nav

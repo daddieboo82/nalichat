@@ -99,7 +99,7 @@ function WorldSplash({world,onComplete}) {
 
 export default function WorldHub(){
   const { user }=useAuth();
-  const {worldId}=useParams(); const world=worlds[worldId]; const canonicalWorld=WORLD_CONTEXTS[worldId]; const [splash,setSplash]=useState(true);
+  const {worldId}=useParams(); const visualWorld=worlds[worldId]; const canonicalWorld=WORLD_CONTEXTS[worldId]; const world=visualWorld&&canonicalWorld ? { ...visualWorld, title: canonicalWorld.label, eyebrow: canonicalWorld.name } : null; const [splash,setSplash]=useState(true);
   const finishSplash=useCallback(()=>setSplash(false),[]);
   useEffect(()=>setSplash(true),[worldId]);
   useEffect(()=>{ if(world) rememberWorldContext(worldId,user?.id); },[worldId,world,user?.id]);

@@ -194,26 +194,17 @@ describe('home, navigation, and recovery flows', () => {
     expect(screen.getByRole('link', { name: 'Sign up' })).toBeTruthy();
   });
 
-  it('restores the last mobile tab path when switching tabs', async () => {
-    const firstRender = renderWithProviders(<MobileNavHarness />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
-    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/profile'));
-
-    fireEvent.click(screen.getByRole('button', { name: 'Go profile detail' }));
-    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/profile?id=42'));
-
-    fireEvent.click(screen.getByRole('button', { name: 'Explore' }));
-    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/explore'));
-
-    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
-    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/profile?id=42'));
-
-    firstRender.unmount();
-
+  it('moves between the NaliBase plaza and world malls on mobile', async () => {
     renderWithProviders(<MobileNavHarness />);
+
     fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
-    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/profile?id=42'));
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/world/connect'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Discover' }));
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/world/discover'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Plaza' }));
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/'));
   });
 
   it('shows the mobile header menu and anonymous login affordance', async () => {

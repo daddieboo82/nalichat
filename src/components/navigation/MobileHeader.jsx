@@ -186,7 +186,7 @@ export default function MobileHeader() {
               <Logo size={30} />
               <span className="font-heading font-extrabold text-gradient-animate tracking-tight">NaliBase</span>
             </SheetTitle>
-            <SheetDescription className="sr-only">All features and navigation</SheetDescription>
+            <SheetDescription className="sr-only">NaliBase malls and account navigation</SheetDescription>
           </SheetHeader>
 
           <div className="p-4 space-y-5">

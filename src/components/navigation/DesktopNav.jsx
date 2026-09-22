@@ -83,7 +83,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
           </div>
         </Link>
 
-        {/* All Features — grouped with separators */}
+        {/* NaliBase world entrances */}
         <div className="flex items-center justify-center flex-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] gap-0.5 px-1">
           {NAV_GROUPS.map((group, gi) => (
             <div key={group.label} className="flex items-center gap-0.5 shrink-0">

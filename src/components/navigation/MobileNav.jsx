@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { Home, Compass, MessageSquare, User, Plus, Film } from "lucide-react";
+import { Home, Compass, MessageSquare, Music, Trophy, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";

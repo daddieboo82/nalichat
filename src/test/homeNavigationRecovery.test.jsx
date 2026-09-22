@@ -161,7 +161,7 @@ describe('home, navigation, and recovery flows', () => {
     expect(screen.getByText('Quick Start Guide')).toBeTruthy();
   });
 
-  it('renders logged-in home CTAs and quick-access links after onboarding', async () => {
+  it('renders the logged-in NaliBase world hub after onboarding', async () => {
     mockAuthState.current = {
       user: {
         id: 'user-1',
@@ -177,14 +177,14 @@ describe('home, navigation, and recovery flows', () => {
 
     renderWithProviders(<Home />);
 
-    expect(screen.getAllByRole('link', { name: /Open Messages/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('link', { name: /Open Studio/i }).length).toBeGreaterThan(0);
-    await screen.findByText('Quick Access');
-    expect(screen.getAllByRole('link', { name: /Messages/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('link', { name: /Studio/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('link', { name: /Explore/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('link', { name: /Files/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('link', { name: /Projects/i }).length).toBeGreaterThan(0);
+    expect(screen.getByText('NaliBase')).toBeTruthy();
+    expect(screen.getByText('Where do you want to go?')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /CONNECT/i })).toHaveAttribute('href', '/messages');
+    expect(screen.getByRole('link', { name: /CREATE/i })).toHaveAttribute('href', '/studio');
+    expect(screen.getByRole('link', { name: /DISCOVER/i })).toHaveAttribute('href', '/explore');
+    expect(screen.getByRole('link', { name: /SHARE/i })).toHaveAttribute('href', '/files');
+    expect(screen.getByRole('link', { name: /VISUALIZE/i })).toHaveAttribute('href', '/music-video-generator');
+    expect(screen.getByRole('link', { name: /COMPETE/i })).toHaveAttribute('href', '/challenges');
   }, 15000);
 
   it('shows visible desktop login and signup entry points for anonymous users', async () => {

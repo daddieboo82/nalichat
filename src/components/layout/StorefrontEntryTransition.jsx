@@ -11,8 +11,8 @@ export default function StorefrontEntryTransition() {
   const world = getWorldForPath(pathname, location.state?.fromWorld);
   const [visible,setVisible]=useState(false);
   useEffect(()=>{
-    if (!world || pathname.startsWith('/world/') || seen.has(pathname)) return;
-    seen.add(pathname); setVisible(true);
+    if (!world || pathname.startsWith('/world/') || seen.has(`${world.id}:${pathname}`)) return;
+    seen.add(`${world.id}:${pathname}`); setVisible(true);
     const t=setTimeout(()=>setVisible(false),720);
     return()=>clearTimeout(t);
   },[pathname,world?.id]);

@@ -1,6 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
-import { isTrustedStoredMediaUrl } from '../../shared/mediaSecurity.ts';
 
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
 const cleanJson = (value: unknown) => {
@@ -9,8 +8,11 @@ const cleanJson = (value: unknown) => {
   if (!match) throw new Error('AI storyboard was not valid JSON');
   return JSON.parse(match[0]);
 };
+function isSafeHttpsMediaUrl(value: unknown){
+  try { const u=new URL(String(value||'')); if(u.protocol!=='https:'||u.username||u.password)return false; const h=u.hostname.toLowerCase(); if(h==='localhost'||h==='127.0.0.1'||h==='0.0.0.0'||h==='::1'||h.endsWith('.local'))return false; return true; } catch { return false; }
+}
 async function storedMediaSize(url:string){
-  try { const r=await fetch(url,{method:'HEAD',redirect:'manual'}); const n=Number(r.headers.get('content-length')); return r.ok&&Number.isFinite(n)?n:null; } catch { return null; }
+  try { const r=await fetch(url,{method:'HEAD',redirect:'follow'}); const n=Number(r.headers.get('content-length')); return r.ok&&Number.isFinite(n)&&n>0?n:null; } catch { return null; }
 }
 Deno.serve(async (req) => {
  try {
@@ -18,8 +20,8 @@ Deno.serve(async (req) => {
   const base44=createClientFromRequest(req), user=await base44.auth.me();
   if(!user) return Response.json({error:'Unauthorized'},{status:401});
   const {audio_url,title,concept,style='Cinematic animation',duration=0}=await readJsonBodyLimited(req,16*1024);
-  if(typeof audio_url!=='string'||!isTrustedStoredMediaUrl(audio_url)) return Response.json({error:'A valid uploaded song is required'},{status:400});
-  const size=await storedMediaSize(audio_url); if(size===null||size<=0||size>MAX_AUDIO_BYTES) return Response.json({error:'Song must be 50MB or less'},{status:413});
+  if(typeof audio_url!=='string'||!isSafeHttpsMediaUrl(audio_url)) return Response.json({error:'A valid uploaded song is required'},{status:400});
+  const size=await storedMediaSize(audio_url); if(size!==null&&size>MAX_AUDIO_BYTES) return Response.json({error:'Song must be 50MB or less'},{status:413});
   let transcript='Instrumental or lyrics unavailable.';
   try { const t=await base44.asServiceRole.integrations.Core.TranscribeAudio({audio_url}); transcript=(typeof t==='string'?t:t?.text||transcript).slice(0,12000); } catch {}
   const seconds=Math.max(30,Math.min(900,Number(duration)||180)), count=Math.max(6,Math.min(14,Math.ceil(seconds/18)));

@@ -5,7 +5,7 @@ import { isBase44EntityId } from '../../shared/workflowEvents.ts';
 import { acquireProjectMembershipLock, releaseProjectMembershipLock } from '../../shared/projectMembershipLock.ts';
 import { acquireFolderMutationLock, releaseFolderMutationLock } from '../../shared/folderMutationLock.ts';
 
-// Nali Transfer has no NaliChat application-level total file-size ceiling.
+// Nali Transfer has no NaliBase application-level total file-size ceiling.
 // Storage/provider capacity and per-request limits remain in force.
 const FILE_TYPES = new Set(['audio', 'image', 'video', 'session', 'document', 'other']);
 
@@ -200,7 +200,7 @@ Deno.serve(async (req) => {
     if (storedFileSize === null && claimedFileSize <= 0) {
       return Response.json({ error: 'Could not verify uploaded file size' }, { status: 400 });
     }
-    // No NaliChat total-size ceiling. Prefer provider-verified size whenever
+    // No NaliBase total-size ceiling. Prefer provider-verified size whenever
     // available; transfer uploads are separately verified before this call.
     const fileSize = storedFileSize ?? claimedFileSize;
 

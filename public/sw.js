@@ -1,5 +1,5 @@
 /**
- * NaliChat Service Worker
+ * NaliBase Service Worker
  *
  * Strategy:
  *  - Navigation requests: network-first (always fetch fresh HTML so users

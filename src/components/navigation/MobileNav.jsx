@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { Home, Compass, MessageSquare, Music, Trophy, Film } from "lucide-react";
+import { Home, Compass, MessageSquare, Music, Trophy, Film, FolderKanban } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { sounds } from "@/hooks/use-sound";
@@ -12,6 +12,7 @@ const TABS = [
   { icon: MessageSquare, label: "Connect", path: "/world/connect" },
   { icon: Music, label: "Create", path: "/world/create" },
   { icon: Compass, label: "Discover", path: "/world/discover" },
+  { icon: FolderKanban, label: "Share", path: "/world/share" },
   { icon: Film, label: "Visualize", path: "/world/visualize" },
   { icon: Trophy, label: "Compete", path: "/world/compete" },
 ];
@@ -25,6 +26,7 @@ function getTabForPath(pathname, preferredWorld = "") {
   if (pathname.startsWith("/world/connect") || pathname.startsWith("/messages") || pathname.startsWith("/profile")) return "/world/connect";
   if (pathname.startsWith("/world/create") || pathname.startsWith("/studio") || pathname.startsWith("/record")) return "/world/create";
   if (pathname.startsWith("/world/discover") || pathname.startsWith("/explore") || pathname.startsWith("/playlist") || pathname.startsWith("/analytics")) return "/world/discover";
+  if (pathname.startsWith("/world/share") || pathname.startsWith("/files") || pathname.startsWith("/projects-summary")) return "/world/share";
   if (pathname.startsWith("/world/visualize") || pathname.startsWith("/music-video-generator") || pathname.startsWith("/cover-art")) return "/world/visualize";
   if (pathname.startsWith("/world/compete") || pathname.startsWith("/challenge") || pathname.startsWith("/leaderboard") || pathname.startsWith("/squad")) return "/world/compete";
   return null;

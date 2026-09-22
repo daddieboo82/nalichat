@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, MessageSquare, Music, Compass, FolderKanban, Video, Trophy, Users, UserPlus, Mic, Wand2, ListMusic, BarChart3, FolderOpen, Upload, Images, Film, Swords, Medal, Rocket, UserRound, Map, Sparkles, Store, Building2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MessageSquare, Music, Compass, FolderKanban, Video, Trophy, Users, UserPlus, Mic, Wand2, ListMusic, BarChart3, FolderOpen, Upload, Images, Film, Swords, Medal, Rocket, UserRound, Map, Sparkles, Store, Building2, Navigation, MapPin } from 'lucide-react';
 import { trackProductEvent } from '@/lib/productAnalytics';
 
 const worlds = {
@@ -120,9 +120,20 @@ export default function WorldHub(){
           </div>
         </section>
         <section className="relative py-10 sm:py-16">
+          <div className="mb-8 overflow-hidden rounded-[2rem] border border-white/10 bg-black/25 p-4 backdrop-blur-xl sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div><div className="flex items-center gap-2 text-white/45"><Navigation className="h-4 w-4"/><p className="text-[10px] font-black uppercase tracking-[.25em]">Mall directory</p></div><p className="mt-2 text-sm text-white/60">You are in <strong className="text-white">{world.title}</strong>. Follow the concourse to a storefront.</p></div>
+              <div className="flex flex-wrap gap-2">{world.districts.map(([name],i)=><a key={name} href={'#storefront-'+i} className="rounded-full border border-white/10 bg-white/[.05] px-3 py-2 text-[10px] font-bold text-white/55 transition hover:bg-white/10 hover:text-white">{String(i+1).padStart(2,'0')} {name}</a>)}</div>
+            </div>
+          </div>
+          <div className="relative mb-10 hidden h-24 overflow-hidden rounded-[2rem] border border-white/[.07] bg-white/[.025] md:block">
+            <div className="absolute left-10 right-10 top-1/2 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent"/>
+            <motion.div className="absolute left-[8%] top-1/2 -translate-y-1/2" animate={{left:['8%','88%','8%']}} transition={{duration:18,repeat:Infinity,ease:'linear'}}><div className={'h-3 w-3 rounded-full bg-gradient-to-br '+world.orb+' shadow-[0_0_24px_rgba(255,255,255,.45)]'}/></motion.div>
+            <div className="absolute inset-0 flex items-center justify-around">{world.landmarks.map(x=><div key={x} className="flex flex-col items-center gap-2"><MapPin className="h-4 w-4 text-white/30"/><span className="rounded-full bg-black/70 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-white/40">{x}</span></div>)}</div>
+          </div>
           <div className="mb-8"><div className="flex items-center gap-2 text-white/40"><Building2 className="h-4 w-4"/><p className="text-xs font-black uppercase tracking-[.28em]">Inside the mall</p></div><h2 className="mt-2 font-heading text-3xl font-black sm:text-5xl">Walk the concourse. Choose a storefront.</h2><p className="mt-3 max-w-2xl text-sm text-white/50">Every storefront opens into a complete NaliBase experience while keeping you connected to this world.</p></div>
           <div className="grid gap-5 md:grid-cols-2">{world.districts.map(([name,description,path,Icon],index)=><motion.div key={name} initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:index*.06}} whileHover={{y:-7,scale:1.01}}>
-            <Link to={path} onClick={()=>trackProductEvent('post_login_action',{source:`${worldId}_world`,action:`open_${name.toLowerCase().replace(/\s+/g,'_')}`})} className="group relative flex min-h-64 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[.055] p-7 shadow-2xl backdrop-blur-2xl transition hover:border-white/25">
+            <Link id={"storefront-"+index} to={path} onClick={()=>trackProductEvent('post_login_action',{source:`${worldId}_world`,action:`open_${name.toLowerCase().replace(/\s+/g,'_')}`})} className="group relative flex min-h-64 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[.055] p-7 shadow-2xl backdrop-blur-2xl transition hover:border-white/25">
               <div className={`absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-to-br ${world.orb} opacity-10 blur-3xl transition group-hover:opacity-25`}/>
               <div className="relative z-10 flex w-full flex-col"><div className="flex items-start justify-between"><div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/15 bg-black/30"><Icon className="h-7 w-7"/></div><ArrowRight className="h-6 w-6 text-white/35 transition group-hover:translate-x-2 group-hover:text-white"/></div><div className="mt-auto pt-12"><div className="flex items-center gap-2 text-white/35"><Store className="h-3.5 w-3.5"/><p className="text-[10px] font-black uppercase tracking-[.22em]">Storefront {String(index+1).padStart(2,'0')}</p></div><h3 className="mt-2 font-heading text-3xl font-black">{name}</h3><p className="mt-2 max-w-md text-sm leading-relaxed text-white/55">{description}</p></div></div>
             </Link>

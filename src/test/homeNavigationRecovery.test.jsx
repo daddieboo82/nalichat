@@ -179,12 +179,12 @@ describe('home, navigation, and recovery flows', () => {
 
     expect(screen.getByText('NaliBase')).toBeTruthy();
     expect(screen.getByText('Where do you want to go?')).toBeTruthy();
-    expect(screen.getByText('CONNECT').closest('a')).toHaveAttribute('href', '/messages');
-    expect(screen.getByText('CREATE').closest('a')).toHaveAttribute('href', '/studio');
-    expect(screen.getByText('DISCOVER').closest('a')).toHaveAttribute('href', '/explore');
-    expect(screen.getByText('SHARE').closest('a')).toHaveAttribute('href', '/files');
-    expect(screen.getByText('VISUALIZE').closest('a')).toHaveAttribute('href', '/music-video-generator');
-    expect(screen.getByText('COMPETE').closest('a')).toHaveAttribute('href', '/challenges');
+    expect(screen.getByText('CONNECT').closest('a')?.getAttribute('href')).toBe('/messages');
+    expect(screen.getByText('CREATE').closest('a')?.getAttribute('href')).toBe('/studio');
+    expect(screen.getByText('DISCOVER').closest('a')?.getAttribute('href')).toBe('/explore');
+    expect(screen.getByText('SHARE').closest('a')?.getAttribute('href')).toBe('/files');
+    expect(screen.getByText('VISUALIZE').closest('a')?.getAttribute('href')).toBe('/music-video-generator');
+    expect(screen.getByText('COMPETE').closest('a')?.getAttribute('href')).toBe('/challenges');
   }, 15000);
 
   it('shows visible desktop login and signup entry points for anonymous users', async () => {

@@ -8,7 +8,7 @@ import { rememberWorldContext, WORLD_CONTEXTS } from '@/lib/nalibaseWorldContext
 
 const worlds = {
   connect: {
-    eyebrow:'NaliChat World', title:'CONNECT', splash:'ENTER THE NETWORK', tagline:'Your people. Your conversations. Your creative network.',
+    splash:'ENTER THE NETWORK', tagline:'Your people. Your conversations. Your creative network.',
     atmosphere:'A neon social metropolis where conversations, creators and collaborations are always moving.',
     glow:'from-pink-500/40 via-primary/15 to-transparent', orb:'from-pink-500 via-fuchsia-500 to-violet-700', icon:MessageSquare,
     landmarks:['Signal Tower','Creator Boulevard','Collab Plaza','Profile Heights'], scene:['Live conversations ripple across Signal Tower.','Creators are gathering on Creator Boulevard.','Collaboration rooms are open in Collab Plaza.'],
@@ -20,7 +20,7 @@ const worlds = {
     ]
   },
   create: {
-    eyebrow:'NaliStudio World', title:'CREATE', splash:'ENTER THE STUDIO CITY', tagline:'A complete creative district for turning an idea into a release.',
+    splash:'ENTER THE STUDIO CITY', tagline:'A complete creative district for turning an idea into a release.',
     atmosphere:'A futuristic production city of recording rooms, sound labs, artwork stations and release tools.',
     glow:'from-cyan-500/40 via-blue-500/15 to-transparent', orb:'from-cyan-400 via-blue-500 to-indigo-700', icon:Music,
     landmarks:['Studio Core','Sound Lab','Art District','Playlist Terminal'], scene:['Studio Core is active with new sessions.','Sound Lab is ready for recording and mixing.','The Art District is open for release visuals.'],
@@ -32,7 +32,7 @@ const worlds = {
     ]
   },
   discover: {
-    eyebrow:'Creator World', title:'DISCOVER', splash:'ENTER THE DISCOVERY GRID', tagline:'A living discovery world for music, creators and momentum.',
+    splash:'ENTER THE DISCOVERY GRID', tagline:'A living discovery world for music, creators and momentum.',
     atmosphere:'An endless discovery grid where new music, rising creators and cultural signals surface in real time.',
     glow:'from-violet-500/40 via-fuchsia-500/15 to-transparent', orb:'from-violet-500 via-fuchsia-500 to-purple-800', icon:Compass,
     landmarks:['Discovery Grid','Sound Trails','Momentum Tower','Insight Observatory'], scene:['New signals are moving through the Discovery Grid.','Sound Trails are open for exploration.','Momentum Tower is tracking creator movement.'],
@@ -44,7 +44,7 @@ const worlds = {
     ]
   },
   share: {
-    eyebrow:'Project World', title:'SHARE', splash:'ENTER THE EXCHANGE', tagline:'The exchange layer for files, projects and creative handoffs.',
+    splash:'ENTER THE EXCHANGE', tagline:'The exchange layer for files, projects and creative handoffs.',
     atmosphere:'A secure logistics world for moving massive creative assets, projects and ideas between collaborators.',
     glow:'from-emerald-500/40 via-teal-500/15 to-transparent', orb:'from-emerald-400 via-teal-500 to-cyan-800', icon:FolderKanban,
     landmarks:['File Vault','Project Dock','Transfer Bridge','Import Terminal'], scene:['The File Vault is ready for creative assets.','Project Dock is open for collaboration handoffs.','Transfer Bridge connects projects to creation.'],
@@ -56,7 +56,7 @@ const worlds = {
     ]
   },
   visualize: {
-    eyebrow:'Visual World', title:'VISUALIZE', splash:'ENTER THE VISUAL REALM', tagline:'Give the music a face, a scene and a visual identity.',
+    splash:'ENTER THE VISUAL REALM', tagline:'Give the music a face, a scene and a visual identity.',
     atmosphere:'A cinematic realm of moving light, virtual sets, artwork labs and visual storytelling.',
     glow:'from-orange-500/40 via-rose-500/15 to-transparent', orb:'from-orange-400 via-rose-500 to-red-800', icon:Video,
     landmarks:['Cinema Core','Cover Gallery','Scene Forge','Inspiration Deck'], scene:['Cinema Core is ready for visual concepts.','Cover Gallery is open for new identities.','Scene Forge is preparing cinematic ideas.'],
@@ -68,7 +68,7 @@ const worlds = {
     ]
   },
   compete: {
-    eyebrow:'Arena World', title:'COMPETE', splash:'ENTER THE ARENA', tagline:'Challenges, rankings and discovery built around creative momentum.',
+    splash:'ENTER THE ARENA', tagline:'Challenges, rankings and discovery built around creative momentum.',
     atmosphere:'A massive competitive arena where creators enter challenges, form squads and rise through the ranks.',
     glow:'from-yellow-500/40 via-amber-500/15 to-transparent', orb:'from-yellow-300 via-amber-500 to-orange-800', icon:Trophy,
     landmarks:['Challenge Arena','Rank Tower','Squad Grounds','Victory Hall'], scene:['Challenge Arena is open for competition.','Rank Tower is tracking creative momentum.','Squad Grounds are ready for teams.'],

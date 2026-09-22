@@ -190,7 +190,7 @@ export default function Home() {
     }
   }, [user]);
 
-  const lastVisitedWorld = user ? getLastVisitedWorld() : null;
+  const lastVisitedWorld = user ? getLastVisitedWorld(user.id) : null;
 
   return (
     <PullToRefresh onRefresh={() => queryClient.invalidateQueries()} className="h-full overflow-auto bg-background">

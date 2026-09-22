@@ -2,10 +2,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
-import {
-  Home, MessageSquare, Compass, Music, FileText, BarChart3, Trophy, Users,
-  Settings, LogOut, LogIn, HelpCircle, UserPlus, Mic, Radio, Film,
-  Wand2, AudioLines, Plus, Gem, Swords, Rocket, Smartphone
+import { MessageSquare, Compass, Music, FileText, BarChart3, Trophy,
+  Settings, LogOut, LogIn, HelpCircle, UserPlus, Film, AudioLines, Plus, Gem, Smartphone
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";

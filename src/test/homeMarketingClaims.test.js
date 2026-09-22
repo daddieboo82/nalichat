@@ -5,10 +5,12 @@ describe('home marketing claims', () => {
   it('uses concrete, supportable creator messaging and pricing language', () => {
     const home = fs.readFileSync('src/pages/Home.jsx', 'utf8');
 
-    expect(home).toContain('Messages + Studio + File Sharing + AI');
+    expect(home).toContain('SIX WORLDS · ONE CREATIVE UNIVERSE');
+    expect(home).toContain('Enter Your');
+    expect(home).toContain('Creative Universe.');
+    expect(home).toContain('NaliBase is an evolving entertainment and creativity universe.');
+    expect(home).toContain('Enter NaliBase Free');
     expect(home).toContain('Start with free core chat');
-    expect(home.match(/Start Free/g)?.length).toBeGreaterThanOrEqual(2);
-    expect(home).toContain('Message your team, produce in NaliStudio');
     expect(home).toContain('Creator Messaging & Collaboration');
     expect(home).toContain('Real-time messaging, unlimited voice notes & high-res file sharing');
     expect(home).toContain('Privacy Policy');
@@ -18,6 +20,7 @@ describe('home marketing claims', () => {
     expect(home).toContain('mailto:support@nalichat.org');
     expect(home).toContain('to="/pricing"');
     expect(home).toContain('NaliChat · Creator messaging, music collaboration, and Studio tools');
+    expect(home).toContain('Six worlds. One identity. Endless creative movement.');
     expect(home).toContain('Core chat is free forever · No paid plan required to start');
     expect(home).not.toContain('The Ultimate Messaging App for Creators');
     expect(home).not.toContain('Join thousands of artists already');

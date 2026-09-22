@@ -31,44 +31,14 @@ const TITLES = {
 };
 
 const MENU_GROUPS = [
-  {
-    label: "Discover",
-    items: [
-      { icon: Home, label: "Home", path: "/", desc: "Dashboard & quick access" },
-      { icon: Compass, label: "Explore", path: "/explore", desc: "Browse tracks & artists" },
-    ],
-  },
-  {
-    label: "Create",
-    items: [
-      { icon: Mic, label: "Studio", path: "/studio", desc: "Record & produce tracks" },
-      { icon: Wand2, label: "AI Cover Art", path: "/cover-art", desc: "Generate album covers" },
-      { icon: Radio, label: "Record", path: "/record", desc: "Quick voice recording" },
-    ],
-  },
-  {
-    label: "Connect",
-    items: [
-      { icon: MessageSquare, label: "Messages", path: "/messages", desc: "Chat & collaborate" },
-      { icon: Users, label: "Projects", path: "/projects-summary", desc: "Manage collaborations" },
-    ],
-  },
-  {
-    label: "Library",
-    items: [
-      { icon: Music, label: "Playlists", path: "/playlists", desc: "Curate your collections" },
-      { icon: FileText, label: "Files", path: "/files", desc: "Shared files & storage" },
-    ],
-  },
-  {
-    label: "Grow",
-    items: [
-      { icon: Swords, label: "Challenges", path: "/challenges", desc: "Remix competitions" },
-      { icon: Trophy, label: "Leaderboard", path: "/leaderboard", desc: "Top creators & tracks" },
-      { icon: BarChart3, label: "Analytics", path: "/analytics", desc: "Track your growth" },
-      { icon: Rocket, label: "ViralSeed", path: "/viral-seed", desc: "Viral content engine" },
-    ],
-  },
+  { label: "Enter a NaliBase Mall", items: [
+    { icon: MessageSquare, label: "CONNECT", path: "/world/connect", desc: "NaliChat social world" },
+    { icon: Music, label: "CREATE", path: "/world/create", desc: "NaliStudio creative world" },
+    { icon: Compass, label: "DISCOVER", path: "/world/discover", desc: "Creator discovery world" },
+    { icon: FileText, label: "SHARE", path: "/world/share", desc: "Projects and file exchange" },
+    { icon: Wand2, label: "VISUALIZE", path: "/world/visualize", desc: "Visual creation world" },
+    { icon: Trophy, label: "COMPETE", path: "/world/compete", desc: "Challenges and squads" },
+  ]},
 ];
 
 export default function MobileHeader() {

@@ -7,23 +7,24 @@ import { sounds } from "@/hooks/use-sound";
 import { useAuth } from "@/lib/AuthContext";
 
 const TABS = [
-  { icon: Home, label: "Home", path: "/" },
-  { icon: Compass, label: "Explore", path: "/explore" },
-  { icon: Film, label: "Video", path: "/music-video-generator" },
-  { icon: Plus, label: "New Project", path: "/projects-summary?new=true", isAction: true },
-  { icon: MessageSquare, label: "Messages", path: "/messages" },
-  { icon: User, label: "Profile", path: "/profile" },
+  { icon: Home, label: "Plaza", path: "/" },
+  { icon: MessageSquare, label: "Connect", path: "/world/connect" },
+  { icon: Music, label: "Create", path: "/world/create" },
+  { icon: Compass, label: "Discover", path: "/world/discover" },
+  { icon: Film, label: "Visualize", path: "/world/visualize" },
+  { icon: Trophy, label: "Compete", path: "/world/compete" },
 ];
 
 const LEGACY_STORAGE_KEY = "mobile_nav_stacks";
 const storageKeyFor = (userId) => `mobile_nav_stacks:${userId || "anonymous"}`;
 
 function getTabForPath(pathname) {
-  if (pathname === "/" || pathname.startsWith("/playlist")) return "/";
-  if (pathname.startsWith("/explore")) return "/explore";
-  if (pathname.startsWith("/music-video-generator")) return "/music-video-generator";
-  if (pathname.startsWith("/messages")) return "/messages";
-  if (pathname.startsWith("/profile")) return "/profile";
+  if (pathname === "/") return "/";
+  if (pathname.startsWith("/world/connect") || pathname.startsWith("/messages") || pathname.startsWith("/profile")) return "/world/connect";
+  if (pathname.startsWith("/world/create") || pathname.startsWith("/studio") || pathname.startsWith("/record")) return "/world/create";
+  if (pathname.startsWith("/world/discover") || pathname.startsWith("/explore") || pathname.startsWith("/playlist") || pathname.startsWith("/analytics")) return "/world/discover";
+  if (pathname.startsWith("/world/visualize") || pathname.startsWith("/music-video-generator") || pathname.startsWith("/cover-art")) return "/world/visualize";
+  if (pathname.startsWith("/world/compete") || pathname.startsWith("/challenge") || pathname.startsWith("/leaderboard") || pathname.startsWith("/squad")) return "/world/compete";
   return null;
 }
 

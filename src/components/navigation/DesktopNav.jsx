@@ -14,45 +14,14 @@ import Logo from "@/components/branding/Logo";
 import { Button } from "@/components/ui/button";
 
 const NAV_GROUPS = [
-  {
-    label: "Discover",
-    items: [
-      { icon: Home, label: "Home", path: "/" },
-      { icon: Compass, label: "Explore", path: "/explore" },
-      { icon: Film, label: "Music Videos", path: "/music-video-generator" },
-    ],
-  },
-  {
-    label: "Create",
-    items: [
-      { icon: Mic, label: "Studio", path: "/studio" },
-      { icon: Wand2, label: "Cover Art", path: "/cover-art" },
-      { icon: Radio, label: "Record", path: "/record" },
-    ],
-  },
-  {
-    label: "Connect",
-    items: [
-      { icon: MessageSquare, label: "Messages", path: "/messages" },
-      { icon: Users, label: "Projects", path: "/projects-summary" },
-    ],
-  },
-  {
-    label: "Library",
-    items: [
-      { icon: Music, label: "Playlists", path: "/playlists" },
-      { icon: FileText, label: "Files", path: "/files" },
-    ],
-  },
-  {
-    label: "Grow",
-    items: [
-      { icon: Swords, label: "Challenges", path: "/challenges" },
-      { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
-      { icon: BarChart3, label: "Analytics", path: "/analytics" },
-      { icon: Rocket, label: "ViralSeed", path: "/viral-seed" },
-    ],
-  },
+  { label: "NaliBase Worlds", items: [
+    { icon: MessageSquare, label: "Connect", path: "/world/connect" },
+    { icon: Music, label: "Create", path: "/world/create" },
+    { icon: Compass, label: "Discover", path: "/world/discover" },
+    { icon: FileText, label: "Share", path: "/world/share" },
+    { icon: Film, label: "Visualize", path: "/world/visualize" },
+    { icon: Trophy, label: "Compete", path: "/world/compete" },
+  ]},
 ];
 
 export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick }) {

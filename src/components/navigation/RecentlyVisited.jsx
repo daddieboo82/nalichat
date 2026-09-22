@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
-import { getRememberedWorldForPath, getWorldForPath } from "@/lib/nalibaseWorldContext";
+import { getRememberedWorldForPath, getWorldForPath, WORLD_CONTEXTS } from "@/lib/nalibaseWorldContext";
 
 const LEGACY_STORAGE_KEY = "nali_recent_pages";
 const storageKeyFor = (userId) => `nali_recent_pages:${userId || "anonymous"}`;
@@ -30,7 +30,11 @@ const ICONS = {
   "/pricing": "💎",
 };
 
-export default function RecentlyVisited({ onNavigate, currentPath }) {
+const normalizeEntry = (item) => typeof item === "string"
+  ? { path: item, fromWorld: "" }
+  : { path: item?.path || "", fromWorld: WORLD_CONTEXTS[item?.fromWorld] ? item.fromWorld : "" };
+
+export default function RecentlyVisited({ onNavigate, currentPath, currentWorldId = "" }) {
   const { user } = useAuth();
   const storageKey = storageKeyFor(user?.id);
   const [recent, setRecent] = useState([]);
@@ -46,10 +50,9 @@ export default function RecentlyVisited({ onNavigate, currentPath }) {
         }
       }
       const parsed = JSON.parse(raw || "[]");
-      // Plaza is a navigation home, not a storefront destination. Remove legacy
-      // entries so Recent stays useful after the NaliBase hub migration.
-      const cleaned = parsed.filter(path => path !== "/");
-      if (cleaned.length !== parsed.length) sessionStorage.setItem(storageKey, JSON.stringify(cleaned));
+      // Migrate legacy path strings to origin-aware entries and remove Plaza.
+      const cleaned = parsed.map(normalizeEntry).filter(entry => entry.path && entry.path !== "/");
+      if (JSON.stringify(cleaned) !== JSON.stringify(parsed)) sessionStorage.setItem(storageKey, JSON.stringify(cleaned));
       setRecent(cleaned);
     } catch { setRecent([]); }
   }, [currentPath, storageKey, user?.id]);
@@ -60,13 +63,14 @@ export default function RecentlyVisited({ onNavigate, currentPath }) {
     // Only track root-level pages (no dynamic segments)
     if (currentPath.split("/").filter(Boolean).length > 1) return;
     try {
-      const stored = JSON.parse(sessionStorage.getItem(storageKey) || "[]");
-      const filtered = stored.filter(p => p !== currentPath);
-      const updated = [currentPath, ...filtered].slice(0, MAX_ITEMS);
+      const stored = JSON.parse(sessionStorage.getItem(storageKey) || "[]").map(normalizeEntry);
+      const filtered = stored.filter(entry => entry.path !== currentPath);
+      const entry = { path: currentPath, fromWorld: WORLD_CONTEXTS[currentWorldId] ? currentWorldId : "" };
+      const updated = [entry, ...filtered].slice(0, MAX_ITEMS);
       sessionStorage.setItem(storageKey, JSON.stringify(updated));
       setRecent(updated);
     } catch {}
-  }, [currentPath, storageKey]);
+  }, [currentPath, currentWorldId, storageKey]);
 
   if (recent.length === 0) return null;
 
@@ -76,12 +80,13 @@ export default function RecentlyVisited({ onNavigate, currentPath }) {
         <Clock className="w-3 h-3" /> Recent
       </h3>
       <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-        {recent.map(path => {
-          const rememberedWorld = getRememberedWorldForPath(path);
+        {recent.map(entry => {
+          const { path, fromWorld } = normalizeEntry(entry);
+          const rememberedWorld = fromWorld || getRememberedWorldForPath(path);
           const world = getWorldForPath(path, rememberedWorld);
           return (
           <button
-            key={path}
+            key={`${path}:${fromWorld}`}
             onClick={() => onNavigate(path, world?.id || '')}
             className={cn(
               "ui-hover flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary/40",

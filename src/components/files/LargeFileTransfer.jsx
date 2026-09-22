@@ -137,7 +137,7 @@ function LargeFileTransferContent({ currentUser }) {
       <div className="flex-1 p-6 md:p-8 space-y-6">
         <div>
           <h2 className="text-2xl font-bold font-heading mb-1">Nali Transfer</h2>
-          <p className="text-sm text-muted-foreground">Send big. Resume anytime. No NaliChat file-size limit.</p>
+          <p className="text-sm text-muted-foreground">Send big. Resume anytime. No NaliBase file-size limit.</p>
         </div>
 
         {shareLink ? (
@@ -195,7 +195,7 @@ function LargeFileTransferContent({ currentUser }) {
                 className="bg-secondary/50"
               />
               <p className="text-[10px] text-muted-foreground">
-                For your reference only — NaliChat does not email the link automatically.
+                For your reference only — NaliBase does not email the link automatically.
               </p>
             </div>
             
@@ -245,7 +245,7 @@ function LargeFileTransferContent({ currentUser }) {
             <UploadCloud className="w-12 h-12 text-primary animate-pulse" />
           </div>
           <h3 className="font-heading font-bold text-2xl mb-3">Fast, secure, resumable.</h3>
-          <p className="text-sm text-muted-foreground max-w-[200px] mx-auto">Share supported sessions and media securely through NaliChat.</p>
+          <p className="text-sm text-muted-foreground max-w-[200px] mx-auto">Share supported sessions and media securely through NaliBase.</p>
         </div>
       </div>
     </div>

@@ -70,7 +70,7 @@ export const SUBSCRIPTION_CATALOG = Object.freeze({
       "Everything in Premium",
       "Premium file transfer tools with resumable transfers",
       "Highest AI limit - up to 1,000 requests per UTC day",
-      "Best available NaliChat AI model and highest-tier Studio AI support",
+      "Best available NaliBase AI model and highest-tier Studio AI support",
       "AI call summaries",
       "Follow-up reminders",
       "Locked chats for extra privacy",

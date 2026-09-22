@@ -82,7 +82,7 @@ export default function StudioTutorial() {
           Master the Studio
         </h2>
         <p className="text-foreground/70 text-lg font-medium max-w-3xl">
-          Watch the real NaliStudio in action. These clips were recorded from the same Studio users open inside NaliChat — not a mockup.
+          Watch the real NaliStudio in action. These clips were recorded from the same Studio users open inside NaliBase — not a mockup.
         </p>
       </div>
 

@@ -232,7 +232,7 @@ export default function AdminDashboard() {
             Make a Test Purchase
           </h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Starts NaliChat&apos;s real subscription checkout using Stripe test mode. This replaces the legacy Base44/Wix test-purchase screen.
+            Starts NaliBase&apos;s real subscription checkout using Stripe test mode. This replaces the legacy Base44/Wix test-purchase screen.
           </p>
 
           {isLoadingBillingTestStatus ? (

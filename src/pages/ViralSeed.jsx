@@ -50,7 +50,7 @@ export default function ViralSeed() {
 
   const generate = async () => {
     if (!canUseAi) {
-      setError("ViralSeed AI is available with Premium. Your regular NaliChat and Studio tools remain available.");
+      setError("ViralSeed AI is available with Premium. Your regular NaliBase worlds and Studio tools remain available.");
       return;
     }
     const generation = generationRef.current;

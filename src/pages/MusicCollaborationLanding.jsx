@@ -28,8 +28,8 @@ export default function MusicCollaborationLanding() {
 
   useEffect(() => {
     const previousTitle = document.title;
-    const description = "Real-time creator messaging, audio sharing, music collaboration, a built-in Studio, and AI-assisted music tools. Start free with NaliChat.";
-    document.title = "Music Collaboration & Creator Messaging | NaliChat";
+    const description = "Real-time creator messaging, audio sharing, music collaboration, a built-in Studio, and AI-assisted music tools. Start free with NaliBase.";
+    document.title = "Music Collaboration & Creator Messaging | NaliBase";
     let meta = document.querySelector('meta[name="description"]');
     const previousDescription = meta?.getAttribute("content") || null;
     if (!meta) {
@@ -49,7 +49,7 @@ export default function MusicCollaborationLanding() {
     <main className="min-h-[100dvh] bg-background text-foreground">
       <section className="mx-auto max-w-6xl px-4 pb-14 pt-[max(4rem,env(safe-area-inset-top))] sm:px-6 sm:pb-20">
         <div className="mx-auto max-w-4xl text-center">
-          <p className="mb-4 text-sm font-bold uppercase tracking-[0.2em] text-primary">NaliChat for music creators</p>
+          <p className="mb-4 text-sm font-bold uppercase tracking-[0.2em] text-primary">NaliBase for music creators</p>
           <h1 className="font-heading text-4xl font-black tracking-tight sm:text-6xl">
             Creator Messaging & Music Collaboration in One Workspace
           </h1>
@@ -87,7 +87,7 @@ export default function MusicCollaborationLanding() {
           <ShieldCheck className="mx-auto h-7 w-7 text-primary" />
           <h2 className="mt-3 text-2xl font-bold">Built for creator collaboration</h2>
           <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
-            Start with messaging, then use NaliChat's collaboration, file-sharing, Studio, and creator tools as your workflow grows.
+            Start with messaging, then use NaliBase's connected collaboration, file-sharing, Studio, and creator worlds as your workflow grows.
           </p>
         </section>
 

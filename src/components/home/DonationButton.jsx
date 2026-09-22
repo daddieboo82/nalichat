@@ -59,7 +59,7 @@ export default function DonationButton({ variant = "hero" }) {
         }
       >
         <Heart className="w-5 h-5 mr-2" />
-        Support NaliChat
+        Support NaliBase
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -67,10 +67,10 @@ export default function DonationButton({ variant = "hero" }) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Heart className="w-5 h-5 text-rose-500" />
-              Support NaliChat
+              Support NaliBase
             </DialogTitle>
             <DialogDescription>
-              Your donation helps keep NaliChat free for all creators. Choose an amount below.
+              Your donation helps keep NaliBase free for all creators. Choose an amount below.
             </DialogDescription>
           </DialogHeader>
 

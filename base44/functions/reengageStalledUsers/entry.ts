@@ -123,7 +123,7 @@ export default async function(req) {
               <p style="color: #333; line-height: 1.6;">
                 We noticed you haven't finished setting up your NaliBase profile yet.
                 It only takes a minute — just add your display name and birthdate to unlock
-                the full studio, messaging, and collaboration features.
+                the NaliBase worlds for creating, connecting, discovering, sharing, visualizing, and competing.
               </p>
               <div style="text-align: center; margin: 32px 0;">
                 <a href="${onboardingLink}"

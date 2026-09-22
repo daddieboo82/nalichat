@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     const res = await fetch(apiBase() + '/v1/billing/subscriptions/' + encodeURIComponent(active.subscription_id) + '/cancel', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason: 'Customer requested cancellation in NaliChat Settings' }),
+      body: JSON.stringify({ reason: 'Customer requested cancellation in NaliBase Settings' }),
     });
     if (!res.ok && res.status !== 204) {
       const details = await res.text();

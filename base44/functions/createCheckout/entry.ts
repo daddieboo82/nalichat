@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
           );
         }
         unitPrice = amount;
-        name = 'Donation to NaliChat';
+        name = 'Donation to NaliBase';
       } else {
         return Response.json(
           { error: 'Only donation checkout is supported' },

@@ -30,10 +30,22 @@ export function getWorldForPath(pathname='', preferredWorld='') {
 }
 
 const WORLD_SESSION_KEY = 'nalibase.activeWorld';
+const WORLD_VISIT_KEY = 'nalibase.lastWorld';
 
 export function rememberWorldContext(worldId='') {
   if (typeof window === 'undefined' || !WORLD_CONTEXTS[worldId]) return;
-  try { window.sessionStorage.setItem(WORLD_SESSION_KEY, worldId); } catch (_) {}
+  try {
+    window.sessionStorage.setItem(WORLD_SESSION_KEY, worldId);
+    window.sessionStorage.setItem(WORLD_VISIT_KEY, worldId);
+  } catch (_) {}
+}
+
+export function getLastVisitedWorld() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const worldId = window.sessionStorage.getItem(WORLD_VISIT_KEY) || '';
+    return WORLD_CONTEXTS[worldId] ? { id: worldId, ...WORLD_CONTEXTS[worldId] } : null;
+  } catch (_) { return null; }
 }
 
 export function getRememberedWorldForPath(pathname='') {

@@ -1,10 +1,10 @@
 export const WORLD_CONTEXTS = Object.freeze({
-  connect: { label: 'CONNECT', name: 'NaliChat World', path: '/world/connect', glow: 'from-pink-500/25 via-fuchsia-500/5 to-transparent' },
-  create: { label: 'CREATE', name: 'NaliStudio World', path: '/world/create', glow: 'from-cyan-500/25 via-blue-500/5 to-transparent' },
-  discover: { label: 'DISCOVER', name: 'Creator World', path: '/world/discover', glow: 'from-violet-500/25 via-fuchsia-500/5 to-transparent' },
-  share: { label: 'SHARE', name: 'Project World', path: '/world/share', glow: 'from-emerald-500/25 via-teal-500/5 to-transparent' },
-  visualize: { label: 'VISUALIZE', name: 'Visual World', path: '/world/visualize', glow: 'from-orange-500/25 via-rose-500/5 to-transparent' },
-  compete: { label: 'COMPETE', name: 'Arena World', path: '/world/compete', glow: 'from-yellow-500/25 via-amber-500/5 to-transparent' },
+  connect: { label: 'CONNECT', name: 'NaliChat World', path: '/world/connect', storefronts: [{label:'Messages',path:'/messages'},{label:'Creator Network',path:'/explore'},{label:'Profile',path:'/profile'},{label:'Projects',path:'/projects-summary'}], glow: 'from-pink-500/25 via-fuchsia-500/5 to-transparent' },
+  create: { label: 'CREATE', name: 'NaliStudio World', path: '/world/create', storefronts: [{label:'Studio',path:'/studio'},{label:'Quick Record',path:'/record'},{label:'Cover Art',path:'/cover-art'},{label:'Playlists',path:'/playlists'}], glow: 'from-cyan-500/25 via-blue-500/5 to-transparent' },
+  discover: { label: 'DISCOVER', name: 'Creator World', path: '/world/discover', storefronts: [{label:'Explore',path:'/explore'},{label:'Playlists',path:'/playlists'},{label:'Leaderboard',path:'/leaderboard'},{label:'Analytics',path:'/analytics'}], glow: 'from-violet-500/25 via-fuchsia-500/5 to-transparent' },
+  share: { label: 'SHARE', name: 'Project World', path: '/world/share', storefronts: [{label:'File Vault',path:'/files'},{label:'Projects',path:'/projects-summary'},{label:'Messages',path:'/messages'},{label:'Studio Import',path:'/studio'}], glow: 'from-emerald-500/25 via-teal-500/5 to-transparent' },
+  visualize: { label: 'VISUALIZE', name: 'Visual World', path: '/world/visualize', storefronts: [{label:'Video Lab',path:'/music-video-generator'},{label:'Cover Art',path:'/cover-art'},{label:'Studio',path:'/studio'},{label:'Explore',path:'/explore'}], glow: 'from-orange-500/25 via-rose-500/5 to-transparent' },
+  compete: { label: 'COMPETE', name: 'Arena World', path: '/world/compete', storefronts: [{label:'Challenges',path:'/challenges'},{label:'Leaderboard',path:'/leaderboard'},{label:'Create Challenge',path:'/create-challenge'},{label:'Squads',path:'/squad'}], glow: 'from-yellow-500/25 via-amber-500/5 to-transparent' },
 });
 
 const PATH_WORLD = [

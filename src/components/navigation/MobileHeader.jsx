@@ -81,10 +81,10 @@ export default function MobileHeader() {
     }
   };
 
-  const handleNavigate = (dest) => {
+  const handleNavigate = (dest, fromWorld = '') => {
     sounds.nav();
     setMenuOpen(false);
-    navigate(dest);
+    navigate(dest, fromWorld ? { state: { fromWorld } } : undefined);
   };
 
   const handleLogout = async () => {

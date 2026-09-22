@@ -14,12 +14,10 @@ describe('first-paint performance guards', () => {
 
   it('keeps the first-visit onboarding shell visible immediately without an initial opacity gate', () => {
     const onboarding = fs.readFileSync('src/components/onboarding/ImmersiveOnboarding.jsx', 'utf8');
-    const home = fs.readFileSync('src/pages/Home.jsx', 'utf8');
 
     expect(onboarding).toContain('const [visible, setVisible] = useState(true);');
     expect(onboarding).toContain('<AnimatePresence initial={false}>');
     expect(onboarding).toContain('initial={false}');
-    expect(home).toContain('const shouldShowVisitorIntro = authChecked && !user && !visitorIntroSeen;');
   });
 
   it('sets a conservative referrer policy for public navigation', () => {

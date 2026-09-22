@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, MessageSquare, Music, Compass, FolderKanban, Video, Trophy, Users, UserPlus, Mic, Wand2, ListMusic, BarChart3, FolderOpen, Upload, Images, Film, Swords, Medal, Rocket, UserRound, Map, Sparkles, Store, Building2, Navigation, MapPin } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MessageSquare, Music, Compass, FolderKanban, Video, Trophy, Users, UserPlus, Mic, Wand2, ListMusic, BarChart3, FolderOpen, Upload, Images, Film, Swords, Medal, Rocket, UserRound, Map, Sparkles, Store, Building2, Navigation, MapPin, Radio, Clock3 } from 'lucide-react';
 import { trackProductEvent } from '@/lib/productAnalytics';
 
 const worlds = {
@@ -9,7 +9,7 @@ const worlds = {
     eyebrow:'NaliChat World', title:'CONNECT', splash:'ENTER THE NETWORK', tagline:'Your people. Your conversations. Your creative network.',
     atmosphere:'A neon social metropolis where conversations, creators and collaborations are always moving.',
     glow:'from-pink-500/40 via-primary/15 to-transparent', orb:'from-pink-500 via-fuchsia-500 to-violet-700', icon:MessageSquare,
-    landmarks:['Signal Tower','Creator Boulevard','Collab Plaza','Profile Heights'],
+    landmarks:['Signal Tower','Creator Boulevard','Collab Plaza','Profile Heights'], scene:['Live conversations ripple across Signal Tower.','Creators are gathering on Creator Boulevard.','Collaboration rooms are open in Collab Plaza.'],
     districts:[
       ['Messages','DMs, group conversations and real-time collaboration.','/messages',MessageSquare],
       ['Creator Network','Discover creators and build your circle.','/explore',Users],
@@ -21,7 +21,7 @@ const worlds = {
     eyebrow:'NaliStudio World', title:'CREATE', splash:'ENTER THE STUDIO CITY', tagline:'A complete creative district for turning an idea into a release.',
     atmosphere:'A futuristic production city of recording rooms, sound labs, artwork stations and release tools.',
     glow:'from-cyan-500/40 via-blue-500/15 to-transparent', orb:'from-cyan-400 via-blue-500 to-indigo-700', icon:Music,
-    landmarks:['Studio Core','Sound Lab','Art District','Playlist Terminal'],
+    landmarks:['Studio Core','Sound Lab','Art District','Playlist Terminal'], scene:['Studio Core is active with new sessions.','Sound Lab is ready for recording and mixing.','The Art District is open for release visuals.'],
     districts:[
       ['NaliStudio','Record, arrange, edit and mix your music.','/studio',Music],
       ['Quick Record','Capture an idea before it disappears.','/record',Mic],
@@ -33,7 +33,7 @@ const worlds = {
     eyebrow:'Creator World', title:'DISCOVER', splash:'ENTER THE DISCOVERY GRID', tagline:'A living discovery world for music, creators and momentum.',
     atmosphere:'An endless discovery grid where new music, rising creators and cultural signals surface in real time.',
     glow:'from-violet-500/40 via-fuchsia-500/15 to-transparent', orb:'from-violet-500 via-fuchsia-500 to-purple-800', icon:Compass,
-    landmarks:['Discovery Grid','Sound Trails','Momentum Tower','Insight Observatory'],
+    landmarks:['Discovery Grid','Sound Trails','Momentum Tower','Insight Observatory'], scene:['New signals are moving through the Discovery Grid.','Sound Trails are open for exploration.','Momentum Tower is tracking creator movement.'],
     districts:[
       ['Explore','Browse tracks, creators and what is happening now.','/explore',Compass],
       ['Playlists','Move through curated collections and sounds.','/playlists',ListMusic],
@@ -45,7 +45,7 @@ const worlds = {
     eyebrow:'Project World', title:'SHARE', splash:'ENTER THE EXCHANGE', tagline:'The exchange layer for files, projects and creative handoffs.',
     atmosphere:'A secure logistics world for moving massive creative assets, projects and ideas between collaborators.',
     glow:'from-emerald-500/40 via-teal-500/15 to-transparent', orb:'from-emerald-400 via-teal-500 to-cyan-800', icon:FolderKanban,
-    landmarks:['File Vault','Project Dock','Transfer Bridge','Import Terminal'],
+    landmarks:['File Vault','Project Dock','Transfer Bridge','Import Terminal'], scene:['The File Vault is ready for creative assets.','Project Dock is open for collaboration handoffs.','Transfer Bridge connects projects to creation.'],
     districts:[
       ['File Vault','Access shared files and creative assets.','/files',FolderOpen],
       ['Projects','Organize collaborations around the work.','/projects-summary',FolderKanban],
@@ -57,7 +57,7 @@ const worlds = {
     eyebrow:'Visual World', title:'VISUALIZE', splash:'ENTER THE VISUAL REALM', tagline:'Give the music a face, a scene and a visual identity.',
     atmosphere:'A cinematic realm of moving light, virtual sets, artwork labs and visual storytelling.',
     glow:'from-orange-500/40 via-rose-500/15 to-transparent', orb:'from-orange-400 via-rose-500 to-red-800', icon:Video,
-    landmarks:['Cinema Core','Cover Gallery','Scene Forge','Inspiration Deck'],
+    landmarks:['Cinema Core','Cover Gallery','Scene Forge','Inspiration Deck'], scene:['Cinema Core is ready for visual concepts.','Cover Gallery is open for new identities.','Scene Forge is preparing cinematic ideas.'],
     districts:[
       ['Music Video Lab','Build visual concepts and music-video experiences.','/music-video-generator',Film],
       ['Cover Art Lab','Shape the visual identity of a release.','/cover-art',Images],
@@ -69,7 +69,7 @@ const worlds = {
     eyebrow:'Arena World', title:'COMPETE', splash:'ENTER THE ARENA', tagline:'Challenges, rankings and discovery built around creative momentum.',
     atmosphere:'A massive competitive arena where creators enter challenges, form squads and rise through the ranks.',
     glow:'from-yellow-500/40 via-amber-500/15 to-transparent', orb:'from-yellow-300 via-amber-500 to-orange-800', icon:Trophy,
-    landmarks:['Challenge Arena','Rank Tower','Squad Grounds','Victory Hall'],
+    landmarks:['Challenge Arena','Rank Tower','Squad Grounds','Victory Hall'], scene:['Challenge Arena is open for competition.','Rank Tower is tracking creative momentum.','Squad Grounds are ready for teams.'],
     districts:[
       ['Challenge Arena','Enter live creative challenges.','/challenges',Swords],
       ['Leaderboards','Track rankings and standout creators.','/leaderboard',Trophy],
@@ -117,6 +117,18 @@ export default function WorldHub(){
             <p className="mx-auto mt-5 max-w-3xl text-lg text-white/75 sm:text-2xl">{world.tagline}</p>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-white/45 sm:text-base">{world.atmosphere}</p>
             <div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-2 sm:grid-cols-4">{world.landmarks.map((x,i)=><motion.div key={x} initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:.15+i*.08}} className="rounded-2xl border border-white/10 bg-white/[.04] p-4 backdrop-blur-xl"><Map className="mx-auto h-4 w-4 text-white/50"/><p className="mt-2 text-xs font-bold text-white/70">{x}</p></motion.div>)}</div>
+          </div>
+        </section>
+        <section className="relative py-6 sm:py-10">
+          <div className="grid gap-4 lg:grid-cols-[1.4fr_.6fr]">
+            <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[.035] p-6 backdrop-blur-xl">
+              <div className="flex items-center gap-2 text-white/45"><Radio className="h-4 w-4"/><p className="text-[10px] font-black uppercase tracking-[.28em]">World pulse</p></div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">{world.scene.map((item,i)=><motion.div key={item} initial={{opacity:0,y:12}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*.08}} className="rounded-2xl border border-white/[.07] bg-black/25 p-4"><div className="mb-3 flex items-center gap-2"><span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-30"/><span className="relative inline-flex h-2 w-2 rounded-full bg-white/70"/></span><span className="text-[9px] font-black uppercase tracking-[.2em] text-white/35">Live</span></div><p className="text-xs leading-relaxed text-white/60">{item}</p></motion.div>)}</div>
+            </div>
+            <div className="rounded-[2rem] border border-white/10 bg-white/[.035] p-6 backdrop-blur-xl">
+              <div className="flex items-center gap-2 text-white/45"><Clock3 className="h-4 w-4"/><p className="text-[10px] font-black uppercase tracking-[.28em]">Always evolving</p></div>
+              <p className="mt-5 font-heading text-xl font-black">This world grows from within.</p><p className="mt-2 text-xs leading-relaxed text-white/50">Nali AI can add subtle improvements to this environment while preserving the mall, its storefronts and your creative flow.</p>
+            </div>
           </div>
         </section>
         <section className="relative py-10 sm:py-16">

@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'file_size must be greater than zero' }, { status: 400 });
     }
 
-    // NaliChat intentionally has no application-level total transfer-size ceiling.
+    // NaliBase intentionally has no application-level total transfer-size ceiling.
     const objectPath = `users/${user.id}/${crypto.randomUUID()}/${fileName}`;
     const { url, serviceKey } = getSupabaseConfig();
     const supabase = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });

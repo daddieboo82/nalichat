@@ -10,7 +10,7 @@ function assertTransferFile(file) {
 }
 
 /**
- * Upload through Nali Transfer. There is intentionally no NaliChat total-size
+ * Upload through Nali Transfer. There is intentionally no NaliBase total-size
  * ceiling here; the underlying storage provider/account capacity still applies.
  *
  * The returned Promise exposes controller.pause/resume/cancel synchronously so

@@ -197,7 +197,7 @@ describe('home, navigation, and recovery flows', () => {
   it('restores the last mobile tab path when switching tabs', async () => {
     const firstRender = renderWithProviders(<MobileNavHarness />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Profile' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/profile'));
 
     fireEvent.click(screen.getByRole('button', { name: 'Go profile detail' }));
@@ -206,13 +206,13 @@ describe('home, navigation, and recovery flows', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Explore' }));
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/explore'));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Profile' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/profile?id=42'));
 
     firstRender.unmount();
 
     renderWithProviders(<MobileNavHarness />);
-    fireEvent.click(screen.getByRole('button', { name: 'Profile' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/profile?id=42'));
   });
 
@@ -225,8 +225,8 @@ describe('home, navigation, and recovery flows', () => {
 
     expect(screen.getAllByRole('button', { name: /Log in/i }).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
-    expect(screen.getByText('Explore')).toBeTruthy();
-    expect(screen.getByText('Studio')).toBeTruthy();
+    expect(screen.getByText('DISCOVER')).toBeTruthy();
+    expect(screen.getByText('CREATE')).toBeTruthy();
   });
 
   it('completes the welcome tour and navigates to challenges', async () => {

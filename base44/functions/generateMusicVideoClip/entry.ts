@@ -3,6 +3,7 @@ import { InferenceClient } from 'npm:@huggingface/inference';
 import { readJsonBodyLimited, requestBodyErrorResponse } from '../../shared/requestLimits.ts';
 
 const MODEL = 'Wan-AI/Wan2.1-T2V-1.3B';
+const PROVIDER = 'fal-ai';
 Deno.serve(async (req) => {
   try {
     if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
@@ -17,14 +18,14 @@ Deno.serve(async (req) => {
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('hugging_face');
     const hf = new InferenceClient(accessToken);
     const video = await hf.textToVideo({
-      provider: 'auto',
+      provider: PROVIDER,
       model: MODEL,
       inputs: text,
       parameters: {
         num_frames: 81,
         guidance_scale: 5,
         num_inference_steps: 28,
-        negative_prompt: [String(negative_prompt || 'text, logo, watermark, celebrity likeness, distorted anatomy, low quality')],
+        negative_prompt: String(negative_prompt || 'text, logo, watermark, celebrity likeness, distorted anatomy, low quality'),
       },
     });
     const bytes = new Uint8Array(await video.arrayBuffer());
@@ -32,10 +33,12 @@ Deno.serve(async (req) => {
     const file = new File([bytes], `scene-${crypto.randomUUID()}.mp4`, { type: video.type || 'video/mp4' });
     const stored = await base44.asServiceRole.integrations.Core.UploadFile({ file });
     if (!stored?.file_url) throw new Error('Generated clip could not be stored');
-    return Response.json({ video_url: stored.file_url, model: MODEL });
+    return Response.json({ video_url: stored.file_url, model: MODEL, provider: PROVIDER });
   } catch (error) {
     const bodyError = requestBodyErrorResponse(error); if (bodyError) return bodyError;
     console.error('generateMusicVideoClip error:', error);
-    return Response.json({ error: error instanceof Error ? error.message : 'AI video generation failed' }, { status: 500 });
+    const raw = error instanceof Error ? error.message : String(error || 'AI video generation failed');
+    const safe = /auth|token|credential|secret/i.test(raw) ? 'AI video provider authentication failed' : raw.slice(0, 600);
+    return Response.json({ error: safe || 'AI video generation failed', model: MODEL, provider: PROVIDER }, { status: 502 });
   }
 });

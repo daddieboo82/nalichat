@@ -5,6 +5,7 @@ import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { unsubscribeFromRemotePush } from '@/lib/pushNotifications';
 import { clearPersistedAuthTokens } from '@/lib/authSession';
 import { purgeOutboundQueueForUser } from '@/lib/outboundQueue';
+import { clearActiveWorldContext } from '@/lib/nalibaseWorldContext';
 import { useQueryClient } from '@tanstack/react-query';
 
 const AuthContext = createContext();
@@ -242,6 +243,7 @@ export const AuthProvider = ({ children }) => {
       purgeOutboundQueueForUser(departingUserId);
       clearPersistedAuthTokens();
       try { localStorage.removeItem('last_activity'); } catch {}
+      clearActiveWorldContext();
       queryClient.clear();
       lastUserIdRef.current = null;
       setUser(null);

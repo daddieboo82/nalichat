@@ -16,7 +16,7 @@ test('protected deep links redirect anonymous users to login', async ({ page }) 
 
 test('public registration page renders required account fields', async ({ page }) => {
   await page.goto('/register');
-  await expect(page.getByRole('heading', { name: /create your account/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /join nalibase free/i })).toBeVisible();
   await expect(page.locator('input[type="email"]')).toBeVisible();
   await expect(page.locator('input[type="password"]')).toHaveCount(2);
   await expect(page.getByRole('button', { name: /create account/i })).toBeVisible();

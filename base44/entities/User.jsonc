@@ -243,7 +243,7 @@
     },
     "stripe_customer_id": {
       "type": "string",
-      "description": "Server-managed Stripe Customer ID for this NaliChat account",
+      "description": "Server-managed Stripe Customer ID for this NaliBase account",
       "rls": {
         "read": true,
         "write": {

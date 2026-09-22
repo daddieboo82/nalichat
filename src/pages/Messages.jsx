@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { recordSquadActivity } from "@/lib/squadBonus";
-import { trackProductEvent } from "@/lib/productAnalytics";
+import { markActivationComplete, trackProductEvent } from "@/lib/productAnalytics";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -602,6 +602,9 @@ export default function Messages() {
             localStorage.setItem(key, "1");
             trackProductEvent("first_message", {
               user_id: currentUser?.id || "",
+              message_type: msg.type || "text",
+            });
+            markActivationComplete(currentUser?.id, "first_message", {
               message_type: msg.type || "text",
             });
           }

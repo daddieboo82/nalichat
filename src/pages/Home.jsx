@@ -7,7 +7,7 @@ import {
   MessageSquare, Music, BarChart3, Sparkles,
   Trophy, ArrowRight, Zap, Shield, Star,
   Headphones, Wand2, FileAudio, ChevronRight, UserCircle, Video, Layers, ShoppingCart,
-  SlidersHorizontal, Tag, FolderKanban
+  SlidersHorizontal, Tag, FolderKanban, MapPin
 } from "lucide-react";
 import { motion } from "framer-motion";
 import QuickStartGuide from "@/components/home/QuickStartGuide";

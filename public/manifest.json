@@ -1,6 +1,6 @@
 {
-  "name": "NaliChat",
-  "short_name": "NaliChat",
+  "name": "NaliBase",
+  "short_name": "NaliBase",
   "description": "A professional collaborative workspace for musicians, producers, and industry professionals to message, share studio sessions, and mix music remotely.",
   "start_url": "/",
   "scope": "/",

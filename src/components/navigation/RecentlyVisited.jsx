@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
-import { resolveWorldForLocation } from "@/lib/nalibaseWorldContext";
+import { getRememberedWorldForPath, getWorldForPath } from "@/lib/nalibaseWorldContext";
 
 const LEGACY_STORAGE_KEY = "nali_recent_pages";
 const storageKeyFor = (userId) => `nali_recent_pages:${userId || "anonymous"}`;
@@ -77,7 +77,8 @@ export default function RecentlyVisited({ onNavigate, currentPath }) {
       </h3>
       <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
         {recent.map(path => {
-          const world = resolveWorldForLocation(path);
+          const rememberedWorld = getRememberedWorldForPath(path);
+          const world = getWorldForPath(path, rememberedWorld);
           return (
           <button
             key={path}

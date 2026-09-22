@@ -344,17 +344,10 @@ export default function Home() {
                 Start in the Hub, choose a world, then explore the tools and experiences inside it. Nali AI helps the universe evolve from within, one thoughtful enhancement at a time.
               </p>
               <div className="mx-auto mb-8 grid max-w-4xl grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-                {[
-                  ["CONNECT", MessageSquare, "from-primary/40 to-pink-500/20"],
-                  ["CREATE", Music, "from-cyan-500/40 to-blue-500/20"],
-                  ["DISCOVER", Sparkles, "from-violet-500/40 to-fuchsia-500/20"],
-                  ["SHARE", FolderKanban, "from-emerald-500/40 to-teal-500/20"],
-                  ["VISUALIZE", Video, "from-orange-500/40 to-rose-500/20"],
-                  ["COMPETE", Trophy, "from-yellow-500/40 to-amber-500/20"],
-                ].map(([label, WorldIcon, gradient]) => (
-                  <div key={label} className={`rounded-2xl border border-white/10 bg-gradient-to-br ${gradient} p-3 backdrop-blur-xl`}>
+                {PLAZA_WORLDS.map(({ id, title, icon: WorldIcon, gradient }) => (
+                  <div key={id} className={`rounded-2xl border border-white/10 bg-gradient-to-br ${gradient} p-3 backdrop-blur-xl`}>
                     <WorldIcon className="mx-auto h-5 w-5" />
-                    <p className="mt-2 text-[10px] font-black tracking-[0.14em]">{label}</p>
+                    <p className="mt-2 text-[10px] font-black tracking-[0.14em]">{title}</p>
                   </div>
                 ))}
               </div>

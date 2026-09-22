@@ -275,7 +275,7 @@ export default function Home() {
               </div>
               {lastVisitedWorld && (
                 <div className="mb-4 flex justify-center">
-                  <Link to={`/world/${lastVisitedWorld.id}`} onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: `return_${lastVisitedWorld.id}` })} className={`group relative inline-flex items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br ${lastVisitedWorld.plazaGradient} px-4 py-3 text-left shadow-lg backdrop-blur-xl transition hover:border-white/25 hover:shadow-xl`}>
+                  <Link to={lastVisitedWorld.path} onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: `return_${lastVisitedWorld.id}` })} className={`group relative inline-flex items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br ${lastVisitedWorld.plazaGradient} px-4 py-3 text-left shadow-lg backdrop-blur-xl transition hover:border-white/25 hover:shadow-xl`}>
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/45">Continue your journey</span>
                     <span className="font-heading text-sm font-black">Return to {lastVisitedWorld.label}</span>
                     <span className="hidden text-xs text-foreground/50 sm:inline">{lastVisitedWorld.name}</span>

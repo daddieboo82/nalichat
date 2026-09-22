@@ -55,8 +55,8 @@ function track(name, properties = {}) {
   }
   const funnelEvents = new Set([
     "homepage_view", "signup_click", "registration_view", "registration_started",
-    "registration_completed", "registration_failed", "onboarding_complete", "messenger_discovery_view",
-    "contact_added", "messenger_discovery_message_click", "first_message", "studio_open", "first_upload", "return_visit"
+    "registration_completed", "registration_failed", "onboarding_complete", "post_login_action", "messenger_discovery_view",
+    "contact_added", "messenger_discovery_message_click", "first_message", "studio_open", "first_upload", "activation_complete", "return_visit"
   ]);
   if (funnelEvents.has(name)) {
     try {
@@ -110,6 +110,23 @@ function flush(reason = "heartbeat") {
   });
 }
 export function trackProductEvent(name, properties = {}) { track(name, properties); }
+
+export function markActivationComplete(userId, source, properties = {}) {
+  if (!userId) return false;
+  const key = `nali_activation_complete:${userId}`;
+  try {
+    if (localStorage.getItem(key) === "1") return false;
+    localStorage.setItem(key, "1");
+  } catch {}
+  track("activation_complete", {
+    user_id: userId,
+    source: source || "product",
+    activation_source: source || "product",
+    ...properties,
+  });
+  return true;
+}
+
 export function initProductAnalytics(userId = null) {
   if (initialized || typeof window === "undefined") return () => {};
   sessionStorageKey = sessionKeyFor(userId);

@@ -231,7 +231,7 @@ export default function Home() {
             transition={{ delay: 0.15, duration: 0.5 }}
             className="mb-6 font-heading text-4xl font-black tracking-tight text-gradient-animate drop-shadow-xl sm:text-5xl md:text-6xl"
           >
-            {user ? "NaliBase" : "NaliChat"}
+            NaliBase
           </motion.h1>
 
           {/* NaliBase hub: the logged-in home is a launch world, not a dashboard. */}
@@ -287,19 +287,37 @@ export default function Home() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
               </span>
-              Messages + Studio + File Sharing + AI
+              SIX WORLDS · ONE CREATIVE UNIVERSE
             </motion.div>
           )}
 
           {!user && (
             <>
               <h1 className="mb-5 font-heading text-4xl font-black leading-[1.02] tracking-tight drop-shadow-xl text-gradient-animate sm:text-6xl md:mb-6 md:text-8xl lg:text-[7rem]">
-                Create. Collaborate.<br className="hidden md:block" />{" "}
-                <span>Share Everything.</span>
+                Enter Your<br className="hidden md:block" />{" "}
+                <span>Creative Universe.</span>
               </h1>
-              <p className="mx-auto mb-8 max-w-3xl text-base font-medium leading-relaxed text-foreground/90 sm:text-xl md:mb-12 md:text-2xl">
-                Message your team, produce in NaliStudio, move large creative files, and use AI-assisted creator tools without bouncing between apps. Start free.
+              <p className="mx-auto mb-5 max-w-3xl text-base font-medium leading-relaxed text-foreground/90 sm:text-xl md:text-2xl">
+                NaliBase is an evolving entertainment and creativity universe. Connect, create, discover, share, visualize and compete — all under one identity.
               </p>
+              <p className="mx-auto mb-8 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base md:mb-10">
+                Start in the Hub, choose a world, then explore the tools and experiences inside it. Nali AI helps the universe evolve from within, one thoughtful enhancement at a time.
+              </p>
+              <div className="mx-auto mb-8 grid max-w-4xl grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                {[
+                  ["CONNECT", MessageSquare, "from-primary/40 to-pink-500/20"],
+                  ["CREATE", Music, "from-cyan-500/40 to-blue-500/20"],
+                  ["DISCOVER", Sparkles, "from-violet-500/40 to-fuchsia-500/20"],
+                  ["SHARE", FolderKanban, "from-emerald-500/40 to-teal-500/20"],
+                  ["VISUALIZE", Video, "from-orange-500/40 to-rose-500/20"],
+                  ["COMPETE", Trophy, "from-yellow-500/40 to-amber-500/20"],
+                ].map(([label, WorldIcon, gradient]) => (
+                  <div key={label} className={`rounded-2xl border border-white/10 bg-gradient-to-br ${gradient} p-3 backdrop-blur-xl`}>
+                    <WorldIcon className="mx-auto h-5 w-5" />
+                    <p className="mt-2 text-[10px] font-black tracking-[0.14em]">{label}</p>
+                  </div>
+                ))}
+              </div>
             </>
           )}
 
@@ -313,8 +331,8 @@ export default function Home() {
                     className="w-full sm:w-auto"
                     onClick={() => trackProductEvent("signup_click", { source: "home_hero", cta: "start_creating_free" })}
                   >
-                    <MessageSquare className="w-5 h-5 mr-2" />
-                    Start Free
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Enter NaliBase Free
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                   </Button>
@@ -325,7 +343,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mx-auto mt-5 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-             Free messaging · NaliStudio included · File sharing up to 2 GB per file · Upgrade for NALI.ai and larger transfers
+             One account · Six connected worlds · Free core experiences · Optional upgrades for advanced AI and creator tools
             </p>
           )}
         </motion.div>
@@ -361,8 +379,9 @@ export default function Home() {
         >
           <div className="absolute -inset-px bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-2xl pointer-events-none" />
           <div className="relative z-10">
-            <h2 className="font-heading font-bold text-3xl md:text-4xl mb-3">One Creative Workflow: Message, Make, Share</h2>
-            <p className="text-foreground/90 text-lg mb-10 max-w-2xl">Keep the creative loop together: talk through the idea, build it in Studio, share the files, get feedback, and publish from the same creator workspace.</p>
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.24em] text-primary">The NaliBase Universe</p>
+            <h2 className="font-heading font-bold text-3xl md:text-5xl mb-3">Six worlds. One identity. Endless creative movement.</h2>
+            <p className="text-foreground/90 text-lg mb-10 max-w-3xl">NaliBase is designed as a universe, not a pile of pages. Every world has a purpose, its own districts and a direct path back to the Hub, so your creative life stays connected as the platform grows.</p>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
               {[

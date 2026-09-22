@@ -94,7 +94,7 @@ export default function ViralSeed() {
             Viral Content Seeding Engine
           </h1>
           <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
-            Generate platform-native viral content for NaliChat — TikTok scripts, Reddit posts, Discord messages, X threads, and YouTube Shorts, all optimized for explosive growth.
+            Generate platform-native viral content for NaliBase — TikTok scripts, Reddit posts, Discord messages, X threads, and YouTube Shorts, all optimized for explosive growth.
           </p>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20">
             <Zap className="w-3.5 h-3.5 text-yellow-400" />

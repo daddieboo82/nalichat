@@ -38,7 +38,7 @@ const RESPONSE_SCHEMA = {
 };
 
 function buildPrompt(mood: string) {
-  return `You are ViralSeed AI — an autonomous engine that creates and optimizes viral content for NaliChat, a music collaboration platform at nalichat.org.
+  return `You are ViralSeed AI — an autonomous engine that creates and optimizes viral content for NaliBase, an entertainment and creativity universe at nalichat.org.
 
 Generate exactly 5 specific viral content concepts for music creators. For each concept provide: title, hook, emotional_trigger, tiktok_script, reddit_post, discord_message, x_thread, youtube_shorts_script, viral_loop, hashtags, communities, screenshot_caption, and a CTA to nalichat.org.
 

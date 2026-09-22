@@ -263,13 +263,13 @@ export default function Home() {
               <p className="mt-1 text-sm text-muted-foreground">Meet a creator, start a conversation, or jump straight into your next track.</p>
               <div className="mt-4 grid gap-2 sm:grid-cols-3">
                 <Button asChild className="min-h-11 rounded-xl">
-                  <Link to="/messages"><MessageSquare className="mr-2 h-4 w-4" />Meet creators</Link>
+                  <Link to="/messages" onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "home_activation", action: "meet_creators" })}><MessageSquare className="mr-2 h-4 w-4" />Meet creators</Link>
                 </Button>
                 <Button asChild variant="outline" className="min-h-11 rounded-xl">
-                  <Link to="/studio"><Music className="mr-2 h-4 w-4" />Start a track</Link>
+                  <Link to="/studio" onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "home_activation", action: "start_track" })}><Music className="mr-2 h-4 w-4" />Start a track</Link>
                 </Button>
                 <Button asChild variant="outline" className="min-h-11 rounded-xl">
-                  <Link to="/explore"><Sparkles className="mr-2 h-4 w-4" />Find inspiration</Link>
+                  <Link to="/explore" onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "home_activation", action: "find_inspiration" })}><Sparkles className="mr-2 h-4 w-4" />Find inspiration</Link>
                 </Button>
               </div>
             </motion.div>

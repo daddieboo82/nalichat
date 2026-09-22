@@ -12,7 +12,7 @@ import { sounds } from "@/hooks/use-sound";
 import { cn } from "@/lib/utils";
 import RecentlyVisited from "@/components/navigation/RecentlyVisited";
 import Logo from "@/components/branding/Logo";
-import { resolveWorldForLocation } from "@/lib/nalibaseWorldContext";
+import { resolveWorldForLocation, WORLD_CONTEXTS, WORLD_ORDER } from "@/lib/nalibaseWorldContext";
 
 const SUBPAGE_PREFIXES = ["/playlist/", "/record", "/settings", "/analytics"];
 
@@ -31,15 +31,14 @@ const TITLES = {
   "/cover-art": "AI Cover Art",
 };
 
+const WORLD_MENU_ICONS = { connect: MessageSquare, create: Music, discover: Compass, share: FileText, visualize: Wand2, compete: Trophy };
 const MENU_GROUPS = [
-  { label: "Enter a NaliBase Mall", items: [
-    { icon: MessageSquare, label: "CONNECT", path: "/world/connect", desc: "NaliChat social world" },
-    { icon: Music, label: "CREATE", path: "/world/create", desc: "NaliStudio creative world" },
-    { icon: Compass, label: "DISCOVER", path: "/world/discover", desc: "Creator discovery world" },
-    { icon: FileText, label: "SHARE", path: "/world/share", desc: "Projects and file exchange" },
-    { icon: Wand2, label: "VISUALIZE", path: "/world/visualize", desc: "Visual creation world" },
-    { icon: Trophy, label: "COMPETE", path: "/world/compete", desc: "Challenges and squads" },
-  ]},
+  { label: "Enter a NaliBase Mall", items: WORLD_ORDER.map((id) => ({
+    icon: WORLD_MENU_ICONS[id],
+    label: WORLD_CONTEXTS[id].label,
+    path: WORLD_CONTEXTS[id].path,
+    desc: WORLD_CONTEXTS[id].menuDescription,
+  })) },
 ];
 
 export default function MobileHeader() {

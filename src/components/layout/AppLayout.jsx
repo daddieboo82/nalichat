@@ -14,6 +14,7 @@ import GlobalInviteDialog from "@/components/GlobalInviteDialog";
 import GlobalMessageDialog from "@/components/GlobalMessageDialog";
 import GlobalHelpDialog from "@/components/GlobalHelpDialog";
 import GlobalAudioPlayer from "@/components/audio/GlobalAudioPlayer";
+import WorldContinuityBar from "@/components/layout/WorldContinuityBar";
 
 export default function AppLayout() {
   const location = useLocation();
@@ -46,6 +47,9 @@ export default function AppLayout() {
     <div className="h-screen h-[100dvh] flex flex-col bg-background overflow-hidden">
       {/* Mobile Header */}
       {!isDesktop && <MobileHeader />}
+
+      {/* Storefront continuity — users remain visibly inside their selected NaliBase mall. */}
+      <WorldContinuityBar />
 
       {/* Main Content */}
       <main className={`flex-1 overflow-hidden ${hasAudioPlayer ? 'pb-[calc(7.75rem+env(safe-area-inset-bottom))] lg:pb-[5rem]' : 'pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0'}`}>

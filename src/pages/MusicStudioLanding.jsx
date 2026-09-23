@@ -61,7 +61,7 @@ export default function MusicStudioLanding() {
               <Link to={attributedPath("/pricing")}>Compare Plans</Link>
             </Button>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">Core chat is free forever · No paid plan required to start</p>
+          <p className="mt-4 text-sm text-muted-foreground">Start creating immediately · Premium unlocks more AI and advanced Studio power</p>
         </div>
 
         <div className="mt-14 grid gap-4 md:grid-cols-2">

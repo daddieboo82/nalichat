@@ -31,12 +31,21 @@ export default function Register() {
   const [otpCode, setOtpCode] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
   const [emailStartedTracked, setEmailStartedTracked] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const markEmailRegistrationStarted = () => {
     if (emailStartedTracked) return;
     setEmailStartedTracked(true);
     trackProductEvent("registration_started", { source: "email", stage: "form_interaction" });
   };
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return undefined;
+    const timer = window.setInterval(() => {
+      setResendCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
 
   // Capture campaign parameters even when an ad links directly to /register.
   useEffect(() => {
@@ -79,7 +88,11 @@ export default function Register() {
       google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
     });
     try {
-      await base44.auth.register({ email, password });
+      const normalizedEmail = email.trim().toLowerCase();
+      await base44.auth.register({ email: normalizedEmail, password });
+      setEmail(normalizedEmail);
+      setOtpCode("");
+      setResendCooldown(30);
       setShowOtp(true);
     } catch (err) {
       const safeReason = registrationErrorMessage(err);
@@ -105,7 +118,10 @@ export default function Register() {
     setError("");
     setLoading(true);
     try {
-      const result = await base44.auth.verifyOtp({ email, otpCode });
+      if (loading || otpCode.trim().length !== 6) return;
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedOtp = otpCode.trim();
+      const result = await base44.auth.verifyOtp({ email: normalizedEmail, otpCode: normalizedOtp });
       const token = persistAuthResult(result);
       if (token) {
         base44.auth.setToken(token);
@@ -146,12 +162,16 @@ export default function Register() {
   };
 
   const handleResend = async () => {
+    if (resendCooldown > 0) return;
     setError("");
     try {
-      await base44.auth.resendOtp(email);
+      const normalizedEmail = email.trim().toLowerCase();
+      await base44.auth.resendOtp(normalizedEmail);
+      setOtpCode("");
+      setResendCooldown(30);
       toast({
-        title: "Code sent",
-        description: "Check your email for the new code.",
+        title: "New code sent",
+        description: "Use the newest 6-digit code in your email. Older codes may no longer work.",
       });
     } catch (err) {
       const attribution = getMarketingAttribution();
@@ -260,9 +280,16 @@ export default function Register() {
         </Button>
         <p className="mt-4 text-center text-sm text-muted-foreground">
           Didn't receive the code?{" "}
-          <button onClick={handleResend} className="ui-hover min-h-9 rounded-lg px-2 py-1 font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40">
-            Resend
+          <button
+            onClick={handleResend}
+            disabled={resendCooldown > 0 || loading}
+            className="ui-hover min-h-9 rounded-lg px-2 py-1 font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
           </button>
+        </p>
+        <p className="mt-2 text-center text-xs leading-relaxed text-muted-foreground">
+          If you requested more than one code, enter only the newest one.
         </p>
       </AuthLayout>
     );

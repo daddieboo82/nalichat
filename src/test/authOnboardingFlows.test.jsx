@@ -196,7 +196,7 @@ describe('auth and onboarding flows', () => {
     await screen.findByText('That verification code is invalid. Check the code and try again.');
 
     const resendButton = screen.getByRole('button', { name: /Resend in 30s/i });
-    expect(resendButton).toBeDisabled();
+    expect(resendButton.disabled).toBe(true);
     expect(mockBase44.auth.resendOtp).not.toHaveBeenCalled();
   });
 

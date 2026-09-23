@@ -407,6 +407,26 @@ export default function Home() {
         </motion.div>
       </section>
 
+      {!user && authChecked && (
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-background/90 px-3 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_rgba(0,0,0,.28)] backdrop-blur-xl sm:hidden">
+          <div className="mx-auto flex max-w-md items-center gap-3">
+            <div className="min-w-0 flex-1 text-left">
+              <p className="truncate text-xs font-black text-foreground">Start creating free</p>
+              <p className="truncate text-[11px] text-muted-foreground">No card · Google or email</p>
+            </div>
+            <Button size="sm" className="min-h-11 shrink-0 rounded-xl bg-gradient-to-r from-primary to-pink-500 px-5 font-bold glow-primary" asChild>
+              <Link
+                to="/register"
+                onClick={() => trackProductEvent("signup_click", { source: "home_mobile_sticky", cta: "start_creating_free" })}
+              >
+                Start Free
+                <ArrowRight className="ml-1.5 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
+
       {!user && <>
       {/* — Fast reassurance for visitors deciding whether to continue — */}
       <section className="relative z-10 border-y border-border/70 bg-card/55 px-4 py-5 backdrop-blur-xl sm:px-6">

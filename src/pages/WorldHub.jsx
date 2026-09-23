@@ -157,7 +157,7 @@ export default function WorldHub(){
                 <p className="mt-2 font-heading text-xl font-black text-white">Get more power inside every NaliBase world.</p>
                 <p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/55">Upgrade for more NALI.ai, deeper Studio tools, larger creative transfers and premium workflow features. Premium starts at $7.99/month.</p>
               </div>
-              <Link to={"/pricing?source="+worldId+"_world_upgrade"} onClick={()=>trackProductEvent('upgrade_click',{source:worldId+'_world',cta:'unlock_premium'})} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-300 px-5 text-sm font-black text-black transition hover:bg-amber-200">Unlock Premium <ArrowRight className="h-4 w-4"/></Link>
+              <Link to={"/pricing?source="+worldId+"_world_upgrade"} onClick={()=>trackProductEvent('upgrade_click',{source:worldId+'_world_upgrade',cta:'unlock_premium'})} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-300 px-5 text-sm font-black text-black transition hover:bg-amber-200">Unlock Premium <ArrowRight className="h-4 w-4"/></Link>
             </div>
           )}
           <div className="grid gap-5 md:grid-cols-2">{world.districts.map(([name,description,Icon],index)=><motion.div key={name} initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:index*.06}} whileHover={{y:-7,scale:1.01}}>

@@ -143,8 +143,8 @@ export default function SubscriptionSettings() {
               Your existing subscription includes Premium Plus at its current external price.
             </p>
           )}
-          <p className="mt-4 text-sm text-muted-foreground">Core chat and NaliStudio remain available on Free.</p>
-          <p className="text-sm text-muted-foreground">Paid plans add advanced creator, AI, and privacy tools. Cancel anytime in Settings and return to Free.</p>
+          <p className="mt-4 text-sm text-muted-foreground">Premium expands NaliBase with advanced creator, AI, Studio, messaging, and privacy tools.</p>
+          <p className="text-sm text-muted-foreground">Manage or cancel an active subscription here at any time.</p>
         </div>
 
         {canManageBilling ? (

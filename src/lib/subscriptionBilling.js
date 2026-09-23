@@ -26,7 +26,7 @@ export async function startSubscriptionCheckout({
   invoke = base44.functions.invoke,
   redirect = (url) => window.location.assign(url),
 }) {
-  const response = await invoke("createPayPalSubscription", { sku });
+  const response = await invoke("createPayPalSubscription", { sku, idempotencyKey });
   const payload = responsePayload(response);
   if (
     payload?.success !== true ||

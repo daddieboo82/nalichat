@@ -71,8 +71,20 @@ export default function LiveTV() {
   }, [selected?.url]);
 
   const chooseChannel = (channel) => {
+    setError("");
     setSelected(channel);
     setRecent((items) => [channel, ...items.filter((item) => item.url !== channel.url)].slice(0, 12));
+  };
+
+  const playSelectedChannel = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    try {
+      await video.play();
+      setError("");
+    } catch {
+      setError("Press Play to start this channel. Your browser may require a direct playback gesture.");
+    }
   };
   const toggleFavorite = (channel) => setFavorites((items) =>
     items.some((item) => item.url === channel.url) ? items.filter((item) => item.url !== channel.url) : [channel, ...items]
@@ -147,7 +159,7 @@ export default function LiveTV() {
             <div>
               <video ref={videoRef} key={selected.url} src={/\.m3u8(?:$|[?#])/i.test(selected.url) ? undefined : selected.url} controls playsInline className="aspect-video w-full bg-black" onError={() => setError("This channel could not play in the browser. Some sources require a compatible CORS-enabled provider.")} />
               <div className="bg-card p-4">
-                <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold">{selected.name}</h2><p className="text-xs text-muted-foreground">{selected.group}</p></div><div className="flex items-center gap-1"><Button type="button" size="icon" variant="ghost" aria-label="Picture in picture" onClick={openPictureInPicture}><PictureInPicture2 className="h-5 w-5" /></Button><Button type="button" size="icon" variant="ghost" aria-label="Toggle favorite" onClick={() => toggleFavorite(selected)}><Heart className={`h-5 w-5 ${favorites.some((item) => item.url === selected.url) ? "fill-current text-primary" : ""}`} /></Button></div></div>
+                <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold">{selected.name}</h2><p className="text-xs text-muted-foreground">{selected.group}</p></div><div className="flex items-center gap-1"><Button type="button" variant="secondary" onClick={playSelectedChannel}><Play className="mr-2 h-4 w-4" />Play</Button><Button type="button" size="icon" variant="ghost" aria-label="Picture in picture" onClick={openPictureInPicture}><PictureInPicture2 className="h-5 w-5" /></Button><Button type="button" size="icon" variant="ghost" aria-label="Toggle favorite" onClick={() => toggleFavorite(selected)}><Heart className={`h-5 w-5 ${favorites.some((item) => item.url === selected.url) ? "fill-current text-primary" : ""}`} /></Button></div></div>
               </div>
             </div>
           ) : (

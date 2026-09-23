@@ -1,6 +1,7 @@
 import { base44 } from "@/api/base44Client";
 
 export const CHECKOUT_RETURN_KEY = "nalichat_subscription_checkout_started";
+export const CHECKOUT_ATTRIBUTION_KEY = "nalichat_subscription_checkout_attribution";
 
 export function createCheckoutRequestKey() {
   const uuid = globalThis.crypto?.randomUUID?.();

@@ -72,7 +72,7 @@ describe("FollowUpReminderDialog", () => {
     renderDialog();
     expect(screen.getByRole("heading", { name: "Premium Plus feature" })).toBeTruthy();
     expect(screen.getByText(/Core chat and notifications stay free/i)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "View Premium Plus" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Unlock follow-up reminders" })).toBeTruthy();
     expect(reminderApi.list).not.toHaveBeenCalled();
   });
 

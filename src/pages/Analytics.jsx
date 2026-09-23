@@ -110,6 +110,20 @@ export default function Analytics() {
     ];
   }, [filteredFunnelEvents]);
 
+  const premiumHealth = React.useMemo(() => {
+    const unique = (name) => new Set(filteredFunnelEvents.filter(e => e.event_name === name).map(e => e.user_id || e.session_id || e.id)).size;
+    const checkout = unique("checkout_started");
+    const purchases = unique("purchase_completed");
+    const failures = unique("purchase_failed");
+    return {
+      checkout,
+      purchases,
+      failures,
+      completionRate: checkout > 0 ? Math.round((purchases / checkout) * 100) : 0,
+      failureRate: checkout > 0 ? Math.round((failures / checkout) * 100) : 0,
+    };
+  }, [filteredFunnelEvents]);
+
   const premiumSources = React.useMemo(() => {
     const labels = {
       desktop_nav_upgrade: "Desktop nav",
@@ -295,6 +309,13 @@ export default function Analytics() {
                   </div>
                 ))}
               </div>
+              {premiumHealth.checkout > 0 && (
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-border/60 bg-background/40 p-3"><p className="text-xs font-medium text-muted-foreground">Checkout completion</p><p className="mt-2 text-xl font-heading font-bold tabular-nums">{premiumHealth.completionRate}%</p><p className="mt-1 text-xs text-muted-foreground">{premiumHealth.purchases} confirmed of {premiumHealth.checkout} checkout starters</p></div>
+                  <div className="rounded-2xl border border-border/60 bg-background/40 p-3"><p className="text-xs font-medium text-muted-foreground">Purchase failures</p><p className="mt-2 text-xl font-heading font-bold tabular-nums">{premiumHealth.failures}</p><p className="mt-1 text-xs text-muted-foreground">{premiumHealth.failureRate}% of checkout starters</p></div>
+                  <div className="rounded-2xl border border-border/60 bg-background/40 p-3"><p className="text-xs font-medium text-muted-foreground">Checkout health</p><p className="mt-2 text-sm font-heading font-bold">{premiumHealth.failureRate >= 20 ? "Needs attention" : premiumHealth.checkout >= 3 ? "Healthy signal" : "Collecting data"}</p><p className="mt-1 text-xs text-muted-foreground">Based on persisted checkout outcomes in this date range.</p></div>
+                </div>
+              )}
               {premiumSources.length > 0 && (
                 <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-background/30">
                   <table className="w-full min-w-[520px] text-left text-xs">

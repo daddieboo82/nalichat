@@ -97,7 +97,7 @@ export default function AiAssistant() {
       return `You've reached today's NALI.ai request limit. Your access resets at ${reset}.`;
     }
     if (code === "AI_NOT_ENTITLED" || /premium is required/i.test(message)) {
-      return "NALI.ai is a Premium creator tool. Compare plans when you want AI assistance; your core chat and Studio access remain available.";
+      return "NALI.ai is a Premium creator tool. Upgrade to add production guidance and creative AI assistance across your workflow.";
     }
     if (code === "AI_REQUEST_IN_PROGRESS" || code === "AI_REQUEST_ALREADY_DISPATCHED") {
       return "That request is already being handled. Give me a moment to finish it.";
@@ -121,7 +121,7 @@ export default function AiAssistant() {
       const text = e.detail?.message;
       if (!text) return;
       if (subscriptionLoading || !canUseAi) {
-        toast.error(subscriptionLoading ? "Checking your subscription…" : "NALI.ai is available with Premium. Core chat and Studio remain available.");
+        toast.error(subscriptionLoading ? "Checking your subscription…" : "NALI.ai is available with Premium for faster creative guidance across your workflow.");
         return;
       }
       setOpen(true);
@@ -230,7 +230,7 @@ export default function AiAssistant() {
     const generation = identityGenerationRef.current;
     if (subscriptionLoading) throw new Error("Subscription is still loading");
     if (!canUseAi) {
-      toast.error("NALI.ai is available with Premium. Core chat and Studio remain available.");
+      toast.error("NALI.ai is available with Premium for faster creative guidance across your workflow.");
       throw new Error("AI entitlement required");
     }
     if (conversation) return conversation;
@@ -267,7 +267,7 @@ export default function AiAssistant() {
       return;
     }
     if (!canUseAi) {
-      toast.error("NALI.ai is available with Premium. Core chat and Studio remain available.");
+      toast.error("NALI.ai is available with Premium for faster creative guidance across your workflow.");
       return;
     }
     setOpen(true);

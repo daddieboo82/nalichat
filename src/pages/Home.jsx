@@ -343,22 +343,28 @@ export default function Home() {
           {!user && (
             <>
               <h1 className="mb-5 font-heading text-4xl font-black leading-[1.02] tracking-tight drop-shadow-xl text-gradient-animate sm:text-6xl md:mb-6 md:text-8xl lg:text-[7rem]">
-                Enter Your<br className="hidden md:block" />{" "}
-                <span>Creative Universe.</span>
+                Make Music.<br className="hidden md:block" />{" "}
+                <span>Connect. Create. Grow.</span>
               </h1>
               <p className="mx-auto mb-5 max-w-3xl text-base font-medium leading-relaxed text-foreground/90 sm:text-xl md:text-2xl">
-                NaliBase is an evolving entertainment and creativity universe. Connect, create, discover, share, visualize and compete — all under one identity.
+                Message creators, record and produce in NaliStudio, share files, and build projects together — all in one place.
               </p>
-              <p className="mx-auto mb-8 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base md:mb-10">
-                Start in the Hub, choose a world, then explore the tools and experiences inside it. Nali AI helps the universe evolve from within, one thoughtful enhancement at a time.
+              <p className="mx-auto mb-7 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base md:mb-8">
+                Start free. No payment required. Join with Google in one tap and get straight into the creator workspace.
               </p>
-              <div className="mx-auto mb-8 grid max-w-4xl grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-                {PLAZA_WORLDS.map(({ id, title, icon: WorldIcon, gradient }) => (
-                  <div key={id} className={`rounded-2xl border border-white/10 bg-gradient-to-br ${gradient} p-3 backdrop-blur-xl`}>
-                    <WorldIcon className="mx-auto h-5 w-5" />
-                    <p className="mt-2 text-[10px] font-black tracking-[0.14em]">{title}</p>
-                  </div>
-                ))}
+              <div className="mx-auto mb-8 grid max-w-3xl grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/10 bg-card/40 p-3 backdrop-blur-xl">
+                  <MessageSquare className="mx-auto h-5 w-5 text-primary" />
+                  <p className="mt-2 text-xs font-bold">Message creators</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-card/40 p-3 backdrop-blur-xl">
+                  <Music className="mx-auto h-5 w-5 text-primary" />
+                  <p className="mt-2 text-xs font-bold">Create in NaliStudio</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-card/40 p-3 backdrop-blur-xl">
+                  <FolderKanban className="mx-auto h-5 w-5 text-primary" />
+                  <p className="mt-2 text-xs font-bold">Share files & projects</p>
+                </div>
               </div>
             </>
           )}
@@ -374,7 +380,7 @@ export default function Home() {
                     onClick={() => trackProductEvent("signup_click", { source: "home_hero", cta: "start_creating_free" })}
                   >
                     <Sparkles className="w-5 h-5 mr-2" />
-                    Enter NaliBase Free
+                    Start Creating Free
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                   </Button>
@@ -385,7 +391,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mx-auto mt-5 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-             One account · Six connected worlds · Free core experiences · Optional upgrades for advanced AI and creator tools
+             Free core messaging + NaliStudio · No payment required · Upgrade only when you want advanced tools
             </p>
           )}
         </motion.div>

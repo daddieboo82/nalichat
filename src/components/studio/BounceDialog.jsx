@@ -278,14 +278,14 @@ export default function BounceDialog({ projectTitle, project, tracks, trigger, o
                   <p className="text-xs text-muted-foreground">
                     {canUseAi
                       ? "Industry-standard EQ, compression & limiting for a pro-finished sound."
-                      : "Premium unlocks AI mastering. You can still bounce and publish with a flat master."}
+                      : "Premium unlocks AI mastering for a more polished, release-ready bounce."}
                   </p>
                 </div>
                 <Switch
                   checked={canUseAi && autoMaster}
                   onCheckedChange={(checked) => {
                     if (!canUseAi) {
-                      toast.error("AI mastering is available with Premium. You can still bounce without AI mastering.");
+                      toast.error("AI mastering is available with Premium for a more polished, release-ready bounce.");
                       return;
                     }
                     setAutoMaster(checked);

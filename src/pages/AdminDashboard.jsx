@@ -232,7 +232,7 @@ export default function AdminDashboard() {
             Make a Test Purchase
           </h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Starts NaliBase&apos;s real subscription checkout using Stripe test mode. This replaces the legacy Base44/Wix test-purchase screen.
+            Starts NaliBase&apos;s real subscription checkout using PayPal Sandbox. Test purchases use the same PayPal subscription flow as production without charging live money.
           </p>
 
           {isLoadingBillingTestStatus ? (
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
             <>
               <div className="flex flex-wrap gap-2 mb-4 text-sm">
                 <span className={`rounded-full border px-3 py-1 font-semibold ${billingTestStatus?.testMode ? "border-green-500/30 bg-green-500/10 text-green-600" : "border-amber-500/30 bg-amber-500/10 text-amber-600"}`}>
-                  Stripe: {billingTestStatus?.environment || "unconfigured"}
+                  PayPal: {billingTestStatus?.environment || "unconfigured"}
                 </span>
                 <span className={`rounded-full border px-3 py-1 font-semibold ${billingTestStatus?.priceCatalogReady ? "border-green-500/30 bg-green-500/10 text-green-600" : "border-amber-500/30 bg-amber-500/10 text-amber-600"}`}>
                   Price catalog: {billingTestStatus?.priceCatalogReady ? "ready" : "incomplete"}
@@ -260,13 +260,13 @@ export default function AdminDashboard() {
 
               {!billingTestStatus?.testMode && (
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 mb-4 text-sm">
-                  Test purchases are disabled because the configured Stripe secret key is not a test key. No live checkout will be launched from this panel.
+                  Test purchases are disabled because PayPal is not configured for Sandbox. No live PayPal checkout will be launched from this panel.
                 </div>
               )}
 
               {billingTestStatus?.missingPriceSecrets?.length > 0 && (
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 mb-4 text-sm">
-                  <p className="font-semibold mb-2">Missing or invalid test price IDs:</p>
+                  <p className="font-semibold mb-2">Missing PayPal Sandbox configuration:</p>
                   <ul className="list-disc pl-5 space-y-1">
                     {billingTestStatus.missingPriceSecrets.map((name) => <li key={name}>{name}</li>)}
                   </ul>

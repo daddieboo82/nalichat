@@ -6,8 +6,6 @@ import { trackProductEvent } from '@/lib/productAnalytics';
 import { useAuth } from '@/lib/AuthContext';
 import { rememberWorldContext, WORLD_CONTEXTS } from '@/lib/nalibaseWorldContext';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useSubscription } from '@/hooks/useSubscription';
 
 const worlds = {
   connect: {
@@ -102,8 +100,6 @@ function WorldSplash({world,onComplete}) {
 
 export default function WorldHub(){
   const { user }=useAuth();
-  const { hasPaidAccess, isLoading: subscriptionLoading }=useSubscription();
-  const { hasPaidAccess, isLoading: subscriptionLoading }=useSubscription();
   const { hasPaidAccess, isLoading: subscriptionLoading }=useSubscription();
   const {worldId}=useParams(); const visualWorld=worlds[worldId]; const canonicalWorld=WORLD_CONTEXTS[worldId]; const world=visualWorld&&canonicalWorld ? { ...visualWorld, title: canonicalWorld.label, eyebrow: canonicalWorld.name } : null; const [splash,setSplash]=useState(true);
   const finishSplash=useCallback(()=>setSplash(false),[]);

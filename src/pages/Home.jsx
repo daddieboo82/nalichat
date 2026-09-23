@@ -408,8 +408,30 @@ export default function Home() {
       </section>
 
       {!user && <>
+      {/* — Fast reassurance for visitors deciding whether to continue — */}
+      <section className="relative z-10 border-y border-border/70 bg-card/55 px-4 py-5 backdrop-blur-xl sm:px-6">
+        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
+          <div>
+            <p className="text-sm font-bold text-foreground sm:text-base">See what NaliChat can do before you sign up.</p>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Watch the NaliStudio walkthrough, then create your free account when you're ready.</p>
+          </div>
+          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
+            <Button variant="outline" className="min-h-11 rounded-xl border-white/20 bg-background/30" asChild>
+              <a href="#studio-demo" onClick={() => trackProductEvent("homepage_demo_click", { source: "home_reassurance", target: "studio_tutorial" })}>
+                <Video className="mr-2 h-4 w-4" /> Watch Studio Demo
+              </a>
+            </Button>
+            <Button className="min-h-11 rounded-xl bg-gradient-to-r from-primary to-pink-500" asChild>
+              <Link to="/register" onClick={() => trackProductEvent("signup_click", { source: "home_reassurance", cta: "start_free" })}>
+                Start Free <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* — Pillar pills — */}
-      <section className="relative z-10 overflow-hidden border-y border-border/70 bg-card/50 py-3 backdrop-blur-xl sm:py-4">
+      <section className="relative z-10 overflow-hidden border-b border-border/70 bg-card/50 py-3 backdrop-blur-xl sm:py-4">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

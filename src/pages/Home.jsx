@@ -352,19 +352,19 @@ export default function Home() {
               <p className="mx-auto mb-7 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base md:mb-8">
                 Start free. No payment required. Join with Google in one tap and get straight into the creator workspace.
               </p>
-              <div className="mx-auto mb-8 grid max-w-3xl grid-cols-1 gap-2 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/10 bg-card/40 p-3 backdrop-blur-xl">
-                  <MessageSquare className="mx-auto h-5 w-5 text-primary" />
-                  <p className="mt-2 text-xs font-bold">Message creators</p>
+              <div className="mx-auto mb-6 max-w-3xl rounded-3xl border border-primary/25 bg-card/55 p-4 text-left shadow-2xl backdrop-blur-xl sm:p-5">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-xl bg-primary/15 p-2"><Music className="h-5 w-5 text-primary" /></div>
+                  <div>
+                    <p className="text-sm font-black text-foreground sm:text-base">Your music workspace is ready when you are.</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">Record and produce in NaliStudio, message creators, and keep project files together without paying to get started.</p>
+                  </div>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-card/40 p-3 backdrop-blur-xl">
-                  <Music className="mx-auto h-5 w-5 text-primary" />
-                  <p className="mt-2 text-xs font-bold">Create in NaliStudio</p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-card/40 p-3 backdrop-blur-xl">
-                  <FolderKanban className="mx-auto h-5 w-5 text-primary" />
-                  <p className="mt-2 text-xs font-bold">Share files & projects</p>
-                </div>
+              </div>
+              <div className="mx-auto mb-8 flex max-w-3xl flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-semibold text-foreground/80 sm:text-sm">
+                <span className="inline-flex items-center gap-1.5"><Music className="h-4 w-4 text-primary" /> NaliStudio</span>
+                <span className="inline-flex items-center gap-1.5"><MessageSquare className="h-4 w-4 text-primary" /> Creator messaging</span>
+                <span className="inline-flex items-center gap-1.5"><FolderKanban className="h-4 w-4 text-primary" /> Project sharing</span>
               </div>
             </>
           )}

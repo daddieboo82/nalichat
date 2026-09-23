@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { MessageSquare, Compass, Music, FileText, BarChart3, Trophy,
-  Settings, LogOut, LogIn, HelpCircle, UserPlus, Film, AudioLines, Plus, Gem, Smartphone
+  Settings, LogOut, LogIn, HelpCircle, UserPlus, Film, AudioLines, Plus, Gem
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { sounds } from "@/hooks/use-sound";

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Brain, LockKeyhole } from "lucide-react";
 import { useAiCapabilities } from "@/hooks/useAiCapabilities";
 import { cn } from "@/lib/utils";
+import { trackPaywallEvent } from "@/lib/paywallAnalytics";
 
 export default function AiModeSelector({ mode, onModeChange, disabled = false }) {
   const { capabilities, isLoading, isError } = useAiCapabilities();
@@ -53,6 +54,7 @@ export default function AiModeSelector({ mode, onModeChange, disabled = false })
               to="/pricing?source=ai_mode_selector&feature=ai.deep_analysis"
               className="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-primary"
               aria-label="Unlock Premium Plus Deep analysis"
+              onClick={() => trackPaywallEvent("upgrade_click", { source: "ai_mode_selector", entitlement: "ai.deep_analysis" })}
             >
               <LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />
               Deep · Plus

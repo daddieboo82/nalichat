@@ -53,12 +53,13 @@ export default function LiveTV() {
     if (!video || !selected?.url) return undefined;
     const isHls = /\.m3u8(?:$|[?#])/i.test(selected.url);
     if (!isHls) return undefined;
+    const nativeHls = video.canPlayType("application/vnd.apple.mpegurl") || video.canPlayType("application/x-mpegURL");
+    if (nativeHls) {
+      video.src = selected.url;
+      video.load();
+      return () => { video.removeAttribute("src"); video.load(); };
+    }
     if (!Hls.isSupported()) {
-      if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = selected.url;
-        video.load();
-        return () => { video.removeAttribute("src"); video.load(); };
-      }
       setError("This browser cannot play this HLS stream.");
       return undefined;
     }

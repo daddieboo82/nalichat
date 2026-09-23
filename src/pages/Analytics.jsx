@@ -343,12 +343,12 @@ export default function Analytics() {
                 <h3 className="font-heading text-sm font-semibold">Premium Conversion</h3>
                 <p className="mt-1 text-xs text-muted-foreground">See whether upgrade interest is turning into confirmed subscriptions.</p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 {premiumConversion.map((step, index) => (
                   <div key={step.label} className="rounded-2xl border border-border/60 bg-background/40 p-3">
                     <p className="text-xs font-medium text-muted-foreground">{step.label}</p>
                     <p className="mt-2 text-xl font-heading font-bold tabular-nums">{step.count}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{index === 0 ? "Baseline" : `${step.rate}% of upgrade clickers`}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{index === 0 ? "Baseline" : `${step.previousRate}% from prior · ${step.rate}% overall`}</p>
                   </div>
                 ))}
               </div>

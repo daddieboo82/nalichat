@@ -14,6 +14,7 @@ const EVENT_NAMES = new Set([
   "billing_portal_opened",
   "entitlement_prompt_view",
   "entitlement_prompt_convert",
+  "upgrade_click",
   "registration_view",
   "registration_started",
   "registration_completed",

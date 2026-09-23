@@ -71,7 +71,7 @@ describe("FollowUpReminderDialog", () => {
   it("shows a Premium Plus prompt without blocking Free chat", () => {
     renderDialog();
     expect(screen.getByRole("heading", { name: "Premium Plus feature" })).toBeTruthy();
-    expect(screen.getByText(/Core chat and notifications stay free/i)).toBeTruthy();
+    expect(screen.getByText(/important conversations do not slip through/i)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Unlock follow-up reminders" })).toBeTruthy();
     expect(reminderApi.list).not.toHaveBeenCalled();
   });

@@ -94,7 +94,6 @@ const SubmissionPlayer = lazyWithReloadRecovery(() => import('@/pages/Submission
 const Squad = lazyWithReloadRecovery(() => import('@/pages/Squad'), 'squad');
 const SquadJoin = lazyWithReloadRecovery(() => import('@/pages/SquadJoin'), 'squad-join');
 const ViralSeed = lazyWithReloadRecovery(() => import('@/pages/ViralSeed'), 'viral-seed');
-const Download = lazyWithReloadRecovery(() => import('@/pages/Download'), 'download');
 const OAuthConsent = lazyWithReloadRecovery(() => import('@/pages/OAuthConsent'), 'oauth-consent');
 const SharedFileDownload = lazyWithReloadRecovery(() => import('@/pages/SharedFileDownload'), 'shared-file-download');
 const LiveTV = lazyWithReloadRecovery(() => import('@/pages/LiveTV'), 'live-tv');
@@ -258,7 +257,7 @@ const AuthenticatedApp = () => {
   // password recovery, shared-file downloads, or the production 404 page.
   const PUBLIC_PATHS = new Set([
     '/login', '/register', '/forgot-password', '/reset-password', '/oauth-consent',
-    '/shared-file', '/download', '/privacy', '/terms', '/encryption-documentation',
+    '/shared-file', '/privacy', '/terms', '/encryption-documentation',
     '/music-collaboration', '/creator-messaging', '/music-studio', '/pricing',
     '/pricingplans', '/thankyou', '/subscription_thank_you',
   ]);
@@ -296,7 +295,7 @@ const AuthenticatedApp = () => {
   // from Terms/Privacy and cannot complete a password reset.
   const ONBOARDING_EXEMPT_PATHS = new Set([
     '/onboarding', '/login', '/register', '/forgot-password', '/reset-password',
-    '/privacy', '/terms', '/download', '/thankyou', '/subscription_thank_you', '/oauth-consent', '/shared-file',
+    '/privacy', '/terms', '/thankyou', '/subscription_thank_you', '/oauth-consent', '/shared-file',
   ]);
   const currentPath = location.pathname.toLowerCase();
 
@@ -380,7 +379,6 @@ const AuthenticatedApp = () => {
           <Route path="/business" element={<Navigate to="/admin" replace />} />
         </Route>
       </Route>
-      <Route path="/download" element={<Download />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/encryption-documentation" element={<EncryptionDocumentation />} />

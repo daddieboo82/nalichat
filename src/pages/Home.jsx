@@ -7,7 +7,7 @@ import {
   MessageSquare, Music, BarChart3, Sparkles,
   Trophy, ArrowRight, Zap, Shield, Star,
   Headphones, Wand2, FileAudio, ChevronRight, UserCircle, Video, Layers, ShoppingCart,
-  SlidersHorizontal, Tag, FolderKanban, MapPin
+  SlidersHorizontal, Tag, FolderKanban, MapPin, Monitor
 } from "lucide-react";
 import { motion } from "framer-motion";
 import QuickStartGuide from "@/components/home/QuickStartGuide";
@@ -31,6 +31,8 @@ const PLAZA_WORLD_DETAILS = Object.freeze({
   visualize: { subtitle: "Music Video Lab", description: "Turn songs and concepts into visual experiences.", icon: Video },
   compete: { subtitle: "Challenges", description: "Enter challenges, climb leaderboards and get discovered.", icon: Trophy },
 });
+
+const NALIBASE_OS_URL = 'https://app.base44.com/apps/6a9bcfb7cdf4628117ca8ada';
 
 const PLAZA_WORLDS = WORLD_ORDER.map((id) => ({
   id,
@@ -272,6 +274,13 @@ export default function Home() {
                   <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-gradient-to-b from-white/20 to-transparent" />
                   <motion.span className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 rounded-full bg-white/70 shadow-[0_0_12px_rgba(255,255,255,.55)]" animate={{ y: [0, 12, 0], opacity: [.45, 1, .45] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }} />
                 </div>
+              </div>
+              <div className="mx-auto mb-5 max-w-3xl">
+                <a href={NALIBASE_OS_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackProductEvent("post_login_action", { user_id: user.id, source: "nalibase_hub", action: "open_nalibase_os" })} className="group flex items-center gap-4 rounded-2xl border border-cyan-400/20 bg-gradient-to-r from-cyan-500/15 via-blue-500/10 to-violet-500/15 px-5 py-4 shadow-lg backdrop-blur-xl transition hover:border-cyan-300/40 hover:bg-white/[.08]">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-400/15 text-cyan-200"><Monitor className="h-6 w-6" /></span>
+                  <span className="min-w-0 flex-1"><span className="block text-[10px] font-black uppercase tracking-[0.2em] text-cyan-200/70">NaliBase System</span><span className="mt-1 block font-heading text-lg font-black">Launch NaliBase OS</span><span className="block text-xs text-foreground/55">Open the Aurora Pro desktop environment.</span></span>
+                  <ArrowRight className="h-5 w-5 shrink-0 text-cyan-200/60 transition group-hover:translate-x-1 group-hover:text-cyan-100" />
+                </a>
               </div>
               {lastVisitedWorld && (
                 <div className="mb-4 flex justify-center">

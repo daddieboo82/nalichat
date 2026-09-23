@@ -336,7 +336,7 @@ export default function Home() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
               </span>
-              SIX WORLDS · ONE CREATIVE UNIVERSE
+              FREE CREATOR WORKSPACE · NO PAYMENT REQUIRED
             </motion.div>
           )}
 
@@ -349,10 +349,10 @@ export default function Home() {
               <p className="mx-auto mb-5 max-w-3xl text-base font-medium leading-relaxed text-foreground/90 sm:text-xl md:text-2xl">
                 Message creators, record and produce in NaliStudio, share files, and build projects together — all in one place.
               </p>
-              <p className="mx-auto mb-7 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base md:mb-8">
-                Start free. No payment required. Join with Google in one tap and get straight into the creator workspace.
+              <p className="mx-auto mb-5 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base md:mb-6">
+                Join with Google in one tap. No card. No payment. Start creating immediately.
               </p>
-              <div className="mx-auto mb-6 max-w-3xl rounded-3xl border border-primary/25 bg-card/55 p-4 text-left shadow-2xl backdrop-blur-xl sm:p-5">
+              <div className="mx-auto mb-5 hidden max-w-3xl rounded-3xl border border-primary/25 bg-card/55 p-4 text-left shadow-2xl backdrop-blur-xl sm:block sm:p-5">
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 rounded-xl bg-primary/15 p-2"><Music className="h-5 w-5 text-primary" /></div>
                   <div>

@@ -11,6 +11,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import Logo from "@/components/branding/Logo";
 import { Button } from "@/components/ui/button";
 import { resolveWorldForLocation, WORLD_CONTEXTS, WORLD_ORDER } from "@/lib/nalibaseWorldContext";
+import { useSubscription } from "@/hooks/useSubscription";
+import { trackProductEvent } from "@/lib/productAnalytics";
 
 const WORLD_ICONS = { connect: MessageSquare, create: Music, discover: Compass, share: FileText, visualize: Film, compete: Trophy };
 const NAV_GROUPS = [
@@ -25,6 +27,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+  const { hasPaidAccess, isLoading: subscriptionLoading } = useSubscription();
 
   const handleLogout = async () => {
     await logout();
@@ -108,6 +111,17 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
                 </Button>
               </Link>
             </div>
+          )}
+
+          {isAuthenticated && !subscriptionLoading && !hasPaidAccess && (
+            <Link
+              to="/pricing?source=desktop_nav_upgrade"
+              onClick={() => trackProductEvent("upgrade_click", { source: "desktop_nav", cta: "upgrade_premium" })}
+              className="ui-hover mr-1 inline-flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 px-3 py-2 text-xs font-black text-black shadow-lg shadow-orange-500/20 transition hover:scale-[1.03]"
+            >
+              <Gem className="h-4 w-4" />
+              Upgrade
+            </Link>
           )}
 
           {/* New Project */}

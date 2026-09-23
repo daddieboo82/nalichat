@@ -88,7 +88,7 @@ describe('MessageSearch', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
     expect(screen.getByText('Advanced message filters')).toBeTruthy();
-    expect(screen.getByText(/Basic text search stays free/)).toBeTruthy();
+    expect(screen.getByText(/find the right conversation faster/)).toBeTruthy();
   });
 
   it('sends composable Premium filters with timezone-normalized date boundaries', async () => {

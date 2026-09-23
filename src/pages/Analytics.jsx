@@ -110,6 +110,37 @@ export default function Analytics() {
     ];
   }, [filteredFunnelEvents]);
 
+  const premiumSources = React.useMemo(() => {
+    const labels = {
+      desktop_nav: "Desktop nav",
+      mobile_header: "Mobile header",
+      app_upgrade_banner: "App banner",
+      pricing: "Direct pricing",
+    };
+    const sourceMap = new Map();
+    for (const event of filteredFunnelEvents) {
+      if (!["upgrade_click", "checkout_started", "purchase_completed"].includes(event.event_name)) continue;
+      const source = event.source || "unknown";
+      const row = sourceMap.get(source) || { source, clicks: new Set(), checkouts: new Set(), purchases: new Set() };
+      const identity = event.user_id || event.session_id || event.id;
+      if (event.event_name === "upgrade_click") row.clicks.add(identity);
+      if (event.event_name === "checkout_started") row.checkouts.add(identity);
+      if (event.event_name === "purchase_completed") row.purchases.add(identity);
+      sourceMap.set(source, row);
+    }
+    return [...sourceMap.values()]
+      .map(row => ({
+        source: row.source,
+        label: labels[row.source] || row.source.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+        clicks: row.clicks.size,
+        checkouts: row.checkouts.size,
+        purchases: row.purchases.size,
+      }))
+      .filter(row => row.clicks || row.checkouts || row.purchases)
+      .sort((a, b) => b.purchases - a.purchases || b.checkouts - a.checkouts || b.clicks - a.clicks)
+      .slice(0, 8);
+  }, [filteredFunnelEvents]);
+
   const { data: userPosts = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["userAnalytics", currentUser?.id],
     queryFn: () =>
@@ -239,6 +270,22 @@ export default function Analytics() {
                   </div>
                 ))}
               </div>
+              {premiumSources.length > 0 && (
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-background/30">
+                  <table className="w-full min-w-[520px] text-left text-xs">
+                    <thead className="border-b border-border/60 text-muted-foreground">
+                      <tr><th className="p-3 font-semibold">Upgrade source</th><th className="p-3 font-semibold">Clicks</th><th className="p-3 font-semibold">Checkout</th><th className="p-3 font-semibold">Purchases</th></tr>
+                    </thead>
+                    <tbody>
+                      {premiumSources.map(row => (
+                        <tr key={row.source} className="border-b border-border/40 last:border-0">
+                          <td className="p-3 font-medium">{row.label}</td><td className="p-3 tabular-nums">{row.clicks}</td><td className="p-3 tabular-nums">{row.checkouts}</td><td className="p-3 font-bold tabular-nums">{row.purchases}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
             <div className="mt-5 grid gap-5 border-t border-border/60 pt-4 lg:grid-cols-2">
               <div>

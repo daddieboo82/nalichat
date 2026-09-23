@@ -141,6 +141,31 @@ export default function Analytics() {
       .slice(0, 8);
   }, [filteredFunnelEvents]);
 
+  const premiumFeatures = React.useMemo(() => {
+    const featureMap = new Map();
+    for (const event of filteredFunnelEvents) {
+      if (!["upgrade_click", "checkout_started", "purchase_completed"].includes(event.event_name)) continue;
+      const feature = event.metadata?.upgrade_feature || event.metadata?.entitlement;
+      if (!feature) continue;
+      const row = featureMap.get(feature) || { feature, clicks: new Set(), checkouts: new Set(), purchases: new Set() };
+      const identity = event.user_id || event.session_id || event.id;
+      if (event.event_name === "upgrade_click") row.clicks.add(identity);
+      if (event.event_name === "checkout_started") row.checkouts.add(identity);
+      if (event.event_name === "purchase_completed") row.purchases.add(identity);
+      featureMap.set(feature, row);
+    }
+    return [...featureMap.values()]
+      .map(row => ({
+        feature: row.feature,
+        label: row.feature.replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+        clicks: row.clicks.size,
+        checkouts: row.checkouts.size,
+        purchases: row.purchases.size,
+      }))
+      .sort((a, b) => b.purchases - a.purchases || b.checkouts - a.checkouts || b.clicks - a.clicks)
+      .slice(0, 8);
+  }, [filteredFunnelEvents]);
+
   const { data: userPosts = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["userAnalytics", currentUser?.id],
     queryFn: () =>
@@ -283,6 +308,15 @@ export default function Analytics() {
                         </tr>
                       ))}
                     </tbody>
+                  </table>
+                </div>
+              )}
+              {premiumFeatures.length > 0 && (
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-background/30">
+                  <div className="border-b border-border/60 p-3"><p className="text-xs font-semibold">Premium feature demand</p><p className="mt-1 text-[11px] text-muted-foreground">Which locked creator tools are driving upgrade intent and purchases.</p></div>
+                  <table className="w-full min-w-[520px] text-left text-xs">
+                    <thead className="border-b border-border/60 text-muted-foreground"><tr><th className="p-3 font-semibold">Feature</th><th className="p-3 font-semibold">Clicks</th><th className="p-3 font-semibold">Checkout</th><th className="p-3 font-semibold">Purchases</th></tr></thead>
+                    <tbody>{premiumFeatures.map(row => <tr key={row.feature} className="border-b border-border/40 last:border-0"><td className="p-3 font-medium">{row.label}</td><td className="p-3 tabular-nums">{row.clicks}</td><td className="p-3 tabular-nums">{row.checkouts}</td><td className="p-3 font-bold tabular-nums">{row.purchases}</td></tr>)}</tbody>
                   </table>
                 </div>
               )}

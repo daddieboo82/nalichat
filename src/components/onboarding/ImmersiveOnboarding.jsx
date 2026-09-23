@@ -78,9 +78,9 @@ const steps = [
   {
     id: "join",
     icon: Sparkles,
-    title: "Start Free. Upgrade When You Need More.",
-    subtitle: "No paid plan required to begin",
-    description: "Core messaging and NaliStudio are available on Free. Premium unlocks advanced creator and AI tools, while Premium Plus gives you our highest AI limits, strongest Studio support, and extra privacy.",
+    title: "Choose How Far You Want to Create.",
+    subtitle: "Build your workflow around your ambition",
+    description: "Start creating immediately, then unlock the serious creator toolkit with Premium: more NALI.ai, advanced Studio tools, larger creative transfers and upgraded messaging. Premium Plus delivers our highest AI limits and strongest Studio support for power users.",
     gradient: "from-primary via-pink-500 to-accent",
     bgGradient: "from-primary/30 via-pink-600/20 to-accent/30",
     accent: "primary",

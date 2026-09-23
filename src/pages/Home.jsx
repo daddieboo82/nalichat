@@ -32,7 +32,7 @@ const PLAZA_WORLD_DETAILS = Object.freeze({
   compete: { subtitle: "Challenges", description: "Enter challenges, climb leaderboards and get discovered.", icon: Trophy },
 });
 
-const NALIBASE_OS_URL = 'https://app.base44.com/apps/6a9bcfb7cdf4628117ca8ada';
+const NALIBASE_OS_URL = 'https://nali-base-os.base44.app';
 
 const PLAZA_WORLDS = WORLD_ORDER.map((id) => ({
   id,

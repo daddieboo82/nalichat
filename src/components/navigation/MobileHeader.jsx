@@ -134,7 +134,7 @@ export default function MobileHeader() {
             {isAuthenticated && !subscriptionLoading && !hasPaidAccess && (
               <button
                 onClick={() => {
-                  trackProductEvent("upgrade_click", { source: "mobile_header", cta: "upgrade_premium" });
+                  trackProductEvent("upgrade_click", { source: "mobile_header_upgrade", cta: "upgrade_premium" });
                   navigate("/pricing?source=mobile_header_upgrade");
                 }}
                 className="inline-flex h-10 items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 px-2.5 text-[11px] font-black text-black shadow-md shadow-orange-500/20 active:scale-95"

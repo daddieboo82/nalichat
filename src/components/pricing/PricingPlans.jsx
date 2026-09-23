@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Loader2, MessageSquare, Music2, Files, Sparkles, ShieldCheck } from "lucide-react";
+import { Check, Loader2, MessageSquare, Music2, Files, Sparkles, ShieldCheck, Crown, Zap } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -255,6 +255,18 @@ export default function PricingPlans({
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">{copy.subhead}</p>
           <p className="mt-4 font-semibold">Make music. Find collaborators. Finish songs. Release more.</p>
           <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">Premium starts at $7.99/month. Unlock more NALI.ai, larger creative transfers, advanced messaging, and deeper Studio tools. Cancel anytime in Settings.</p>
+          {!paidSubscriber && (
+            <div className="mx-auto mt-5 grid max-w-3xl gap-2 text-left sm:grid-cols-2">
+              <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
+                <div className="flex items-center gap-2 font-bold"><Zap className="h-4 w-4 text-primary" /> Premium · $7.99/mo</div>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">For creators ready to work faster with more AI, advanced Studio tools, larger transfers and upgraded messaging.</p>
+              </div>
+              <div className="rounded-2xl border border-amber-400/25 bg-amber-400/5 p-4">
+                <div className="flex items-center gap-2 font-bold"><Crown className="h-4 w-4 text-amber-400" /> Premium Plus · $14.99/mo</div>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">For power users who want the highest AI limits, strongest Studio support and the complete premium creator experience.</p>
+              </div>
+            </div>
+          )}
           <div className="mx-auto mt-5 max-w-2xl rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
             <span className="font-bold">{upgradeFeature ? "You came here to unlock a premium creator feature:" : "Why creators upgrade:"}</span>{" "}
             {upgradeFeature ? `${upgradeFeature.replaceAll(".", " ")}. Choose the plan that fits your workflow below.` : "fewer app switches, more room for creative files, and premium tools available right where the work happens."}

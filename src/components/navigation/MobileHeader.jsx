@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  ChevronLeft, Music, AudioLines, LogIn, LogOut, Menu, Wand2, FileText, Trophy, Settings, Gem, BarChart3, Compass, MessageSquare, Users, Smartphone
+  ChevronLeft, Music, AudioLines, LogIn, LogOut, Menu, Wand2, FileText, Trophy, Settings, Gem, BarChart3, Compass, MessageSquare, Users
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import NotificationBell from "@/components/notifications/NotificationBell";

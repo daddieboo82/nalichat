@@ -247,18 +247,6 @@ export default function MobileHeader() {
             {/* Footer items */}
             <div className="pt-3 border-t border-white/[0.06] space-y-1">
               <button
-                onClick={() => handleNavigate("/download")}
-                className="ui-hover min-h-[58px] w-full rounded-xl p-2.5 text-left transition-all hover:bg-secondary/50 flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-primary/40"
-              >
-                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Smartphone className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">Download App</p>
-                  <p className="text-[11px] text-muted-foreground">Android, iOS, Desktop</p>
-                </div>
-              </button>
-              <button
                 onClick={() => handleNavigate("/pricing")}
                 className="ui-hover min-h-[58px] w-full rounded-xl p-2.5 text-left transition-all hover:bg-secondary/50 flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-primary/40"
               >

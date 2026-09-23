@@ -383,7 +383,17 @@ export default function Home() {
                     Start Creating Free
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
-                  </Button>
+                </Button>
+                <Button size="lg" variant="outline" className="ui-hover min-h-12 w-full rounded-xl border-white/20 bg-card/30 px-7 text-base font-semibold backdrop-blur-xl sm:w-auto" asChild>
+                  <a
+                    href="#studio-demo"
+                    className="w-full sm:w-auto"
+                    onClick={() => trackProductEvent("homepage_demo_click", { source: "home_hero", target: "studio_tutorial" })}
+                  >
+                    <Video className="w-5 h-5 mr-2" />
+                    See NaliStudio in Action
+                  </a>
+                </Button>
               </>
             )}
           </div>
@@ -496,7 +506,9 @@ export default function Home() {
         <QuickStartGuide />
 
         {/* — Studio Video Tutorial — */}
-        <StudioTutorial />
+        <div id="studio-demo" className="scroll-mt-24">
+          <StudioTutorial />
+        </div>
 
         {/* — Messaging Hero Card — */}
         <motion.div

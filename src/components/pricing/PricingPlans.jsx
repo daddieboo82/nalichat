@@ -84,7 +84,7 @@ function PlanCard({
         </Button>
       ) : (
         <Button className="ui-hover min-h-12 w-full rounded-xl font-semibold" variant="outline" onClick={onContinueFree}>
-          Continue with Free
+          Keep current plan
         </Button>
       )}
     </article>
@@ -236,8 +236,8 @@ export default function PricingPlans({
       <div className="h-full min-h-0 overflow-y-auto touch-pan-y overscroll-contain [-webkit-overflow-scrolling:touch] bg-background px-4 py-10 sm:px-6 sm:py-16">
         <div className="ui-surface mx-auto max-w-xl rounded-3xl border border-border bg-card p-6 text-center sm:p-8">
           <h1 className="font-heading text-3xl font-black">Plans are temporarily unavailable</h1>
-          <p className="mt-3 text-muted-foreground">Core chat is free forever.</p>
-          <Button className="ui-hover mt-6 min-h-12 rounded-xl px-6 font-semibold" onClick={continueFree}>Continue with Free</Button>
+          <p className="mt-3 text-muted-foreground">Your current access remains available while paid plans are unavailable.</p>
+          <Button className="ui-hover mt-6 min-h-12 rounded-xl px-6 font-semibold" onClick={continueFree}>Return to NaliBase</Button>
         </div>
       </div>
     );
@@ -276,7 +276,7 @@ export default function PricingPlans({
 
         {checkoutCanceled && (
           <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-border bg-card p-4 text-center" role="status">
-            Checkout was canceled. No charge was made, and you can keep using Free.
+            Checkout was canceled. No charge was made. Your current plan is unchanged.
           </div>
         )}
 
@@ -339,8 +339,8 @@ export default function PricingPlans({
           </p>
         )}
         <div className="mt-8 text-center">
-          <Button className="ui-hover min-h-11 rounded-xl px-5" variant="ghost" onClick={continueFree}>Continue with Free</Button>
-          <p className="mt-2 text-sm text-muted-foreground">Paid subscriptions can be canceled in Settings. You can continue using Free afterward.</p>
+          <Button className="ui-hover min-h-11 rounded-xl px-5" variant="ghost" onClick={continueFree}>Maybe later</Button>
+          <p className="mt-2 text-sm text-muted-foreground">Paid subscriptions can be canceled in Settings. Your current access remains available afterward.</p>
         </div>
       </section>
     </div>

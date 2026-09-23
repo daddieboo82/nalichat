@@ -175,6 +175,7 @@ export default function Register() {
     try {
       const normalizedEmail = email.trim().toLowerCase();
       await base44.auth.resendOtp(normalizedEmail);
+      trackProductEvent("otp_resend_success", { source: "email_otp" });
       setOtpCode("");
       setResendCooldown(30);
       toast({

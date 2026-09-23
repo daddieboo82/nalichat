@@ -5,11 +5,13 @@ describe('home marketing claims', () => {
   it('uses concrete, supportable creator messaging and pricing language', () => {
     const home = fs.readFileSync('src/pages/Home.jsx', 'utf8');
 
-    expect(home).toContain('SIX WORLDS · ONE CREATIVE UNIVERSE');
-    expect(home).toContain('Enter Your');
-    expect(home).toContain('Creative Universe.');
-    expect(home).toContain('NaliBase is an evolving entertainment and creativity universe.');
-    expect(home).toContain('Enter NaliBase Free');
+    expect(home).toContain('FREE CREATOR WORKSPACE · NO PAYMENT REQUIRED');
+    expect(home).toContain('Make Music.');
+    expect(home).toContain('Connect. Create. Grow.');
+    expect(home).toContain('Start Creating Free');
+    expect(home).toContain('Start creating free');
+    expect(home).toContain('No card · Google or email');
+    expect(home).toContain('home_mobile_sticky');
     expect(home).toContain('Start with free core chat');
     expect(home).toContain('Creator Messaging & Collaboration');
     expect(home).toContain('Real-time messaging, unlimited voice notes & high-res file sharing');

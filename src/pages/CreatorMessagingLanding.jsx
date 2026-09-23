@@ -61,7 +61,7 @@ export default function CreatorMessagingLanding() {
               <Link to={attributedPath("/pricing")}>Compare Plans</Link>
             </Button>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">Core chat is free forever · No paid plan required to start</p>
+          <p className="mt-4 text-sm text-muted-foreground">Start connecting immediately · Premium unlocks advanced messaging and creator tools</p>
         </div>
 
         <div className="mt-14 grid gap-4 md:grid-cols-2">

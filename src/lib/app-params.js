@@ -92,7 +92,7 @@ const getAppParams = () => {
     safeStorageRemove('token');
   }
   return {
-    appId: getRuntimeConfigValue("app_id", import.meta.env.VITE_BASE44_APP_ID),
+    appId: getRuntimeConfigValue("app_id", import.meta.env.VITE_BASE44_APP_ID || '6a1f5ee134147461560c2b37'),
     token: getAppParamValue("access_token", { removeFromUrl: true }),
     fromUrl: getAppParamValue("from_url", { defaultValue: currentHref }),
     functionsVersion: getRuntimeConfigValue("functions_version", import.meta.env.VITE_BASE44_FUNCTIONS_VERSION),

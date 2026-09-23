@@ -69,7 +69,7 @@ export default function MusicCollaborationLanding() {
           </div>
 
           <p className="mt-4 text-sm text-muted-foreground">
-            Core chat is free forever · No paid plan required to start
+            Start collaborating immediately · Premium unlocks advanced creator workflows
           </p>
         </div>
 

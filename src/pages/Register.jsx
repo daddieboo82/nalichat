@@ -115,10 +115,10 @@ export default function Register() {
   };
 
   const handleVerify = async () => {
+    if (loading || otpCode.trim().length !== 6) return;
     setError("");
     setLoading(true);
     try {
-      if (loading || otpCode.trim().length !== 6) return;
       const normalizedEmail = email.trim().toLowerCase();
       const normalizedOtp = otpCode.trim();
       const result = await base44.auth.verifyOtp({ email: normalizedEmail, otpCode: normalizedOtp });

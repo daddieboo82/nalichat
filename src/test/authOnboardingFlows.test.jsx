@@ -195,11 +195,9 @@ describe('auth and onboarding flows', () => {
 
     await screen.findByText('That verification code is invalid. Check the code and try again.');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Resend' }));
-    await waitFor(() => {
-      expect(mockBase44.auth.resendOtp).toHaveBeenCalledWith('new@example.com');
-      expect(mockToastObject).toHaveBeenCalled();
-    });
+    const resendButton = screen.getByRole('button', { name: /Resend in 30s/i });
+    expect(resendButton).toBeDisabled();
+    expect(mockBase44.auth.resendOtp).not.toHaveBeenCalled();
   });
 
   it('requires display name and birthdate before onboarding can complete', async () => {

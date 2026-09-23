@@ -41,6 +41,10 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const sku = typeof body?.sku === 'string' ? body.sku : '';
+    const idempotencyKey = typeof body?.idempotencyKey === 'string' ? body.idempotencyKey.trim() : '';
+    if (!/^[A-Za-z0-9._~-]{16,128}$/.test(idempotencyKey)) {
+      return Response.json({ error: 'Invalid checkout request key' }, { status: 400 });
+    }
     const item = CATALOG[sku];
     if (!item) return Response.json({ error: 'Unknown subscription plan' }, { status: 400 });
     const planId = secrets.get(item.secret);
@@ -55,7 +59,7 @@ Deno.serve(async (req) => {
         Authorization: 'Bearer ' + token,
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'PayPal-Request-Id': 'nalichat-' + user.id + '-' + crypto.randomUUID(),
+        'PayPal-Request-Id': 'nalichat-' + user.id + '-' + idempotencyKey,
       },
       body: JSON.stringify({
         plan_id: planId,

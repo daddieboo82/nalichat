@@ -9,6 +9,16 @@ import { motion } from "framer-motion";
 import { getLikeCount } from "@/lib/engagement";
 import { useAuth } from "@/lib/AuthContext";
 
+async function listAllFunnelEvents() {
+  const rows = [];
+  const pageSize = 500;
+  for (let skip = 0; ; skip += pageSize) {
+    const page = await base44.entities.ActivationFunnel.list("-created_date", pageSize, skip);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 async function listAllUserPosts(userId) {
   const rows = [];
   const pageSize = 200;
@@ -31,7 +41,7 @@ export default function Analytics() {
 
   const { data: funnelEvents = [] } = useQuery({
     queryKey: ["activationFunnel", currentUser?.id],
-    queryFn: async () => isAdmin ? base44.entities.ActivationFunnel.list("-created_date", 500) : [],
+    queryFn: async () => isAdmin ? listAllFunnelEvents() : [],
     enabled: Boolean(currentUser && isAdmin),
   });
 
@@ -265,7 +275,7 @@ export default function Analytics() {
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="font-heading text-lg font-semibold tracking-tight">Visitor Activation Funnel</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Unique users or sessions across the latest 500 activation events.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Unique users or sessions across the complete stored activation history.</p>
               </div>
               <div className="flex items-center gap-2">
                 {[['7d', '7 days'], ['30d', '30 days'], ['all', 'All']].map(([value, label]) => (

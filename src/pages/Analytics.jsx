@@ -190,6 +190,30 @@ export default function Analytics() {
       .slice(0, 8);
   }, [filteredFunnelEvents]);
 
+  const premiumPlans = React.useMemo(() => {
+    const labels = {
+      premium_monthly: "Premium Monthly",
+      premium_yearly: "Premium Yearly",
+      premium_plus_monthly: "Premium Plus Monthly",
+      premium_plus_yearly: "Premium Plus Yearly",
+    };
+    const planMap = new Map();
+    for (const event of filteredFunnelEvents) {
+      if (!["paywall_tier_select", "checkout_started", "purchase_completed"].includes(event.event_name)) continue;
+      const sku = event.metadata?.checkout_sku || event.metadata?.sku;
+      if (!sku) continue;
+      const row = planMap.get(sku) || { sku, selected: new Set(), checkouts: new Set(), purchases: new Set() };
+      const identity = event.user_id || event.session_id || event.id;
+      if (event.event_name === "paywall_tier_select") row.selected.add(identity);
+      if (event.event_name === "checkout_started") row.checkouts.add(identity);
+      if (event.event_name === "purchase_completed") row.purchases.add(identity);
+      planMap.set(sku, row);
+    }
+    return [...planMap.values()]
+      .map(row => ({ sku: row.sku, label: labels[row.sku] || row.sku.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()), selected: row.selected.size, checkouts: row.checkouts.size, purchases: row.purchases.size }))
+      .sort((a, b) => b.purchases - a.purchases || b.checkouts - a.checkouts || b.selected - a.selected);
+  }, [filteredFunnelEvents]);
+
   const { data: userPosts = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["userAnalytics", currentUser?.id],
     queryFn: () =>
@@ -339,6 +363,15 @@ export default function Analytics() {
                         </tr>
                       ))}
                     </tbody>
+                  </table>
+                </div>
+              )}
+              {premiumPlans.length > 0 && (
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-background/30">
+                  <div className="border-b border-border/60 p-3"><p className="text-xs font-semibold">Premium plan performance</p><p className="mt-1 text-[11px] text-muted-foreground">See which subscription options users select and which plans complete purchase.</p></div>
+                  <table className="w-full min-w-[520px] text-left text-xs">
+                    <thead className="border-b border-border/60 text-muted-foreground"><tr><th className="p-3 font-semibold">Plan</th><th className="p-3 font-semibold">Selected</th><th className="p-3 font-semibold">Checkout</th><th className="p-3 font-semibold">Purchases</th></tr></thead>
+                    <tbody>{premiumPlans.map(row => <tr key={row.sku} className="border-b border-border/40 last:border-0"><td className="p-3 font-medium">{row.label}</td><td className="p-3 tabular-nums">{row.selected}</td><td className="p-3 tabular-nums">{row.checkouts}</td><td className="p-3 font-bold tabular-nums">{row.purchases}</td></tr>)}</tbody>
                   </table>
                 </div>
               )}

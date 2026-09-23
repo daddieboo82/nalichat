@@ -111,13 +111,22 @@ export default function Analytics() {
       filteredFunnelEvents.filter(e => e.event_name === name).map(e => e.user_id || e.session_id || e.id)
     ).size;
     const upgrades = countUnique("upgrade_click");
+    const paywallViews = countUnique("paywall_view");
+    const tierSelections = countUnique("paywall_tier_select");
     const checkout = countUnique("checkout_started");
     const purchases = countUnique("purchase_completed");
-    return [
-      { label: "Upgrade Click", count: upgrades, rate: 100 },
-      { label: "Checkout Started", count: checkout, rate: upgrades > 0 ? Math.round((checkout / upgrades) * 100) : 0 },
-      { label: "Purchase Confirmed", count: purchases, rate: upgrades > 0 ? Math.round((purchases / upgrades) * 100) : 0 },
+    const steps = [
+      { label: "Upgrade Click", count: upgrades },
+      { label: "Pricing Viewed", count: paywallViews },
+      { label: "Plan Selected", count: tierSelections },
+      { label: "Checkout Started", count: checkout },
+      { label: "Purchase Confirmed", count: purchases },
     ];
+    return steps.map((step, index) => ({
+      ...step,
+      rate: upgrades > 0 ? Math.round((step.count / upgrades) * 100) : index === 0 ? 100 : 0,
+      previousRate: index === 0 ? 100 : steps[index - 1].count > 0 ? Math.round((step.count / steps[index - 1].count) * 100) : 0,
+    }));
   }, [filteredFunnelEvents]);
 
   const premiumHealth = React.useMemo(() => {

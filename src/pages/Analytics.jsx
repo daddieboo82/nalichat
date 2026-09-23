@@ -96,6 +96,20 @@ export default function Analytics() {
     });
   }, [filteredFunnelEvents]);
 
+  const premiumConversion = React.useMemo(() => {
+    const countUnique = (name) => new Set(
+      filteredFunnelEvents.filter(e => e.event_name === name).map(e => e.user_id || e.session_id || e.id)
+    ).size;
+    const upgrades = countUnique("upgrade_click");
+    const checkout = countUnique("checkout_started");
+    const purchases = countUnique("purchase_completed");
+    return [
+      { label: "Upgrade Click", count: upgrades, rate: 100 },
+      { label: "Checkout Started", count: checkout, rate: upgrades > 0 ? Math.round((checkout / upgrades) * 100) : 0 },
+      { label: "Purchase Confirmed", count: purchases, rate: upgrades > 0 ? Math.round((purchases / upgrades) * 100) : 0 },
+    ];
+  }, [filteredFunnelEvents]);
+
   const { data: userPosts = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["userAnalytics", currentUser?.id],
     queryFn: () =>
@@ -210,6 +224,21 @@ export default function Analytics() {
                   )}
                 </div>
               ))}
+            </div>
+            <div className="mt-5 border-t border-border/60 pt-4">
+              <div className="mb-3">
+                <h3 className="font-heading text-sm font-semibold">Premium Conversion</h3>
+                <p className="mt-1 text-xs text-muted-foreground">See whether upgrade interest is turning into confirmed subscriptions.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {premiumConversion.map((step, index) => (
+                  <div key={step.label} className="rounded-2xl border border-border/60 bg-background/40 p-3">
+                    <p className="text-xs font-medium text-muted-foreground">{step.label}</p>
+                    <p className="mt-2 text-xl font-heading font-bold tabular-nums">{step.count}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{index === 0 ? "Baseline" : `${step.rate}% of upgrade clickers`}</p>
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="mt-5 grid gap-5 border-t border-border/60 pt-4 lg:grid-cols-2">
               <div>

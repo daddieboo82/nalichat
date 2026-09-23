@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { rememberWorldContext, WORLD_CONTEXTS } from '@/lib/nalibaseWorldContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const worlds = {
   connect: {
@@ -103,6 +104,7 @@ export default function WorldHub(){
   const { user }=useAuth();
   const { hasPaidAccess, isLoading: subscriptionLoading }=useSubscription();
   const { hasPaidAccess, isLoading: subscriptionLoading }=useSubscription();
+  const { hasPaidAccess, isLoading: subscriptionLoading }=useSubscription();
   const {worldId}=useParams(); const visualWorld=worlds[worldId]; const canonicalWorld=WORLD_CONTEXTS[worldId]; const world=visualWorld&&canonicalWorld ? { ...visualWorld, title: canonicalWorld.label, eyebrow: canonicalWorld.name } : null; const [splash,setSplash]=useState(true);
   const finishSplash=useCallback(()=>setSplash(false),[]);
   useEffect(()=>setSplash(true),[worldId]);
@@ -152,6 +154,16 @@ export default function WorldHub(){
             <div className="absolute inset-0 flex items-center justify-around">{world.landmarks.map(x=><div key={x} className="flex flex-col items-center gap-2"><MapPin className="h-4 w-4 text-white/30"/><span className="rounded-full bg-black/70 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-white/40">{x}</span></div>)}</div>
           </div>
           <div className="mb-8"><div className="flex items-center gap-2 text-white/40"><Building2 className="h-4 w-4"/><p className="text-xs font-black uppercase tracking-[.28em]">Inside the mall</p></div><h2 className="mt-2 font-heading text-3xl font-black sm:text-5xl">Walk the concourse. Choose a storefront.</h2><p className="mt-3 max-w-2xl text-sm text-white/50">Every storefront opens into a complete NaliBase experience while keeping you connected to this world.</p></div>
+          {!subscriptionLoading && !hasPaidAccess && (
+            <div className="mb-8 flex flex-col gap-4 rounded-[2rem] border border-amber-300/25 bg-gradient-to-r from-amber-400/10 via-orange-500/10 to-pink-500/10 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:p-6">
+              <div>
+                <div className="flex items-center gap-2 text-amber-300"><Sparkles className="h-4 w-4"/><p className="text-[10px] font-black uppercase tracking-[.25em]">Premium creator pass</p></div>
+                <p className="mt-2 font-heading text-xl font-black text-white">Get more power inside every NaliBase world.</p>
+                <p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/55">Upgrade for more NALI.ai, deeper Studio tools, larger creative transfers and premium workflow features. Premium starts at $7.99/month.</p>
+              </div>
+              <Link to={"/pricing?source="+worldId+"_world_upgrade"} onClick={()=>trackProductEvent('upgrade_click',{source:worldId+'_world',cta:'unlock_premium'})} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-300 px-5 text-sm font-black text-black transition hover:bg-amber-200">Unlock Premium <ArrowRight className="h-4 w-4"/></Link>
+            </div>
+          )}
           {!subscriptionLoading && !hasPaidAccess && (
             <div className="mb-8 flex flex-col gap-4 rounded-[2rem] border border-amber-300/25 bg-gradient-to-r from-amber-400/10 via-orange-500/10 to-pink-500/10 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:p-6">
               <div>

@@ -143,10 +143,10 @@ export default function Register() {
       window.location.href = safeReturnTo();
     } catch (err) {
       const attribution = getMarketingAttribution();
-      trackProductEvent("registration_failed", { source: "email_otp", outcome: "otp_error" });
+      const otpReason = otpErrorMessage(err);\n      const otpOutcome = /expired/i.test(otpReason)\n        ? "otp_expired"\n        : /invalid/i.test(otpReason)\n          ? "otp_invalid"\n          : /too many/i.test(otpReason)\n            ? "otp_rate_limited"\n            : "otp_unknown_error";\n      trackProductEvent("registration_failed", { source: "email_otp", outcome: otpOutcome });
       trackPaywallEvent("registration_failed", {
         source: "email_otp",
-        outcome: "otp_error",
+        outcome: otpOutcome,
         campaign_source: attribution?.utm_source || undefined,
         campaign_medium: attribution?.utm_medium || undefined,
         campaign_name: attribution?.utm_campaign || undefined,
@@ -155,7 +155,7 @@ export default function Register() {
         campaign_landing_path: attribution?.landing_path || undefined,
         google_ads_click: Boolean(attribution?.gclid || attribution?.gbraid || attribution?.wbraid),
       });
-      setError(otpErrorMessage(err));
+      setError(otpReason);
     } finally {
       setLoading(false);
     }

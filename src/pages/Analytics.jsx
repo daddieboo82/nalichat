@@ -112,8 +112,8 @@ export default function Analytics() {
 
   const premiumSources = React.useMemo(() => {
     const labels = {
-      desktop_nav: "Desktop nav",
-      mobile_header: "Mobile header",
+      desktop_nav_upgrade: "Desktop nav",
+      mobile_header_upgrade: "Mobile header",
       app_upgrade_banner: "App banner",
       pricing: "Direct pricing",
     };

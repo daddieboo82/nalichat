@@ -17,7 +17,7 @@ export function EntitlementGate({
   entitlement,
   children,
   title = "Premium feature",
-  description = "Unlock this creator tool with Premium while keeping your core NaliBase experience on Free.",
+  description = "Unlock this creator tool with Premium and expand your NaliBase workflow.",
   source = "entitlement_gate",
 }) {
   const { isEntitled, isLoading, isError, refetch } = useEntitlement(entitlement);

@@ -7,7 +7,7 @@ import { base44 } from "@/api/base44Client";
 import { useSubscription } from "@/hooks/useSubscription";
 import { pollForSubscriptionConfirmation } from "@/lib/subscriptionConfirmation";
 import { trackPaywallEvent } from "@/lib/paywallAnalytics";
-import { CHECKOUT_RETURN_KEY } from "@/lib/subscriptionBilling";
+import { CHECKOUT_ATTRIBUTION_KEY, CHECKOUT_RETURN_KEY } from "@/lib/subscriptionBilling";
 import { getMarketingAttribution } from "@/lib/adAttribution";
 
 export default function ThankYou() {
@@ -29,7 +29,12 @@ export default function ThankYou() {
     let active = true;
 
     const confirmSubscription = async () => {
-      try { sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch {}
+      let checkoutAttribution = null;
+      try {
+        const raw = sessionStorage.getItem(CHECKOUT_ATTRIBUTION_KEY);
+        checkoutAttribution = raw ? JSON.parse(raw) : null;
+        sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
+      } catch {}
       setSubscriptionConfirmation("processing");
       const result = await pollForSubscriptionConfirmation({
         fetchStatus: async () => {
@@ -57,7 +62,9 @@ export default function ThankYou() {
             {
               plan: result.subscription.plan,
               billing_period: result.subscription.billingPeriod || "unknown",
-              source: "subscription_thank_you",
+              source: checkoutAttribution?.source || "subscription_thank_you",
+              upgrade_feature: checkoutAttribution?.feature || undefined,
+              checkout_sku: checkoutAttribution?.sku || undefined,
               campaign_source: attribution?.utm_source || undefined,
               campaign_medium: attribution?.utm_medium || undefined,
               campaign_name: attribution?.utm_campaign || undefined,
@@ -68,6 +75,7 @@ export default function ThankYou() {
             },
           );
         }
+        try { sessionStorage.removeItem(CHECKOUT_ATTRIBUTION_KEY); } catch {}
       } else if (result.outcome === "failed") {
         trackPaywallEvent("purchase_failed", {
           source: "subscription_thank_you",

@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 import RecentlyVisited from "@/components/navigation/RecentlyVisited";
 import Logo from "@/components/branding/Logo";
 import { resolveWorldForLocation, WORLD_CONTEXTS, WORLD_ORDER } from "@/lib/nalibaseWorldContext";
+import { useSubscription } from "@/hooks/useSubscription";
+import { trackProductEvent } from "@/lib/productAnalytics";
 
 const SUBPAGE_PREFIXES = ["/playlist/", "/record", "/settings", "/analytics"];
 
@@ -43,6 +45,7 @@ export default function MobileHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
+  const { hasPaidAccess, isLoading: subscriptionLoading } = useSubscription();
   const [menuOpen, setMenuOpen] = useState(false);
   const lastUserIdRef = useRef(user?.id || null);
 
@@ -128,6 +131,18 @@ export default function MobileHeader() {
           {/* Right Section */}
           <div className="flex items-center gap-1 shrink-0">
             <NotificationBell />
+            {isAuthenticated && !subscriptionLoading && !hasPaidAccess && (
+              <button
+                onClick={() => {
+                  trackProductEvent("upgrade_click", { source: "mobile_header", cta: "upgrade_premium" });
+                  navigate("/pricing?source=mobile_header_upgrade");
+                }}
+                className="inline-flex h-10 items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 px-2.5 text-[11px] font-black text-black shadow-md shadow-orange-500/20 active:scale-95"
+                aria-label="Upgrade to Premium"
+              >
+                <Gem className="h-3.5 w-3.5" /> Upgrade
+              </button>
+            )}
             {!isAuthenticated && (
               <button
                 onClick={() => navigate("/login")}
@@ -254,8 +269,8 @@ export default function MobileHeader() {
                   <Gem className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold">Pricing</p>
-                  <p className="text-[11px] text-muted-foreground">Plans & features</p>
+                  <p className="text-sm font-semibold">{isAuthenticated && !hasPaidAccess ? "Upgrade to Premium" : "Pricing"}</p>
+                  <p className="text-[11px] text-muted-foreground">{isAuthenticated && !hasPaidAccess ? "Unlock AI, advanced Studio & creator tools" : "Plans & features"}</p>
                 </div>
               </button>
               <button

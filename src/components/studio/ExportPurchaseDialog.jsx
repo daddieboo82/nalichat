@@ -59,7 +59,7 @@ export default function ExportPurchaseDialog({ open, onOpenChange, format, track
             Export Mix ({(format || "").toUpperCase()})
           </DialogTitle>
           <DialogDescription className="text-center text-sm text-muted-foreground mt-2">
-            Render and download your mixed track as a {EXPORT_LABELS[format] || "high-quality"} file. 100% free.
+            Render and download your mixed track as a {EXPORT_LABELS[format] || "high-quality"} file.
           </DialogDescription>
         </DialogHeader>
 
@@ -70,8 +70,8 @@ export default function ExportPurchaseDialog({ open, onOpenChange, format, track
               <span className="text-sm text-muted-foreground">{EXPORT_LABELS[format]}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-foreground">Price</span>
-              <span className="text-lg font-bold text-accent">Free</span>
+              <span className="text-sm font-semibold text-foreground">Export</span>
+              <span className="text-sm font-bold text-accent">Included</span>
             </div>
           </div>
 
@@ -96,7 +96,7 @@ export default function ExportPurchaseDialog({ open, onOpenChange, format, track
             {stage === "idle" ? (
               <>
                 <Download className="w-4 h-4 mr-2" />
-                Download Free
+                Download Mix
               </>
             ) : (
               <>

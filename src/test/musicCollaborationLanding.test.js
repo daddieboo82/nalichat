@@ -11,7 +11,7 @@ describe('Campaign #2 music collaboration landing page', () => {
     expect(page).toContain('Creator Messaging & Music Collaboration in One Workspace');
     expect(page).toContain('Start Free');
     expect(page).toContain('Compare Plans');
-    expect(page).toContain('Core chat is free forever');
+    expect(page).toContain('Premium unlocks advanced creator workflows');
     expect(page).toContain('captureMarketingAttribution();');
     expect(page).toContain('attributedPath("/register")');
     expect(page).toContain('attributedPath("/pricing")');

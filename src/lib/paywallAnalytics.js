@@ -1,3 +1,5 @@
+import { trackProductEvent } from "@/lib/productAnalytics";
+
 const EVENT_NAMES = new Set([
   "paywall_view",
   "paywall_billing_toggle",
@@ -34,6 +36,8 @@ const ALLOWED_FIELDS = new Set([
   "campaign_content",
   "campaign_landing_path",
   "google_ads_click",
+  "upgrade_feature",
+  "checkout_sku",
 ]);
 
 let reportedUnavailable = false;
@@ -47,6 +51,8 @@ export function trackPaywallEvent(name, properties = {}) {
     Object.entries(properties)
       .filter(([key, value]) => ALLOWED_FIELDS.has(key) && ["string", "boolean", "number"].includes(typeof value)),
   );
+
+  trackProductEvent(name, safeProperties);
 
   const analytics = typeof window !== "undefined" ? Reflect.get(window, "gtag") : null;
   if (typeof analytics === "function") {

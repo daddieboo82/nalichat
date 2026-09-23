@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 import { secrets } from 'base44:runtime';
-import { stripeEnvironmentFromSecretKey } from '../../shared/stripeBilling.ts';
+
 
 Deno.serve(async (req) => {
   try {
@@ -20,33 +20,33 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'timed_out', timeout_until: user.timeout_until }, { status: 403 });
     }
 
-    let environment = 'unconfigured';
-    let configured = false;
-    try {
-      environment = stripeEnvironmentFromSecretKey(secrets.get('STRIPE_SECRET_KEY'));
-      configured = true;
-    } catch {}
-
-    const requiredPriceSecrets = [
-      'STRIPE_PRICE_PREMIUM_MONTHLY',
-      'STRIPE_PRICE_PREMIUM_YEARLY',
-      'STRIPE_PRICE_PREMIUM_PLUS_MONTHLY',
-      'STRIPE_PRICE_PREMIUM_PLUS_YEARLY',
+    const environment = (secrets.get('PAYPAL_ENVIRONMENT') || 'live').trim().toLowerCase();
+    const requiredSecrets = [
+      'PAYPAL_CLIENT_ID',
+      'PAYPAL_CLIENT_SECRET',
+      'PAYPAL_PREMIUM_MONTHLY_PLAN_ID',
+      'PAYPAL_PREMIUM_YEARLY_PLAN_ID',
+      'PAYPAL_PREMIUM_PLUS_MONTHLY_PLAN_ID',
+      'PAYPAL_PREMIUM_PLUS_YEARLY_PLAN_ID',
     ];
-    const missingPriceSecrets = requiredPriceSecrets.filter((name) => {
+    const missingSecrets = requiredSecrets.filter((name) => {
       const value = secrets.get(name);
-      return typeof value !== 'string' || !/^price_[A-Za-z0-9_]+$/.test(value.trim());
+      return typeof value !== 'string' || !value.trim();
     });
+    const sandboxMode = environment === 'sandbox';
 
     return Response.json({
       success: true,
       action: 'billing_test_status',
       adminUserId: user.id,
-      configured,
+      provider: 'paypal',
+      configured: missingSecrets.length === 0,
       environment,
-      testMode: environment === 'test',
-      priceCatalogReady: missingPriceSecrets.length === 0,
-      missingPriceSecrets,
+      testMode: sandboxMode,
+      sandboxMode,
+      priceCatalogReady: missingSecrets.length === 0,
+      missingPriceSecrets: missingSecrets,
+      missingSecrets,
     });
   } catch (error) {
     console.error('getBillingTestStatus error:', error);

@@ -52,10 +52,18 @@ export default function LiveTV() {
     const video = videoRef.current;
     if (!video || !selected?.url) return undefined;
     const isHls = /\.m3u8(?:$|[?#])/i.test(selected.url);
-    if (!isHls || video.canPlayType("application/vnd.apple.mpegurl")) return undefined;
-    if (!Hls.isSupported()) { setError("This browser cannot play this HLS stream."); return undefined; }
+    if (!isHls) return undefined;
+    if (!Hls.isSupported()) {
+      if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = selected.url;
+        video.load();
+        return () => { video.removeAttribute("src"); video.load(); };
+      }
+      setError("This browser cannot play this HLS stream.");
+      return undefined;
+    }
     const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
-    hls.loadSource(selected.url);
+    hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(selected.url));
     hls.attachMedia(video);
     hls.on(Hls.Events.ERROR, (_event, data) => { if (data?.fatal) setError("This channel could not be played. Check that the stream is online and permits browser playback."); });
     return () => hls.destroy();

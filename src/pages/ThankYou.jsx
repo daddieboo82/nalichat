@@ -172,7 +172,7 @@ export default function ThankYou() {
             {subscriptionConfirmation === "processing"
               ? "We are checking the authoritative account status. This can take a moment."
               : confirmed
-                ? "Your plan is confirmed. Your upgraded creator tools and AI access are ready to use now."
+                ? "Your plan is confirmed. NALI.ai, advanced creator tools, and your upgraded workflow are ready now."
                 : timedOut
                   ? "Your payment provider returned successfully, but the subscription update has not arrived yet. No paid access is granted until confirmation completes."
                   : "Subscription status could not be checked. No paid access was granted."}
@@ -197,7 +197,7 @@ export default function ThankYou() {
                 <Link to="/pricing">Back to plans</Link>
               </Button>
               <Button size="lg" variant="ghost" asChild>
-                <Link to="/messages">Continue with Free</Link>
+                <Link to="/messages">Return to NaliBase</Link>
               </Button>
             </div>
           )}

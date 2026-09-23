@@ -21,6 +21,7 @@ import { trackPaywallEvent } from "@/lib/paywallAnalytics";
 import { captureMarketingAttribution, getMarketingAttribution } from "@/lib/adAttribution";
 import {
   CHECKOUT_RETURN_KEY,
+  CHECKOUT_ATTRIBUTION_KEY,
   createCheckoutRequestKey,
   startSubscriptionCheckout,
 } from "@/lib/subscriptionBilling";
@@ -199,7 +200,10 @@ export default function PricingPlans({
       if (!requestKeys.current.has(sku)) {
         requestKeys.current.set(sku, createCheckoutRequestKey());
       }
-      try { sessionStorage.setItem(CHECKOUT_RETURN_KEY, "1"); } catch {}
+      try {
+        sessionStorage.setItem(CHECKOUT_RETURN_KEY, "1");
+        sessionStorage.setItem(CHECKOUT_ATTRIBUTION_KEY, JSON.stringify({ source: upgradeSource || "pricing", feature: upgradeFeature || undefined, sku }));
+      } catch {}
       const attribution = getMarketingAttribution();
       trackPaywallEvent("checkout_started", {
         variant,
@@ -221,7 +225,10 @@ export default function PricingPlans({
         expectedUserId: user?.id,
       });
     } catch (checkoutError) {
-      try { sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch {}
+      try {
+        sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
+        sessionStorage.removeItem(CHECKOUT_ATTRIBUTION_KEY);
+      } catch {}
       trackPaywallEvent("purchase_failed", {
         variant,
         plan: planId,

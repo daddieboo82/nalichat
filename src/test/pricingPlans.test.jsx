@@ -117,9 +117,9 @@ describe("pricing plans", () => {
     });
   });
 
-  it("keeps Continue with Free visible and returns directly to chat", async () => {
+  it("keeps the current-plan escape visible and returns directly to chat", async () => {
     renderPricing({ variantOverride: "A" });
-    const continueButtons = screen.getAllByRole("button", { name: "Continue with Free" });
+    const continueButtons = screen.getAllByRole("button", { name: "Keep current plan" });
     expect(continueButtons.length).toBeGreaterThan(0);
 
     fireEvent.click(continueButtons[0]);
@@ -129,7 +129,7 @@ describe("pricing plans", () => {
   it("honors the paywall kill switch", () => {
     renderPricing({ enabled: false, variantOverride: "A" });
     expect(screen.getByText("Plans are temporarily unavailable")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Continue with Free" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Return to NaliBase" })).toBeTruthy();
     expect(screen.queryByText("$59.99")).toBeNull();
   });
 });

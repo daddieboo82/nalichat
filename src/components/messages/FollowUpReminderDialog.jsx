@@ -183,7 +183,7 @@ export default function FollowUpReminderDialog({
             <LockKeyhole className="mx-auto h-8 w-8 text-primary" aria-hidden="true" />
             <h3 className="mt-3 font-heading text-lg font-bold">Premium Plus feature</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Core chat and notifications stay free. Premium Plus adds automatic no-reply follow-ups.
+              Premium Plus adds automatic no-reply follow-ups so important conversations do not slip through.
             </p>
             <Button asChild className="mt-5">
               <Link

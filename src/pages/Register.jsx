@@ -143,7 +143,15 @@ export default function Register() {
       window.location.href = safeReturnTo();
     } catch (err) {
       const attribution = getMarketingAttribution();
-      const otpReason = otpErrorMessage(err);\n      const otpOutcome = /expired/i.test(otpReason)\n        ? "otp_expired"\n        : /invalid/i.test(otpReason)\n          ? "otp_invalid"\n          : /too many/i.test(otpReason)\n            ? "otp_rate_limited"\n            : "otp_unknown_error";\n      trackProductEvent("registration_failed", { source: "email_otp", outcome: otpOutcome });
+      const otpReason = otpErrorMessage(err);
+      const otpOutcome = /expired/i.test(otpReason)
+        ? "otp_expired"
+        : /invalid/i.test(otpReason)
+          ? "otp_invalid"
+          : /too many/i.test(otpReason)
+            ? "otp_rate_limited"
+            : "otp_unknown_error";
+      trackProductEvent("registration_failed", { source: "email_otp", outcome: otpOutcome });
       trackPaywallEvent("registration_failed", {
         source: "email_otp",
         outcome: otpOutcome,

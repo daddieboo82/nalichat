@@ -12,6 +12,7 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { useSubscription } from "@/hooks/useSubscription";
 import { recordArtPostPlay, recordArtPostView } from "@/lib/trackAnalytics";
 import { base44 } from "@/api/base44Client";
+import { trackPaywallEvent } from "@/lib/paywallAnalytics";
 
 export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlaylist, currentUser }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -244,7 +245,7 @@ export default function MediaViewerModal({ post, open, onOpenChange, onAddToPlay
                    {post.file_url && !canDownload && (
                      <Link
                        to="/pricing?source=explore_download&feature=media.download"
-                       onClick={() => onOpenChange(false)}
+                       onClick={() => { trackPaywallEvent("upgrade_click", { source: "explore_download", entitlement: "media.download" }); onOpenChange(false); }}
                        title="Downloads are available with Premium"
                        className="ui-hover flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 px-5 text-sm text-white/80 transition-colors hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-white/40"
                      >

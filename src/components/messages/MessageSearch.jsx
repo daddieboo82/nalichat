@@ -269,7 +269,7 @@ export default function MessageSearch({
               <EntitlementGate
                 entitlement="search.advanced"
                 title="Advanced message filters"
-                description="Premium unlocks filters for sender, date, and message type. Basic text search stays free."
+                description="Premium unlocks powerful filters for sender, date, and message type so you can find the right conversation faster."
                 source="message_search_filters"
               >
                 <div />

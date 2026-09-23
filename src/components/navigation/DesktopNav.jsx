@@ -150,11 +150,6 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
                   <HelpCircle className="w-4 h-4 mr-2" /> Help
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/download" className="min-h-10 cursor-pointer rounded-xl">
-                    <Smartphone className="w-4 h-4 mr-2" /> Download App
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
                   <Link to="/pricing" className="min-h-10 cursor-pointer rounded-xl">
                     <Gem className="w-4 h-4 mr-2 text-primary" /> Pricing
                   </Link>

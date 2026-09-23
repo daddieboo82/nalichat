@@ -28,7 +28,7 @@ export default function ExportBounce({ postId, title, disabled }) {
 
   const handleExport = async () => {
     if (!canMaster) {
-      toast.error("Mastering export is a Premium feature. Standard Studio tools remain available.");
+      toast.error("Mastering export is a Premium feature built for polished, release-ready Studio output.");
       return;
     }
     if (!postId) return;

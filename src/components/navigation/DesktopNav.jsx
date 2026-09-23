@@ -116,7 +116,7 @@ export default function DesktopNav({ onMessageClick, onInviteClick, onHelpClick 
           {isAuthenticated && !subscriptionLoading && !hasPaidAccess && (
             <Link
               to="/pricing?source=desktop_nav_upgrade"
-              onClick={() => trackProductEvent("upgrade_click", { source: "desktop_nav", cta: "upgrade_premium" })}
+              onClick={() => trackProductEvent("upgrade_click", { source: "desktop_nav_upgrade", cta: "upgrade_premium" })}
               className="ui-hover mr-1 inline-flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 px-3 py-2 text-xs font-black text-black shadow-lg shadow-orange-500/20 transition hover:scale-[1.03]"
             >
               <Gem className="h-4 w-4" />

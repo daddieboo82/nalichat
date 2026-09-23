@@ -31,6 +31,7 @@ describe("subscription billing client", () => {
 
     expect(invoke).toHaveBeenCalledWith("createPayPalSubscription", {
       sku: "premium_plus_yearly",
+      idempotencyKey: "checkout_request_1234",
     });
     expect(redirect).toHaveBeenCalledWith("https://www.paypal.com/checkoutnow?token=test");
   });

@@ -138,8 +138,8 @@ export default function PricingPlans({
   }, [variant, upgradeFeature, upgradeSource]);
 
   const continueFree = () => {
-    trackPaywallEvent("paywall_secondary_cta", { variant, plan: "free", source: "pricing", ...campaignContext() });
-    trackPaywallEvent("paywall_dismissed", { variant, source: "continue_free", ...campaignContext() });
+    trackPaywallEvent("paywall_secondary_cta", { variant, plan: "free", source: upgradeSource || "pricing", ...campaignContext() });
+    trackPaywallEvent("paywall_dismissed", { variant, source: upgradeSource ? `${upgradeSource}_dismissed` : "pricing_dismissed", ...campaignContext() });
     const returnTo = location.state?.from;
     navigate(isAuthenticated && typeof returnTo === "string" ? returnTo : isAuthenticated ? "/messages" : "/");
   };
@@ -176,6 +176,7 @@ export default function PricingPlans({
       plan: planId,
       billing_period: period,
       sku,
+      source: upgradeSource || "pricing",
       ...campaignContext(),
     });
     trackPaywallEvent("paywall_primary_cta", {
@@ -183,6 +184,7 @@ export default function PricingPlans({
       plan: planId,
       billing_period: period,
       sku,
+      source: upgradeSource || "pricing",
       ...campaignContext(),
     });
 
@@ -204,6 +206,7 @@ export default function PricingPlans({
         plan: planId,
         billing_period: period,
         sku,
+        source: upgradeSource || "pricing",
         campaign_source: attribution?.utm_source || undefined,
         campaign_medium: attribution?.utm_medium || undefined,
         campaign_name: attribution?.utm_campaign || undefined,

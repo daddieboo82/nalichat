@@ -336,7 +336,7 @@ export default function Home() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
               </span>
-              FREE CREATOR WORKSPACE · NO PAYMENT REQUIRED
+              THE CREATOR WORKSPACE · PREMIUM POWER WHEN YOU'RE READY
             </motion.div>
           )}
 
@@ -357,7 +357,7 @@ export default function Home() {
                   <div className="mt-0.5 rounded-xl bg-primary/15 p-2"><Music className="h-5 w-5 text-primary" /></div>
                   <div>
                     <p className="text-sm font-black text-foreground sm:text-base">Your music workspace is ready when you are.</p>
-                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">Record and produce in NaliStudio, message creators, and keep project files together without paying to get started.</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">Record and produce in NaliStudio, message creators, and keep project files together. Premium expands the workflow with more AI and advanced creator tools.</p>
                   </div>
                 </div>
               </div>
@@ -401,7 +401,7 @@ export default function Home() {
           {/* Trust strip */}
           {!user && (
             <p className="mx-auto mt-5 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-             Free core messaging + NaliStudio · No payment required · Upgrade only when you want advanced tools
+             Start creating immediately · Premium unlocks more AI, advanced Studio tools and larger creative workflows
             </p>
           )}
         </motion.div>
@@ -619,7 +619,7 @@ export default function Home() {
                 </div>
                 <h2 className="font-heading font-bold text-2xl md:text-3xl mb-2">Your Personal Music Assistant</h2>
                 <p className="text-foreground/90 leading-relaxed">
-                  Premium adds Nali AI for production guidance, track-tag suggestions, Studio help, and creator questions across the app. Start with the free creator workspace, then add AI when it fits your workflow.
+                  Premium adds NALI.ai for production guidance, track-tag suggestions, Studio help, and creator questions across the app—giving serious creators a faster, deeper workflow.
                 </p>
               </div>
             </div>
@@ -797,7 +797,7 @@ export default function Home() {
               <p className="text-lg sm:text-xl text-foreground/90 font-medium mb-8 md:mb-10 max-w-3xl mx-auto leading-relaxed">
                 {user
                   ? "Jump into your messages, share your latest ideas, and connect with your team instantly."
-                  : "Start with free core chat, then move between NaliBase worlds as your creative workflow grows when you need more."}
+                  : "Start creating, move between NaliBase worlds, and unlock Premium power as your workflow grows."}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center w-full max-w-sm mx-auto sm:max-w-none">
                 {user ? (
@@ -828,7 +828,7 @@ export default function Home() {
               </div>
               {!user && (
                 <p className="mt-8 text-sm font-bold text-muted-foreground tracking-wide uppercase">
-                  Core chat is free forever · No paid plan required to start
+                  Create immediately · Upgrade to Premium for the complete creator toolkit
                 </p>
               )}
             </div>

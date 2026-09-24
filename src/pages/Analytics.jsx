@@ -339,6 +339,16 @@ export default function Analytics() {
 
   const premiumCampaignEfficiency = React.useMemo(() => premiumCampaigns.map(row => ({ ...row, clickToCheckout: row.clicks > 0 ? Math.min(100, Math.round((row.checkouts / row.clicks) * 100)) : 0, checkoutToPurchase: row.checkouts > 0 ? Math.min(100, Math.round((row.purchases / row.checkouts) * 100)) : 0 })), [premiumCampaigns]);
 
+  const premiumOpportunities = React.useMemo(() => {
+    const weakest = (rows, key) => rows.filter(row => (row.checkouts || 0) >= 2).sort((a, b) => (a[key] || 0) - (b[key] || 0))[0] || null;
+    return {
+      source: weakest(premiumSources, "checkoutToPurchase"),
+      feature: weakest(premiumFeatures, "checkoutToPurchase"),
+      plan: weakest(premiumPlans, "checkoutToPurchase"),
+      campaign: weakest(premiumCampaignEfficiency, "checkoutToPurchase"),
+    };
+  }, [premiumSources, premiumFeatures, premiumPlans, premiumCampaignEfficiency]);
+
   const premiumLeaders = React.useMemo(() => {
     const best = (rows, key, minimum = 1) => rows.filter(row => (row.purchases || 0) >= minimum).sort((a, b) => (b[key] || 0) - (a[key] || 0))[0] || null;
     return {
@@ -524,6 +534,13 @@ export default function Analytics() {
                   <p className="text-xs font-semibold">Premium conversion leaders</p>
                   <p className="mt-1 text-[11px] text-muted-foreground">Highest checkout-to-paid rate among rows with at least one confirmed purchase in this date range.</p>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[["Source", premiumLeaders.source], ["Feature", premiumLeaders.feature], ["Plan", premiumLeaders.plan], ["Campaign", premiumLeaders.campaign]].filter(([, row]) => row).map(([kind, row]) => <div key={kind} className="rounded-xl border border-border/50 p-3"><p className="text-[11px] text-muted-foreground">{kind}</p><p className="mt-1 text-sm font-semibold">{row.label || row.campaign || row.source || row.sku}</p><p className="mt-1 text-lg font-bold tabular-nums">{row.checkoutToPurchase}%</p></div>)}</div>
+                </div>
+              )}
+              {Object.values(premiumOpportunities).some(Boolean) && (
+                <div className="mt-4 rounded-2xl border border-border/60 bg-background/30 p-4">
+                  <p className="text-xs font-semibold">Premium conversion opportunities</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">Lowest checkout-to-paid rate among rows with at least two checkout starts. Use this as a diagnostic signal, not a causal conclusion.</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[["Source", premiumOpportunities.source], ["Feature", premiumOpportunities.feature], ["Plan", premiumOpportunities.plan], ["Campaign", premiumOpportunities.campaign]].filter(([, row]) => row).map(([kind, row]) => <div key={kind} className="rounded-xl border border-border/50 p-3"><p className="text-[11px] text-muted-foreground">{kind}</p><p className="mt-1 text-sm font-semibold">{row.label || row.campaign || row.source || row.sku}</p><p className="mt-1 text-lg font-bold tabular-nums">{row.checkoutToPurchase}%</p><p className="text-[11px] text-muted-foreground">{row.checkouts} checkout starts</p></div>)}</div>
                 </div>
               )}
               {premiumFailures.length > 0 && (

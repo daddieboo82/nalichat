@@ -17,6 +17,7 @@ import MarkersBar from '@/components/studio/MarkersBar';
 import { sounds } from '@/hooks/use-sound';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePerformance } from '@/hooks/use-performance';
+import { useSubscription } from '@/hooks/useSubscription';
 
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -108,6 +109,7 @@ async function listPersistedTracks(projectId) {
 export default function Studio() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { hasPaidAccess, isLoading: subscriptionLoading } = useSubscription();
   const studioOpenTrackedRef = useRef(false);
   useEffect(() => {
     if (studioOpenTrackedRef.current) return;
@@ -2294,6 +2296,25 @@ export default function Studio() {
       {isLowEnd && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 px-4 py-1.5 rounded-full bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-xs font-medium backdrop-blur-md whitespace-nowrap">
           ⚠ Performance Mode: Reduced waveform quality for smoother experience
+        </div>
+      )}
+
+      {!subscriptionLoading && !hasPaidAccess && (
+        <div className="mx-2 sm:mx-3 mt-2 rounded-xl border border-primary/25 bg-primary/10 px-3 py-2 flex items-center justify-between gap-3 relative z-20">
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm font-semibold text-foreground">Take this session further with Premium</p>
+            <p className="hidden sm:block text-xs text-muted-foreground">Unlock more NALI.ai, advanced Studio tools, and the complete creator workflow.</p>
+          </div>
+          <Button
+            size="sm"
+            className="shrink-0"
+            onClick={() => {
+              trackProductEvent("upgrade_click", { source: "studio_upgrade", upgrade_feature: "studio.creator_workflow" });
+              navigate('/pricing?source=studio_upgrade&feature=studio.creator_workflow');
+            }}
+          >
+            Unlock Premium
+          </Button>
         </div>
       )}
 

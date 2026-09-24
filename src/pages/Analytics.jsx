@@ -33,6 +33,13 @@ async function listAllUserPosts(userId) {
     if (page.length < pageSize) return rows;
   }
 }
+function normalizePremiumSource(rawSource) {
+  const aliases = { desktop_nav: "desktop_nav_upgrade", mobile_header: "mobile_header_upgrade" };
+  let source = aliases[rawSource || "unknown"] || rawSource || "unknown";
+  if (/^(connect|create|discover|share|visualize|compete)_world$/.test(source)) source = `${source}_upgrade`;
+  return source;
+}
+
 export default function Analytics() {
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
@@ -207,13 +214,10 @@ export default function Analytics() {
   }, [filteredFunnelEvents]);
 
   const premiumFailureSources = React.useMemo(() => {
-    const aliases = { desktop_nav: "desktop_nav_upgrade", mobile_header: "mobile_header_upgrade" };
     const rows = new Map();
     for (const event of filteredFunnelEvents) {
       if (event.event_name !== "purchase_failed") continue;
-      const raw = event.source || "unknown";
-      let source = aliases[raw] || raw;
-      if (/^(connect|create|discover|share|visualize|compete)_world$/.test(source)) source = `${source}_upgrade`;
+      const source = normalizePremiumSource(event.source);
       const row = rows.get(source) || { source, identities: new Set() };
       row.identities.add(event.user_id || event.session_id || event.id);
       rows.set(source, row);
@@ -231,10 +235,7 @@ export default function Analytics() {
     const sourceMap = new Map();
     for (const event of filteredFunnelEvents) {
       if (!["upgrade_click", "checkout_started", "purchase_completed"].includes(event.event_name)) continue;
-      const rawSource = event.source || "unknown";
-      const legacyAliases = { desktop_nav: "desktop_nav_upgrade", mobile_header: "mobile_header_upgrade" };
-      let source = legacyAliases[rawSource] || rawSource;
-      if (/^(connect|create|discover|share|visualize|compete)_world$/.test(source)) source = `${source}_upgrade`;
+      const source = normalizePremiumSource(event.source);
       const row = sourceMap.get(source) || { source, clicks: new Set(), checkouts: new Set(), purchases: new Set() };
       const identity = event.user_id || event.session_id || event.id;
       if (event.event_name === "upgrade_click") row.clicks.add(identity);

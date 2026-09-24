@@ -259,7 +259,8 @@ export default function Analytics() {
         checkouts: row.checkouts.size,
         purchases: row.purchases.size,
         selectionToCheckout: row.selected.size > 0 ? Math.round((row.checkouts.size / row.selected.size) * 100) : 0,
-        checkoutToPurchase: row.checkouts.size > 0 ? Math.round((row.purchases.size / row.checkouts.size) * 100) : 0,
+        selectionToCheckout: row.selected.size > 0 ? Math.min(100, Math.round((row.checkouts.size / row.selected.size) * 100)) : 0,
+        checkoutToPurchase: row.checkouts.size > 0 ? Math.min(100, Math.round((row.purchases.size / row.checkouts.size) * 100)) : 0,
       }))
       .sort((a, b) => b.purchases - a.purchases || b.checkouts - a.checkouts || b.selected - a.selected);
   }, [filteredFunnelEvents]);
@@ -414,6 +415,7 @@ export default function Analytics() {
                   </div>
                 ))}
               </div>
+              <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">Premium stages count unique users/sessions within the selected date range. Users can enter Pricing directly, so stage totals are directional and may not always decrease step-by-step.</p>
               {premiumDropoff?.lost > 0 && (
                 <div className="mt-4 rounded-2xl border border-border/60 bg-background/40 p-3">
                   <p className="text-xs font-semibold">Largest Premium drop-off</p>
